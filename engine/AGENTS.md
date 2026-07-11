@@ -1,0 +1,69 @@
+# engine/ — Parallax engine layer
+
+Everything platform-facing lives here: this is the only directory allowed to touch
+browser APIs (`navigator.*`, WebGPU, OPFS, workers, `WebAssembly.*`, Prompt API,
+WebAudio, and later WebRTC). Read the root `AGENTS.md` and
+[docs/architecture.md](../docs/architecture.md) before working here — the layer rules and
+worker topology defined there govern this directory.
+
+## Scope
+
+**In:** render orchestration (Babylon.js WebGPU), worker fabric (SAB channels,
+lifecycle), streaming manager, storage (OPFS/Cache/manifest/install), Rust→WASM modules,
+sim-runtime scaffolding (scheduler, snapshots, command transport), audio, input, save
+serialization, AI-inference service (Prompt API sessions), instrumentation.
+
+**Out:** game rules, content, world data, NPC personas, UI layouts — those are `game/`.
+If you're writing a string a player will see or a rule a designer would tune, you're in
+the wrong directory.
+
+## Planned structure (create directories as their milestone starts; update this list)
+
+```
+engine/
+  core/        types, ids, math, time, event/command plumbing
+  workers/     worker entrypoints + SAB channel library
+  render/      Babylon integration, pipeline warmup, custom WGSL passes
+  streaming/   cell scheduler, memory budget governor, eviction
+  storage/     OPFS, manifest, install/update, integrity
+  wasm/        Rust crates (one per module) + JS bindings
+  ai/          Prompt API session management, schema-constrained output
+  audio/       WebAudio graph + worklets
+  input/       keyboard/mouse/gamepad → command stream
+  save/        snapshot/delta serialization
+  telemetry/   counters, timings, harness export surface
+```
+
+## Rules
+
+1. **Every subsystem is a service with an explicit interface** consumed by `game/` or
+   other engine services. No reaching into another service's internals.
+2. **Main thread is sacred.** Nothing here may block or do sustained work on the main
+   thread. Long tasks > 50 ms on main during gameplay are budget violations.
+3. **Memory is budgeted, never assumed.** Allocations on hot paths come from pools sized
+   at boot; SAB sizes are boot-time constants recorded in telemetry.
+4. **Instrument as you build** (root rule 5): a subsystem without telemetry counters is
+   incomplete. Telemetry is exported through `telemetry/` in the harness's format.
+5. **Babylon is a dependency, not a framework.** Parallax owns the loop, scheduling, and
+   memory. If Babylon blocks a needed WebGPU feature: bypass or patch locally, and log
+   the gap in [docs/rough-edges.md](../docs/rough-edges.md).
+6. **Failed platform experiments are findings.** If an API can't do what we need, write
+   the rough-edges entry with the repro before working around it.
+7. **Engine artifacts are shareable by hash (D-010).** Engine bundles build
+   deterministically — same source + pinned toolchain ⇒ byte-identical output (no
+   timestamps, build paths, or nondeterministic ordering in artifacts; the pipeline's
+   double-build hash check enforces this). Engine bundles carry explicit versions,
+   contain zero game code or game data, and must load/initialize without any
+   game-specific bundle present. This is what lets engine code move to a Cross-Origin
+   Storage hash index and be shared across published games.
+
+## Language conventions
+
+- **TypeScript:** strict mode; no `any` without a justifying comment; no implicit
+  main-thread singletons (everything must know which worker it lives in).
+- **WGSL:** one entrypoint per file; constants via pipeline-overridable constants or a
+  generated constants header — never string-spliced shader source; every pipeline
+  creation goes through the warmup-aware pipeline registry in `render/`.
+- **Rust/WASM:** one crate per module under `wasm/`; `#![forbid(unsafe_code)]` unless the
+  module's README justifies it; explicit about memory32 vs memory64 (see decision P-001);
+  bindings expose typed-array views, never copies, on hot paths.

@@ -1,0 +1,59 @@
+# harness/ — build, deploy, measure ("WebPageTest for games")
+
+The project's verification loop and a first-class deliverable in its own right
+([docs/vision.md](../docs/vision.md)). Every claim about performance in this repository
+is backed by a number the harness produced. Read the root `AGENTS.md` and
+[docs/budgets.md](../docs/budgets.md) first.
+
+## What it does
+
+One command: build → serve (COOP/COEP, immutable URLs, correct 304 behavior — the
+serving discipline is part of what's under test) → launch Chrome (scripted, fresh
+profile *and* warm profile) → drive a deterministic run → collect metrics → diff against
+budgets.md → pass/fail with a report.
+
+## Metric surface (grow with the systems; a system without harness coverage is invisible)
+
+- **Frames:** frame-time distribution (p50/p95/p99.9/max), long tasks per thread,
+  pipeline-compile events during gameplay (must be zero).
+- **Memory:** JS heap per thread, WASM linear memory per module, GPU memory as
+  attributable, SAB pool sizes, high-water marks per run phase.
+- **Caches:** V8 wasm/JS code cache hit evidence, HTTP 304 discipline, Dawn pipeline
+  cache behavior (launch-1 vs launch-2 compile counts), OPFS read throughput.
+- **Lifecycle:** install wall time and phase breakdown, launch-1/launch-2/offline-launch
+  to gameplay, update-flow cache preservation.
+- **Streaming:** cell load latency distribution, queue depths/stalls, eviction events
+  (emergency count must be zero), transition-contract measurements (D1↔D2).
+- **Sim:** determinism hash (same command log ⇒ same state hash), step-time distribution.
+- **AI:** Prompt API first-token/total latency, frame impact during generation.
+
+Sources: CDP (tracing, Performance domains), in-app telemetry exported by
+`engine/telemetry/` on a stable schema, and Chrome internals surfaces where CDP falls
+short (each gap in observability is itself a rough-edges finding — log it).
+
+## Standard runs (versioned scripts in `runs/`; deterministic by construction)
+
+- `smoke` — boot to first interactive frame, budget snapshot (every change).
+- `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
+- `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
+- `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only
+  update → relaunch (from M2).
+- `determinism` — replay a canned command log N times, compare state hashes (from M3).
+
+## Rules
+
+1. **Deterministic runs.** Scripted input/camera paths, fixed seeds, pinned Chrome
+   version per report (version recorded in every result). Variance across repeats is
+   itself a tracked metric — a noisy metric is a broken metric.
+2. **Results are diffable artifacts** (JSON + human-readable report), stored per
+   build/commit; regressions must point at the metric, the run, and the commit range.
+3. **Budget failures fail the run.** No advisory mode. Changing a threshold happens in
+   docs/budgets.md with a decision-log entry, never in harness code.
+4. **Reference machines are pinned** (specs recorded in `machines/`); add machines,
+   don't silently swap them.
+5. **The harness may not depend on `engine/` or `game/` internals** — only on the
+   telemetry export schema and public URLs. It must be able to measure a broken build.
+6. **Attribution first.** When a metric regresses, the harness should help prove which
+   layer (app / Babylon / Dawn / V8 / storage / OS) — prefer adding a probe or a
+   standalone micro-repro (`probes/`) over speculation. Micro-repros double as
+   rough-edges reproductions.
