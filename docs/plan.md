@@ -19,7 +19,7 @@ The measurement loop everything else depends on, plus the thinnest possible end-
 app: a Babylon.js WebGPU scene in a render worker, served with COOP/COEP, deployed and
 measured automatically.
 
-- [ ] Build/serve pipeline (per D-014 toolchain) with immutable-URL output and correct
+- [ ] Build/serve pipeline (per D-014/D-020 toolchain) with immutable-URL output and correct
       headers; local server at this stage (D-011).
 - [ ] Engine/game bundle separation with deterministic engine builds (D-010): same
       source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
@@ -31,9 +31,14 @@ measured automatically.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go).
 - [ ] Spike: SAB ring buffer main↔worker.
 - [ ] Spike: OPFS sync-access-handle read throughput from a worker.
-- [ ] Spike: Prompt API availability/download flow.
+- [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
+      activation for download/create, download flow + model-size reporting, eviction
+      + offline reavailability behavior, session limits.
 - [ ] Spike: Rust→WASM module with wasm threads.
 - [ ] Spike: memory64 module load.
+- [ ] Harness result contract implemented (budgets.md → Measurement methodology):
+      metric states, environment identity, artifact digest + dirty-tree identity,
+      per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.
 - [ ] Exit: one command produces a deployed build and a budget report; all spike results
       recorded in rough-edges.md or decisions.md.
 
@@ -67,10 +72,21 @@ credible.
       launch-1 vs launch-2.
 - [ ] V8 code-cache validation (instantiateStreaming, 304/immutable discipline); update
       flow that preserves code caches on asset-only changes.
-- [ ] Offline run (kill network post-install).
-- [ ] Scale test: synthetic ≥100 GB manifest through install/resume/integrity/update/
-      eviction (budgets.md, D-009 — a floor, not a ceiling; grow until a platform limit
-      is found or disproven); pre-install quota check + failure UX at that scale.
+- [ ] Service-worker offline shell (D-015): precache, cache-first navigation, atomic
+      activation + rollback, COOP/COEP preserved on cached responses, version
+      compatibility checks (shell/engine/manifest/save schema).
+- [ ] Installer trust + crash-safety (architecture.md contract): hash verification of
+      every bundle, atomic version switch, resume/rollback on interruption,
+      repair-by-refetch, persist() denial and QuotaExceededError flows, best-effort
+      space preflight with quota-error-aware incremental writes.
+- [ ] Offline fault suite: offline hard reload, browser restart offline, corrupt-cache
+      recovery, interrupted update, disk-full injection.
+- [ ] Scale tests, two corpora (budgets.md, D-009/D-018): (a) ≥100 GB filler lifecycle
+      corpus through install/resume/integrity/update/eviction — a floor, not a
+      ceiling; grow until a platform limit is found or disproven; (b) representative
+      streaming corpus (realistic encoding/entropy/file distribution/dependency
+      graphs) exercising decode → GPU upload at scale; best-effort quota preflight +
+      failure UX at that scale.
 - [ ] Exit: cold-install and warm-launch times within budget, measured across ≥3
       machines; findings written up.
 
@@ -80,8 +96,11 @@ credible.
 - [ ] Character controller, camera, basic interaction loop in greybox D1.
 - [ ] Prompt API NPC dialog: persona cards, rolling memory, structured output for
       state-affecting intents; frame-impact measurement during inference.
-- [ ] Exit: playable greybox loop with conversing NPCs; save/reload round-trip; sim
-      determinism check (same input log → same state hash) in the harness.
+- [ ] Exit: playable greybox loop with conversing NPCs (incl. authored-fallback path
+      with the model unavailable, D-017); save/reload round-trip; sim determinism check
+      (same input log → same state hash) in the harness — **cross-machine**: replays
+      must hash-match across dev-01 and mac-01 on the same pinned Chrome version
+      (D-016), not just on one host.
 
 ## M4 — District 2 (catacombs) + hard transitions  `pending`
 
@@ -110,7 +129,9 @@ credible.
 ## M7 — P2P multiplayer exploration  `parked (design constraints active now)`
 
 - [ ] WebRTC data channels, 2–4 players, D1: presence/co-exploration first, shared sim
-      second. Scope decided when M3 determinism results are in.
+      second. Scope decided when M3 determinism results are in. Infrastructure per
+      D-016: self-hosted signaling + STUN; TURN permitted if direct connectivity
+      failure rates warrant it.
 
 ## M8 — Cross-Origin Storage exercise  `parked (blocked on COS API availability)`
 

@@ -43,12 +43,25 @@ short (each gap in observability is itself a rough-edges finding — log it).
 ## Rules
 
 1. **Deterministic runs.** Scripted input/camera paths, fixed seeds, pinned Chrome
-   version per report (version recorded in every result). Variance across repeats is
-   itself a tracked metric — a noisy metric is a broken metric.
-2. **Results are diffable artifacts** (JSON + human-readable report), stored per
-   build/commit; regressions must point at the metric, the run, and the commit range.
+   version per report — operationally, archived Chrome for Testing binaries at the
+   current stable milestone (D-019), so any past result can be re-run; the exact
+   version is recorded in every result and a periodic parity smoke runs on installed
+   branded stable. Variance across repeats is itself a tracked metric — a noisy metric
+   is a broken metric.
+2. **Results are diffable artifacts** (JSON + human-readable report), keyed by
+   **artifact digest**, not commit: the hash of the exact built artifacts measured,
+   plus source identity = last commit + a digest of the dirty working tree (agent work
+   is intentionally measured pre-commit — "commit" alone cannot identify what ran).
+   Every result also records the full environment identity and per-metric states
+   defined in docs/budgets.md → Measurement methodology. Regressions point at the
+   metric, the run, and the artifact/source delta.
 3. **Budget failures fail the run.** No advisory mode. Changing a threshold happens in
-   docs/budgets.md with a decision-log entry, never in harness code.
+   docs/budgets.md with a decision-log entry, never in harness code. Metrics use the
+   `measured | unsupported | invalid | not-applicable` states from budgets.md; a
+   milestone-mandatory metric that isn't `measured` is a failure (silence is not a
+   pass), and each milestone's mandatory-metric set is versioned here alongside the
+   run scripts. Baseline promotion on Chrome-stable updates follows the budgets.md
+   policy (explicit promotion, never automatic).
 4. **Reference machines are pinned** (specs recorded in `machines/`); add machines,
    don't silently swap them.
 5. **The harness may not depend on `engine/` or `game/` internals** — only on the

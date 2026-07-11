@@ -23,7 +23,7 @@ build later) · `explored` (idea logged, no constraints yet)
 | Spatial audio | WebAudio worklets, HRTF panning, underground/surface acoustic contrast as a showcase | designed | M6 |
 | VFX & weather | Full weather system is core creative direction (game-design.md): sun→overcast→storms, lightning, day/night, fire/area lighting; GPU-compute particles. Dynamic-lighting consequence binds the renderer from M1 (architecture.md) | designed (renderer constraint active from M1; full system M6) | M1 constraint, M6 build |
 | Photo mode | Cheap, high-value web flex: canvas capture, offline render-quality crank, shareable output | explored | M6 |
-| P2P multiplayer | WebRTC data channels, serverless co-play | **designed — constraints below** | M7 |
+| P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |
 | Input | Keyboard/mouse (Pointer Lock w/ `unadjustedMovement`, Keyboard Lock for Esc/system keys in fullscreen), Gamepad API incl. haptics, Fullscreen, Screen Wake Lock | active | M3 |
 | Accessibility | Remap, subtitles for NPC dialog (free — dialog is text-native), UI scaling | explored | M6 |
 | Live content hooks | Manifest-driven content drops using the update path (no code deploy) | explored | post-M6 |
@@ -64,14 +64,17 @@ area is active) · `stretch` (only if a cheap opportunity appears) · `parked`
 
 Rules of engagement for this list: each item, when picked up, gets a matrix row (with
 status/milestone) or is dropped with a decision-log entry; nothing here may compromise
-the offline constraint (on-device variants only) or add a server dependency; and
+the offline single-player experience — on-device variants only, and **offline
+single-player requires zero server infrastructure** (multiplayer is inherently
+networked and may use the D-016-permitted connection infrastructure, nothing more); and
 permission-gated hardware features (camera, mic, HID, Bluetooth, idle) are always opt-in
 with in-fiction framing, never required to play.
 
 ## Design-now constraints: P2P multiplayer (build at M7)
 
-The multiplayer bet is WebRTC data channels between browsers — potentially serverless
-beyond signaling. It is **not** implemented until M7, but the following are load-bearing
+The multiplayer bet is WebRTC data channels between browsers — no game-simulation
+servers; connection infrastructure (self-hosted signaling, STUN, TURN if warranted) per
+D-016. It is **not** implemented until M7, but the following are load-bearing
 architectural requirements **now** (violations are M7 rewrites):
 
 1. **Sim/render separation.** Gameplay simulation runs in its own worker at a fixed
@@ -80,9 +83,12 @@ architectural requirements **now** (violations are M7 rewrites):
 2. **Input-command pattern.** All player intent enters the sim as serializable commands
    (timestamped, ordered). No gameplay code mutates sim state directly from UI/input
    handlers.
-3. **Determinism-friendly sim.** Same command log ⇒ same state hash. No `Math.random()`
-   without a seeded RNG owned by the sim; no wall-clock reads inside the sim step; no
-   iteration-order-dependent logic over unordered collections. The harness checks this
+3. **Determinism-friendly sim.** Same command log ⇒ same state hash — **cross-machine,
+   within a pinned Chrome version** (D-016): verified across Windows and macOS hosts
+   from M3, since single-host determinism says nothing about cross-peer lockstep
+   suitability. No `Math.random()` without a seeded RNG owned by the sim; no wall-clock
+   reads inside the sim step; no iteration-order-dependent logic over unordered
+   collections; no wasm paths sensitive to NaN bit patterns. The harness checks this
    from M3 (it's also what makes replays a regression tool).
 4. **Stable entity identity.** Every entity has a persistent, serializable ID assigned
    deterministically — never object references or array indices as identity.

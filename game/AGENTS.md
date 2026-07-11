@@ -25,7 +25,8 @@ game/
   sim/         gameplay systems running in the sim worker (entities, movement,
                interaction, quests)
   npc/         persona cards, dialog schemas, memory policies
-  ui/          HUD, menus, installer/launch screens
+  ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
+               (installer/updater/launcher screens belong to app/, per D-012)
   balance/     tunable-numbers data (never inline constants in sim code)
 ```
 
@@ -44,6 +45,9 @@ game/
    game state comes back through a JSON-schema-constrained intent, validated before the
    sim sees it as a command. Freeform model text is flavor only. Design for nano-class
    model quality — constrain hard, tolerate weirdness gracefully (it's characterful).
+   Every persona card includes **authored fallback dialog** sufficient to keep the NPC
+   functional when the on-device model is unavailable (Chrome can evict it — D-017);
+   quest-critical interactions must never require the model.
 5. **Tunables live in `balance/` data**, not as magic numbers in systems — this is also
    what lets agents iterate on feel without touching sim correctness.
 6. **Placeholder-first.** Gameplay is built and proven against greybox content; nothing

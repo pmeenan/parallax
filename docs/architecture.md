@@ -54,8 +54,16 @@ decode pool (N)    Texture transcode (KTX2/BasisU), mesh decompress (meshopt),
 sim worker         Fixed-timestep gameplay simulation. Deliberately isolated so a
                    future multiplayer peer can drive it from network input
                    (see features.md → Multiplayer).
-ai worker          Prompt API sessions for NPC dialog; decoupled from frame loop.
 ```
+
+**AI inference is the exception to the worker rule (D-017):** the Prompt API is not
+currently available in Web Workers (checked 2026-07-11,
+developer.chrome.com/docs/ai/prompt-api), so NPC inference runs as a **window-owned
+broker** on the main thread — behind an `engine/ai` service interface identical to what
+a worker would expose, so it migrates the day worker support lands. The broker is
+strictly decoupled from the frame loop (queued requests, streamed responses, no sync
+waits), and its main-thread impact is a first-class harness metric. Worker
+unavailability itself is a standing rough-edges item.
 
 Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
 sim→render state snapshots); `postMessage` with transferables for bulk handoffs;
@@ -71,20 +79,57 @@ Findings go to [rough-edges.md](rough-edges.md).
 | Data | Location | Why |
 | --- | --- | --- |
 | Game assets (meshes, textures, audio, world data) | OPFS | Multi-GB, random-access reads via sync access handles in workers |
-| App shell (HTML/JS/WASM binaries) | HTTP cache, immutable URLs, 304-friendly | Preserves V8 code cache (keyed to URL + response state) |
+| App shell (HTML/JS/WASM binaries) | HTTP cache (immutable URLs, 304-friendly) **plus service-worker precache** | HTTP cache preserves the V8 code cache; the service worker guarantees offline navigation (HTTP cache alone doesn't — see below) |
 | PSO/shader warmup trace data | OPFS, versioned with the asset build | Drives progressive pipeline warmup at boot |
-| Save games / settings | OPFS (`saves/`), versioned schema | Survives cache eviction pressure better than other stores |
-| Gemini Nano model | Chrome-managed (Prompt API download) | Triggered during install; not in our quota |
+| Save games / settings | OPFS (`saves/`), versioned schema | Worker sync-handle access; **protection comes from origin persistence + explicit export, not from OPFS itself** — all origin storage shares one quota/eviction policy. Storage Buckets as a saves/assets separation is open (P-006) |
+| Gemini Nano model | Chrome-managed (Prompt API download) | Triggered during install (user activation required); needs ~22 GB free on the profile volume to download; size varies; **evictable by Chrome under storage pressure** — see NPC AI fallback below |
+
+**Quota reality (checked 2026-07-11, web.dev/articles/storage-for-the-web + MDN):** a
+Chromium origin may use up to ~60% of **total** disk size (not free space), and
+`navigator.storage.estimate()` can report quota exceeding actually-writable free space.
+The installer treats space checks as **best-effort preflight** (estimate + a small
+probe — no probe can prove 100 GB of writable space without writing it) and relies on
+`QuotaExceededError`-aware incremental writes with resume for the real guarantee;
+quota errors and `persist()` denial are designed flows, not errors.
+
+### Offline shell: service worker
+
+The install/launch promise requires offline navigation, which the HTTP cache does not
+guarantee. A **service worker** owns the app shell offline story:
+
+- Precaches the shell (HTML/JS/WASM bootstrap) at install; serves navigations
+  cache-first once installed.
+- **Atomic activation:** a new shell version activates all-or-nothing, with rollback to
+  the previous known-good version on failure; shell, engine bundle, asset manifest, and
+  save-schema versions are checked for compatibility at boot.
+- **COOP/COEP preservation:** cached navigation responses must carry the isolation
+  headers or SAB dies offline — verified by an explicit harness check.
+- Interplay between SW-served responses and the V8 code cache is a pre-seeded
+  rough-edges question — measure it, don't assume it.
 
 Asset placement is benchmark-driven: if the harness shows a class of data loads better
 from Cache Storage than OPFS, move it and record the numbers in the decision log.
 
 ## Install / launch / run lifecycle
 
-1. **Install (first visit, user-initiated):** persist-storage permission → manifest fetch
-   → parallel asset pull into OPFS with resume support → Prompt API model availability +
-   download → PSO warmup pass (see below) → integrity verification. UX: a real installer
-   progress screen, not a spinner.
+1. **Install (first visit, user-initiated):** the install-button click handler
+   **immediately** calls `LanguageModel.create()` (transient activation expires in
+   seconds — it will not survive a long install; the model download then proceeds in
+   parallel with everything else) and requests persist-storage (denial is a handled
+   flow with degraded-durability warning) → best-effort space preflight (estimate +
+   small probe; see quota reality above — the real protection is
+   `QuotaExceededError`-aware incremental writing throughout) → manifest fetch →
+   parallel asset pull into OPFS with resume support → PSO warmup pass (see below) →
+   integrity verification. UX: a real installer progress screen, not a spinner.
+
+   **Trust and crash-safety contract:** the manifest is served over TLS from the origin
+   and pins SHA-256 content hashes for every bundle (the same content addressing COS
+   wants); every fetched byte is verified against its hash before commit; version
+   switches are atomic (new version fully staged, then flipped; interrupted
+   installs/updates resume or roll back, never half-apply); corruption detected at load
+   repairs by re-fetch-by-hash; saves are never touched by asset reclamation, and the
+   player can export saves before any destructive storage operation. Disk-full and
+   interrupted-update fault injection are harness lifecycle tests (M2).
 2. **Launch (every boot):** integrity/version check against manifest → progressive PSO
    warmup from trace → resident-set preload for the player's saved location → gameplay.
    Launch 2+ must hit the V8 code cache (wasm via `instantiateStreaming`, stable URLs)
@@ -152,11 +197,23 @@ save/load, replay-driven harness tests, and the future multiplayer model.
 
 ## NPC AI
 
-Chrome's built-in Prompt API (on-device Gemini Nano) via the `ai worker`. Persona cards +
-rolling summarized memory per NPC; structured-output (JSON schema) for anything that
-touches game state, freeform text only for flavor dialog. Inference contends with
-rendering for on-device resources — the harness measures frame impact during generation
-(likely a rough-edge finding in itself). Model download is an install-phase step.
+Chrome's built-in Prompt API (on-device Gemini Nano) via the window-owned broker in
+`engine/ai` (see worker topology — Prompt API is not available in workers today).
+Persona cards + rolling summarized memory per NPC; structured-output (JSON schema) for
+anything that touches game state, freeform text only for flavor dialog. Inference
+contends with rendering for on-device resources — the harness measures frame impact
+during generation (likely a rough-edge finding in itself).
+
+**Model lifecycle (D-017):** download starts directly in the install-click handler
+(`create()` inside the transient-activation window; the download runs in parallel with
+the asset pull — activation expires in seconds and won't survive the install. ~22 GB
+free profile-volume space needed; model size varies — never hardcode it). Chrome may
+**evict the model under storage pressure**, possibly while the player is offline and
+can't re-download. Policy: **graceful degradation** — every NPC carries authored
+fallback dialog lines; the game remains fully playable with reduced conversational
+depth; restoring the model **requires a fresh user gesture** (the launch screen offers
+a "restore AI dialog" action when online — it cannot be automatic); each eviction
+observed is logged as a rough-edges data point.
 
 ## Forward-design constraints (build later, respect now)
 

@@ -51,8 +51,12 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
 3. **Library assets are immutable** — fixes produce a new content-addressed version;
    packaging manifests pin versions.
 4. **Track provenance** in asset metadata: generating agent/model, reference sheets
-   used, gate results. When a visual-consistency problem is found later, provenance is
-   how we find its siblings.
+   used, prompt/seed lineage, gate results — and **rights metadata**: license/terms of
+   every reference input, the generating model's output-usage terms, and a
+   rights-review flag that must be set before an asset ships in a public build. When a
+   visual-consistency or rights problem is found later, provenance is how we find its
+   siblings. (This includes the game-design licensing rule: nothing derived from
+   D&D-protected material.)
 5. **Greybox is an asset class too** — placeholder kits go through the same pipeline
    (relaxed visual checks, same structural ones), so the swap to final art (M5) is a
    library substitution, not a code change.

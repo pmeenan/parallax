@@ -14,7 +14,144 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
-## D-014: Toolchain  (2026-07-11, accepted)
+## D-020: Toolchain refinements — Rollup, exact pins, reproducibility levels  (2026-07-11, accepted; supersedes D-014)
+**Decision:** As D-014, with three refinements. (1) The engine library bundler is
+**Rollup** (chosen over esbuild for deterministic, timestamp-free output; exact version
+pinned in the lockfile). (2) Pinning is by **exact version** everywhere (`.nvmrc` +
+`packageManager` — "LTS" is a policy, the pin is a version); builds normalize locale,
+timezone, and path inputs. (3) Playwright drives the pinned Chrome for Testing binary
+for gate runs and `channel: 'chrome'` (installed branded stable) for parity smokes —
+see D-019. **Reproducibility levels (ties to D-010):** (1) *repeatable* — same-host
+double-build hash check, required from M0; (2) *reproducible* — cross-host
+bit-identical builds (dev-01 ↔ mac-01), required before the M8 COS exercise, likely
+needing a hermetic/containerized build definition; (3) *canonical* — published engine
+artifacts that platform publishers consume rather than rebuild, the end-state COS
+actually needs (hash-sharing works even if independent rebuilds don't match, because
+nobody rebuilds). Level 3 is the fallback if level 2 proves impractical.
+**Context:** Review found D-014 left the bundler ambiguous and "repeatable vs.
+reproducible vs. canonical" undefined, which D-010's cross-publisher hash-sharing goal
+requires.
+**Consequences:** M0 scaffolds to this shape; D-010's hash check targets the Rollup
+engine artifact.
+**Reopen if:** any component proves inadequate in practice — supersede, don't drift.
+
+## D-019: Chrome pinning mechanism — Chrome for Testing archives  (2026-07-11, accepted; supersedes D-013)
+**Decision:** As D-013 (stable-only targeting; Canary solely for Chrome-side changes,
+always labeled), with the operational mechanism defined: reproducible runs (budget
+gates, cross-machine determinism, baselines) use archived **Chrome for Testing**
+binaries pinned to the current stable milestone — versioned, non-auto-updating,
+retained per platform so any past result can be re-run. A periodic parity smoke run on
+the real installed stable channel guards against CfT-vs-branded divergence (any
+divergence found is a finding). **"Same version" across platforms** means same
+milestone + V8 revision — platform build/patch numbers may legitimately differ.
+**Context:** D-013's "pinned per run" was aspirational: installed branded stable
+auto-updates independently and cannot serve reproducible baselines or the M3
+cross-machine determinism criterion.
+**Consequences:** harness/AGENTS.md rule 1 and machines/README.md updated; budgets.md
+baseline-promotion policy operates on CfT milestone advances.
+**Reopen if:** a committed feature needs an API that hasn't reached stable, or CfT
+proves behaviorally divergent from branded stable in a way that matters to findings.
+
+## D-018: Hardware gates — capable-consumer baseline; Showcase calibrated to dev-01; Standard gate is a target profile  (2026-07-11, accepted; supersedes D-009's hardware/tier provisions)
+**Decision:** D-009's install-scale provisions stand unchanged (≤ 12 GB experiment
+content; ≥ 100 GB architecture floor, not ceiling; synthetic scale tests). Its hardware
+and tier provisions are replaced:
+- Hardware baseline is **capable consumer hardware** (not "gaming rig"); low-end and
+  mobile stay out of scope.
+- **Showcase** — 4K, gated on and **calibrated to dev-01 itself** (i9-14900KF, 128 GB,
+  RTX 4080 Super 16 GB, 4K @ 60 Hz display, Chrome/D3D12). The abstract 16 GB RAM /
+  12 GB GPU reference machine is retired: envelope enforcement on dissimilar hardware
+  cannot prove transfer, and the transfer story belongs to the Standard tier. Showcase
+  envelopes: GPU ≤ 14 GB, CPU-side ≤ 16 GB — provisional ceilings, rebalanceable within
+  the envelope by decision-log note. (These ceilings do not by themselves exercise
+  wasm64 — memory64 adoption remains P-001, proven only by a dedicated harness run in
+  which a single module addresses beyond 4 GiB.)
+- **Standard** — 1440p @ 120 Hz, defined by the **standard-target profile**: M1 Pro
+  MacBook Pro (2021), 16 GB unified memory, ProMotion. This is a *profile, not a pinned
+  machine*: it registers as `standard-01` only when the physical unit is recorded with
+  exact model/size, GPU-core configuration, display mode with verified 120 Hz behavior
+  under Chrome, and OS build. Until then Standard runs execute on dev-01 with envelope
+  enforcement, labeled provisional, and satisfy no Standard-tier exit criteria.
+- The two gates intentionally span Dawn's Metal and D3D12 backends. Quota reality
+  (correcting D-009): a Chromium origin may use up to ~60% of **total** disk size, and
+  `estimate()` can over-report writable space — preflight is best-effort; the guarantee
+  is `QuotaExceededError`-aware incremental writing with resume.
+**Context:** Review rounds found D-009's 16/12 reference contradicted by dev-01's
+actual hardware, the free-disk quota claim wrong against current docs, and the Standard
+machine underspecified.
+**Sources checked (2026-07-11):** web.dev/articles/storage-for-the-web + MDN storage
+quota docs (total-disk quota, `estimate()` caveats); user-confirmed machine facts
+(dev-01 display 4K @ 60 Hz; Standard profile M1 Pro/120 Hz).
+**Consequences:** budgets.md hardware-baseline, quality-tier, frame-gate (per-tier,
+refresh-quantized), and memory-envelope sections; harness/machines/README.md.
+**Reopen if:** a physical Standard machine is registered (records specs, no new entry
+needed); or a mid-range Windows rig joins the fleet and a transfer-focused Showcase
+variant becomes worth gating.
+
+## D-017: Prompt API operational model — window broker, activation-correct download, authored fallback  (2026-07-11, accepted; supersedes D-007)
+**Decision:** As D-007 (Prompt API for NPC dialog; schema-gated state effects), with
+the operational model corrected against current platform behavior:
+- The Prompt API is **not available in Web Workers**, so inference runs as a
+  **window-owned broker** behind a worker-shaped `engine/ai` interface (migrates when
+  worker support lands); broker main-thread impact is a mandatory harness metric.
+- Model download starts **directly in the install-button click handler** —
+  `LanguageModel.create()` is called within the transient-activation window and
+  downloads in parallel with the asset pull (transient activation expires in seconds;
+  it does not survive a multi-GB install). Model size varies by version — never
+  hardcoded; download requires ~22 GB free on the profile volume.
+- **Eviction policy:** Chrome may evict the model under storage pressure. Every NPC
+  carries authored fallback dialog; the game stays fully playable offline with reduced
+  conversational depth; restoring the model **requires a fresh user gesture** (the
+  launch screen offers a "restore AI dialog" action when online — it cannot be
+  automatic); evictions are logged as findings.
+**Context:** D-007 assumed an `ai worker`, a fixed ~4.3 GB model, and
+activation-at-install-time — all contradicted by current documentation and
+transient-activation semantics.
+**Sources checked (2026-07-11, Chrome 150 era):** developer.chrome.com/docs/ai/prompt-api
+(worker unavailability, user activation, 22 GB requirement, variable model size); MDN
+transient-activation semantics. M0 spike re-verifies locally.
+**Consequences:** no `ai worker` in the topology; fallback lines are part of every
+persona card from M3; quest-critical interactions never require the model.
+**Reopen if:** worker support lands (move the broker; new entry), quality is unusable
+for even constrained NPC dialog, or session limits make per-NPC state impractical
+(either outcome is itself a finding).
+
+## D-016: Multiplayer infrastructure and determinism scope  (2026-07-11, accepted)
+**Decision:** M7 multiplayer means **reliable internet co-play**: self-hosted signaling
+on the D-011 host and STUN are permitted; TURN relay is permitted if measured direct-
+connectivity failure rates warrant it. "Serverless" in project language means **no
+game-simulation servers** — peers run the sim; infrastructure is limited to connection
+establishment/relay. **Determinism scope:** cross-machine within a pinned Chrome
+version — same command log ⇒ same state hash across OS/CPU (dev-01 Windows ↔ mac-01
+macOS), verified by the harness from M3. Chrome-only helps: one engine (V8), one wasm
+runtime; the sim additionally avoids known nondeterminism sources (unseeded RNG,
+wall-clock, iteration-order, NaN-bit-pattern-sensitive wasm paths).
+**Context:** Real-world WebRTC requires signaling and frequently TURN
+(webrtc.org/getting-started/turn-server, checked 2026-07-11); a single-host determinism
+check says nothing about cross-peer lockstep suitability.
+**Consequences:** features.md multiplayer wording qualified; M3 determinism exit
+criterion is cross-machine; offline single-player continues to require zero server
+infrastructure.
+**Reopen if:** cross-machine determinism proves unachievable at reasonable cost (then
+choose rollback/authoritative-state sync over lockstep at M7 — log the evidence).
+
+## D-015: Service worker owns the offline app shell  (2026-07-11, accepted)
+**Decision:** A service worker precaches the app shell and serves navigations offline,
+with atomic activation + rollback and boot-time version-compatibility checks
+(shell/engine/manifest/save schema). Cached navigation responses must preserve
+COOP/COEP (verified by harness) or SAB dies offline.
+**Context:** The HTTP cache alone does not guarantee offline navigation — eviction is
+permitted and navigation needs a controlled response source
+(web.dev/articles/service-worker-caching-and-http-caching, checked 2026-07-11). The
+offline-launch budget was unimplementable without this.
+**Consequences:** SW lifecycle in architecture.md; M2 offline fault suite (offline hard
+reload, restart, corrupt cache, interrupted update, disk-full); SW-vs-V8-code-cache
+interplay pre-seeded as a rough-edges question (wasm/JS should stay HTTP-cache-served
+for code-cache friendliness where possible — measure, don't assume).
+**Reopen if:** SW-served responses measurably break V8 code caching for the shell and
+no split-serving arrangement resolves it (that's a headline finding).
+
+## D-014: Toolchain  (2026-07-11, superseded by D-020)
 **Decision:** pnpm workspaces monorepo (`app`, `engine`, `game`, `harness` packages);
 TypeScript strict with project references (references enforce the layer import
 direction at compile time); Vite for dev server/HMR and app/game builds; the engine
@@ -29,7 +166,7 @@ driver with raw CDP as the escape hatch; Biome for lint+format.
 **Reopen if:** any component proves inadequate in practice — swaps are expected to be
 cheap early; supersede with a new entry, don't drift silently.
 
-## D-013: Harness targets Chrome stable; Canary only for Chrome-side changes  (2026-07-11, accepted)
+## D-013: Harness targets Chrome stable; Canary only for Chrome-side changes  (2026-07-11, superseded by D-019)
 **Decision:** All harness runs and budgets target **Chrome stable** (pinned per run,
 recorded in results). Canary/dev channels are permitted only when testing Chrome-side
 changes (e.g., COS work), always labeled as such and never mixed into stable baselines.
@@ -95,7 +232,7 @@ origin model is decided by this entry, and the rest isn't needed for this explor
 deterministic builds prove impractical for some artifact class (log why — that's a
 finding about the sharing model's feasibility).
 
-## D-009: Install scale — 12 GB content, ≥100 GB architecture floor; gaming-rig baseline; 4K showcase tier  (2026-07-11, accepted)
+## D-009: Install scale — 12 GB content, ≥100 GB architecture floor; gaming-rig baseline; 4K showcase tier  (2026-07-11, superseded by D-018)
 **Decision:** The two-district experiment ships ≤ 12 GB of content, but every lifecycle
 system (manifest, resumable install, integrity, update, streaming/eviction) must support
 **at least** 50–100 GB installs — a floor, not a ceiling; no architectural limit may
@@ -132,7 +269,7 @@ without requiring horizon-scale streaming first.
 any art exists for it.
 **Reopen if:** never for the design-for-N property; district count/theme may change freely.
 
-## D-007: NPC dialog via Chrome built-in Prompt API (on-device Gemini Nano)  (2026-07-11, accepted)
+## D-007: NPC dialog via Chrome built-in Prompt API (on-device Gemini Nano)  (2026-07-11, superseded by D-017)
 **Decision:** NPC conversation uses Chrome's Prompt API; model download is an
 install-phase step. Structured-output JSON schemas gate anything that affects game state.
 **Context:** Shipped in Chrome 148 for web pages. The ~4.3 GB model download is
@@ -156,6 +293,10 @@ paths.
 **Context:** No popular engine ships real multithreading on the web today; on this
 platform, threading is an application architecture. Owning the topology is also where
 much of the platform research lives.
+**Sources checked (2026-07-11):** Unity web technical limitations (docs.unity3d.com —
+no managed C# threads on web), Bevy wasm multithreading tracking issue
+(github.com/bevyengine/bevy/issues/4078), Godot web export docs; M0 spikes re-verify
+WebGPU-in-worker and SAB channels locally.
 **Consequences:** COOP/COEP required everywhere, including the harness's serving
 infrastructure; every queue/boundary instrumented.
 **Reopen if:** WebGPU-in-worker or Babylon-in-worker spikes (M0) fail — fallback is
@@ -171,6 +312,10 @@ single-threaded (as of 2026-07). Babylon has years-mature WebGPU support, is ful
 inspectable, and is the strongest AI-agent target (TypeScript, instant iteration, no
 editor round-trips). From-scratch rejected: scene graph/materials/animation/glTF are
 solved problems that don't advance either goal.
+**Sources checked (2026-07-11):** Unity WebGPU manual (experimental status), Unity web
+technical limitations, Godot 4.7 web export status (WebGPU experimental behind flag),
+Bevy WebGPU/wasm-threading issues, Babylon.js WebGPU support docs
+(doc.babylonjs.com/setup/support/webGPU).
 **Consequences:** We hand-build LOD, occlusion/culling, and world partitioning — accepted
 because those systems had to be browser-custom anyway and building them *is* the
 research. Where Babylon blocks a WebGPU feature: fork locally or bypass, and log the gap.
@@ -184,6 +329,10 @@ OPFS, offline-capable, warm-launch optimized. Storage map in architecture.md; pl
 is benchmark-driven per asset class.
 **Context:** Origin ideation (docs/history/); OPFS gives worker-side sync access handles
 and quota headroom for multi-GB installs.
+**Sources checked (2026-07-11):** web.dev/articles/storage-for-the-web + MDN storage
+quota docs (~60% of total disk per origin; `estimate()` caveats; `persist()` semantics
+— protects the origin, not specific files). Offline shell requires a service worker on
+top of this — see D-015. M0 OPFS throughput spike verifies read performance locally.
 **Reopen if:** harness shows a better-performing store for a given asset class (move it,
 log numbers here).
 
@@ -208,7 +357,9 @@ a small portfolio site) judged negligible.
 
 - **P-001: wasm64 (memory64) adoption per module** — which Rust modules, if any, justify
   the pointer-width overhead for >4 GB address space. Decide after M0 spike + M1 memory
-  data.
+  data. Note: aggregate memory budgets prove nothing about memory64 (multiple memory32
+  modules can sum past 4 GB); the actual exercise is a dedicated harness run in which a
+  single module addresses data beyond 4 GiB.
 - **P-002: Geometry representation & rendering-scale strategy** — comparative
   exploration of (a) classic triangle LOD chains, (b) meshlet-based virtualized geometry
   (nanite-like: GPU-driven culling, visibility buffer, WGSL compute), and (c) 3D Gaussian
@@ -226,4 +377,9 @@ a small portfolio site) judged negligible.
 - **P-004: Binary asset storage** — git LFS vs. external content store + manifest for
   `assets/source/` and `assets/library/`. Decide when the first real (non-greybox)
   assets exist (M5 at the latest).
-*(P-005, toolchain, was accepted as D-014.)*
+- **P-006: Storage Buckets for saves vs. assets** — whether separating critical saves
+  from replaceable assets into distinct buckets (with different eviction/durability
+  characteristics) buys real protection beyond origin `persist()`, or is complexity
+  without benefit. Decide during M2 with measurements; interim protection is origin
+  persistence + explicit save export (architecture.md).
+*(P-005, toolchain, was accepted as D-014 and refined by D-020.)*

@@ -42,7 +42,15 @@ numbered finding (or a decisions.md entry) once there's evidence:
   workers; contention behavior with N readers; OPFS vs Cache Storage per asset class.
 - **wasm64 in anger:** real cost of memory64 (pointer width, perf) in a hot Rust module.
 - **Prompt API under load:** inference/render GPU contention; session limits vs.
-  many-NPC designs; download/availability UX during install.
+  many-NPC designs; download/availability UX during install; main-thread cost of the
+  window-owned broker (worker unavailability is itself the first finding here, D-017);
+  eviction and offline-reavailability behavior.
+- **Service worker vs. V8 code cache:** does serving the shell's JS/wasm through SW
+  Cache Storage preserve code-cache behavior, or must code stay HTTP-cache-served for
+  warm-launch compile avoidance? (D-015; measure both arrangements.)
+- **Storage truthfulness:** `estimate()` vs. actually-writable space at 100 GB scale;
+  `persist()` grant/denial behavior; whether Storage Buckets provide real
+  durability separation for saves (P-006).
 - **Compute limits:** WebGPU compute dispatch/watchdog limits vs. AAA-scale culling and
   particle workloads.
 - **GPU memory attribution:** what can a page actually know about its own GPU memory

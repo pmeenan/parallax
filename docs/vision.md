@@ -23,9 +23,9 @@ COS-*ready*: packaged resources split between common and game-specific, and engi
 builds deterministic and versioned so they're hash-shareable. The actual cross-origin
 exercise is parked as [plan.md](plan.md) M8 until the APIs land. Other many-games
 concerns (quota contention, instant-play, alternative origin models) are out of scope
-for this exploration (D-010). Note also that the gaming-rig hardware baseline (D-009)
-means this experiment answers "given sufficient hardware" — scaling down to low-end kid
-hardware is a known-open follow-on, not something this POC settles.
+for this exploration (D-010). Note also that the capable-consumer hardware baseline
+(D-018) means this experiment answers "given sufficient hardware" — scaling down to
+low-end kid hardware is a known-open follow-on, not something this POC settles.
 
 ## The immediate question
 
@@ -75,9 +75,10 @@ and idiomatic for the web rather than a downported approximation. The feature ma
 ## Non-goals
 
 - Cross-browser support. Chrome latest+ only, by design (Decision D-002).
-- Low-end or mobile hardware. The baseline is a gaming rig (D-009); hardware is an
-  evolving target and the question is what the platform supports given sufficient
-  hardware.
+- Low-end or mobile hardware. The baseline is capable consumer hardware — an M1-class
+  MacBook Pro gates the Standard tier, a high-end Windows rig gates Showcase (D-018);
+  hardware is an evolving target and the question is what the platform supports given
+  sufficient hardware.
 - First-visit instant load, traditional Core Web Vitals, or SEO. This is an installed
   application that happens to be delivered through a browser.
 - Monetization, accounts, or live-ops infrastructure.
