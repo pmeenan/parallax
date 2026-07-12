@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project Parallax — an AAA-scope open-world game, built for the web</title>
+<meta name="description" content="Project Parallax is an AI-built, AAA-scope open-world game that runs entirely on the web platform — and a research project probing where Chrome and the web can improve to make that possible.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b1020'/%3E%3Cpath d='M6 24 L14 8 L18 16 L21 11 L26 24 Z' fill='%237aa2ff'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0b1020;
+    --bg-2: #101735;
+    --ink: #e8ecf8;
+    --ink-dim: #9aa5c4;
+    --accent: #7aa2ff;
+    --accent-2: #4d6fd6;
+    --card: rgba(255, 255, 255, 0.04);
+    --card-border: rgba(255, 255, 255, 0.09);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 60%, #0d1228 100%);
+    min-height: 100vh;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+  header { padding: 96px 0 48px; position: relative; overflow: hidden; }
+  .kicker {
+    text-transform: uppercase; letter-spacing: 0.22em; font-size: 13px;
+    color: var(--accent); font-weight: 600;
+  }
+  h1 {
+    font-size: clamp(44px, 8vw, 76px); font-weight: 800; letter-spacing: -0.02em;
+    margin: 10px 0 18px;
+    background: linear-gradient(90deg, #ffffff, #b9c8ff);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .tagline { font-size: clamp(19px, 2.6vw, 24px); color: var(--ink-dim); max-width: 40em; }
+
+  /* Parallax ridge motif */
+  .ridges { margin: 56px 0 0; }
+  .ridges svg { display: block; width: 100%; height: auto; }
+
+  main { padding: 8px 0 48px; }
+  section { margin: 0 0 56px; }
+  h2 {
+    font-size: 15px; text-transform: uppercase; letter-spacing: 0.18em;
+    color: var(--accent); margin-bottom: 16px; font-weight: 700;
+  }
+  p { color: var(--ink); max-width: 46em; }
+  p + p { margin-top: 14px; }
+  .dim { color: var(--ink-dim); }
+  a { color: var(--accent); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 20px 22px;
+  }
+  .card h3 { font-size: 17px; margin-bottom: 8px; }
+  .card p { font-size: 15px; color: var(--ink-dim); }
+
+  .cta { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent-2); color: #fff; text-decoration: none;
+    padding: 12px 22px; border-radius: 10px; font-weight: 600;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: background 0.15s ease;
+  }
+  .btn:hover { background: var(--accent); }
+  .btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+  .status {
+    display: inline-block; font-size: 13px; letter-spacing: 0.04em;
+    border: 1px solid var(--card-border); border-radius: 999px;
+    padding: 4px 14px; color: var(--ink-dim); background: var(--card);
+  }
+  .status b { color: var(--ink); font-weight: 600; }
+
+  footer {
+    border-top: 1px solid var(--card-border);
+    padding: 28px 0 48px; color: var(--ink-dim); font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">Project</div>
+    <h1>Parallax</h1>
+    <p class="tagline">An AAA-scope open-world game, built by AI agents, that installs,
+    launches, and runs entirely on the web platform.</p>
+  </div>
+  <div class="ridges" aria-hidden="true">
+    <svg viewBox="0 0 1200 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 150 L120 90 L260 140 L420 60 L560 130 L720 80 L900 150 L1050 100 L1200 140 L1200 180 L0 180 Z" fill="#2a3a6e" opacity="0.35"/>
+      <path d="M0 165 L180 110 L340 155 L520 95 L700 150 L880 105 L1040 160 L1200 120 L1200 180 L0 180 Z" fill="#3d54a0" opacity="0.45"/>
+      <path d="M0 178 L220 135 L400 170 L620 125 L820 168 L1000 138 L1200 165 L1200 180 L0 180 Z" fill="#5876cc" opacity="0.55"/>
+    </svg>
+  </div>
+</header>
+
+<main class="wrap">
+  <section>
+    <h2>What this is</h2>
+    <p>Parallax is a research project with a playable product. It builds the hardest kind
+    of game the web could host — a high-fidelity, streaming open world with a multi-gigabyte
+    local install, on-device AI NPCs, and native-title launch behavior — using only what
+    the newest Chrome ships: WebGPU, WebAssembly (threads and memory64), the Origin Private
+    File System, SharedArrayBuffer workers, and the built-in AI Prompt API.</p>
+    <p>The point is the question underneath: <strong>can the web platform host an
+    AAA-class game — and where exactly does it fall short?</strong> Every browser bug,
+    spec gap, and performance cliff found along the way is documented with reproductions
+    and measurements, as input to making the platform better.</p>
+  </section>
+
+  <section>
+    <h2>The deliverables</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>The findings</h3>
+        <p>An evidence-backed catalog of where Chrome, WebGPU, V8/wasm, storage, and the
+        built-in AI APIs limit native-class games — with reproductions, not opinions.</p>
+      </div>
+      <div class="card">
+        <h3>The harness</h3>
+        <p>Automated build → deploy → launch → measure → diff infrastructure for web
+        games. Think “WebPageTest for games.”</p>
+      </div>
+      <div class="card">
+        <h3>The game</h3>
+        <p>A visually striking open-world slice — two districts, seamless streaming,
+        conversational NPCs — installable and playable offline in the browser.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Status</h2>
+    <p><span class="status">Current milestone: <b>M0 — harness + skeleton</b></span></p>
+    <p class="dim" style="margin-top:14px">Early days: the measurement infrastructure and
+    platform spikes come first, the world after. Everything — plans, decisions, findings —
+    is developed in the open. Chrome (latest release or newer) only, by design.</p>
+  </section>
+
+  <section>
+    <h2>Follow along</h2>
+    <div class="cta">
+      <a class="btn" href="https://github.com/pmeenan/parallax">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        View on GitHub
+      </a>
+      <span class="dim">github.com/pmeenan/parallax</span>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Project Parallax · an experiment in what the web platform can do
+  </div>
+</footer>
+
+</body>
+</html>

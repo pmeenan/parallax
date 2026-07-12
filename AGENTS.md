@@ -57,6 +57,7 @@ updating the affected docs. Until that happens, the constraints below govern.
 | `game/`     | World definition, gameplay systems, NPC logic, content wiring | yes           |
 | `assets/`   | Reference material, generation pipeline, QA gate, asset library | yes         |
 | `harness/`  | Build/deploy/measure infrastructure ("WebPageTest for games") | yes           |
+| `site/`     | Public website: frozen placeholder landing page (D-021/D-022) | no            |
 
 ## Required reading
 

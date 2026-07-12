@@ -21,6 +21,9 @@ measured automatically.
 
 - [ ] Build/serve pipeline (per D-014/D-020 toolchain) with immutable-URL output and correct
       headers; local server at this stage (D-011).
+- [x] Public landing page (`site/`, D-021/D-022): brief project description + link to
+      the GitHub repo, published once to parallax-web.com 2026-07-12 and frozen; the
+      harness-deployed game landing page replaces it at M2.
 - [ ] Engine/game bundle separation with deterministic engine builds (D-010): same
       source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
       double-build hash check in the pipeline.

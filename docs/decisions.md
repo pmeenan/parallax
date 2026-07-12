@@ -14,6 +14,51 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-022: Publish script retired; placeholder landing page frozen as published  (2026-07-12, accepted; amends D-021)
+**Decision:** The machine-local `publish.ps1` from D-021 is deleted (along with the
+`.gitignore` whose only entry it was). The static landing page was published once to
+parallax-web.com (2026-07-12) and is intentionally **frozen** — it will not be updated
+(not even milestone status) between now and M2. `site/` stays in the repo as the
+versioned source of what is live. When M2's harness-owned production deployment lands
+(D-011), the game's own landing page replaces the placeholder, and the harness pipeline
+becomes the origin's only publish path — no separate site-publishing mechanism returns.
+Should the placeholder need an emergency fix before then (broken link), that's an ad-hoc
+manual `scp` to `/var/www/parallax-web.com`, acceptable at its expected frequency of
+approximately zero.
+**Context:** Maintaining a machine-specific deploy script for a page that will never
+change is upkeep with no benefit, and keeping it invited scope creep (publishing
+in-progress game builds through it, which would bypass the versioned, measured deploy
+path the M2 research requires — deploying the game *is* the experiment, so it must go
+through the harness).
+**Consequences:** `publish.ps1` and `.gitignore` deleted; plan.md M0 item reworded.
+D-021's publish-script provisions no longer apply; its `site/` placement and
+distinct-from-`app/` framing stand.
+**Reopen if:** the placeholder turns out to need recurring updates before M2 exists.
+
+## D-021: Public landing page in top-level `site/`; machine-local publish script  (2026-07-12, accepted; publish-script provisions amended by D-022)
+**Decision:** The project gets a public face in M0: a static landing page (what Parallax
+is + a link to the GitHub repo, https://github.com/pmeenan/parallax) living in a new
+top-level `site/` directory. `site/` carries project-facing web content only — plain
+static HTML/CSS with no build step, no engine or game code — and is distinct from the
+app shell (`app/`, D-012), which is the installer/boot/launch entry point of the game
+itself. Publishing to production (`/var/www/parallax-web.com` over SSH per D-011
+hosting) is done by a machine-local `publish.ps1` at the repo root that copies `site/`
+via OpenSSH `scp` (key-based auth through a local `parallax` SSH host alias). The script
+is **gitignored**: it encodes one machine's SSH configuration, not project
+infrastructure. It is an explicit stopgap — when M2's production-deployment work lands
+(versioned nginx config, harness-driven deploys, D-011), site publishing folds into that
+pipeline.
+**Context:** A public description of the project is wanted before M2's production
+serving exists. `scp` over the Windows built-in OpenSSH client was chosen over
+WSL-hosted `rsync` to avoid a WSL dependency for a copy of a handful of static files
+(verified working against the server on 2026-07-12).
+**Consequences:** Root AGENTS.md layout table gains `site/`; plan.md M0 gains a
+landing-page item; `.gitignore` created with `publish.ps1`. The landing page is
+plain static content — the header discipline / COOP-COEP requirements of D-011 apply to
+the game's serving, and are unaffected by it.
+**Reopen if:** the site needs a build step or more than a few pages, or when the M2
+deployment pipeline exists — supersede with a unified publish path then.
+
 ## D-020: Toolchain refinements — Rollup, exact pins, reproducibility levels  (2026-07-11, accepted; supersedes D-014)
 **Decision:** As D-014, with three refinements. (1) The engine library bundler is
 **Rollup** (chosen over esbuild for deterministic, timestamp-free output; exact version
