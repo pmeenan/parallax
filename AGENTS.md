@@ -34,8 +34,10 @@ updating the affected docs. Until that happens, the constraints below govern.
   shims. If an API is missing, that is a finding — log it, don't work around it silently.
 - **Stack:** TypeScript + Babylon.js (WebGPU backend only) as the engine core, a custom
   worker topology designed by this project (SharedArrayBuffer, OffscreenCanvas,
-  WebGPU-in-worker), and Rust→WASM modules for hot paths. No Unity, no build-time engine
-  abstraction layers.
+  WebGPU-in-worker), and Rust→WASM modules for hot paths. Wasm SIMD (128-bit) + threads
+  are baseline machine requirements, and per-subsystem placement is performance-driven
+  (D-032): JS/TS is orchestration and glue, with no presumption against wasm or WGSL.
+  No Unity, no build-time engine abstraction layers.
 - **Install/launch/run lifecycle.** The game installs (multi-GB pull into OPFS, Prompt API
   model download, shader/PSO warmup), then launches from local storage. Do not optimize
   for first-visit instant load; do optimize launch-2+ aggressively.

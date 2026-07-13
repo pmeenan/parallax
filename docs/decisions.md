@@ -27,6 +27,94 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-033: NPC context is assembled by a knowledge service in engine/ai  (2026-07-13, accepted)
+**Decision:** The AI layer gains a **knowledge service** in `engine/ai`: NPC prompts are
+assembled as persona card + context retrieved through an explicit interface — never by
+hardcoding all world knowledge into the prompt. Three context tiers, each adopting its
+own mechanism independently, on evidence:
+1. **Structured game-state queries** — quest state, relationships, location/world-graph
+   facts answered from the sim's typed state. Deterministic, no embeddings, debuggable;
+   the default tool, and it lands with M3.
+2. **Authored lore retrieval** — world backstory chunked + tagged at authoring time,
+   shipped as a content-addressed game-specific bundle (D-010). Mechanism open:
+   tag/world-graph lookup vs. precomputed embeddings with brute-force similarity (at
+   game-scale corpora — thousands of chunks — a linear scan in a wasm simd128 worker
+   suffices; no vector database). Build-later.
+3. **Episodic memory** — NPC observations embedded at runtime. Requires an app-owned
+   embedder: Chrome ships **no built-in Embedding API** (checked 2026-07-13).
+   Build-later.
+**Ownership (layer rules apply as everywhere):** `engine/ai` owns the *generic
+contract* — provider registration, context assembly/ranking/token budgeting, scheduling,
+telemetry — and contains no game knowledge. `game/` supplies the providers: game-state
+query implementations, retrieval schemas, lore content and its tagging, persona cards.
+The tier list above describes what game-supplied providers answer, not what engine code
+knows.
+Design-now constraints: the M3 prompt/persona-card schema reserves a retrieved-context
+slot from day one; lore is authored chunked + tagged in `game/` from the first writing;
+embedding precompute, if adopted, is an `assets/` pipeline step. The service is
+**backend-independent of D-017/P-007** — whichever generation backend wins, retrieval
+infrastructure is app-owned.
+**Context:** On-device, prompt-stuffing is triply wrong: prefill cost scales with prompt
+length (time-to-first-token is the dialog latency the player feels), Nano session/context
+limits are an already-flagged D-017 concern, and small models degrade on long
+mostly-irrelevant context. Unlike generic RAG deployments, a game has an authoritative,
+queryable ground truth (the sim state and world graph) — so semantic retrieval is the
+fallback for freeform lore and memories, not the default mechanism. Persona cards remain
+what they always were: curated static context.
+**Sources checked (2026-07-13):** developer.chrome.com/docs/ai/built-in lists Prompt,
+Summarizer, Translator, Language Detector, Writer, Rewriter, Proofreader — no Embedding
+API. App-owned in-browser embedding is feasible today: EmbeddingGemma (~308M on-device
+embedder, developers.googleblog.com/en/introducing-embeddinggemma) runs in-browser via
+Transformers.js with WebGPU (huggingface.co/docs/transformers.js/guides/webgpu).
+**Consequences:** engine/AGENTS.md `ai/` scope; architecture.md NPC AI section and
+forward-design constraints; plan.md M3 item; rough-edges.md pre-seeds the missing
+Embedding API gap; P-007's "facts stay prompt-context" phrasing refined — facts stay out
+of the *weights* and arrive via assembled context.
+**Reopen if:** M3 evidence shows persona cards alone suffice at shipped scale (drop the
+unused tiers, keep the interface), or a Chrome built-in Embedding API ships (re-evaluate
+tier-3 embedder ownership — and update the rough-edges entry).
+
+## D-032: Performance-first technology placement — JS is glue; wasm SIMD/threads baseline  (2026-07-13, accepted)
+**Decision:** Per-subsystem language/technology placement is a performance decision made
+on harness evidence, with no presumption that TypeScript is the default and wasm/WGSL the
+exception. TS/JS is orchestration and glue; compute-heavy paths are presumed Rust→wasm or
+WGSL compute until measurement says otherwise — and the reverse presumption is equally
+banned: JS↔wasm boundary-crossing cost is real (wasm cannot call WebGPU/OPFS/web APIs
+directly; every call bounces through JS glue), so "rewrite it in wasm" is also a claim
+the harness must confirm. **Baseline machine/browser requirements:** wasm `simd128` and
+threads (atomics + SAB) are required; engine wasm crates enable them unconditionally and
+ship no scalar or single-threaded fallback paths. Relaxed-simd is baseline too **except
+in crates that feed deterministic simulation state**: relaxed operations are
+hardware-dependent by design (FMA contraction, lane-select and min/max edge cases differ
+across x86/ARM), which is incompatible with D-016's cross-machine state-hash requirement
+— authoritative-sim crates use plain simd128 only. Wasm's SIMD is fixed 128-bit — no
+SSE/AVX passthrough, no 256/512-bit path — but what that ceiling costs is
+machine-dependent (dev-01's x86 has AVX2-class width to lose; the Standard profile's
+M1 Pro is itself 128-bit NEON), and "wider-than-128-bit work moves to WGSL compute" is a
+working **hypothesis**, not a placement rule: the standing rough-edges item compares
+native (AVX2/NEON), wasm simd128, and WGSL compute on a representative kernel per
+reference machine before any rule is fixed. Rust stays the authored language for engine wasm
+modules (determinism, D-014/D-020); consuming existing C/C++ libraries compiled to wasm
+(e.g., Basis transcoder, meshoptimizer per D-006) is consistent with this.
+**Context:** A project-level review against a "maximum performance on the web platform,
+JS as glue" principle found the stance already de facto (D-004/D-005 chose Babylon for
+AI-iteration speed and attribution, not JS purity; wasm hot paths and custom WGSL passes
+were always planned) but nowhere explicit, leaving room for future agents to drift
+JS-first out of web idiom. This entry makes the principle a citable rule.
+**Sources checked (2026-07-13):** relaxed-simd standardized 2024, shipped in Chrome
+(github.com/WebAssembly/relaxed-simd;
+platform.uno/blog/the-state-of-webassembly-2025-2026); flexible-vectors (length-agnostic
+wider SIMD) still stage-1 design (github.com/WebAssembly/flexible-vectors);
+emscripten.org/docs/porting/simd.html (simd128 ↔ SSE/NEON-class mapping).
+**Consequences:** engine/AGENTS.md Rust/WASM conventions gain the SIMD/threads baseline,
+the no-fallback rule, and the deterministic-sim relaxed-simd carve-out; root AGENTS.md
+stack constraint names the baseline; rough-edges.md pre-seeds the CPU SIMD-width-ceiling
+measurement (native AVX2/NEON vs. wasm simd128 vs. WGSL compute, per reference machine).
+**Reopen if:** flexible-vectors or another wider-SIMD path ships in Chrome (recalibrate
+the CPU/GPU split), or measurements show boundary overhead systematically negating wasm
+wins for a whole subsystem class (record the placement rule that replaces the
+presumption).
+
 ## D-031: Harness smoke gates an exact external Chrome for Testing pin  (2026-07-12, accepted)
 **Decision:** The first Harness v1 scenario is versioned as `smoke@1` and is driven by
 exact-pinned `playwright-core`. Gate runs require `PARALLAX_CHROME_PATH` to name an
@@ -711,4 +799,38 @@ a small portfolio site) judged negligible.
   characteristics) buys real protection beyond origin `persist()`, or is complexity
   without benefit. Decide during M2 with measurements; interim protection is origin
   persistence + explicit save export (architecture.md).
+- **P-007: App-owned in-browser NPC model vs. Prompt API** — challenger to D-017, which
+  stays authoritative until there is spike evidence. Hypothesis: a small open-weight
+  model running on WebGPU under the app's control beats browser-managed Gemini Nano for
+  this game's NPC dialog on some combination of: **placement** (WebLLM-class engines run
+  in a Web Worker; the Prompt API is window-only per D-017 — this would retire the
+  main-thread broker exception), **lifecycle** (the model becomes a normal hash-verified
+  OPFS install artifact under our install/update/uninstall contract instead of a
+  Chrome-managed, silently-evictable blob — retiring most of D-017's eviction machinery),
+  **contention attributability** (inference runs on the same physical GPU under app
+  control — but note current WebLLM-class engines create their own logical WebGPU device
+  internally, and same GPU ≠ same device/queue, so **device topology — own device vs.
+  shared render device — is an explicit phase-A spike variable**, and true shared-device
+  scheduling may require integration or fork work, to be scoped by the spike), and — with
+  fine-tuning — **persona/format quality**. Two phases, cheapest risk first:
+  **(A)** M0 spike: off-the-shelf small open-weight model (~1–4B, Q4) via in-browser
+  WebGPU inference in a worker against the walking skeleton, measured on a fixed
+  NPC-dialog prompt fixture set head-to-head with the Prompt API spike: first-token
+  latency p95 against the budgets.md dialog budget, tokens/s, frame impact during
+  generation, VRAM, OPFS model-load time, structured-output/schema compliance,
+  context-window behavior at persona+retrieved-context sizes, baseline dialog quality,
+  and model/install size — throughput alone does not pass the spike. **(B)** only if A
+  is viable: LoRA-tune for voice, dialog format, and schema compliance, and compare
+  constrained-dialog quality. Scope note:
+  fine-tuning reliably shifts style/format, not factual knowledge — retrieval/context
+  beats fine-tuning for facts (arxiv.org/pdf/2312.05934, checked 2026-07-13) — so world
+  lore and live game state stay out of the weights under either backend, arriving via
+  context assembled by the engine/ai knowledge service (D-033); general language
+  competence, not lore volume, sets the model-size floor. The training pipeline lives
+  outside the browser (an assets/-adjacent workstream, not engine/). D-010 note: a
+  world-tuned model is **game-specific**, not common/COS-shareable (unlike Nano, which
+  is browser-wide). Sources checked 2026-07-13: github.com/mlc-ai/web-llm +
+  webllm.mlc.ai/docs (worker support, structured output, ~8B-param practical ceiling
+  quantized), arxiv.org/abs/2412.15803 (up to ~80%-of-native throughput). Resolve after
+  phase A (and phase B if reached): supersede D-017 or close this and keep it.
 *(P-005, toolchain, was accepted as D-014 and refined by D-020.)*

@@ -50,6 +50,14 @@ measured automatically.
 - [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
       activation for download/create, download flow + model-size reporting, eviction
       + offline reavailability behavior, session limits.
+- [ ] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
+      model via WebGPU inference in a worker against the walking skeleton, head-to-head
+      with the Prompt API spike above on a fixed NPC-dialog prompt fixture set:
+      first-token latency p95 vs. the budgets.md dialog budget, tokens/s, frame impact
+      during generation, VRAM, OPFS model-load time, structured-output/schema
+      compliance, context-window behavior at persona+retrieved-context sizes, baseline
+      dialog quality, and model/install size. Device topology (own WebGPU device vs.
+      sharing the render device) is an explicit spike variable.
 - [ ] Spike: Rust→WASM module with wasm threads.
 - [ ] Spike: memory64 module load and cost; this validates the optional last-resort path
       in P-001, not a default wasm64 target.
@@ -124,6 +132,11 @@ credible.
 - [ ] Character controller, camera, basic interaction loop in greybox D1.
 - [ ] Prompt API NPC dialog: persona cards, rolling memory, structured output for
       state-affecting intents; frame-impact measurement during inference.
+- [ ] NPC knowledge service (D-033): generic retrieval/assembly contract in `engine/ai`
+      with `game/`-supplied providers; structured game-state tier implemented;
+      prompt/persona schema carries the retrieved-context slot; lore authored
+      chunked + tagged in `game/`. Semantic tiers (lore embeddings, episodic memory)
+      stay build-later.
 - [ ] Exit: playable greybox loop with conversing NPCs (incl. authored-fallback path
       with the model unavailable, D-017); save/reload round-trip; sim determinism check
       (same input log → same state hash) in the harness — **cross-machine**: replays

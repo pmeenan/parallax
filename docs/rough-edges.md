@@ -45,6 +45,29 @@ numbered finding (or a decisions.md entry) once there's evidence:
   many-NPC designs; download/availability UX during install; main-thread cost of the
   window-owned broker (worker unavailability is itself the first finding here, D-017);
   eviction and offline-reavailability behavior.
+- **CPU SIMD width ceiling:** wasm tops out at 128-bit vectors (simd128 + relaxed-simd;
+  the flexible-vectors proposal for wider/length-agnostic SIMD is still design-stage,
+  checked 2026-07-13). The cost is machine-dependent: dev-01's x86 has AVX2-class width
+  to lose, while the Standard profile's M1 Pro is itself 128-bit NEON — the gap may be
+  near zero there. Measure a representative hot kernel three ways per reference machine
+  — native (AVX2/NEON), wasm simd128, WGSL compute — before fixing any CPU/GPU placement
+  rule (D-032 treats "wide work moves to WGSL" as a hypothesis); feeds a potential
+  spec-gap write-up.
+- **App-owned WebGPU LLM inference (P-007):** can a small quantized model run on the
+  same GPU without busting frame budgets? Device topology is itself a spike variable —
+  WebLLM-class engines create their own logical WebGPU device internally, so own-device
+  vs. shared-render-device scheduling, VRAM pressure across two devices, tokens/s vs.
+  Prompt API on the same hardware, and OPFS model-load time at launch all need
+  measurement.
+- **No built-in Embedding API:** Chrome ships a generation model (Prompt API/Gemini
+  Nano) but no embedding counterpart (developer.chrome.com/docs/ai/built-in, checked
+  2026-07-13). Impact is limited to **semantic/vector** retrieval — one candidate
+  mechanism for D-033 tiers 2–3; tag/world-graph and lexical retrieval (e.g., BM25)
+  need no embedder — but choosing it means shipping an app-owned embedder (candidate
+  models range from tens to hundreds of MB; size/quality is measured when a candidate
+  is picked, not assumed). If built, measure embedder load time, VRAM, and render
+  contention. Proposed improvement: an embedding API sharing the already-downloaded
+  Nano runtime.
 - **Service worker vs. V8 code cache:** does serving the shell's JS/wasm through SW
   Cache Storage preserve code-cache behavior, or must code stay HTTP-cache-served for
   warm-launch compile avoidance? (D-015; measure both arrangements.)

@@ -217,6 +217,25 @@ anything that touches game state, freeform text only for flavor dialog. Inferenc
 contends with rendering for on-device resources — the harness measures frame impact
 during generation (likely a rough-edge finding in itself).
 
+An **app-owned in-browser model** (WebGPU inference in a worker, optionally LoRA-tuned
+for persona/voice/format) is an open challenger — P-007; phase A is an M0 spike. D-017
+remains authoritative until that produces evidence; `engine/ai` is a backend-hiding
+service interface precisely so the backend can swap.
+
+**Knowledge & retrieval (D-033):** NPC prompts are assembled by a **knowledge service**
+in `engine/ai` — persona card + context retrieved through an explicit interface, never
+all-lore-in-prompt (on-device prefill cost, Nano session limits, and small-model
+context-following all punish long prompts). Tier 1 is structured game-state queries
+against the sim's typed state and world graph — deterministic, no embeddings, lands
+with M3. Tier 2 (authored-lore retrieval; mechanism open — tag/graph lookup vs.
+precomputed embeddings with a brute-force wasm scan) and tier 3 (episodic memory;
+needs an app-owned embedder — Chrome ships no built-in Embedding API, checked
+2026-07-13) are build-later. Ownership follows the layer rules: `engine/ai` owns the
+generic contract (provider registration, context assembly/budgeting, telemetry) and
+contains no game knowledge; `game/` supplies the providers, query schemas, and content.
+The prompt schema reserves a retrieved-context slot from day one, and the service is
+backend-independent of D-017/P-007.
+
 **Model lifecycle (D-017):** download starts directly in the install-click handler
 (`create()` inside the transient-activation window; the download runs in parallel with
 the asset pull — activation expires in seconds and won't survive the install. ~22 GB
@@ -239,6 +258,10 @@ observed is logged as a rough-edges data point.
   unavoidable measured single-module >4 GiB need after partitioning/streaming/resident-
   set alternatives fail; it is known to make that module unloadable in Safari as of
   2026-07-12, so it is the last resort rather than a scale target.
+- **NPC knowledge retrieval (D-033):** the prompt/persona-card schema carries a
+  retrieved-context slot from M3 even while only tier-1 (structured state queries)
+  exists; lore is authored chunked + tagged in `game/` from the first writing; embedding
+  precompute, if adopted, is an `assets/` pipeline step.
 - **Cross-Origin Storage readiness (D-010):** the common/game-specific packaging split
   above, plus deterministic, versioned engine builds (byte-identical from same source +
   toolchain; no timestamps/paths in artifacts; stable chunking) so engine bundles are

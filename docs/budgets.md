@@ -112,8 +112,8 @@ lifecycle or streaming architecture quietly assumes "a few GB."
 
 | Metric | Target | Notes |
 | --- | --- | --- |
-| Dialog first-token latency p95 | ≤ 1.5 s | On-device Prompt API |
-| Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget; inference broker runs on the main thread (D-017), so main-thread long-task metrics apply to it |
+| Dialog first-token latency p95 | ≤ 1.5 s | Backend-neutral: applies to any on-device backend (Prompt API per D-017, or an app-owned model if P-007 wins) |
+| Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget. Backend-neutral, but the metric surface differs: the Prompt API broker runs on the main thread (D-017), so main-thread long-task metrics apply to it; a worker-hosted backend (P-007) shifts measurement to worker and GPU contention |
 
 ## Measurement methodology
 

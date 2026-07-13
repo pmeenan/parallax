@@ -11,7 +11,8 @@ worker topology defined there govern this directory.
 **In:** render orchestration (Babylon.js WebGPU), worker fabric (SAB channels,
 lifecycle), streaming manager, storage (OPFS/Cache/manifest/install), Rust→WASM modules,
 sim-runtime scaffolding (scheduler, snapshots, command transport), audio, input, save
-serialization, AI-inference service (Prompt API sessions), instrumentation.
+serialization, AI services (inference sessions, knowledge/retrieval context assembly —
+D-033), instrumentation.
 
 **Out:** game rules, content, world data, NPC personas, UI layouts — those are `game/`.
 If you're writing a string a player will see or a rule a designer would tune, you're in
@@ -27,7 +28,8 @@ engine/
   streaming/   cell scheduler, memory budget governor, eviction
   storage/     OPFS, manifest, install/update, integrity
   wasm/        Rust crates (one per module) + JS bindings
-  ai/          Prompt API session management, schema-constrained output
+  ai/          inference backends (Prompt API sessions; P-007), knowledge service /
+               retrieval context assembly (D-033), schema-constrained output
   audio/       WebAudio graph + worklets
   input/       keyboard/mouse/gamepad → command stream
   save/        snapshot/delta serialization
@@ -66,4 +68,10 @@ engine/
   creation goes through the warmup-aware pipeline registry in `render/`.
 - **Rust/WASM:** one crate per module under `wasm/`; `#![forbid(unsafe_code)]` unless the
   module's README justifies it; explicit about memory32 vs memory64 (see decision P-001);
-  bindings expose typed-array views, never copies, on hot paths.
+  bindings expose typed-array views, never copies, on hot paths; `simd128` and threads
+  (atomics) are baseline target features (D-032) — enabled unconditionally, no scalar or
+  single-threaded fallback paths; relaxed-simd is baseline too **except** in crates
+  feeding deterministic simulation state (relaxed ops are hardware-dependent and break
+  D-016's cross-machine state hashes — plain simd128 only there); moving
+  wider-than-128-bit work to WGSL compute is a D-032 hypothesis the harness confirms
+  per kernel, not a standing rule.
