@@ -13,12 +13,14 @@ if (pnpmCli === undefined) {
 const first = await buildAndDigest();
 const second = await buildAndDigest();
 
-if (first.name !== second.name || first.sha256 !== second.sha256) {
+if (JSON.stringify(first) !== JSON.stringify(second)) {
   console.error("Engine repeatability check failed", { first, second });
   process.exit(1);
 }
 
-console.log(`Engine repeatability: ${first.name} sha256=${first.sha256}`);
+for (const artifact of first) {
+  console.log(`Engine repeatability: ${artifact.name} sha256=${artifact.sha256}`);
+}
 
 async function buildAndDigest() {
   const outputDirectory = await mkdtemp(join(tmpdir(), "parallax-engine-build-"));
@@ -39,12 +41,18 @@ async function buildAndDigest() {
       throw new Error(`Engine build failed with exit code ${result.status ?? "unknown"}`);
     }
 
-    const outputs = await readdir(outputDirectory);
-    if (outputs.length !== 1 || outputs[0] !== "engine.js") {
-      throw new Error(`Expected only engine.js; received: ${outputs.join(", ")}`);
+    const outputs = (await readdir(outputDirectory)).sort();
+    // Keep this exact allowlist aligned with engine/rollup.config.mjs: unexpected chunks
+    // would weaken the self-contained, independently addressable engine artifact contract.
+    if (outputs.join(",") !== "engine.js,render-worker.js") {
+      throw new Error(`Expected engine.js and render-worker.js; received: ${outputs.join(", ")}`);
     }
-    const bytes = await readFile(join(outputDirectory, outputs[0]));
-    return { name: outputs[0], sha256: createHash("sha256").update(bytes).digest("hex") };
+    return await Promise.all(
+      outputs.map(async (name) => {
+        const bytes = await readFile(join(outputDirectory, name));
+        return { name, sha256: createHash("sha256").update(bytes).digest("hex") };
+      }),
+    );
   } finally {
     await rm(outputDirectory, { force: true, recursive: true });
   }

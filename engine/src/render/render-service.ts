@@ -1,0 +1,200 @@
+import type {
+  RenderFrameSample,
+  RenderWorkerRequest,
+  RenderWorkerResponse,
+  WalkingSkeletonScene,
+} from "./render-protocol";
+
+export type { RenderFrameSample, WalkingSkeletonScene } from "./render-protocol";
+
+export interface RenderTelemetrySnapshot {
+  readonly failureMessage: string | null;
+  readonly frameCount: number;
+  readonly recentFrames: readonly RenderFrameSample[];
+  readonly state: "idle" | "starting" | "ready" | "failed" | "disposed";
+  readonly workerInitToFirstFrameMs: number | null;
+  readonly workerStartupToFirstFrameMs: number | null;
+}
+
+export type RenderServiceListener = (snapshot: RenderTelemetrySnapshot) => void;
+
+export interface RenderService {
+  dispose(): void;
+  snapshot(): RenderTelemetrySnapshot;
+  start(canvas: HTMLCanvasElement, scene: WalkingSkeletonScene): void;
+  subscribe(listener: RenderServiceListener): () => void;
+}
+
+// D-028: the assembler replaces this token after hashing the sibling worker artifact.
+const WORKER_ARTIFACT = "./__RENDER_WORKER_ARTIFACT__";
+const MAX_RECENT_FRAMES = 120;
+
+interface DevelopmentImportMeta extends ImportMeta {
+  readonly env?: { readonly DEV?: boolean };
+}
+
+interface PixelSize {
+  readonly height: number;
+  readonly width: number;
+}
+
+function renderWorkerUrl(): URL {
+  const development = (import.meta as DevelopmentImportMeta).env?.DEV === true;
+  return development
+    ? new URL("../workers/render-worker.ts", import.meta.url)
+    : new URL(WORKER_ARTIFACT, import.meta.url);
+}
+
+function initialCanvasPixelSize(canvas: HTMLCanvasElement): PixelSize {
+  return Object.freeze({
+    height: Math.max(1, Math.round(canvas.clientHeight * devicePixelRatio)),
+    width: Math.max(1, Math.round(canvas.clientWidth * devicePixelRatio)),
+  });
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error && error.message !== "" ? error.message : String(error);
+}
+
+export function createRenderService(): RenderService {
+  let telemetry: RenderTelemetrySnapshot = Object.freeze({
+    failureMessage: null,
+    frameCount: 0,
+    recentFrames: Object.freeze([]),
+    state: "idle",
+    workerInitToFirstFrameMs: null,
+    workerStartupToFirstFrameMs: null,
+  });
+  let worker: Worker | null = null;
+  let resizeObserver: ResizeObserver | null = null;
+  const listeners = new Set<RenderServiceListener>();
+
+  const publish = (next: RenderTelemetrySnapshot): void => {
+    telemetry = Object.freeze(next);
+    for (const listener of listeners) listener(telemetry);
+  };
+
+  const teardown = (): void => {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    if (worker !== null) {
+      worker.onmessage = null;
+      worker.onerror = null;
+      worker.terminate();
+      worker = null;
+    }
+  };
+
+  const fail = (message: string): void => {
+    if (telemetry.state === "failed" || telemetry.state === "disposed") return;
+    teardown();
+    publish({ ...telemetry, failureMessage: message, state: "failed" });
+    console.error("Render worker failed", message);
+  };
+
+  const sendResize = (size: PixelSize): void => {
+    worker?.postMessage({
+      height: Math.max(1, Math.round(size.height)),
+      kind: "resize",
+      width: Math.max(1, Math.round(size.width)),
+    } satisfies RenderWorkerRequest);
+  };
+
+  return Object.freeze({
+    dispose(): void {
+      if (telemetry.state === "disposed") return;
+      teardown();
+      publish({ ...telemetry, state: "disposed" });
+    },
+
+    snapshot(): RenderTelemetrySnapshot {
+      return telemetry;
+    },
+
+    start(canvas: HTMLCanvasElement, scene: WalkingSkeletonScene): void {
+      if (telemetry.state !== "idle") {
+        throw new Error("Render service can only be started once");
+      }
+
+      publish({ ...telemetry, state: "starting" });
+      try {
+        if (!("transferControlToOffscreen" in canvas)) {
+          throw new Error("OffscreenCanvas transfer is unavailable in this Chrome build");
+        }
+
+        const initialSize = initialCanvasPixelSize(canvas);
+        const offscreenCanvas = canvas.transferControlToOffscreen();
+        const workerStartupStartedAt = performance.now();
+        const renderWorker = new Worker(renderWorkerUrl(), {
+          name: "parallax-render",
+          type: "module",
+        });
+        worker = renderWorker;
+        renderWorker.onmessage = (event: MessageEvent<RenderWorkerResponse>): void => {
+          const message = event.data;
+          if (telemetry.state === "failed" || telemetry.state === "disposed") return;
+          switch (message.kind) {
+            case "ready":
+              publish({
+                ...telemetry,
+                frameCount: 1,
+                recentFrames: Object.freeze([message.firstFrame]),
+                state: "ready",
+                workerInitToFirstFrameMs: message.workerInitToFirstFrameMs,
+                workerStartupToFirstFrameMs: performance.now() - workerStartupStartedAt,
+              });
+              break;
+            case "frame":
+              publish({
+                ...telemetry,
+                frameCount: message.frameCount,
+                recentFrames: Object.freeze(
+                  [...telemetry.recentFrames, ...message.samples].slice(-MAX_RECENT_FRAMES),
+                ),
+              });
+              break;
+            case "error":
+              fail(message.message);
+              break;
+          }
+        };
+        renderWorker.onerror = (event): void => {
+          if (telemetry.state === "failed" || telemetry.state === "disposed") return;
+          fail(
+            event instanceof ErrorEvent && event.message !== ""
+              ? event.message
+              : "Render worker script failed to load",
+          );
+        };
+
+        renderWorker.postMessage(
+          {
+            canvas: offscreenCanvas,
+            height: initialSize.height,
+            kind: "start",
+            scene,
+            width: initialSize.width,
+          } satisfies RenderWorkerRequest,
+          [offscreenCanvas],
+        );
+        resizeObserver = new ResizeObserver((entries) => {
+          const devicePixelSize = entries[0]?.devicePixelContentBoxSize[0];
+          if (devicePixelSize === undefined) {
+            fail("ResizeObserver did not provide device-pixel canvas dimensions");
+            return;
+          }
+          sendResize({ height: devicePixelSize.blockSize, width: devicePixelSize.inlineSize });
+        });
+        resizeObserver.observe(canvas, { box: "device-pixel-content-box" });
+      } catch (error: unknown) {
+        fail(errorMessage(error));
+      }
+    },
+
+    subscribe(listener: RenderServiceListener): () => void {
+      listeners.add(listener);
+      listener(telemetry);
+      return () => listeners.delete(listener);
+    },
+  });
+}

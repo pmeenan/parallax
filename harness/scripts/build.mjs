@@ -13,12 +13,6 @@ const moduleDescriptors = Object.freeze([
     token: "/immutable/app.js",
   },
   {
-    input: "engine/dist/engine.js",
-    mode: "copy",
-    scope: "engine",
-    token: "__ENGINE_ARTIFACT__",
-  },
-  {
     input: "game/dist/game.js",
     mode: "copy",
     scope: "game",
@@ -46,7 +40,21 @@ runPnpm(["--filter", "@parallax/app", "build"]);
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
 
-const assembledModules = [];
+const workerInput = join(repositoryRoot, "engine/dist/render-worker.js");
+const workerBytes = await readFile(workerInput);
+const workerOutputName = contentAddressedNameFromBytes("render-worker", workerBytes);
+await writeFile(join(outputRoot, "immutable", workerOutputName), workerBytes);
+
+const engineInput = join(repositoryRoot, "engine/dist/engine.js");
+const engineSource = replaceExactlyOnce(
+  await readFile(engineInput, "utf8"),
+  "__RENDER_WORKER_ARTIFACT__",
+  workerOutputName,
+);
+const engineOutputName = contentAddressedNameFromBytes("engine", Buffer.from(engineSource));
+await writeFile(join(outputRoot, "immutable", engineOutputName), engineSource);
+
+const htmlModuleReferences = [];
 for (const descriptor of moduleDescriptors) {
   const input = join(repositoryRoot, descriptor.input);
   const outputName = await contentAddressedName(descriptor.scope, input);
@@ -56,18 +64,23 @@ for (const descriptor of moduleDescriptors) {
   } else {
     await cp(input, output);
   }
-  assembledModules.push({ ...descriptor, outputName });
+  htmlModuleReferences.push({ ...descriptor, outputName });
 }
+htmlModuleReferences.push({
+  scope: "engine",
+  token: "__ENGINE_ARTIFACT__",
+  outputName: engineOutputName,
+});
 
 const indexPath = join(outputRoot, "index.html");
 let index = await readFile(indexPath, "utf8");
-for (const descriptor of assembledModules) {
+for (const descriptor of htmlModuleReferences) {
   const replacement = descriptor.token.startsWith("/immutable/")
     ? `/immutable/${descriptor.outputName}`
     : descriptor.outputName;
   index = replaceExactlyOnce(index, descriptor.token, replacement);
 }
-validateImmutableReferences(index);
+validateImmutableReferences(index, htmlModuleReferences.length);
 await writeFile(indexPath, index);
 
 const artifacts = (await collectArtifacts(outputRoot)).sort((left, right) =>
@@ -97,6 +110,10 @@ function runPnpm(arguments_) {
 
 async function contentAddressedName(scope, path) {
   const bytes = await readFile(path);
+  return contentAddressedNameFromBytes(scope, bytes);
+}
+
+function contentAddressedNameFromBytes(scope, bytes) {
   const digest = createHash("sha256").update(bytes).digest("hex");
   return `${scope}-${digest}.js`;
 }
@@ -110,11 +127,11 @@ function replaceExactlyOnce(source, token, replacement) {
   return `${source.slice(0, first)}${replacement}${source.slice(first + token.length)}`;
 }
 
-function validateImmutableReferences(index) {
+function validateImmutableReferences(index, expectedCount) {
   const references = index.match(/\/immutable\/[^"'\s<]+/g) ?? [];
-  if (references.length !== moduleDescriptors.length) {
+  if (references.length !== expectedCount) {
     throw new Error(
-      `Expected ${moduleDescriptors.length} immutable module references; found ${references.length}`,
+      `Expected ${expectedCount} immutable module references; found ${references.length}`,
     );
   }
   const contentAddressedPath = /^\/immutable\/[a-z0-9-]+-[a-f0-9]{64}\.[a-z0-9]+$/;

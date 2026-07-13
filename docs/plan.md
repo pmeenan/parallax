@@ -27,15 +27,20 @@ measured automatically.
 - [x] Engine/game bundle separation with deterministic engine builds (D-010): same
       source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
       double-build hash check in the pipeline.
-- [ ] Walking-skeleton app: the render-worker Babylon.js WebGPU scene from the preamble,
+- [x] Walking-skeleton app: the render-worker Babylon.js WebGPU scene from the preamble,
       booting through the real build/serve pipeline with COOP/COEP intact — the target
       the harness and spikes run against (integrated deliverable, not just the
-      WebGPU-in-worker spike).
+      WebGPU-in-worker spike). Verified locally in the Chromium-based Codex browser on
+      2026-07-12 through the assembled server to the first rendered frame with no
+      page/worker errors; the pinned-Chrome automated gate is Harness v1 scope below.
 - [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
       frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
       fail on bust.
-- [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go).
+- [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
+      skeleton is positive integration evidence; controlled pinned-Chrome maturity,
+      main-thread-escape, and environment-identified measurements remain before the
+      spike can produce its finding/decision write-up.
 - [ ] Spike: SAB ring buffer main↔worker.
 - [ ] Spike: OPFS sync-access-handle read throughput from a worker.
 - [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user

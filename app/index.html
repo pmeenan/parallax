@@ -4,6 +4,26 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Parallax</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+      * { box-sizing: border-box; }
+      html, body, main { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body { background: #040713; color: #dcecff; }
+      canvas { display: block; width: 100%; height: 100%; }
+      .status-panel {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid rgb(110 180 255 / 35%);
+        border-radius: 0.5rem;
+        background: rgb(3 8 20 / 78%);
+        backdrop-filter: blur(0.5rem);
+      }
+      h1 { margin: 0 0 0.25rem; font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; }
+      p { margin: 0; color: #9bcaff; font: 0.75rem ui-monospace, monospace; }
+      p[data-state="failed"] { color: #ff8e8e; }
+    </style>
     <script type="importmap">
       {
         "imports": {
@@ -15,10 +35,12 @@
   </head>
   <body>
     <main>
-      <h1>Parallax</h1>
-      <p id="status">Booting local build…</p>
+      <canvas id="render-canvas" aria-label="Parallax WebGPU render output"></canvas>
+      <section class="status-panel" aria-live="polite">
+        <h1>Parallax</h1>
+        <p id="status">Booting local build…</p>
+      </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
-

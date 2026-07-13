@@ -27,6 +27,50 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-030: Findings handback runs in fix-pass and verify-pass modes  (2026-07-12, accepted)
+**Decision:** Two more kickoff prompts get encoded operating models in workflow.md,
+completing the review loop started by D-026/D-027. Handing an agent review results or
+findings ("here are the review findings — address them") invokes **fix-pass mode**: the
+agent independently verifies each finding before acting (findings are claims per D-027,
+not orders), fixes confirmed ones at root cause with docs-with-code and re-verification,
+rebuts unconfirmed ones with concrete evidence, and ends with a self-contained
+per-finding disposition report. Asking an agent to "verify the fixes" invokes
+**verify-pass mode**: given the original findings and the fix agent's dispositions, the
+agent verifies each fix against the working tree rather than trusting the report,
+independently adjudicates each pushback, stays read-only by default (like reviewer
+mode), and reports a per-finding verdict (fix verified / fix incomplete / pushback
+accepted / pushback rejected).
+**Context:** Same motivation as D-026/D-027 — the human was restating these two process
+descriptions in every handback and fix-verification prompt. Encoding them makes the full
+loop (review → fix or push back → verify) invocable with short prompts, and makes
+independent re-verification the default at both steps instead of prompt-dependent.
+**Consequences:** workflow.md gains "Findings handback: fix-pass mode" and
+"Fix verification: verify-pass mode"; handback and verification prompts need no process
+language; fix-pass agents are expected to push back rather than blindly apply findings.
+**Reopen if:** the disposition/verdict categories prove too coarse in practice, or the
+verify pass consistently finds nothing and becomes ceremony worth dropping.
+
+## D-029: M0 in-app telemetry export surface  (2026-07-12, accepted)
+**Decision:** Engine telemetry is exposed on the window as a non-writable
+`globalThis.__PARALLAX_TELEMETRY__` object with a versioned snapshot/subscribe contract.
+Schema v1 begins with render lifecycle state, initialization-to-first-frame time,
+failure detail, engine/game version identity, total frame count, and a fixed 120-sample
+recent-frame window; the render worker sends 60-frame batches so instrumentation does
+not add per-frame main-thread messages. Initialization has two explicit phases: end-to-end worker startup
+(immediately before construction through first frame, including module load/evaluation)
+and worker-local initialization (start message through first frame). The harness
+consumes only this public surface, never engine internals. Full result aggregation and
+mandatory metrics remain Harness v1 scope.
+**Context:** The walking skeleton introduces the first runtime subsystem, and project
+rules require instrumentation and a harness-facing export from day one. A fixed sample
+window prevents telemetry memory from growing during long runs while subscriptions let
+the harness collect every batch during a measurement window.
+**Consequences:** Changes to the global name or schema are versioned contract changes.
+The app installs the export explicitly from the render service; the engine does not use
+an implicit main-thread singleton.
+**Reopen if:** CDP bindings or another measured transport proves more reliable without
+making the harness depend on engine internals.
+
 ## D-028: M0 local artifact and serving contract  (2026-07-12, accepted)
 **Decision:** The M0 build assembles a static `dist/` tree with an unhashed `index.html`
 and all executable modules under `dist/immutable/`. Engine and game
@@ -42,6 +86,11 @@ weak comparison, wildcard, and list semantics for `If-None-Match`; the static se
 rejects unsupported methods. The generated
 `build-manifest.json` records sorted paths, byte counts, and full SHA-256 digests for
 the exact assembled artifacts. Served module filenames include the full SHA-256 digest.
+The engine's separately built render-worker URL uses the build-time
+`__RENDER_WORKER_ARTIFACT__` token: the assembler hashes and writes the worker first,
+replaces that token in `engine.js` while retaining its `./` sibling-URL prefix, then
+hashes the rewritten engine artifact. The build-contract test gates this two-sided
+engine/assembler contract.
 The local server caches validated ETag metadata across requests and exposes versioned
 request/cache counters at `/__parallax/metrics`; conditional 304 responses therefore do
 not reread or rehash unchanged artifacts.

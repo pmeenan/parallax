@@ -42,6 +42,13 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
+    const workerArtifact = manifest.artifacts.find((artifact) =>
+      /^immutable\/render-worker-[a-f0-9]{64}\.js$/.test(artifact.path),
+    );
+    expect(workerArtifact).toBeDefined();
+    const workerSource = await readFile(join(buildRoot, workerArtifact?.path ?? ""), "utf8");
+    expect(workerSource).not.toContain('from "@babylonjs/core');
+
     for (const artifact of manifest.artifacts) {
       const bytes = await readFile(join(buildRoot, artifact.path));
       const digest = createHash("sha256").update(bytes).digest("hex");
@@ -66,6 +73,9 @@ describe("assembled build contract", () => {
     expect(engineArtifact).toBeDefined();
     const engineSource = await readFile(join(buildRoot, engineArtifact?.path ?? ""), "utf8");
     expect(engineSource).not.toContain("@parallax/game");
+    expect(engineSource).not.toContain("__RENDER_WORKER_ARTIFACT__");
+    expect(engineSource).toContain(`./${workerArtifact?.path.replace("immutable/", "")}`);
+    expect(engineSource).toContain("__PARALLAX_TELEMETRY__");
 
     const immutableReferences = index.match(/\/immutable\/[^"'\s<]+/g) ?? [];
     expect(immutableReferences).toHaveLength(3);

@@ -81,3 +81,41 @@ have moved with the change actually did.
   rebut with evidence"), not an order. Rank findings most-severe first.
 - **A clean review is a valid result.** If nothing survives verification, say so
   plainly — don't manufacture findings to look thorough.
+
+## Findings handback: fix-pass mode (D-030)
+
+A prompt that hands you review results or findings ("here are the review findings —
+address them") makes you the **fix-pass agent**: the findings came from a reviewer
+(step 2), and you now own the tree.
+
+- **Verify independently before fixing.** Each finding is a claim to verify, not an
+  order (that's how reviewer mode phrases them). Confirm the problem yourself — read
+  the code, run the check — before changing anything.
+- **Fix what's confirmed** at the root cause, with docs moving alongside (root rule 6),
+  and re-run the relevant checks afterward.
+- **Push back where appropriate.** A finding that doesn't survive your verification
+  gets a rebuttal with concrete evidence (code reading, test, measurement), not a
+  grudging fix or a bare disagreement. "Won't fix" carries the same burden of proof
+  as a fix.
+- **End with a per-finding disposition:** fixed (what changed, how verified) or
+  rebutted (the evidence). Write it self-contained — it goes verbatim to a
+  verification pass that has the tree and your report but not your conversation.
+
+## Fix verification: verify-pass mode (D-030)
+
+A prompt like "verify the fixes" makes you the **verification agent**: a review's
+findings went to a fix-pass agent, which fixed some and pushed back on others. You
+check both sides.
+
+- Inputs are the original findings and the fix agent's disposition report; the unit
+  under check is the current working tree.
+- **Verify each fix against the tree, not the report.** Confirm the change actually
+  resolves the finding (run the check that would have caught it) and didn't introduce
+  a regression.
+- **Adjudicate each pushback independently.** Evaluate the rebuttal's evidence on the
+  merits; accept it, or make the evidence-backed case for why the finding stands.
+- **Read-only by default,** like reviewer mode — report, don't fix, unless the human
+  explicitly asks you to fix directly.
+- **Report a per-finding verdict:** fix verified / fix incomplete or wrong (with
+  evidence) / pushback accepted / pushback rejected (why the finding stands). All
+  verdicts positive is a valid result — don't manufacture disputes.
