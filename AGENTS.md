@@ -4,9 +4,9 @@ An AI-built, AAA-scope, open-world game that runs entirely on the web platform �
 research vehicle for finding where Chrome and the web platform can improve to make that
 class of application possible.
 
-**Read this file first. Then read the docs listed under "Required reading" for the area
-you are working in. Every subdirectory with its own `AGENTS.md` has additional rules that
-apply within that directory.**
+**Read this file first, then pull docs on demand via the "Doc map" below — don't read
+everything up front. Every subdirectory with its own `AGENTS.md` has additional rules
+that apply within that directory.**
 
 ## The two goals (in priority order)
 
@@ -59,15 +59,23 @@ updating the affected docs. Until that happens, the constraints below govern.
 | `harness/`  | Build/deploy/measure infrastructure ("WebPageTest for games") | yes           |
 | `site/`     | Public website: frozen placeholder landing page (D-021/D-022) | no            |
 
-## Required reading
+## Doc map — pull what the task needs, not everything
 
-Before any non-trivial work: [docs/vision.md](docs/vision.md),
-[docs/architecture.md](docs/architecture.md), and [docs/workflow.md](docs/workflow.md)
-(how agent collaboration and the human commit gate work here).
-Before structural or cross-cutting changes: [docs/decisions.md](docs/decisions.md) and
-[docs/features.md](docs/features.md).
-For anything touching game content, world, or art: [docs/game-design.md](docs/game-design.md).
-To know what to work on and what "done" means: [docs/plan.md](docs/plan.md).
+Always read (it's ~30 lines): [docs/workflow.md](docs/workflow.md) — how agents
+collaborate here and the human commit gate.
+
+Everything else is on demand. Each doc, and the questions it answers:
+
+| Doc | Read when the task needs |
+| --- | --- |
+| [docs/plan.md](docs/plan.md) | What to work on, milestone scope, exit criteria — what "done" means |
+| [docs/architecture.md](docs/architecture.md) | System structure: layers, worker topology, rendering/streaming/storage, lifecycle contracts. Read before building or changing any system that touches another system |
+| [docs/vision.md](docs/vision.md) | Why the project exists, success criteria, non-goals. Read when weighing scope or priority trade-offs |
+| [docs/decisions.md](docs/decisions.md) | Settled choices (D-NNN). Scan the headings (or grep) and read only the entries your task touches; full read only for structural or cross-cutting changes |
+| [docs/features.md](docs/features.md) | Feature matrix + design-now/build-later constraints. Read before structural changes |
+| [docs/budgets.md](docs/budgets.md) | Performance budgets and measurement methodology. Read for any perf-relevant change or harness work |
+| [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
+| [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
 
 `docs/history/` contains the original ideation chat transcripts. They are **historical
 context only** — several technical claims in them are outdated or unverified (they predate
@@ -99,7 +107,11 @@ the engine decision and assume Unity). Never cite them as a source of truth.
    rewrites history). All changes stay in the working tree; a human reviews and commits
    every change. This applies even if a prompt asks you to commit — stop and leave the
    changes uncommitted instead.
-9. **Ground technology claims in current sources, not training knowledge.** This
+9. **Keep the always-loaded context lean.** This file is imported into every
+   conversation; every line added here costs every future agent. Detail belongs in
+   `docs/` behind the doc map, not here. The same discipline applies to the
+   per-directory `AGENTS.md` files.
+10. **Ground technology claims in current sources, not training knowledge.** This
    project lives on APIs, browser features, and tooling that change monthly — an
    agent's built-in knowledge about them should be presumed stale. Before making or
    citing a claim about what an API/library/browser supports (in a decision, an

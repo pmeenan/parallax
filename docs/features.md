@@ -13,7 +13,7 @@ build later) · `explored` (idea logged, no constraints yet)
 | Feature area | Web-novel angle | Status | Milestone |
 | --- | --- | --- | --- |
 | Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; hard district swaps | active | M1, M4 |
-| Install/update lifecycle | Multi-GB browser-native installer; asset-only updates that never invalidate code caches; full offline | active | M2 |
+| Install/update lifecycle | Multi-GB browser-native installer; asset-only updates that never invalidate code caches; full offline; clean confirmed uninstall with measured full-removal (D-024) | active | M2 |
 | High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M5 |
 | Geometry representation & LOD | Open exploration (P-002): classic triangle LOD chains vs. meshlet-based virtualized geometry (nanite-like, GPU-driven culling in WGSL compute) vs. 3D Gaussian splats — likely a hybrid (e.g., splat environments/backdrops + triangle interactives). Splat rendering is compute-native and unusually web-friendly; virtualized geometry stress-tests WebGPU compute limits (finding-rich either way) | active | M1 spike, M5 commit |
 | Conversational NPCs | On-device LLM (Prompt API/Gemini Nano) — no server, works offline, downloaded at install. Aspiration (game-design.md): NPCs shouldn't be blindingly distinguishable from real players | active | M3 |
@@ -26,6 +26,7 @@ build later) · `explored` (idea logged, no constraints yet)
 | P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |
 | Input | Keyboard/mouse (Pointer Lock w/ `unadjustedMovement`, Keyboard Lock for Esc/system keys in fullscreen), Gamepad API incl. haptics, Fullscreen, Screen Wake Lock | active | M3 |
 | Accessibility | Remap, subtitles for NPC dialog (free — dialog is text-native), UI scaling | explored | M6 |
+| Benchmark mode | Public, deterministic front end to the harness scenarios and telemetry; comparable browser-engine/hardware reports without a single opaque score (D-025) | active | M1+ |
 | Live content hooks | Manifest-driven content drops using the update path (no code deploy) | explored | post-M6 |
 
 Anything added to the game that doesn't fit a row: add a row, including its web-novel

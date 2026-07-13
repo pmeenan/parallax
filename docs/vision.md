@@ -74,7 +74,9 @@ and idiomatic for the web rather than a downported approximation. The feature ma
 
 ## Non-goals
 
-- Cross-browser support. Chrome latest+ only, by design (Decision D-002).
+- Cross-browser support. Chrome latest+ only, by design (D-002). Advisory benchmark
+  runs of the unchanged build in other engines are research inputs, not a support
+  commitment or permission to add compatibility paths (D-025).
 - Low-end or mobile hardware. The baseline is capable consumer hardware — an M1-class
   MacBook Pro gates the Standard tier, a high-end Windows rig gates Showcase (D-018);
   hardware is an evolving target and the question is what the platform supports given

@@ -1,10 +1,20 @@
 # Decision log
 
-Append-only (newest first within each status). Every entry: what was decided, why, and
-what would reopen it. Reversing a decision gets a *new* entry superseding the old one.
+Newest first. Every entry: what was decided, why, and what would reopen it. Existing
+entries are never edited into a different decision — reversing or amending one gets a
+*new* entry that supersedes it (a status-line annotation on the old entry is fine).
 Entries that rest on claims about current technology state (API availability, browser
 support, tooling behavior) must be grounded in current sources or local experiments —
-not training knowledge — and note what was checked and when (root AGENTS.md rule 9).
+not training knowledge — and note what was checked and when (root AGENTS.md rule 10).
+
+**Reading:** scan the D-NNN headings (or grep) and read only the entries your task
+touches. Full read is for structural or cross-cutting work.
+
+**Culling (D-023):** the log is periodically pruned — superseded or moot entries whose
+context no longer informs anything current are deleted outright; git history is the
+archive. D-numbers are never reused, so a citation to a culled entry stays unambiguous
+(recover it from git history if needed).
+
 Format:
 
 ```
@@ -13,6 +23,92 @@ Decision / Context / Consequences / Reopen if
 ```
 
 ---
+
+## D-025: In-game benchmark mode is a public front end to the harness  (2026-07-12, accepted)
+**Decision:** Parallax ships a benchmark mode that runs the same versioned,
+deterministic scenarios and consumes the same telemetry/result schema as the automated
+harness. It is launched and run **entirely in-game**: scenario control, warm-up,
+repeats, measurement-window boundaries, metric collection, aggregation, environment
+capture, and result export require no external automation. It provides fixed
+quality/resolution controls, seed and camera/input path, warm-up and repeat policy, and
+exports both machine-readable JSON and a human-readable summary. Results identify the
+exact game artifact, scenario, browser/engine version, OS, GPU/driver, display/power
+state, and metric support. It reports distributions and phase timings, not a synthetic
+single score. External automation may navigate to or start benchmark mode and collect
+the finished artifact for CI, but stays outside the measured path; a manually launched
+run is equally valid under the same eligibility rules. The mode is usable in other
+browsers for engine comparisons, but Chrome on the reference machines remains the only
+budget gate; non-Chrome runs are advisory. Benchmark mode adds no compatibility paths:
+an unchanged build either runs, marks individual metrics `unsupported`, or produces a
+capability-failure result identifying the missing surface.
+**Context:** The harness is already an independently useful deliverable and the game
+already needs deterministic flythroughs, stable telemetry, environment identity, and
+repeat/variance rules. Exposing those through the game makes Parallax useful for
+comparing browser engines and hardware without building a second measurement system.
+A single score would conceal whether a difference came from presentation pacing, CPU,
+GPU, streaming, compilation, or unsupported observability, undermining the project's
+attribution goal. Cross-browser measurement is not cross-browser support (D-002).
+**Consequences:** the M0 result contract stays browser-engine-neutral even though the
+automation initially drives Chrome; its schema includes provenance distinguishing
+in-game measurements from optional launcher/collector timings. M1 exposes the canonical
+D1 flythrough as a self-contained in-game benchmark; later canonical scenarios join it
+as they land. Public results are comparable only when artifact, scenario, settings, and
+environment fields match, and unsupported metrics remain visible rather than being
+imputed.
+**Reopen if:** the in-game runner cannot reproduce harness scenario semantics closely
+enough to compare results; keep the export/telemetry UI but label manual runs separately.
+
+## D-024: Uninstall joins the lifecycle — confirmed, dual-mechanism, measured  (2026-07-12, accepted)
+**Decision:** The install/launch/run/update lifecycle gains a fifth stage, **uninstall**,
+in scope for M2. The app shell (D-012) offers user-initiated uninstall behind an
+**explicit confirmation** that states what will be deleted (installed assets, caches,
+service worker, saves) and offers save export first (architecture.md's
+export-before-destructive-storage-op rule). Two mechanisms are built and measured
+against each other: (1) **client-side teardown** — service-worker unregister, OPFS
+clear, Cache Storage + IndexedDB deletion, quota-release verification via
+`navigator.storage.estimate()`; (2) a **`Clear-Site-Data` endpoint** — a static nginx
+location (`/uninstall`) attaching `Clear-Site-Data: "storage", "cache"`, within D-011's
+static-serving preference. Actual coverage of each is a measurement, not an assumption:
+does `"storage"` clear OPFS; does `"cache"` clear the V8 code cache and GPU/shader
+caches (which would also make the endpoint a useful harness "reset origin to cold"
+primitive); asymmetries go to rough-edges.md. The Gemini Nano model is Chrome-managed
+and browser-wide, not origin storage (D-017): uninstall does not remove it, and the
+confirmation UX must not imply it does.
+**Context:** A native-title lifecycle demo is incomplete if the only removal path is
+digging through browser settings. Checked 2026-07-12 (MDN Clear-Site-Data reference;
+web.dev OPFS article): MDN lists `"storage"` as clearing DOM storage incl. IndexedDB
+and service-worker registrations — OPFS not explicitly named — and `"cache"` as
+clearing cached data incl. script and shader caches; web.dev states OPFS is deleted
+when site data is cleared. That documentation gap is itself why coverage gets measured
+locally (root rules 3/10) rather than trusted.
+**Consequences:** architecture.md lifecycle stage 5; plan.md M2 uninstall item;
+features.md install-lifecycle row includes uninstall; harness gains an
+uninstall-verification check (storage actually released).
+**Reopen if:** measurement shows one mechanism strictly dominates — collapse to it then
+and record the numbers.
+
+## D-023: Context-lean doc policy — on-demand doc map, scan-first logs, decision culling  (2026-07-12, accepted)
+**Decision:** Agent context is managed pull-based, not push-based. (1) Root AGENTS.md's
+"required reading" mandate (vision + architecture + workflow before any non-trivial
+work) is replaced by a **doc map**: workflow.md stays universally required (~30 lines);
+every other doc is read on demand, routed by a one-line "read when the task needs"
+description. (2) decisions.md and rough-edges.md are **scan-first** documents: grep or
+scan headings, read only relevant entries; full reads reserved for structural or
+cross-cutting work. (3) decisions.md drops strict append-only in favor of **periodic
+culling**: superseded or moot entries that no longer inform anything current are
+deleted; git history is the archive; D-numbers are never reused. (4) New root rule 9:
+root AGENTS.md is the only always-loaded file, so it stays lean — detail belongs in
+docs/ behind the map.
+**Context:** Every conversation pays for what's mandated up front. The old blanket
+mandate cost ~300 lines/~23 KB per task, mostly unread-in-anger; decisions.md (400+
+lines, growing weekly) made "read it before structural changes" increasingly expensive.
+**Consequences:** Root AGENTS.md restructured (doc map section, new rule 9, later rules
+renumbered — the technology-claims rule is now rule 10); decisions.md header documents
+the reading and culling policy; architecture.md's "required reading for every agent"
+self-description softened to match.
+**Reopen if:** on-demand reading measurably causes agents to miss constraints they'd
+have caught under mandatory reading — tighten the map's routing lines first, the
+mandate only as a last resort.
 
 ## D-022: Publish script retired; placeholder landing page frozen as published  (2026-07-12, accepted; amends D-021)
 **Decision:** The machine-local `publish.ps1` from D-021 is deleted (along with the
@@ -404,7 +500,15 @@ a small portfolio site) judged negligible.
   the pointer-width overhead for >4 GB address space. Decide after M0 spike + M1 memory
   data. Note: aggregate memory budgets prove nothing about memory64 (multiple memory32
   modules can sum past 4 GB); the actual exercise is a dedicated harness run in which a
-  single module addresses data beyond 4 GiB.
+  single module addresses data beyond 4 GiB. **Compatibility gate:** adopting memory64
+  currently makes that module unloadable in Safari (MDN browser-compat-data
+  `webassembly/memory64`, checked 2026-07-12:
+  github.com/mdn/browser-compat-data/blob/main/webassembly/memory64.json — Chrome 133+,
+  Firefox 134+, Safari false).
+  Therefore memory64 is a last resort: adopt it only when measurements show an
+  unavoidable single-module >4 GiB requirement and memory32 alternatives (partitioning
+  data/modules, streaming, or reducing the resident set) cannot meet the same requirement
+  within budget. Record that evidence when resolving P-001.
 - **P-002: Geometry representation & rendering-scale strategy** — comparative
   exploration of (a) classic triangle LOD chains, (b) meshlet-based virtualized geometry
   (nanite-like: GPU-driven culling, visibility buffer, WGSL compute), and (c) 3D Gaussian

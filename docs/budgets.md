@@ -138,10 +138,17 @@ Definitions the harness implements; budgets above are meaningless without them.
   but not `measured` — silence is not a pass. The mandatory set per milestone is
   defined in `harness/` alongside the runs.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
-  version, Chrome version/channel, Dawn backend, power mode, display mode/refresh,
+  version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the
   artifact digest of the exact build measured (see harness/AGENTS.md — includes
   dirty-tree identity, since agent work is measured pre-commit).
+- **Comparison eligibility (D-025):** benchmark results are directly comparable only
+  when artifact digest, scenario version, quality/resolution, warm-up/repeat policy, and
+  relevant environment fields match. Chrome reference-machine runs alone carry budget
+  verdicts; other-browser runs are advisory, preserve `unsupported` metrics, and never
+  substitute estimates for unavailable measurements. The benchmark is executed and
+  measured in-game; optional launcher/collector automation is outside the measurement
+  window and does not supply scenario pacing, metric aggregation, or result timings.
 - **Baseline promotion:** when Chrome stable advances, the first run on the new version
   is compared against the old baseline but does not replace it until explicitly
   promoted (a human or lead-agent action recorded in the result store); regressions

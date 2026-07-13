@@ -38,7 +38,8 @@ measured automatically.
       activation for download/create, download flow + model-size reporting, eviction
       + offline reavailability behavior, session limits.
 - [ ] Spike: Rust→WASM module with wasm threads.
-- [ ] Spike: memory64 module load.
+- [ ] Spike: memory64 module load and cost; this validates the optional last-resort path
+      in P-001, not a default wasm64 target.
 - [ ] Harness result contract implemented (budgets.md → Measurement methodology):
       metric states, environment identity, artifact digest + dirty-tree identity,
       per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.
@@ -55,6 +56,11 @@ measured automatically.
       Gaussian splats on representative content, harness-measured at both quality tiers;
       results recorded in decisions.md + rough-edges.md.
 - [ ] Scripted harness flythrough as the standard regression run.
+- [ ] Benchmark mode (D-025): expose that same versioned flythrough, fixed settings,
+      warm-up/repeats, environment identity, and JSON + human-readable result export in
+      the game; the complete run and measurement path works from in-game with no
+      external driver, non-Chrome results are advisory, and missing capabilities/metrics
+      remain explicit rather than gaining compatibility fallbacks.
 - [ ] Exit: 10-minute flythrough with zero budget violations; streaming metrics
       dashboarded.
 
@@ -84,6 +90,11 @@ credible.
       space preflight with quota-error-aware incremental writes.
 - [ ] Offline fault suite: offline hard reload, browser restart offline, corrupt-cache
       recovery, interrupted update, disk-full injection.
+- [ ] Uninstall path (D-024): in-shell uninstall behind explicit confirmation with
+      save-export offer; both mechanisms (client-side storage teardown, static
+      `Clear-Site-Data` endpoint) built and measured for actual coverage — OPFS,
+      service worker, code cache, Dawn cache — and quota release; gaps logged in
+      rough-edges.md.
 - [ ] Scale tests, two corpora (budgets.md, D-009/D-018): (a) ≥100 GB filler lifecycle
       corpus through install/resume/integrity/update/eviction — a floor, not a
       ceiling; grow until a platform limit is found or disproven; (b) representative

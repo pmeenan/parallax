@@ -1,8 +1,8 @@
 # Architecture
 
 High-level system design. Detailed per-system designs live next to the code they
-describe; this document is the map. Keep it current — it is required reading for every
-agent.
+describe; this document is the map. Keep it current — any agent building or changing a
+system that touches another system reads it first (root doc map, D-023).
 
 ## Layer model
 
@@ -14,7 +14,7 @@ agent.
 │            streaming, storage, worker fabric, WASM modules,   │
 │            audio, input, save, AI-inference services          │  ← all platform APIs
 ├───────────────────────────────────────────────────────────────┤
-│ platform   Chrome ≥ latest stable: WebGPU, wasm64 modules,    │
+│ platform   Chrome ≥ latest stable: WebGPU, optional memory64, │
 │            OPFS, Cache Storage, SAB + workers, OffscreenCanvas,│
 │            Prompt API (Gemini Nano), WebRTC (future), WebAudio │
 └───────────────────────────────────────────────────────────────┘
@@ -138,6 +138,19 @@ from Cache Storage than OPFS, move it and record the numbers in the decision log
    player moves; eviction is proactive, never emergency.
 4. **Update:** manifest diff → fetch changed assets only → invalidate affected warmup
    traces. Design goal: an asset-only update never invalidates the wasm/JS code caches.
+5. **Uninstall (user-initiated, D-024):** a native-title lifecycle removes cleanly, not
+   just installs. The shell offers uninstall behind an **explicit confirmation** that
+   states what is deleted (installed assets, caches, service worker, saves) and offers
+   save export first (per the trust contract above). Two mechanisms, both built and
+   measured in M2: (a) client-side teardown — service-worker unregister, OPFS clear,
+   Cache Storage + IndexedDB deletion, then quota-release verification via
+   `navigator.storage.estimate()`; (b) navigation to a static `/uninstall` endpoint
+   whose response carries `Clear-Site-Data: "storage", "cache"` (an nginx location
+   block — stays within D-011's static-serving preference). What each actually clears
+   (OPFS? V8 code cache? Dawn/shader caches? HTTP cache?) is measured, not assumed —
+   gaps go to rough-edges.md. The Gemini Nano model is Chrome-managed and browser-wide
+   (D-017): uninstall does not remove it, and the confirmation UX must not imply it
+   does.
 
 ## World structure and streaming
 
@@ -221,8 +234,11 @@ observed is logged as a rough-edges data point.
   pattern, stable entity IDs, and a serializable authoritative state are required today.
   See [features.md](features.md) for the full constraint list.
 - **N districts:** no code may assume exactly one or two districts; district IDs are data.
-- **wasm64:** Rust modules should isolate memory-size assumptions so individual modules
-  can move to memory64 when >4 GB address space pays for the pointer-width cost.
+- **wasm64 (P-001):** Rust modules isolate memory-size assumptions so an individual
+  module *can* move to memory64, but memory32 remains the default. A switch requires an
+  unavoidable measured single-module >4 GiB need after partitioning/streaming/resident-
+  set alternatives fail; it is known to make that module unloadable in Safari as of
+  2026-07-12, so it is the last resort rather than a scale target.
 - **Cross-Origin Storage readiness (D-010):** the common/game-specific packaging split
   above, plus deterministic, versioned engine builds (byte-identical from same source +
   toolchain; no timestamps/paths in artifacts; stable chunking) so engine bundles are

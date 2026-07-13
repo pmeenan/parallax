@@ -40,6 +40,15 @@ short (each gap in observability is itself a rough-edges finding — log it).
   update → relaunch (from M2).
 - `determinism` — replay a canned command log N times, compare state hashes (from M3).
 
+The game-facing benchmark mode (D-025, from M1) is a public runner for these same
+versioned scenarios and the same telemetry/result schema. It is not a separate benchmark
+implementation. The whole benchmark lifecycle—scenario execution, warm-up, repeats,
+measurement windows, aggregation, and export—runs in-game without an external driver.
+Automation may only launch it and retrieve the completed result; launcher/collector
+activity is outside the measurement window and is not required for a valid manual run.
+Manual and non-Chrome results are labeled advisory; only automated Chrome runs on
+reference machines gate budgets.
+
 ## Rules
 
 1. **Deterministic runs.** Scripted input/camera paths, fixed seeds, pinned Chrome
@@ -70,3 +79,14 @@ short (each gap in observability is itself a rough-edges finding — log it).
    layer (app / Babylon / Dawn / V8 / storage / OS) — prefer adding a probe or a
    standalone micro-repro (`probes/`) over speculation. Micro-repros double as
    rough-edges reproductions.
+7. **Portable result contract, Chrome-first automation.** Browser-driving and privileged
+   probes may initially be Chrome/CDP-specific, but scenario definitions, in-app
+   telemetry, environment identity, metric states, and result JSON may not encode Chrome
+   as the only possible engine. Other engines report unsupported probes explicitly; do
+   not add runtime fallbacks merely to obtain a benchmark result (D-002/D-025).
+8. **No driver in the benchmark measurement path.** A D-025 benchmark result is produced
+   by the game itself. WebDriver/CDP/Playwright may open the URL, request a run, wait for
+   completion, and copy its exported artifact, but may not pace frames, inject the
+   scenario step-by-step, define measurement boundaries, aggregate metrics, or contribute
+   timings to the in-game result. This keeps manual and automated invocations equivalent
+   and removes driver overhead/variability from browser-engine comparisons.
