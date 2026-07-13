@@ -46,14 +46,18 @@ until its downloaded executable digest is promoted into the descriptor. Pin upda
 $env:PARALLAX_CHROME_PATH = 'C:\path\to\chrome-for-testing\chrome.exe'
 $env:PARALLAX_MACHINE_ID = 'dev-01'
 $env:PARALLAX_TIER = 'showcase'
-$env:PARALLAX_GPU_BACKEND = 'D3D12'
-$env:PARALLAX_POWER_MODE = 'Balanced'
 pnpm harness:smoke
 ```
+
+Run a reference-machine gate only while directly signed in at that machine's physical
+console. RDP and indirect/virtual display adapters are useful for development but make
+the environment identity invalid because they can change Chrome's display timing. The
+runner verifies the machine against its versioned descriptor in `harness/machines/`;
+GPU backend, driver, display, OS, and power state are measured rather than accepted as
+environment-variable declarations.
 
 The command builds and serves the exact artifact, runs three fresh/warm profile pairs
 with the required 10-second warm-up, writes ignored JSON and Markdown output under
 `harness/results/`, and exits nonzero on a measured budget violation, browser error,
-Chrome identity mismatch, or still-missing mandatory Harness v1 probe. Machine, tier,
-backend, display target, and power-mode inputs are declarations for investigation only;
-until the environment-verification probe lands they cannot produce a gating verdict.
+Chrome or registered-machine identity mismatch, a remote session, or a still-missing
+mandatory Harness v1 probe.

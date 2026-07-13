@@ -27,6 +27,81 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-034: Harness gates versioned observed environments from a physical console  (2026-07-13, accepted)
+**Decision:** Reference-machine identities live as versioned descriptors in
+`harness/machines/`; `smoke@1` verifies the requested tier against observed state rather
+than caller-provided GPU/backend/power/display labels. The initial Windows verifier checks
+the exact OS build, CPU topology, minimum RAM, CDP primary-GPU PCI IDs and driver, WebGPU
+adapter vendor/architecture/device/driver/backend, active Windows power-scheme GUID, and
+display-controller resolution/refresh. Every gate browser launches native fullscreen without
+Playwright viewport emulation, ties its own `screen` dimensions at its device-pixel ratio to
+the target physical resolution, requires every refresh rate reported by Chrome GPU Internals
+to match the tier, and verifies the canvas device-pixel surface equals the tier resolution;
+Chrome-internals diagnostics complete before the full warmup, then each measurement browser
+samples screen/surface identity at the immediate boundaries of its 120-frame window and
+continuously records device-pixel resize events during the window, with any drift invalidating
+the result. Windows display adapters are matched to the descriptor by PCI vendor/device IDs,
+not mutable display names; any other active adapter is rejected as unregistered. The short-lived
+identity browser loads a minimal harness-control document and enables Chrome's WebGPU
+developer-features switch solely to read the
+non-standard adapter backend and driver;
+measurement browsers do not enable that switch. Host identity is sampled before and after
+the six measurement launches, and any drift invalidates the result. A remote Windows session,
+remote/indirect display adapter, unregistered tier, missing descriptor, or any mismatch makes
+the mandatory environment metric `invalid`. Reference gates require advance notice to the
+developer and a native local interactive session at the physical machine; remote sessions
+remain valid only for explicitly non-gating development diagnostics.
+
+**Context:** Machine/backend/power/display fields in the first `smoke@1` report were
+declarations and therefore could not establish gate eligibility (D-031). A local CfT
+150.0.7871.115 experiment on dev-01 on 2026-07-13 showed why: under RDP, Windows' physical
+NVIDIA controller reported 3840×2160 at 59 Hz while Chrome's GPU Internals accessibility
+tree reported three remote displays at 32 Hz; Windows also exposed a Microsoft Remote
+Display Adapter. The same pinned Chrome, launched separately with
+`--enable-webgpu-developer-features`, exposed the selected adapter as NVIDIA Lovelace,
+D3D12, driver 32.0.15.9649. Chrome documents the extended `GPUAdapterInfo.backend` and
+`driver` fields as developer-only, and CDP documents GPU PCI/driver fields but not the
+selected WebGPU backend, so both probes are needed.
+
+The first physical-console verification later on 2026-07-13 found the installed NVIDIA
+driver had advanced to 32.0.16.1074; Windows, CDP, and developer-mode WebGPU adapter info
+agreed, so that version is the explicitly promoted dev-01 descriptor baseline. The earlier
+RDP evidence retains its observed version rather than being rewritten.
+
+**Consequences:** `PARALLAX_GPU_BACKEND` and `PARALLAX_POWER_MODE` are removed; future
+machine registrations add descriptors and platform probes instead of trusting labels. OS,
+driver, or power-plan promotion is visible in review. The developer-features switch can
+change development-only WebGPU behavior, so isolating it to identity inspection avoids
+silently changing the measured runtime. The Harness v1 environment probe is implemented,
+and its dev-01 native-console measurement was `measured` across all three fresh/warm pairs on
+2026-07-13; other mandatory probes still keep Harness v1 incomplete. The smoke result schema advances to v2 for the observed machine,
+adapter, browser-display, and pre/post host-identity fields. Result-contract field names remain
+browser-neutral (`executableSha256`, `refreshRatesHz`) even where the current privileged probe
+is Chrome-specific; probe failures are retained in browser-neutral `probeFailures` evidence
+and invalidate the environment so a completed measurement report is still written. Machine
+IDs are accepted case-insensitively and persisted using the descriptor's canonical lowercase
+ID. Descriptive CPU/WebGPU strings compare case-insensitively with whitespace normalized;
+numeric PCI IDs, OS/driver/browser versions, measured dimensions/rates, and power GUIDs
+remain strict.
+This supersedes D-031's initial fixed-headed-viewport provision: native fullscreen plus an
+explicit render-surface assertion makes each measured browser prove its presentation monitor
+instead of accepting an emulated `window.screen`.
+
+The native run also established that Chrome's `devicePixelContentBoxSize` is consistently
+3841×2161 on dev-01's 3840×2160 display under its fractional Windows scale. The descriptor's
+explicit ±2-pixel physical-dimension tolerance therefore applies to both observed screen and
+render-surface checks; the actual surface remains recorded per run (RE-003).
+
+**Sources checked (2026-07-13):** local dev-01 experiments described above;
+`chromedevtools.github.io/devtools-protocol/tot/SystemInfo/`;
+`developer.chrome.com/docs/web-platform/webgpu/developer-features`; and Chromium's
+`gpu/config/gpu_switches.cc` definition of `enable-webgpu-developer-features`.
+
+**Reopen if:** Chrome exposes the selected WebGPU backend through a stable, non-mutating
+CDP surface; OS display APIs cannot identify the actual presentation display; a remote
+transport can prove unmodified physical display timing; or exact OS/driver pins cause more
+baseline churn than research value.
+
 ## D-033: NPC context is assembled by a knowledge service in engine/ai  (2026-07-13, accepted)
 **Decision:** The AI layer gains a **knowledge service** in `engine/ai`: NPC prompts are
 assembled as persona card + context retrieved through an explicit interface — never by
@@ -129,8 +204,8 @@ present-to-present timing stays mandatory and invalid until a validated probe ex
 and callback p95 variance above 10% makes that diagnostic invalid. The versioned
 scenario, tier profiles, and single mandatory/incomplete metric registry live together
 in `harness/src/runs/`.
-The requested tier fixes the headed viewport, but machine/backend/power/display labels
-are declarations and do not confer gate eligibility. Reports are local ignored artifacts
+As amended by D-034, the requested tier fixes a verified native-fullscreen display and
+device-pixel render surface rather than a Playwright-emulated headed viewport. Reports are local ignored artifacts
 and fail on measured budgets, browser errors, version mismatch, unverified gate identity,
 or any other unfinished Harness-v1-mandatory probe.
 

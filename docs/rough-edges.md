@@ -100,9 +100,11 @@ COS APIs exist):
   (revision 1639810); Windows 11 10.0.26200; NVIDIA RTX 4080 Super, driver
   32.0.15.9649; D3D12; dev-01.
 - **Layer:** scheduler / Babylon / WebGPU-Dawn (attribution open).
-- **Status:** open.
+- **Status:** resolved for the harness on 2026-07-13; Chrome-internals display probing
+  must finish before the full warmup.
 - **What we expected / What happened:** Across three fresh and three warm headed-profile
-  runs at the declared 3840x2160 smoke viewport, worker `requestAnimationFrame` callback
+  runs in a native-fullscreen browser on the dev-01 3840×2160 display, worker
+  `requestAnimationFrame` callback
   spacing p50 was 31.21-31.28 ms and p95 was 31.57-31.71 ms. These are callback
   timestamps, not compositor presentation timestamps, so they do not establish a 32 Hz
   presentation rate and are not compared with the Showcase frame budget. The
@@ -110,15 +112,92 @@ COS APIs exist):
   50 ms were zero, and relative p95 range within fresh and warm groups was below 0.15%.
   Those diagnostics rule out noisy repeats and sustained JS submission cost, but do not
   distinguish Babylon, GPU execution/presentation, worker rAF pacing, or automation.
-- **Repro:** build the current tree, set the pinned CfT path and dev-01 identity as in
-  `README.md`, then run `pnpm harness:smoke`. The `smoke@1` runner performs three fresh
-  profile launches and three warm relaunches after 10-second warm-ups; the generated
-  JSON contains each distribution. A standalone WebGPU/worker repro and trace are still
-  needed before filing a Chrome issue.
-- **Impact on Parallax:** the unexplained pacing and lack of a validated present-to-present
-  probe block the M0 Showcase smoke gate and Harness v1; no workaround or budget change
-  applied.
-- **Proposed improvement:** first add GPU execution/present and Dawn trace attribution,
-  then compare worker vs window rAF and Babylon vs a minimal WebGPU loop under the same
-  pinned browser. If worker presentation is the cause, expose stable pacing/diagnostic
-  signals that let applications distinguish scheduler throttling from GPU backpressure.
+- **Repro:** the original harness opened and polled `chrome://gpu` after its 10-second
+  warmup, briefly backgrounding the fullscreen app, then allowed only two animation frames
+  before beginning measurement. In the corrected runner, Chrome-internals probing completes
+  first and the app receives the full warmup afterward. Run `pnpm harness:smoke` with the
+  pinned CfT and dev-01 identity from `README.md`; the JSON retains every distribution.
+- **Resolution evidence:** after that ordering fix, a physical-console 4K/60 run on the
+  same pinned browser produced worker-callback p95 values of 16.775-16.830 ms across all
+  three fresh/warm pairs, with zero main-thread long tasks and CPU render/submit p95 of
+  0.47-0.57 ms. The prior ~32 Hz result was harness-induced resume/warmup contamination,
+  not evidence of a 32 Hz compositor path.
+- **Impact on Parallax:** worker callback pacing no longer blocks the Showcase smoke run.
+  True compositor presentation timing remains a separate incomplete Harness v1 metric;
+  no budget was changed.
+- **Proposed improvement:** browser diagnostics that require opening an internal page should
+  disclose their foreground/scheduling impact, or CDP should expose the same display data
+  without tab activation. Keep privileged diagnostics outside benchmark warmup and
+  measurement windows.
+
+## RE-002: RDP makes Chrome display timing disagree with Windows' physical mode
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver
+  32.0.15.9649; dev-01 over RDP.
+- **Layer:** display/compositor observability / automation environment.
+- **Status:** open; remote sessions are non-gating per D-034.
+- **What we expected / What happened:** Windows `Win32_VideoController` reported the
+  physical NVIDIA controller at 3840×2160 and 59 Hz, but Chrome GPU Internals' accessibility
+  tree reported three displays at 32 Hz with remote-session bounds/scaling. Windows also
+  exposed an active `Microsoft Remote Display Adapter`; a native-fullscreen browser reported
+  a 6017×3386 device-pixel screen/render surface rather than 3840×2160. A declared 4K@60
+  label or emulated viewport would therefore misidentify the presentation environment and
+  could falsely contextualize the near-32 Hz callback pacing in RE-001.
+- **Repro:** connect to dev-01 over RDP; launch pinned CfT headed; read
+  `SystemInfo.getInfo`, the `chrome://gpu` accessibility tree, and
+  `Win32_VideoController`. The versioned `smoke@1` environment probe is the maintained
+  reproduction: it records the observations and marks remote/indirect-display runs invalid.
+- **Impact on Parallax:** reference-machine gates cannot run through the convenient RDP
+  workflow. The developer must switch to the physical console before a gating smoke run,
+  and automation must distinguish diagnostic remote runs from budget evidence.
+- **Proposed improvement:** expose the active presentation display, refresh behavior, and
+  remote/virtual-display status through a stable CDP or web diagnostics surface tied to the
+  browser window being measured. Today the harness must combine OS-specific probes with
+  browser evidence and reject the ambiguous case.
+
+## RE-003: Native fullscreen WebGPU surface is one pixel larger than the 4K display mode
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 physical console at 3840×2160/59 Hz.
+- **Layer:** CSS/device-pixel conversion / fullscreen canvas sizing.
+- **Status:** open; measured surface is retained and the registered ±2-pixel display
+  tolerance is applied per D-034.
+- **What we expected / What happened:** In six native-fullscreen fresh/warm launches,
+  `ResizeObserver.devicePixelContentBoxSize` consistently reported the full-window canvas
+  as 3841×2161 although Windows reported a 3840×2160 display. Chrome exposed fractional
+  `devicePixelRatio` 1.3625000715 with a 2819×1586 CSS-pixel screen, whose products require
+  rounding at the physical-pixel boundary.
+- **Repro:** on dev-01's physical console, launch pinned CfT with `--start-fullscreen` and
+  no Playwright viewport emulation; observe a fullscreen canvas using
+  `ResizeObserver({box: "device-pixel-content-box"})`. `smoke@1` records the value for every
+  measurement browser and fails outside the descriptor's ±2-pixel tolerance.
+- **Impact on Parallax:** an exact-equality 4K render-surface gate rejects the real native
+  4K environment, while accepting the observed one-pixel conversion preserves materially
+  identical workload and keeps the discrepancy explicit in every result.
+- **Proposed improvement:** expose a deterministic way for fullscreen content to request
+  the display's exact native pixel extent, or document the rounding contract applications
+  should use when CSS dimensions and fractional device scale do not multiply to the mode.
+
+## RE-004: CDP cannot identify the selected WebGPU backend
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super; dev-01.
+- **Layer:** WebGPU / CDP observability.
+- **Status:** open; the gate uses an isolated developer-mode identity browser per D-034.
+- **What we expected / What happened:** `SystemInfo.getInfo` identifies the physical GPU
+  and driver but does not identify the backend selected for the page's WebGPU adapter.
+  Standard `GPUAdapterInfo` likewise omitted backend and driver. A separate Chrome launch
+  with `--enable-webgpu-developer-features` exposed `GPUAdapterInfo.backend` as D3D12 and
+  the matching driver, but that switch is inappropriate for the measured browser because
+  it changes the runtime configuration under test.
+- **Repro:** launch pinned CfT normally and compare `SystemInfo.getInfo` plus
+  `navigator.gpu.requestAdapter().info` with a second launch using
+  `--enable-webgpu-developer-features`. The versioned `smoke@1` identity probe performs
+  this comparison against the registered machine descriptor.
+- **Impact on Parallax:** a gate cannot prove the selected WebGPU backend from stable CDP
+  alone. The harness needs a second short-lived browser, increasing probe cost and leaving
+  backend identity dependent on a non-standard developer feature.
+- **Proposed improvement:** expose the selected adapter's backend and driver through a
+  stable, page-correlated CDP/WebGPU diagnostics API without changing WebGPU behavior.

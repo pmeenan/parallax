@@ -1,0 +1,32 @@
+{
+  "arch": "x64",
+  "cpu": {
+    "cores": 24,
+    "logicalProcessors": 32,
+    "name": "Intel(R) Core(TM) i9-14900KF"
+  },
+  "display": {
+    "dimensionTolerancePixels": 2,
+    "height": 2160,
+    "refreshRateHz": 60,
+    "refreshRateToleranceHz": 1,
+    "width": 3840
+  },
+  "gateTiers": ["showcase"],
+  "gpu": {
+    "architecture": "lovelace",
+    "backend": "D3D12",
+    "deviceId": 9986,
+    "driverVersion": "32.0.16.1074",
+    "name": "NVIDIA GeForce RTX 4080 SUPER",
+    "subSysId": 1094980696,
+    "vendor": "nvidia",
+    "vendorId": 4318
+  },
+  "id": "dev-01",
+  "minimumPhysicalMemoryBytes": 128000000000,
+  "osBuild": "26200.8655",
+  "platform": "win32",
+  "powerSchemeGuid": "381b4222-f694-41f0-9685-ff5bb260df2e",
+  "schemaVersion": 1
+}

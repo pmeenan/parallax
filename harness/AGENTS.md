@@ -90,3 +90,10 @@ reference machines gate budgets.
    scenario step-by-step, define measurement boundaries, aggregate metrics, or contribute
    timings to the in-game result. This keeps manual and automated invocations equivalent
    and removes driver overhead/variability from browser-engine comparisons.
+9. **Reference gates run from the machine's physical console.** Before starting a
+   reference-machine budget gate, tell the developer that direct local access is needed
+   and wait for confirmation that the browser will run in a native local interactive
+   session. RDP, remote/indirect display adapters, virtual displays, and remotely altered
+   display timing make the environment identity `invalid`; they are allowed for
+   development and explicitly non-gating diagnostics only. Never promote a remote-session
+   result by copying declared display, power, GPU, or machine labels into the report.

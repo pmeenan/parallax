@@ -39,8 +39,14 @@ measured automatically.
       fail on bust. First slice in progress: `smoke@1` now pins/validates CfT, runs three
       fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
       window heap, atomic HTTP cache deltas, validated artifact/source identity, plus
-      explicit metric states. True compositor presentation timing, verified environment
-      identity, Dawn/V8 probes, and callback-pacing attribution (RE-001) remain.
+      explicit metric states. Registered-machine environment verification now probes the
+      exact OS build, CPU/RAM, GPU/driver/WebGPU backend, power scheme, display mode, and
+      rejects remote/indirect displays (D-034). Verified `measured` across three native-console
+      fresh/warm pairs on dev-01 at 4K/60 on 2026-07-13; RDP remains non-gating (RE-002), and
+      the fractional-scale surface discrepancy is recorded as RE-003. Post-review native
+      reruns confirmed that moving Chrome diagnostics before the full warmup resolves the
+      harness-induced ~32 Hz callback pacing (RE-001). True compositor presentation timing
+      and the Dawn/V8 probes remain.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

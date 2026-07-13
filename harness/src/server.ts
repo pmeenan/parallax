@@ -14,7 +14,11 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
 });
 
 const IMMUTABLE_PATH = /^\/immutable\/[a-z0-9-]+-([a-f0-9]{64})\.[a-z0-9]+$/;
+const IDENTITY_PATH = "/__parallax/identity";
 const METRICS_PATH = "/__parallax/metrics";
+const IDENTITY_DOCUMENT = Buffer.from(
+  "<!doctype html><meta charset=utf-8><title>Parallax harness identity probe</title>",
+);
 
 type PathClass = "document" | "immutable" | "other";
 
@@ -83,6 +87,20 @@ export function createLocalServer(options: LocalServerOptions): Server {
     try {
       const requestUrl = new URL(request.url ?? "/", "http://localhost");
       const pathname = decodeURIComponent(requestUrl.pathname);
+
+      if (pathname === IDENTITY_PATH) {
+        // Identity probing is harness control traffic, not application workload.
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          response.setHeader("Allow", "GET, HEAD");
+          response.writeHead(405).end();
+          return;
+        }
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Content-Length", IDENTITY_DOCUMENT.byteLength);
+        response.setHeader("Content-Type", "text/html; charset=utf-8");
+        response.writeHead(200).end(request.method === "HEAD" ? undefined : IDENTITY_DOCUMENT);
+        return;
+      }
 
       if (pathname === METRICS_PATH) {
         // Metrics reads are out-of-band: all methods are excluded from counters, and

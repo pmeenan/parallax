@@ -87,6 +87,23 @@ describe("local build server", () => {
       const malformedPathResponse = await fetch(`${baseUrl}/%zz`);
       expect(malformedPathResponse.status).toBe(400);
 
+      const metricsBeforeIdentity = (await (
+        await fetch(`${baseUrl}/__parallax/metrics`)
+      ).json()) as LocalServerMetrics;
+      const identityResponse = await fetch(`${baseUrl}/__parallax/identity`);
+      expect(identityResponse.status).toBe(200);
+      expect(identityResponse.headers.get("cache-control")).toBe("no-cache");
+      expect(identityResponse.headers.get("content-type")).toBe("text/html; charset=utf-8");
+      expect(await identityResponse.text()).toContain("Parallax harness identity probe");
+      const identityPostResponse = await fetch(`${baseUrl}/__parallax/identity`, {
+        method: "POST",
+      });
+      expect(identityPostResponse.status).toBe(405);
+      expect(identityPostResponse.headers.get("allow")).toBe("GET, HEAD");
+      expect(await (await fetch(`${baseUrl}/__parallax/metrics`)).json()).toEqual(
+        metricsBeforeIdentity,
+      );
+
       const metricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
       const metrics = (await metricsResponse.json()) as LocalServerMetrics;
       expect(metricsResponse.status).toBe(200);

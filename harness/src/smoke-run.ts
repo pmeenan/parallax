@@ -1,5 +1,5 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { release, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
 import { type BrowserContext, chromium, type Page } from "playwright-core";
@@ -7,8 +7,25 @@ import { type Distribution, distribution, evaluateP95Variance } from "./aggregat
 import { type BudgetCheck, evaluateMainThreadBudgets, type QualityTier } from "./budgets.js";
 import { readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
 import {
+  type BrowserDisplayIdentity,
+  type CdpGpuDevice,
+  type EnvironmentGateState,
+  evaluateBrowserDisplay,
+  evaluateGateEnvironment,
+  invalidEnvironmentGate,
+  loadMachineDescriptor,
+  type MachineDescriptor,
+  parseDisplayRefreshRates,
+  safeMachineIdForFilename,
+  tryReadWindowsHostIdentity,
+  type WebGpuAdapterIdentity,
+  type WindowsHostIdentity,
+  type WindowsHostIdentityResult,
+} from "./environment.js";
+import {
   parseQualityTier,
   QUALITY_TIER_PROFILES,
+  renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MEASUREMENT_FRAMES,
   SMOKE_METRICS,
@@ -32,6 +49,10 @@ interface MeasuredMetric<T> {
   readonly value: T;
 }
 
+type ProbeResult<T> =
+  | Readonly<{ readonly state: "measured"; readonly value: T }>
+  | Readonly<{ readonly reason: string; readonly state: "invalid" }>;
+
 interface ChromePin {
   readonly channel: "stable";
   readonly executableSha256: Readonly<Record<string, string>>;
@@ -41,6 +62,8 @@ interface ChromePin {
 
 interface RunMeasurement {
   readonly budgetChecks: readonly BudgetCheck[];
+  readonly browserDisplayAfter: BrowserDisplayIdentity;
+  readonly browserDisplayBefore: BrowserDisplayIdentity;
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
   readonly jsHeapUsedBytes: MeasuredMetric<number>;
@@ -52,21 +75,27 @@ interface RunMeasurement {
     readonly id: string;
   };
   readonly repeat: number;
+  readonly renderSurfaceAfter: Readonly<{ height: number; width: number }>;
+  readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
+  readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
 }
 
 interface EnvironmentIdentity {
+  readonly adapter: WebGpuAdapterIdentity | null;
+  readonly browserDisplay: BrowserDisplayIdentity | null;
   readonly browserProduct: string;
   readonly browserRevision: string;
   readonly browserUserAgent: string;
-  readonly declaredGpuBackend: string;
-  readonly declaredMachineId: string;
-  readonly declaredPowerMode: string;
-  readonly gateIdentityState: "invalid";
-  readonly gpuDevices: readonly unknown[];
+  readonly executableSha256: string;
+  readonly gateIdentity: EnvironmentGateState;
+  readonly gpuDevices: readonly CdpGpuDevice[];
+  readonly host: WindowsHostIdentity | null;
+  readonly hostAfterRuns: WindowsHostIdentity | null;
   readonly jsVersion: string;
-  readonly os: string;
+  readonly machine: MachineDescriptor | null;
+  readonly machineId: string;
   readonly requestedTier: QualityTier;
   readonly targetDisplayMode: string;
 }
@@ -89,7 +118,7 @@ interface SmokeReport {
   readonly passed: boolean;
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly {
     readonly profile: "fresh" | "warm";
@@ -102,6 +131,7 @@ interface SmokeReport {
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const buildRoot = join(repositoryRoot, "dist");
 const chromePinPath = join(repositoryRoot, "harness/chrome/stable.json");
+const machineRoot = join(repositoryRoot, "harness/machines");
 const outputRoot = join(repositoryRoot, "harness/results");
 
 await main();
@@ -119,21 +149,20 @@ async function main(): Promise<void> {
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-harness-"));
 
   try {
-    const environment = await inspectEnvironment(
+    let environment = await inspectEnvironment(
       executablePath,
       join(profileRoot, "identity"),
       chromePin,
       machineId,
       tier,
-      requiredEnvironment("PARALLAX_GPU_BACKEND"),
-      requiredEnvironment("PARALLAX_POWER_MODE"),
+      baseUrl,
     );
     const runs: RunMeasurement[] = [];
     for (let repeat = 1; repeat <= SMOKE_REPEATS; repeat += 1) {
       const lineage = join(profileRoot, `lineage-${repeat}`);
       runs.push(
-        await measureRun(executablePath, lineage, baseUrl, tier, repeat, "fresh"),
-        await measureRun(executablePath, lineage, baseUrl, tier, repeat, "warm"),
+        await measureRun(executablePath, lineage, baseUrl, repeat, "fresh"),
+        await measureRun(executablePath, lineage, baseUrl, repeat, "warm"),
       );
     }
     const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) => {
@@ -155,9 +184,12 @@ async function main(): Promise<void> {
             state: variance.state,
           });
     });
+    environment = revalidateRunDisplays(environment, runs);
+    environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
     const passed =
       runs.every((run) => run.budgetChecks.every((check) => check.passed)) &&
+      environment.gateIdentity.state === "measured" &&
       incompleteMetrics.every((metric) => !metric.mandatoryForHarnessV1) &&
       callbackPacingVariance.every((metric) => metric.state === "measured");
     if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
@@ -184,7 +216,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 1,
+      schemaVersion: 2,
       source,
     });
     await writeReport(report);
@@ -210,14 +242,24 @@ function measured<T>(value: T): MeasuredMetric<T> {
   return Object.freeze({ state: "measured", value });
 }
 
+async function tryProbe<T>(label: string, probe: () => Promise<T>): Promise<ProbeResult<T>> {
+  try {
+    return Object.freeze({ state: "measured", value: await probe() });
+  } catch (error) {
+    return Object.freeze({
+      reason: `${label} probe failed: ${errorMessage(error)}`,
+      state: "invalid",
+    });
+  }
+}
+
 async function inspectEnvironment(
   executablePath: string,
   profilePath: string,
   chromePin: ChromePin,
   machineId: string,
   tier: QualityTier,
-  gpuBackend: string,
-  powerMode: string,
+  baseUrl: string,
 ): Promise<EnvironmentIdentity> {
   const platformKey = chromePlatformKey();
   const expectedExecutableDigest = chromePin.executableSha256[platformKey];
@@ -230,7 +272,15 @@ async function inspectEnvironment(
       `Chrome executable digest mismatch: expected ${expectedExecutableDigest}, received ${executableDigest.sha256}`,
     );
   }
-  const context = await launch(executablePath, profilePath, tier);
+  let machine: MachineDescriptor | null = null;
+  let machineDescriptorFailure: string | null = null;
+  try {
+    machine = await loadMachineDescriptor(machineRoot, machineId);
+  } catch (error) {
+    machineDescriptorFailure = `Machine descriptor unavailable: ${errorMessage(error)}`;
+  }
+  const hostResultPromise = tryReadWindowsHostIdentity();
+  const context = await launch(executablePath, profilePath, ["--enable-webgpu-developer-features"]);
   try {
     const browser = context.browser();
     if (browser === null) throw new Error("Playwright did not expose the launched browser");
@@ -247,18 +297,56 @@ async function inspectEnvironment(
         `Chrome for Testing version mismatch: expected ${chromePin.version}, received ${actualVersion}`,
       );
     }
-    const systemInfo = await session.send("SystemInfo.getInfo");
+    const systemInfo = (await session.send("SystemInfo.getInfo")) as {
+      gpu: { devices: readonly CdpGpuDevice[] };
+    };
+    const primaryGpu = systemInfo.gpu.devices[0];
+    if (primaryGpu === undefined) throw new Error("CDP did not report a primary GPU");
+    const page = context.pages()[0] ?? (await context.newPage());
+    await page.goto(`${baseUrl}/__parallax/identity`, { waitUntil: "load" });
+    const adapterResult = await tryProbe("WebGPU adapter identity", () =>
+      readWebGpuAdapterIdentity(page),
+    );
+    const browserDisplayResult = await tryProbe("Browser display identity", () =>
+      readBrowserDisplayIdentity(context, page),
+    );
+    const adapter = adapterResult.state === "measured" ? adapterResult.value : null;
+    const browserDisplay =
+      browserDisplayResult.state === "measured" ? browserDisplayResult.value : null;
+    const hostResult = await hostResultPromise;
+    const host = hostResult.state === "measured" ? hostResult.host : null;
+    const identityFailures = [
+      ...(machineDescriptorFailure === null ? [] : [machineDescriptorFailure]),
+      ...(hostResult.state === "invalid" ? [hostResult.reason] : []),
+      ...(adapterResult.state === "invalid" ? [adapterResult.reason] : []),
+      ...(browserDisplayResult.state === "invalid" ? [browserDisplayResult.reason] : []),
+    ];
+    const gateIdentity =
+      machine === null || host === null || adapter === null || browserDisplay === null
+        ? invalidEnvironmentGate(identityFailures)
+        : evaluateGateEnvironment(machine, {
+            adapter,
+            arch: process.arch,
+            browserDisplay,
+            host,
+            platform: process.platform,
+            primaryGpu,
+            requestedTier: tier,
+          });
     return Object.freeze({
+      adapter,
+      browserDisplay,
       browserProduct: version.product,
       browserRevision: version.revision,
       browserUserAgent: version.userAgent,
-      declaredGpuBackend: gpuBackend,
-      declaredMachineId: machineId,
-      declaredPowerMode: powerMode,
-      gateIdentityState: "invalid",
+      executableSha256: executableDigest.sha256,
+      gateIdentity,
       gpuDevices: systemInfo.gpu.devices,
+      host,
+      hostAfterRuns: null,
       jsVersion: version.jsVersion,
-      os: `${process.platform} ${process.arch} ${release()}`,
+      machine,
+      machineId: machine?.id ?? machineId,
       requestedTier: tier,
       targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
     });
@@ -279,12 +367,11 @@ async function measureRun(
   executablePath: string,
   profilePath: string,
   baseUrl: string,
-  tier: QualityTier,
   repeat: number,
   profile: "fresh" | "warm",
 ): Promise<RunMeasurement> {
   const before = await fetchServerMetrics(baseUrl);
-  const context = await launch(executablePath, profilePath, tier);
+  const context = await launch(executablePath, profilePath);
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
@@ -302,13 +389,29 @@ async function measureRun(
       },
       { timeout: 30_000 },
     );
+    await installSurfaceObserver(page);
+    const refreshRateResult = await tryProbe("Browser refresh-rate diagnostics", () =>
+      readChromeDisplayRefreshRates(context),
+    );
+    const refreshRatesHz =
+      refreshRateResult.state === "measured" ? refreshRateResult.value : Object.freeze([]);
+    const displayProbeFailures =
+      refreshRateResult.state === "invalid" ? Object.freeze([refreshRateResult.reason]) : [];
     await page.waitForTimeout(SMOKE_WARMUP_MS);
-    await page.evaluate(() => {
-      const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
-        reset(): void;
-      };
-      state.reset();
-    });
+    await resetSurfaceObserver(page);
+    const renderSurfaceBefore = await readSurfaceLatest(page);
+    const screenBeforeResult = await tryProbe("Browser screen identity", () =>
+      readScreenIdentity(page),
+    );
+    const browserDisplayBefore = browserDisplay(
+      screenBeforeResult.state === "measured" ? screenBeforeResult.value : null,
+      refreshRatesHz,
+      [
+        ...displayProbeFailures,
+        ...(screenBeforeResult.state === "invalid" ? [screenBeforeResult.reason] : []),
+      ],
+    );
+    await resetLongTaskObserver(page);
     const start = await readTelemetry(page);
     await page.waitForFunction(
       (target) => {
@@ -320,6 +423,18 @@ async function measureRun(
         globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
       },
       { timeout: 15_000 },
+    );
+    const endSurfaceState = await readSurfaceState(page);
+    const screenAfterResult = await tryProbe("Browser screen identity", () =>
+      readScreenIdentity(page),
+    );
+    const browserDisplayAfter = browserDisplay(
+      screenAfterResult.state === "measured" ? screenAfterResult.value : null,
+      refreshRatesHz,
+      [
+        ...displayProbeFailures,
+        ...(screenAfterResult.state === "invalid" ? [screenAfterResult.reason] : []),
+      ],
     );
     const snapshot = await readTelemetry(page);
     if (snapshot.render.state !== "ready") {
@@ -355,6 +470,8 @@ async function measureRun(
     const workerAnimationCallbackIntervalMs = distribution(presentIntervals);
     return Object.freeze({
       budgetChecks: evaluateMainThreadBudgets(mainThreadLongTasks),
+      browserDisplayAfter,
+      browserDisplayBefore,
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
       jsHeapUsedBytes: measured(jsHeapUsedBytes),
@@ -365,6 +482,9 @@ async function measureRun(
         id: `lineage-${repeat}`,
       }),
       repeat,
+      renderSurfaceAfter: endSurfaceState.latest,
+      renderSurfaceBefore,
+      renderSurfaceChanges: endSurfaceState.changes,
       workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
       workerStartupToFirstFrameMs: measured(
         requiredNumber(snapshot.render.workerStartupToFirstFrameMs),
@@ -379,14 +499,268 @@ async function measureRun(
 function launch(
   executablePath: string,
   profilePath: string,
-  tier: QualityTier,
+  args: readonly string[] = [],
 ): Promise<BrowserContext> {
-  const viewport = QUALITY_TIER_PROFILES[tier].viewport;
   return chromium.launchPersistentContext(profilePath, {
     executablePath,
     headless: false,
-    viewport,
+    args: ["--start-fullscreen", ...args],
+    viewport: null,
   });
+}
+
+function readWebGpuAdapterIdentity(page: Page): Promise<WebGpuAdapterIdentity> {
+  return page.evaluate(async () => {
+    const adapter = await navigator.gpu?.requestAdapter();
+    if (adapter === null || adapter === undefined) throw new Error("WebGPU adapter is unavailable");
+    const info = adapter.info;
+    const optionalString = (name: string): string | null => {
+      const value = Reflect.get(info, name);
+      return typeof value === "string" ? value : null;
+    };
+    return Object.freeze({
+      architecture: info.architecture,
+      backend: optionalString("backend"),
+      description: info.description,
+      device: info.device,
+      driver: optionalString("driver"),
+      isFallbackAdapter: info.isFallbackAdapter,
+      type: optionalString("type"),
+      vendor: info.vendor,
+    });
+  });
+}
+
+async function readBrowserDisplayIdentity(
+  context: BrowserContext,
+  page: Page,
+): Promise<BrowserDisplayIdentity> {
+  const refreshRatesHz = await readChromeDisplayRefreshRates(context);
+  return browserDisplay(await readScreenIdentity(page), refreshRatesHz, []);
+}
+
+function readScreenIdentity(page: Page): Promise<NonNullable<BrowserDisplayIdentity["screen"]>> {
+  return page.evaluate(() =>
+    Object.freeze({
+      availHeight: screen.availHeight,
+      availWidth: screen.availWidth,
+      colorDepth: screen.colorDepth,
+      devicePixelRatio,
+      height: screen.height,
+      width: screen.width,
+    }),
+  );
+}
+
+function browserDisplay(
+  screen: BrowserDisplayIdentity["screen"],
+  refreshRatesHz: readonly number[],
+  probeFailures: readonly string[],
+): BrowserDisplayIdentity {
+  return Object.freeze({ probeFailures, refreshRatesHz, screen });
+}
+
+function installSurfaceObserver(page: Page): Promise<void> {
+  return page.evaluate(
+    () =>
+      new Promise<void>((resolveReady, rejectReady) => {
+        const canvas = document.querySelector("#render-canvas");
+        if (!(canvas instanceof HTMLCanvasElement)) {
+          rejectReady(new Error("Render canvas is missing"));
+          return;
+        }
+        const sizes: { height: number; width: number }[] = [];
+        let latest: { height: number; width: number } | null = null;
+        let ready = false;
+        const observer = new ResizeObserver((entries) => {
+          for (const entry of entries) {
+            const size = entry.devicePixelContentBoxSize[0];
+            if (size !== undefined) {
+              latest = { height: size.blockSize, width: size.inlineSize };
+              sizes.push(latest);
+            }
+          }
+          if (!ready && sizes.length > 0) {
+            ready = true;
+            clearTimeout(timeout);
+            resolveReady();
+          }
+        });
+        const timeout = setTimeout(() => {
+          observer.disconnect();
+          rejectReady(new Error("Canvas device-pixel observer initialization timed out"));
+        }, 5_000);
+        Object.defineProperty(globalThis, "__PARALLAX_HARNESS_SURFACE__", {
+          value: Object.freeze({
+            reset: () => {
+              return new Promise<void>((resolveReset) => {
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    sizes.length = 0;
+                    resolveReset();
+                  });
+                });
+              });
+            },
+            latest: () => {
+              if (latest === null) throw new Error("Canvas device-pixel size is unavailable");
+              return Object.freeze({ ...latest });
+            },
+            snapshot: () => sizes.map((size) => Object.freeze({ ...size })),
+          }),
+        });
+        observer.observe(canvas, { box: "device-pixel-content-box" });
+      }),
+  );
+}
+
+function resetSurfaceObserver(page: Page): Promise<void> {
+  return page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_SURFACE__") as {
+      reset(): Promise<void>;
+    };
+    return state.reset();
+  });
+}
+
+function readSurfaceLatest(page: Page): Promise<Readonly<{ height: number; width: number }>> {
+  return page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_SURFACE__") as {
+      latest(): Readonly<{ height: number; width: number }>;
+    };
+    return state.latest();
+  });
+}
+
+function readSurfaceState(page: Page): Promise<
+  Readonly<{
+    changes: readonly Readonly<{ height: number; width: number }>[];
+    latest: Readonly<{ height: number; width: number }>;
+  }>
+> {
+  return page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_SURFACE__") as {
+      latest(): Readonly<{ height: number; width: number }>;
+      snapshot(): readonly Readonly<{ height: number; width: number }>[];
+    };
+    return Object.freeze({
+      changes: state.snapshot(),
+      latest: state.latest(),
+    });
+  });
+}
+
+async function readChromeDisplayRefreshRates(context: BrowserContext): Promise<readonly number[]> {
+  const gpuPage = await context.newPage();
+  try {
+    await gpuPage.goto("chrome://gpu", { waitUntil: "load" });
+    const session = await context.newCDPSession(gpuPage);
+    const document = (await session.send("DOM.getDocument")) as { root: { nodeId: number } };
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const matches = (await session.send("Accessibility.queryAXTree", {
+        accessibleName: "Refresh Rate in Hz",
+        nodeId: document.root.nodeId,
+      })) as { nodes: readonly { name?: { value?: unknown } }[] };
+      const labelIsReady = matches.nodes.some((node) => node.name?.value === "Refresh Rate in Hz");
+      if (!labelIsReady) {
+        await gpuPage.waitForTimeout(250);
+        continue;
+      }
+      const tree = (await session.send("Accessibility.getFullAXTree")) as {
+        nodes: readonly { name?: { value?: unknown } }[];
+      };
+      const names = tree.nodes.flatMap((node) =>
+        typeof node.name?.value === "string" ? [node.name.value] : [],
+      );
+      const refreshRates = parseDisplayRefreshRates(names);
+      if (refreshRates.length > 0) {
+        return Object.freeze([...new Set(refreshRates)]);
+      }
+      await gpuPage.waitForTimeout(250);
+    }
+    return Object.freeze([]);
+  } finally {
+    await gpuPage.close();
+  }
+}
+
+function revalidateHostEnvironment(
+  environment: EnvironmentIdentity,
+  result: WindowsHostIdentityResult,
+): EnvironmentIdentity {
+  if (result.state === "invalid") {
+    return invalidateEnvironment(environment, [result.reason]);
+  }
+  const hostAfterRuns = result.host;
+  if (environment.host !== null && jsonEquals(environment.host, hostAfterRuns)) {
+    return Object.freeze({ ...environment, hostAfterRuns });
+  }
+  return Object.freeze({
+    ...invalidateEnvironment(environment, [
+      environment.host === null
+        ? "Pre-run Windows host identity was unavailable"
+        : "Host environment changed between pre-run and post-run identity probes",
+    ]),
+    hostAfterRuns,
+  });
+}
+
+function revalidateRunDisplays(
+  environment: EnvironmentIdentity,
+  runs: readonly RunMeasurement[],
+): EnvironmentIdentity {
+  const reasons: string[] = [];
+  for (const run of runs) {
+    const runLabel = `${run.profile} repeat ${run.repeat}`;
+    if (environment.machine !== null) {
+      for (const [phase, display] of [
+        ["before", run.browserDisplayBefore],
+        ["after", run.browserDisplayAfter],
+      ] as const) {
+        for (const reason of evaluateBrowserDisplay(environment.machine.display, display)) {
+          reasons.push(`${runLabel} ${phase}: ${reason}`);
+        }
+      }
+      for (const [phase, surface] of [
+        ["before", run.renderSurfaceBefore],
+        ["after", run.renderSurfaceAfter],
+        ...run.renderSurfaceChanges.map((surface) => ["during", surface] as const),
+      ] as const) {
+        const surfaceMismatch = renderSurfaceMismatch(
+          environment.requestedTier,
+          surface,
+          environment.machine.display.dimensionTolerancePixels,
+        );
+        if (surfaceMismatch !== null) reasons.push(`${runLabel} ${phase}: ${surfaceMismatch}`);
+      }
+    }
+    if (!jsonEquals(run.browserDisplayBefore, run.browserDisplayAfter)) {
+      reasons.push(`${runLabel}: browser display identity changed during the measurement window`);
+    }
+    if (
+      run.renderSurfaceChanges.length > 0 ||
+      !jsonEquals(run.renderSurfaceBefore, run.renderSurfaceAfter)
+    ) {
+      reasons.push(`${runLabel}: render surface changed during the measurement window`);
+    }
+  }
+  return reasons.length === 0 ? environment : invalidateEnvironment(environment, reasons);
+}
+
+function invalidateEnvironment(
+  environment: EnvironmentIdentity,
+  reasons: readonly string[],
+): EnvironmentIdentity {
+  const priorReasons =
+    environment.gateIdentity.state === "invalid" ? environment.gateIdentity.reasons : [];
+  return Object.freeze({
+    ...environment,
+    gateIdentity: invalidEnvironmentGate([...priorReasons, ...reasons]),
+  });
+}
+
+function jsonEquals(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function telemetryReady(contract: { expectedSchemaVersion: number; globalName: string }): boolean {
@@ -428,6 +802,15 @@ async function installLongTaskObserver(page: Page): Promise<void> {
   });
 }
 
+function resetLongTaskObserver(page: Page): Promise<void> {
+  return page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
+      reset(): void;
+    };
+    state.reset();
+  });
+}
+
 async function fetchServerMetrics(baseUrl: string): Promise<LocalServerMetrics> {
   const response = await fetch(`${baseUrl}/__parallax/metrics`);
   if (!response.ok) throw new Error(`Server metrics request failed with ${response.status}`);
@@ -463,7 +846,7 @@ async function writeReport(report: SmokeReport): Promise<void> {
   const stem = [
     report.scenario.replace("@", "-"),
     report.artifactDigest.slice(0, 12),
-    report.environment.declaredMachineId,
+    safeMachineIdForFilename(report.environment.machineId),
     report.environment.requestedTier,
     timestamp,
   ].join("-");
@@ -475,6 +858,13 @@ async function writeReport(report: SmokeReport): Promise<void> {
         (check) =>
           `${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.limit}`,
       ),
+  );
+  failures.push(
+    ...(report.environment.gateIdentity.state === "invalid"
+      ? report.environment.gateIdentity.reasons.map(
+          (reason) => `verified gate environment identity: invalid (${reason})`,
+        )
+      : []),
   );
   failures.push(
     ...report.incompleteMetrics
@@ -511,4 +901,8 @@ function requiredEnvironment(name: string): string {
 function requiredNumber(value: number | null): number {
   if (value === null) throw new Error("Required telemetry timing is missing");
   return value;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

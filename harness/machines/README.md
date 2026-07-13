@@ -19,11 +19,19 @@ into this repository.
 - CPU: Intel Core i9-14900KF (24 cores)
 - RAM: 128 GB
 - GPU: NVIDIA GeForce RTX 4080 Super (16 GB)
+- Promoted gate driver: 32.0.16.1074 (verified by Windows, CDP, and WebGPU adapter info
+  from the physical console on 2026-07-13)
 - Display: 4K @ 60 Hz (Showcase presentation gates are stated for 60 Hz pacing; any
   120 Hz-capability claim requires the dedicated uncapped capability run in budgets.md)
 - Disk: 2× 2 TB NVMe SSD
 - Network: 2 Gbps down / 35 Mbps up
 - OS: Windows 11; Dawn backend: D3D12
+
+The gate identity is machine-readable in `dev-01.json`, including the currently promoted
+OS build, GPU driver, display mode, and Windows power scheme. Updating one of those pins
+is an explicit reviewed environment-baseline change. A gate must run from the physical
+console: RDP/remote display adapters are detected and reported as `invalid` (D-034), even
+when the requested viewport and Windows video-controller mode still say 3840×2160.
 
 **Note:** Showcase budgets are **calibrated to this machine** (D-018) — it defines the
 platform-ceiling tier; the transfer-to-modest-hardware story belongs to the Standard
