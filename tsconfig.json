@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./engine" },
+    { "path": "./game" },
+    { "path": "./app" },
+    { "path": "./harness" }
+  ]
+}

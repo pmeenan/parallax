@@ -1,0 +1,19 @@
+{
+  "name": "@parallax/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/engine.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup --config rollup.config.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.1",
+    "rollup": "4.62.2"
+  }
+}

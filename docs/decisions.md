@@ -27,6 +27,43 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-028: M0 local artifact and serving contract  (2026-07-12, accepted)
+**Decision:** The M0 build assembles a static `dist/` tree with an unhashed `index.html`
+and all executable modules under `dist/immutable/`. Engine and game
+package builds retain stable, independently loadable entry names; the assembler gives
+their served copies SHA-256-derived names and connects them to the app with an import
+map, so Vite cannot fold either boundary back into the app bundle. The version-controlled
+local server lives in `harness/`, uses Node's HTTP implementation, applies
+`Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` to every response (including 304s), serves
+content-addressed modules with a one-year immutable policy, and requires revalidation
+for unhashed files. Strong SHA-256 ETags drive conditional requests using RFC 9110's
+weak comparison, wildcard, and list semantics for `If-None-Match`; the static server
+rejects unsupported methods. The generated
+`build-manifest.json` records sorted paths, byte counts, and full SHA-256 digests for
+the exact assembled artifacts. Served module filenames include the full SHA-256 digest.
+The local server caches validated ETag metadata across requests and exposes versioned
+request/cache counters at `/__parallax/metrics`; conditional 304 responses therefore do
+not reread or rehash unchanged artifacts.
+**Context:** D-011 deliberately left the local serving-config location to M0. D-010
+requires a real packaging boundary, not merely separate source directories, and the
+harness must be able to identify exact bytes. Automated local tests on 2026-07-12
+verified isolation/cache headers on 200 and 304 responses and the conditional-request
+cases defined by RFC 9110 (`datatracker.ietf.org/doc/html/rfc9110`, checked 2026-07-12);
+the assembled-build contract gate verified references and content digests, and a
+same-host double build verified identical engine bytes. Dependency versions were checked against the npm
+registry on 2026-07-12; Node 24's LTS status was checked against the official Node.js
+release table (`nodejs.org/en/about/previous-releases`, checked 2026-07-12) the same
+day.
+**Consequences:** `pnpm start` is the local build-and-serve entry point, and `pnpm build`
+includes the same-host engine repeatability gate. Production
+nginx remains deferred to M2 per D-011/D-022, and `site/` remains untouched. The M0
+repeatability gate covers engine artifact bytes; cross-host reproducibility remains the
+later D-020 level-2 gate.
+**Reopen if:** the local server diverges from production semantics, import maps prevent
+a required cache/code-cache experiment, or the assembled artifact contract cannot
+represent a new common/game-specific resource class without ambiguity.
+
 ## D-027: Review passes run in reviewer mode  (2026-07-12, accepted)
 **Decision:** A kickoff prompt asking for a review of current changes ("review the
 current changes") invokes the **reviewer operating model** in workflow.md: the unit

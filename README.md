@@ -19,3 +19,14 @@ project documentation.
 - [docs/architecture.md](docs/architecture.md) — system design
 - [docs/plan.md](docs/plan.md) — milestone ladder and current status
 - [docs/rough-edges.md](docs/rough-edges.md) — platform findings log
+
+## Local M0 build
+
+Use the exact Node version in `.nvmrc`, then install the pinned pnpm toolchain and
+dependencies. `pnpm start` builds the separated engine, game, and app artifacts and
+serves them at `http://127.0.0.1:4173` with the required cross-origin-isolation and
+cache headers.
+
+Run `pnpm check` for a clean production build, strict TypeScript, formatting/lint,
+server and assembly contract tests, and the same-host engine repeatability gate.
+`pnpm test` is also safe on a clean checkout because it builds its fixture first.

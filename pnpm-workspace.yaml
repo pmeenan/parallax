@@ -1,0 +1,8 @@
+packages:
+  - app
+  - engine
+  - game
+  - harness
+
+allowBuilds:
+  esbuild: true

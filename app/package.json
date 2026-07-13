@@ -1,0 +1,17 @@
+{
+  "name": "@parallax/app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@parallax/engine": "workspace:*",
+    "@parallax/game": "workspace:*"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "devDependencies": {
+    "vite": "8.1.4"
+  }
+}

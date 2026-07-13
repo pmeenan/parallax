@@ -1,0 +1,21 @@
+{
+  "name": "@parallax/game",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/game.js"
+    }
+  },
+  "dependencies": {
+    "@parallax/engine": "workspace:*"
+  },
+  "scripts": {
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "8.1.4"
+  }
+}
