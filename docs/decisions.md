@@ -27,6 +27,29 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-027: Review passes run in reviewer mode  (2026-07-12, accepted)
+**Decision:** A kickoff prompt asking for a review of current changes ("review the
+current changes") invokes the **reviewer operating model** in workflow.md: the unit
+under review is the entire uncommitted working tree (diff against last commit plus
+untracked files, including docs-moved-with-code); the reviewer is **read-only by
+default** (the implementing agent owns fixes; the reviewer edits only when the human
+says to fix directly); review scope covers correctness, AGENTS.md rule compliance,
+missing decision/rough-edges entries, budget implications, and better-approach
+suggestions clearly labeled as suggestions rather than defects; findings are verified
+with cheap checks before being reported (root rule 3); and the report is written for
+verbatim handback to the implementing agent — self-contained findings (file:line, what,
+why, severity, suggested fix) phrased as claims to verify or rebut with evidence,
+ranked most-severe first. A clean review is a valid result.
+**Context:** Companion to D-026 — the human runs review passes from separate agent
+sessions (workflow step 2) and was specifying the process in each prompt; encoding it
+makes "review the current changes" sufficient. Read-only-by-default keeps the handback
+loop clean: one agent's understanding of the change stays authoritative for fixes.
+**Consequences:** workflow.md gains "Review passes: reviewer mode"; review kickoff
+prompts need no process language; findings-as-verifiable-claims matches tech-lead
+mode's duty to address or rebut every finding.
+**Reopen if:** the handback loop proves slower than reviewers fixing in place — then
+define when a reviewer may fix directly (and how the implementing agent is informed).
+
 ## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted)
 **Decision:** A kickoff prompt naming a milestone ("start work on M0") invokes the
 **tech-lead operating model** defined in workflow.md: the lead agent scopes a

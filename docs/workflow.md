@@ -56,3 +56,28 @@ means:
   re-verify, and re-review if the fixes were substantial.
 - **End with the handoff summary** (rule above): what changed and why, what was
   verified and how, what remains open.
+
+## Review passes: reviewer mode (D-027)
+
+A prompt like "review the current changes" makes you a **review-pass agent** (step 2 of
+the loop). The unit under review is the **entire uncommitted working tree** — the diff
+against the last commit plus untracked files — including whether the docs that should
+have moved with the change actually did.
+
+- **Read-only by default.** You report; the agent that did the work owns the fixes.
+  Don't edit the tree unless the human explicitly asks you to fix directly.
+- **Review thoroughly, not just for bugs.** Correctness first, then: root and
+  directory AGENTS.md rule violations (layers, instrumentation, determinism), missing
+  decision-log or rough-edges entries, budget implications — and **better approaches**:
+  if you know a simpler, more idiomatic, or measurably better way, report it as a
+  suggestion, clearly distinct from a defect.
+- **Verify before you report.** Run the cheap checks (typecheck, tests, a harness run
+  when measured behavior changed) rather than speculating — root rule 3 applies to
+  reviews too. Read-only subagents may be used freely to cover ground.
+- **Write findings for handback.** The report goes verbatim to the implementing agent,
+  who has the tree but not your conversation — each finding must be self-contained:
+  where (file:line), what and why it matters, severity, and a concrete suggested fix,
+  phrased as a claim to **verify** ("X appears to break Y when Z — verify and fix, or
+  rebut with evidence"), not an order. Rank findings most-severe first.
+- **A clean review is a valid result.** If nothing survives verification, say so
+  plainly — don't manufacture findings to look thorough.

@@ -62,7 +62,7 @@ updating the affected docs. Until that happens, the constraints below govern.
 ## Doc map — pull what the task needs, not everything
 
 Always read (it's short): [docs/workflow.md](docs/workflow.md) — how agents collaborate
-here, the tech-lead operating model for milestone work, and the human commit gate.
+here, the tech-lead and reviewer operating models, and the human commit gate.
 
 Everything else is on demand. Each doc, and the questions it answers:
 
