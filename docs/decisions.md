@@ -27,6 +27,54 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-031: Harness smoke gates an exact external Chrome for Testing pin  (2026-07-12, accepted)
+**Decision:** The first Harness v1 scenario is versioned as `smoke@1` and is driven by
+exact-pinned `playwright-core`. Gate runs require `PARALLAX_CHROME_PATH` to name an
+externally archived Chrome for Testing executable whose full version matches
+`harness/chrome/stable.json` and whose executable SHA-256 matches the platform pin; the
+runner never downloads a moving browser or silently falls back to installed branded
+Chrome. Each of three repeat lineages starts with an
+empty persistent profile and is relaunched once warm. Both launches exclude 10 seconds,
+then record 120 recent render-worker frames. Worker animation-callback spacing is a
+nearest-rank diagnostic, not a presentation-budget metric; true compositor
+present-to-present timing stays mandatory and invalid until a validated probe exists,
+and callback p95 variance above 10% makes that diagnostic invalid. The versioned
+scenario, tier profiles, and single mandatory/incomplete metric registry live together
+in `harness/src/runs/`.
+The requested tier fixes the headed viewport, but machine/backend/power/display labels
+are declarations and do not confer gate eligibility. Reports are local ignored artifacts
+and fail on measured budgets, browser errors, version mismatch, unverified gate identity,
+or any other unfinished Harness-v1-mandatory probe.
+
+**Context:** D-019 requires archived CfT rather than auto-updating branded Chrome, and
+D-020 chose Playwright. Playwright's official browser documentation confirms that it
+can drive branded Chrome and that browser channels differ from its default Chromium;
+Chrome's official CfT documentation provides versioned downloads and JSON endpoints.
+On 2026-07-12 the official last-known-good endpoint reported Stable 150.0.7871.115,
+revision 1639810; that exact version was downloaded and locally verified before the
+first run. The run produced stable callback-pacing evidence recorded as RE-001 and
+exposed that callback timestamps cannot satisfy the presentation metric.
+
+**Consequences:** Updating the pin is an explicit baseline-promotion action, not a
+package update side effect. Machine-local browser archives stay outside git. Installed
+branded Stable remains reserved for D-019 parity smoke work. The overall Harness v1
+checkbox remains open until presentation, environment, Dawn/V8 cache, and pipeline
+probes land; missing mandatory metrics are explicit invalid states rather than passing
+by omission. Local-server metrics exclude their own endpoint and atomically publish
+only completed-request deltas, so observation neither contaminates nor blocks a run.
+Artifact, executable, tracked-diff, and untracked-file hashes stream rather than buffer
+multi-GB inputs. This M0 driver-run window is not a D-025 benchmark result; M1 still moves
+scenario boundaries, aggregation, and export in-game before exposing benchmark mode.
+
+**Sources checked (2026-07-12):**
+`playwright.dev/docs/browsers` and
+`developer.chrome.com/blog/chrome-for-testing/`; the live pin came from
+`googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json`.
+
+**Reopen if:** CfT archives cannot reproduce branded Chrome behavior, external browser
+bootstrap is too error-prone, or the smoke scene needs an in-app measurement window to
+keep later D-025 manual and automated paths identical.
+
 ## D-030: Findings handback runs in fix-pass and verify-pass modes  (2026-07-12, accepted)
 **Decision:** Two more kickoff prompts get encoded operating models in workflow.md,
 completing the review loop started by D-026/D-027. Handing an agent review results or

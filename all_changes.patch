@@ -1,0 +1,1476 @@
+﻿diff --git a/.gitignore b/.gitignore
+index 30d0ef8..28d77e3 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -2,4 +2,4 @@ node_modules/
+ dist/
+ */dist/
+ *.tsbuildinfo
+-
++harness/results/
+diff --git a/README.md b/README.md
+index 7fc3a50..017f61b 100644
+--- a/README.md
++++ b/README.md
+@@ -30,3 +30,30 @@ cache headers.
+ Run `pnpm check` for a clean production build, strict TypeScript, formatting/lint,
+ server and assembly contract tests, and the same-host engine repeatability gate.
+ `pnpm test` is also safe on a clean checkout because it builds its fixture first.
++
++## M0 smoke harness (in progress)
++
++The first Harness v1 slice drives the committed `smoke@1` scenario with the exact Chrome
++for Testing version and platform download URLs in `harness/chrome/stable.json`. Download
++the matching archive, extract it outside the repository, and point the harness at the
++executable. The version check is exact; installed branded Chrome is not accepted for a
++gating run because the current platform's executable SHA-256 must also match. The first
++pin contains a verified win64 digest for dev-01; another platform remains ineligible
++until its downloaded executable digest is promoted into the descriptor. Pin updates come from the
++[official CfT availability data](https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json).
++
++```powershell
++$env:PARALLAX_CHROME_PATH = 'C:\path\to\chrome-for-testing\chrome.exe'
++$env:PARALLAX_MACHINE_ID = 'dev-01'
++$env:PARALLAX_TIER = 'showcase'
++$env:PARALLAX_GPU_BACKEND = 'D3D12'
++$env:PARALLAX_POWER_MODE = 'Balanced'
++pnpm harness:smoke
++```
++
++The command builds and serves the exact artifact, runs three fresh/warm profile pairs
++with the required 10-second warm-up, writes ignored JSON and Markdown output under
++`harness/results/`, and exits nonzero on a measured budget violation, browser error,
++Chrome identity mismatch, or still-missing mandatory Harness v1 probe. Machine, tier,
++backend, display target, and power-mode inputs are declarations for investigation only;
++until the environment-verification probe lands they cannot produce a gating verdict.
+diff --git a/all_changes.patch b/all_changes.patch
+new file mode 100644
+index 0000000..a70046a
+Binary files /dev/null and b/all_changes.patch differ
+diff --git a/app/index.html b/app/index.html
+index 47a4d91..13a2af4 100644
+--- a/app/index.html
++++ b/app/index.html
+@@ -3,6 +3,7 @@
+   <head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
++    <link rel="icon" href="data:," />
+     <title>Parallax</title>
+     <style>
+       :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+diff --git a/biome.json b/biome.json
+index 5bee58f..2a6f62d 100644
+--- a/biome.json
++++ b/biome.json
+@@ -1,7 +1,7 @@
+ {
+   "$schema": "https://biomejs.dev/schemas/2.5.3/schema.json",
+   "files": {
+-    "includes": ["**", "!**/dist", "!site"]
++    "includes": ["**", "!**/dist", "!harness/results", "!site"]
+   },
+   "formatter": {
+     "enabled": true,
+diff --git a/docs/decisions.md b/docs/decisions.md
+index 04f5b7e..8c448af 100644
+--- a/docs/decisions.md
++++ b/docs/decisions.md
+@@ -27,6 +27,54 @@ Decision / Context / Consequences / Reopen if
+ 
+ ---
+ 
++## D-031: Harness smoke gates an exact external Chrome for Testing pin  (2026-07-12, accepted)
++**Decision:** The first Harness v1 scenario is versioned as `smoke@1` and is driven by
++exact-pinned `playwright-core`. Gate runs require `PARALLAX_CHROME_PATH` to name an
++externally archived Chrome for Testing executable whose full version matches
++`harness/chrome/stable.json` and whose executable SHA-256 matches the platform pin; the
++runner never downloads a moving browser or silently falls back to installed branded
++Chrome. Each of three repeat lineages starts with an
++empty persistent profile and is relaunched once warm. Both launches exclude 10 seconds,
++then record 120 recent render-worker frames. Worker animation-callback spacing is a
++nearest-rank diagnostic, not a presentation-budget metric; true compositor
++present-to-present timing stays mandatory and invalid until a validated probe exists,
++and callback p95 variance above 10% makes that diagnostic invalid. The versioned
++scenario, tier profiles, and single mandatory/incomplete metric registry live together
++in `harness/src/runs/`.
++The requested tier fixes the headed viewport, but machine/backend/power/display labels
++are declarations and do not confer gate eligibility. Reports are local ignored artifacts
++and fail on measured budgets, browser errors, version mismatch, unverified gate identity,
++or any other unfinished Harness-v1-mandatory probe.
++
++**Context:** D-019 requires archived CfT rather than auto-updating branded Chrome, and
++D-020 chose Playwright. Playwright's official browser documentation confirms that it
++can drive branded Chrome and that browser channels differ from its default Chromium;
++Chrome's official CfT documentation provides versioned downloads and JSON endpoints.
++On 2026-07-12 the official last-known-good endpoint reported Stable 150.0.7871.115,
++revision 1639810; that exact version was downloaded and locally verified before the
++first run. The run produced stable callback-pacing evidence recorded as RE-001 and
++exposed that callback timestamps cannot satisfy the presentation metric.
++
++**Consequences:** Updating the pin is an explicit baseline-promotion action, not a
++package update side effect. Machine-local browser archives stay outside git. Installed
++branded Stable remains reserved for D-019 parity smoke work. The overall Harness v1
++checkbox remains open until presentation, environment, Dawn/V8 cache, and pipeline
++probes land; missing mandatory metrics are explicit invalid states rather than passing
++by omission. Local-server metrics exclude their own endpoint and atomically publish
++only completed-request deltas, so observation neither contaminates nor blocks a run.
++Artifact, executable, tracked-diff, and untracked-file hashes stream rather than buffer
++multi-GB inputs. This M0 driver-run window is not a D-025 benchmark result; M1 still moves
++scenario boundaries, aggregation, and export in-game before exposing benchmark mode.
++
++**Sources checked (2026-07-12):**
++`playwright.dev/docs/browsers` and
++`developer.chrome.com/blog/chrome-for-testing/`; the live pin came from
++`googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json`.
++
++**Reopen if:** CfT archives cannot reproduce branded Chrome behavior, external browser
++bootstrap is too error-prone, or the smoke scene needs an in-app measurement window to
++keep later D-025 manual and automated paths identical.
++
+ ## D-030: Findings handback runs in fix-pass and verify-pass modes  (2026-07-12, accepted)
+ **Decision:** Two more kickoff prompts get encoded operating models in workflow.md,
+ completing the review loop started by D-026/D-027. Handing an agent review results or
+diff --git a/docs/plan.md b/docs/plan.md
+index b25d738..eef5ce4 100644
+--- a/docs/plan.md
++++ b/docs/plan.md
+@@ -36,7 +36,11 @@ measured automatically.
+ - [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
+       frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
+       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
+-      fail on bust.
++      fail on bust. First slice in progress: `smoke@1` now pins/validates CfT, runs three
++      fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
++      window heap, atomic HTTP cache deltas, validated artifact/source identity, plus
++      explicit metric states. True compositor presentation timing, verified environment
++      identity, Dawn/V8 probes, and callback-pacing attribution (RE-001) remain.
+ - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
+       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
+       main-thread-escape, and environment-identified measurements remain before the
+diff --git a/docs/rough-edges.md b/docs/rough-edges.md
+index ee8388d..f8c3746 100644
+--- a/docs/rough-edges.md
++++ b/docs/rough-edges.md
+@@ -71,4 +71,31 @@ COS APIs exist):
+ 
+ ## Findings
+ 
+-*(none yet)*
++## RE-001: Render-worker animation callbacks hold near 32 Hz in automated 4K smoke run
++
++- **Date / Chrome version:** 2026-07-12; Chrome for Testing Stable 150.0.7871.115
++  (revision 1639810); Windows 11 10.0.26200; NVIDIA RTX 4080 Super, driver
++  32.0.15.9649; D3D12; dev-01.
++- **Layer:** scheduler / Babylon / WebGPU-Dawn (attribution open).
++- **Status:** open.
++- **What we expected / What happened:** Across three fresh and three warm headed-profile
++  runs at the declared 3840x2160 smoke viewport, worker `requestAnimationFrame` callback
++  spacing p50 was 31.21-31.28 ms and p95 was 31.57-31.71 ms. These are callback
++  timestamps, not compositor presentation timestamps, so they do not establish a 32 Hz
++  presentation rate and are not compared with the Showcase frame budget. The
++  worker's CPU render/submit-duration p95 was 0.69-0.95 ms, main-thread long tasks over
++  50 ms were zero, and relative p95 range within fresh and warm groups was below 0.15%.
++  Those diagnostics rule out noisy repeats and sustained JS submission cost, but do not
++  distinguish Babylon, GPU execution/presentation, worker rAF pacing, or automation.
++- **Repro:** build the current tree, set the pinned CfT path and dev-01 identity as in
++  `README.md`, then run `pnpm harness:smoke`. The `smoke@1` runner performs three fresh
++  profile launches and three warm relaunches after 10-second warm-ups; the generated
++  JSON contains each distribution. A standalone WebGPU/worker repro and trace are still
++  needed before filing a Chrome issue.
++- **Impact on Parallax:** the unexplained pacing and lack of a validated present-to-present
++  probe block the M0 Showcase smoke gate and Harness v1; no workaround or budget change
++  applied.
++- **Proposed improvement:** first add GPU execution/present and Dawn trace attribution,
++  then compare worker vs window rAF and Babylon vs a minimal WebGPU loop under the same
++  pinned browser. If worker presentation is the cause, expose stable pacing/diagnostic
++  signals that let applications distinguish scheduler throttling from GPU backpressure.
+diff --git a/harness/AGENTS.md b/harness/AGENTS.md
+index a74218d..93ddc65 100644
+--- a/harness/AGENTS.md
++++ b/harness/AGENTS.md
+@@ -31,7 +31,7 @@ Sources: CDP (tracing, Performance domains), in-app telemetry exported by
+ `engine/telemetry/` on a stable schema, and Chrome internals surfaces where CDP falls
+ short (each gap in observability is itself a rough-edges finding ΓÇö log it).
+ 
+-## Standard runs (versioned scripts in `runs/`; deterministic by construction)
++## Standard runs (versioned contracts in `src/runs/`; deterministic by construction)
+ 
+ - `smoke` ΓÇö boot to first interactive frame, budget snapshot (every change).
+ - `flythrough-d1` ΓÇö the M1 standard 10-minute traversal (regression gate).
+diff --git a/harness/chrome/stable.json b/harness/chrome/stable.json
+new file mode 100644
+index 0000000..c83f80c
+--- /dev/null
++++ b/harness/chrome/stable.json
+@@ -0,0 +1,14 @@
++{
++  "channel": "stable",
++  "downloads": {
++    "linux64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/linux64/chrome-linux64.zip",
++    "mac-arm64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/mac-arm64/chrome-mac-arm64.zip",
++    "mac-x64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/mac-x64/chrome-mac-x64.zip",
++    "win64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/win64/chrome-win64.zip"
++  },
++  "executableSha256": {
++    "win64": "c55dc23c0d6c2b87cf3d056959eb1e351bc98dfb3e5fa5d53aff86a25f1b32c5"
++  },
++  "revision": "1639810",
++  "version": "150.0.7871.115"
++}
+diff --git a/harness/machines/README.md b/harness/machines/README.md
+index ee1b952..073e1c0 100644
+--- a/harness/machines/README.md
++++ b/harness/machines/README.md
+@@ -9,6 +9,11 @@ reproducible baseline; a periodic parity smoke run on it guards against divergen
+ "Same version" across platforms = same milestone + V8 revision. Canary is permitted
+ only when testing Chrome-side changes and is always labeled as such (D-019).
+ 
++The current M0 automation pin is Chrome for Testing **150.0.7871.115**, revision
++**1639810** (`harness/chrome/stable.json`, promoted 2026-07-12 from the official CfT
++Stable availability endpoint). Archived binaries are machine-local and are not checked
++into this repository.
++
+ ## dev-01 ΓÇö primary dev machine; Showcase-tier gate and calibration reference
+ 
+ - CPU: Intel Core i9-14900KF (24 cores)
+diff --git a/harness/package.json b/harness/package.json
+index 0f67787..5e0d2b0 100644
+--- a/harness/package.json
++++ b/harness/package.json
+@@ -7,7 +7,9 @@
+     "test": "vitest run"
+   },
+   "devDependencies": {
++    "@parallax/engine": "workspace:*",
+     "@types/node": "24.13.3",
++    "playwright-core": "1.61.1",
+     "vitest": "4.1.10"
+   }
+ }
+diff --git a/harness/src/aggregate.test.ts b/harness/src/aggregate.test.ts
+new file mode 100644
+index 0000000..165a552
+--- /dev/null
++++ b/harness/src/aggregate.test.ts
+@@ -0,0 +1,23 @@
++import { describe, expect, it } from "vitest";
++import { distribution, evaluateP95Variance, relativeRange } from "./aggregate";
++
++describe("measurement aggregation", () => {
++  it("uses nearest-rank percentiles without averaging away tail frames", () => {
++    const values = Array.from({ length: 1_000 }, (_, index) => index + 1).reverse();
++    expect(distribution(values)).toEqual({ max: 1_000, p50: 500, p95: 950, p99_9: 999 });
++  });
++
++  it("measures repeat spread relative to the best repeat", () => {
++    expect(relativeRange([10, 11, 10.5])).toBeCloseTo(0.1);
++    expect(relativeRange([0, 1])).toBe(Number.POSITIVE_INFINITY);
++  });
++
++  it("invalidates a p95 repeat spread above ten percent", () => {
++    expect(evaluateP95Variance([10, 11])).toMatchObject({ state: "measured" });
++    expect(evaluateP95Variance([10, 11.01])).toMatchObject({ state: "invalid" });
++  });
++
++  it("rejects empty sample sets", () => {
++    expect(() => distribution([])).toThrow("empty sample set");
++  });
++});
+diff --git a/harness/src/aggregate.ts b/harness/src/aggregate.ts
+new file mode 100644
+index 0000000..3adb114
+--- /dev/null
++++ b/harness/src/aggregate.ts
+@@ -0,0 +1,48 @@
++export interface Distribution {
++  readonly max: number;
++  readonly p50: number;
++  readonly p95: number;
++  readonly p99_9: number;
++}
++
++export type VarianceMetric =
++  | Readonly<{ relativeRange: number; state: "measured" }>
++  | Readonly<{ reason: string; relativeRange: number; state: "invalid" }>;
++
++export function distribution(values: readonly number[]): Distribution {
++  if (values.length === 0) throw new Error("Cannot aggregate an empty sample set");
++  const sorted = [...values].sort((left, right) => left - right);
++  return Object.freeze({
++    max: sorted.at(-1) ?? 0,
++    p50: percentile(sorted, 0.5),
++    p95: percentile(sorted, 0.95),
++    p99_9: percentile(sorted, 0.999),
++  });
++}
++
++function percentile(sorted: readonly number[], fraction: number): number {
++  const rank = Math.ceil(fraction * sorted.length) - 1;
++  return sorted[Math.max(0, rank)] ?? 0;
++}
++
++export function relativeRange(values: readonly number[]): number {
++  if (values.length === 0) throw new Error("Cannot calculate variance for no values");
++  const minimum = Math.min(...values);
++  const maximum = Math.max(...values);
++  return minimum === 0
++    ? maximum === 0
++      ? 0
++      : Number.POSITIVE_INFINITY
++    : (maximum - minimum) / minimum;
++}
++
++export function evaluateP95Variance(values: readonly number[]): VarianceMetric {
++  const range = relativeRange(values);
++  return range > 0.1
++    ? Object.freeze({
++        reason: `p95 relative range ${range} exceeds the 0.1 variance limit`,
++        relativeRange: range,
++        state: "invalid",
++      })
++    : Object.freeze({ relativeRange: range, state: "measured" });
++}
+diff --git a/harness/src/budgets.test.ts b/harness/src/budgets.test.ts
+new file mode 100644
+index 0000000..3fb4232
+--- /dev/null
++++ b/harness/src/budgets.test.ts
+@@ -0,0 +1,9 @@
++import { describe, expect, it } from "vitest";
++import { evaluateMainThreadBudgets } from "./budgets";
++
++describe("M0 implemented budgets", () => {
++  it("passes zero main-thread long tasks and fails a nonzero count", () => {
++    expect(evaluateMainThreadBudgets(0)[0]?.passed).toBe(true);
++    expect(evaluateMainThreadBudgets(1)[0]?.passed).toBe(false);
++  });
++});
+diff --git a/harness/src/budgets.ts b/harness/src/budgets.ts
+new file mode 100644
+index 0000000..38add0c
+--- /dev/null
++++ b/harness/src/budgets.ts
+@@ -0,0 +1,16 @@
++export type QualityTier = "showcase" | "standard";
++
++export interface BudgetCheck {
++  readonly actual: number;
++  readonly limit: number;
++  readonly metric: string;
++  readonly passed: boolean;
++}
++
++export function evaluateMainThreadBudgets(mainThreadLongTasks: number): readonly BudgetCheck[] {
++  return Object.freeze([check("mainThreadLongTasksOver50Ms", mainThreadLongTasks, 0)]);
++}
++
++function check(metric: string, actual: number, limit: number): BudgetCheck {
++  return Object.freeze({ actual, limit, metric, passed: actual <= limit });
++}
+diff --git a/harness/src/build-contract.test.ts b/harness/src/build-contract.test.ts
+index 762d8da..ec35b65 100644
+--- a/harness/src/build-contract.test.ts
++++ b/harness/src/build-contract.test.ts
+@@ -1,18 +1,7 @@
+-import { createHash } from "node:crypto";
+ import { readFile } from "node:fs/promises";
+ import { join, resolve } from "node:path";
+ import { describe, expect, it } from "vitest";
+-
+-interface ManifestArtifact {
+-  readonly bytes: number;
+-  readonly path: string;
+-  readonly sha256: string;
+-}
+-
+-interface BuildManifest {
+-  readonly artifacts: readonly ManifestArtifact[];
+-  readonly schemaVersion: number;
+-}
++import { readAndValidateBuildManifest } from "./build-manifest.js";
+ 
+ const repositoryRoot = resolve(import.meta.dirname, "../..");
+ const buildRoot = join(repositoryRoot, "dist");
+@@ -20,9 +9,7 @@ const buildRoot = join(repositoryRoot, "dist");
+ describe("assembled build contract", () => {
+   it("contains independently addressed engine, game, and app artifacts with exact metadata", async () => {
+     const index = await readFile(join(buildRoot, "index.html"), "utf8");
+-    const manifest = JSON.parse(
+-      await readFile(join(buildRoot, "build-manifest.json"), "utf8"),
+-    ) as BuildManifest;
++    const { manifest } = await readAndValidateBuildManifest(buildRoot);
+ 
+     expect(index).not.toContain("__ENGINE_ARTIFACT__");
+     expect(index).not.toContain("__GAME_ARTIFACT__");
+@@ -50,12 +37,8 @@ describe("assembled build contract", () => {
+     expect(workerSource).not.toContain('from "@babylonjs/core');
+ 
+     for (const artifact of manifest.artifacts) {
+-      const bytes = await readFile(join(buildRoot, artifact.path));
+-      const digest = createHash("sha256").update(bytes).digest("hex");
+-      expect(artifact.bytes).toBe(bytes.byteLength);
+-      expect(artifact.sha256).toBe(digest);
+       if (artifact.path.startsWith("immutable/")) {
+-        expect(artifact.path).toContain(`-${digest}.`);
++        expect(artifact.path).toContain(`-${artifact.sha256}.`);
+       }
+     }
+ 
+diff --git a/harness/src/build-manifest.ts b/harness/src/build-manifest.ts
+new file mode 100644
+index 0000000..a35e911
+--- /dev/null
++++ b/harness/src/build-manifest.ts
+@@ -0,0 +1,65 @@
++import { createHash } from "node:crypto";
++import { createReadStream } from "node:fs";
++import { readFile } from "node:fs/promises";
++import { resolve, sep } from "node:path";
++
++export interface ManifestArtifact {
++  readonly bytes: number;
++  readonly path: string;
++  readonly sha256: string;
++}
++
++export interface BuildManifest {
++  readonly artifacts: readonly ManifestArtifact[];
++  readonly schemaVersion: 1;
++}
++
++export interface FileDigest {
++  readonly bytes: number;
++  readonly sha256: string;
++}
++
++export interface ValidatedBuildManifest {
++  readonly artifactDigest: string;
++  readonly manifest: BuildManifest;
++}
++
++export async function readAndValidateBuildManifest(
++  buildRoot: string,
++): Promise<ValidatedBuildManifest> {
++  const resolvedRoot = resolve(buildRoot);
++  const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
++  const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
++  if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.artifacts)) {
++    throw new Error(`Unsupported build manifest ${String(manifest.schemaVersion)}`);
++  }
++  for (const artifact of manifest.artifacts) {
++    const artifactPath = resolve(resolvedRoot, artifact.path);
++    if (!artifactPath.startsWith(`${resolvedRoot}${sep}`)) {
++      throw new Error(`Build manifest artifact escapes the build root: ${artifact.path}`);
++    }
++    const actual = await sha256File(artifactPath);
++    if (actual.bytes !== artifact.bytes || actual.sha256 !== artifact.sha256) {
++      throw new Error(`Built artifact does not match its manifest: ${artifact.path}`);
++    }
++  }
++  return Object.freeze({
++    artifactDigest: sha256Hex(manifestBytes),
++    manifest,
++  });
++}
++
++export async function sha256File(path: string): Promise<FileDigest> {
++  const digest = createHash("sha256");
++  let bytes = 0;
++  for await (const chunk of createReadStream(path)) {
++    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
++    bytes += buffer.byteLength;
++    digest.update(buffer);
++  }
++  return Object.freeze({ bytes, sha256: digest.digest("hex") });
++}
++
++export function sha256Hex(bytes: NodeJS.ArrayBufferView): string {
++  return createHash("sha256").update(bytes).digest("hex");
++}
+diff --git a/harness/src/runs/smoke.test.ts b/harness/src/runs/smoke.test.ts
+new file mode 100644
+index 0000000..19b6063
+--- /dev/null
++++ b/harness/src/runs/smoke.test.ts
+@@ -0,0 +1,38 @@
++import {
++  type ParallaxTelemetrySnapshot,
++  TELEMETRY_GLOBAL_NAME,
++  TELEMETRY_SCHEMA_VERSION,
++} from "@parallax/engine";
++import { describe, expect, it } from "vitest";
++import {
++  parseQualityTier,
++  QUALITY_TIER_PROFILES,
++  SMOKE_INCOMPLETE_METRICS,
++  SMOKE_METRICS,
++  SMOKE_TELEMETRY_GLOBAL_NAME,
++  SMOKE_TELEMETRY_SCHEMA_VERSION,
++} from "./smoke.js";
++
++const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
++  SMOKE_TELEMETRY_SCHEMA_VERSION;
++
++describe("smoke@1 contract", () => {
++  it("stays synchronized with the public engine telemetry contract", () => {
++    expect(SMOKE_TELEMETRY_GLOBAL_NAME).toBe(TELEMETRY_GLOBAL_NAME);
++    expect(expectedSchemaVersion).toBe(TELEMETRY_SCHEMA_VERSION);
++  });
++
++  it("accounts for every mandatory metric in its single registry", () => {
++    const mandatory = SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1);
++    expect(mandatory.length).toBeGreaterThan(0);
++    expect(new Set(SMOKE_METRICS.map((metric) => metric.name)).size).toBe(SMOKE_METRICS.length);
++    expect(SMOKE_INCOMPLETE_METRICS.every((metric) => SMOKE_METRICS.includes(metric))).toBe(true);
++  });
++
++  it("owns exhaustive tier profiles", () => {
++    expect(parseQualityTier(undefined)).toBe("showcase");
++    expect(parseQualityTier("standard")).toBe("standard");
++    expect(() => parseQualityTier("future-tier")).toThrow("showcase or standard");
++    expect(Object.keys(QUALITY_TIER_PROFILES).sort()).toEqual(["showcase", "standard"]);
++  });
++});
+diff --git a/harness/src/runs/smoke.ts b/harness/src/runs/smoke.ts
+new file mode 100644
+index 0000000..dee8785
+--- /dev/null
++++ b/harness/src/runs/smoke.ts
+@@ -0,0 +1,54 @@
++import type { QualityTier } from "../budgets.js";
++
++export interface SmokeMetricDefinition {
++  readonly mandatoryForHarnessV1: boolean;
++  readonly name: string;
++  readonly probe: "implemented" | "incomplete";
++}
++
++export interface QualityTierProfile {
++  readonly targetDisplayMode: string;
++  readonly viewport: Readonly<{ height: number; width: number }>;
++}
++
++export const SMOKE_SCENARIO = "smoke@1";
++export const SMOKE_REPEATS = 3;
++export const SMOKE_WARMUP_MS = 10_000;
++export const SMOKE_MEASUREMENT_FRAMES = 120;
++export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
++export const SMOKE_TELEMETRY_SCHEMA_VERSION = 1;
++
++export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
++  metric("compositor presentation interval", true),
++  metric("verified gate environment identity", true),
++  metric("all-worker JS heap", false),
++  metric("attributable GPU memory", false),
++  metric("Dawn pipeline compile/cache evidence", true),
++  metric("V8 code-cache evidence", true),
++]);
++
++export const SMOKE_INCOMPLETE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze(
++  SMOKE_METRICS.filter((metric) => metric.probe === "incomplete"),
++);
++
++export const QUALITY_TIER_PROFILES: Readonly<Record<QualityTier, QualityTierProfile>> =
++  Object.freeze({
++    showcase: Object.freeze({
++      targetDisplayMode: "3840x2160@60Hz",
++      viewport: Object.freeze({ height: 2_160, width: 3_840 }),
++    }),
++    standard: Object.freeze({
++      targetDisplayMode: "2560x1440@120Hz",
++      viewport: Object.freeze({ height: 1_440, width: 2_560 }),
++    }),
++  });
++
++export function parseQualityTier(value: string | undefined): QualityTier {
++  const candidate = value ?? "showcase";
++  if (Object.hasOwn(QUALITY_TIER_PROFILES, candidate)) return candidate as QualityTier;
++  throw new Error(`PARALLAX_TIER must be showcase or standard; received ${candidate}`);
++}
++
++function metric(name: string, mandatoryForHarnessV1: boolean): SmokeMetricDefinition {
++  return Object.freeze({ mandatoryForHarnessV1, name, probe: "incomplete" });
++}
+diff --git a/harness/src/server.test.ts b/harness/src/server.test.ts
+index beb3f97..1581ee3 100644
+--- a/harness/src/server.test.ts
++++ b/harness/src/server.test.ts
+@@ -1,11 +1,15 @@
+ import { createHash } from "node:crypto";
+ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+-import type { AddressInfo } from "node:net";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { afterEach, describe, expect, it } from "vitest";
+ import { parseServerPort } from "./config.js";
+-import { createLocalServer } from "./server.js";
++import {
++  createLocalServer,
++  type LocalServerMetrics,
++  listenLocalServer,
++  stopLocalServer,
++} from "./server.js";
+ 
+ const cleanup: string[] = [];
+ 
+@@ -27,8 +31,7 @@ describe("local build server", () => {
+     await writeFile(join(immutable, "engine-abc123.js"), artifactBody);
+ 
+     const server = createLocalServer({ root });
+-    await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+-    const address = server.address() as AddressInfo;
++    const address = await listenLocalServer(server);
+     const baseUrl = `http://127.0.0.1:${address.port}`;
+ 
+     try {
+@@ -85,15 +88,7 @@ describe("local build server", () => {
+       expect(malformedPathResponse.status).toBe(400);
+ 
+       const metricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
+-      const metrics = (await metricsResponse.json()) as {
+-        readonly bytesServed: number;
+-        readonly metadataCacheHits: number;
+-        readonly metadataCacheMisses: number;
+-        readonly pathClasses: Readonly<Record<string, number>>;
+-        readonly requests: number;
+-        readonly schemaVersion: number;
+-        readonly statuses: Readonly<Record<string, number>>;
+-      };
++      const metrics = (await metricsResponse.json()) as LocalServerMetrics;
+       expect(metricsResponse.status).toBe(200);
+       expect(metrics.schemaVersion).toBe(1);
+       expect(metrics.requests).toBeGreaterThan(0);
+@@ -105,10 +100,15 @@ describe("local build server", () => {
+       expect(metrics.statuses["404"]).toBe(1);
+       expect(metrics.statuses["405"]).toBe(1);
+       expect(metrics.pathClasses.immutable).toBeGreaterThan(0);
+-    } finally {
+-      await new Promise<void>((resolveClose, reject) => {
+-        server.close((error) => (error === undefined ? resolveClose() : reject(error)));
++
++      const metricsPostResponse = await fetch(`${baseUrl}/__parallax/metrics`, {
++        method: "POST",
+       });
++      expect(metricsPostResponse.status).toBe(405);
++      const secondMetricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
++      expect(await secondMetricsResponse.json()).toEqual(metrics);
++    } finally {
++      await stopLocalServer(server);
+     }
+   });
+ });
+diff --git a/harness/src/server.ts b/harness/src/server.ts
+index b33aac9..d59da4a 100644
+--- a/harness/src/server.ts
++++ b/harness/src/server.ts
+@@ -1,6 +1,7 @@
+ import { createHash } from "node:crypto";
+ import { readFile, stat } from "node:fs/promises";
+ import { createServer, type Server } from "node:http";
++import type { AddressInfo } from "node:net";
+ import { extname, resolve, sep } from "node:path";
+ 
+ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
+@@ -15,7 +16,7 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
+ const IMMUTABLE_PATH = /^\/immutable\/[a-z0-9-]+-([a-f0-9]{64})\.[a-z0-9]+$/;
+ const METRICS_PATH = "/__parallax/metrics";
+ 
+-type PathClass = "document" | "immutable" | "metrics" | "other";
++type PathClass = "document" | "immutable" | "other";
+ 
+ interface CachedMetadata {
+   readonly digestHex: string;
+@@ -53,43 +54,56 @@ export function createLocalServer(options: LocalServerOptions): Server {
+     bytesServed: 0,
+     metadataCacheHits: 0,
+     metadataCacheMisses: 0,
+-    pathClasses: { document: 0, immutable: 0, metrics: 0, other: 0 },
++    pathClasses: { document: 0, immutable: 0, other: 0 },
+     requests: 0,
+     statuses: {},
+   };
+ 
+   return createServer(async (request, response) => {
+-    metrics.requests += 1;
+     response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
+     response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+     response.setHeader("X-Content-Type-Options", "nosniff");
+ 
+     let pathClass: PathClass = "other";
++    let requestMetadataCacheHits = 0;
++    let requestMetadataCacheMisses = 0;
+     const send = (status: number, body?: Buffer): void => {
+-      metrics.statuses[String(status)] = (metrics.statuses[String(status)] ?? 0) + 1;
+-      metrics.pathClasses[pathClass] += 1;
+       const responseBody = request.method === "HEAD" ? undefined : body;
+-      metrics.bytesServed += responseBody?.byteLength ?? 0;
++      response.once("finish", () => {
++        metrics.requests += 1;
++        metrics.statuses[String(status)] = (metrics.statuses[String(status)] ?? 0) + 1;
++        metrics.pathClasses[pathClass] += 1;
++        metrics.metadataCacheHits += requestMetadataCacheHits;
++        metrics.metadataCacheMisses += requestMetadataCacheMisses;
++        metrics.bytesServed += responseBody?.byteLength ?? 0;
++      });
+       response.writeHead(status).end(responseBody);
+     };
+ 
+-    if (request.method !== "GET" && request.method !== "HEAD") {
+-      response.setHeader("Allow", "GET, HEAD");
+-      send(405);
+-      return;
+-    }
+-
+     try {
+       const requestUrl = new URL(request.url ?? "/", "http://localhost");
+       const pathname = decodeURIComponent(requestUrl.pathname);
+-      pathClass = classifyPath(pathname);
+ 
+       if (pathname === METRICS_PATH) {
++        // Metrics reads are out-of-band: all methods are excluded from counters, and
++        // ordinary requests publish their complete counter delta atomically on finish.
++        if (request.method !== "GET" && request.method !== "HEAD") {
++          response.setHeader("Allow", "GET, HEAD");
++          response.writeHead(405).end();
++          return;
++        }
+         const body = Buffer.from(`${JSON.stringify(snapshotMetrics(metrics), null, 2)}\n`);
+         response.setHeader("Cache-Control", "no-cache");
+         response.setHeader("Content-Length", body.byteLength);
+         response.setHeader("Content-Type", "application/json; charset=utf-8");
+-        send(200, body);
++        response.writeHead(200).end(request.method === "HEAD" ? undefined : body);
++        return;
++      }
++
++      pathClass = classifyPath(pathname);
++      if (request.method !== "GET" && request.method !== "HEAD") {
++        response.setHeader("Allow", "GET, HEAD");
++        send(405);
+         return;
+       }
+ 
+@@ -112,10 +126,10 @@ export function createLocalServer(options: LocalServerOptions): Server {
+       let body: Buffer | undefined;
+       let metadata: CachedMetadata;
+       if (cached?.signature === signature) {
+-        metrics.metadataCacheHits += 1;
++        requestMetadataCacheHits += 1;
+         metadata = cached;
+       } else {
+-        metrics.metadataCacheMisses += 1;
++        requestMetadataCacheMisses += 1;
+         body = await readFile(filePath);
+         metadata = createMetadata(signature, body);
+         metadataCache.set(filePath, metadata);
+@@ -161,8 +175,30 @@ export function createLocalServer(options: LocalServerOptions): Server {
+   });
+ }
+ 
++export function listenLocalServer(server: Server): Promise<AddressInfo> {
++  return new Promise<AddressInfo>((resolveListen, rejectListen) => {
++    const onError = (error: Error): void => rejectListen(error);
++    server.once("error", onError);
++    server.listen(0, "127.0.0.1", () => {
++      server.off("error", onError);
++      const address = server.address();
++      if (address === null || typeof address === "string") {
++        rejectListen(new Error("Local server did not expose a TCP address"));
++        return;
++      }
++      resolveListen(address);
++    });
++  });
++}
++
++export function stopLocalServer(server: Server): Promise<void> {
++  if (!server.listening) return Promise.resolve();
++  return new Promise<void>((resolveClose, rejectClose) => {
++    server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
++  });
++}
++
+ function classifyPath(pathname: string): PathClass {
+-  if (pathname === METRICS_PATH) return "metrics";
+   if (pathname === "/" || pathname.endsWith(".html")) return "document";
+   if (pathname.startsWith("/immutable/")) return "immutable";
+   return "other";
+diff --git a/harness/src/smoke-run.ts b/harness/src/smoke-run.ts
+new file mode 100644
+index 0000000..db02ff3
+--- /dev/null
++++ b/harness/src/smoke-run.ts
+@@ -0,0 +1,514 @@
++import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
++import { release, tmpdir } from "node:os";
++import { join, resolve } from "node:path";
++import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
++import { type BrowserContext, chromium, type Page } from "playwright-core";
++import { type Distribution, distribution, evaluateP95Variance } from "./aggregate.js";
++import { type BudgetCheck, evaluateMainThreadBudgets, type QualityTier } from "./budgets.js";
++import { readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
++import {
++  parseQualityTier,
++  QUALITY_TIER_PROFILES,
++  SMOKE_INCOMPLETE_METRICS,
++  SMOKE_MEASUREMENT_FRAMES,
++  SMOKE_METRICS,
++  SMOKE_REPEATS,
++  SMOKE_SCENARIO,
++  SMOKE_TELEMETRY_GLOBAL_NAME,
++  SMOKE_TELEMETRY_SCHEMA_VERSION,
++  SMOKE_WARMUP_MS,
++  type SmokeMetricDefinition,
++} from "./runs/smoke.js";
++import {
++  createLocalServer,
++  type LocalServerMetrics,
++  listenLocalServer,
++  stopLocalServer,
++} from "./server.js";
++import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
++
++interface MeasuredMetric<T> {
++  readonly state: "measured";
++  readonly value: T;
++}
++
++interface ChromePin {
++  readonly channel: "stable";
++  readonly executableSha256: Readonly<Record<string, string>>;
++  readonly revision: string;
++  readonly version: string;
++}
++
++interface RunMeasurement {
++  readonly budgetChecks: readonly BudgetCheck[];
++  readonly cpuFrameMs: MeasuredMetric<Distribution>;
++  readonly http: MeasuredMetric<LocalServerMetrics>;
++  readonly jsHeapUsedBytes: MeasuredMetric<number>;
++  readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
++  readonly workerAnimationCallbackIntervalMs: MeasuredMetric<Distribution>;
++  readonly profile: "fresh" | "warm";
++  readonly profileLineage: {
++    readonly history: readonly ("fresh" | "warm")[];
++    readonly id: string;
++  };
++  readonly repeat: number;
++  readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
++  readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
++}
++
++interface EnvironmentIdentity {
++  readonly browserProduct: string;
++  readonly browserRevision: string;
++  readonly browserUserAgent: string;
++  readonly declaredGpuBackend: string;
++  readonly declaredMachineId: string;
++  readonly declaredPowerMode: string;
++  readonly gateIdentityState: "invalid";
++  readonly gpuDevices: readonly unknown[];
++  readonly jsVersion: string;
++  readonly os: string;
++  readonly requestedTier: QualityTier;
++  readonly targetDisplayMode: string;
++}
++
++interface SmokeReport {
++  readonly artifactDigest: string;
++  readonly chromePin: ChromePin;
++  readonly environment: EnvironmentIdentity;
++  readonly generatedAt: string;
++  readonly incompleteMetrics: readonly {
++    readonly mandatoryForHarnessV1: boolean;
++    readonly metric: string;
++    readonly reason: string;
++    readonly state: "invalid";
++  }[];
++  readonly mandatoryMetricSet: {
++    readonly metrics: readonly string[];
++    readonly version: 1;
++  };
++  readonly passed: boolean;
++  readonly runs: readonly RunMeasurement[];
++  readonly scenario: typeof SMOKE_SCENARIO;
++  readonly schemaVersion: 1;
++  readonly source: SourceIdentity;
++  readonly callbackPacingVariance: readonly {
++    readonly profile: "fresh" | "warm";
++    readonly reason?: string;
++    readonly relativeP95Range: number;
++    readonly state: "invalid" | "measured";
++  }[];
++}
++
++const repositoryRoot = resolve(import.meta.dirname, "../../..");
++const buildRoot = join(repositoryRoot, "dist");
++const chromePinPath = join(repositoryRoot, "harness/chrome/stable.json");
++const outputRoot = join(repositoryRoot, "harness/results");
++
++await main();
++
++async function main(): Promise<void> {
++  const executablePath = requiredEnvironment("PARALLAX_CHROME_PATH");
++  const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
++  const tier = parseQualityTier(process.env.PARALLAX_TIER);
++  const chromePin = JSON.parse(await readFile(chromePinPath, "utf8")) as ChromePin;
++  const artifactDigest = (await readAndValidateBuildManifest(buildRoot)).artifactDigest;
++  const source = await readSourceIdentity(repositoryRoot);
++  const server = createLocalServer({ root: buildRoot });
++  const address = await listenLocalServer(server);
++  const baseUrl = `http://127.0.0.1:${address.port}`;
++  const profileRoot = await mkdtemp(join(tmpdir(), "parallax-harness-"));
++
++  try {
++    const environment = await inspectEnvironment(
++      executablePath,
++      join(profileRoot, "identity"),
++      chromePin,
++      machineId,
++      tier,
++      requiredEnvironment("PARALLAX_GPU_BACKEND"),
++      requiredEnvironment("PARALLAX_POWER_MODE"),
++    );
++    const runs: RunMeasurement[] = [];
++    for (let repeat = 1; repeat <= SMOKE_REPEATS; repeat += 1) {
++      const lineage = join(profileRoot, `lineage-${repeat}`);
++      runs.push(
++        await measureRun(executablePath, lineage, baseUrl, tier, repeat, "fresh"),
++        await measureRun(executablePath, lineage, baseUrl, tier, repeat, "warm"),
++      );
++    }
++    const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) => {
++      const variance = evaluateP95Variance(
++        runs
++          .filter((run) => run.profile === profile)
++          .map((run) => run.workerAnimationCallbackIntervalMs.value.p95),
++      );
++      return variance.state === "invalid"
++        ? Object.freeze({
++            profile,
++            reason: variance.reason,
++            relativeP95Range: variance.relativeRange,
++            state: variance.state,
++          })
++        : Object.freeze({
++            profile,
++            relativeP95Range: variance.relativeRange,
++            state: variance.state,
++          });
++    });
++    const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
++    const passed =
++      runs.every((run) => run.budgetChecks.every((check) => check.passed)) &&
++      incompleteMetrics.every((metric) => !metric.mandatoryForHarnessV1) &&
++      callbackPacingVariance.every((metric) => metric.state === "measured");
++    if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
++      throw new Error("Built artifact identity changed during the smoke run");
++    }
++    if (JSON.stringify(await readSourceIdentity(repositoryRoot)) !== JSON.stringify(source)) {
++      throw new Error("Source identity changed during the smoke run");
++    }
++    const report: SmokeReport = Object.freeze({
++      artifactDigest,
++      callbackPacingVariance,
++      chromePin,
++      environment,
++      generatedAt: new Date().toISOString(),
++      incompleteMetrics,
++      mandatoryMetricSet: Object.freeze({
++        metrics: Object.freeze(
++          SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map(
++            (metric) => metric.name,
++          ),
++        ),
++        version: 1,
++      }),
++      passed,
++      runs,
++      scenario: SMOKE_SCENARIO,
++      schemaVersion: 1,
++      source,
++    });
++    await writeReport(report);
++    process.exitCode = passed ? 0 : 1;
++  } finally {
++    await rm(profileRoot, { force: true, recursive: true });
++    await stopLocalServer(server);
++  }
++}
++
++function invalidMetric(
++  definition: SmokeMetricDefinition,
++): SmokeReport["incompleteMetrics"][number] {
++  return Object.freeze({
++    mandatoryForHarnessV1: definition.mandatoryForHarnessV1,
++    metric: definition.name,
++    reason: "Probe is not implemented in smoke@1; Harness v1 remains incomplete",
++    state: "invalid",
++  });
++}
++
++function measured<T>(value: T): MeasuredMetric<T> {
++  return Object.freeze({ state: "measured", value });
++}
++
++async function inspectEnvironment(
++  executablePath: string,
++  profilePath: string,
++  chromePin: ChromePin,
++  machineId: string,
++  tier: QualityTier,
++  gpuBackend: string,
++  powerMode: string,
++): Promise<EnvironmentIdentity> {
++  const platformKey = chromePlatformKey();
++  const expectedExecutableDigest = chromePin.executableSha256[platformKey];
++  if (expectedExecutableDigest === undefined) {
++    throw new Error(`Chrome for Testing executable digest is not pinned for ${platformKey}`);
++  }
++  const executableDigest = await sha256File(executablePath);
++  if (executableDigest.sha256 !== expectedExecutableDigest) {
++    throw new Error(
++      `Chrome executable digest mismatch: expected ${expectedExecutableDigest}, received ${executableDigest.sha256}`,
++    );
++  }
++  const context = await launch(executablePath, profilePath, tier);
++  try {
++    const browser = context.browser();
++    if (browser === null) throw new Error("Playwright did not expose the launched browser");
++    const session = await browser.newBrowserCDPSession();
++    const version = (await session.send("Browser.getVersion")) as {
++      product: string;
++      revision: string;
++      jsVersion: string;
++      userAgent: string;
++    };
++    const actualVersion = version.product.replace(/^Chrome\//, "");
++    if (actualVersion !== chromePin.version) {
++      throw new Error(
++        `Chrome for Testing version mismatch: expected ${chromePin.version}, received ${actualVersion}`,
++      );
++    }
++    const systemInfo = await session.send("SystemInfo.getInfo");
++    return Object.freeze({
++      browserProduct: version.product,
++      browserRevision: version.revision,
++      browserUserAgent: version.userAgent,
++      declaredGpuBackend: gpuBackend,
++      declaredMachineId: machineId,
++      declaredPowerMode: powerMode,
++      gateIdentityState: "invalid",
++      gpuDevices: systemInfo.gpu.devices,
++      jsVersion: version.jsVersion,
++      os: `${process.platform} ${process.arch} ${release()}`,
++      requestedTier: tier,
++      targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
++    });
++  } finally {
++    await context.close();
++  }
++}
++
++function chromePlatformKey(): string {
++  if (process.platform === "win32" && process.arch === "x64") return "win64";
++  if (process.platform === "linux" && process.arch === "x64") return "linux64";
++  if (process.platform === "darwin" && process.arch === "arm64") return "mac-arm64";
++  if (process.platform === "darwin" && process.arch === "x64") return "mac-x64";
++  throw new Error(`No Chrome for Testing platform mapping for ${process.platform}/${process.arch}`);
++}
++
++async function measureRun(
++  executablePath: string,
++  profilePath: string,
++  baseUrl: string,
++  tier: QualityTier,
++  repeat: number,
++  profile: "fresh" | "warm",
++): Promise<RunMeasurement> {
++  const before = await fetchServerMetrics(baseUrl);
++  const context = await launch(executablePath, profilePath, tier);
++  const page = context.pages()[0] ?? (await context.newPage());
++  const errors: string[] = [];
++  page.on("pageerror", (error) => errors.push(error.message));
++  page.on("console", (message) => {
++    if (message.type() === "error") errors.push(message.text());
++  });
++  await installLongTaskObserver(page);
++  try {
++    await page.goto(baseUrl, { waitUntil: "load" });
++    await page.waitForFunction(
++      telemetryReady,
++      {
++        expectedSchemaVersion: SMOKE_TELEMETRY_SCHEMA_VERSION,
++        globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
++      },
++      { timeout: 30_000 },
++    );
++    await page.waitForTimeout(SMOKE_WARMUP_MS);
++    await page.evaluate(() => {
++      const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
++        reset(): void;
++      };
++      state.reset();
++    });
++    const start = await readTelemetry(page);
++    await page.waitForFunction(
++      (target) => {
++        const telemetry = Reflect.get(globalThis, target.globalName) as ParallaxTelemetryExport;
++        return telemetry.snapshot().render.frameCount >= target.frameCount;
++      },
++      {
++        frameCount: start.render.frameCount + SMOKE_MEASUREMENT_FRAMES,
++        globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
++      },
++      { timeout: 15_000 },
++    );
++    const snapshot = await readTelemetry(page);
++    if (snapshot.render.state !== "ready") {
++      throw new Error(
++        snapshot.render.failureMessage ?? `Unexpected render state ${snapshot.render.state}`,
++      );
++    }
++    const frames = snapshot.render.recentFrames.slice(-SMOKE_MEASUREMENT_FRAMES);
++    const presentIntervals = frames.flatMap((frame) =>
++      frame.presentIntervalMs === null ? [] : [frame.presentIntervalMs],
++    );
++    if (presentIntervals.length !== SMOKE_MEASUREMENT_FRAMES) {
++      throw new Error(
++        `Expected ${SMOKE_MEASUREMENT_FRAMES} intervals; received ${presentIntervals.length}`,
++      );
++    }
++    const session = await context.newCDPSession(page);
++    await session.send("Performance.enable");
++    const performanceMetrics = (await session.send("Performance.getMetrics")) as {
++      metrics: readonly { name: string; value: number }[];
++    };
++    const jsHeapUsedBytes = performanceMetrics.metrics.find(
++      (metric) => metric.name === "JSHeapUsedSize",
++    )?.value;
++    if (jsHeapUsedBytes === undefined) throw new Error("CDP did not report JSHeapUsedSize");
++    const mainThreadLongTasks = await page.evaluate(() => {
++      const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
++        count(): number;
++      };
++      return state.count();
++    });
++    if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
++    const workerAnimationCallbackIntervalMs = distribution(presentIntervals);
++    return Object.freeze({
++      budgetChecks: evaluateMainThreadBudgets(mainThreadLongTasks),
++      cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
++      http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
++      jsHeapUsedBytes: measured(jsHeapUsedBytes),
++      mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
++      profile,
++      profileLineage: Object.freeze({
++        history: profile === "fresh" ? (["fresh"] as const) : (["fresh", "warm"] as const),
++        id: `lineage-${repeat}`,
++      }),
++      repeat,
++      workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
++      workerStartupToFirstFrameMs: measured(
++        requiredNumber(snapshot.render.workerStartupToFirstFrameMs),
++      ),
++      workerAnimationCallbackIntervalMs: measured(workerAnimationCallbackIntervalMs),
++    });
++  } finally {
++    await context.close();
++  }
++}
++
++function launch(
++  executablePath: string,
++  profilePath: string,
++  tier: QualityTier,
++): Promise<BrowserContext> {
++  const viewport = QUALITY_TIER_PROFILES[tier].viewport;
++  return chromium.launchPersistentContext(profilePath, {
++    executablePath,
++    headless: false,
++    viewport,
++  });
++}
++
++function telemetryReady(contract: { expectedSchemaVersion: number; globalName: string }): boolean {
++  const telemetry = Reflect.get(globalThis, contract.globalName) as
++    | ParallaxTelemetryExport
++    | undefined;
++  if (telemetry === undefined) return false;
++  const snapshot = telemetry.snapshot();
++  if (snapshot.render.state === "failed")
++    throw new Error(snapshot.render.failureMessage ?? "Render failed");
++  return (
++    snapshot.schemaVersion === contract.expectedSchemaVersion && snapshot.render.state === "ready"
++  );
++}
++
++function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapshot> {
++  return page.evaluate((globalName) => {
++    const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
++    return telemetry.snapshot();
++  }, SMOKE_TELEMETRY_GLOBAL_NAME);
++}
++
++async function installLongTaskObserver(page: Page): Promise<void> {
++  await page.addInitScript(() => {
++    let longTasks = 0;
++    const observer = new PerformanceObserver((list) => {
++      longTasks += list.getEntries().filter((entry) => entry.duration > 50).length;
++    });
++    observer.observe({ type: "longtask", buffered: true } as unknown as PerformanceObserverInit);
++    Object.defineProperty(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__", {
++      value: Object.freeze({
++        count: () => longTasks,
++        reset: () => {
++          observer.takeRecords();
++          longTasks = 0;
++        },
++      }),
++    });
++  });
++}
++
++async function fetchServerMetrics(baseUrl: string): Promise<LocalServerMetrics> {
++  const response = await fetch(`${baseUrl}/__parallax/metrics`);
++  if (!response.ok) throw new Error(`Server metrics request failed with ${response.status}`);
++  return (await response.json()) as LocalServerMetrics;
++}
++
++function subtractServerMetrics(
++  after: LocalServerMetrics,
++  before: LocalServerMetrics,
++): LocalServerMetrics {
++  const statuses: Record<string, number> = {};
++  for (const [status, count] of Object.entries(after.statuses)) {
++    statuses[status] = count - (before.statuses[status] ?? 0);
++  }
++  return {
++    bytesServed: after.bytesServed - before.bytesServed,
++    metadataCacheHits: after.metadataCacheHits - before.metadataCacheHits,
++    metadataCacheMisses: after.metadataCacheMisses - before.metadataCacheMisses,
++    pathClasses: {
++      document: after.pathClasses.document - before.pathClasses.document,
++      immutable: after.pathClasses.immutable - before.pathClasses.immutable,
++      other: after.pathClasses.other - before.pathClasses.other,
++    },
++    requests: after.requests - before.requests,
++    schemaVersion: 1,
++    statuses,
++  };
++}
++
++async function writeReport(report: SmokeReport): Promise<void> {
++  await mkdir(outputRoot, { recursive: true });
++  const timestamp = report.generatedAt.replaceAll(/[:.]/g, "-");
++  const stem = [
++    report.scenario.replace("@", "-"),
++    report.artifactDigest.slice(0, 12),
++    report.environment.declaredMachineId,
++    report.environment.requestedTier,
++    timestamp,
++  ].join("-");
++  await writeFile(join(outputRoot, `${stem}.json`), `${JSON.stringify(report, null, 2)}\n`);
++  const failures = report.runs.flatMap((run) =>
++    run.budgetChecks
++      .filter((check) => !check.passed)
++      .map(
++        (check) =>
++          `${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.limit}`,
++      ),
++  );
++  failures.push(
++    ...report.incompleteMetrics
++      .filter((metric) => metric.mandatoryForHarnessV1)
++      .map((metric) => `${metric.metric}: ${metric.state} (${metric.reason})`),
++  );
++  failures.push(
++    ...report.callbackPacingVariance
++      .filter((metric) => metric.state === "invalid")
++      .map((metric) => `${metric.profile} callback pacing variance: ${metric.reason}`),
++  );
++  const lines = [
++    `# Parallax ${report.scenario}`,
++    "",
++    `Verdict: **${report.passed ? "PASS" : "FAIL"}**`,
++    `Artifact: \`${report.artifactDigest}\``,
++    `Chrome: \`${report.environment.browserProduct}\``,
++    "",
++    "## Failures",
++    "",
++    ...(failures.length === 0 ? ["None."] : failures.map((failure) => `- ${failure}`)),
++    "",
++  ];
++  await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
++  console.log(lines.join("\n"));
++}
++
++function requiredEnvironment(name: string): string {
++  const value = process.env[name];
++  if (value === undefined || value === "") throw new Error(`${name} is required`);
++  return value;
++}
++
++function requiredNumber(value: number | null): number {
++  if (value === null) throw new Error("Required telemetry timing is missing");
++  return value;
++}
+diff --git a/harness/src/source-identity.ts b/harness/src/source-identity.ts
+new file mode 100644
+index 0000000..0abea3f
+--- /dev/null
++++ b/harness/src/source-identity.ts
+@@ -0,0 +1,80 @@
++import { execFileSync, spawn } from "node:child_process";
++import { createHash, type Hash } from "node:crypto";
++import { join } from "node:path";
++import { sha256File } from "./build-manifest.js";
++
++export interface SourceIdentity {
++  readonly commit: string;
++  readonly dirtyTreeDigest: string | null;
++}
++
++export async function readSourceIdentity(repositoryRoot: string): Promise<SourceIdentity> {
++  const commit = gitText(repositoryRoot, ["rev-parse", "HEAD"]).trim();
++  const digest = createHash("sha256").update("tracked\0");
++  const trackedBytes = await hashGitDiff(repositoryRoot, digest);
++  const untracked = nullSeparatedPaths(
++    execFileSync("git", ["ls-files", "--others", "--exclude-standard", "-z"], {
++      cwd: repositoryRoot,
++      encoding: null,
++      maxBuffer: 64 * 1024 * 1024,
++    }),
++  ).sort();
++  if (trackedBytes === 0 && untracked.length === 0) {
++    return Object.freeze({ commit, dirtyTreeDigest: null });
++  }
++  for (const path of untracked) {
++    const fileDigest = await sha256File(join(repositoryRoot, path));
++    digest
++      .update("untracked\0")
++      .update(path)
++      .update("\0")
++      .update(String(fileDigest.bytes))
++      .update("\0")
++      .update(fileDigest.sha256);
++  }
++  return Object.freeze({ commit, dirtyTreeDigest: digest.digest("hex") });
++}
++
++async function hashGitDiff(repositoryRoot: string, digest: Hash): Promise<number> {
++  const child = spawn("git", ["diff", "--binary", "HEAD", "--", "."], {
++    cwd: repositoryRoot,
++    stdio: ["ignore", "pipe", "pipe"],
++  });
++  const stderr: Buffer[] = [];
++  child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
++  const completion = new Promise<number>((resolveExit, rejectExit) => {
++    child.once("error", rejectExit);
++    child.once("close", (code) => resolveExit(code ?? 1));
++  });
++  let bytes = 0;
++  for await (const chunk of child.stdout) {
++    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
++    bytes += buffer.byteLength;
++    digest.update(buffer);
++  }
++  const exitCode = await completion;
++  if (exitCode !== 0) {
++    throw new Error(`git diff failed (${exitCode}): ${Buffer.concat(stderr).toString("utf8")}`);
++  }
++  return bytes;
++}
++
++function gitText(repositoryRoot: string, arguments_: readonly string[]): string {
++  return execFileSync("git", arguments_, {
++    cwd: repositoryRoot,
++    encoding: "utf8",
++    maxBuffer: 64 * 1024,
++  });
++}
++
++function nullSeparatedPaths(output: Buffer): string[] {
++  const paths: string[] = [];
++  let start = 0;
++  for (let index = 0; index < output.length; index += 1) {
++    if (output[index] !== 0) continue;
++    if (index > start) paths.push(output.subarray(start, index).toString("utf8"));
++    start = index + 1;
++  }
++  if (start !== output.length) throw new Error("git ls-files output was not NUL-terminated");
++  return paths;
++}
+diff --git a/harness/tsconfig.json b/harness/tsconfig.json
+index e6769f4..d0d6c56 100644
+--- a/harness/tsconfig.json
++++ b/harness/tsconfig.json
+@@ -1,11 +1,12 @@
+ {
+   "extends": "../tsconfig.base.json",
+   "compilerOptions": {
+-    "lib": ["ES2024"],
++    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+     "outDir": "dist/types",
+     "rootDir": "src",
+     "tsBuildInfoFile": "dist/types.tsbuildinfo",
+     "types": ["node"]
+   },
+-  "include": ["src/**/*.ts"]
++  "include": ["src/**/*.ts"],
++  "references": [{ "path": "../engine" }]
+ }
+diff --git a/package.json b/package.json
+index 70d2840..f3f9d97 100644
+--- a/package.json
++++ b/package.json
+@@ -10,6 +10,7 @@
+     "build": "node harness/scripts/build.mjs",
+     "check": "pnpm build && pnpm lint && pnpm test:unit",
+     "dev": "pnpm --filter @parallax/app dev",
++    "harness:smoke": "pnpm build && node harness/dist/types/smoke-run.js",
+     "lint": "biome check .",
+     "serve": "node harness/scripts/serve.mjs",
+     "start": "pnpm build && pnpm serve",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index c1e6030..33ef6b9 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -62,9 +62,15 @@ importers:
+ 
+   harness:
+     devDependencies:
++      '@parallax/engine':
++        specifier: workspace:*
++        version: link:../engine
+       '@types/node':
+         specifier: 24.13.3
+         version: 24.13.3
++      playwright-core:
++        specifier: 1.61.1
++        version: 1.61.1
+       vitest:
+         specifier: 4.1.10
+         version: 4.1.10(@types/node@24.13.3)(vite@8.1.4(@types/node@24.13.3)(esbuild@0.28.1))
+@@ -900,6 +906,11 @@ packages:
+     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+     engines: {node: '>=12'}
+ 
++  playwright-core@1.61.1:
++    resolution: {integrity: sha512-h7Qlt6m4REp25qvIdvbDtVmD4LqVXfpRxhORv9L0jzETM05p4fuPJ3dKyuSXQxDSbXnmS79HAgi9589lGSpLkg==}
++    engines: {node: '>=18'}
++    hasBin: true
++
+   postcss@8.5.17:
+     resolution: {integrity: sha512-J7EF+8X+CzRPaJPOv9Ck2wNWJvGnnl3PcNPAdGg6GTLjyVpyQ0yATMSXRFRV01BviT/9Gwuc3rjEyJbDJG9a4w==}
+     engines: {node: ^10 || ^12 || >=14}
+@@ -1597,6 +1608,8 @@ snapshots:
+ 
+   picomatch@4.0.5: {}
+ 
++  playwright-core@1.61.1: {}
++
+   postcss@8.5.17:
+     dependencies:
+       nanoid: 3.3.15

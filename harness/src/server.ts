@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
 import { extname, resolve, sep } from "node:path";
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
@@ -15,7 +16,7 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
 const IMMUTABLE_PATH = /^\/immutable\/[a-z0-9-]+-([a-f0-9]{64})\.[a-z0-9]+$/;
 const METRICS_PATH = "/__parallax/metrics";
 
-type PathClass = "document" | "immutable" | "metrics" | "other";
+type PathClass = "document" | "immutable" | "other";
 
 interface CachedMetadata {
   readonly digestHex: string;
@@ -53,43 +54,56 @@ export function createLocalServer(options: LocalServerOptions): Server {
     bytesServed: 0,
     metadataCacheHits: 0,
     metadataCacheMisses: 0,
-    pathClasses: { document: 0, immutable: 0, metrics: 0, other: 0 },
+    pathClasses: { document: 0, immutable: 0, other: 0 },
     requests: 0,
     statuses: {},
   };
 
   return createServer(async (request, response) => {
-    metrics.requests += 1;
     response.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
     response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     response.setHeader("X-Content-Type-Options", "nosniff");
 
     let pathClass: PathClass = "other";
+    let requestMetadataCacheHits = 0;
+    let requestMetadataCacheMisses = 0;
     const send = (status: number, body?: Buffer): void => {
-      metrics.statuses[String(status)] = (metrics.statuses[String(status)] ?? 0) + 1;
-      metrics.pathClasses[pathClass] += 1;
       const responseBody = request.method === "HEAD" ? undefined : body;
-      metrics.bytesServed += responseBody?.byteLength ?? 0;
+      response.once("finish", () => {
+        metrics.requests += 1;
+        metrics.statuses[String(status)] = (metrics.statuses[String(status)] ?? 0) + 1;
+        metrics.pathClasses[pathClass] += 1;
+        metrics.metadataCacheHits += requestMetadataCacheHits;
+        metrics.metadataCacheMisses += requestMetadataCacheMisses;
+        metrics.bytesServed += responseBody?.byteLength ?? 0;
+      });
       response.writeHead(status).end(responseBody);
     };
-
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      response.setHeader("Allow", "GET, HEAD");
-      send(405);
-      return;
-    }
 
     try {
       const requestUrl = new URL(request.url ?? "/", "http://localhost");
       const pathname = decodeURIComponent(requestUrl.pathname);
-      pathClass = classifyPath(pathname);
 
       if (pathname === METRICS_PATH) {
+        // Metrics reads are out-of-band: all methods are excluded from counters, and
+        // ordinary requests publish their complete counter delta atomically on finish.
+        if (request.method !== "GET" && request.method !== "HEAD") {
+          response.setHeader("Allow", "GET, HEAD");
+          response.writeHead(405).end();
+          return;
+        }
         const body = Buffer.from(`${JSON.stringify(snapshotMetrics(metrics), null, 2)}\n`);
         response.setHeader("Cache-Control", "no-cache");
         response.setHeader("Content-Length", body.byteLength);
         response.setHeader("Content-Type", "application/json; charset=utf-8");
-        send(200, body);
+        response.writeHead(200).end(request.method === "HEAD" ? undefined : body);
+        return;
+      }
+
+      pathClass = classifyPath(pathname);
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        response.setHeader("Allow", "GET, HEAD");
+        send(405);
         return;
       }
 
@@ -112,10 +126,10 @@ export function createLocalServer(options: LocalServerOptions): Server {
       let body: Buffer | undefined;
       let metadata: CachedMetadata;
       if (cached?.signature === signature) {
-        metrics.metadataCacheHits += 1;
+        requestMetadataCacheHits += 1;
         metadata = cached;
       } else {
-        metrics.metadataCacheMisses += 1;
+        requestMetadataCacheMisses += 1;
         body = await readFile(filePath);
         metadata = createMetadata(signature, body);
         metadataCache.set(filePath, metadata);
@@ -161,8 +175,30 @@ export function createLocalServer(options: LocalServerOptions): Server {
   });
 }
 
+export function listenLocalServer(server: Server): Promise<AddressInfo> {
+  return new Promise<AddressInfo>((resolveListen, rejectListen) => {
+    const onError = (error: Error): void => rejectListen(error);
+    server.once("error", onError);
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", onError);
+      const address = server.address();
+      if (address === null || typeof address === "string") {
+        rejectListen(new Error("Local server did not expose a TCP address"));
+        return;
+      }
+      resolveListen(address);
+    });
+  });
+}
+
+export function stopLocalServer(server: Server): Promise<void> {
+  if (!server.listening) return Promise.resolve();
+  return new Promise<void>((resolveClose, rejectClose) => {
+    server.close((error) => (error === undefined ? resolveClose() : rejectClose(error)));
+  });
+}
+
 function classifyPath(pathname: string): PathClass {
-  if (pathname === METRICS_PATH) return "metrics";
   if (pathname === "/" || pathname.endsWith(".html")) return "document";
   if (pathname.startsWith("/immutable/")) return "immutable";
   return "other";

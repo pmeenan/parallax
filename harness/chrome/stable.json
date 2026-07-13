@@ -1,0 +1,14 @@
+{
+  "channel": "stable",
+  "downloads": {
+    "linux64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/linux64/chrome-linux64.zip",
+    "mac-arm64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/mac-arm64/chrome-mac-arm64.zip",
+    "mac-x64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/mac-x64/chrome-mac-x64.zip",
+    "win64": "https://storage.googleapis.com/chrome-for-testing-public/150.0.7871.115/win64/chrome-win64.zip"
+  },
+  "executableSha256": {
+    "win64": "c55dc23c0d6c2b87cf3d056959eb1e351bc98dfb3e5fa5d53aff86a25f1b32c5"
+  },
+  "revision": "1639810",
+  "version": "150.0.7871.115"
+}

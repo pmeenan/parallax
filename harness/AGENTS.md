@@ -31,7 +31,7 @@ Sources: CDP (tracing, Performance domains), in-app telemetry exported by
 `engine/telemetry/` on a stable schema, and Chrome internals surfaces where CDP falls
 short (each gap in observability is itself a rough-edges finding — log it).
 
-## Standard runs (versioned scripts in `runs/`; deterministic by construction)
+## Standard runs (versioned contracts in `src/runs/`; deterministic by construction)
 
 - `smoke` — boot to first interactive frame, budget snapshot (every change).
 - `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).

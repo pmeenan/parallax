@@ -1,11 +1,15 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { parseServerPort } from "./config.js";
-import { createLocalServer } from "./server.js";
+import {
+  createLocalServer,
+  type LocalServerMetrics,
+  listenLocalServer,
+  stopLocalServer,
+} from "./server.js";
 
 const cleanup: string[] = [];
 
@@ -27,8 +31,7 @@ describe("local build server", () => {
     await writeFile(join(immutable, "engine-abc123.js"), artifactBody);
 
     const server = createLocalServer({ root });
-    await new Promise<void>((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
-    const address = server.address() as AddressInfo;
+    const address = await listenLocalServer(server);
     const baseUrl = `http://127.0.0.1:${address.port}`;
 
     try {
@@ -85,15 +88,7 @@ describe("local build server", () => {
       expect(malformedPathResponse.status).toBe(400);
 
       const metricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
-      const metrics = (await metricsResponse.json()) as {
-        readonly bytesServed: number;
-        readonly metadataCacheHits: number;
-        readonly metadataCacheMisses: number;
-        readonly pathClasses: Readonly<Record<string, number>>;
-        readonly requests: number;
-        readonly schemaVersion: number;
-        readonly statuses: Readonly<Record<string, number>>;
-      };
+      const metrics = (await metricsResponse.json()) as LocalServerMetrics;
       expect(metricsResponse.status).toBe(200);
       expect(metrics.schemaVersion).toBe(1);
       expect(metrics.requests).toBeGreaterThan(0);
@@ -105,10 +100,15 @@ describe("local build server", () => {
       expect(metrics.statuses["404"]).toBe(1);
       expect(metrics.statuses["405"]).toBe(1);
       expect(metrics.pathClasses.immutable).toBeGreaterThan(0);
-    } finally {
-      await new Promise<void>((resolveClose, reject) => {
-        server.close((error) => (error === undefined ? resolveClose() : reject(error)));
+
+      const metricsPostResponse = await fetch(`${baseUrl}/__parallax/metrics`, {
+        method: "POST",
       });
+      expect(metricsPostResponse.status).toBe(405);
+      const secondMetricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
+      expect(await secondMetricsResponse.json()).toEqual(metrics);
+    } finally {
+      await stopLocalServer(server);
     }
   });
 });

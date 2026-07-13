@@ -1,11 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2024"],
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "outDir": "dist/types",
     "rootDir": "src",
     "tsBuildInfoFile": "dist/types.tsbuildinfo",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../engine" }]
 }

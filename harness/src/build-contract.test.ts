@@ -1,18 +1,7 @@
-import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-
-interface ManifestArtifact {
-  readonly bytes: number;
-  readonly path: string;
-  readonly sha256: string;
-}
-
-interface BuildManifest {
-  readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: number;
-}
+import { readAndValidateBuildManifest } from "./build-manifest.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const buildRoot = join(repositoryRoot, "dist");
@@ -20,9 +9,7 @@ const buildRoot = join(repositoryRoot, "dist");
 describe("assembled build contract", () => {
   it("contains independently addressed engine, game, and app artifacts with exact metadata", async () => {
     const index = await readFile(join(buildRoot, "index.html"), "utf8");
-    const manifest = JSON.parse(
-      await readFile(join(buildRoot, "build-manifest.json"), "utf8"),
-    ) as BuildManifest;
+    const { manifest } = await readAndValidateBuildManifest(buildRoot);
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
@@ -50,12 +37,8 @@ describe("assembled build contract", () => {
     expect(workerSource).not.toContain('from "@babylonjs/core');
 
     for (const artifact of manifest.artifacts) {
-      const bytes = await readFile(join(buildRoot, artifact.path));
-      const digest = createHash("sha256").update(bytes).digest("hex");
-      expect(artifact.bytes).toBe(bytes.byteLength);
-      expect(artifact.sha256).toBe(digest);
       if (artifact.path.startsWith("immutable/")) {
-        expect(artifact.path).toContain(`-${digest}.`);
+        expect(artifact.path).toContain(`-${artifact.sha256}.`);
       }
     }
 

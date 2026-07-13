@@ -10,6 +10,7 @@
     "build": "node harness/scripts/build.mjs",
     "check": "pnpm build && pnpm lint && pnpm test:unit",
     "dev": "pnpm --filter @parallax/app dev",
+    "harness:smoke": "pnpm build && node harness/dist/types/smoke-run.js",
     "lint": "biome check .",
     "serve": "node harness/scripts/serve.mjs",
     "start": "pnpm build && pnpm serve",

@@ -36,7 +36,11 @@ measured automatically.
 - [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
       frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
-      fail on bust.
+      fail on bust. First slice in progress: `smoke@1` now pins/validates CfT, runs three
+      fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
+      window heap, atomic HTTP cache deltas, validated artifact/source identity, plus
+      explicit metric states. True compositor presentation timing, verified environment
+      identity, Dawn/V8 probes, and callback-pacing attribution (RE-001) remain.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

@@ -30,3 +30,30 @@ cache headers.
 Run `pnpm check` for a clean production build, strict TypeScript, formatting/lint,
 server and assembly contract tests, and the same-host engine repeatability gate.
 `pnpm test` is also safe on a clean checkout because it builds its fixture first.
+
+## M0 smoke harness (in progress)
+
+The first Harness v1 slice drives the committed `smoke@1` scenario with the exact Chrome
+for Testing version and platform download URLs in `harness/chrome/stable.json`. Download
+the matching archive, extract it outside the repository, and point the harness at the
+executable. The version check is exact; installed branded Chrome is not accepted for a
+gating run because the current platform's executable SHA-256 must also match. The first
+pin contains a verified win64 digest for dev-01; another platform remains ineligible
+until its downloaded executable digest is promoted into the descriptor. Pin updates come from the
+[official CfT availability data](https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json).
+
+```powershell
+$env:PARALLAX_CHROME_PATH = 'C:\path\to\chrome-for-testing\chrome.exe'
+$env:PARALLAX_MACHINE_ID = 'dev-01'
+$env:PARALLAX_TIER = 'showcase'
+$env:PARALLAX_GPU_BACKEND = 'D3D12'
+$env:PARALLAX_POWER_MODE = 'Balanced'
+pnpm harness:smoke
+```
+
+The command builds and serves the exact artifact, runs three fresh/warm profile pairs
+with the required 10-second warm-up, writes ignored JSON and Markdown output under
+`harness/results/`, and exits nonzero on a measured budget violation, browser error,
+Chrome identity mismatch, or still-missing mandatory Harness v1 probe. Machine, tier,
+backend, display target, and power-mode inputs are declarations for investigation only;
+until the environment-verification probe lands they cannot produce a gating verdict.

@@ -71,4 +71,31 @@ COS APIs exist):
 
 ## Findings
 
-*(none yet)*
+## RE-001: Render-worker animation callbacks hold near 32 Hz in automated 4K smoke run
+
+- **Date / Chrome version:** 2026-07-12; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 10.0.26200; NVIDIA RTX 4080 Super, driver
+  32.0.15.9649; D3D12; dev-01.
+- **Layer:** scheduler / Babylon / WebGPU-Dawn (attribution open).
+- **Status:** open.
+- **What we expected / What happened:** Across three fresh and three warm headed-profile
+  runs at the declared 3840x2160 smoke viewport, worker `requestAnimationFrame` callback
+  spacing p50 was 31.21-31.28 ms and p95 was 31.57-31.71 ms. These are callback
+  timestamps, not compositor presentation timestamps, so they do not establish a 32 Hz
+  presentation rate and are not compared with the Showcase frame budget. The
+  worker's CPU render/submit-duration p95 was 0.69-0.95 ms, main-thread long tasks over
+  50 ms were zero, and relative p95 range within fresh and warm groups was below 0.15%.
+  Those diagnostics rule out noisy repeats and sustained JS submission cost, but do not
+  distinguish Babylon, GPU execution/presentation, worker rAF pacing, or automation.
+- **Repro:** build the current tree, set the pinned CfT path and dev-01 identity as in
+  `README.md`, then run `pnpm harness:smoke`. The `smoke@1` runner performs three fresh
+  profile launches and three warm relaunches after 10-second warm-ups; the generated
+  JSON contains each distribution. A standalone WebGPU/worker repro and trace are still
+  needed before filing a Chrome issue.
+- **Impact on Parallax:** the unexplained pacing and lack of a validated present-to-present
+  probe block the M0 Showcase smoke gate and Harness v1; no workaround or budget change
+  applied.
+- **Proposed improvement:** first add GPU execution/present and Dawn trace attribution,
+  then compare worker vs window rAF and Babylon vs a minimal WebGPU loop under the same
+  pinned browser. If worker presentation is the cause, expose stable pacing/diagnostic
+  signals that let applications distinguish scheduler throttling from GPU backpressure.
