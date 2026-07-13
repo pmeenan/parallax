@@ -13,7 +13,10 @@ touches. Full read is for structural or cross-cutting work.
 **Culling (D-023):** the log is periodically pruned — superseded or moot entries whose
 context no longer informs anything current are deleted outright; git history is the
 archive. D-numbers are never reused, so a citation to a culled entry stays unambiguous
-(recover it from git history if needed).
+(recover it from git history if needed). One guard: some entries are written as diffs
+against the entry they supersede (e.g., D-020 is "as D-014, with refinements") — a
+superseded entry whose content a live entry builds on cannot be culled until that
+content is folded forward into a self-contained entry.
 
 Format:
 

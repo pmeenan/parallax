@@ -27,6 +27,10 @@ measured automatically.
 - [ ] Engine/game bundle separation with deterministic engine builds (D-010): same
       source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
       double-build hash check in the pipeline.
+- [ ] Walking-skeleton app: the render-worker Babylon.js WebGPU scene from the preamble,
+      booting through the real build/serve pipeline with COOP/COEP intact — the target
+      the harness and spikes run against (integrated deliverable, not just the
+      WebGPU-in-worker spike).
 - [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
       frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
@@ -43,8 +47,9 @@ measured automatically.
 - [ ] Harness result contract implemented (budgets.md → Measurement methodology):
       metric states, environment identity, artifact digest + dirty-tree identity,
       per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.
-- [ ] Exit: one command produces a deployed build and a budget report; all spike results
-      recorded in rough-edges.md or decisions.md.
+- [ ] Exit: one command produces a built, locally served build (local serving only at
+      M0 per D-011/D-022 — production deployment is M2) and a budget report; all spike
+      results recorded in rough-edges.md or decisions.md.
 
 ## M1 — Greybox District 1 streaming  `pending`
 

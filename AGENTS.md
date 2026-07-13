@@ -11,7 +11,7 @@ that apply within that directory.**
 ## The two goals (in priority order)
 
 1. **Platform research / capabilities demo.** Push the newest Chrome releases (WebGPU,
-   wasm64, OPFS, SharedArrayBuffer workers, the built-in AI Prompt API) to their limits
+   wasm threads, OPFS, SharedArrayBuffer workers, the built-in AI Prompt API) to their limits
    and document every rough edge with evidence. The findings log and the measurement
    harness are first-class deliverables, not side effects.
 2. **The game itself.** A playable, high-fidelity open-world slice that demonstrates what

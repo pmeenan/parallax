@@ -1,7 +1,7 @@
 # Project Parallax
 
 An experiment in building an AI-generated, AAA-scope, open-world game that runs entirely
-on the web platform — targeting the newest Chrome releases (WebGPU, wasm64, OPFS,
+on the web platform — targeting the newest Chrome releases (WebGPU, wasm threads, OPFS,
 SharedArrayBuffer workers, the built-in AI Prompt API) and treating the browser like a
 native install/launch/run target instead of an instant-load web page.
 
