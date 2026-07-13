@@ -31,6 +31,13 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "verified gate environment identity")?.probe,
     ).toBe("implemented");
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")?.probe,
+    ).toBe("incomplete");
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
+        ?.invalidReason,
+    ).toContain("PresentationFeedback.kFailure");
   });
 
   it("owns exhaustive tier profiles", () => {

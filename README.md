@@ -60,4 +60,7 @@ The command builds and serves the exact artifact, runs three fresh/warm profile 
 with the required 10-second warm-up, writes ignored JSON and Markdown output under
 `harness/results/`, and exits nonzero on a measured budget violation, browser error,
 Chrome or registered-machine identity mismatch, a remote session, or a still-missing
-mandatory Harness v1 probe.
+mandatory Harness v1 probe. Chrome's narrowly scoped Viz trace is retained as a non-gating
+presentation-feedback callback diagnostic. It cannot satisfy the present-to-present budget
+because the trace omits Chrome's presentation-failure flag; the mandatory metric therefore
+stays explicitly invalid rather than being replaced with callback timing.

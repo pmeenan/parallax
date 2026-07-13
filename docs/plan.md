@@ -45,8 +45,10 @@ measured automatically.
       fresh/warm pairs on dev-01 at 4K/60 on 2026-07-13; RDP remains non-gating (RE-002), and
       the fractional-scale surface discrepancy is recorded as RE-003. Post-review native
       reruns confirmed that moving Chrome diagnostics before the full warmup resolves the
-      harness-induced ~32 Hz callback pacing (RE-001). True compositor presentation timing
-      and the Dawn/V8 probes remain.
+      harness-induced ~32 Hz callback pacing (RE-001). A page-windowed Viz trace now records
+      presentation-feedback callback cadence, but Chrome omits the success/failure flag, so
+      true presentation remains mandatory/invalid (D-035, RE-006). Dawn/V8 probes also
+      remain.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

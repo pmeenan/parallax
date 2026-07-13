@@ -27,6 +27,48 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-035: Viz presentation-feedback trace is diagnostic, not a presentation gate  (2026-07-13, accepted)
+**Decision:** `smoke@1` records GPU-process `Display::FrameDisplayed` intervals as the
+explicitly non-gating `vizPresentationFeedbackCallbackIntervalMs` diagnostic. It does not
+satisfy budgets.md's compositor-presentation metric, which remains mandatory and invalid.
+The collector enables only `disabled-by-default-display.framedisplayed` plus
+`blink.user_timing`; renderer `performance.mark()` instants bound the run in Chrome's
+shared monotonic trace clock. A usable diagnostic requires no trace loss, exactly one GPU
+process/track, and feedback spanning both boundaries. A 100 ms post-marker trace tail sits
+outside app/CPU measurement so the final callback can close the boundary interval. Smoke
+result schema advances to v3 for the diagnostic and its cross-repeat variance. Trace
+end/completion is bounded as one five-second transaction; timeout or CDP disconnect makes
+only the diagnostic invalid and always detaches the session.
+
+**Context:** Chromium's Viz `Display::DidReceivePresentationFeedback` sanitizes invalid
+feedback to `PresentationFeedback::Failure()`, whose timestamp is the failure time and whose
+flags contain `kFailure`, then emits `Display::FrameDisplayed` with only the timestamp/name.
+The trace event does not expose that failure flag. Treating every event as successful
+scan-out could therefore report a passing cadence when presentation actually failed. A
+local diagnostic on branded Chrome Stable 150.0.7871.102, Windows 11, RTX 4080
+Super/D3D12, observed one callback track and correlated it with the worker's ~32 Hz pacing;
+that validates collection/clock alignment, not display success. RE-005 records the
+branded-vs-pinned cadence question and RE-006 the blocking observability gap.
+
+**Consequences:** The harness preserves useful compositor-adjacent evidence without
+weakening the true frame gate or substituting worker callbacks. Trace ambiguity/loss makes
+only the diagnostic invalid and does not independently fail a run. The mandatory metric's
+explicit invalid state continues to fail Harness v1. A browser surface that exposes both
+the timestamp and presentation-success flags—or another independently correlated source—is
+required before applying frame budgets. External trace markers also remain unsuitable for
+D-025's eventual driver-free in-game measurement path.
+
+**Sources checked (2026-07-13):** Chromium
+`components/viz/service/display/display.cc` at main (sanitization and trace emission),
+`ui/gfx/presentation_feedback.h` at main (`Failure()`, `kFailure`, and timestamp semantics),
+`base/trace_event/builtin_categories.h` at main (the dedicated category), and the Chrome
+DevTools Protocol Tracing-domain documentation (completion, delivery, and data loss). Local
+behavior was checked directly as described above.
+
+**Reopen if:** Chrome exposes the feedback flags in a correlated trace/CDP event, a stable
+page-correlated presentation API becomes available, or a separate probe can prove that all
+events in the gate window represent successful scan-out.
+
 ## D-034: Harness gates versioned observed environments from a physical console  (2026-07-13, accepted)
 **Decision:** Reference-machine identities live as versioned descriptors in
 `harness/machines/`; `smoke@1` verifies the requested tier against observed state rather

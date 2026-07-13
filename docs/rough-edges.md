@@ -201,3 +201,61 @@ COS APIs exist):
   backend identity dependent on a non-standard developer feature.
 - **Proposed improvement:** expose the selected adapter's backend and driver through a
   stable, page-correlated CDP/WebGPU diagnostics API without changing WebGPU behavior.
+
+## RE-005: Branded Stable Viz-feedback pacing diverges from the current CfT callback baseline
+
+- **Date / Chrome version:** 2026-07-13; branded Chrome Stable 150.0.7871.102;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 physical console at 3840×2160/59 Hz.
+- **Layer:** scheduler / compositor / release-channel parity (attribution open).
+- **Status:** open; compare the new presentation probe on exact-pinned CfT
+  150.0.7871.115, then run the D-019 branded-Stable parity smoke on a promoted matching
+  release.
+- **What we expected / What happened:** The D-035 diagnostic recorded one GPU-process
+  Viz presentation-feedback callback track during a 120-worker-callback window. It saw
+  107 callbacks over 3.323 seconds, with p50 31.225 ms and p95 31.593 ms. The 120 callback
+  samples immediately before tracing were already at p50 31.180 ms and p95 31.615 ms, so
+  enabling the dedicated presentation trace category did not introduce the ~32 Hz pacing.
+  In contrast, the current CfT 150.0.7871.115 callback-only baseline in RE-001 holds near
+  60 Hz after the harness warmup-order fix. Because the browser patch/build differs and
+  the CfT baseline lacks presentation timestamps, this is divergence evidence, not yet an
+  attribution to branded Chrome or successful display presentation (RE-006).
+- **Repro:** Build and serve the walking skeleton, launch branded Stable with a fresh
+  persistent profile and native fullscreen, allow the full 10-second warmup, then trace
+  only `disabled-by-default-display.framedisplayed` and `blink.user_timing`. Bound 120
+  worker callbacks with user-timing markers and aggregate the intervening GPU-process
+  `Display::FrameDisplayed` timestamps. The maintained implementation is
+  `harness/src/presentation-trace.ts` plus `smoke@1` orchestration.
+- **Impact on Parallax:** The callback diagnostic is locally validated but cannot implement
+  the compositor metric because Chrome omits feedback success/failure (RE-006). A
+  branded/CfT difference at the same promoted version would become a browser parity
+  finding.
+- **Proposed improvement:** expose page-correlated presentation timestamps through a
+  stable CDP or web performance API, and make Chrome/CfT variant differences machine-
+  readable so automation can attribute pacing changes without relying on build branding.
+
+## RE-006: Viz trace omits whether a presentation-feedback callback represents failure
+
+- **Date / Chrome version:** source checked 2026-07-13 at Chromium main; locally observed
+  event shape on branded Chrome Stable 150.0.7871.102, Windows 11, NVIDIA RTX 4080 Super,
+  D3D12.
+- **Layer:** WebGPU/Viz compositor observability.
+- **Status:** open; blocks the mandatory compositor-presentation metric.
+- **What we expected / What happened:** `Display::FrameDisplayed` is emitted at Viz's
+  sanitized presentation-feedback timestamp, but carries no success/failure field.
+  Chromium converts invalid feedback to `PresentationFeedback::Failure()`, timestamped at
+  failure time with `kFailure`; `Display::DidReceivePresentationFeedback` then emits the
+  same trace event without serializing the flag. A callback-time distribution can therefore
+  look regular even if one or more buffers were never scanned out.
+- **Repro:** inspect Chromium
+  `components/viz/service/display/display.cc` (`SanitizePresentationFeedback` and
+  `DidReceivePresentationFeedback`) with `ui/gfx/presentation_feedback.h` (`Failure()` and
+  `kFailure`), then capture `disabled-by-default-display.framedisplayed`. The maintained
+  `smoke@1` collector records the resulting timestamp cadence as the explicitly non-gating
+  `vizPresentationFeedbackCallbackIntervalMs` diagnostic.
+- **Impact on Parallax:** Chrome's available trace cannot satisfy budgets.md's definition
+  of player-visible present-to-present time. Harness v1 must keep the mandatory metric
+  `invalid`; worker rAF and feedback-callback cadence remain diagnostics only.
+- **Proposed improvement:** include presentation flags (at minimum `kFailure`, ideally
+  `kVSync`/`kHWClock`/`kHWCompletion`) and a page/frame-sink identifier in a stable CDP or
+  Perfetto event, or expose successful presentation timing through a web performance API.

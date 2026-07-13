@@ -3,7 +3,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
 import { type BrowserContext, chromium, type Page } from "playwright-core";
-import { type Distribution, distribution, evaluateP95Variance } from "./aggregate.js";
+import {
+  type Distribution,
+  distribution,
+  evaluateP95Variance,
+  type VarianceMetric,
+} from "./aggregate.js";
 import { type BudgetCheck, evaluateMainThreadBudgets, type QualityTier } from "./budgets.js";
 import { readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
 import {
@@ -23,12 +28,22 @@ import {
   type WindowsHostIdentityResult,
 } from "./environment.js";
 import {
+  type ChromeTraceEvent,
+  extractVizPresentationFeedbackCallbackIntervalsMs,
+  PRESENTATION_TRACE_CATEGORY,
+  PRESENTATION_TRACE_END_MARKER,
+  PRESENTATION_TRACE_START_MARKER,
+  withTimeout,
+} from "./presentation-trace.js";
+import {
   parseQualityTier,
   QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MEASUREMENT_FRAMES,
   SMOKE_METRICS,
+  SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+  SMOKE_PRESENTATION_TRACE_TAIL_MS,
   SMOKE_REPEATS,
   SMOKE_SCENARIO,
   SMOKE_TELEMETRY_GLOBAL_NAME,
@@ -52,6 +67,13 @@ interface MeasuredMetric<T> {
 type ProbeResult<T> =
   | Readonly<{ readonly state: "measured"; readonly value: T }>
   | Readonly<{ readonly reason: string; readonly state: "invalid" }>;
+
+interface P95VarianceSummary {
+  readonly profile: "fresh" | "warm";
+  readonly reason?: string;
+  readonly relativeP95Range: number;
+  readonly state: "invalid" | "measured";
+}
 
 interface ChromePin {
   readonly channel: "stable";
@@ -80,6 +102,7 @@ interface RunMeasurement {
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
+  readonly vizPresentationFeedbackCallbackIntervalMs: ProbeResult<Distribution>;
 }
 
 interface EnvironmentIdentity {
@@ -116,16 +139,17 @@ interface SmokeReport {
     readonly version: 1;
   };
   readonly passed: boolean;
-  readonly runs: readonly RunMeasurement[];
-  readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 2;
-  readonly source: SourceIdentity;
-  readonly callbackPacingVariance: readonly {
+  readonly vizPresentationFeedbackCallbackVariance: readonly {
     readonly profile: "fresh" | "warm";
     readonly reason?: string;
-    readonly relativeP95Range: number;
+    readonly relativeP95Range: number | null;
     readonly state: "invalid" | "measured";
   }[];
+  readonly runs: readonly RunMeasurement[];
+  readonly scenario: typeof SMOKE_SCENARIO;
+  readonly schemaVersion: 3;
+  readonly source: SourceIdentity;
+  readonly callbackPacingVariance: readonly P95VarianceSummary[];
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
@@ -171,18 +195,39 @@ async function main(): Promise<void> {
           .filter((run) => run.profile === profile)
           .map((run) => run.workerAnimationCallbackIntervalMs.value.p95),
       );
-      return variance.state === "invalid"
-        ? Object.freeze({
-            profile,
-            reason: variance.reason,
-            relativeP95Range: variance.relativeRange,
-            state: variance.state,
-          })
-        : Object.freeze({
-            profile,
-            relativeP95Range: variance.relativeRange,
-            state: variance.state,
-          });
+      return summarizeP95Variance(profile, variance);
+    });
+    const vizPresentationFeedbackCallbackVariance = (["fresh", "warm"] as const).map((profile) => {
+      const profileRuns = runs.filter((run) => run.profile === profile);
+      const invalidRuns = profileRuns.filter(
+        (run) => run.vizPresentationFeedbackCallbackIntervalMs.state === "invalid",
+      );
+      if (invalidRuns.length > 0) {
+        return Object.freeze({
+          profile,
+          reason: invalidRuns
+            .map(
+              (run) =>
+                `repeat ${run.repeat}: ${
+                  run.vizPresentationFeedbackCallbackIntervalMs.state === "invalid"
+                    ? run.vizPresentationFeedbackCallbackIntervalMs.reason
+                    : "unknown failure"
+                }`,
+            )
+            .join(" | "),
+          relativeP95Range: null,
+          state: "invalid" as const,
+        });
+      }
+      const variance = evaluateP95Variance(
+        profileRuns.map((run) => {
+          if (run.vizPresentationFeedbackCallbackIntervalMs.state !== "measured") {
+            throw new Error("Viz presentation diagnostic state changed during aggregation");
+          }
+          return run.vizPresentationFeedbackCallbackIntervalMs.value.p95;
+        }),
+      );
+      return summarizeP95Variance(profile, variance);
     });
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
@@ -216,8 +261,9 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 2,
+      schemaVersion: 3,
       source,
+      vizPresentationFeedbackCallbackVariance,
     });
     await writeReport(report);
     process.exitCode = passed ? 0 : 1;
@@ -233,7 +279,9 @@ function invalidMetric(
   return Object.freeze({
     mandatoryForHarnessV1: definition.mandatoryForHarnessV1,
     metric: definition.name,
-    reason: "Probe is not implemented in smoke@1; Harness v1 remains incomplete",
+    reason:
+      definition.invalidReason ??
+      "Probe is not implemented in smoke@1; Harness v1 remains incomplete",
     state: "invalid",
   });
 }
@@ -251,6 +299,24 @@ async function tryProbe<T>(label: string, probe: () => Promise<T>): Promise<Prob
       state: "invalid",
     });
   }
+}
+
+function summarizeP95Variance(
+  profile: "fresh" | "warm",
+  variance: VarianceMetric,
+): P95VarianceSummary {
+  return variance.state === "invalid"
+    ? Object.freeze({
+        profile,
+        reason: variance.reason,
+        relativeP95Range: variance.relativeRange,
+        state: variance.state,
+      })
+    : Object.freeze({
+        profile,
+        relativeP95Range: variance.relativeRange,
+        state: variance.state,
+      });
 }
 
 async function inspectEnvironment(
@@ -374,6 +440,19 @@ async function measureRun(
   const context = await launch(executablePath, profilePath);
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
+  let presentationTrace: PresentationTraceCapture | null = null;
+  let presentationTraceFailure: string | null = null;
+  const markPresentationBoundary = async (boundary: "start" | "end"): Promise<void> => {
+    if (presentationTrace === null) return;
+    const trace = presentationTrace;
+    const markerResult = await tryProbe(`Viz presentation-feedback ${boundary} marker`, () =>
+      boundary === "start" ? trace.markStart(page) : trace.markEnd(page),
+    );
+    if (markerResult.state === "invalid") {
+      presentationTraceFailure = await discardFailedPresentationTrace(trace, markerResult.reason);
+      presentationTrace = null;
+    }
+  };
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
@@ -397,6 +476,14 @@ async function measureRun(
       refreshRateResult.state === "measured" ? refreshRateResult.value : Object.freeze([]);
     const displayProbeFailures =
       refreshRateResult.state === "invalid" ? Object.freeze([refreshRateResult.reason]) : [];
+    const traceStartResult = await tryProbe("Viz presentation-feedback trace start", () =>
+      beginPresentationTrace(context),
+    );
+    if (traceStartResult.state === "measured") {
+      presentationTrace = traceStartResult.value;
+    } else {
+      presentationTraceFailure = traceStartResult.reason;
+    }
     await page.waitForTimeout(SMOKE_WARMUP_MS);
     await resetSurfaceObserver(page);
     const renderSurfaceBefore = await readSurfaceLatest(page);
@@ -413,6 +500,7 @@ async function measureRun(
     );
     await resetLongTaskObserver(page);
     const start = await readTelemetry(page);
+    await markPresentationBoundary("start");
     await page.waitForFunction(
       (target) => {
         const telemetry = Reflect.get(globalThis, target.globalName) as ParallaxTelemetryExport;
@@ -424,6 +512,9 @@ async function measureRun(
       },
       { timeout: 15_000 },
     );
+    await markPresentationBoundary("end");
+    const snapshot = await readTelemetry(page);
+    const mainThreadLongTasks = await readMainThreadLongTasks(page);
     const endSurfaceState = await readSurfaceState(page);
     const screenAfterResult = await tryProbe("Browser screen identity", () =>
       readScreenIdentity(page),
@@ -436,7 +527,6 @@ async function measureRun(
         ...(screenAfterResult.state === "invalid" ? [screenAfterResult.reason] : []),
       ],
     );
-    const snapshot = await readTelemetry(page);
     if (snapshot.render.state !== "ready") {
       throw new Error(
         snapshot.render.failureMessage ?? `Unexpected render state ${snapshot.render.state}`,
@@ -460,12 +550,19 @@ async function measureRun(
       (metric) => metric.name === "JSHeapUsedSize",
     )?.value;
     if (jsHeapUsedBytes === undefined) throw new Error("CDP did not report JSHeapUsedSize");
-    const mainThreadLongTasks = await page.evaluate(() => {
-      const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
-        count(): number;
-      };
-      return state.count();
-    });
+    if (presentationTrace !== null) {
+      await page.waitForTimeout(SMOKE_PRESENTATION_TRACE_TAIL_MS);
+    }
+    const traceToFinish = presentationTrace;
+    const vizPresentationFeedbackCallbackIntervalMs =
+      traceToFinish === null
+        ? Object.freeze({
+            reason: presentationTraceFailure ?? "Viz presentation-feedback trace is unavailable",
+            state: "invalid" as const,
+          })
+        : await tryProbe("Viz presentation-feedback callback intervals", async () =>
+            distribution(await traceToFinish.finish()),
+          );
     if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
     const workerAnimationCallbackIntervalMs = distribution(presentIntervals);
     return Object.freeze({
@@ -490,10 +587,108 @@ async function measureRun(
         requiredNumber(snapshot.render.workerStartupToFirstFrameMs),
       ),
       workerAnimationCallbackIntervalMs: measured(workerAnimationCallbackIntervalMs),
+      vizPresentationFeedbackCallbackIntervalMs,
     });
   } finally {
-    await context.close();
+    try {
+      if (presentationTrace !== null) {
+        const trace = presentationTrace;
+        await tryProbe("Viz presentation-feedback trace cleanup", () => trace.discard());
+      }
+    } finally {
+      await context.close();
+    }
   }
+}
+
+async function discardFailedPresentationTrace(
+  trace: PresentationTraceCapture,
+  failure: string,
+): Promise<string> {
+  const discardResult = await tryProbe("Viz presentation-feedback trace cleanup", () =>
+    trace.discard(),
+  );
+  return discardResult.state === "invalid" ? `${failure} | ${discardResult.reason}` : failure;
+}
+
+interface PresentationTraceCapture {
+  discard(): Promise<void>;
+  finish(): Promise<readonly number[]>;
+  markEnd(page: Page): Promise<void>;
+  markStart(page: Page): Promise<void>;
+}
+
+async function beginPresentationTrace(context: BrowserContext): Promise<PresentationTraceCapture> {
+  const browser = context.browser();
+  if (browser === null) throw new Error("Playwright did not expose the launched browser");
+  const session = await browser.newBrowserCDPSession();
+  const events: ChromeTraceEvent[] = [];
+  let active = true;
+  let endMarked = false;
+  session.on("Tracing.dataCollected", (event) => {
+    for (const traceEvent of event.value as unknown as readonly ChromeTraceEvent[]) {
+      events.push(traceEvent);
+    }
+  });
+  const completed = new Promise<{ dataLossOccurred: boolean }>(
+    (resolveComplete, rejectComplete) => {
+      session.once("Tracing.tracingComplete", resolveComplete);
+      session.once("close", () => rejectComplete(new Error("Viz callback CDP session closed")));
+    },
+  );
+  void completed.catch(() => undefined);
+  try {
+    await session.send("Tracing.start", {
+      traceConfig: {
+        includedCategories: [PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
+        recordMode: "recordAsMuchAsPossible",
+      },
+      transferMode: "ReportEvents",
+    });
+  } catch (error) {
+    await session.detach().catch(() => undefined);
+    throw error;
+  }
+
+  const stop = async (): Promise<{ dataLossOccurred: boolean }> => {
+    if (!active) throw new Error("Viz callback trace was already stopped");
+    active = false;
+    try {
+      return await withTimeout(
+        (async () => {
+          await session.send("Tracing.end");
+          return completed;
+        })(),
+        SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+        "Viz callback trace end/completion",
+      );
+    } finally {
+      await session.detach().catch(() => undefined);
+    }
+  };
+  return Object.freeze({
+    async discard(): Promise<void> {
+      if (active) await stop();
+    },
+    async finish(): Promise<readonly number[]> {
+      if (!endMarked) throw new Error("Viz callback trace ended before its measurement marker");
+      const result = await stop();
+      if (result.dataLossOccurred) throw new Error("Chrome reported Viz callback trace data loss");
+      return extractVizPresentationFeedbackCallbackIntervalsMs(events);
+    },
+    async markEnd(page: Page): Promise<void> {
+      if (endMarked) throw new Error("Viz callback trace end was marked more than once");
+      await markPresentationTrace(page, PRESENTATION_TRACE_END_MARKER);
+      endMarked = true;
+    },
+    markStart(page: Page): Promise<void> {
+      return markPresentationTrace(page, PRESENTATION_TRACE_START_MARKER);
+    },
+  });
+}
+
+function markPresentationTrace(page: Page, marker: string): Promise<void> {
+  return page.evaluate((name) => performance.mark(name), marker).then(() => undefined);
 }
 
 function launch(
@@ -808,6 +1003,15 @@ function resetLongTaskObserver(page: Page): Promise<void> {
       reset(): void;
     };
     state.reset();
+  });
+}
+
+function readMainThreadLongTasks(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const state = Reflect.get(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__") as {
+      count(): number;
+    };
+    return state.count();
   });
 }
 
