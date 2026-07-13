@@ -27,6 +27,26 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted)
+**Decision:** A kickoff prompt naming a milestone ("start work on M0") invokes the
+**tech-lead operating model** defined in workflow.md: the lead agent scopes a
+commit-sized slice from plan.md in dependency order; delegates well-scoped pieces to
+subagents with per-task model/reasoning-effort choices; serializes writing subagents
+(shared working tree) while parallelizing read-only work; owns acceptance with evidence
+(runs the checks itself — subagent success reports are assertions, not measurements);
+retains the cross-cutting duties (decision log, rough-edges, docs-with-code, budgets)
+regardless of delegation; and, once it believes the slice complete, spawns a
+fresh-context **adversarial reviewer** over the full working-tree diff briefed to find
+problems, addressing findings before handoff.
+**Context:** The human was pasting this operating model into every milestone kickoff
+prompt; encoding it in workflow.md (universally required reading, D-023) reduces the
+prompt to naming the milestone and makes the collaboration contract reviewable and
+evolvable like everything else.
+**Consequences:** workflow.md gains the "Milestone work: tech-lead mode" section;
+kickoff prompts need no process language.
+**Reopen if:** orchestration tooling changes materially (e.g., per-subagent isolated
+worktrees become standard, relaxing the serial-writers rule).
+
 ## D-025: In-game benchmark mode is a public front end to the harness  (2026-07-12, accepted)
 **Decision:** Parallax ships a benchmark mode that runs the same versioned,
 deterministic scenarios and consumes the same telemetry/result schema as the automated
