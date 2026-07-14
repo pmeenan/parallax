@@ -15,7 +15,14 @@ describe("smoke result adapters", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       incompleteMetrics: [],
-      runs: [{ dawnPipeline: { state: "measured" }, profile: "fresh", repeat: 1 }],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          jsHeap: { state: "measured" },
+          profile: "fresh",
+          repeat: 1,
+        },
+      ],
       v8CodeCacheDiagnostics: [
         {
           production: { state: "measured" },
@@ -37,6 +44,9 @@ describe("smoke result adapters", () => {
     expect(
       evidenceChecks.find((check) => check.description.includes("presentation-feedback")),
     ).toMatchObject({ mandatory: false, measured: false });
+    expect(
+      evidenceChecks.find((check) => check.description.includes("all-worker JS heap")),
+    ).toEqual(expect.objectContaining({ mandatory: true, measured: true }));
     expect(facets.evidenceCompleteness.status).toBe("passed");
     expect(facets.budgetEvaluation.status).toBe("passed");
   });
@@ -52,6 +62,39 @@ describe("smoke result adapters", () => {
     expect(environment).toEqual({ failures: [], measured: false });
     expect(facets.environment.status).toBe("failed");
     expect(facets.environment.reasons[0]).toContain("no reason was supplied");
+  });
+
+  it("fails closed when mandatory all-worker JS heap evidence is invalid", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      incompleteMetrics: [],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          jsHeap: { reason: "worker target disappeared", state: "invalid" },
+          profile: "fresh",
+          repeat: 1,
+        },
+      ],
+      v8CodeCacheDiagnostics: [
+        {
+          production: { state: "measured" },
+          profile: "warm",
+          repeat: 1,
+          v8CodeCache: { state: "measured" },
+        },
+      ],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "observed checks passed", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    expect(facets.evidenceCompleteness.status).toBe("failed");
+    expect(facets.evidenceCompleteness.reasons.join(" ")).toContain("all-worker JS heap invalid");
+    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
   });
 
   it("maps core and V8 budget checks with stable failure descriptions", () => {

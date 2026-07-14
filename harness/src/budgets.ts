@@ -7,6 +7,20 @@ export interface BudgetCheck {
   readonly passed: boolean;
 }
 
+const JS_HEAP_LIMIT_BYTES: Readonly<Record<QualityTier, number>> = Object.freeze({
+  showcase: 4 * 1024 ** 3,
+  standard: 2 * 1024 ** 3,
+});
+
+export function evaluateJsHeapBudget(
+  highWaterUsedSizeBytes: number,
+  tier: QualityTier,
+): readonly BudgetCheck[] {
+  return Object.freeze([
+    check("allRealmJsHeapHighWaterBytes", highWaterUsedSizeBytes, JS_HEAP_LIMIT_BYTES[tier]),
+  ]);
+}
+
 export function evaluateMainThreadBudgets(mainThreadLongTasks: number): readonly BudgetCheck[] {
   return Object.freeze([check("mainThreadLongTasksOver50Ms", mainThreadLongTasks, 0)]);
 }

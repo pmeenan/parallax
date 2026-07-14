@@ -34,6 +34,7 @@ export interface SmokeEvidenceInput {
   })[];
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
+    readonly jsHeap: EvidenceState;
     readonly profile: string;
     readonly repeat: number;
   }[];
@@ -113,6 +114,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${evidenceReason(run.dawnPipeline)})`,
         true,
         run.dawnPipeline,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: all-worker JS heap ${run.jsHeap.state} (${evidenceReason(run.jsHeap)})`,
+        true,
+        run.jsHeap,
       ),
     ),
   ]);

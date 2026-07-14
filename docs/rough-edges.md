@@ -94,6 +94,72 @@ COS APIs exist):
 
 ## Findings
 
+## RE-013: Playwright cannot publicly address a flat child-target CDP session
+
+- **Date / versions:** checked 2026-07-14 against CDP tip-of-tree, pinned Chrome for Testing
+  150.0.7871.115, and local `playwright-core@1.61.1` declarations.
+- **Layer:** CDP Target domain / Playwright transport.
+- **Status:** open; the all-realm heap collector uses the deprecated non-flat nested-session path
+  and fails closed if it stops working (D-047).
+- **What we expected / What happened:** CDP recommends flat sessions and says non-flat mode will
+  eventually be retired, but Playwright's public `CDPSession` API does not expose a constructor or
+  send method for a child session ID. The collector must use `Target.attachToTarget({flatten:false})`,
+  `Target.sendMessageToTarget`, and `Target.receivedMessageFromTarget` to reach the render worker.
+- **Repro:** create a browser CDP session through Playwright, attach a worker with flat mode, and
+  attempt to send `Runtime.getHeapUsage` through the public `CDPSession.send` API. There is no
+  session-ID parameter. Non-flat routing works on the pinned Chrome and is covered by a runtime
+  diagnostic plus attachment/session unit tests.
+- **Impact on Parallax:** this deprecated transport is mandatory for the current cross-isolate heap
+  gate. Every Chrome promotion runs the pinned mandatory smoke, so removal becomes explicit invalid
+  evidence rather than a silent pass, but it can block the harness until Playwright exposes flat
+  child sessions or the collector adopts another supported transport.
+- **Proposed improvement:** expose a public Playwright child-session API backed by flat CDP routing,
+  or add a first-class CDP aggregate memory surface that does not require per-worker attachment.
+- **Sources checked:** [CDP Target domain](https://chromedevtools.github.io/devtools-protocol/tot/Target/)
+  and pinned local Playwright type declarations.
+
+## RE-012: CDP exposes isolate used-heap snapshots but no continuous live-retention high-water
+
+- **Date / Chrome version:** protocol source and remote runtime diagnostic checked 2026-07-14;
+  Chrome for Testing Stable 150.0.7871.115 on dev-01.
+- **Layer:** V8 / CDP memory observability.
+- **Status:** open; `smoke@1` operationalizes the JS-heap budget as a fixed-deadline 100 ms
+  near-concurrent estimate in a dedicated post-trace window (D-047) and records probe duration
+  and per-realm CDP response-completion skew.
+- **What we expected / What happened:** a game memory gate needs the peak simultaneously retained
+  JavaScript heap across the window and every worker. `Runtime.getHeapUsage` returns current totals
+  for one isolate. `HeapProfiler.startSampling` samples allocations, optionally including objects
+  later collected, while `Memory.startSampling` profiles native allocations; neither surface
+  reports the continuous cross-isolate retained-size high-water. Polling can therefore miss a
+  short-lived residency peak between samples, while summing independent per-isolate maxima can
+  invent a peak that never coexisted. The protocol's `usedSize` is V8 heap occupancy, including
+  unreachable objects awaiting garbage collection, so snapshots are also GC-phase-sensitive and
+  cannot establish live retention.
+- **Repro:** attach CDP sessions to a window and dedicated worker, issue near-concurrent
+  `Runtime.getHeapUsage` calls around a shorter-than-poll-interval allocation/free burst, and
+  compare the returned snapshots with the allocation profiler. The maintained collector and its
+  exact sampling contract live in `harness/src/js-heap.ts`. A post-review six-launch remote
+  diagnostic measured both realms in the dedicated post-trace window in all 168 samples (28 per
+  launch): aggregate observed peaks were 8.28–12.04 MB, maximum fixed-deadline start delay was
+  13.2–15.7 ms, maximum Node-observed response-completion skew was 0.0 ms at report precision, and
+  the slowest collection per launch was 1.1–16.2 ms. Every launch returned measured cadence evidence. This
+  validates the collector integration, not exact peak coverage or a reference-machine budget
+  result. Response-completion timing is CDP arrival timing and cannot bound when V8 read each
+  isolate.
+- **Impact on Parallax:** the sampled estimate is diffable and budgetable, but it can under- or
+  over-estimate a truly simultaneous total. GC scheduling can move the observed value without a
+  change in live retention. Short-lived allocation churn needs separate allocation/GC diagnostics
+  before the harness can claim exact peak residency. The harness invalidates missed fixed
+  deadlines and ≥100 ms collection duration, response-completion skew, or
+  start delay rather than presenting poor temporal coverage as measured evidence.
+- **Proposed improvement:** expose a resettable per-isolate retained-JS-heap high-water counter and
+  a page/origin aggregation surface that includes dedicated/shared/service workers, with timestamped
+  breakdowns for JS heap, embedder heap, backing stores, wasm memories, and SABs.
+- **Sources checked:** [CDP Runtime](https://chromedevtools.github.io/devtools-protocol/tot/Runtime/),
+  [HeapProfiler](https://chromedevtools.github.io/devtools-protocol/tot/HeapProfiler/),
+  [Memory](https://chromedevtools.github.io/devtools-protocol/tot/Memory/), and the current
+  [V8 inspector implementation](https://chromium.googlesource.com/v8/v8/+/b339cf019df6e238d0bf5e970e513e941dc6d563/src/inspector/v8-runtime-agent-impl.cc).
+
 ## RE-011: WebGPU exposes a single queue per device — async compute is unavailable to any web engine
 
 - **Date / Chrome version:** 2026-07-14. Spec-level, not version-specific — the constraint is in

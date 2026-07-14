@@ -27,6 +27,117 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-048: Declare runtime worker entrypoints semantically in build-manifest v2  (2026-07-14, accepted)
+**Decision:** build-manifest schema v2 adds `workerEntrypoints`, whose records name the artifact
+path, target type, and runtime role. The walking skeleton declares its one dedicated `worker`
+entrypoint with role `render`; harness code consumes that declaration instead of inferring engine
+ownership from a `render-worker-*` filename prefix. Manifest validation requires every entrypoint
+to name a hashed artifact in the same manifest.
+
+**Context:** the JS-heap gate must compare observed worker targets with a declared runtime topology
+without depending on `engine/` bundler naming. Artifact paths and hashes alone do not express which
+files create target realms. A semantic entrypoint list is also the place to enumerate planned
+decode, streaming, simulation, shared, and service workers as they become launch-required.
+
+**Consequences:** renaming a worker artifact no longer changes harness discovery. The current heap
+collector scopes discovery to the app page's browser-context ID and requires its observed target
+set to equal the declared page-plus-render-worker topology both before and after sampling. The
+page target ID and browser-context ID come directly from that page's CDP session, so another
+browser context visiting the same URL cannot be mistaken for the app. Any
+additional target—including dedicated/shared/service workers, worklets, OOPIFs, `other`, or future
+target types—invalidates the metric instead of being silently omitted. Expanding the topology
+requires expanding the manifest role vocabulary and collector aggregation in the same change. The
+build-manifest format advances from v1 to v2; this is an explicit contract change, not a silent
+filename convention.
+
+**Reopen if:** runtime telemetry can provide a cryptographically tied worker-realm registry that is
+more authoritative than the assembled build manifest, or workers are created dynamically from
+non-artifact URLs that require a different declaration model.
+
+## D-047: Gate JS used heap as a fixed-deadline cross-isolate estimate  (2026-07-14, accepted)
+**Decision:** `smoke@1` replaces its renderer-page-only `Performance.getMetrics`
+snapshot with a 100 ms sampler in a dedicated post-trace steady-state window over both current
+JavaScript isolates: the
+window and the exact immutable render-worker target named by the validated build manifest. Each
+sample issues near-concurrent `Runtime.getHeapUsage` requests for both targets. The tier budget
+gates the maximum observed sum of `usedSize`; the report retains every isolate's `usedSize`,
+`totalSize`, `embedderHeapUsedSize`, and `backingStorageSize`, plus per-realm CDP
+response-completion timing,
+collection duration, deadline, and start delay. Missing, duplicate, detached, malformed, or
+cadence-invalid worker evidence makes this mandatory Harness-v1 metric `invalid` rather than
+silently falling back to the window. Cadence-invalid results retain their collected evidence and
+reason; experimental diagnostic fields are nullable when Chrome omits them. The mandatory metric
+set advances to v2.
+
+`usedSize` is V8 heap occupancy, including unreachable objects awaiting garbage collection; it is
+therefore GC-phase-sensitive and is not a retained-live-data measurement. Chrome does not expose a
+continuous live-retention high-water counter (RE-012), so "high-water" in this gate means the
+largest observed 100 ms used-heap estimate, now stated explicitly in budgets.md. The two CDP
+requests are not atomic: the estimate can miss a shorter-lived peak or combine values that did not
+coexist. It is neither a guaranteed lower nor upper bound on exact peak residency.
+
+**Context:** CDP defines `Runtime.getHeapUsage` as total usage of the corresponding V8 isolate,
+not a value scoped to one execution context. The old `Performance.getMetrics` call therefore
+measured only the page session even though 99.84% of decoded JavaScript runs in the dedicated
+render worker. A single end snapshot also did not implement budgets.md's high-water definition.
+Summing each realm's independent maximum would create an even less time-correlated result, so
+aggregation happens per near-concurrent sample before selecting the maximum. `usedSize` alone maps
+to the JS-heap sub-budget;
+embedder and backing-store bytes remain diagnostics for later CPU-envelope accounting and are not
+double-counted here. Result schema advances from v12 to v14: v13 introduced per-sample heap
+evidence, and v14 retains that evidence on the invalid metric variant.
+The enforced Standard and Showcase ceilings are exactly 2 × 1024³ and 4 × 1024³ bytes; budgets.md
+uses GiB so the documented units and byte comparisons cannot drift.
+
+Playwright exposes page and browser CDP sessions but no public child-target session constructor.
+The pinned implementation therefore attaches the exact worker target and uses CDP's nested-session
+message path inside one small collector. That transport is explicitly contained because CDP marks
+`Target.sendMessageToTarget` deprecated in favor of flat session routing, which Playwright's public
+`CDPSession.send` surface does not expose.
+
+**Sources checked (2026-07-14):** Chrome DevTools Protocol tip-of-tree `Runtime.getHeapUsage`
+(`chromedevtools.github.io/devtools-protocol/tot/Runtime/`) and Target domain
+(`chromedevtools.github.io/devtools-protocol/tot/Target/`),
+[HeapProfiler domain](https://chromedevtools.github.io/devtools-protocol/tot/HeapProfiler/), and
+[Memory domain](https://chromedevtools.github.io/devtools-protocol/tot/Memory/); pinned local
+`playwright-core@1.61.1` type declarations for `CDPSession` and `newBrowserCDPSession`; current
+[V8 inspector implementation](https://chromium.googlesource.com/v8/v8/+/b339cf019df6e238d0bf5e970e513e941dc6d563/src/inspector/v8-runtime-agent-impl.cc),
+which maps `usedSize` to `v8::HeapStatistics::used_heap_size()`.
+
+**Consequences:** the all-worker JS-heap registry entry is implemented, mandatory, and measured
+failures can bust the Standard 2 GiB or Showcase 4 GiB limit. Sampling uses fixed start deadlines;
+it skips rather than overlaps an overrun, then invalidates any deadline due through the periodic
+sampling boundary that lacks a sample. Response-completion skew, sampling start delay, or
+collection duration at least as large as the 100 ms interval also invalidates the metric.
+The forced measurement-end sample substitutes for the latest deadline at the boundary; any
+earlier missing deadline still invalidates the metric. Sampling runs only after trace and primary
+frame/Dawn/presentation evidence collection so the CDP requests cannot perturb those zero-tolerance
+gates. Realm response-completion skew is Node-side CDP arrival skew only; it is a transport-health
+diagnostic and cannot prove or bound V8 read-time simultaneity. The current exact app-context
+target-set assertion rejects every unexpected isolate-bearing or unknown target type and is a
+walking-skeleton contract, not a permanent topology assumption: when streaming/decode/sim workers
+land, the build/run contract must enumerate every required worker target and this metric must sum
+all of them. Sampling cost and non-atomic response timing are visible in each result. A
+pinned-Chrome remote diagnostic on 2026-07-14 measured both realms in the dedicated post-trace
+window across all six core launches: 28 samples per launch, 8.28–12.04 MB aggregate observed
+peaks, 13.2–15.7 ms maximum fixed-deadline start delay, 0.0 ms maximum response-completion skew at
+report precision, and 1.1–16.2 ms slowest collection. Every launch returned measured cadence evidence and no
+heap budget bust. The environment remained invalid under RDP, as required; this validates the
+collector integration, not a promoted gate baseline or exact live-retention coverage.
+
+Browser errors raised only during the dedicated heap workload invalidate the heap metric while
+retaining any samples already collected; they do not abort report generation or discard the
+completed primary trace/frame evidence. CDP session creation, commands, responses, and teardown
+are all timeout-bounded, and partial setup detaches any session already acquired.
+
+The required nested-session transport is itself a platform/tooling exposure (RE-013). The pinned
+Chrome executable/digest plus mandatory runtime smoke is the version tripwire: a Chrome update that
+removes non-flat routing produces explicit invalid evidence and cannot be promoted silently.
+
+**Reopen if:** CDP exposes an aggregate origin/page memory counter with per-isolate attribution,
+Playwright exposes flat child sessions, sampling cost affects the measured workload, or the M0 SAB
+and wasm spikes require separating backing stores/linear memories from the JS-heap sub-budget.
+
 ## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; re-grounds the technology claims in D-004 and D-005)
 **Decision:** D-004 stands — TypeScript + Babylon.js, WebGPU-only. Its supporting technology
 claims are re-verified against **Unity 6.5 (6000.5)**, the current release, and two of them are

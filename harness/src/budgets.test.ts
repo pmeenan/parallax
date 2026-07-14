@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
   evaluateV8CodeCacheBudgets,
@@ -7,6 +8,12 @@ import {
 } from "./budgets";
 
 describe("M0 implemented budgets", () => {
+  it("enforces the tier-specific all-realm JS heap ceiling", () => {
+    expect(evaluateJsHeapBudget(2 * 1024 ** 3, "standard")[0]?.passed).toBe(true);
+    expect(evaluateJsHeapBudget(2 * 1024 ** 3 + 1, "standard")[0]?.passed).toBe(false);
+    expect(evaluateJsHeapBudget(4 * 1024 ** 3, "showcase")[0]?.passed).toBe(true);
+  });
+
   it("passes zero main-thread long tasks and fails a nonzero count", () => {
     expect(evaluateMainThreadBudgets(0)[0]?.passed).toBe(true);
     expect(evaluateMainThreadBudgets(1)[0]?.passed).toBe(false);

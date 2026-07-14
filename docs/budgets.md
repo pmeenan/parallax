@@ -64,7 +64,7 @@ addressing beyond 4 GiB, gated on P-001.
 | Metric | Standard | Showcase | Notes |
 | --- | --- | --- | --- |
 | CPU-side envelope (JS + WASM + SAB + staging) | ≤ 5 GB | ≤ 16 GB | Standard's gate profile has 16 GB *unified* memory: the CPU/GPU split is accounting there — combined CPU+GPU envelope (≤ 9 GB) plus macOS/Chrome overhead must fit in 16 GB, which is the real gate. Showcase's ≤ 16 GB is a purposeful provisional ceiling on a 128 GB host — an upper limit, not a usage target |
-| — JS heap (all threads) | ≤ 2 GB | ≤ 4 GB | |
+| — JS heap (all threads) | ≤ 2 GiB | ≤ 4 GiB | Exact byte limits are 2 × 1024³ and 4 × 1024³ (D-047) |
 | — WASM linear memory (sum of modules) | ≤ 2 GB | ≤ 8 GB | Per-module tracked; memory64 modules justified individually (P-001). An aggregate sum proves nothing about memory64 — see the dedicated single-module >4 GiB harness run under P-001 |
 | GPU memory envelope (as attributable) | ≤ 4 GB | ≤ 14 GB | Resident set + transient uploads; Showcase leaves ~2 GB of dev-01's 16 GB card for OS/compositor/browser |
 | SAB pools | Fixed at boot | Fixed at boot | No runtime growth; sizes recorded per build |
@@ -140,6 +140,21 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Warm-up exclusion:** the first 10 seconds of any run (or until first steady-state
   marker emitted by the app) are excluded from frame statistics; launch metrics have
   their own budgets and are never mixed into gameplay frame stats.
+- **JavaScript used-heap high-water estimate (D-047):** after the primary frame/trace
+  measurement completes, run a dedicated steady-state window over the same 120-frame workload.
+  Issue near-concurrent `Runtime.getHeapUsage.usedSize` requests for every required
+  window/worker isolate on fixed 100 ms start deadlines; sum realms within each sample,
+  then gate the largest observed aggregate. `usedSize` is current V8 heap occupancy, including
+  objects that are unreachable but have not yet been collected, so it is GC-phase-sensitive and
+  must not be described as retained live data. The requests are not atomic, so the result can
+  under- or over-estimate a coexisting total. Per-realm CDP response-completion timing,
+  total/embedder/backing-store values, collection duration, start delay, and missed deadlines
+  remain evidence even when a cadence gate invalidates the metric; experimental diagnostic fields
+  are `null` when absent. Response-completion skew is transport arrival skew observed by the Node
+  collector; it does not bound when V8 read each realm. Response-completion skew, start delay, or
+  collection duration reaching 100 ms, or any deadline due before the sampling boundary without
+  a periodic sample or the substituting boundary sample, makes the mandatory metric invalid.
+  Chrome exposes no continuous cross-isolate live-retention peak (RE-012).
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).

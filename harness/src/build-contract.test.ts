@@ -13,7 +13,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(1);
+    expect(manifest.schemaVersion).toBe(2);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -29,8 +29,11 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    const workerArtifact = manifest.artifacts.find((artifact) =>
-      /^immutable\/render-worker-[a-f0-9]{64}\.js$/.test(artifact.path),
+    expect(manifest.workerEntrypoints).toHaveLength(1);
+    const workerEntrypoint = manifest.workerEntrypoints[0];
+    expect(workerEntrypoint).toMatchObject({ role: "render", targetType: "worker" });
+    const workerArtifact = manifest.artifacts.find(
+      (artifact) => artifact.path === workerEntrypoint?.path,
     );
     expect(workerArtifact).toBeDefined();
     const workerSource = await readFile(join(buildRoot, workerArtifact?.path ?? ""), "utf8");

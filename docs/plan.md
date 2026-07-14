@@ -38,7 +38,7 @@ measured automatically.
       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
       fail on bust. First slice in progress: `smoke@1` now pins/validates CfT, runs three
       fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
-      window heap, atomic HTTP cache deltas, validated artifact/source identity, plus
+      all-required-realm JS used heap, atomic HTTP cache deltas, validated artifact/source identity, plus
       explicit metric states. Registered-machine environment verification now probes the
       exact OS build, CPU/RAM, GPU/driver/WebGPU backend, power scheme, display mode, and
       rejects remote/indirect displays (D-034). Verified `measured` across three native-console
@@ -100,7 +100,18 @@ measured automatically.
       native schema-v12 dev-01 run verified that exact outcome: environment `passed`, evidence
       completeness `failed`, and budget evaluation `not-evaluated` after 17 executed checks with
       no observed threshold bust. RE-008 additionally invalidated two of six core traces while all
-      nine isolated V8 traces completed.
+      nine isolated V8 traces completed. Result schema v14 now replaces the page-only heap snapshot
+      with fixed-deadline 100 ms near-concurrent window + render-worker isolate sampling in a
+      dedicated post-trace steady-state window and gates the maximum observed aggregate used-heap
+      estimate against the tier's JS-heap ceiling (D-047/RE-012).
+      The metric is mandatory in metric-set v2 and fails closed on missing realms, missed deadlines,
+      or collection/response-completion/start-delay evidence spanning the sample interval. A post-review
+      pinned-Chrome remote diagnostic measured the final collector integration on all six core
+      launches: 28 samples each, 8.28–12.04 MB observed peaks, 13.2–15.7 ms maximum start delay,
+      0.0 ms maximum response-completion skew at report precision, and 1.1–16.2 ms slowest collection. Every launch
+      returned measured heap evidence with no heap budget bust. The run remained correctly
+      non-gating under RDP; a physical-console rerun is required before promoting memory baseline
+      evidence.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

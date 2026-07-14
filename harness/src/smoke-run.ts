@@ -11,6 +11,7 @@ import {
 } from "./aggregate.js";
 import {
   type BudgetCheck,
+  evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
   evaluateV8CodeCacheBudgets,
@@ -18,6 +19,7 @@ import {
   type QualityTier,
 } from "./budgets.js";
 import {
+  type BuildManifest,
   type ManifestArtifact,
   readAndValidateBuildManifest,
   sha256File,
@@ -46,6 +48,14 @@ import {
   type WindowsHostIdentityResult,
 } from "./environment.js";
 import {
+  invalidateJsHeapMetric,
+  type JsHeapEvidence,
+  type JsHeapMetric,
+  type JsHeapSampler,
+  JsHeapValidationError,
+  prepareJsHeapSampler,
+} from "./js-heap.js";
+import {
   type ChromeTraceEvent,
   extractVizPresentationFeedbackCallbackIntervalsMs,
   PRESENTATION_TRACE_CATEGORY,
@@ -59,6 +69,8 @@ import {
   QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
+  SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
+  SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_MEASUREMENT_FRAMES,
   SMOKE_METRICS,
   SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
@@ -136,7 +148,7 @@ interface RunMeasurement {
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
-  readonly jsHeapUsedBytes: MeasuredMetric<number>;
+  readonly jsHeap: JsHeapMetric;
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
@@ -226,7 +238,7 @@ interface SmokeReport {
   }[];
   readonly mandatoryMetricSet: {
     readonly metrics: readonly string[];
-    readonly version: 1;
+    readonly version: typeof SMOKE_MANDATORY_METRIC_SET_VERSION;
   };
   readonly passed: boolean;
   readonly vizPresentationFeedbackCallbackVariance: readonly {
@@ -237,7 +249,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 12;
+  readonly schemaVersion: 14;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -259,10 +271,17 @@ async function main(): Promise<void> {
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
   const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest.artifacts);
+  const renderWorkerArtifact = await tryProbe("Build-manifest render-worker entrypoint", async () =>
+    renderWorkerArtifactPath(validatedBuild.manifest),
+  );
   const source = await readSourceIdentity(repositoryRoot);
   const server = createLocalServer({ root: buildRoot });
   const address = await listenLocalServer(server);
   const baseUrl = `http://127.0.0.1:${address.port}`;
+  const renderWorkerUrl: ProbeResult<string> =
+    renderWorkerArtifact.state === "measured"
+      ? measured(new URL(renderWorkerArtifact.value, `${baseUrl}/`).href)
+      : renderWorkerArtifact;
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-harness-"));
 
   try {
@@ -287,6 +306,8 @@ async function main(): Promise<void> {
           repeat,
           "fresh",
           environment.adapter?.backend ?? null,
+          tier,
+          renderWorkerUrl,
           launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
         ),
         await measureRun(
@@ -296,6 +317,8 @@ async function main(): Promise<void> {
           repeat,
           "warm",
           environment.adapter?.backend ?? null,
+          tier,
+          renderWorkerUrl,
           launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
         ),
       );
@@ -408,12 +431,12 @@ async function main(): Promise<void> {
             (metric) => metric.name,
           ),
         ),
-        version: 1,
+        version: SMOKE_MANDATORY_METRIC_SET_VERSION,
       }),
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 12,
+      schemaVersion: 14,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -473,6 +496,18 @@ async function readV8ScriptArtifacts(
         ),
     ),
   );
+}
+
+function renderWorkerArtifactPath(manifest: BuildManifest): string {
+  const matches = manifest.workerEntrypoints.filter(
+    (entrypoint) => entrypoint.role === "render" && entrypoint.targetType === "worker",
+  );
+  if (matches.length !== 1) {
+    throw new Error(`Expected one declared render-worker entrypoint; received ${matches.length}`);
+  }
+  const entrypoint = matches[0];
+  if (entrypoint === undefined) throw new Error("Render-worker entrypoint disappeared");
+  return entrypoint.path;
 }
 
 async function readD3D12CacheHistograms(
@@ -677,6 +712,8 @@ async function measureRun(
   repeat: number,
   profile: "fresh" | "warm",
   dawnBackend: string | null,
+  tier: QualityTier,
+  renderWorkerUrl: ProbeResult<string>,
   launchPosition: LaunchSequencePosition,
 ): Promise<RunMeasurement> {
   const before = await fetchServerMetrics(baseUrl);
@@ -786,15 +823,6 @@ async function measureRun(
         `Expected ${SMOKE_MEASUREMENT_FRAMES} intervals; received ${presentIntervals.length}`,
       );
     }
-    const session = await context.newCDPSession(page);
-    await session.send("Performance.enable");
-    const performanceMetrics = (await session.send("Performance.getMetrics")) as {
-      metrics: readonly { name: string; value: number }[];
-    };
-    const jsHeapUsedBytes = performanceMetrics.metrics.find(
-      (metric) => metric.name === "JSHeapUsedSize",
-    )?.value;
-    if (jsHeapUsedBytes === undefined) throw new Error("CDP did not report JSHeapUsedSize");
     if (smokeTrace !== null) {
       await page.waitForTimeout(SMOKE_PRESENTATION_TRACE_TAIL_MS);
     }
@@ -845,6 +873,22 @@ async function measureRun(
       histogramsBeforeTraceEnd,
       histogramsAfterTraceEnd,
     );
+    const browserErrorsBeforeJsHeap = errors.length;
+    let jsHeap: JsHeapMetric =
+      renderWorkerUrl.state === "measured"
+        ? await measureJsHeapMetric(context, page, renderWorkerUrl.value)
+        : Object.freeze({
+            evidence: null,
+            reason: renderWorkerUrl.reason,
+            state: "invalid",
+          });
+    const jsHeapBrowserErrors = errors.slice(browserErrorsBeforeJsHeap);
+    if (jsHeapBrowserErrors.length > 0) {
+      jsHeap = invalidateJsHeapMetric(
+        jsHeap,
+        `Browser errors during the JS heap steady-state window: ${jsHeapBrowserErrors.join(" | ")}`,
+      );
+    }
     const workerAnimationCallbackIntervalMs = distribution(presentIntervals);
     const pipelineBudgetChecks =
       dawnPipeline.state === "measured"
@@ -855,6 +899,9 @@ async function measureRun(
         : [];
     return Object.freeze({
       budgetChecks: Object.freeze([
+        ...(jsHeap.state === "measured"
+          ? evaluateJsHeapBudget(jsHeap.value.highWaterUsedSizeBytes, tier)
+          : []),
         ...evaluateMainThreadBudgets(mainThreadLongTasks),
         ...pipelineBudgetChecks,
       ]),
@@ -863,7 +910,7 @@ async function measureRun(
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
       http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
-      jsHeapUsedBytes: measured(jsHeapUsedBytes),
+      jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
@@ -893,6 +940,79 @@ async function measureRun(
     } finally {
       await context.close();
     }
+  }
+}
+
+async function measureJsHeapSteadyStateWindow(
+  context: BrowserContext,
+  page: Page,
+  renderWorkerUrl: string,
+): Promise<JsHeapEvidence> {
+  const browser = context.browser();
+  if (browser === null) throw new Error("Playwright did not expose the launched browser");
+  let browserSession: CDPSession | null = null;
+  let pageSession: CDPSession | null = null;
+  let sampler: JsHeapSampler | null = null;
+  try {
+    browserSession = await withTimeout(
+      browser.newBrowserCDPSession(),
+      5_000,
+      "JS heap browser CDP session creation",
+    );
+    pageSession = await withTimeout(
+      context.newCDPSession(page),
+      5_000,
+      "JS heap page CDP session creation",
+    );
+    sampler = await prepareJsHeapSampler(
+      browserSession,
+      pageSession,
+      page.url(),
+      renderWorkerUrl,
+      SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
+    );
+    const start = await readTelemetry(page);
+    sampler.start();
+    await page.waitForFunction(
+      (target) => {
+        const telemetry = Reflect.get(globalThis, target.globalName) as ParallaxTelemetryExport;
+        return telemetry.snapshot().render.frameCount >= target.frameCount;
+      },
+      {
+        frameCount: start.render.frameCount + SMOKE_MEASUREMENT_FRAMES,
+        globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+      },
+      { timeout: 15_000 },
+    );
+    return await sampler.finish();
+  } finally {
+    await sampler?.discard().catch(() => undefined);
+    if (pageSession !== null) {
+      await withTimeout(pageSession.detach(), 1_000, "JS heap page CDP session detach").catch(
+        () => undefined,
+      );
+    }
+    if (browserSession !== null) {
+      await withTimeout(browserSession.detach(), 1_000, "JS heap browser CDP session detach").catch(
+        () => undefined,
+      );
+    }
+  }
+}
+
+async function measureJsHeapMetric(
+  context: BrowserContext,
+  page: Page,
+  renderWorkerUrl: string,
+): Promise<JsHeapMetric> {
+  try {
+    return measured(await measureJsHeapSteadyStateWindow(context, page, renderWorkerUrl));
+  } catch (error) {
+    return Object.freeze({
+      evidence: error instanceof JsHeapValidationError ? error.evidence : null,
+      reason: `All-realm JS heap steady-state window: ${errorMessage(error)}`,
+      state: "invalid",
+    });
   }
 }
 
@@ -1640,6 +1760,15 @@ async function writeReport(report: SmokeReport): Promise<void> {
       return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
     }),
   );
+  const jsHeapEvidence = report.runs.map((run) => {
+    const invalidReason = run.jsHeap.state === "invalid" ? run.jsHeap.reason : null;
+    const evidence = run.jsHeap.state === "measured" ? run.jsHeap.value : run.jsHeap.evidence;
+    if (evidence === null) {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — ${invalidReason ?? "unknown failure"}`;
+    }
+    const validity = invalidReason === null ? "measured" : `invalid — ${invalidReason}; retained`;
+    return `- ${run.profile} repeat ${run.repeat}: ${validity} near-concurrent aggregate used-heap high-water estimate ${formatBytes(evidence.highWaterUsedSizeBytes)} across window + render worker; ${evidence.samples.length} samples over ${formatMilliseconds(evidence.periodicSamplingDurationMs)} at ${evidence.sampleIntervalMs} ms fixed-deadline interval in a dedicated post-trace steady-state window; missed deadlines ${evidence.missedSampleDeadlines}; maximum start delay ${formatMilliseconds(evidence.maximumSamplingStartDelayMs)}; maximum realm response-completion skew ${formatMilliseconds(evidence.maximumRealmResponseCompletionSkewMs)}; slowest collection ${formatMilliseconds(evidence.maximumCollectionDurationMs)}`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -1675,6 +1804,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...v8WorkerStartupEvidence,
     "",
+    "## All-worker JavaScript heap",
+    "",
+    ...jsHeapEvidence,
+    "",
     "## Trace drain diagnostics",
     "",
     ...traceDrainEvidence,
@@ -1704,6 +1837,10 @@ function formatDawnCachePath(path: DawnPipelineEvidence["pipelineCache"]["comput
 
 function formatMilliseconds(value: number | null): string {
   return value === null ? "unknown duration" : `${value.toFixed(1)} ms`;
+}
+
+function formatBytes(value: number): string {
+  return `${value.toLocaleString("en-US")} bytes`;
 }
 
 function requiredEnvironment(name: string): string {

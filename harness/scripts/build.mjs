@@ -88,7 +88,21 @@ const artifacts = (await collectArtifacts(outputRoot)).sort((left, right) =>
 );
 await writeFile(
   join(outputRoot, "build-manifest.json"),
-  `${JSON.stringify({ schemaVersion: 1, artifacts }, null, 2)}\n`,
+  `${JSON.stringify(
+    {
+      schemaVersion: 2,
+      workerEntrypoints: [
+        {
+          path: `immutable/${workerOutputName}`,
+          role: "render",
+          targetType: "worker",
+        },
+      ],
+      artifacts,
+    },
+    null,
+    2,
+  )}\n`,
 );
 runPnpm(["verify:repeatable"]);
 

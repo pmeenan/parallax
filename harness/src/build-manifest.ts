@@ -11,7 +11,14 @@ export interface ManifestArtifact {
 
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
+  readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
+}
+
+export interface ManifestWorkerEntrypoint {
+  readonly path: string;
+  readonly role: "render";
+  readonly targetType: "worker";
 }
 
 export interface FileDigest {
@@ -30,7 +37,11 @@ export async function readAndValidateBuildManifest(
   const resolvedRoot = resolve(buildRoot);
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
-  if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.artifacts)) {
+  if (
+    manifest.schemaVersion !== 2 ||
+    !Array.isArray(manifest.artifacts) ||
+    !Array.isArray(manifest.workerEntrypoints)
+  ) {
     throw new Error(`Unsupported build manifest ${String(manifest.schemaVersion)}`);
   }
   for (const artifact of manifest.artifacts) {
@@ -41,6 +52,15 @@ export async function readAndValidateBuildManifest(
     const actual = await sha256File(artifactPath);
     if (actual.bytes !== artifact.bytes || actual.sha256 !== artifact.sha256) {
       throw new Error(`Built artifact does not match its manifest: ${artifact.path}`);
+    }
+  }
+  for (const entrypoint of manifest.workerEntrypoints) {
+    if (
+      entrypoint.role !== "render" ||
+      entrypoint.targetType !== "worker" ||
+      !manifest.artifacts.some((artifact) => artifact.path === entrypoint.path)
+    ) {
+      throw new Error(`Invalid build-manifest worker entrypoint: ${JSON.stringify(entrypoint)}`);
     }
   }
   return Object.freeze({
