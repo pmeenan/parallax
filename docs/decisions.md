@@ -27,6 +27,381 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-044: Keep RE-008 causal attribution open after an active user-timing-only timeout  (2026-07-14, accepted)
+
+**Decision:** Do not attribute RE-008 to enabled GPU-process trace categories, payload volume,
+or a particular process failing to acknowledge `Tracing.end`. Keep the maintained core trace
+categories because Dawn and presentation evidence require them; a narrower category set is not
+a completion workaround.
+
+**Context:** A controlled pinned-CfT 150.0.7871.115 remote diagnostic kept the real app, render
+worker, 4K target, 10 s warmup, 120-frame measurement, measured-page lifetime, browser-level
+`ReportEvents` transport, and five-second completion bound unchanged, but traced only
+`blink.user_timing`. Core traces completed 5/6. Fresh repeat 3 at ordinal 5 held the trace for
+14,163.0 ms, acknowledged `Tracing.end` in 2.3 ms, then delivered zero events, zero chunks, and
+no `Tracing.tracingComplete` before the 5,006.3 ms invalidation; ordinal 6 recovered. Successful
+traces carried only 221–237 events / 34,744–36,798 serialized bytes and completed in
+13.0–13.9 ms. All nine isolated short V8 traces completed.
+
+Those unchanged V8 lineages also measured launch-2 worker startup at 148.7, 150.7, and
+150.4 ms versus launch-3 at 145.3, 156.8, and 151.4 ms. Launch 3 was slower in two of three
+lineages, directly rebutting a consistent launch-2 → launch-3 saving or a measured ≤5 ms V8
+cache bound. The worker still emitted no production event on launch 2, and no controlled cache
+toggle exists, so the earlier 789.5 ms launch-2 outlier is not evidence of cache serialization.
+
+The result disproves enabled Dawn/presentation categories and multi-megabyte payload as
+necessary conditions for the captured failure. It does not identify which browser participant
+withheld completion: browser-level tracing may coordinate processes that emit no enabled events.
+Together with D-043's 6/6 long blank-page controls, current evidence points to measured-page
+activity or workload/process coordination interacting with a roughly 14 s trace, not lifetime,
+category payload, or GPU-category emission alone.
+
+**Sources checked (2026-07-14):** local temporary category-control run on dev-01 under RDP
+(non-gating), report
+`smoke-1-cb961cbc9d86-dev-01-showcase-2026-07-14T18-42-02-841Z.json`; maintained source was
+restored after the predeclared timeout falsifier occurred.
+
+**Consequences:** RE-008 remains fail-closed and its Chromium report must present the
+user-timing-only failure alongside the core-category failures. The next discriminating
+experiment needs a controlled active-workload toggle or traced-process completion visibility;
+another category-removal arm cannot establish the responsible process. RE-010 remains an
+observability finding with a modest measured warm worker-startup component, not a measured V8
+cache-savings claim.
+
+**Reopen if:** an active-workload toggle separates completion from page/process activity, CDP
+exposes per-process trace-stop acknowledgement, or a pinned Chrome change removes the failure.
+
+## D-043: Measure worker startup and trace recording lifetime without inferring causes  (2026-07-14, accepted)
+
+**Decision:** The isolated diagnostic advances to `v8-code-cache@5` and records the existing
+public `workerStartupToFirstFrameMs` telemetry on fresh, produce, and warm launches. The timer
+starts immediately before constructing the module worker and ends when its first-frame message
+reaches the window, so it includes worker script startup plus render initialization and first
+frame; it is a launch component, not the full launch metric and not a V8-only timer. Result
+schema v11 also records trace recording lifetime from acknowledged `Tracing.start` through the
+`Tracing.end` request for every core and V8 trace.
+
+Neither diagnostic attributes a cause. A fresh/warm startup difference can include HTTP cache,
+worker startup, V8, WebGPU/Babylon initialization, Dawn state, GPU scheduling, and first-frame
+delivery. Recording lifetime is correlated with all activity accumulated during that interval;
+it must be varied in a controlled arm before being blamed for RE-008.
+
+**Context:** A local pinned-CfT 150.0.7871.115 run measured worker startup-to-first-frame at
+191.4–204.8 ms fresh, 146.0–149.0 ms on launch 2, and 146.0–154.5 ms warm. The improvement is
+already present on launch 2 even though the worker exposes no cache-production prerequisite, so
+the launch-3 result cannot be assigned specifically to code-cache consumption. The warm worker
+component is about 1.5% of the 10 s launch budget; it de-escalates RE-010's current launch-cost
+risk without resolving its mandatory cache-evidence gap.
+
+A second exact-tree run reproduced the fresh and warm bands at 182.4–206.5 ms and
+144.2–150.3 ms. Its launch-2 samples were 152.4 ms, 152.9 ms, and one 789.5 ms outlier. That
+outlier is retained rather than assigned to V8: this remote, non-gating timer covers the whole
+worker-to-first-frame path, and no controlled cache toggle isolates the cause.
+
+The two maintained runs measured core traces open for 13,190.5–14,187.3 ms and V8 traces
+normally open for 288.9–387.9 ms; the launch-2 startup outlier extended one V8 recording to
+944.8 ms. Each run lost one of six core traces while all nine V8 traces completed. A controlled
+fresh-browser `about:blank` matrix then held traces for either 300 ms or 14,100 ms without page
+activity. All arms completed 6/6: short core produced 24–29 events / 3,564–4,262 bytes, long core
+80–89 events / 13,496–14,645 bytes, and long V8 43–52 events / 6,949–8,074 bytes. Successful
+long-arm drains completed in 8.6–20.0 ms. The maintained active core traces at the same lifetime
+carried roughly 24,500–25,000 events / 3.9–4.0 MB. Trace lifetime alone therefore does not
+reproduce RE-008; page activity and the resulting event/process/volume regime remain in scope.
+
+**Sources checked (2026-07-14):** local render-service timer boundary, pinned CfT
+150.0.7871.115 `v8-code-cache@5`/schema-v11 runs, and the three-arm local CDP experiment above on
+dev-01 under RDP (all non-gating). Current V8 documentation confirms that post-execution code
+caches can contain functions compiled lazily during execution, but does not make either Parallax
+timer an authoritative cache result
+([V8 code-caching documentation](https://v8.dev/blog/improved-code-caching)).
+
+**Consequences:** Parallax measures the end-to-end worker-startup component it already waited for
+and knows the actual recording lifetime of every trace. RE-010 no longer carries an unmeasured
+dominant-launch-cost implication, and RE-008 investigation shifts from duration alone toward the
+active-page event/process/volume regime. Neither cache nor trace gates are weakened.
+
+**Reopen if:** worker startup becomes a calibrated launch sub-budget, a controlled cache toggle
+can isolate its V8 share, or an active-page trace matrix separates event volume, process set, and
+category interaction.
+
+## D-042: Retain V8 compile-event duration as a diagnostic, not cache proof  (2026-07-14, accepted; startup and trace-lifetime diagnostics added by D-043)
+
+**Decision:** The isolated diagnostic advances to `v8-code-cache@4` and retains the finite,
+nonnegative `dur` from every attributed complete `v8.compile`/`v8.compileModule` event as
+`compileDurationUs`, both per event and summed per artifact. Missing or malformed duration
+invalidates the same attribution transaction as missing URL or streaming state. The report emits
+raw per-run, per-artifact microsecond values and the result schema advances to v10.
+
+Compile-event duration is a non-gating diagnostic. A shorter warm event may motivate a controlled
+reproduction, but does not prove cache consumption; a flat event does not prove reparsing or
+cache absence. Streamed compilation overlaps other work, three lineages are a small sample, and
+the trace span is not an authoritative cache outcome. D-037/D-041's production, re-production,
+and positive consume/reject evidence remain the cache gates.
+
+**Context:** A local pinned-CfT 150.0.7871.115 run retained one compile event per artifact per
+launch. The non-streamed render worker measured 24,862–25,262 µs fresh, 25,083–26,496 µs on the
+produce launch, and 24,415–26,758 µs warm: overlapping ranges with no consistent warm decrease.
+That is consistent with repeated full compile work but does not identify the mechanism. It also
+puts the observed event near 25 ms—roughly 0.25% of the 10 s launch budget—so the worker's 99.84%
+source-code share is not evidence of proportional launch cost. Streamed app events measured
+37–40 µs fresh and 26–30 µs warm; streamed engine events were 3–8 µs in both phases. Those tiny,
+overlapping/confounded spans do not turn RE-009 into functional cache proof.
+
+The same run captured one core trace timeout at launch ordinal 5 followed by recovery at ordinal
+6. Combined with the prior three-failure ordinal-3–5 burst and other isolated failures, RE-008
+can be described as burst-capable with recovery, but the samples do not distinguish transient
+shared state from chance clustering.
+
+**Sources checked (2026-07-14):** local pinned CfT 150.0.7871.115
+`v8-code-cache@4`/schema-v10 diagnostic on dev-01 under RDP (non-gating), with raw durations
+retained in the result; current Chromium DevTools trace-event types, which declare complete-event
+`dur` in microseconds
+([source](https://chromium.googlesource.com/devtools/devtools-frontend/+/main/front_end/models/trace/types/TraceEvents.ts)).
+
+**Consequences:** Parallax no longer discards already-captured compile spans, and can correlate
+them with future artifact growth or controlled cache experiments. The duration diagnostic cannot
+make a red cache gate green or replace authoritative cache outcome fields.
+
+**Reopen if:** a controlled micro-repro establishes a calibrated relationship between this trace
+span and cache consumption, Chrome documents stronger event semantics, or enough samples support
+a variance-aware duration budget.
+
+## D-041: Assert production phase boundaries and measure warm re-production  (2026-07-14, accepted; compile-duration diagnostics added by D-042)
+
+**Decision:** The isolated diagnostic advances to `v8-code-cache@3` and evaluates
+URL-attributed code-cache production on every launch. Fresh launches must emit no production
+events; any positive event invalidates the timestamp → produce → consume model directly.
+Produce launches retain D-040's requirement that every cacheable required artifact emit positive
+production. Warm launches record every positive re-production and gate the count at zero
+artifacts. Missing warm production is a measured absence, not proof of consumption; D-037's
+positive consume/reject requirement remains independently mandatory. Result schema v9 also adds
+an ordinal and elapsed measurement-sequence time to every core and V8 launch so RE-008 samples
+can be checked for temporal clustering.
+
+**Context:** `v8-code-cache@2` inspected production only on launch 2, leaving two ambiguity gaps.
+An unexpected launch-1 production would contradict the lifecycle but escape direct detection,
+and repeated app/engine production on launch 3 would show that their launch-2 cache was not used
+as expected rather than merely consumed without trace fields. A three-lineage local CfT
+150.0.7871.115 diagnostic with the new assertions observed zero fresh production events and zero
+warm re-production events in all repeats. Launch 2 again produced exactly 3,072 app bytes and
+6,968 engine bytes while exposing no render-worker production (RE-010). The warm result therefore
+does not support repeated production as the explanation for app/engine's missing consumption
+fields; it is consistent with silent consumption but cannot prove it, so RE-009 remains open.
+
+The same run's core trace failures occurred at launch ordinals 3, 4, and 5, approximately 30,
+50, and 70 seconds after the measurement sequence began; launch 6 completed at approximately
+90 seconds. Together with earlier warm-repeat-1 failures, this first timed sample argues against
+a simple monotonic late-session cutoff while leaving RE-008's intermittent mechanism open. A
+final-tree rerun then repeated the same fresh/produce/warm V8 outcomes with 9/9 completed traces
+and completed all 6 core traces, further demonstrating intermittency rather than an ordinal
+cutoff.
+
+**Sources checked (2026-07-14):** local pinned CfT 150.0.7871.115 `v8-code-cache@3`/schema-v9
+diagnostic on dev-01 under RDP (non-gating), plus the Blink source and Chromium three-fetch test
+recorded by D-040.
+
+**Consequences:** the existing nine V8 launches now test all three production phase boundaries
+without adding launches. A reported warm re-production is measured negative evidence and fails
+the gate even when consumption fields remain unavailable. An absence of re-production narrows
+the functional hypotheses but never substitutes for positive consumption evidence. Trace
+failures retain their order and elapsed position without inferring that either causes the issue.
+
+**Reopen if:** Blink changes its production lifecycle, repeated production proves compatible
+with a valid consumed cache, or temporal fields identify a better boundary than sequence start.
+
+## D-040: V8 code-cache diagnostics use the timestamp/produce/consume lifecycle  (2026-07-14, accepted; production phase assertions amended by D-041)
+
+**Decision:** The isolated V8 diagnostic advances to `v8-code-cache@2` and gives each of its
+three persistent-profile lineages three launches: `fresh` establishes Blink's hot-resource
+timestamp, `produce` must emit a URL-attributed `v8.produceCache` or `v8.produceModuleCache`
+event with positive `producedCacheSize` for every cacheable immutable JavaScript artifact, and
+`warm` is the first launch on which the zero-rejection budget requires URL-attributed cache
+consumption. Fresh and produce launches reject unexpected consumption results. The enclosing
+result schema advances to v8 and preserves per-artifact production outcomes even when another
+artifact makes the aggregate production metric invalid.
+
+**Context:** D-037/D-039 incorrectly modeled the second profile launch as a consumption launch.
+Current Blink source selects `kSetTimeStamp` when no hot timestamp exists, selects
+`kProduceCodeCache` after that timestamp exists, and only enters the consume path after code
+cache exists. Chromium's own module cache test correspondingly loads a module three times and
+states that the second fetch produces cache while the third consumes it. A corrected local
+three-lineage diagnostic on pinned CfT 150.0.7871.115 then measured the same launch-2 production
+in every lineage: 3,072 bytes for the app and 6,968 bytes for the engine. The game module was
+below Chrome 150's 1,024-code-unit external-script threshold. The 5,257,345-code-unit render
+worker compiled on launch 2 but emitted no URL-attributed production event in any lineage
+(RE-010), so production correctly remained mandatory/invalid while retaining the two positive
+outcomes. Launch-3 consumption still omitted a usable result for all cacheable artifacts,
+strengthening RE-009 now that the maintained harness reaches the correct consumption launch.
+
+**Sources checked (2026-07-14):** current Blink
+[`v8_code_cache.cc`](https://chromium.googlesource.com/chromium/src/third_party/+/master/blink/renderer/bindings/core/v8/v8_code_cache.cc),
+Chromium's
+[three-fetch module cache test](https://chromium.googlesource.com/chromium/src/+/3188edc14a270a65297865a82af20bf4e3c57563%5E%21/),
+and the local pinned-CfT diagnostic above on dev-01 under RDP (non-gating).
+
+**Consequences:** each V8 lineage costs one additional short launch. The harness now proves the
+cache-write prerequisite independently of cache consumption and cannot mistake a launch-2
+production for a missing launch-2 hit. Worker production and warm consumption remain fail-closed
+platform findings rather than being hidden behind one aggregate invalid state.
+
+**Reopen if:** Blink changes the code-cache lifecycle, Chrome exposes an authoritative cache
+state that removes a launch, or the extra launch becomes a measured throughput problem.
+
+## D-039: Isolate mandatory V8 evidence from the core smoke trace  (2026-07-14, accepted; diagnostic lifecycle amended by D-040)
+**Decision:** Harness v1 collects V8 code-cache evidence in the versioned
+`v8-code-cache@1` diagnostic rather than co-locating `v8` with the core `smoke@1`
+presentation/Dawn trace. The diagnostic owns three independent fresh/warm persistent-profile
+lineages, traces only `v8` from before navigation through render readiness, and runs against the
+same validated artifact, pinned Chrome executable, inspected environment, and before/after
+source identity as the enclosing report. `smoke@1` still runs its three core fresh/warm lineages
+with presentation, Dawn, and user-timing categories. Both sets and their trace-drain diagnostics
+are emitted in one result; the schema advances to v7.
+
+V8 code-cache evidence remains mandatory for Harness v1. An invalid `v8-code-cache@1` result
+still fails the overall verdict; isolation narrows the damage of its trace failure rather than
+turning the metric advisory. A V8 timeout can no longer invalidate core presentation or Dawn
+evidence, and a core timeout cannot erase V8 attribution.
+
+**Context:** D-038 measured that merely narrowing `devtools.timeline` to `v8` reduced ordinary
+collection cost without materially changing the intermittent combined-trace failure rate. A
+follow-up `ReturnAsStream` experiment also reproduced two timeouts in six launches: both
+acknowledged `Tracing.end` in 1.8–1.9 ms, then never emitted `Tracing.tracingComplete`, so Chrome
+never supplied an IO stream handle. The four successes completed in 116–125 ms. Changing the
+transfer path therefore did not bypass the captured missing-completion failure and was not kept.
+
+Two unchanged integrated isolation diagnostics then completed 12/12 core traces and 12/12
+V8-only traces. Every core launch retained the expected Dawn evidence: fresh 6 shader/3 graphics-
+PSO misses, warm 6/3 hits, and zero gameplay-overlap compilation. Core traces delivered
+3,915,274–4,013,410 locally reserialized bytes in 111.3–121.3 ms. V8-only traces still attributed
+all four immutable JavaScript artifacts while delivering just 173–177 events /
+26,434–27,708 bytes in 11.0–12.3 ms. Warm V8 consumption remained invalid for the independent
+RE-009 observability reason; isolation fixes evidence coupling, not Chrome's missing cache result.
+
+**Sources checked (2026-07-14):** local CfT 150.0.7871.115 `ReturnAsStream` and integrated
+isolation diagnostics above on dev-01 under RDP (non-gating); local Playwright 1.61.1 CDP
+protocol declarations for `Tracing.tracingComplete`, `IO.read`, and `IO.close`.
+
+**Consequences:** the report adds six short browser launches for V8's three paired lineages, but
+protects the longer core runs and their valid Dawn evidence from a V8-correlated trace failure.
+Artifact and source identity are rechecked only after both sets finish, so the shared report
+cannot combine different builds. Profile histories remain explicit and are never compared
+across the core/V8 boundary. The physical-console Dawn calibration can now obtain a complete
+core evidence set even while the mandatory V8 metric remains invalid and keeps Harness v1 red.
+
+**Reopen if:** isolated V8 traces become unreliable, Chrome exposes a stable non-trace
+page-correlated cache result, combined tracing becomes reliable on the physical-console gate, or
+the additional launches become a measured throughput problem.
+
+## D-038: Narrow V8 tracing and measure trace completion as a first-class diagnostic  (2026-07-14, accepted; shared-trace placement superseded by D-039)
+**Decision:** `smoke@1` enables the `v8` trace category, not the broader
+`devtools.timeline` category, for D-037's `v8.compile`/`v8.compileModule` evidence. The
+shared presentation/Dawn/V8 trace records its exact categories, event and CDP data-chunk counts,
+locally reserialized UTF-8 event bytes, `Tracing.end` command latency, command-to-completion and
+total completion latency, configured timeout, and Chrome's data-loss result for every started
+trace. Partial diagnostics survive a timeout and appear in both JSON and the human report. The
+result schema advances to v6. The five-second completion bound remains unchanged; a timeout
+invalidates every probe that depends on the shared trace.
+
+**Context:** A pinned-CfT 150.0.7871.115 remote A/B on the same artifact measured three
+six-launch configurations. With `devtools.timeline`, three traces timed out; the three completed
+traces delivered 29,383–29,914 events / 5,000,116–5,091,624 serialized bytes and completed in
+149.2–152.1 ms. With `v8`, one trace timed out; the five completed traces still attributed every
+immutable JavaScript artifact and retained the required compile fields while delivering
+25,703–26,095 events / 4,088,465–4,151,565 bytes in 117.4–120.1 ms. With no V8 category, all six
+traces completed with 24,770–25,036 events / 3,954,012–3,982,554 bytes in 112.7–117.3 ms. A
+second `v8` diagnostic timed out twice; on both failures `Tracing.end` returned in 1.6–2.1 ms,
+then Chrome delivered neither `Tracing.tracingComplete` nor any data chunk during the remaining
+five-second bound. Its completed traces took 116.8–119.1 ms total. A separate 20-second broad-
+category diagnostic completed 6/6, but every completion was still fast (146.5–153.3 ms); it did
+not capture a delayed completion and therefore does not establish that a larger bound repairs
+the intermittent failure.
+
+These samples correlate V8 tracing with the completion failure, but they do not establish a
+volume-driven flush mechanism: completed drains are two orders of magnitude below the bound,
+while failures begin only after the end command returns and deliver zero chunks. Narrowing is
+still the correct maintained configuration because it preserves the probe with measurably less
+trace traffic. Splitting the shared trace would require another navigation/launch and would
+change the fresh/warm profile lineage whose atomic evidence the harness is measuring, so that is
+not adopted without a replacement lifecycle design.
+
+**Sources checked (2026-07-14):** local CfT 150.0.7871.115 diagnostics above on dev-01 under
+RDP (non-gating); exact trace configuration and partial completion diagnostics recorded by
+`smoke@1` v6.
+
+**Consequences:** ordinary trace completion cost and failure mode are now observable per run.
+The narrower V8 category reduces collection overhead but does not eliminate RE-008, and one
+completion failure still invalidates presentation, Dawn, and V8 evidence together. The retained
+diagnostics distinguish a `Tracing.end` command stall, missing completion event, data loss, and
+large/slow payload if Chrome's behavior changes.
+
+**Reopen if:** `v8` stops carrying the D-037 fields, the trace completion failure reproduces on a
+physical-console gate, `ReturnAsStream` or another collection mode proves more reliable, or a
+separate-navigation design can preserve the required profile lineage and atomic measurement
+contract.
+
+## D-037: Streamed-module V8 cache traces are diagnostic, not cache-hit evidence  (2026-07-13, accepted; trace category amended by D-038, collection isolated by D-039, launch lifecycle corrected by D-040/D-041, duration retained by D-042)
+**Decision:** `smoke@1` implements its V8 code-cache probe with URL-attributed
+`v8.compile`/`v8.compileModule` events from Chrome's `devtools.timeline` trace category.
+Every launch-required immutable JavaScript artifact in the validated build manifest must have at
+least one compilation event before any cache outcome is evaluated. Multiple events for one URL
+are valid when the same artifact compiles in multiple renderer processes, workers, threads, or
+realms; the result retains each event's process/thread identity and requires trustworthy evidence
+from every compilation. On a warm profile, a successful consumption requires a positive
+`consumedCacheSize` and `cacheRejected: false`; an explicit `cacheRejected: true` is measured
+negative evidence even if its size is zero or absent, and fails the zero-rejection budget. A
+missing/ambiguous result is `invalid`, while artifacts below Chrome 150's
+1,024-decoded-source-code-unit threshold and cold-profile consumption are explicitly
+`not-applicable`. If no artifact is cacheable, the aggregate mandatory metric is also
+`not-applicable` and fails the gate. The overall smoke result schema advances to v5.
+
+**Context:** All four current Parallax JavaScript artifacts compile as ES modules. In pinned CfT
+150.0.7871.115, the three window modules stream and the render-worker module currently reports
+non-streamed compilation. Chromium's non-streaming `V8ScriptRunner::CompileModule` branch
+serializes a `V8ConsumeCacheResult`, but its `ScriptStreamer` branch does not populate that
+result. A local persistent-profile experiment captured the four exact Parallax URLs on each of
+five launches; their compile events never included `consumedCacheSize` or `cacheRejected`.
+The second launch instead reported producing 3,072 bytes of app cache and 6,968 bytes of engine
+cache, so at least those two artifacts demonstrably did not consume code cache on launch 2.
+Blink's process-wide `WebCore.Scripts.V8CodeCacheMetadata.Get` histogram later contained four
+code-cache-metadata reads, but that surface requires the subprocess-importing Histograms
+Internals page and cannot correlate a read, V8 acceptance, or rejection to a page URL. Treating
+it as a hit would violate the project's measure-don't-assert rule.
+
+The first maintained six-launch remote diagnostic completed all combined traces within D-035's
+bound, attributed all fresh artifacts, and left the already-validated Dawn
+fresh-miss/warm-hit evidence unchanged. Two post-review six-launch reruns continued to attribute
+all four artifacts in every completed fresh trace and all three cacheable artifacts in each
+completed warm trace, but one and then three combined traces exceeded the existing five-second
+completion bound. Across these three maintained diagnostics, 14 of 18 traces completed and four
+timed out with the measured page kept alive, extending RE-008. No completed trace reported CDP
+buffer data loss. Every completed warm V8 result correctly remained `invalid`, so these
+diagnostics do not promote a V8 gate baseline. RE-009 records the code-cache observability gap.
+
+**Sources checked (2026-07-13):** local CfT 150.0.7871.115 experiments above; Chromium tag
+150.0.7871.115 `third_party/blink/renderer/bindings/core/v8/v8_script_runner.cc`,
+`v8_code_cache.cc`, `inspector_trace_events.cc`, and
+`tools/metrics/histograms/metadata/v8/enums.xml`; pinned V8 revision
+`ce0af5c0d181678bcda077c68d4beaec2854ad16` via Chromium's `DEPS`.
+
+**Follow-up checked (2026-07-14):** the third maintained local CfT 150.0.7871.115 diagnostic
+above; three of its six combined traces timed out and none reported trace-buffer data loss.
+
+**Consequences:** the V8 probe is implemented but its mandatory warm metric remains invalid on
+the walking skeleton. The trace diagnostic is kept because it is exact, page-correlated, and
+will turn measured without a schema change when Chrome exposes successful streamed consumption.
+Process-wide metadata-read counts remain supporting diagnostics only. The probe must be extended
+separately when a wasm artifact exists; this decision covers JavaScript code caching.
+Decoded source length is read from the validated built files before launching Chrome so non-ASCII
+bundles use the same UTF-16-code-unit quantity as Blink rather than response byte length; a
+leading BOM is removed to match browser decoding. The M0 manifest currently contains only
+launch-required JavaScript. Before lazy scenario-specific JavaScript chunks enter it, the build
+contract must classify scenario participation so `smoke@1` can keep zero compilation events
+invalid for required code without demanding unrelated lazy chunks.
+
+**Reopen if:** Chrome adds consumption/rejection data to streamed-module trace events, exposes a
+stable page-correlated code-cache API, changes the pinned cacheability threshold, or Parallax
+adds wasm and needs `v8.wasm.moduleCacheHit` evidence.
+
 ## D-036: D3D12 Dawn gates combine page-windowed traces with subprocess cache histograms  (2026-07-13, accepted)
 **Decision:** `smoke@1` implements the mandatory Dawn pipeline compile/cache metric on the
 registered D3D12 gate by combining two independent Chrome surfaces. One browser-wide trace,

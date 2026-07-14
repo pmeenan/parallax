@@ -13,9 +13,15 @@ import {
   type BudgetCheck,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
+  evaluateV8CodeCacheBudgets,
+  evaluateV8CodeCacheReproductionBudgets,
   type QualityTier,
 } from "./budgets.js";
-import { readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
+import {
+  type ManifestArtifact,
+  readAndValidateBuildManifest,
+  sha256File,
+} from "./build-manifest.js";
 import {
   D3D12_HISTOGRAM_PREFIX,
   DAWN_TRACE_CATEGORY,
@@ -61,6 +67,8 @@ import {
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
   SMOKE_TRACE_QUIESCE_MS,
+  SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
+  SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS,
   SMOKE_WARMUP_MS,
   type SmokeMetricDefinition,
 } from "./runs/smoke.js";
@@ -71,6 +79,16 @@ import {
   stopLocalServer,
 } from "./server.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
+import {
+  decodedSourceCodeUnits,
+  resolveV8CodeCacheEvidence,
+  resolveV8CodeCacheProductionEvidence,
+  V8_CODE_CACHE_TRACE_CATEGORY,
+  type V8CodeCacheArtifactEvidence,
+  type V8CodeCacheMetric,
+  type V8CodeCacheProductionMetric,
+  type V8ScriptArtifact,
+} from "./v8-code-cache-trace.js";
 
 interface MeasuredMetric<T> {
   readonly state: "measured";
@@ -92,6 +110,11 @@ interface P95VarianceSummary {
   readonly state: "invalid" | "measured";
 }
 
+interface LaunchSequencePosition {
+  readonly launchOrdinal: number;
+  readonly launchStartedAfterSequenceMs: number;
+}
+
 interface ChromePin {
   readonly channel: "stable";
   readonly executableSha256: Readonly<Record<string, string>>;
@@ -107,6 +130,8 @@ interface RunMeasurement {
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
   readonly jsHeapUsedBytes: MeasuredMetric<number>;
+  readonly launchOrdinal: number;
+  readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
   readonly workerAnimationCallbackIntervalMs: MeasuredMetric<Distribution>;
   readonly profile: "fresh" | "warm";
@@ -118,10 +143,49 @@ interface RunMeasurement {
   readonly renderSurfaceAfter: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
+  readonly traceDrain: SmokeTraceDrainMetric;
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
   readonly vizPresentationFeedbackCallbackIntervalMs: ProbeResult<Distribution>;
 }
+
+interface V8CodeCacheDiagnosticRun {
+  readonly budgetChecks: readonly BudgetCheck[];
+  readonly launchOrdinal: number;
+  readonly launchStartedAfterSequenceMs: number;
+  readonly profile: "fresh" | "produce" | "warm";
+  readonly profileLineage: {
+    readonly history: readonly ("fresh" | "produce" | "warm")[];
+    readonly id: string;
+  };
+  readonly production: V8CodeCacheProductionMetric;
+  readonly repeat: number;
+  readonly scenario: typeof SMOKE_V8_CODE_CACHE_DIAGNOSTIC;
+  readonly traceDrain: SmokeTraceDrainMetric;
+  readonly v8CodeCache: V8CodeCacheMetric;
+  readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
+}
+
+interface SmokeTraceDrainEvidence {
+  readonly categories: readonly string[];
+  readonly completionAfterEndCommandMs: number | null;
+  readonly completionTimeoutMs: number;
+  readonly dataChunkCount: number;
+  readonly dataLossOccurred: boolean | null;
+  readonly endWaitMs: number | null;
+  readonly endCommandMs: number | null;
+  readonly eventCount: number;
+  readonly recordingDurationBeforeEndMs: number | null;
+  readonly serializedEventBytes: number;
+}
+
+type SmokeTraceDrainMetric =
+  | Readonly<{ readonly evidence: SmokeTraceDrainEvidence; readonly state: "measured" }>
+  | Readonly<{
+      readonly evidence: SmokeTraceDrainEvidence | null;
+      readonly reason: string;
+      readonly state: "invalid";
+    }>;
 
 interface EnvironmentIdentity {
   readonly adapter: WebGpuAdapterIdentity | null;
@@ -165,9 +229,10 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 4;
+  readonly schemaVersion: 11;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
+  readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
@@ -183,7 +248,9 @@ async function main(): Promise<void> {
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
   const chromePin = JSON.parse(await readFile(chromePinPath, "utf8")) as ChromePin;
-  const artifactDigest = (await readAndValidateBuildManifest(buildRoot)).artifactDigest;
+  const validatedBuild = await readAndValidateBuildManifest(buildRoot);
+  const artifactDigest = validatedBuild.artifactDigest;
+  const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest.artifacts);
   const source = await readSourceIdentity(repositoryRoot);
   const server = createLocalServer({ root: buildRoot });
   const address = await listenLocalServer(server);
@@ -199,6 +266,8 @@ async function main(): Promise<void> {
       tier,
       baseUrl,
     );
+    const measurementSequenceStartedAtMs = performance.now();
+    let launchOrdinal = 0;
     const runs: RunMeasurement[] = [];
     for (let repeat = 1; repeat <= SMOKE_REPEATS; repeat += 1) {
       const lineage = join(profileRoot, `lineage-${repeat}`);
@@ -210,6 +279,7 @@ async function main(): Promise<void> {
           repeat,
           "fresh",
           environment.adapter?.backend ?? null,
+          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
         ),
         await measureRun(
           executablePath,
@@ -218,6 +288,40 @@ async function main(): Promise<void> {
           repeat,
           "warm",
           environment.adapter?.backend ?? null,
+          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
+        ),
+      );
+    }
+    const v8CodeCacheDiagnostics: V8CodeCacheDiagnosticRun[] = [];
+    for (let repeat = 1; repeat <= SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS; repeat += 1) {
+      const lineage = join(profileRoot, `v8-lineage-${repeat}`);
+      v8CodeCacheDiagnostics.push(
+        await measureV8CodeCacheDiagnosticRun(
+          executablePath,
+          lineage,
+          baseUrl,
+          repeat,
+          "fresh",
+          v8ScriptArtifacts,
+          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
+        ),
+        await measureV8CodeCacheDiagnosticRun(
+          executablePath,
+          lineage,
+          baseUrl,
+          repeat,
+          "produce",
+          v8ScriptArtifacts,
+          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
+        ),
+        await measureV8CodeCacheDiagnosticRun(
+          executablePath,
+          lineage,
+          baseUrl,
+          repeat,
+          "warm",
+          v8ScriptArtifacts,
+          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
         ),
       );
     }
@@ -267,6 +371,9 @@ async function main(): Promise<void> {
     const passed =
       runs.every((run) => run.budgetChecks.every((check) => check.passed)) &&
       runs.every((run) => run.dawnPipeline.state === "measured") &&
+      v8CodeCacheDiagnostics.every((run) => run.budgetChecks.every((check) => check.passed)) &&
+      v8CodeCacheDiagnostics.every((run) => run.v8CodeCache.state === "measured") &&
+      v8CodeCacheDiagnostics.every((run) => run.production.state === "measured") &&
       environment.gateIdentity.state === "measured" &&
       incompleteMetrics.every((metric) => !metric.mandatoryForHarnessV1) &&
       callbackPacingVariance.every((metric) => metric.state === "measured");
@@ -294,8 +401,9 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 4,
+      schemaVersion: 11,
       source,
+      v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
     });
     await writeReport(report);
@@ -321,6 +429,38 @@ function invalidMetric(
 
 function measured<T>(value: T): MeasuredMetric<T> {
   return Object.freeze({ state: "measured", value });
+}
+
+function launchSequencePosition(
+  launchOrdinal: number,
+  measurementSequenceStartedAtMs: number,
+): LaunchSequencePosition {
+  return Object.freeze({
+    launchOrdinal,
+    launchStartedAfterSequenceMs: performance.now() - measurementSequenceStartedAtMs,
+  });
+}
+
+async function readV8ScriptArtifacts(
+  artifacts: readonly ManifestArtifact[],
+): Promise<readonly V8ScriptArtifact[]> {
+  return Object.freeze(
+    await Promise.all(
+      artifacts
+        .filter(
+          (artifact) => artifact.path.startsWith("immutable/") && artifact.path.endsWith(".js"),
+        )
+        .map(async (artifact) =>
+          Object.freeze({
+            bytes: artifact.bytes,
+            path: artifact.path,
+            sourceCodeUnits: decodedSourceCodeUnits(
+              await readFile(join(buildRoot, artifact.path), "utf8"),
+            ),
+          }),
+        ),
+    ),
+  );
 }
 
 async function readD3D12CacheHistograms(
@@ -525,6 +665,7 @@ async function measureRun(
   repeat: number,
   profile: "fresh" | "warm",
   dawnBackend: string | null,
+  launchPosition: LaunchSequencePosition,
 ): Promise<RunMeasurement> {
   const before = await fetchServerMetrics(baseUrl);
   const context = await launch(executablePath, profilePath);
@@ -549,7 +690,10 @@ async function measureRun(
   await installLongTaskObserver(page);
   try {
     const traceStartResult = await tryProbe("Chrome smoke trace start", () =>
-      beginSmokeTrace(context),
+      beginSmokeTrace(context, {
+        categories: [DAWN_TRACE_CATEGORY, PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
+        requireMeasurementEndMarker: true,
+      }),
     );
     if (traceStartResult.state === "measured") {
       smokeTrace = traceStartResult.value;
@@ -657,6 +801,20 @@ async function measureRun(
             state: "invalid" as const,
           })
         : await tryProbe("Chrome smoke trace", () => traceToFinish.finish());
+    const traceDrain: SmokeTraceDrainMetric =
+      traceToFinish === null
+        ? Object.freeze({
+            evidence: null,
+            reason: smokeTraceFailure ?? "Chrome smoke trace is unavailable",
+            state: "invalid",
+          })
+        : traceEvents.state === "invalid"
+          ? Object.freeze({
+              evidence: traceToFinish.diagnostics(),
+              reason: traceEvents.reason,
+              state: "invalid",
+            })
+          : Object.freeze({ evidence: traceToFinish.diagnostics(), state: "measured" });
     const vizPresentationFeedbackCallbackIntervalMs =
       traceEvents.state === "invalid"
         ? traceEvents
@@ -694,6 +852,8 @@ async function measureRun(
       dawnPipeline,
       http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
       jsHeapUsedBytes: measured(jsHeapUsedBytes),
+      launchOrdinal: launchPosition.launchOrdinal,
+      launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
       profile,
       profileLineage: Object.freeze({
@@ -704,6 +864,7 @@ async function measureRun(
       renderSurfaceAfter: endSurfaceState.latest,
       renderSurfaceBefore,
       renderSurfaceChanges: endSurfaceState.changes,
+      traceDrain,
       workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
       workerStartupToFirstFrameMs: measured(
         requiredNumber(snapshot.render.workerStartupToFirstFrameMs),
@@ -723,28 +884,177 @@ async function measureRun(
   }
 }
 
+async function measureV8CodeCacheDiagnosticRun(
+  executablePath: string,
+  profilePath: string,
+  baseUrl: string,
+  repeat: number,
+  profile: "fresh" | "produce" | "warm",
+  buildArtifacts: readonly V8ScriptArtifact[],
+  launchPosition: LaunchSequencePosition,
+): Promise<V8CodeCacheDiagnosticRun> {
+  const context = await launch(executablePath, profilePath);
+  const page = context.pages()[0] ?? (await context.newPage());
+  const errors: string[] = [];
+  let trace: SmokeTraceCapture | null = null;
+  let traceStartFailure: string | null = null;
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  try {
+    const traceStartResult = await tryProbe("V8 code-cache diagnostic trace start", () =>
+      beginSmokeTrace(context, {
+        categories: [V8_CODE_CACHE_TRACE_CATEGORY],
+        requireMeasurementEndMarker: false,
+      }),
+    );
+    if (traceStartResult.state === "measured") {
+      trace = traceStartResult.value;
+    } else {
+      traceStartFailure = traceStartResult.reason;
+    }
+    await page.goto(baseUrl, { waitUntil: "load" });
+    await page.waitForFunction(
+      telemetryReady,
+      {
+        expectedSchemaVersion: SMOKE_TELEMETRY_SCHEMA_VERSION,
+        globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+      },
+      { timeout: 30_000 },
+    );
+    const telemetry = await readTelemetry(page);
+    const workerStartupToFirstFrameMs = requiredNumber(
+      telemetry.render.workerStartupToFirstFrameMs,
+    );
+    await page.waitForTimeout(SMOKE_TRACE_QUIESCE_MS);
+    if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
+    const traceToFinish = trace;
+    const traceEvents =
+      traceToFinish === null
+        ? Object.freeze({
+            reason: traceStartFailure ?? "V8 code-cache diagnostic trace is unavailable",
+            state: "invalid" as const,
+          })
+        : await tryProbe("V8 code-cache diagnostic trace", () => traceToFinish.finish());
+    const traceDrain: SmokeTraceDrainMetric =
+      traceToFinish === null
+        ? Object.freeze({
+            evidence: null,
+            reason: traceStartFailure ?? "V8 code-cache diagnostic trace is unavailable",
+            state: "invalid",
+          })
+        : traceEvents.state === "invalid"
+          ? Object.freeze({
+              evidence: traceToFinish.diagnostics(),
+              reason: traceEvents.reason,
+              state: "invalid",
+            })
+          : Object.freeze({ evidence: traceToFinish.diagnostics(), state: "measured" });
+    const v8CodeCache: V8CodeCacheMetric =
+      traceEvents.state === "invalid"
+        ? Object.freeze({ evidence: null, reason: traceEvents.reason, state: "invalid" })
+        : resolveV8CodeCacheEvidence(traceEvents.value, baseUrl, buildArtifacts, profile);
+    const production: V8CodeCacheProductionMetric =
+      traceEvents.state === "invalid"
+        ? Object.freeze({ evidence: null, reason: traceEvents.reason, state: "invalid" })
+        : resolveV8CodeCacheProductionEvidence(traceEvents.value, baseUrl, buildArtifacts, profile);
+    const budgetChecks =
+      profile === "warm"
+        ? [
+            ...(v8CodeCache.evidence === null
+              ? []
+              : evaluateV8CodeCacheBudgets(
+                  v8CodeCache.evidence.rejectedArtifactCount,
+                  v8CodeCache.state === "measured",
+                )),
+            ...(production.evidence === null
+              ? []
+              : evaluateV8CodeCacheReproductionBudgets(
+                  production.evidence.producedArtifactCount,
+                  production.state === "measured",
+                )),
+          ]
+        : [];
+    return Object.freeze({
+      budgetChecks: Object.freeze(budgetChecks),
+      launchOrdinal: launchPosition.launchOrdinal,
+      launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
+      profile,
+      profileLineage: Object.freeze({
+        history:
+          profile === "fresh"
+            ? (["fresh"] as const)
+            : profile === "produce"
+              ? (["fresh", "produce"] as const)
+              : (["fresh", "produce", "warm"] as const),
+        id: `v8-lineage-${repeat}`,
+      }),
+      production,
+      repeat,
+      scenario: SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
+      traceDrain,
+      v8CodeCache,
+      workerStartupToFirstFrameMs: measured(workerStartupToFirstFrameMs),
+    });
+  } finally {
+    try {
+      if (trace !== null) {
+        const traceToDiscard = trace;
+        await tryProbe("V8 code-cache diagnostic trace cleanup", () => traceToDiscard.discard());
+      }
+    } finally {
+      await context.close();
+    }
+  }
+}
+
 interface SmokeTraceCapture {
+  diagnostics(): SmokeTraceDrainEvidence;
   discard(): Promise<void>;
   finish(): Promise<readonly ChromeTraceEvent[]>;
   markEnd(page: Page): Promise<void>;
   markStart(page: Page): Promise<void>;
 }
 
-async function beginSmokeTrace(context: BrowserContext): Promise<SmokeTraceCapture> {
+interface SmokeTraceOptions {
+  readonly categories: readonly string[];
+  readonly requireMeasurementEndMarker: boolean;
+}
+
+async function beginSmokeTrace(
+  context: BrowserContext,
+  options: SmokeTraceOptions,
+): Promise<SmokeTraceCapture> {
   const browser = context.browser();
   if (browser === null) throw new Error("Playwright did not expose the launched browser");
   const session = await browser.newBrowserCDPSession();
   const events: ChromeTraceEvent[] = [];
+  const categories = Object.freeze([...options.categories]);
   let active = true;
+  let completedAtMs: number | null = null;
+  let dataChunkCount = 0;
+  let dataLossOccurred: boolean | null = null;
+  let endCommandCompletedAtMs: number | null = null;
   let endMarked = false;
+  let endRequestedAtMs: number | null = null;
+  let serializedEventBytes = 0;
+  let traceStartedAtMs: number | null = null;
   session.on("Tracing.dataCollected", (event) => {
-    for (const traceEvent of event.value as unknown as readonly ChromeTraceEvent[]) {
+    const traceEvents = event.value as unknown as readonly ChromeTraceEvent[];
+    dataChunkCount += 1;
+    serializedEventBytes += Buffer.byteLength(JSON.stringify(traceEvents), "utf8");
+    for (const traceEvent of traceEvents) {
       events.push(traceEvent);
     }
   });
   const completed = new Promise<{ dataLossOccurred: boolean }>(
     (resolveComplete, rejectComplete) => {
-      session.once("Tracing.tracingComplete", resolveComplete);
+      session.once("Tracing.tracingComplete", (result) => {
+        completedAtMs = performance.now();
+        dataLossOccurred = result.dataLossOccurred;
+        resolveComplete(result);
+      });
       session.once("close", () => rejectComplete(new Error("Smoke trace CDP session closed")));
     },
   );
@@ -752,11 +1062,12 @@ async function beginSmokeTrace(context: BrowserContext): Promise<SmokeTraceCaptu
   try {
     await session.send("Tracing.start", {
       traceConfig: {
-        includedCategories: [DAWN_TRACE_CATEGORY, PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
+        includedCategories: [...categories],
         recordMode: "recordAsMuchAsPossible",
       },
       transferMode: "ReportEvents",
     });
+    traceStartedAtMs = performance.now();
   } catch (error) {
     await session.detach().catch(() => undefined);
     throw error;
@@ -765,25 +1076,60 @@ async function beginSmokeTrace(context: BrowserContext): Promise<SmokeTraceCaptu
   const stop = async (): Promise<{ dataLossOccurred: boolean }> => {
     if (!active) throw new Error("Smoke trace was already stopped");
     active = false;
+    endRequestedAtMs = performance.now();
     try {
-      return await withTimeout(
-        (async () => {
-          await session.send("Tracing.end");
-          return completed;
-        })(),
-        SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
-        "Smoke trace end/completion",
-      );
+      try {
+        return await withTimeout(
+          (async () => {
+            await session.send("Tracing.end");
+            endCommandCompletedAtMs = performance.now();
+            return completed;
+          })(),
+          SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+          "Smoke trace end/completion",
+        );
+      } catch (error) {
+        const diagnostics = snapshotDiagnostics();
+        throw new Error(
+          `${errorMessage(error)}; Tracing.end command ${formatMilliseconds(diagnostics.endCommandMs)}; received ${diagnostics.eventCount} events in ${diagnostics.dataChunkCount} chunks (${diagnostics.serializedEventBytes} serialized bytes) during ${formatMilliseconds(diagnostics.endWaitMs)}`,
+        );
+      }
     } finally {
       await session.detach().catch(() => undefined);
     }
   };
+  const snapshotDiagnostics = (): SmokeTraceDrainEvidence =>
+    Object.freeze({
+      categories,
+      completionAfterEndCommandMs:
+        completedAtMs === null || endCommandCompletedAtMs === null
+          ? null
+          : completedAtMs - endCommandCompletedAtMs,
+      completionTimeoutMs: SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+      dataChunkCount,
+      dataLossOccurred,
+      endWaitMs:
+        endRequestedAtMs === null ? null : (completedAtMs ?? performance.now()) - endRequestedAtMs,
+      endCommandMs:
+        endRequestedAtMs === null || endCommandCompletedAtMs === null
+          ? null
+          : endCommandCompletedAtMs - endRequestedAtMs,
+      eventCount: events.length,
+      recordingDurationBeforeEndMs:
+        traceStartedAtMs === null || endRequestedAtMs === null
+          ? null
+          : endRequestedAtMs - traceStartedAtMs,
+      serializedEventBytes,
+    });
   return Object.freeze({
+    diagnostics: snapshotDiagnostics,
     async discard(): Promise<void> {
       if (active) await stop();
     },
     async finish(): Promise<readonly ChromeTraceEvent[]> {
-      if (!endMarked) throw new Error("Smoke trace ended before its measurement marker");
+      if (options.requireMeasurementEndMarker && !endMarked) {
+        throw new Error("Smoke trace ended before its measurement marker");
+      }
       const result = await stop();
       if (result.dataLossOccurred) throw new Error("Chrome reported smoke trace data loss");
       return Object.freeze(events);
@@ -1176,11 +1522,39 @@ async function writeReport(report: SmokeReport): Promise<void> {
       ),
   );
   failures.push(
+    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
+      run.budgetChecks
+        .filter((check) => !check.passed)
+        .map(
+          (check) =>
+            `V8 diagnostic ${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.limit}`,
+        ),
+    ),
+  );
+  failures.push(
+    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
+      run.production.state !== "measured"
+        ? [
+            `V8 diagnostic ${run.profile} repeat ${run.repeat}: code-cache production ${run.production.state} (${"reason" in run.production ? run.production.reason : "unknown production failure"})`,
+          ]
+        : [],
+    ),
+  );
+  failures.push(
     ...(report.environment.gateIdentity.state === "invalid"
       ? report.environment.gateIdentity.reasons.map(
           (reason) => `verified gate environment identity: invalid (${reason})`,
         )
       : []),
+  );
+  failures.push(
+    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
+      run.v8CodeCache.state === "measured"
+        ? []
+        : [
+            `V8 diagnostic ${run.profile} repeat ${run.repeat}: V8 code-cache evidence ${run.v8CodeCache.state} (${run.v8CodeCache.reason})`,
+          ],
+    ),
   );
   failures.push(
     ...report.incompleteMetrics
@@ -1208,6 +1582,109 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const evidence = run.dawnPipeline.value;
     return `- ${run.profile} repeat ${run.repeat}: shader hits/misses ${evidence.shaderCache.hitCount}/${evidence.shaderCache.missCount}; graphics PSO ${formatDawnCachePath(evidence.pipelineCache.render)}; compute PSO ${formatDawnCachePath(evidence.pipelineCache.compute)}; gameplay-overlap pipeline/shader ${evidence.pipelineActivity.overlappingMeasurement}/${evidence.shaderCache.missesOverlappingMeasurement}`;
   });
+  const v8Evidence = report.v8CodeCacheDiagnostics.map((run) => {
+    if (run.v8CodeCache.state !== "measured") {
+      const retainedEvidence = run.v8CodeCache.evidence;
+      const retainedSummary =
+        retainedEvidence === null
+          ? ""
+          : `; retained outcomes: ${retainedEvidence.artifacts.map(formatV8ArtifactOutcome).join(", ")}`;
+      return `- ${run.profile} repeat ${run.repeat}: ${run.v8CodeCache.state} — ${run.v8CodeCache.reason}${retainedSummary}`;
+    }
+    const evidence = run.v8CodeCache.evidence;
+    if (run.profile === "fresh") {
+      return `- fresh repeat ${run.repeat}: attributed ${evidence.artifacts.length} immutable JavaScript artifacts; ${evidence.cacheableArtifactCount} cacheable artifacts are cold-profile/not-applicable`;
+    }
+    return run.profile === "produce"
+      ? `- produce repeat ${run.repeat}: attributed ${evidence.artifacts.length} immutable JavaScript artifacts; cache consumption is timestamp-profile/not-applicable`
+      : `- warm repeat ${run.repeat}: consumed ${evidence.consumedArtifactCount}/${evidence.cacheableArtifactCount} cacheable immutable JavaScript artifacts; rejected ${evidence.rejectedArtifactCount}`;
+  });
+  const v8ProductionEvidence = report.v8CodeCacheDiagnostics.map((run) => {
+    const evidence = run.production.evidence;
+    if (run.production.state !== "measured" || evidence === null) {
+      const retained =
+        evidence === null
+          ? ""
+          : `; retained outcomes: ${evidence.artifacts
+              .map((artifact) => {
+                if (artifact.state !== "measured") {
+                  return `${artifact.artifact}=${artifact.state}`;
+                }
+                const producedBytes = artifact.productions.reduce(
+                  (total, production) =>
+                    total + (production.state === "measured" ? production.producedBytes : 0),
+                  0,
+                );
+                return `${artifact.artifact}=produced(${producedBytes} bytes)`;
+              })
+              .join(", ")}`;
+      return `- ${run.profile} repeat ${run.repeat}: ${run.production.state} — ${"reason" in run.production ? run.production.reason : "unknown production failure"}${retained}`;
+    }
+    if (run.profile === "fresh") {
+      return `- fresh repeat ${run.repeat}: no unexpected URL-attributed code-cache production events`;
+    }
+    if (run.profile === "warm") {
+      const reproduced = evidence.artifacts
+        .filter((artifact) => artifact.state === "measured")
+        .map(
+          (artifact) =>
+            `${artifact.artifact}=${artifact.productions.reduce((total, production) => total + production.producedBytes, 0)} bytes`,
+        );
+      return `- warm repeat ${run.repeat}: re-produced ${evidence.producedArtifactCount}/${evidence.cacheableArtifactCount} cacheable artifacts, ${evidence.producedBytes} bytes total${reproduced.length === 0 ? "; no URL-attributed re-production observed" : `; ${reproduced.join(", ")}`}`;
+    }
+    return `- produce repeat ${run.repeat}: produced ${evidence.producedArtifactCount}/${evidence.cacheableArtifactCount} cacheable artifacts, ${evidence.producedBytes} bytes total; ${evidence.artifacts
+      .filter((artifact) => artifact.state === "measured")
+      .map(
+        (artifact) =>
+          `${artifact.artifact}=${artifact.productions.reduce((total, production) => total + production.producedBytes, 0)} bytes`,
+      )
+      .join(", ")}`;
+  });
+  const v8CompileDurationEvidence = report.v8CodeCacheDiagnostics.map((run) => {
+    const evidence = run.v8CodeCache.evidence;
+    if (evidence === null) {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — compilation evidence unavailable`;
+    }
+    const totalDurationUs = evidence.artifacts.reduce(
+      (total, artifact) => total + artifact.compileDurationUs,
+      0,
+    );
+    const artifacts = evidence.artifacts.map((artifact) => {
+      const modes = [...new Set(artifact.compilations.map((compilation) => compilation.streamed))]
+        .map((streamed) => (streamed ? "streamed" : "non-streamed"))
+        .join("+");
+      return `${artifact.artifact}=${artifact.compileDurationUs} µs (${modes}; ${artifact.compilations.length} event${artifact.compilations.length === 1 ? "" : "s"})`;
+    });
+    return `- ${run.profile} repeat ${run.repeat}: ${totalDurationUs} µs total; ${artifacts.join(", ")}`;
+  });
+  const v8WorkerStartupEvidence = report.v8CodeCacheDiagnostics.map(
+    (run) =>
+      `- ${run.profile} repeat ${run.repeat}: ${formatMilliseconds(run.workerStartupToFirstFrameMs.value)}`,
+  );
+  const traceDrainEvidence = report.runs.map((run) => {
+    const evidence = run.traceDrain.evidence;
+    if (evidence === null) {
+      return `- core ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
+    }
+    const completion =
+      run.traceDrain.state === "measured"
+        ? `${formatMilliseconds(evidence.endWaitMs)} to completion`
+        : `${formatMilliseconds(evidence.endWaitMs)} before invalidation`;
+    return `- core ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
+  });
+  traceDrainEvidence.push(
+    ...report.v8CodeCacheDiagnostics.map((run) => {
+      const evidence = run.traceDrain.evidence;
+      if (evidence === null) {
+        return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
+      }
+      const completion =
+        run.traceDrain.state === "measured"
+          ? `${formatMilliseconds(evidence.endWaitMs)} to completion`
+          : `${formatMilliseconds(evidence.endWaitMs)} before invalidation`;
+      return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
+    }),
+  );
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -1223,15 +1700,51 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...dawnEvidence,
     "",
+    `## V8 code-cache evidence (${SMOKE_V8_CODE_CACHE_DIAGNOSTIC})`,
+    "",
+    ...v8Evidence,
+    "",
+    "## V8 code-cache production",
+    "",
+    ...v8ProductionEvidence,
+    "",
+    "## V8 compile-event duration diagnostics",
+    "",
+    ...v8CompileDurationEvidence,
+    "",
+    "## V8 worker startup-to-first-frame diagnostics",
+    "",
+    ...v8WorkerStartupEvidence,
+    "",
+    "## Trace drain diagnostics",
+    "",
+    ...traceDrainEvidence,
+    "",
   ];
   await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
   console.log(lines.join("\n"));
+}
+
+function formatV8ArtifactOutcome(artifact: V8CodeCacheArtifactEvidence): string {
+  if (artifact.cache.state === "measured") {
+    const bytes = artifact.cache.consumedBytes ?? "unknown-size";
+    return `${artifact.artifact}=${artifact.cache.outcome}(${bytes} bytes; ${artifact.compilations.length} compilation${artifact.compilations.length === 1 ? "" : "s"})`;
+  }
+  const rejectedCompilations = artifact.compilations.filter(
+    (compilation) =>
+      compilation.cache.state === "measured" && compilation.cache.outcome === "rejected",
+  ).length;
+  return `${artifact.artifact}=${artifact.cache.state}(${artifact.compilations.length} compilation${artifact.compilations.length === 1 ? "" : "s"}${rejectedCompilations === 0 ? "" : `; ${rejectedCompilations} rejected`})`;
 }
 
 function formatDawnCachePath(path: DawnPipelineEvidence["pipelineCache"]["compute"]): string {
   return path.state === "measured"
     ? `hits/misses ${path.value.hitCount}/${path.value.missCount}`
     : `${path.state} (${path.reason})`;
+}
+
+function formatMilliseconds(value: number | null): string {
+  return value === null ? "unknown duration" : `${value.toFixed(1)} ms`;
 }
 
 function requiredEnvironment(name: string): string {

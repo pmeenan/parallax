@@ -52,7 +52,48 @@ measured automatically.
       cache histograms (D-036, RE-007): a three-pair remote diagnostic measured fresh launches
       at 6 shader/3 graphics-PSO misses, every warm relaunch at 6/3 hits, and zero pipeline or
       shader compilation overlapping all gameplay windows. A physical-console rerun remains
-      before promoting that evidence to the gate baseline. The V8 code-cache probe also remains.
+      before promoting that evidence to the gate baseline. The V8 JavaScript code-cache trace
+      probe now URL-matches every immutable build artifact and requires positive consumed bytes
+      with no rejection (D-037/D-038), but Chrome omits that result for the walking skeleton's streamed
+      ES-module path; all three warm diagnostics remain mandatory/invalid (RE-009). Wasm cache
+      evidence remains for when the first wasm artifact lands. Trace-drain volume, command time,
+      completion time, and partial timeout evidence are now part of the result. A remote
+      A/B retained exact V8 evidence while replacing `devtools.timeline` with `v8`, reducing
+      completed-trace volume from about 5.0 MB/150 ms to 4.1 MB/119 ms (D-038). The narrower
+      category still timed out on 3 of 12 traces versus 0 of 6 with no V8 category; captured
+      failures acknowledged `Tracing.end` in 1.6–2.1 ms but delivered no event chunks or
+      completion within five seconds. `ReturnAsStream` reproduced the failure and was rejected.
+      D-039–D-043 now run mandatory V8 evidence in three isolated `v8-code-cache@5`
+      fresh/timestamp → produce → warm/consume lineages inside result schema v11. A remote
+      diagnostic completed all 9 V8 traces: every produce launch wrote 3,072 app bytes and 6,968
+      engine bytes, while the render worker emitted no production event in 3/3 lineages despite
+      containing 99.84% of decoded JavaScript (RE-010). Fresh emitted no unexpected production,
+      warm re-produced 0/3 cacheable artifacts in every lineage, and every launch-3 cacheable
+      artifact still omitted consumption evidence. The no-reproduction control narrows RE-009 to
+      an app/engine observability gap without substituting for positive consumption. Core trace
+      failures at ordinals 3–5 followed by success at ordinal 6 argue against a simple late-run
+      cutoff and extend RE-008; a final-tree rerun then completed all 6 core and 9 V8 traces with
+      the same V8 outcomes. Ordinal and elapsed-sequence timing now ship in every trace record.
+      Per-artifact compile-event durations are also retained as non-gating diagnostics: the
+      non-streamed worker measured 24.4–26.8 ms with overlapping fresh/warm ranges, while streamed
+      app/engine spans were only 2–40 µs. These spans constrain current launch-cost risk but do
+      not substitute timing inference for cache evidence (D-042). End-to-end worker startup to
+      first frame measured 182–207 ms fresh and 144–155 ms warm across two runs, so the current
+      warm component is modest but cannot be attributed specifically to V8. Launch 2 was normally
+      146–153 ms but retained one 789.5 ms outlier from the whole worker-to-frame path. Core/V8
+      recording lifetime is now explicit (normally about 13.2–14.2 s versus 0.29–0.39 s; the
+      startup outlier extended one V8 trace to 0.94 s). A controlled
+      blank-page matrix completed 6/6 short-core, 6/6 14.1 s core, and 6/6 14.1 s V8 traces;
+      lifetime alone does not reproduce RE-008, leaving active-page event/process/volume regime
+      as the next controlled variable (D-043). An active 4K app control tracing only
+      `blink.user_timing` still timed out once in six launches with zero delivered events/chunks;
+      enabled GPU categories and multi-megabyte payload are not necessary, and the responsible
+      process remains unproved. The same control's unchanged V8 lineages had launch 3 slower
+      than launch 2 in two of three repeats, rebutting a consistent ≤5 ms cache-savings bound
+      (D-044). The aggregate `passed` bit intentionally remains
+      fail-closed but is currently constant-red on known mandatory platform gaps; a later Harness
+      v1 slice must design independently named environment, evidence-completeness, and evaluated-
+      budget facets without allowing an unmeasured budget to appear green.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

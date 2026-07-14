@@ -15,6 +15,8 @@ export interface QualityTierProfile {
 
 export const SMOKE_SCENARIO = "smoke@1";
 export const SMOKE_REPEATS = 3;
+export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@5";
+export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS = 3;
 export const SMOKE_WARMUP_MS = 10_000;
 export const SMOKE_MEASUREMENT_FRAMES = 120;
 export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
@@ -34,7 +36,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("all-worker JS heap", false),
   metric("attributable GPU memory", false),
   metric("Dawn pipeline compile/cache evidence", true, "implemented"),
-  metric("V8 code-cache evidence", true),
+  metric("V8 code-cache evidence", true, "implemented"),
 ]);
 
 export const SMOKE_INCOMPLETE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze(

@@ -79,8 +79,23 @@ addressing beyond 4 GiB, gated on P-001.
 | Install wall time | Bandwidth-bound + ≤ 90 s local work | Local work = integrity, unpack, PSO warmup |
 | Launch 2+ → interactive gameplay | ≤ 10 s | Fully local; the number the demo lives or dies on |
 | Launch 1 (post-install) → gameplay | ≤ 30 s | |
+| Warm JavaScript code-cache rejections | 0 artifacts | Three-launch persistent-profile lineage: launch 2 must positively produce cache, then launch 3 supplies URL-attributed V8 consumption results; a missing production or consumption result is `invalid` |
+| Warm JavaScript code-cache re-productions | 0 artifacts | A positive URL-attributed production event on launch 3 is measured negative evidence that fails independently of consumption observability |
 | Asset-only update | Never invalidates V8 code caches | Verified by harness cache probes |
 | Offline launch | ≤ 1.10× warm-launch time (and within the ≤ 10 s budget) | Network killed post-install; served entirely by SW precache + OPFS |
+
+The M0 walking skeleton currently has 5,265,895 decoded JavaScript source code units. Its
+render-worker artifact contains 5,257,345 (99.84%), while artifacts with observed launch-2 cache
+production contain 7,884 (0.15%). Source share is not a launch-cost proxy: the worker's retained
+non-streamed compile-event duration measured 24.4–26.8 ms across fresh/produce/warm launches,
+about 0.25% of the ≤10 s budget, with no consistent warm decrease (D-042/RE-010). This raw trace
+span is diagnostic rather than proof of cache state or total parse/compile cost; the missing
+worker production result still fails the cache-evidence gate. The broader
+worker-startup-to-first-frame component measured 144.2–156.8 ms on warm launches (about 1.6% of
+the budget) across three diagnostics. Launch 2 included one 789.5 ms outlier, and the third
+diagnostic measured launch 3 slower than launch 2 in two of three lineages. This whole-worker-
+path timer therefore neither establishes a consistent launch-2 → launch-3 saving nor assigns
+the outlier specifically to V8 cache serialization or consumption (D-043/D-044).
 
 **Scale tests (two corpora, M2):** proving "the web supports 100 GB games" requires
 more than proving OPFS holds 100 GB:
@@ -128,6 +143,12 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).
+- **JavaScript code-cache lifecycle (D-040–D-042):** each repeat uses one persistent profile for
+  fresh/timestamp, produce, and warm/consume launches. Fresh must expose no production, every
+  cacheable required immutable script must report a positive URL-attributed `producedCacheSize`
+  on launch 2, and warm must expose no re-production before it can satisfy the zero-rejection
+  budget. Production, absence of re-production, and consumption are separate mandatory evidence;
+  none can substitute for another.
 - **Variance gate:** if p95 varies more than 10% across the repeats, the result is
   `invalid` (fix the noise before trusting the number) — a noisy metric is a broken
   metric, not a passing one.

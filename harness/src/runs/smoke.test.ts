@@ -12,6 +12,8 @@ import {
   SMOKE_METRICS,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
+  SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
+  SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS,
 } from "./smoke.js";
 
 const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
@@ -21,6 +23,11 @@ describe("smoke@1 contract", () => {
   it("stays synchronized with the public engine telemetry contract", () => {
     expect(SMOKE_TELEMETRY_GLOBAL_NAME).toBe(TELEMETRY_GLOBAL_NAME);
     expect(expectedSchemaVersion).toBe(TELEMETRY_SCHEMA_VERSION);
+  });
+
+  it("versions the isolated V8 diagnostic and its repeat contract", () => {
+    expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC).toBe("v8-code-cache@5");
+    expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS).toBe(3);
   });
 
   it("accounts for every mandatory metric in its single registry", () => {
@@ -37,6 +44,9 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "Dawn pipeline compile/cache evidence")?.probe,
     ).toBe("implemented");
+    expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
+      "implemented",
+    );
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
         ?.invalidReason,
