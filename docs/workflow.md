@@ -59,28 +59,25 @@ means:
 
 ## Review passes: reviewer mode (D-027)
 
-A prompt like "review the current changes" makes you a **review-pass agent** (step 2 of
-the loop). The unit under review is the **entire uncommitted working tree** — the diff
-against the last commit plus untracked files — including whether the docs that should
-have moved with the change actually did.
+Any prompt requesting a review of uncommitted modifications (e.g., "review the current changes", "take a look at the changes", "review my edits", "check the modifications") triggers **reviewer mode** (step 2 of the loop). The unit under review is the **entire uncommitted working tree** — the diff against the last commit plus untracked files — including whether the docs that should have moved with the change actually did.
 
-- **Read-only by default.** You report; the agent that did the work owns the fixes.
-  Don't edit the tree unless the human explicitly asks you to fix directly.
-- **Review thoroughly, not just for bugs.** Correctness first, then: root and
-  directory AGENTS.md rule violations (layers, instrumentation, determinism), missing
-  decision-log or rough-edges entries, budget implications — and **better approaches**:
-  if you know a simpler, more idiomatic, or measurably better way, report it as a
-  suggestion, clearly distinct from a defect.
-- **Verify before you report.** Run the cheap checks (typecheck, tests, a harness run
-  when measured behavior changed) rather than speculating — root rule 3 applies to
-  reviews too. Read-only subagents may be used freely to cover ground.
-- **Write findings for handback.** The report goes verbatim to the implementing agent,
-  who has the tree but not your conversation — each finding must be self-contained:
-  where (file:line), what and why it matters, severity, and a concrete suggested fix,
-  phrased as a claim to **verify** ("X appears to break Y when Z — verify and fix, or
-  rebut with evidence"), not an order. Rank findings most-severe first.
-- **A clean review is a valid result.** If nothing survives verification, say so
-  plainly — don't manufacture findings to look thorough.
+- **DO NOT simply summarize the changes.** The user is not asking for a diff description. You must perform an active, critical code review looking for correctness, logic errors, code quality issues, and rule compliance.
+- **Read-only by default.** You report; the agent that did the work owns the fixes. Don't edit the tree unless the human explicitly asks you to fix directly.
+- **Review thoroughly, not just for bugs.** Correctness first, then check:
+  - Root and directory `AGENTS.md` rule violations (e.g., layer violations, lack of instrumentation/telemetry, determinism).
+  - Missing decision-log entries ([decisions.md](file:///d:/src/parallax/docs/decisions.md)) or rough-edges entries ([rough-edges.md](file:///d:/src/parallax/docs/rough-edges.md)).
+  - Budget implications ([budgets.md](file:///d:/src/parallax/docs/budgets.md)).
+  - **Better approaches**: If there is a simpler, more idiomatic, or measurably better way, report it as a suggestion, clearly distinct from a defect.
+- **Verify before you report.** Run the verification checks to validate behavior instead of guessing:
+  - Run `pnpm check` (which builds, lints via Biome, and runs unit tests via Vitest).
+  - Or run individual checks: `pnpm typecheck`, `pnpm lint`, `pnpm test:unit`.
+  - Run the harness via `pnpm harness:smoke` when measured performance or runtime behavior has changed.
+- **Write findings for handback.** The report goes verbatim to the implementing agent, who has the tree but not your conversation — each finding must be self-contained:
+  - **Location**: Specific file and line number range.
+  - **Details**: What the issue is, why it matters, and severity.
+  - **Suggestion**: A concrete suggested fix, phrased as a claim to **verify** ("X appears to break Y when Z — verify and fix, or rebut with evidence"), not a command.
+  - **Priority**: Rank findings most-severe first.
+- **A clean review is a valid result.** If nothing survives verification, say so plainly — don't manufacture findings to look thorough.
 
 ## Findings handback: fix-pass mode (D-030)
 
@@ -103,19 +100,15 @@ address them") makes you the **fix-pass agent**: the findings came from a review
 
 ## Fix verification: verify-pass mode (D-030)
 
-A prompt like "verify the fixes" makes you the **verification agent**: a review's
-findings went to a fix-pass agent, which fixed some and pushed back on others. You
-check both sides.
+Any prompt requesting to check or verify fixes (e.g., "verify the fixes", "check the fixes", "verify fixes", "verify the resolved issues") triggers **verify-pass mode**. The verification agent evaluates a fix-pass agent's changes and disposition report against the current working tree.
 
-- Inputs are the original findings and the fix agent's disposition report; the unit
-  under check is the current working tree.
-- **Verify each fix against the tree, not the report.** Confirm the change actually
-  resolves the finding (run the check that would have caught it) and didn't introduce
-  a regression.
-- **Adjudicate each pushback independently.** Evaluate the rebuttal's evidence on the
-  merits; accept it, or make the evidence-backed case for why the finding stands.
-- **Read-only by default,** like reviewer mode — report, don't fix, unless the human
-  explicitly asks you to fix directly.
-- **Report a per-finding verdict:** fix verified / fix incomplete or wrong (with
-  evidence) / pushback accepted / pushback rejected (why the finding stands). All
-  verdicts positive is a valid result — don't manufacture disputes.
+- **Retrieve the context first.** If the original findings and disposition report are not fully detailed in the current prompt, retrieve them from the conversation history logs (e.g., look for `walkthrough.md`, the latest messages, or check `transcript.jsonl` under `<appDataDir>\brain\<conversation-id>\.system_generated\logs/`).
+- **Verify each fix against the tree, not the report.** Run actual tests and compilation commands (`pnpm check`, `pnpm typecheck`, or `pnpm harness:smoke`) to confirm the change actually resolves the finding and didn't introduce a regression.
+- **Adjudicate each pushback independently.** Evaluate the rebuttal's evidence on the merits; accept it, or make the evidence-backed case for why the finding stands.
+- **Read-only by default,** like reviewer mode — report, don't fix, unless the human explicitly asks you to fix directly.
+- **Report a per-finding verdict:**
+  - `fix verified`
+  - `fix incomplete or wrong (with evidence)`
+  - `pushback accepted`
+  - `pushback rejected (why the finding stands)`
+  - All verdicts positive is a valid result — don't manufacture disputes.
