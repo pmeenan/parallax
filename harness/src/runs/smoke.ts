@@ -18,6 +18,7 @@ export const SMOKE_REPEATS = 3;
 export const SMOKE_WARMUP_MS = 10_000;
 export const SMOKE_MEASUREMENT_FRAMES = 120;
 export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
+export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 export const SMOKE_TELEMETRY_SCHEMA_VERSION = 1;
@@ -32,7 +33,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("verified gate environment identity", true, "implemented"),
   metric("all-worker JS heap", false),
   metric("attributable GPU memory", false),
-  metric("Dawn pipeline compile/cache evidence", true),
+  metric("Dawn pipeline compile/cache evidence", true, "implemented"),
   metric("V8 code-cache evidence", true),
 ]);
 

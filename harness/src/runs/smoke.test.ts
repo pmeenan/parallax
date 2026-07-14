@@ -35,6 +35,9 @@ describe("smoke@1 contract", () => {
       SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")?.probe,
     ).toBe("incomplete");
     expect(
+      SMOKE_METRICS.find((metric) => metric.name === "Dawn pipeline compile/cache evidence")?.probe,
+    ).toBe("implemented");
+    expect(
       SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
         ?.invalidReason,
     ).toContain("PresentationFeedback.kFailure");

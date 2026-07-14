@@ -2,15 +2,27 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
-import { type BrowserContext, chromium, type Page } from "playwright-core";
+import { type BrowserContext, type CDPSession, chromium, type Page } from "playwright-core";
 import {
   type Distribution,
   distribution,
   evaluateP95Variance,
   type VarianceMetric,
 } from "./aggregate.js";
-import { type BudgetCheck, evaluateMainThreadBudgets, type QualityTier } from "./budgets.js";
+import {
+  type BudgetCheck,
+  evaluateMainThreadBudgets,
+  evaluatePipelineBudgets,
+  type QualityTier,
+} from "./budgets.js";
 import { readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
+import {
+  D3D12_HISTOGRAM_PREFIX,
+  DAWN_TRACE_CATEGORY,
+  type DawnHistogram,
+  type DawnPipelineEvidence,
+  resolveD3D12DawnPipelineEvidence,
+} from "./dawn-pipeline-trace.js";
 import {
   type BrowserDisplayIdentity,
   type CdpGpuDevice,
@@ -48,6 +60,7 @@ import {
   SMOKE_SCENARIO,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
+  SMOKE_TRACE_QUIESCE_MS,
   SMOKE_WARMUP_MS,
   type SmokeMetricDefinition,
 } from "./runs/smoke.js";
@@ -68,6 +81,10 @@ type ProbeResult<T> =
   | Readonly<{ readonly state: "measured"; readonly value: T }>
   | Readonly<{ readonly reason: string; readonly state: "invalid" }>;
 
+type MetricResult<T> =
+  | ProbeResult<T>
+  | Readonly<{ readonly reason: string; readonly state: "unsupported" }>;
+
 interface P95VarianceSummary {
   readonly profile: "fresh" | "warm";
   readonly reason?: string;
@@ -87,6 +104,7 @@ interface RunMeasurement {
   readonly browserDisplayAfter: BrowserDisplayIdentity;
   readonly browserDisplayBefore: BrowserDisplayIdentity;
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
+  readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
   readonly jsHeapUsedBytes: MeasuredMetric<number>;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
@@ -147,7 +165,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 3;
+  readonly schemaVersion: 4;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
 }
@@ -185,8 +203,22 @@ async function main(): Promise<void> {
     for (let repeat = 1; repeat <= SMOKE_REPEATS; repeat += 1) {
       const lineage = join(profileRoot, `lineage-${repeat}`);
       runs.push(
-        await measureRun(executablePath, lineage, baseUrl, repeat, "fresh"),
-        await measureRun(executablePath, lineage, baseUrl, repeat, "warm"),
+        await measureRun(
+          executablePath,
+          lineage,
+          baseUrl,
+          repeat,
+          "fresh",
+          environment.adapter?.backend ?? null,
+        ),
+        await measureRun(
+          executablePath,
+          lineage,
+          baseUrl,
+          repeat,
+          "warm",
+          environment.adapter?.backend ?? null,
+        ),
       );
     }
     const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) => {
@@ -234,6 +266,7 @@ async function main(): Promise<void> {
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
     const passed =
       runs.every((run) => run.budgetChecks.every((check) => check.passed)) &&
+      runs.every((run) => run.dawnPipeline.state === "measured") &&
       environment.gateIdentity.state === "measured" &&
       incompleteMetrics.every((metric) => !metric.mandatoryForHarnessV1) &&
       callbackPacingVariance.every((metric) => metric.state === "measured");
@@ -261,7 +294,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 3,
+      schemaVersion: 4,
       source,
       vizPresentationFeedbackCallbackVariance,
     });
@@ -288,6 +321,60 @@ function invalidMetric(
 
 function measured<T>(value: T): MeasuredMetric<T> {
   return Object.freeze({ state: "measured", value });
+}
+
+async function readD3D12CacheHistograms(
+  context: BrowserContext,
+): Promise<readonly DawnHistogram[]> {
+  const browser = context.browser();
+  if (browser === null) throw new Error("Playwright did not expose the launched browser");
+  const session = await browser.newBrowserCDPSession();
+  let page: Page | null = null;
+  try {
+    page = await context.newPage();
+    await page.goto(`chrome://histograms/#${D3D12_HISTOGRAM_PREFIX}`);
+    const subprocessCheckbox = page.locator("#subprocess_checkbox");
+    await subprocessCheckbox.waitFor({ state: "attached" });
+    await subprocessCheckbox.setChecked(true);
+    const refresh = page.getByText("Refresh", { exact: true });
+    await refresh.click();
+    await page.waitForFunction(
+      (prefix) => document.body.textContent?.includes(prefix) === true,
+      D3D12_HISTOGRAM_PREFIX,
+      { timeout: 5_000 },
+    );
+    const first = await queryD3D12CacheHistograms(session);
+    await delay(SMOKE_TRACE_QUIESCE_MS);
+    await refresh.click();
+    await delay(SMOKE_TRACE_QUIESCE_MS);
+    const second = await queryD3D12CacheHistograms(session);
+    if (JSON.stringify(first) !== JSON.stringify(second)) {
+      throw new Error(
+        "Dawn cache histograms were unstable across subprocess histogram synchronization",
+      );
+    }
+    return second;
+  } finally {
+    await session.detach().catch(() => undefined);
+    await page?.close().catch(() => undefined);
+  }
+}
+
+async function queryD3D12CacheHistograms(session: CDPSession): Promise<readonly DawnHistogram[]> {
+  const result = (await session.send("Browser.getHistograms", {
+    delta: false,
+    query: D3D12_HISTOGRAM_PREFIX,
+  })) as {
+    histograms: readonly DawnHistogram[];
+  };
+  return Object.freeze(
+    result.histograms
+      .filter((histogram) => !histogram.name.endsWith(".90SecondsPostStartup"))
+      .map((histogram) =>
+        Object.freeze({ count: histogram.count, name: histogram.name, sum: histogram.sum }),
+      )
+      .sort((left, right) => left.name.localeCompare(right.name)),
+  );
 }
 
 async function tryProbe<T>(label: string, probe: () => Promise<T>): Promise<ProbeResult<T>> {
@@ -347,10 +434,11 @@ async function inspectEnvironment(
   }
   const hostResultPromise = tryReadWindowsHostIdentity();
   const context = await launch(executablePath, profilePath, ["--enable-webgpu-developer-features"]);
+  let session: CDPSession | null = null;
   try {
     const browser = context.browser();
     if (browser === null) throw new Error("Playwright did not expose the launched browser");
-    const session = await browser.newBrowserCDPSession();
+    session = await browser.newBrowserCDPSession();
     const version = (await session.send("Browser.getVersion")) as {
       product: string;
       revision: string;
@@ -417,6 +505,7 @@ async function inspectEnvironment(
       targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
     });
   } finally {
+    await session?.detach().catch(() => undefined);
     await context.close();
   }
 }
@@ -435,22 +524,22 @@ async function measureRun(
   baseUrl: string,
   repeat: number,
   profile: "fresh" | "warm",
+  dawnBackend: string | null,
 ): Promise<RunMeasurement> {
   const before = await fetchServerMetrics(baseUrl);
   const context = await launch(executablePath, profilePath);
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
-  let presentationTrace: PresentationTraceCapture | null = null;
-  let presentationTraceFailure: string | null = null;
+  let smokeTrace: SmokeTraceCapture | null = null;
+  let smokeTraceFailure: string | null = null;
   const markPresentationBoundary = async (boundary: "start" | "end"): Promise<void> => {
-    if (presentationTrace === null) return;
-    const trace = presentationTrace;
-    const markerResult = await tryProbe(`Viz presentation-feedback ${boundary} marker`, () =>
+    if (smokeTrace === null) return;
+    const trace = smokeTrace;
+    const markerResult = await tryProbe(`Smoke trace presentation-window ${boundary} marker`, () =>
       boundary === "start" ? trace.markStart(page) : trace.markEnd(page),
     );
     if (markerResult.state === "invalid") {
-      presentationTraceFailure = await discardFailedPresentationTrace(trace, markerResult.reason);
-      presentationTrace = null;
+      smokeTraceFailure = markerResult.reason;
     }
   };
   page.on("pageerror", (error) => errors.push(error.message));
@@ -459,6 +548,14 @@ async function measureRun(
   });
   await installLongTaskObserver(page);
   try {
+    const traceStartResult = await tryProbe("Chrome smoke trace start", () =>
+      beginSmokeTrace(context),
+    );
+    if (traceStartResult.state === "measured") {
+      smokeTrace = traceStartResult.value;
+    } else {
+      smokeTraceFailure = traceStartResult.reason;
+    }
     await page.goto(baseUrl, { waitUntil: "load" });
     await page.waitForFunction(
       telemetryReady,
@@ -476,14 +573,6 @@ async function measureRun(
       refreshRateResult.state === "measured" ? refreshRateResult.value : Object.freeze([]);
     const displayProbeFailures =
       refreshRateResult.state === "invalid" ? Object.freeze([refreshRateResult.reason]) : [];
-    const traceStartResult = await tryProbe("Viz presentation-feedback trace start", () =>
-      beginPresentationTrace(context),
-    );
-    if (traceStartResult.state === "measured") {
-      presentationTrace = traceStartResult.value;
-    } else {
-      presentationTraceFailure = traceStartResult.reason;
-    }
     await page.waitForTimeout(SMOKE_WARMUP_MS);
     await resetSurfaceObserver(page);
     const renderSurfaceBefore = await readSurfaceLatest(page);
@@ -550,26 +639,59 @@ async function measureRun(
       (metric) => metric.name === "JSHeapUsedSize",
     )?.value;
     if (jsHeapUsedBytes === undefined) throw new Error("CDP did not report JSHeapUsedSize");
-    if (presentationTrace !== null) {
+    if (smokeTrace !== null) {
       await page.waitForTimeout(SMOKE_PRESENTATION_TRACE_TAIL_MS);
     }
-    const traceToFinish = presentationTrace;
-    const vizPresentationFeedbackCallbackIntervalMs =
+    if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
+    const histogramsBeforeTraceEnd =
+      smokeTrace !== null && dawnBackend?.toLowerCase() === "d3d12"
+        ? await tryProbe("Dawn subprocess cache histograms before trace end", () =>
+            readD3D12CacheHistograms(context),
+          )
+        : null;
+    const traceToFinish = smokeTrace;
+    const traceEvents =
       traceToFinish === null
         ? Object.freeze({
-            reason: presentationTraceFailure ?? "Viz presentation-feedback trace is unavailable",
+            reason: smokeTraceFailure ?? "Chrome smoke trace is unavailable",
             state: "invalid" as const,
           })
+        : await tryProbe("Chrome smoke trace", () => traceToFinish.finish());
+    const vizPresentationFeedbackCallbackIntervalMs =
+      traceEvents.state === "invalid"
+        ? traceEvents
         : await tryProbe("Viz presentation-feedback callback intervals", async () =>
-            distribution(await traceToFinish.finish()),
+            distribution(extractVizPresentationFeedbackCallbackIntervalsMs(traceEvents.value)),
           );
-    if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
+    const histogramsAfterTraceEnd =
+      smokeTrace !== null && dawnBackend?.toLowerCase() === "d3d12"
+        ? await tryProbe("Dawn subprocess cache histograms after trace end", () =>
+            readD3D12CacheHistograms(context),
+          )
+        : null;
+    const dawnPipeline = resolveD3D12DawnPipelineEvidence(
+      traceEvents,
+      dawnBackend,
+      histogramsBeforeTraceEnd,
+      histogramsAfterTraceEnd,
+    );
     const workerAnimationCallbackIntervalMs = distribution(presentIntervals);
+    const pipelineBudgetChecks =
+      dawnPipeline.state === "measured"
+        ? evaluatePipelineBudgets(
+            dawnPipeline.value.pipelineActivity.overlappingMeasurement,
+            dawnPipeline.value.shaderCache.missesOverlappingMeasurement,
+          )
+        : [];
     return Object.freeze({
-      budgetChecks: evaluateMainThreadBudgets(mainThreadLongTasks),
+      budgetChecks: Object.freeze([
+        ...evaluateMainThreadBudgets(mainThreadLongTasks),
+        ...pipelineBudgetChecks,
+      ]),
       browserDisplayAfter,
       browserDisplayBefore,
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
+      dawnPipeline,
       http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
       jsHeapUsedBytes: measured(jsHeapUsedBytes),
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
@@ -591,9 +713,9 @@ async function measureRun(
     });
   } finally {
     try {
-      if (presentationTrace !== null) {
-        const trace = presentationTrace;
-        await tryProbe("Viz presentation-feedback trace cleanup", () => trace.discard());
+      if (smokeTrace !== null) {
+        const trace = smokeTrace;
+        await tryProbe("Chrome smoke trace cleanup", () => trace.discard());
       }
     } finally {
       await context.close();
@@ -601,24 +723,14 @@ async function measureRun(
   }
 }
 
-async function discardFailedPresentationTrace(
-  trace: PresentationTraceCapture,
-  failure: string,
-): Promise<string> {
-  const discardResult = await tryProbe("Viz presentation-feedback trace cleanup", () =>
-    trace.discard(),
-  );
-  return discardResult.state === "invalid" ? `${failure} | ${discardResult.reason}` : failure;
-}
-
-interface PresentationTraceCapture {
+interface SmokeTraceCapture {
   discard(): Promise<void>;
-  finish(): Promise<readonly number[]>;
+  finish(): Promise<readonly ChromeTraceEvent[]>;
   markEnd(page: Page): Promise<void>;
   markStart(page: Page): Promise<void>;
 }
 
-async function beginPresentationTrace(context: BrowserContext): Promise<PresentationTraceCapture> {
+async function beginSmokeTrace(context: BrowserContext): Promise<SmokeTraceCapture> {
   const browser = context.browser();
   if (browser === null) throw new Error("Playwright did not expose the launched browser");
   const session = await browser.newBrowserCDPSession();
@@ -633,14 +745,14 @@ async function beginPresentationTrace(context: BrowserContext): Promise<Presenta
   const completed = new Promise<{ dataLossOccurred: boolean }>(
     (resolveComplete, rejectComplete) => {
       session.once("Tracing.tracingComplete", resolveComplete);
-      session.once("close", () => rejectComplete(new Error("Viz callback CDP session closed")));
+      session.once("close", () => rejectComplete(new Error("Smoke trace CDP session closed")));
     },
   );
   void completed.catch(() => undefined);
   try {
     await session.send("Tracing.start", {
       traceConfig: {
-        includedCategories: [PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
+        includedCategories: [DAWN_TRACE_CATEGORY, PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
         recordMode: "recordAsMuchAsPossible",
       },
       transferMode: "ReportEvents",
@@ -651,7 +763,7 @@ async function beginPresentationTrace(context: BrowserContext): Promise<Presenta
   }
 
   const stop = async (): Promise<{ dataLossOccurred: boolean }> => {
-    if (!active) throw new Error("Viz callback trace was already stopped");
+    if (!active) throw new Error("Smoke trace was already stopped");
     active = false;
     try {
       return await withTimeout(
@@ -660,7 +772,7 @@ async function beginPresentationTrace(context: BrowserContext): Promise<Presenta
           return completed;
         })(),
         SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
-        "Viz callback trace end/completion",
+        "Smoke trace end/completion",
       );
     } finally {
       await session.detach().catch(() => undefined);
@@ -670,14 +782,14 @@ async function beginPresentationTrace(context: BrowserContext): Promise<Presenta
     async discard(): Promise<void> {
       if (active) await stop();
     },
-    async finish(): Promise<readonly number[]> {
-      if (!endMarked) throw new Error("Viz callback trace ended before its measurement marker");
+    async finish(): Promise<readonly ChromeTraceEvent[]> {
+      if (!endMarked) throw new Error("Smoke trace ended before its measurement marker");
       const result = await stop();
-      if (result.dataLossOccurred) throw new Error("Chrome reported Viz callback trace data loss");
-      return extractVizPresentationFeedbackCallbackIntervalsMs(events);
+      if (result.dataLossOccurred) throw new Error("Chrome reported smoke trace data loss");
+      return Object.freeze(events);
     },
     async markEnd(page: Page): Promise<void> {
-      if (endMarked) throw new Error("Viz callback trace end was marked more than once");
+      if (endMarked) throw new Error("Smoke trace end was marked more than once");
       await markPresentationTrace(page, PRESENTATION_TRACE_END_MARKER);
       endMarked = true;
     },
@@ -1080,6 +1192,22 @@ async function writeReport(report: SmokeReport): Promise<void> {
       .filter((metric) => metric.state === "invalid")
       .map((metric) => `${metric.profile} callback pacing variance: ${metric.reason}`),
   );
+  failures.push(
+    ...report.runs.flatMap((run) =>
+      run.dawnPipeline.state === "measured"
+        ? []
+        : [
+            `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${run.dawnPipeline.reason})`,
+          ],
+    ),
+  );
+  const dawnEvidence = report.runs.map((run) => {
+    if (run.dawnPipeline.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: ${run.dawnPipeline.state} — ${run.dawnPipeline.reason}`;
+    }
+    const evidence = run.dawnPipeline.value;
+    return `- ${run.profile} repeat ${run.repeat}: shader hits/misses ${evidence.shaderCache.hitCount}/${evidence.shaderCache.missCount}; graphics PSO ${formatDawnCachePath(evidence.pipelineCache.render)}; compute PSO ${formatDawnCachePath(evidence.pipelineCache.compute)}; gameplay-overlap pipeline/shader ${evidence.pipelineActivity.overlappingMeasurement}/${evidence.shaderCache.missesOverlappingMeasurement}`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -1091,9 +1219,19 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...(failures.length === 0 ? ["None."] : failures.map((failure) => `- ${failure}`)),
     "",
+    "## Dawn pipeline/cache evidence",
+    "",
+    ...dawnEvidence,
+    "",
   ];
   await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
   console.log(lines.join("\n"));
+}
+
+function formatDawnCachePath(path: DawnPipelineEvidence["pipelineCache"]["compute"]): string {
+  return path.state === "measured"
+    ? `hits/misses ${path.value.hitCount}/${path.value.missCount}`
+    : `${path.state} (${path.reason})`;
 }
 
 function requiredEnvironment(name: string): string {
@@ -1109,4 +1247,8 @@ function requiredNumber(value: number | null): number {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
 }

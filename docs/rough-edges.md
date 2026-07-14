@@ -259,3 +259,62 @@ COS APIs exist):
 - **Proposed improvement:** include presentation flags (at minimum `kFailure`, ideally
   `kVSync`/`kHWClock`/`kHWCompletion`) and a page/frame-sink identifier in a stable CDP or
   Perfetto event, or expose successful presentation timing through a web performance API.
+
+## RE-007: CDP omits GPU-process Dawn histograms until Chrome Internals imports subprocesses
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 remote diagnostic (non-gating).
+- **Layer:** CDP / Chrome metrics / WebGPU-Dawn observability.
+- **Status:** open; Harness v1 synchronizes through `chrome://histograms/` after the
+  measurement window (D-036).
+- **What we expected / What happened:** Dawn records exact shader and D3D12 PSO cache
+  hit/miss UMA in the GPU process, but `Browser.getHistograms` initially returned no
+  `GPU.WebGPU` entries. Loading Histograms Internals with its subprocess checkbox enabled
+  imports shared-memory child-process histograms into the browser statistics recorder;
+  the same CDP query then returned `CompileShader` and `CreateGraphicsPipelineState`
+  hit/miss counts and durations. CDP offers no direct include-subprocesses parameter.
+- **Repro:** launch pinned Chrome with a fresh profile, run the walking skeleton, and call
+  `Browser.getHistograms({query: "GPU.WebGPU.", delta: false})` (empty). Then open
+  `chrome://histograms/#GPU.WebGPU.`, refresh with `#subprocess_checkbox` checked, and
+  repeat the CDP call. The maintained reproduction is the D-036 probe in
+  `harness/src/smoke-run.ts`; the six-launch diagnostic consistently observed fresh
+  6-shader/3-PSO misses and paired warm 6/3 hits.
+- **Impact on Parallax:** exact Dawn cache evidence is obtainable, but only through a
+  privileged Chrome-specific page that creates another tab and synchronously coordinates
+  subprocess metrics. The first synchronization runs after the gameplay marker while tracing
+  remains active; a second stable synchronization after trace completion must match it, so
+  deferred Dawn work cannot fall between the two evidence surfaces. The internals tab cannot
+  contaminate measured focus or pacing and unrelated GPU work is excluded by the Dawn-specific
+  trace/histogram filter, but the mechanism remains unsuitable as a browser-neutral telemetry
+  contract.
+- **Proposed improvement:** let CDP request subprocess histogram synchronization directly,
+  or expose page/origin-correlated WebGPU pipeline-cache hit/miss events through tracing or
+  a stable diagnostics API.
+
+## RE-008: Browser trace completion becomes intermittently unbounded after measured-page teardown
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 remote diagnostic (non-gating).
+- **Layer:** CDP tracing / renderer-GPU-process teardown.
+- **Status:** open; D-036 keeps the measured page alive and brackets trace completion with
+  stable subprocess-histogram snapshots instead.
+- **What we expected / What happened:** To give the Dawn trace and process-wide UMA an
+  atomic app-lifetime boundary, the harness opened a blank keepalive tab, closed the measured
+  app page, waited for a quiescence tail, and called `Tracing.end`. Four of six traces completed
+  within D-035's five-second transaction bound, but warm repeats 1 and 3 never delivered
+  `Tracing.tracingComplete` before the timeout. The same combined trace completed reliably
+  when the measured renderer remained alive.
+- **Repro:** run `smoke@1` with `disabled-by-default-gpu.dawn`,
+  `disabled-by-default-display.framedisplayed`, and `blink.user_timing`; after the end marker
+  and presentation tail, create a blank tab, close the measured tab, wait 100 ms, then send
+  `Tracing.end` on the browser CDP session with a five-second completion bound. The failed
+  diagnostic report was generated locally on 2026-07-13 and intentionally remains ignored.
+- **Impact on Parallax:** renderer teardown is not a reliable trace/UMA boundary and would
+  make a valid Dawn metric intermittently `invalid`. The maintained probe instead imports
+  subprocess histograms while tracing, ends the trace with the renderer alive, then imports
+  again and requires stable counters across the boundary.
+- **Proposed improvement:** make browser-level `Tracing.end` completion independent of traced
+  renderer teardown, or expose which process is delaying completion so harnesses can attribute
+  and bound the wait safely.

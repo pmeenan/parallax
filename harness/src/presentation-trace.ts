@@ -5,6 +5,8 @@ export const PRESENTATION_TRACE_EVENT = "Display::FrameDisplayed";
 
 export interface ChromeTraceEvent {
   readonly args?: Readonly<Record<string, unknown>>;
+  readonly cat?: string;
+  readonly dur?: number;
   readonly name: string;
   readonly ph: string;
   readonly pid: number;

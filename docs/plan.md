@@ -47,8 +47,12 @@ measured automatically.
       reruns confirmed that moving Chrome diagnostics before the full warmup resolves the
       harness-induced ~32 Hz callback pacing (RE-001). A page-windowed Viz trace now records
       presentation-feedback callback cadence, but Chrome omits the success/failure flag, so
-      true presentation remains mandatory/invalid (D-035, RE-006). Dawn/V8 probes also
-      remain.
+      true presentation remains mandatory/invalid (D-035, RE-006). The D3D12 Dawn probe now
+      cross-checks page-windowed pipeline/shader trace events against synchronized GPU-process
+      cache histograms (D-036, RE-007): a three-pair remote diagnostic measured fresh launches
+      at 6 shader/3 graphics-PSO misses, every warm relaunch at 6/3 hits, and zero pipeline or
+      shader compilation overlapping all gameplay windows. A physical-console rerun remains
+      before promoting that evidence to the gate baseline. The V8 code-cache probe also remains.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

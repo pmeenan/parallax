@@ -11,6 +11,20 @@ export function evaluateMainThreadBudgets(mainThreadLongTasks: number): readonly
   return Object.freeze([check("mainThreadLongTasksOver50Ms", mainThreadLongTasks, 0)]);
 }
 
+export function evaluatePipelineBudgets(
+  pipelineCreationActivityOverlappingMeasurement: number,
+  shaderCompilationsOverlappingMeasurement: number,
+): readonly BudgetCheck[] {
+  return Object.freeze([
+    check(
+      "pipelineCreationActivityOverlappingMeasurement",
+      pipelineCreationActivityOverlappingMeasurement,
+      0,
+    ),
+    check("shaderCompilationsOverlappingMeasurement", shaderCompilationsOverlappingMeasurement, 0),
+  ]);
+}
+
 function check(metric: string, actual: number, limit: number): BudgetCheck {
   return Object.freeze({ actual, limit, metric, passed: actual <= limit });
 }

@@ -27,6 +27,75 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-036: D3D12 Dawn gates combine page-windowed traces with subprocess cache histograms  (2026-07-13, accepted)
+**Decision:** `smoke@1` implements the mandatory Dawn pipeline compile/cache metric on the
+registered D3D12 gate by combining two independent Chrome surfaces. One browser-wide trace,
+started before navigation, adds `disabled-by-default-gpu.dawn` to the D-035 categories.
+Renderer user-timing markers bound gameplay; any overlapping synchronous render/compute
+pipeline creation, asynchronous `CreatePipelineAsyncEvent::InitializeImpl`, or D3D12 shader
+compiler event fails the zero-gameplay-compile budget. After the trace and measurement end,
+the harness opens `chrome://histograms/` outside the measurement window while the trace remains
+active, synchronizes subprocess counters, then ends the trace and synchronizes them again. It reads
+the exact `GPU.WebGPU.D3D12` shader, graphics-PSO, and compute-PSO hit/miss histograms through
+CDP. Shader request/miss trace counts must agree exactly with the histogram operation counts;
+PSO histogram operations are bounded by the trace's synchronous API requests plus actual
+asynchronous initializations, and must cover every traced asynchronous initialization (a
+synchronous API request can be an in-device cache hit and therefore have no backend PSO
+histogram). Graphics and compute counts also have independent upper bounds: their matching
+synchronous requests plus the generic async-initialization count, so one path cannot explain
+contradictory evidence from the other. Each synchronization itself uses two stable reads, and the snapshots immediately
+before and after trace completion must also match; any late change makes the metric `invalid`.
+Any other trace/histogram contradiction does likewise.
+Missing hit or miss sides count as zero only when the counterpart proves that cache path was
+exercised. Non-D3D12 backends remain explicit `unsupported` for this probe rather than
+borrowing D3D12 semantics.
+
+**Context:** Dawn emits page-windowable pipeline/compiler work into Chrome's disabled Dawn
+trace category, but its exact backend cache results are GPU-process UMA histograms. A direct
+`Browser.getHistograms` call returned no `GPU.WebGPU` entries because CDP reads the browser
+process's statistics recorder. Chrome's Histograms Internals page imports shared-memory
+subprocess histograms and requests remaining child-process deltas; after that synchronization,
+the same CDP call returned Dawn's exact counters. Keeping the trace active through the first
+import makes any deferred app Dawn work visible to both surfaces; the stable post-trace snapshot
+then establishes their shared observation boundary. The internals tab opens only after the
+presentation tail and gameplay marker, so its focus/GPU work cannot contaminate measured
+timings, and filtering to Dawn's `GPU.WebGPU` events/counters excludes unrelated diagnostics
+work. Each `measureRun` launches a new
+browser process, so counters are per launch even though the persistent profile deliberately
+survives for its paired warm relaunch.
+
+A non-gating remote diagnostic with pinned CfT 150.0.7871.115 on dev-01 measured the same
+result across all three lineages: each fresh launch recorded 6 shader-cache and 3 graphics-PSO
+misses; each warm relaunch recorded 6 shader-cache and 3 graphics-PSO hits; compute PSOs were
+not exercised; all six marked gameplay windows had zero overlapping pipeline initialization
+and zero shader compiler events. The environment correctly remained `invalid` under RDP, so a
+physical-console rerun is still required before baseline promotion.
+
+**Consequences:** smoke result schema advances to v4. Harness reports whole-launch cache counts
+and durations while using trace markers—not end-of-run UMA—for gameplay-window attribution.
+Synchronous API creation is conservatively budgeted even if Dawn could satisfy it from an
+in-device cache; Parallax's warmup contract forbids requesting new pipelines during gameplay
+regardless. `smoke@1` now marks the D3D12 Dawn metric implemented and continues to fail when the
+probe is unsupported, internally inconsistent, or missing. RE-007 records the Chrome
+observability gap and internals-page synchronization cost. Each PSO cache subpath carries its
+own metric state; an unexercised compute or render path is `not-applicable`, never a measured
+zero-hit result.
+
+**Sources checked (2026-07-13):** local CfT 150.0.7871.115 experiments above; Chromium tag
+150.0.7871.115 `content/browser/metrics/histograms_internals_ui.cc`,
+`content/browser/resources/histograms/histograms_internals.html` and
+`histograms_internals.ts`, `content/browser/devtools/protocol/browser_handler.cc`,
+`gpu/command_buffer/service/dawn_platform.cc`, and
+`gpu/command_buffer/service/webgpu_decoder_impl.cc`; pinned Dawn revision
+`01249a97332468dbdd6cf5edb8dd7bae77875de5` `native/d3d12/RenderPipelineD3D12.cpp`,
+`native/CacheRequest.h`, and `native/CreatePipelineAsyncEvent.cpp`. A local attempted
+page-close boundary was rejected after two of six browser traces exceeded D-035's five-second
+completion bound; keeping the app target alive preserved the already-validated bound.
+
+**Reopen if:** Chrome exposes page-correlated Dawn cache events directly, CDP gains a safe
+subprocess-histogram option, Dawn trace/histogram semantics change, or another backend is
+promoted to a mandatory gate and needs its own verified mapping.
+
 ## D-035: Viz presentation-feedback trace is diagnostic, not a presentation gate  (2026-07-13, accepted)
 **Decision:** `smoke@1` records GPU-process `Display::FrameDisplayed` intervals as the
 explicitly non-gating `vizPresentationFeedbackCallbackIntervalMs` diagnostic. It does not
