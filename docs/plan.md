@@ -51,8 +51,10 @@ measured automatically.
       cross-checks page-windowed pipeline/shader trace events against synchronized GPU-process
       cache histograms (D-036, RE-007): a three-pair remote diagnostic measured fresh launches
       at 6 shader/3 graphics-PSO misses, every warm relaunch at 6/3 hits, and zero pipeline or
-      shader compilation overlapping all gameplay windows. A physical-console rerun remains
-      before promoting that evidence to the gate baseline. The V8 JavaScript code-cache trace
+      shader compilation overlapping all gameplay windows. A first physical-console rerun measured
+      all three fresh launches at 6 shader/3 graphics-PSO misses and warm repeat 1 at 6/3 hits, but
+      RE-008 invalidated warm repeats 2 and 3 before their evidence could be retained; a complete
+      three-pair native baseline still remains. The V8 JavaScript code-cache trace
       probe now URL-matches every immutable build artifact and requires positive consumed bytes
       with no rejection (D-037/D-038), but Chrome omits that result for the walking skeleton's streamed
       ES-module path; all three warm diagnostics remain mandatory/invalid (RE-009). Wasm cache
@@ -90,10 +92,15 @@ measured automatically.
       enabled GPU categories and multi-megabyte payload are not necessary, and the responsible
       process remains unproved. The same control's unchanged V8 lineages had launch 3 slower
       than launch 2 in two of three repeats, rebutting a consistent ≤5 ms cache-savings bound
-      (D-044). The aggregate `passed` bit intentionally remains
-      fail-closed but is currently constant-red on known mandatory platform gaps; a later Harness
-      v1 slice must design independently named environment, evidence-completeness, and evaluated-
-      budget facets without allowing an unmeasured budget to appear green.
+      (D-044). Result schema v12 now separates registered-environment validity, mandatory-evidence
+      completeness, and budget evaluation while retaining the fail-closed aggregate `passed` bit
+      (D-045). An observed budget bust fails independently, while passing partial checks remains
+      explicitly `not-evaluated` whenever mandatory evidence is incomplete; known compositor and
+      V8 gaps therefore cannot appear green even when the physical-console environment passes. A
+      native schema-v12 dev-01 run verified that exact outcome: environment `passed`, evidence
+      completeness `failed`, and budget evaluation `not-evaluated` after 17 executed checks with
+      no observed threshold bust. RE-008 additionally invalidated two of six core traces while all
+      nine isolated V8 traces completed.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

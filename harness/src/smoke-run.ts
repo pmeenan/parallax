@@ -53,6 +53,7 @@ import {
   PRESENTATION_TRACE_START_MARKER,
   withTimeout,
 } from "./presentation-trace.js";
+import { evaluateResultFacets, type ResultFacets, resultFacetsPassed } from "./result-facets.js";
 import {
   parseQualityTier,
   QUALITY_TIER_PROFILES,
@@ -78,6 +79,12 @@ import {
   listenLocalServer,
   stopLocalServer,
 } from "./server.js";
+import {
+  collectSmokeBudgetFacetChecks,
+  collectSmokeEnvironmentFacetInput,
+  collectSmokeEvidenceChecks,
+  formatSmokeFacetSummary,
+} from "./smoke-result.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
 import {
   decodedSourceCodeUnits,
@@ -209,6 +216,7 @@ interface SmokeReport {
   readonly artifactDigest: string;
   readonly chromePin: ChromePin;
   readonly environment: EnvironmentIdentity;
+  readonly facets: ResultFacets;
   readonly generatedAt: string;
   readonly incompleteMetrics: readonly {
     readonly mandatoryForHarnessV1: boolean;
@@ -229,7 +237,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 11;
+  readonly schemaVersion: 12;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -368,15 +376,18 @@ async function main(): Promise<void> {
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
-    const passed =
-      runs.every((run) => run.budgetChecks.every((check) => check.passed)) &&
-      runs.every((run) => run.dawnPipeline.state === "measured") &&
-      v8CodeCacheDiagnostics.every((run) => run.budgetChecks.every((check) => check.passed)) &&
-      v8CodeCacheDiagnostics.every((run) => run.v8CodeCache.state === "measured") &&
-      v8CodeCacheDiagnostics.every((run) => run.production.state === "measured") &&
-      environment.gateIdentity.state === "measured" &&
-      incompleteMetrics.every((metric) => !metric.mandatoryForHarnessV1) &&
-      callbackPacingVariance.every((metric) => metric.state === "measured");
+    const facets = evaluateResultFacets({
+      budgetChecks: collectSmokeBudgetFacetChecks({ runs, v8CodeCacheDiagnostics }),
+      environment: collectSmokeEnvironmentFacetInput(environment.gateIdentity),
+      evidenceChecks: collectSmokeEvidenceChecks({
+        callbackPacingVariance,
+        incompleteMetrics,
+        runs,
+        v8CodeCacheDiagnostics,
+        vizPresentationFeedbackCallbackVariance,
+      }),
+    });
+    const passed = resultFacetsPassed(facets);
     if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
       throw new Error("Built artifact identity changed during the smoke run");
     }
@@ -388,6 +399,7 @@ async function main(): Promise<void> {
       callbackPacingVariance,
       chromePin,
       environment,
+      facets,
       generatedAt: new Date().toISOString(),
       incompleteMetrics,
       mandatoryMetricSet: Object.freeze({
@@ -401,7 +413,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 11,
+      schemaVersion: 12,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -1513,68 +1525,11 @@ async function writeReport(report: SmokeReport): Promise<void> {
     timestamp,
   ].join("-");
   await writeFile(join(outputRoot, `${stem}.json`), `${JSON.stringify(report, null, 2)}\n`);
-  const failures = report.runs.flatMap((run) =>
-    run.budgetChecks
-      .filter((check) => !check.passed)
-      .map(
-        (check) =>
-          `${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.limit}`,
-      ),
-  );
-  failures.push(
-    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
-      run.budgetChecks
-        .filter((check) => !check.passed)
-        .map(
-          (check) =>
-            `V8 diagnostic ${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.limit}`,
-        ),
-    ),
-  );
-  failures.push(
-    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
-      run.production.state !== "measured"
-        ? [
-            `V8 diagnostic ${run.profile} repeat ${run.repeat}: code-cache production ${run.production.state} (${"reason" in run.production ? run.production.reason : "unknown production failure"})`,
-          ]
-        : [],
-    ),
-  );
-  failures.push(
-    ...(report.environment.gateIdentity.state === "invalid"
-      ? report.environment.gateIdentity.reasons.map(
-          (reason) => `verified gate environment identity: invalid (${reason})`,
-        )
-      : []),
-  );
-  failures.push(
-    ...report.v8CodeCacheDiagnostics.flatMap((run) =>
-      run.v8CodeCache.state === "measured"
-        ? []
-        : [
-            `V8 diagnostic ${run.profile} repeat ${run.repeat}: V8 code-cache evidence ${run.v8CodeCache.state} (${run.v8CodeCache.reason})`,
-          ],
-    ),
-  );
-  failures.push(
-    ...report.incompleteMetrics
-      .filter((metric) => metric.mandatoryForHarnessV1)
-      .map((metric) => `${metric.metric}: ${metric.state} (${metric.reason})`),
-  );
-  failures.push(
-    ...report.callbackPacingVariance
-      .filter((metric) => metric.state === "invalid")
-      .map((metric) => `${metric.profile} callback pacing variance: ${metric.reason}`),
-  );
-  failures.push(
-    ...report.runs.flatMap((run) =>
-      run.dawnPipeline.state === "measured"
-        ? []
-        : [
-            `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${run.dawnPipeline.reason})`,
-          ],
-    ),
-  );
+  const failures = [
+    ...report.facets.environment.reasons,
+    ...report.facets.evidenceCompleteness.reasons,
+    ...report.facets.budgetEvaluation.reasons,
+  ];
   const dawnEvidence = report.runs.map((run) => {
     if (run.dawnPipeline.state !== "measured") {
       return `- ${run.profile} repeat ${run.repeat}: ${run.dawnPipeline.state} — ${run.dawnPipeline.reason}`;
@@ -1691,6 +1646,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     `Verdict: **${report.passed ? "PASS" : "FAIL"}**`,
     `Artifact: \`${report.artifactDigest}\``,
     `Chrome: \`${report.environment.browserProduct}\``,
+    "",
+    "## Result facets",
+    "",
+    ...formatSmokeFacetSummary(report.facets),
     "",
     "## Failures",
     "",

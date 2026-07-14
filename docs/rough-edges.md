@@ -145,9 +145,9 @@ COS APIs exist):
 
 ## RE-009: Streamed ES-module traces omit V8 code-cache consumption results
 
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+- **Date / Chrome version:** 2026-07-13–14; Chrome for Testing Stable 150.0.7871.115;
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
-  dev-01 remote diagnostic (non-gating).
+  dev-01 remote diagnostics plus a physical-console gate reproduction.
 - **Layer:** V8 / Blink / CDP observability.
 - **Status:** open; blocks the mandatory warm V8 code-cache metric.
 - **What we expected / What happened:** Chrome's `v8.compileModule` trace schema can report
@@ -452,12 +452,19 @@ COS APIs exist):
   34,744–36,798 bytes and completed in 13.0–13.9 ms. Enabled GPU categories and multi-megabyte
   payload are therefore not necessary conditions. Browser-level tracing can still coordinate a
   process that emits no enabled events, so the failed arm does not identify which process withheld
-  completion or prove a GPU-process mechanism.
+  completion or prove a GPU-process mechanism. The first physical-console schema-v12 gate then
+  reproduced the maintained core failure on warm repeats 2 and 3 (ordinals 4 and 6). Both traces
+  were open for 12,828.8–12,845.0 ms, acknowledged `Tracing.end` in 1.9–2.1 ms, delivered zero
+  events/chunks, and had no completion after 5,009.1–5,013.3 ms. The other four core traces
+  delivered 40,793–41,583 events / 6.80–6.93 MB and completed 179.0–185.9 ms after the end
+  command; all nine isolated V8 traces completed. The registered environment was `measured`
+  (`remoteSession: false`, native 3840×2160 at observed 59 Hz), so remote display/session state is
+  not necessary for RE-008 and the issue can invalidate a real reference gate.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second
   completion bound. Maintained `smoke@1` instead traces the first three categories without `v8`
-  for its core run, then runs the isolated `v8-code-cache@5` lineages. The v11 result records
+  for its core run, then runs the isolated `v8-code-cache@5` lineages. The v12 result records
   categories, event/chunk/serialized-byte volume, end-command and completion latency, and data
   loss plus recording lifetime, launch ordinal, and elapsed sequence time for both sets. To
   reproduce the lifetime control, launch a fresh pinned browser on `about:blank`, start a
@@ -470,8 +477,8 @@ COS APIs exist):
   The original renderer-teardown variant remains useful for reproducing the earlier, more
   frequent form of the failure.
 - **Impact on Parallax:** renderer teardown is not a reliable trace/UMA boundary, and category
-  combination is correlated with missing completion under this remote configuration but no
-  enabled GPU category is required. D-039
+  combination is correlated with missing completion across remote diagnostics, but no enabled GPU
+  category or remote session is required. D-039
   removes V8 from the maintained core trace, so a V8 timeout no longer invalidates presentation
   or Dawn. Core completion failure remains fail-closed for those core probes, and an isolated V8
   completion failure remains fail-closed for mandatory V8 evidence.

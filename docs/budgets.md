@@ -158,6 +158,14 @@ Definitions the harness implements; budgets above are meaningless without them.
   `measured` value **and** on any metric that is mandatory for the current milestone
   but not `measured` — silence is not a pass. The mandatory set per milestone is
   defined in `harness/` alongside the runs.
+- **Result facets (D-045):** reports separate registered-environment validity, mandatory
+  evidence completeness, and budget evaluation. A budget facet is `passed` only when
+  mandatory evidence is complete, at least one check ran, and every executed check
+  passes; it is `failed` when any observed value busts its limit, and otherwise
+  `not-evaluated` when evidence is incomplete or no checks ran. The aggregate result
+  passes only when all three facets pass. Thus a valid environment remains visible
+  through a platform evidence gap, but neither missing evidence nor a passing subset
+  of checks can appear green.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the

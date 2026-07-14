@@ -27,6 +27,38 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-045: Split harness verdicts into environment, evidence, and budget facets  (2026-07-14, accepted)
+
+**Decision:** Result schema v12 exposes three independently named facets while retaining the
+fail-closed aggregate `passed` bit:
+
+- `environment` is `passed` only when the registered-machine gate identity is measured;
+- `evidenceCompleteness` is `passed` only when every mandatory non-environment metric has
+  trustworthy evidence; and
+- `budgetEvaluation` is `passed` only when evidence is complete, at least one budget check ran,
+  and every executed check passes; it is `failed` when any observed check busts its limit, and
+  otherwise `not-evaluated` when mandatory evidence is incomplete or no checks ran.
+
+The aggregate passes only when all three facets pass. An observed budget violation takes
+precedence over `not-evaluated`, so partial evidence cannot hide a known regression; conversely,
+passing the subset of checks that could execute never produces a green budget facet.
+
+**Context:** Harness v1 intentionally fails on the known compositor-presentation and V8
+code-cache observability gaps. The single aggregate bit correctly prevented false success but
+could not distinguish a valid physical-console environment from complete evidence or an actual
+threshold violation. That made a known evidence gap look the same as an invalid environment and
+made the passing subset of `budgetChecks` easy for result consumers to misread as a complete
+budget verdict.
+
+**Consequences:** JSON and Markdown reports can now show environment validity, evidence coverage,
+and evaluated budgets without weakening any gate. The Markdown failure list is derived from the
+same facet reasons as the JSON contract. Schema consumers must move from v11 to v12; the top-level
+`passed` field remains as the strict automation exit verdict.
+
+**Reopen if:** a result needs per-metric budget eligibility rather than scenario-level mandatory
+evidence, advisory/non-reference results require a fourth comparison-eligibility facet, or a
+future result store replaces the aggregate bit with a richer state machine.
+
 ## D-044: Keep RE-008 causal attribution open after an active user-timing-only timeout  (2026-07-14, accepted)
 
 **Decision:** Do not attribute RE-008 to enabled GPU-process trace categories, payload volume,
