@@ -94,6 +94,38 @@ COS APIs exist):
 
 ## Findings
 
+## RE-011: WebGPU exposes a single queue per device — async compute is unavailable to any web engine
+
+- **Date / Chrome version:** 2026-07-14. Spec-level, not version-specific — the constraint is in
+  the WebGPU API shape, not in a Chrome build. (Confirmed present in Chrome for Testing Stable
+  150.x, the `smoke@1` pin.)
+- **Layer:** WebGPU/Dawn.
+- **Status:** open (spec gap — not a bug).
+- **What we expected / What happened:** native engines fill idle GPU occupancy by submitting
+  compute work on a separate compute-only queue while graphics work proceeds. WebGPU exposes
+  exactly one `GPUQueue` per `GPUDevice` (`device.queue`, readonly), with no API to create
+  another. Multi-queue has been under working-group investigation since 2020 and is not in the
+  spec ([gpuweb#1065](https://github.com/gpuweb/gpuweb/issues/1065)). Overlapping compute and
+  graphics on independent queues is therefore not expressible on the web at all.
+- **Repro:** any WebGPU context — `const d = await (await navigator.gpu.requestAdapter()).requestDevice();`
+  then observe that `d.queue` is the only queue and `GPUDevice` has no queue-creation method.
+  Nothing to file: the API simply has no surface for it.
+- **Impact on Parallax:** **cost unquantified — do not claim one yet.** Independent work on a
+  single queue can still be interleaved or reordered by the hardware scheduler, so the loss is
+  not automatically the naive "serialized" worst case. What is certain is that we cannot
+  *express* the overlap, which constrains GPU-driven culling and streaming-transcode scheduling
+  to a single submission timeline. Quantifying the gap (measured occupancy during a culling
+  dispatch overlapping a render pass) is the follow-up, and is a prerequisite for citing this
+  anywhere.
+- **Proposed improvement:** multi-queue support, or a narrower async-compute hint that lets an
+  application mark a compute pass as latency-tolerant so the implementation may overlap it with
+  graphics work. Either would need a story for cross-queue synchronization.
+- **Note — why this is logged here and nowhere else:** Unity's WebGPU-limitations page lists
+  "Async compute" as unsupported, which reads like an engine gap and is not one. This is a
+  *platform* limit binding every web engine, Babylon and Parallax included. It must never be
+  cited as an argument against Unity — see the "Not on this list" section of
+  [why-not-unity.md](why-not-unity.md) and D-046.
+
 ## RE-010: Render-worker module exposes no URL-attributed code-cache production event
 
 - **Date / Chrome version:** 2026-07-14; Chrome for Testing Stable 150.0.7871.115;

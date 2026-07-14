@@ -27,6 +27,53 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; re-grounds the technology claims in D-004 and D-005)
+**Decision:** D-004 stands — TypeScript + Babylon.js, WebGPU-only. Its supporting technology
+claims are re-verified against **Unity 6.5 (6000.5)**, the current release, and two of them are
+corrected. The sourced differentiator list now lives in
+[why-not-unity.md](why-not-unity.md), which is the canonical artifact for defending the engine
+choice; this entry records what changed and why the verdict didn't.
+**Context — two corrections, both against us:**
+1. **D-005's "No popular engine ships real multithreading on the web today" is wrong as
+   written.** Unity 6.4 shipped official Web support for Burst-compiled C# jobs and native
+   C/C++ engine threads. The accurate claim is narrower and still decisive: *managed* C#
+   threads remain unsupported ("due to the lack of a multithreaded garbage collection feature
+   in WebAssembly"), gameplay C# is main-thread-only, and "you must schedule all jobs from the
+   main thread." Never assert that Unity is single-threaded on the web — it isn't, and the
+   overstatement is trivially refuted.
+2. **A WebGPU-limitations argument was raised and withdrawn.** Several headline items on Unity's
+   WebGPU-limitations page — no async compute, r32-only read-write storage textures, no
+   synchronous readback, no `RWBuffer`, no Int64, uniform-control-flow barriers — are **WebGPU
+   spec limits, not Unity gaps**. They bind Parallax exactly as hard. Citing them against Unity
+   is a self-own, and the related claim that they "gut GPU-driven culling" is false (culling
+   needs compute, storage buffers, atomics, and indirect draw; WebGPU has all four). The
+   single-queue/no-async-compute gap is a *platform* finding and is logged as RE-011.
+**Context — claims that hardened:** D-004's "unconfirmed wasm64" is now confirmed adverse — the
+Unity heap tops out at 4 GB (wasm32), with no Memory64 support and no roadmap commitment.
+Unity's WebGPU backend is still labelled Experimental in 6.5 (continuously so since 6.1).
+Two new structural gaps were established: Unity Web storage is IndexedDB (`persistentDataPath`
+→ `/idbfs/<hash>`; Unity's `Caching` API unsupported on Web; OPFS absent from all 75 Web-section
+manual pages; the `.jslib` escape hatch is ES5-only while `createSyncAccessHandle` is
+worker-only) — directly against D-003 — and Unity documents **no GPU-timing path on Web** (GPU
+Usage Profiler: "Web | All WebGL | Not supported"; FrameTimingManager: "no GPU time is
+provided"), which is disqualifying for a project whose harness is a first-class deliverable.
+Unity exposes neither WebGPU subgroups (Chrome 134) nor `shader-f16` (Chrome 120).
+**Sources checked (2026-07-14):** Unity 6.5 manual + scripting reference (Web technical
+limitations, Burst web multithreading, Web memory, Web caching, `Application.persistentDataPath`,
+`Caching`, browser-JS interop, WebGPU + WebGPU-limitations, GPU Usage Profiler,
+FrameTimingManager); Unity release/EOL data (6.4 EOL 2026-06-17); Chrome WebGPU release notes
+(134 subgroups, 120 f16); gpuweb#1065 (multi-queue); Babylon `WebGPUEngineOptions` typedoc
+(`requiredFeatures` includes `subgroups`, `shader-f16`, `timestamp-query`). Full URL list in
+why-not-unity.md. Two claims rest on *absence* of documentation (Unity GPU timing on WebGPU
+specifically; OPFS in the emitted runtime) and are flagged there for a local experiment to
+settle — root rule 3 prefers a measurement over a doc search.
+**Consequences:** why-not-unity.md is maintained alongside D-004 and re-verified before any
+public use; D-004/D-005 status lines are annotated to point here. Any future "Unity can't do X"
+claim gets checked against that doc's "Not on this list" section first.
+**Reopen if:** Unity ships **all three** of Memory64/wasm64, managed C# threads (which requires
+multithreaded GC in wasm), and a non-experimental WebGPU backend. Any one alone does not reopen
+D-004; together they would.
+
 ## D-045: Split harness verdicts into environment, evidence, and budget facets  (2026-07-14, accepted)
 
 **Decision:** Result schema v12 exposes three independently named facets while retaining the
@@ -1288,7 +1335,7 @@ limits make per-NPC state impractical (either outcome is itself a finding).
 content-addressing enables asset-only updates that never touch code caches.
 **Reopen if:** harness shows decode/transcode dominating cell-load p95.
 
-## D-005: Multithreading via explicit worker topology (SAB + OffscreenCanvas + WebGPU-in-worker)  (2026-07-11, accepted)
+## D-005: Multithreading via explicit worker topology (SAB + OffscreenCanvas + WebGPU-in-worker)  (2026-07-11, accepted; the "no engine ships web multithreading" claim below is corrected by D-046 — Unity 6.4 ships Burst/Job-System threads; the decision is unaffected)
 **Decision:** Parallax designs its own thread architecture (see architecture.md) rather
 than inheriting an engine's. Rust→WASM modules (with wasm threads) for compute-heavy
 paths.
@@ -1304,7 +1351,7 @@ infrastructure; every queue/boundary instrumented.
 **Reopen if:** WebGPU-in-worker or Babylon-in-worker spikes (M0) fail — fallback is
 render on main thread with everything else in workers, logged as a major finding.
 
-## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted)
+## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted; technology claims re-grounded against Unity 6.5 by D-046; sourced differentiator list in why-not-unity.md)
 **Decision:** Babylon.js as scene/material/animation core; Parallax owns scheduling,
 streaming, memory, and the worker fabric. WebGPU backend exclusively — no WebGL2 path.
 **Context:** Unity's web export blocks the project's core needs (no C# threads on web,
