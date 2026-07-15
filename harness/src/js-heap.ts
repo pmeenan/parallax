@@ -1,5 +1,6 @@
 import type { CDPSession } from "playwright-core";
 import { withTimeout } from "./presentation-trace.js";
+import { errorMessage } from "./value-utils.js";
 
 export interface JsHeapUsage {
   readonly backingStorageSizeBytes: number | null;
@@ -487,8 +488,4 @@ function optionalSize(value: unknown, name: string): number | null {
 
 function isNonNegativeFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

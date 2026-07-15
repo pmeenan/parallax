@@ -94,6 +94,66 @@ COS APIs exist):
 
 ## Findings
 
+## RE-015: CDP memory-dump request GUID is not preserved in JSON trace export
+
+- **Date / Chrome version:** 2026-07-14; Chrome for Testing Stable 150.0.7871.115 on
+  Windows 11/dev-01/D3D12 (remote diagnostic; display invalidity is irrelevant to this trace
+  identity result).
+- **Layer:** CDP Tracing / Perfetto JSON export.
+- **Status:** open; `smoke@1` retains both identities and requires one unambiguous GPU-process dump
+  instead of asserting equality (D-050).
+- **What we expected / What happened:** `Tracing.requestMemoryDump` returned success with GUID
+  `0x2` or `0x3`, but the sole allocator-bearing dump exported as event name
+  `periodic_interval`, ID `0x0`. Waiting one second after the successful request and explicitly
+  supplying `memoryDumpConfig` did not change the exported identity.
+- **Repro:** start a CDP trace with `disabled-by-default-memory-infra`, load the walking skeleton,
+  call `Tracing.requestMemoryDump`, wait for its successful response, stop the trace, and compare
+  the returned `dumpGuid` with allocator-bearing `ph: "v"` events. `smoke@1` retains these fields
+  in every core-run result.
+- **Impact on Parallax:** dump attribution is safe only while the harness requests exactly one dump
+  and observes exactly one allocator-bearing GPU-process event. Multiple phase-specific dumps
+  cannot be correlated through the documented GUID in current JSON export.
+- **Proposed improvement:** preserve the CDP request GUID and explicit trigger name in exported
+  events, or return an event timestamp/trace packet sequence that clients can correlate without
+  relying on a single-dump invariant.
+
+## RE-014: Chrome exposes no page-attributed WebGPU resident-memory total
+
+- **Date / Chrome version:** 2026-07-14; Chrome for Testing Stable 150.0.7871.115 on
+  Windows 11/dev-01/RTX 4080 Super/D3D12 (remote diagnostic; six core runs plus controlled
+  background/detailed single-launch dumps).
+- **Layer:** WebGPU/Dawn / CDP memory-infra.
+- **Status:** open; Harness v1 reports the GPU-envelope metric `unsupported` and retains the
+  GPU-process allocator inventory (D-050).
+- **What we expected / What happened:** a WebGPU game needs attributable resident and transient
+  GPU bytes. Successful Chrome GPU-process memory dumps exposed general GPU, shader-cache,
+  shared-image, transfer, and Skia allocators; a detailed dump also exposed
+  `gpu/shader_cache/webgpu_cache_0x1`. Neither background nor detailed dumps exposed an allocator
+  for the web-created Dawn device's buffers/textures, and CDP/WebGPU expose no alternative
+  page-attributed resident total. The similarly named Chromium `gpu/dawn` provider covers a
+  separate shared/Graphite Dawn context, not devices owned by `WebGPUDecoderImpl`.
+- **Repro:** run `smoke@1` and inspect each run's `gpuMemory` evidence. For the controlled variant,
+  request a detailed memory-infra dump after `__PARALLAX_TELEMETRY__` reports the render worker
+  ready; inspect the GPU-process allocator names while the animated Babylon WebGPU scene is live.
+- **Impact on Parallax:** the 4 GB/14 GB GPU envelopes cannot be automatically evaluated from
+  page-attributed evidence. Process private memory and Windows per-process GPU counters are not
+  substitutes: Chrome's GPU process is shared with compositor/browser work and Chromium documents
+  platform-dependent graphics-memory accounting. Logical resource-size estimates, if later
+  exposed, still would not establish residency or transient allocator peaks.
+- **Proposed improvement:** expose per-`GPUDevice` current/peak logical allocation and resident
+  allocator usage with buffer/texture/transient categories, or add an origin/page attribution key
+  to Chrome's GPU memory-infra provider. Document whether shared images and aliased/suballocated
+  heaps are charged once and how multi-device workloads are aggregated.
+- **Sources checked:** CDP
+  [Tracing domain](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/), Chromium
+  [graphics memory metrics](https://chromium.googlesource.com/chromium/src/+/main/docs/memory/graphics_metrics.md)
+  and [GPU memory tracing](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/memory-infra/probe-gpu.md),
+  Chromium
+  [`DawnSharedContext`](https://chromium.googlesource.com/chromium/src/gpu/+/bf2b35ebcf902cda172ffaa4faffca8affc539f7/command_buffer/service/dawn_context_provider.cc)
+  and
+  [`WebGPUDecoderImpl`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/gpu/command_buffer/service/webgpu_decoder_impl.cc)
+  source, and pinned local traces.
+
 ## RE-013: Playwright cannot publicly address a flat child-target CDP session
 
 - **Date / versions:** checked 2026-07-14 against CDP tip-of-tree, pinned Chrome for Testing

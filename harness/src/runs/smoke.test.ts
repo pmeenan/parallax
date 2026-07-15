@@ -45,6 +45,9 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "Dawn pipeline compile/cache evidence")?.probe,
     ).toBe("implemented");
+    expect(SMOKE_METRICS.find((metric) => metric.name === "attributable GPU memory")?.probe).toBe(
+      "implemented",
+    );
     expect(SMOKE_METRICS.find((metric) => metric.name === "all-worker JS heap")?.probe).toBe(
       "implemented",
     );

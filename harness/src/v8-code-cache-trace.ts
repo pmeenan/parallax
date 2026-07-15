@@ -1,4 +1,5 @@
 import type { ChromeTraceEvent } from "./presentation-trace.js";
+import { errorMessage } from "./value-utils.js";
 
 export const V8_CODE_CACHE_TRACE_CATEGORY = "v8";
 export const V8_MIN_CACHEABLE_SCRIPT_CODE_UNITS = 1_024;
@@ -547,8 +548,4 @@ function positiveNumber(value: unknown): value is number {
 
 function nonnegativeNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

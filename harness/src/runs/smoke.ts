@@ -36,7 +36,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   ),
   metric("verified gate environment identity", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
-  metric("attributable GPU memory", false),
+  metric("attributable GPU memory", false, "implemented"),
   metric("Dawn pipeline compile/cache evidence", true, "implemented"),
   metric("V8 code-cache evidence", true, "implemented"),
 ]);

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import type { QualityTier } from "./budgets.js";
 import { QUALITY_TIER_PROFILES } from "./runs/smoke.js";
+import { errorMessage, isRecord } from "./value-utils.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -448,10 +449,6 @@ function withinTolerance(actual: number, expected: number, tolerance: number): b
   return Math.abs(actual - expected) <= tolerance;
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function isMachineId(value: string): boolean {
   return /^[a-z0-9-]+$/i.test(value);
 }
@@ -588,10 +585,6 @@ function isVideoController(
 
 function isNullableNumber(value: unknown): value is number | null {
   return value === null || typeof value === "number";
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 const windowsIdentityScript = String.raw`

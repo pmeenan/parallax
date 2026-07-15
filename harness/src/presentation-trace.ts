@@ -7,11 +7,29 @@ export interface ChromeTraceEvent {
   readonly args?: Readonly<Record<string, unknown>>;
   readonly cat?: string;
   readonly dur?: number;
+  readonly id?: number | string;
   readonly name: string;
   readonly ph: string;
   readonly pid: number;
   readonly tid: number;
   readonly ts: number;
+}
+
+export function uniqueGpuProcessId(events: readonly ChromeTraceEvent[]): number {
+  const processIds = new Set(
+    events
+      .filter(
+        (event) =>
+          event.name === "process_name" && event.ph === "M" && event.args?.name === "GPU Process",
+      )
+      .map((event) => event.pid),
+  );
+  if (processIds.size !== 1) {
+    throw new Error(`Expected one traced GPU process; received ${processIds.size}`);
+  }
+  const processId = processIds.values().next().value;
+  if (processId === undefined) throw new Error("Traced GPU process ID is missing");
+  return processId;
 }
 
 export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
@@ -43,20 +61,10 @@ export function extractVizPresentationFeedbackCallbackIntervalsMs(
   }
   if (end.ts <= start.ts) throw new Error("Viz callback-window markers are out of order");
 
-  const gpuProcessIds = new Set(
-    events
-      .filter(
-        (event) =>
-          event.name === "process_name" && event.ph === "M" && event.args?.name === "GPU Process",
-      )
-      .map((event) => event.pid),
-  );
-  if (gpuProcessIds.size !== 1) {
-    throw new Error(`Expected one traced GPU process; received ${gpuProcessIds.size}`);
-  }
+  const gpuProcessId = uniqueGpuProcessId(events);
 
   const presentations = events
-    .filter((event) => event.name === PRESENTATION_TRACE_EVENT && gpuProcessIds.has(event.pid))
+    .filter((event) => event.name === PRESENTATION_TRACE_EVENT && event.pid === gpuProcessId)
     .sort((left, right) => left.ts - right.ts);
   const tracks = new Set(presentations.map((event) => `${event.pid}:${event.tid}`));
   if (tracks.size !== 1) {

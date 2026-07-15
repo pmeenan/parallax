@@ -27,6 +27,60 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-050: Retain GPU-process memory dumps without treating them as page VRAM  (2026-07-14, accepted)
+**Decision:** `smoke@1` now requests one background global memory dump after its primary gameplay
+window and retains the GPU-process allocator inventory, request GUID/duration, exported dump
+name/ID, and any Dawn/WebGPU-named allocator paths. The Harness-v1 `attributable GPU memory`
+probe is implemented but reports `unsupported`: its evidence is diagnostic and produces no GPU
+envelope budget check. Result schema advances from v14 to v15. The metric remains non-mandatory
+for M0, so an honest platform `unsupported` result is visible without making the already
+fail-closed compositor/V8 evidence state more restrictive.
+The top-level metric contract remains provider-neutral and supports all four metric states;
+Chrome's CDP/memory-infra request and inventory live in a named, optional provider diagnostic, so
+a future non-Chrome benchmark does not need to fabricate Chrome fields.
+
+**Context:** Chrome for Testing 150.0.7871.115 on dev-01 successfully accepted the dump request in
+all six core launches, but the walking skeleton's GPU-process dumps exposed no allocator covering
+the web-created WebGPU device's buffers or textures. A controlled single-launch detailed dump
+showed WebGPU shader-cache and shared-image plumbing, proving that the GPU process and active
+WebGPU workload were present, while still exposing no page-device resource total. Chromium's
+current `gpu/dawn` memory-dump provider calls Dawn's estimated resource-size API for a
+`DawnSharedContext`; the web WebGPU decoder owns a separate set of wire-server devices and has no
+corresponding memory-dump provider. Even if `gpu/dawn` were present, Dawn's estimate is live
+logical buffer/texture bytes, not page-attributed resident VRAM or transient allocator pressure,
+so it could not honestly gate budgets.md's resident GPU envelope.
+
+The same experiment found that CDP returned request GUID `0x2`/`0x3`, while JSON trace export
+labeled the sole allocator-bearing dump `periodic_interval` with ID `0x0`. The harness therefore
+requires exactly one allocator-bearing GPU-process dump and retains both identities rather than
+claiming GUID equality that Chrome does not provide (RE-015).
+
+**Sources checked (2026-07-14):** pinned local Chrome runtime traces; CDP
+[Tracing.requestMemoryDump](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/);
+Chromium's current
+[graphics-memory metrics guidance](https://chromium.googlesource.com/chromium/src/+/main/docs/memory/graphics_metrics.md),
+[GPU memory tracing guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/memory-infra/probe-gpu.md),
+[`DawnSharedContext` memory-dump implementation](https://chromium.googlesource.com/chromium/src/gpu/+/bf2b35ebcf902cda172ffaa4faffca8affc539f7/command_buffer/service/dawn_context_provider.cc),
+and current Chromium
+[`webgpu_decoder_impl.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/gpu/command_buffer/service/webgpu_decoder_impl.cc)
+device ownership; pinned Chrome 150.0.7871.115
+[`DEPS`](https://chromium.googlesource.com/chromium/src/+/25f5b661e5b08141ec24b17d1ce96c5ceb5828da/DEPS)
+mapping to Dawn revision `01249a97332468dbdd6cf5edb8dd7bae77875de5`; and that exact Dawn
+[`DeviceBase::ComputeEstimatedMemoryUsage`](https://dawn.googlesource.com/dawn/+/01249a97332468dbdd6cf5edb8dd7bae77875de5/src/dawn/native/Device.cpp)
+implementation, which sums texture estimated byte sizes and buffer allocated sizes.
+
+**Consequences:** Harness results distinguish three facts that were previously easy to conflate:
+Chrome accepted a GPU-process dump, Chrome exposed some GPU-process allocator data, and Chrome did
+not expose page-attributed resident WebGPU memory. Adding memory-infra to the core trace also makes
+its event/byte/drain cost visible in the existing trace diagnostics. A future Chrome allocator or
+WebGPU API can promote this metric only after a controlled allocation test proves its scope,
+residency semantics, attribution, and cross-backend behavior; merely finding a byte counter is not
+enough.
+
+**Reopen if:** WebGPU exposes memory budgets/usage, Chrome adds per-web-device memory-infra
+allocators with documented semantics, or OS/ETW tooling can attribute resident allocations to the
+page's WebGPU device across the D3D12 and Metal reference backends.
+
 ## D-049: Task-sized work units; AI-led multi-agent review  (2026-07-14, accepted)
 **Decision:** Two linked amendments to the D-026/D-027 operating models. (1) The
 tech-lead unit of work grows from a commit-sized slice to a **full plan.md task** by

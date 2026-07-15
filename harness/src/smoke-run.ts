@@ -48,6 +48,12 @@ import {
   type WindowsHostIdentityResult,
 } from "./environment.js";
 import {
+  type GpuMemoryMetric,
+  MEMORY_INFRA_TRACE_CATEGORY,
+  type MemoryDumpRequest,
+  resolveGpuMemoryMetric,
+} from "./gpu-memory.js";
+import {
   invalidateJsHeapMetric,
   type JsHeapEvidence,
   type JsHeapMetric,
@@ -108,6 +114,7 @@ import {
   type V8CodeCacheProductionMetric,
   type V8ScriptArtifact,
 } from "./v8-code-cache-trace.js";
+import { errorMessage } from "./value-utils.js";
 
 interface MeasuredMetric<T> {
   readonly state: "measured";
@@ -147,6 +154,7 @@ interface RunMeasurement {
   readonly browserDisplayBefore: BrowserDisplayIdentity;
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
+  readonly gpuMemory: GpuMemoryMetric;
   readonly http: MeasuredMetric<LocalServerMetrics>;
   readonly jsHeap: JsHeapMetric;
   readonly launchOrdinal: number;
@@ -249,7 +257,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 14;
+  readonly schemaVersion: 15;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -436,7 +444,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 14,
+      schemaVersion: 15,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -740,7 +748,12 @@ async function measureRun(
   try {
     const traceStartResult = await tryProbe("Chrome smoke trace start", () =>
       beginSmokeTrace(context, {
-        categories: [DAWN_TRACE_CATEGORY, PRESENTATION_TRACE_CATEGORY, "blink.user_timing"],
+        categories: [
+          DAWN_TRACE_CATEGORY,
+          MEMORY_INFRA_TRACE_CATEGORY,
+          PRESENTATION_TRACE_CATEGORY,
+          "blink.user_timing",
+        ],
         requireMeasurementEndMarker: true,
       }),
     );
@@ -827,6 +840,16 @@ async function measureRun(
       await page.waitForTimeout(SMOKE_PRESENTATION_TRACE_TAIL_MS);
     }
     if (errors.length > 0) throw new Error(`Browser errors: ${errors.join(" | ")}`);
+    const traceForMemoryDump = smokeTrace;
+    const memoryDumpRequest: ProbeResult<MemoryDumpRequest> =
+      traceForMemoryDump === null
+        ? Object.freeze({
+            reason: smokeTraceFailure ?? "Chrome smoke trace is unavailable",
+            state: "invalid",
+          })
+        : await tryProbe("Dawn GPU memory dump request", () =>
+            traceForMemoryDump.requestMemoryDump(),
+          );
     const histogramsBeforeTraceEnd =
       smokeTrace !== null && dawnBackend?.toLowerCase() === "d3d12"
         ? await tryProbe("Dawn subprocess cache histograms before trace end", () =>
@@ -873,6 +896,7 @@ async function measureRun(
       histogramsBeforeTraceEnd,
       histogramsAfterTraceEnd,
     );
+    const gpuMemory = resolveGpuMemoryMetric(traceEvents, memoryDumpRequest);
     const browserErrorsBeforeJsHeap = errors.length;
     let jsHeap: JsHeapMetric =
       renderWorkerUrl.state === "measured"
@@ -909,6 +933,7 @@ async function measureRun(
       browserDisplayBefore,
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
+      gpuMemory,
       http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
@@ -1147,6 +1172,7 @@ interface SmokeTraceCapture {
   finish(): Promise<readonly ChromeTraceEvent[]>;
   markEnd(page: Page): Promise<void>;
   markStart(page: Page): Promise<void>;
+  requestMemoryDump(): Promise<MemoryDumpRequest>;
 }
 
 interface SmokeTraceOptions {
@@ -1195,6 +1221,7 @@ async function beginSmokeTrace(
     await session.send("Tracing.start", {
       traceConfig: {
         includedCategories: [...categories],
+        ...(categories.includes(MEMORY_INFRA_TRACE_CATEGORY) ? { memoryDumpConfig: {} } : {}),
         recordMode: "recordAsMuchAsPossible",
       },
       transferMode: "ReportEvents",
@@ -1273,6 +1300,23 @@ async function beginSmokeTrace(
     },
     markStart(page: Page): Promise<void> {
       return markPresentationTrace(page, PRESENTATION_TRACE_START_MARKER);
+    },
+    async requestMemoryDump(): Promise<MemoryDumpRequest> {
+      if (!active) throw new Error("Cannot request a memory dump after the smoke trace stopped");
+      const startedAtMs = performance.now();
+      const result = await withTimeout(
+        session.send("Tracing.requestMemoryDump", {
+          deterministic: false,
+          levelOfDetail: "background",
+        }),
+        5_000,
+        "Chrome global memory dump request",
+      );
+      return Object.freeze({
+        dumpGuid: result.dumpGuid,
+        requestDurationMs: performance.now() - startedAtMs,
+        success: result.success,
+      });
     },
   });
 }
@@ -1657,6 +1701,24 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const evidence = run.dawnPipeline.value;
     return `- ${run.profile} repeat ${run.repeat}: shader hits/misses ${evidence.shaderCache.hitCount}/${evidence.shaderCache.missCount}; graphics PSO ${formatDawnCachePath(evidence.pipelineCache.render)}; compute PSO ${formatDawnCachePath(evidence.pipelineCache.compute)}; gameplay-overlap pipeline/shader ${evidence.pipelineActivity.overlappingMeasurement}/${evidence.shaderCache.missesOverlappingMeasurement}`;
   });
+  const gpuMemoryEvidence = report.runs.map((run) => {
+    const metricSummary =
+      run.gpuMemory.state === "measured"
+        ? `${run.gpuMemory.state} — ${formatBytes(run.gpuMemory.value.envelopePeakBytes)} envelope peak (${formatBytes(run.gpuMemory.value.residentBytes)} resident + ${formatBytes(run.gpuMemory.value.transientPeakBytes)} transient peak)`
+        : `${run.gpuMemory.state} — ${run.gpuMemory.reason}`;
+    const providerDiagnostic = run.gpuMemory.diagnostic;
+    if (providerDiagnostic === null) {
+      return `- ${run.profile} repeat ${run.repeat}: ${metricSummary}; no provider diagnostic`;
+    }
+    const diagnostic = providerDiagnostic.result;
+    if (diagnostic.state === "invalid") {
+      const request = diagnostic.request;
+      return `- ${run.profile} repeat ${run.repeat}: ${metricSummary}; memory-infra diagnostic invalid — ${diagnostic.reason}${request === null ? "" : `; dump ${request.dumpGuid} completed in ${formatMilliseconds(request.requestDurationMs)}`}`;
+    }
+    const evidence = diagnostic.evidence;
+    const request = diagnostic.request;
+    return `- ${run.profile} repeat ${run.repeat}: ${metricSummary}; measured memory-infra diagnostic exported as ${evidence.exportedDumpName}/${evidence.exportedDumpId ?? "no id"} with ${evidence.allocatorCount} allocators (${evidence.webGpuRelatedAllocatorNames.length === 0 ? "no Dawn/WebGPU-named allocator" : evidence.webGpuRelatedAllocatorNames.join(", ")}); CDP request ${request.dumpGuid} completed in ${formatMilliseconds(request.requestDurationMs)}`;
+  });
   const v8Evidence = report.v8CodeCacheDiagnostics.map((run) => {
     if (run.v8CodeCache.state !== "measured") {
       const retainedEvidence = run.v8CodeCache.evidence;
@@ -1788,6 +1850,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...dawnEvidence,
     "",
+    "## GPU memory observability",
+    "",
+    ...gpuMemoryEvidence,
+    "",
     `## V8 code-cache evidence (${SMOKE_V8_CODE_CACHE_DIAGNOSTIC})`,
     "",
     ...v8Evidence,
@@ -1852,10 +1918,6 @@ function requiredEnvironment(name: string): string {
 function requiredNumber(value: number | null): number {
   if (value === null) throw new Error("Required telemetry timing is missing");
   return value;
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 function delay(milliseconds: number): Promise<void> {

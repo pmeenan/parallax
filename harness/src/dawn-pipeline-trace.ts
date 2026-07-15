@@ -1,4 +1,5 @@
-import type { ChromeTraceEvent } from "./presentation-trace.js";
+import { type ChromeTraceEvent, uniqueGpuProcessId } from "./presentation-trace.js";
+import { errorMessage } from "./value-utils.js";
 
 export const DAWN_TRACE_CATEGORY = "disabled-by-default-gpu.dawn";
 export const D3D12_HISTOGRAM_PREFIX = "GPU.WebGPU.D3D12.";
@@ -225,10 +226,6 @@ function cacheBreakdown(
   });
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 function cacheOperationCount(cache: DawnCacheBreakdown | undefined): number {
   return cache === undefined ? 0 : cache.hitCount + cache.missCount;
 }
@@ -268,23 +265,6 @@ function uniqueMarker(events: readonly ChromeTraceEvent[], name: string): Chrome
     throw new Error(`${name} trace marker has an invalid timestamp`);
   }
   return marker;
-}
-
-function uniqueGpuProcessId(events: readonly ChromeTraceEvent[]): number {
-  const processIds = new Set(
-    events
-      .filter(
-        (event) =>
-          event.name === "process_name" && event.ph === "M" && event.args?.name === "GPU Process",
-      )
-      .map((event) => event.pid),
-  );
-  if (processIds.size !== 1) {
-    throw new Error(`Expected one traced GPU process; received ${processIds.size}`);
-  }
-  const processId = processIds.values().next().value;
-  if (processId === undefined) throw new Error("Traced GPU process ID is missing");
-  return processId;
 }
 
 function validDuration(event: ChromeTraceEvent): boolean {

@@ -36,7 +36,7 @@ measured automatically.
 - [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
       frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
       hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
-      fail on bust. First slice in progress: `smoke@1` now pins/validates CfT, runs three
+      fail on bust. Current implementation: `smoke@1` pins/validates CfT, runs three
       fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
       all-required-realm JS used heap, atomic HTTP cache deltas, validated artifact/source identity, plus
       explicit metric states. Registered-machine environment verification now probes the
@@ -111,7 +111,17 @@ measured automatically.
       0.0 ms maximum response-completion skew at report precision, and 1.1–16.2 ms slowest collection. Every launch
       returned measured heap evidence with no heap budget bust. The run remained correctly
       non-gating under RDP; a physical-console rerun is required before promoting memory baseline
-      evidence.
+      evidence. Result schema v15 now requests a background GPU-process memory-infra dump after
+      each primary window and retains its request timing plus allocator inventory (D-050). Pinned
+      Chrome accepted all six requests in a remote diagnostic, but exposed neither page-attributed
+      resident WebGPU memory nor even a web-device buffer/texture allocator (RE-014), so the
+      non-mandatory M0 GPU-envelope metric is explicitly `unsupported` with no budget check rather
+      than mislabeled from GPU-process or logical-resource proxies. Chrome also exported the sole
+      allocator-bearing dump as `periodic_interval`/`0x0` instead of the successful CDP request
+      GUID (`0x2`/`0x3`), now recorded as RE-015. The GPU-observability portion is implemented; Harness
+      v1 remains incomplete and intentionally red on the mandatory compositor-presentation probe
+      and V8 platform evidence gaps. Physical-console baseline promotion and the broader
+      result-store/promotion contract remain separate work below.
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the

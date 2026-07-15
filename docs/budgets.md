@@ -155,6 +155,13 @@ Definitions the harness implements; budgets above are meaningless without them.
   collection duration reaching 100 ms, or any deadline due before the sampling boundary without
   a periodic sample or the substituting boundary sample, makes the mandatory metric invalid.
   Chrome exposes no continuous cross-isolate live-retention peak (RE-012).
+- **GPU memory (D-050):** the tier envelope means page-attributed resident GPU allocation plus
+  transient peaks, not GPU-process private memory or the sum of logical WebGPU resource sizes.
+  Chrome 150 exposes neither that total nor per-page/per-device attribution (RE-014). `smoke@1`
+  requests a GPU-process memory-infra dump and retains its allocator inventory as diagnostic
+  evidence, but reports the envelope metric `unsupported` and runs no GPU budget check. A future
+  counter becomes gate-eligible only after allocation controls establish scope, residency,
+  attribution, aliasing/shared-image accounting, and D3D12/Metal parity.
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).

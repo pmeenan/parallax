@@ -18,6 +18,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           jsHeap: { state: "measured" },
           profile: "fresh",
           repeat: 1,
@@ -47,6 +48,9 @@ describe("smoke result adapters", () => {
     expect(
       evidenceChecks.find((check) => check.description.includes("all-worker JS heap")),
     ).toEqual(expect.objectContaining({ mandatory: true, measured: true }));
+    expect(
+      evidenceChecks.find((check) => check.description.includes("attributable GPU memory")),
+    ).toEqual(expect.objectContaining({ mandatory: false, measured: false }));
     expect(facets.evidenceCompleteness.status).toBe("passed");
     expect(facets.budgetEvaluation.status).toBe("passed");
   });
@@ -71,6 +75,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
           profile: "fresh",
           repeat: 1,

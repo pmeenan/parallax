@@ -34,6 +34,7 @@ export interface SmokeEvidenceInput {
   })[];
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
+    readonly gpuMemory: EvidenceState;
     readonly jsHeap: EvidenceState;
     readonly profile: string;
     readonly repeat: number;
@@ -121,6 +122,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: all-worker JS heap ${run.jsHeap.state} (${evidenceReason(run.jsHeap)})`,
         true,
         run.jsHeap,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: attributable GPU memory ${run.gpuMemory.state} (${evidenceReason(run.gpuMemory)})`,
+        false,
+        run.gpuMemory,
       ),
     ),
   ]);
