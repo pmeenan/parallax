@@ -39,13 +39,17 @@ measured automatically.
       on a bust. Chrome observability gaps remain explicit informational findings and
       launch performance is the outcome gate (D-051). Completed on registered dev-01 at
       4K/60: schema v16 / metric-set v3 passed all three facets and 24 budget checks.
-      (Contract since advanced to schema v17 / metric-set v4 by D-054's measurement-
-      soundness fixes; the next console run emits v17.)
+      After D-054's measurement-soundness fixes, a current schema v17 / metric-set v4
+      physical-console gate also passed all three facets and 24 checks on 2026-07-15.
 
-- [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
-      skeleton is positive integration evidence; controlled pinned-Chrome maturity,
-      main-thread-escape, and environment-identified measurements remain before the
-      spike can produce its finding/decision write-up.
+- [x] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). **Go** for the
+      rendering core (D-056): a schema v17 / metric-set v4 pinned CfT 150 / Babylon
+      9.16.1 physical-console run on registered dev-01 passed all facets and 24 budget
+      checks across three fresh/warm pairs; the harness verified the exact page +
+      dedicated-worker topology and every measurement window recorded zero >50 ms long
+      tasks.
+      Babylon/WebGPU rendering remains worker-owned; explicit window orchestration and
+      DOM-sensitive future features are scoped in D-056.
 - [ ] Spike: SAB ring buffer main↔worker.
 - [ ] Spike: OPFS sync-access-handle read throughput from a worker.
 - [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user

@@ -31,8 +31,6 @@ updated with links. Periodically synthesize clusters of findings into shareable 
 Known unknowns to be answered by M0 spikes and later milestones — convert each to a
 numbered finding (or a decisions.md entry) once there's evidence:
 
-- **WebGPU-in-worker maturity:** does the full Babylon + OffscreenCanvas + device-in-worker
-  stack hold up? Where does it leak back to the main thread?
 - **Dawn pipeline cache observability:** launch-1 vs launch-2 compile behavior; can we
   prove cache hits? The bigger idea: **shippable/distributable PSO caches** so players
   don't each pay warmup once per device (connects to existing COS code-cache work).

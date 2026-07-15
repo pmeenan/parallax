@@ -70,9 +70,13 @@ sim→render state snapshots); `postMessage` with transferables for bulk handoff
 no structured-clone of large objects on hot paths. Every queue instrumented
 (depth, stall counts) for the harness.
 
-Open question (M0/M1 to verify): WebGPU-in-worker + OffscreenCanvas maturity in current
-Chrome, and whether Babylon.js runs fully inside a worker without main-thread escapes.
-Findings go to [rough-edges.md](rough-edges.md).
+The M0 spike is a go (D-056): the controlled walking-skeleton run keeps Babylon scene
+construction, WebGPU device ownership, animation, and render submission in the dedicated
+render worker. The window retains only explicit orchestration — worker/canvas setup,
+device-pixel resize forwarding, batched telemetry reception, and shell UI. This is the
+verified rendering-core boundary, not a blanket claim that DOM-bound Babylon features are
+worker-safe; new input, GUI, accessibility, and loader paths must cross explicit protocols
+or be re-verified when they land.
 
 ## Storage map
 

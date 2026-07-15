@@ -128,7 +128,7 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 ## Current status
 
 Milestone **M0 (harness + skeleton)** — see [docs/plan.md](docs/plan.md) for what is
-done vs. open. The build/serve pipeline, walking-skeleton app (render-worker Babylon.js
-WebGPU scene), and Harness v1 (`smoke@1` on registered dev-01) are complete; the M0
-spikes and exit items remain. Keep this paragraph current when plan.md milestone status
-changes (root rule 6).
+done vs. open. The build/serve pipeline, walking-skeleton app, Harness v1 (`smoke@1` on
+registered dev-01), and WebGPU-in-worker/OffscreenCanvas go spike (D-056) are complete;
+the remaining M0 spikes and exit items remain. Keep this paragraph current when plan.md
+milestone status changes (root rule 6).

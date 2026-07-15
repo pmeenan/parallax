@@ -27,6 +27,65 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-056: Keep Babylon WebGPU rendering in the dedicated render worker  (2026-07-15, accepted)
+
+**Decision:** The M0 WebGPU-in-worker spike is a **go**. Parallax keeps the D-005
+topology: Babylon.js owns the scene in a dedicated module worker, creates its WebGPU
+device there, and renders to an `OffscreenCanvas` transferred from the window. This is
+evidence for the rendering core exercised by the walking skeleton, not a claim that
+every Babylon subsystem is worker-safe. DOM-bound input, GUI, accessibility, and future
+asset-loader paths must cross the engine's explicit protocols or be re-verified when
+introduced; they do not move Babylon rendering back to the window implicitly.
+
+The accepted main-thread boundary is narrow and observable: the app shell creates the
+worker, transfers the canvas, forwards device-pixel resizes, receives 60-frame telemetry
+batches, and updates boot/status UI. Babylon/WebGPU scene construction, frame scheduling,
+animation, render submission, and their JavaScript heap remain in the dedicated worker.
+These orchestration messages are not treated as a zero-work claim: the budget remains
+zero main-thread tasks longer than 50 ms during gameplay.
+
+**Context:** The controlled evidence is retained physical-console result
+`smoke-1-56bc808071f1-dev-01-showcase-2026-07-15T15-00-29-040Z.json`: schema v17,
+mandatory metric-set v4, exact CfT Stable 150.0.7871.115 (revision 1639810 and executable
+SHA-256 pinned), Windows 26200.8875, RTX 4080 Super / D3D12 driver 32.0.16.1074, and the
+registered 3840x2160@60 Hz target. The result's source identity and artifact digest tie it
+to the exact build; its engine manifest and lockfile pin Babylon.js 9.16.1. Windows
+observed the display at 3840x2160/59 Hz, Chrome reported 60 Hz, and the 3841x2161 render
+surface passed the descriptor's explicit +/-2-pixel tolerance (RE-003). Its three fresh
+and three warm launches passed environment, evidence, and all 24 budget checks. Across
+those six launches:
+
+- worker callback-interval p95 was 16.740-16.860 ms and worker render/submit CPU p95 was
+  0.480-0.610 ms (callback pacing is a heuristic, not presentation proof per D-051);
+- worker-local initialization to first frame was 78.905-85.460 ms; and
+- the main thread recorded zero tasks over 50 ms in every measurement window.
+
+The harness did not infer placement from those timings. Its all-realm heap probe required
+the browser context to contain exactly the app page and the manifest-declared render-worker
+target, attached to both isolates, and retained separately attributed window and
+dedicated-worker samples. The first-frame telemetry could therefore arrive only after
+Babylon's worker-owned `WebGPUEngine` initialized and submitted the walking-skeleton scene.
+The assembled build keeps Babylon imports in the separately built worker artifact; the
+window-side render service imports only the worker protocol and owns orchestration.
+
+Current platform documentation agrees with the measured path: MDN's `WorkerNavigator.gpu`
+page documents WebGPU as a worker entry point, and Babylon's current `WebGPUEngine`
+constructor accepts `HTMLCanvasElement | OffscreenCanvas` (checked 2026-07-15:
+`developer.mozilla.org/en-US/docs/Web/API/WorkerNavigator/gpu` and
+`doc.babylonjs.com/typedoc/classes/BABYLON.WebGPUEngine`). The local result is the deciding
+evidence; the documentation is corroboration.
+
+**Consequences:** D-005 stays accepted, architecture.md's M0 open question is closed,
+and the worker topology remains the basis for the SAB and later streaming spikes. No new
+Chrome rough edge was found in this tested slice. M1 still owns long-run device-loss and
+restart handling, and each newly adopted DOM-sensitive Babylon feature must demonstrate a
+worker-safe path rather than silently escaping to the main thread.
+
+**Reopen if:** representative M1 content or a required Babylon subsystem cannot run behind
+the worker boundary, a pinned-Chrome run produces main-thread long tasks attributable to
+rendering, or worker/device-loss behavior makes the topology unreliable over flythrough-
+length sessions.
+
 ## D-055: Transition-contract prefetch trigger is defined at M4, not before  (2026-07-15, accepted)
 
 **Decision:** The inter-district transition contract in budgets.md deliberately omits
