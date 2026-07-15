@@ -27,6 +27,44 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-049: Task-sized work units; AI-led multi-agent review  (2026-07-14, accepted)
+**Decision:** Two linked amendments to the D-026/D-027 operating models. (1) The
+tech-lead unit of work grows from a commit-sized slice to a **full plan.md task** by
+default — a full milestone when its tasks are tightly coupled. Work is no longer
+fragmented to fit a human line-by-line reader. (2) The human gate is restated to match
+how it actually operates: the human manages agents, makes architecture decisions,
+guides reviews, gives feedback, and scans changes and results — delegating most
+line-level reviewing to AI. To hold review quality at the larger unit size, reviewer
+mode becomes **multi-agent**: the reviewing agent acts as review lead — partitioning
+the diff into subagent-sized pieces (the lead judges what is bite-sized), spawning
+parallel read-only reviewer subagents, merging/deduplicating their findings and
+verifying each one itself, then spawning an adversarial challenge subagent briefed to
+refute weak findings and hunt for cross-piece misses before the final report. The
+tech-lead pre-handoff adversarial review uses the same structure for
+task-sized-or-larger diffs. The human commit gate itself is unchanged (root rule 8:
+agents never commit).
+
+**Context:** M0 Harness v1 ran for seven commit-sized chunks without completing, each
+chunk paying a full review-loop round trip (review → fix-pass → verify-pass → human
+gate). The small iterations surfaced real issues, but the human's judgment is that
+comparable issues would have surfaced in larger reviews with far fewer interruptions —
+and the premise behind commit-sized slices ("one coherent unit the human can review
+and commit") no longer holds, because the human is not reading every line before
+commit.
+
+**Consequences:** workflow.md's loop, tech-lead mode, and reviewer mode sections are
+updated. D-026 and D-027 remain in force except where amended here (unit sizing;
+single-context review). Individual review passes cost more (subagent fan-out) but run
+far less often. Fix-pass and verify-pass modes (D-030) are unchanged; they operate on
+the larger units' findings. Uncommitted working-tree state now lives longer between
+commits, raising the stakes on the existing one-stream-of-work and serial-writers
+rules.
+
+**Reopen if:** larger units measurably let defects slip through that small-slice
+reviews would have caught, long-lived uncommitted trees prove fragile in practice
+(lost work, unexplainable state), or the adversarial challenge pass consistently finds
+nothing and becomes ceremony.
+
 ## D-048: Declare runtime worker entrypoints semantically in build-manifest v2  (2026-07-14, accepted)
 **Decision:** build-manifest schema v2 adds `workerEntrypoints`, whose records name the artifact
 path, target type, and runtime role. The walking skeleton declares its one dedicated `worker`
@@ -1000,7 +1038,7 @@ later D-020 level-2 gate.
 a required cache/code-cache experiment, or the assembled artifact contract cannot
 represent a new common/game-specific resource class without ambiguity.
 
-## D-027: Review passes run in reviewer mode  (2026-07-12, accepted)
+## D-027: Review passes run in reviewer mode  (2026-07-12, accepted; amended by D-049 — review is multi-agent)
 **Decision:** A kickoff prompt asking for a review of current changes ("review the
 current changes") invokes the **reviewer operating model** in workflow.md: the unit
 under review is the entire uncommitted working tree (diff against last commit plus
@@ -1023,7 +1061,7 @@ mode's duty to address or rebut every finding.
 **Reopen if:** the handback loop proves slower than reviewers fixing in place — then
 define when a reviewer may fix directly (and how the implementing agent is informed).
 
-## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted)
+## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted; amended by D-049 — unit of work is task-sized, not commit-sized)
 **Decision:** A kickoff prompt naming a milestone ("start work on M0") invokes the
 **tech-lead operating model** defined in workflow.md: the lead agent scopes a
 commit-sized slice from plan.md in dependency order; delegates well-scoped pieces to

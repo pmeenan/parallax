@@ -12,7 +12,10 @@ root `AGENTS.md` rules (especially: agents never commit — rule 8).
    uncommitted state is shared). Each reviewer either improves the change or reports
    findings for the next iteration.
 3. **Human gate** — iteration continues until the developer is satisfied; the developer
-   commits. Nothing is ever committed by an agent.
+   commits. Nothing is ever committed by an agent. The human operates at the level of
+   direction: managing agents, making architecture decisions, guiding reviews, and
+   scanning changes and results — not reading every line before commit. Line-level
+   review is the job of the AI review passes (D-049).
 
 ## Rules that make the loop work
 
@@ -36,9 +39,12 @@ root `AGENTS.md` rules (especially: agents never commit — rule 8).
 A prompt like "start work on M0" makes you the **tech lead** for that milestone. That
 means:
 
-- **Scope a commit-sized slice.** Pick the next unblocked plan.md checkbox(es) in
-  dependency order — one coherent unit the human can review and commit. Don't sprawl
-  the working tree across unrelated items; the human gate closes each slice.
+- **Scope a task-sized unit of work (D-049).** Pick the next unblocked plan.md task in
+  dependency order and take it whole — a full task is the default unit; a full
+  milestone is acceptable when its tasks are tightly coupled. Don't fragment work into
+  small chunks to fit a human line-by-line reader (review is AI-led per D-049), and
+  don't sprawl the working tree across unrelated tasks; the human gate still closes
+  each unit.
 - **Delegate deliberately.** Spawn subagents for well-scoped pieces, choosing each
   subagent's model and reasoning effort to match its task. The working tree is shared:
   subagents that write must run serially or own disjoint files; parallelize freely only
@@ -49,11 +55,13 @@ means:
   subagent reporting success is an assertion, not a measurement.
 - **You own the cross-cutting rules.** Decision-log entries, rough-edges findings,
   docs moving with code, budget compliance — delegating work never delegates these.
-- **Adversarial review before handoff.** When you believe the slice is complete, spawn
-  a fresh-context reviewer subagent over the full working-tree diff, briefed to find
-  problems — correctness, layer violations, missing docs/instrumentation/telemetry,
-  rule breaches — not to summarize or approve. Address every finding worth addressing,
-  re-verify, and re-review if the fixes were substantial.
+- **Adversarial review before handoff.** When you believe the unit is complete, run a
+  fresh-context review over the full working-tree diff, briefed to find problems —
+  correctness, layer violations, missing docs/instrumentation/telemetry, rule breaches
+  — not to summarize or approve. For task-sized-or-larger diffs, use the multi-agent
+  review structure from reviewer mode below (review lead + piecewise subagents +
+  adversarial challenge). Address every finding worth addressing, re-verify, and
+  re-review if the fixes were substantial.
 - **End with the handoff summary** (rule above): what changed and why, what was
   verified and how, what remains open.
 
@@ -63,6 +71,23 @@ Any prompt requesting a review of uncommitted modifications (e.g., "review the c
 
 - **DO NOT simply summarize the changes.** The user is not asking for a diff description. You must perform an active, critical code review looking for correctness, logic errors, code quality issues, and rule compliance.
 - **Read-only by default.** You report; the agent that did the work owns the fixes. Don't edit the tree unless the human explicitly asks you to fix directly.
+- **Structure the review as a team (D-049).** Work units are task-sized or larger, so a
+  single context reading the whole diff is not the model. You are the **review lead**:
+  1. Partition the diff into pieces sized for one subagent to review deeply — by
+     subsystem, file cluster, or concern; you judge what is bite-sized.
+  2. Spawn a reviewer subagent per piece. They are read-only, so run them in parallel.
+  3. Merge and deduplicate their findings, then **verify each surviving finding
+     yourself** before it enters the report — subagent findings are claims, not facts.
+  4. Spawn an **adversarial challenge subagent** against the merged review, briefed to
+     attack it from both sides: refute findings that don't hold up, and hunt for what
+     the piecewise reviewers missed — especially cross-cutting issues that span piece
+     boundaries (interface mismatches, duplicated logic, inconsistent conventions,
+     docs/decision entries the whole change should have produced).
+  5. Fold the challenge results in (dropping refuted findings, verifying new ones)
+     before writing the final report.
+
+  A diff small enough for one deep read may skip the fan-out (steps 1–3) but never the
+  adversarial challenge.
 - **Review thoroughly, not just for bugs.** Correctness first, then check:
   - Root and directory `AGENTS.md` rule violations (e.g., layer violations, lack of instrumentation/telemetry, determinism).
   - Missing decision-log entries ([decisions.md](file:///d:/src/parallax/docs/decisions.md)) or rough-edges entries ([rough-edges.md](file:///d:/src/parallax/docs/rough-edges.md)).
