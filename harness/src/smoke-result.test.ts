@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { invalidEnvironmentGate } from "./environment.js";
 import { evaluateResultFacets } from "./result-facets.js";
+import type { LocalServerMetrics } from "./server.js";
 import {
   collectSmokeBudgetFacetChecks,
   collectSmokeEnvironmentFacetInput,
@@ -11,10 +12,32 @@ import {
 
 const measuredEnvironment = collectSmokeEnvironmentFacetInput({ state: "measured", value: true });
 
+const completedCoreRuns = { completedRuns: 6, expectedRuns: 6, failure: null };
+
+function httpDelta(overrides: Partial<LocalServerMetrics> = {}): {
+  readonly value: LocalServerMetrics;
+} {
+  return {
+    value: {
+      bytesServed: 1_024,
+      bytesServedByPathClass: { document: 512, immutable: 512, other: 0 },
+      metadataCacheHits: 0,
+      metadataCacheMisses: 2,
+      pathClasses: { document: 1, immutable: 1, other: 0 },
+      requests: 2,
+      schemaVersion: 2,
+      statuses: { "200": 2 },
+      statusesByPathClass: { document: { "200": 1 }, immutable: { "200": 1 }, other: {} },
+      ...overrides,
+    },
+  };
+}
+
 describe("smoke result adapters", () => {
   it("keeps presentation, GPU-memory, and V8 evidence failures informational", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [
         {
           mandatoryForHarnessV1: false,
@@ -27,6 +50,7 @@ describe("smoke result adapters", () => {
         {
           dawnPipeline: { state: "measured" },
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
+          http: httpDelta(),
           jsHeap: { state: "measured" },
           profile: "fresh",
           repeat: 1,
@@ -77,6 +101,124 @@ describe("smoke result adapters", () => {
     );
   });
 
+  it("derives every evidence-check mandatory flag from the metric registry", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta(),
+          jsHeap: { state: "measured" },
+          profile: "fresh",
+          repeat: 1,
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
+    });
+
+    expect(
+      evidenceChecks.find((check) => check.description.includes("callback pacing variance")),
+    ).toMatchObject({ mandatory: true, measured: true });
+    expect(
+      evidenceChecks.find((check) => check.description.includes("core measurement runs completed")),
+    ).toMatchObject({ mandatory: true, measured: true });
+    for (const check of evidenceChecks.filter(
+      (candidate) =>
+        candidate.description.includes("HTTP") || candidate.description.includes("immutable"),
+    )) {
+      expect(check.mandatory).toBe(false);
+    }
+  });
+
+  it("fails the mandatory core-run-completion check when core runs are incomplete", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [
+        { profile: "fresh", state: "measured" },
+        { profile: "warm", reason: "No completed warm core measurement runs", state: "invalid" },
+      ],
+      coreRunCompletion: {
+        completedRuns: 3,
+        expectedRuns: 6,
+        failure: "core warm repeat 2 failed: Browser errors: boom",
+      },
+      incompleteMetrics: [],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta(),
+          jsHeap: { state: "measured" },
+          profile: "fresh",
+          repeat: 1,
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "long-task budget", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    const completionCheck = evidenceChecks.find((check) =>
+      check.description.includes("core measurement runs completed"),
+    );
+    expect(completionCheck).toMatchObject({ mandatory: true, measured: false });
+    expect(completionCheck?.description).toBe(
+      "core measurement runs completed (3 of 6) — core warm repeat 2 failed: Browser errors: boom",
+    );
+    expect(facets.evidenceCompleteness.status).toBe("failed");
+    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
+  });
+
+  it("keeps HTTP serving discipline misses informational", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "warm", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta({
+            pathClasses: { document: 1, immutable: 2, other: 0 },
+            requests: 3,
+            statuses: { "200": 3 },
+            statusesByPathClass: { document: { "200": 1 }, immutable: { "200": 2 }, other: {} },
+          }),
+          jsHeap: { state: "measured" },
+          profile: "warm",
+          repeat: 1,
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "warm", state: "measured" }],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "long-task budget", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+    const informationalFailures = collectSmokeInformationalFailures({
+      evidenceChecks,
+      v8CodeCacheDiagnostics: [],
+    });
+
+    expect(facets.evidenceCompleteness.status).toBe("passed");
+    expect(facets.budgetEvaluation.status).toBe("passed");
+    expect(informationalFailures).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("immutable requests reaching the server expected zero"),
+        expect.stringContaining("expected to revalidate via 304"),
+      ]),
+    );
+  });
+
   it("preserves invalid environment state even when its reason list is empty", () => {
     const environment = collectSmokeEnvironmentFacetInput(invalidEnvironmentGate([]));
     const facets = evaluateResultFacets({
@@ -93,11 +235,13 @@ describe("smoke result adapters", () => {
   it("fails closed when mandatory all-worker JS heap evidence is invalid", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
+          http: httpDelta(),
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
           profile: "fresh",
           repeat: 1,

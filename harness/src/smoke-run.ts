@@ -1,7 +1,11 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
+import {
+  type ParallaxTelemetryExport,
+  type ParallaxTelemetrySnapshot,
+  TELEMETRY_FRAME_BATCH_FRAMES,
+} from "@parallax/engine";
 import { type BrowserContext, type CDPSession, chromium, type Page } from "playwright-core";
 import {
   type Distribution,
@@ -48,12 +52,14 @@ import {
   type WindowsHostIdentity,
   type WindowsHostIdentityResult,
 } from "./environment.js";
+import { markerAlignedWindowStart, selectMeasurementFrameWindow } from "./frame-window.js";
 import {
   type GpuMemoryMetric,
   MEMORY_INFRA_TRACE_CATEGORY,
   type MemoryDumpRequest,
   resolveGpuMemoryMetric,
 } from "./gpu-memory.js";
+import { formatHttpServingEvidence } from "./http-evidence.js";
 import {
   invalidateJsHeapMetric,
   type JsHeapEvidence,
@@ -134,8 +140,16 @@ type MetricResult<T> =
 interface P95VarianceSummary {
   readonly profile: "fresh" | "warm";
   readonly reason?: string;
-  readonly relativeP95Range: number;
+  readonly relativeP95Range: number | null;
   readonly state: "invalid" | "measured";
+}
+
+interface CoreRunFailure {
+  readonly launchOrdinal: number;
+  readonly message: string;
+  readonly profile: "fresh" | "warm";
+  readonly repeat: number;
+  readonly v8CodeCacheDiagnosticsSkipped: string;
 }
 
 interface LaunchSequencePosition {
@@ -238,6 +252,7 @@ interface EnvironmentIdentity {
 interface SmokeReport {
   readonly artifactDigest: string;
   readonly chromePin: ChromePin;
+  readonly coreRunFailure: CoreRunFailure | null;
   readonly environment: EnvironmentIdentity;
   readonly facets: ResultFacets;
   readonly generatedAt: string;
@@ -261,7 +276,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 16;
+  readonly schemaVersion: 17;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -276,10 +291,10 @@ const outputRoot = join(repositoryRoot, "harness/results");
 await main();
 
 async function main(): Promise<void> {
-  const executablePath = requiredEnvironment("PARALLAX_CHROME_PATH");
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
   const chromePin = JSON.parse(await readFile(chromePinPath, "utf8")) as ChromePin;
+  const executablePath = await resolveChromeExecutablePath(chromePin);
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
   const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest.artifacts);
@@ -308,35 +323,47 @@ async function main(): Promise<void> {
     const measurementSequenceStartedAtMs = performance.now();
     let launchOrdinal = 0;
     const runs: RunMeasurement[] = [];
-    for (let repeat = 1; repeat <= SMOKE_REPEATS; repeat += 1) {
+    // A core-run failure must still produce a result artifact: capture the failure,
+    // stop launching further core runs, skip the V8 diagnostic phase, and let the
+    // mandatory core-run-completion evidence check fail the run.
+    let coreRunFailure: CoreRunFailure | null = null;
+    for (let repeat = 1; repeat <= SMOKE_REPEATS && coreRunFailure === null; repeat += 1) {
       const lineage = join(profileRoot, `lineage-${repeat}`);
-      runs.push(
-        await measureRun(
-          executablePath,
-          lineage,
-          baseUrl,
-          repeat,
-          "fresh",
-          environment.adapter?.backend ?? null,
-          tier,
-          renderWorkerUrl,
-          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
-        ),
-        await measureRun(
-          executablePath,
-          lineage,
-          baseUrl,
-          repeat,
-          "warm",
-          environment.adapter?.backend ?? null,
-          tier,
-          renderWorkerUrl,
-          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
-        ),
-      );
+      for (const profile of ["fresh", "warm"] as const) {
+        const launchPosition = launchSequencePosition(
+          ++launchOrdinal,
+          measurementSequenceStartedAtMs,
+        );
+        try {
+          runs.push(
+            await measureRun(
+              executablePath,
+              lineage,
+              baseUrl,
+              repeat,
+              profile,
+              environment.adapter?.backend ?? null,
+              tier,
+              renderWorkerUrl,
+              launchPosition,
+            ),
+          );
+        } catch (error) {
+          coreRunFailure = Object.freeze({
+            launchOrdinal: launchPosition.launchOrdinal,
+            message: errorMessage(error),
+            profile,
+            repeat,
+            v8CodeCacheDiagnosticsSkipped: `core ${profile} repeat ${repeat} failed, so the V8 code-cache diagnostic phase was not launched`,
+          });
+          break;
+        }
+      }
     }
     const v8CodeCacheDiagnostics: V8CodeCacheDiagnosticRun[] = [];
-    for (let repeat = 1; repeat <= SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS; repeat += 1) {
+    const v8DiagnosticRepeats =
+      coreRunFailure === null ? SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS : 0;
+    for (let repeat = 1; repeat <= v8DiagnosticRepeats; repeat += 1) {
       const lineage = join(profileRoot, `v8-lineage-${repeat}`);
       const completedHistory: V8CodeCacheDiagnosticRun["profile"][] = [];
       let predecessorFailure: string | null = null;
@@ -368,14 +395,19 @@ async function main(): Promise<void> {
         }
       }
     }
-    const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) => {
-      const variance = evaluateP95Variance(
-        runs
-          .filter((run) => run.profile === profile)
-          .map((run) => run.workerAnimationCallbackIntervalMs.value.p95),
-      );
-      return summarizeP95Variance(profile, variance);
-    });
+    // Variance is evaluated against the full SMOKE_REPEATS contract: fewer completed
+    // repeats (including zero) yields an invalid variance metric, never "measured".
+    const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) =>
+      summarizeP95Variance(
+        profile,
+        evaluateP95Variance(
+          runs
+            .filter((run) => run.profile === profile)
+            .map((run) => run.workerAnimationCallbackIntervalMs.value.p95),
+          SMOKE_REPEATS,
+        ),
+      ),
+    );
     const vizPresentationFeedbackCallbackVariance = (["fresh", "warm"] as const).map((profile) => {
       const profileRuns = runs.filter((run) => run.profile === profile);
       const invalidRuns = profileRuns.filter(
@@ -405,6 +437,7 @@ async function main(): Promise<void> {
           }
           return run.vizPresentationFeedbackCallbackIntervalMs.value.p95;
         }),
+        SMOKE_REPEATS,
       );
       return summarizeP95Variance(profile, variance);
     });
@@ -413,6 +446,14 @@ async function main(): Promise<void> {
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance,
+      coreRunCompletion: {
+        completedRuns: runs.length,
+        expectedRuns: SMOKE_REPEATS * 2,
+        failure:
+          coreRunFailure === null
+            ? null
+            : `core ${coreRunFailure.profile} repeat ${coreRunFailure.repeat} failed: ${coreRunFailure.message}`,
+      },
       incompleteMetrics,
       runs,
       v8CodeCacheDiagnostics,
@@ -438,6 +479,7 @@ async function main(): Promise<void> {
       artifactDigest,
       callbackPacingVariance,
       chromePin,
+      coreRunFailure,
       environment,
       facets,
       generatedAt: new Date().toISOString(),
@@ -454,7 +496,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 16,
+      schemaVersion: 17,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -734,7 +776,39 @@ async function measureRun(
   renderWorkerUrl: ProbeResult<string>,
   launchPosition: LaunchSequencePosition,
 ): Promise<RunMeasurement> {
+  // Server-metric window: snapshot immediately before browser launch and again only
+  // after the browser context is fully closed, so late requests from this browser
+  // instance cannot bleed into the next run's delta.
   const before = await fetchServerMetrics(baseUrl);
+  const measurement = await measureRunWithBrowser(
+    executablePath,
+    profilePath,
+    baseUrl,
+    repeat,
+    profile,
+    dawnBackend,
+    tier,
+    renderWorkerUrl,
+    launchPosition,
+  );
+  const after = await fetchServerMetrics(baseUrl);
+  return Object.freeze({
+    ...measurement,
+    http: measured(subtractServerMetrics(after, before)),
+  });
+}
+
+async function measureRunWithBrowser(
+  executablePath: string,
+  profilePath: string,
+  baseUrl: string,
+  repeat: number,
+  profile: "fresh" | "warm",
+  dawnBackend: string | null,
+  tier: QualityTier,
+  renderWorkerUrl: ProbeResult<string>,
+  launchPosition: LaunchSequencePosition,
+): Promise<Omit<RunMeasurement, "http">> {
   const context = await launch(executablePath, profilePath);
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
@@ -804,15 +878,25 @@ async function measureRun(
       ],
     );
     await resetLongTaskObserver(page);
-    const start = await readTelemetry(page);
     await markPresentationBoundary("start");
+    const start = await readTelemetry(page);
+    // Guard-band invariant: telemetry frameCount publishes once per
+    // TELEMETRY_FRAME_BATCH_FRAMES rendered frames, so the observed count trails the
+    // true rendered count by up to one batch minus one frame. Because the start marker
+    // was placed *before* this read, the true rendered count at the marker is at most
+    // start.render.frameCount + TELEMETRY_FRAME_BATCH_FRAMES - 1, so every frame in the
+    // selected window (indexes > windowStart) provably rendered after the marker.
+    const windowStart = markerAlignedWindowStart(
+      start.render.frameCount,
+      TELEMETRY_FRAME_BATCH_FRAMES,
+    );
     await page.waitForFunction(
       (target) => {
         const telemetry = Reflect.get(globalThis, target.globalName) as ParallaxTelemetryExport;
         return telemetry.snapshot().render.frameCount >= target.frameCount;
       },
       {
-        frameCount: start.render.frameCount + SMOKE_MEASUREMENT_FRAMES,
+        frameCount: windowStart + SMOKE_MEASUREMENT_FRAMES,
         globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
       },
       { timeout: 15_000 },
@@ -837,7 +921,12 @@ async function measureRun(
         snapshot.render.failureMessage ?? `Unexpected render state ${snapshot.render.state}`,
       );
     }
-    const frames = snapshot.render.recentFrames.slice(-SMOKE_MEASUREMENT_FRAMES);
+    const frames = selectMeasurementFrameWindow({
+      measurementFrames: SMOKE_MEASUREMENT_FRAMES,
+      recentFrames: snapshot.render.recentFrames,
+      snapshotFrameCount: snapshot.render.frameCount,
+      startFrameCount: windowStart,
+    });
     const presentIntervals = frames.flatMap((frame) =>
       frame.presentIntervalMs === null ? [] : [frame.presentIntervalMs],
     );
@@ -907,6 +996,13 @@ async function measureRun(
       histogramsAfterTraceEnd,
     );
     const gpuMemory = resolveGpuMemoryMetric(traceEvents, memoryDumpRequest);
+    // Errors raised between the in-window error check and here (trace tail/end, memory
+    // dump, histogram probes) still fail the run (a browser error is never
+    // non-blocking; D-031). Throwing routes through the coreRunFailure wrapper, so the
+    // result artifact is still written and the exit code is 1.
+    if (errors.length > 0) {
+      throw new Error(`Browser errors after the measurement window: ${errors.join(" | ")}`);
+    }
     const browserErrorsBeforeJsHeap = errors.length;
     let jsHeap: JsHeapMetric =
       renderWorkerUrl.state === "measured"
@@ -944,7 +1040,6 @@ async function measureRun(
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
       gpuMemory,
-      http: measured(subtractServerMetrics(await fetchServerMetrics(baseUrl), before)),
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
@@ -1691,7 +1786,13 @@ async function installLongTaskObserver(page: Page): Promise<void> {
     observer.observe({ type: "longtask", buffered: true } as unknown as PerformanceObserverInit);
     Object.defineProperty(globalThis, "__PARALLAX_HARNESS_LONG_TASKS__", {
       value: Object.freeze({
-        count: () => longTasks,
+        count: () => {
+          // Drain records the observer callback has not delivered yet. takeRecords
+          // removes them from delivery, so fold them into the running total to keep
+          // count() idempotent-safe across repeated calls.
+          longTasks += observer.takeRecords().filter((entry) => entry.duration > 50).length;
+          return longTasks;
+        },
         reset: () => {
           observer.takeRecords();
           longTasks = 0;
@@ -1729,12 +1830,13 @@ function subtractServerMetrics(
   after: LocalServerMetrics,
   before: LocalServerMetrics,
 ): LocalServerMetrics {
-  const statuses: Record<string, number> = {};
-  for (const [status, count] of Object.entries(after.statuses)) {
-    statuses[status] = count - (before.statuses[status] ?? 0);
-  }
   return {
     bytesServed: after.bytesServed - before.bytesServed,
+    bytesServedByPathClass: {
+      document: after.bytesServedByPathClass.document - before.bytesServedByPathClass.document,
+      immutable: after.bytesServedByPathClass.immutable - before.bytesServedByPathClass.immutable,
+      other: after.bytesServedByPathClass.other - before.bytesServedByPathClass.other,
+    },
     metadataCacheHits: after.metadataCacheHits - before.metadataCacheHits,
     metadataCacheMisses: after.metadataCacheMisses - before.metadataCacheMisses,
     pathClasses: {
@@ -1743,9 +1845,34 @@ function subtractServerMetrics(
       other: after.pathClasses.other - before.pathClasses.other,
     },
     requests: after.requests - before.requests,
-    schemaVersion: 1,
-    statuses,
+    schemaVersion: 2,
+    statuses: subtractStatusCounts(after.statuses, before.statuses),
+    statusesByPathClass: {
+      document: subtractStatusCounts(
+        after.statusesByPathClass.document,
+        before.statusesByPathClass.document,
+      ),
+      immutable: subtractStatusCounts(
+        after.statusesByPathClass.immutable,
+        before.statusesByPathClass.immutable,
+      ),
+      other: subtractStatusCounts(
+        after.statusesByPathClass.other,
+        before.statusesByPathClass.other,
+      ),
+    },
   };
+}
+
+function subtractStatusCounts(
+  after: Readonly<Record<string, number>>,
+  before: Readonly<Record<string, number>>,
+): Record<string, number> {
+  const statuses: Record<string, number> = {};
+  for (const [status, count] of Object.entries(after)) {
+    statuses[status] = count - (before[status] ?? 0);
+  }
+  return statuses;
 }
 
 async function writeReport(report: SmokeReport): Promise<void> {
@@ -1898,6 +2025,16 @@ async function writeReport(report: SmokeReport): Promise<void> {
       return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; ${launch}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
     }),
   );
+  const httpServingEvidence = report.runs.map((run) =>
+    formatHttpServingEvidence(run.profile, run.repeat, run.http.value),
+  );
+  const coreRunFailureLines =
+    report.coreRunFailure === null
+      ? ["None."]
+      : [
+          `- core ${report.coreRunFailure.profile} repeat ${report.coreRunFailure.repeat} (launch ${report.coreRunFailure.launchOrdinal}) failed: ${report.coreRunFailure.message}`,
+          `- ${report.coreRunFailure.v8CodeCacheDiagnosticsSkipped}`,
+        ];
   const jsHeapEvidence = report.runs.map((run) => {
     const invalidReason = run.jsHeap.state === "invalid" ? run.jsHeap.reason : null;
     const evidence = run.jsHeap.state === "measured" ? run.jsHeap.value : run.jsHeap.evidence;
@@ -1921,6 +2058,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## Failures",
     "",
     ...(failures.length === 0 ? ["None."] : failures.map((failure) => `- ${failure}`)),
+    "",
+    "## Core run failure",
+    "",
+    ...coreRunFailureLines,
     "",
     "## Informational failures (non-blocking)",
     "",
@@ -1955,6 +2096,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## All-worker JavaScript heap",
     "",
     ...jsHeapEvidence,
+    "",
+    "## HTTP serving evidence",
+    "",
+    ...httpServingEvidence,
     "",
     "## Trace drain diagnostics",
     "",
@@ -1995,6 +2140,30 @@ function requiredEnvironment(name: string): string {
   const value = process.env[name];
   if (value === undefined || value === "") throw new Error(`${name} is required`);
   return value;
+}
+
+// Conventional in-repo location for the pinned Chrome for Testing binary (gitignored):
+// the extracted platform directory's contents live at harness/chrome/cft/<version>/.
+// PARALLAX_CHROME_PATH overrides for non-conventional layouts. The digest gate performed
+// during environment inspection remains the authority on whether the binary is the pin.
+async function resolveChromeExecutablePath(chromePin: ChromePin): Promise<string> {
+  const override = process.env.PARALLAX_CHROME_PATH;
+  if (override !== undefined && override !== "") return override;
+  const versionRoot = join(repositoryRoot, "harness/chrome/cft", chromePin.version);
+  const conventional =
+    process.platform === "darwin"
+      ? join(versionRoot, "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing")
+      : process.platform === "win32"
+        ? join(versionRoot, "chrome.exe")
+        : join(versionRoot, "chrome");
+  try {
+    await access(conventional);
+  } catch {
+    throw new Error(
+      `Pinned Chrome for Testing ${chromePin.version} was not found at the conventional path ${conventional}. Extract the pinned archive's platform directory contents there, or set PARALLAX_CHROME_PATH to the executable.`,
+    );
+  }
+  return conventional;
 }
 
 function requiredNumber(value: number | null): number {

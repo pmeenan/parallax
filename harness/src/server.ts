@@ -20,7 +20,7 @@ const IDENTITY_DOCUMENT = Buffer.from(
   "<!doctype html><meta charset=utf-8><title>Parallax harness identity probe</title>",
 );
 
-type PathClass = "document" | "immutable" | "other";
+export type PathClass = "document" | "immutable" | "other";
 
 interface CachedMetadata {
   readonly digestHex: string;
@@ -30,21 +30,28 @@ interface CachedMetadata {
 
 interface MutableMetrics {
   bytesServed: number;
+  bytesServedByPathClass: Record<PathClass, number>;
   metadataCacheHits: number;
   metadataCacheMisses: number;
   pathClasses: Record<PathClass, number>;
   requests: number;
   statuses: Record<string, number>;
+  statusesByPathClass: Record<PathClass, Record<string, number>>;
 }
 
+// schemaVersion 2 added the correlated per-path-class counters (statusesByPathClass,
+// bytesServedByPathClass) so serving-discipline evidence can prove *which* class
+// produced a status or the served bytes, not just that the aggregates coincided.
 export interface LocalServerMetrics {
   readonly bytesServed: number;
+  readonly bytesServedByPathClass: Readonly<Record<PathClass, number>>;
   readonly metadataCacheHits: number;
   readonly metadataCacheMisses: number;
   readonly pathClasses: Readonly<Record<PathClass, number>>;
   readonly requests: number;
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly statuses: Readonly<Record<string, number>>;
+  readonly statusesByPathClass: Readonly<Record<PathClass, Readonly<Record<string, number>>>>;
 }
 
 export interface LocalServerOptions {
@@ -56,11 +63,13 @@ export function createLocalServer(options: LocalServerOptions): Server {
   const metadataCache = new Map<string, CachedMetadata>();
   const metrics: MutableMetrics = {
     bytesServed: 0,
+    bytesServedByPathClass: { document: 0, immutable: 0, other: 0 },
     metadataCacheHits: 0,
     metadataCacheMisses: 0,
     pathClasses: { document: 0, immutable: 0, other: 0 },
     requests: 0,
     statuses: {},
+    statusesByPathClass: { document: {}, immutable: {}, other: {} },
   };
 
   return createServer(async (request, response) => {
@@ -74,12 +83,17 @@ export function createLocalServer(options: LocalServerOptions): Server {
     const send = (status: number, body?: Buffer): void => {
       const responseBody = request.method === "HEAD" ? undefined : body;
       response.once("finish", () => {
+        const statusKey = String(status);
+        const bodyBytes = responseBody?.byteLength ?? 0;
+        const classStatuses = metrics.statusesByPathClass[pathClass];
         metrics.requests += 1;
-        metrics.statuses[String(status)] = (metrics.statuses[String(status)] ?? 0) + 1;
+        metrics.statuses[statusKey] = (metrics.statuses[statusKey] ?? 0) + 1;
         metrics.pathClasses[pathClass] += 1;
+        classStatuses[statusKey] = (classStatuses[statusKey] ?? 0) + 1;
         metrics.metadataCacheHits += requestMetadataCacheHits;
         metrics.metadataCacheMisses += requestMetadataCacheMisses;
-        metrics.bytesServed += responseBody?.byteLength ?? 0;
+        metrics.bytesServed += bodyBytes;
+        metrics.bytesServedByPathClass[pathClass] += bodyBytes;
       });
       response.writeHead(status).end(responseBody);
     };
@@ -239,12 +253,18 @@ function isContentAddressed(pathname: string, digestHex: string): boolean {
 function snapshotMetrics(metrics: MutableMetrics): LocalServerMetrics {
   return {
     bytesServed: metrics.bytesServed,
+    bytesServedByPathClass: { ...metrics.bytesServedByPathClass },
     metadataCacheHits: metrics.metadataCacheHits,
     metadataCacheMisses: metrics.metadataCacheMisses,
     pathClasses: { ...metrics.pathClasses },
     requests: metrics.requests,
-    schemaVersion: 1,
+    schemaVersion: 2,
     statuses: { ...metrics.statuses },
+    statusesByPathClass: {
+      document: { ...metrics.statusesByPathClass.document },
+      immutable: { ...metrics.statusesByPathClass.immutable },
+      other: { ...metrics.statusesByPathClass.other },
+    },
   };
 }
 

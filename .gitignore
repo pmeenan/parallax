@@ -3,3 +3,6 @@ dist/
 */dist/
 *.tsbuildinfo
 harness/results/
+harness/chrome/cft/
+*.patch
+.claude/

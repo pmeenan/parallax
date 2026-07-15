@@ -12,9 +12,11 @@ import type {
   RenderWorkerResponse,
   WalkingSkeletonScene,
 } from "../render/render-protocol";
+import { TELEMETRY_FRAME_BATCH_FRAMES } from "../telemetry/telemetry-export";
 
 interface RenderWorkerScope {
   onmessage: ((event: MessageEvent<RenderWorkerRequest>) => void) | null;
+  onmessageerror: ((event: MessageEvent) => void) | null;
   postMessage(message: RenderWorkerResponse): void;
   requestAnimationFrame(callback: (timestamp: number) => void): number;
 }
@@ -23,6 +25,10 @@ const workerScope = globalThis as unknown as RenderWorkerScope;
 let engine: WebGPUEngine | null = null;
 let rendererReady = false;
 let pendingSize: Readonly<{ height: number; width: number }> | null = null;
+
+workerScope.onmessageerror = (): void => {
+  postError("Render worker message failed to deserialize");
+};
 
 workerScope.onmessage = (event): void => {
   const message = event.data;
@@ -110,7 +116,7 @@ async function startRenderer(
       } else {
         samples.push(sample);
       }
-      if (samples.length === 60) {
+      if (samples.length === TELEMETRY_FRAME_BATCH_FRAMES) {
         workerScope.postMessage({
           frameCount,
           kind: "frame",

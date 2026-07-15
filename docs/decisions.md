@@ -27,7 +27,171 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
-## D-051: Harness-v1 presentation and V8 gaps are informational, not M0 gates  (2026-07-14, accepted)
+## D-055: Transition-contract prefetch trigger is defined at M4, not before  (2026-07-15, accepted)
+
+**Decision:** The inter-district transition contract in budgets.md deliberately omits
+its **prefetch trigger** element (when a transition preload must start, per entrance)
+until M4. Defining it is an explicit M4 task: calibrate from greybox transition
+measurements, add the element to budgets.md through the normal decision process, and
+only then evaluate the M4 exit ("no contract violations") against the completed
+contract — the exit cannot be declared against a contract that still lacks the element.
+
+**Context:** architecture.md promised a prefetch trigger "in budgets.md" that budgets.md
+never defined — an unverifiable contract element a 2026-07-15 review flagged. Inventing
+a threshold now would violate root rule 3 (measure, don't assert): the honest trigger
+depends on cell sizes, OPFS read throughput, and traversal speeds that only exist once
+M4 greybox content and the M1 streaming path are measurable. plan.md M4 carries the
+calibration task and the qualified exit criterion.
+
+**Consequences:** Until M4, the enforced transition contract is: overlap memory peak
+(≤ 1.25× steady-state GPU budget), max hitch (≤ 100 ms), total swap (≤ 4 s), proactive
+eviction only — all per entrance. The prefetch trigger is the one deferred element.
+
+**Reopen if:** M1 streaming measurements already force a prefetch policy (then define it
+early through a decision), or M4 measurements show a per-entrance trigger is the wrong
+shape (e.g., it belongs to the streaming manager's budget governor instead).
+
+## D-054: Harness measurement-soundness fixes — schema v17, metric-set v4  (2026-07-15, accepted)
+
+**Decision:** A holistic multi-agent review of the completed Harness v1 found and fixed
+several measurement-soundness defects; the result contract advances to **schema v17**
+and **mandatory metric-set v4**. The changes:
+
+1. **Deterministic frame window.** Frame statistics previously came from
+   `recentFrames.slice(-120)` on a snapshot read *after* the end marker, so the analyzed
+   span slid with CDP latency and differed from the trace-marker window used by the
+   blocking pipeline/shader checks. The harness now selects exactly frames
+   `(start, start+120]` by index (`harness/src/frame-window.ts`, unit-tested); engine
+   telemetry retention widens from 120 to 240 recent frames (amends D-029; telemetry
+   schema shape and version unchanged) so the window survives snapshot latency, and
+   eviction of any in-window frame is a loud measurement-invalid error. Because
+   frameCount publishes only per 60-frame batch (`TELEMETRY_FRAME_BATCH_FRAMES`, now an
+   exported telemetry-contract constant), the start marker is placed *before* the
+   telemetry read and the window begins one full batch after the observed count — every
+   counted frame is provably rendered inside the trace-marker window, so pipeline
+   activity on counted frames cannot escape the marker-windowed trace gates.
+2. **Long-task counter drains pending records.** The injected observer's `count()` now
+   folds `takeRecords()` into the total, closing a false-pass window on the zero-limit
+   blocking `mainThreadLongTasksOver50Ms` budget (a >50 ms task ending just before the
+   read could previously go uncounted).
+3. **A core-run failure still produces artifacts.** One failed launch previously aborted
+   the process with no JSON/markdown result, discarding completed runs (violating
+   harness rules 2/5). Failures are now captured as top-level `coreRunFailure`, the V8
+   diagnostic phase is skipped with the reason recorded, and a **mandatory** "core
+   measurement run completion" evidence check fails the evidence facet — report written,
+   exit code still 1.
+4. **Mandatory-metric registry is the single source of truth.** Callback-pacing variance
+   was enforced as mandatory but absent from the declared registry; it is now registered,
+   and every evidence-check mandatory flag is derived from the registry by name (loud
+   failure on an unregistered name). Metric-set v4 = v3 + render-worker callback-pacing
+   variance (mandatory), core measurement run completion (mandatory), HTTP serving
+   evidence (non-mandatory).
+5. **HTTP serving evidence is evaluated and reported** (informational only). The local
+   server's metrics endpoint advances to **schema v2** (amends D-028) with per-path-class
+   status and byte counters — the v1 aggregate counters could not prove the claims (an
+   unrelated 304 could satisfy the document-revalidation check; document bytes could
+   satisfy the immutable-body check). Checks: fresh runs fetch every immutable artifact
+   as a 200 with bytes; warm runs reach the server with zero immutable requests and at
+   least one document request, all revalidated 304 (zero observed documents is a failed
+   observation, not a pass); ≥400 statuses flagged. Calibrated against the retained
+   passing results; nothing enters the budget facet.
+6. **Late page errors fail the run.** Errors raised between the in-window check and the
+   JS-heap window (trace end, memory dump, histogram probes) were previously dropped
+   silently; they now fail the run through the core-run-failure path (artifacts still
+   written, exit code 1), upholding the README/D-031 fail-on-browser-error contract.
+   Errors during the JS-heap window itself continue to invalidate only that metric
+   (D-047), unchanged.
+7. **Run-scoped server metrics.** The before/after server-metric snapshots now bracket
+   launch and full context close, so late requests can't bleed into the next run's delta.
+8. **Bounded variance values, full repeats required.** `relativeP95Range` is `null`
+   (with an explicit reason) instead of `Infinity` when the minimum repeat p95 is 0, so
+   JSON and report agree. Variance verdicts also require the full `SMOKE_REPEATS`
+   sample count: fewer completed repeats (e.g., after a captured core-run failure) is
+   `invalid`, never `measured` — a single run's zero range is not evidence of
+   stability.
+9. **Served tree must match the manifest.** Manifest validation fails on files present
+   in the served dist tree but not listed (allowlist: `build-manifest.json`), so the
+   artifact digest cannot silently stamp unlisted bytes.
+10. **Repeatability gate covers shipped bytes.** `verify:repeatable` now hashes the
+    actual `engine/dist` artifacts the assembler consumes and compares them against one
+    independent temp-dir rebuild (previously two throwaway builds whose digests were
+    never tied to the shipped artifact) — one fewer build per `pnpm check`, same-host
+    level-1 scope per D-020 unchanged. The dirty-tree diff digest is also pinned against
+    user git config (`--no-color --no-ext-diff --no-renames --diff-algorithm=myers`,
+    neutralized attribute and order files — an empty `diff.orderfile=` is fatal on
+    Windows git, so the documented `/dev/null` cancellation value is used; determinism
+    verified byte-identical under renames/orderfile/attributesfile config toggles in a
+    fixture repo).
+
+**Context:** Found by the 2026-07-15 tech-lead review (six-agent fan-out plus adversarial
+challenge, findings verified against code and the retained result JSONs). Items 1–3 were
+false-pass or lost-evidence paths inside the checked Harness v1 deliverable; the rest are
+declared-surface vs. implementation gaps. Engine-side robustness landed in the same
+change: `onmessageerror` handling, per-listener telemetry-publish isolation covering
+the initial subscribe delivery too (the D-029 surface is externally consumed), received
+frame samples re-frozen at the main-thread boundary (structured clone strips the
+worker-side freeze), an explicit failed-is-terminal M0 comment (M1 owns device-loss
+recovery — plan.md M1 item), and `engineStrict: true` in `pnpm-workspace.yaml` so the
+D-020 Node pin hard-fails on mismatch (a root `.npmrc` `engine-strict` flag is ignored
+by pnpm 11 — verified via `pnpm config get` before and after).
+
+**Consequences:** `pnpm check` green (134 unit tests, up from 106; lint clean; shipped
+engine bytes verified). No numeric threshold changed; the only informational signal
+promoted to blocking is late browser errors (item 6), which restores an already
+documented contract. The next dev-01 physical-console `smoke@1` run will emit schema
+v17 and is not directly comparable to v16 results on window placement (the frame window
+no longer slides), which is a correctness fix, not a regression.
+
+**Reopen if:** telemetry gains per-frame identity/timestamps (making index-based
+selection unnecessary), M1 promotes presentation gating (revisit what the frame window
+gates), or HTTP evidence proves stable enough to graduate from informational to a
+mandatory evidence check.
+
+## D-053: Repository license is Apache-2.0  (2026-07-15, accepted)
+
+**Decision:** The whole repository — code, harness, docs, and generated assets that land
+in-tree — is licensed **Apache License 2.0**. The root `LICENSE` file is authoritative;
+every `package.json` declares `"license": "Apache-2.0"`, and the README states it. New
+packages and the M2+ public game/site deliverables inherit this unless a future decision
+says otherwise.
+
+**Context:** The repo has shipped with an Apache-2.0 `LICENSE` since the initial
+scaffold, but no decision recorded the choice and no manifest declared it. The license
+choice is load-bearing for D-010's Cross-Origin Storage story: shared engine bundles are
+consumed (and at level 3, *not* rebuilt) by other publishers, so a permissive license
+with an explicit patent grant is the deliberate pick over MIT (no patent grant) or a
+copyleft license (would encumber consumers of shared artifacts). Confirmed by the
+project owner 2026-07-15.
+
+**Consequences:** `license` fields added to all five package manifests; README notes the
+license. Third-party code brought into the tree must be Apache-2.0-compatible.
+
+**Reopen if:** the COS sharing model or a publication decision requires different terms
+for some artifact class (e.g., game content vs. engine code).
+
+## D-052: TypeScript 7 (native compiler) is the pinned type toolchain  (2026-07-15, accepted)
+
+**Decision:** The repository pins TypeScript **7.0.2** — the natively-compiled compiler
+("tsgo" lineage) — as the type-checking and build toolchain, continuing D-014/D-020's
+strict-mode + project-references setup unchanged.
+
+**Context:** D-014 chose "TypeScript strict with project references" in the 5.x era; the
+7.x native compiler is a materially different toolchain component (different binary,
+different performance characteristics), and it was adopted during M0 without a log
+entry — exactly the silent-drift root rule 1 exists to prevent. Recording it
+retroactively: the pin has been in `package.json` through the completed Harness v1 work,
+`pnpm check` (build, lint, 106 unit tests, engine repeatability gate) is green on it
+(verified locally 2026-07-15), and no compiler-attributable issue has surfaced.
+
+**Consequences:** Version selection stays under D-020's exact-pin policy; this entry
+exists so the 5.x→7.x toolchain-generation jump is a recorded choice, not drift. The
+engine repeatability gate already covers the compiler's contribution to artifact bytes.
+
+**Reopen if:** tsc-native behavior ever affects build determinism or emits differently
+across hosts (relevant to D-020 level 2), or a project-references/strict-mode regression
+forces a downgrade.
+
+## D-051: Harness-v1 presentation and V8 gaps are informational, not M0 gates  (2026-07-14, accepted; result schema and mandatory metric-set advanced to v17/v4 by D-054)
 
 **Decision:** `smoke@1` mandatory metric-set v3 makes the authoritative compositor-presentation
 metric and V8 JavaScript code-cache lifecycle explicitly informational for Harness v1. Their
@@ -114,7 +278,7 @@ a future non-Chrome benchmark does not need to fabricate Chrome fields.
 all six core launches, but the walking skeleton's GPU-process dumps exposed no allocator covering
 the web-created WebGPU device's buffers or textures. A controlled single-launch detailed dump
 showed WebGPU shader-cache and shared-image plumbing, proving that the GPU process and active
-WebGPU workload were present, while still exposing no page-device resource total. Chromium's
+WebGPU workload were present, while still exposing no page-device resource total (RE-014). Chromium's
 current `gpu/dawn` memory-dump provider calls Dawn's estimated resource-size API for a
 `DawnSharedContext`; the web WebGPU decoder owns a separate set of wire-server devices and has no
 corresponding memory-dump provider. Even if `gpu/dawn` were present, Dawn's estimate is live
@@ -348,7 +512,7 @@ claim gets checked against that doc's "Not on this list" section first.
 multithreaded GC in wasm), and a non-experimental WebGPU backend. Any one alone does not reopen
 D-004; together they would.
 
-## D-045: Split harness verdicts into environment, evidence, and budget facets  (2026-07-14, accepted)
+## D-045: Split harness verdicts into environment, evidence, and budget facets  (2026-07-14, accepted; partially superseded by D-051 — the compositor-presentation and V8 lifecycle gaps are non-mandatory informational failures, no longer blocking Harness v1)
 
 **Decision:** Result schema v12 exposes three independently named facets while retaining the
 fail-closed aggregate `passed` bit:
@@ -380,7 +544,7 @@ same facet reasons as the JSON contract. Schema consumers must move from v11 to 
 evidence, advisory/non-reference results require a fourth comparison-eligibility facet, or a
 future result store replaces the aggregate bit with a richer state machine.
 
-## D-044: Keep RE-008 causal attribution open after an active user-timing-only timeout  (2026-07-14, accepted)
+## D-044: Keep RE-008 causal attribution open after an active user-timing-only timeout  (2026-07-14, accepted; partially superseded by D-051 where it requires V8/presentation metrics to block Harness v1)
 
 **Decision:** Do not attribute RE-008 to enabled GPU-process trace categories, payload volume,
 or a particular process failing to acknowledge `Tracing.end`. Keep the maintained core trace
@@ -424,7 +588,7 @@ cache-savings claim.
 **Reopen if:** an active-workload toggle separates completion from page/process activity, CDP
 exposes per-process trace-stop acknowledgement, or a pinned Chrome change removes the failure.
 
-## D-043: Measure worker startup and trace recording lifetime without inferring causes  (2026-07-14, accepted)
+## D-043: Measure worker startup and trace recording lifetime without inferring causes  (2026-07-14, accepted; partially superseded by D-051 where it requires V8/presentation metrics to block Harness v1)
 
 **Decision:** The isolated diagnostic advances to `v8-code-cache@5` and records the existing
 public `workerStartupToFirstFrameMs` telemetry on fresh, produce, and warm launches. The timer
@@ -477,7 +641,7 @@ active-page event/process/volume regime. Neither cache nor trace gates are weake
 can isolate its V8 share, or an active-page trace matrix separates event volume, process set, and
 category interaction.
 
-## D-042: Retain V8 compile-event duration as a diagnostic, not cache proof  (2026-07-14, accepted; startup and trace-lifetime diagnostics added by D-043)
+## D-042: Retain V8 compile-event duration as a diagnostic, not cache proof  (2026-07-14, accepted; startup and trace-lifetime diagnostics added by D-043; V8 checks made non-blocking by D-051)
 
 **Decision:** The isolated diagnostic advances to `v8-code-cache@4` and retains the finite,
 nonnegative `dur` from every attributed complete `v8.compile`/`v8.compileModule` event as
@@ -519,7 +683,7 @@ make a red cache gate green or replace authoritative cache outcome fields.
 span and cache consumption, Chrome documents stronger event semantics, or enough samples support
 a variance-aware duration budget.
 
-## D-041: Assert production phase boundaries and measure warm re-production  (2026-07-14, accepted; compile-duration diagnostics added by D-042)
+## D-041: Assert production phase boundaries and measure warm re-production  (2026-07-14, accepted; compile-duration diagnostics added by D-042; zero-count budget gates reclassified as diagnostic checks by D-051)
 
 **Decision:** The isolated diagnostic advances to `v8-code-cache@3` and evaluates
 URL-attributed code-cache production on every launch. Fresh launches must emit no production
@@ -562,7 +726,7 @@ failures retain their order and elapsed position without inferring that either c
 **Reopen if:** Blink changes its production lifecycle, repeated production proves compatible
 with a valid consumed cache, or temporal fields identify a better boundary than sequence start.
 
-## D-040: V8 code-cache diagnostics use the timestamp/produce/consume lifecycle  (2026-07-14, accepted; production phase assertions amended by D-041)
+## D-040: V8 code-cache diagnostics use the timestamp/produce/consume lifecycle  (2026-07-14, accepted; production phase assertions amended by D-041; V8 checks made non-blocking by D-051)
 
 **Decision:** The isolated V8 diagnostic advances to `v8-code-cache@2` and gives each of its
 three persistent-profile lineages three launches: `fresh` establishes Blink's hot-resource
@@ -600,7 +764,7 @@ platform findings rather than being hidden behind one aggregate invalid state.
 **Reopen if:** Blink changes the code-cache lifecycle, Chrome exposes an authoritative cache
 state that removes a launch, or the extra launch becomes a measured throughput problem.
 
-## D-039: Isolate mandatory V8 evidence from the core smoke trace  (2026-07-14, accepted; diagnostic lifecycle amended by D-040)
+## D-039: Isolate mandatory V8 evidence from the core smoke trace  (2026-07-14, accepted; diagnostic lifecycle amended by D-040; partially superseded by D-051 — an invalid V8 diagnostic result no longer fails the overall verdict)
 **Decision:** Harness v1 collects V8 code-cache evidence in the versioned
 `v8-code-cache@1` diagnostic rather than co-locating `v8` with the core `smoke@1`
 presentation/Dawn trace. The diagnostic owns three independent fresh/warm persistent-profile
@@ -645,7 +809,7 @@ core evidence set even while the mandatory V8 metric remains invalid and keeps H
 page-correlated cache result, combined tracing becomes reliable on the physical-console gate, or
 the additional launches become a measured throughput problem.
 
-## D-038: Narrow V8 tracing and measure trace completion as a first-class diagnostic  (2026-07-14, accepted; shared-trace placement superseded by D-039)
+## D-038: Narrow V8 tracing and measure trace completion as a first-class diagnostic  (2026-07-14, accepted; shared-trace placement superseded by D-039; V8 checks made non-blocking by D-051)
 **Decision:** `smoke@1` enables the `v8` trace category, not the broader
 `devtools.timeline` category, for D-037's `v8.compile`/`v8.compileModule` evidence. The
 shared presentation/Dawn/V8 trace records its exact categories, event and CDP data-chunk counts,
@@ -692,7 +856,7 @@ physical-console gate, `ReturnAsStream` or another collection mode proves more r
 separate-navigation design can preserve the required profile lineage and atomic measurement
 contract.
 
-## D-037: Streamed-module V8 cache traces are diagnostic, not cache-hit evidence  (2026-07-13, accepted; trace category amended by D-038, collection isolated by D-039, launch lifecycle corrected by D-040/D-041, duration retained by D-042)
+## D-037: Streamed-module V8 cache traces are diagnostic, not cache-hit evidence  (2026-07-13, accepted; trace category amended by D-038, collection isolated by D-039, launch lifecycle corrected by D-040/D-041, duration retained by D-042; zero-rejection budget reclassified as a diagnostic by D-051)
 **Decision:** `smoke@1` implements its V8 code-cache probe with URL-attributed
 `v8.compile`/`v8.compileModule` events from Chrome's `devtools.timeline` trace category.
 Every launch-required immutable JavaScript artifact in the validated build manifest must have at
@@ -824,7 +988,7 @@ completion bound; keeping the app target alive preserved the already-validated b
 subprocess-histogram option, Dawn trace/histogram semantics change, or another backend is
 promoted to a mandatory gate and needs its own verified mapping.
 
-## D-035: Viz presentation-feedback trace is diagnostic, not a presentation gate  (2026-07-13, accepted)
+## D-035: Viz presentation-feedback trace is diagnostic, not a presentation gate  (2026-07-13, accepted; partially superseded by D-051 — the authoritative presentation metric is informational and no longer fails Harness v1)
 **Decision:** `smoke@1` records GPU-process `Display::FrameDisplayed` intervals as the
 explicitly non-gating `vizPresentationFeedbackCallbackIntervalMs` diagnostic. It does not
 satisfy budgets.md's compositor-presentation metric, which remains mandatory and invalid.
@@ -1029,7 +1193,7 @@ the CPU/GPU split), or measurements show boundary overhead systematically negati
 wins for a whole subsystem class (record the placement rule that replaces the
 presumption).
 
-## D-031: Harness smoke gates an exact external Chrome for Testing pin  (2026-07-12, accepted)
+## D-031: Harness smoke gates an exact external Chrome for Testing pin  (2026-07-12, accepted; fixed-headed-viewport provision superseded by D-034; partially superseded by D-051 — the presentation metric no longer stays mandatory-and-blocking)
 **Decision:** The first Harness v1 scenario is versioned as `smoke@1` and is driven by
 exact-pinned `playwright-core`. Gate runs require `PARALLAX_CHROME_PATH` to name an
 externally archived Chrome for Testing executable whose full version matches
@@ -1100,7 +1264,7 @@ language; fix-pass agents are expected to push back rather than blindly apply fi
 **Reopen if:** the disposition/verdict categories prove too coarse in practice, or the
 verify pass consistently finds nothing and becomes ceremony worth dropping.
 
-## D-029: M0 in-app telemetry export surface  (2026-07-12, accepted)
+## D-029: M0 in-app telemetry export surface  (2026-07-12, accepted; recent-frame retention widened 120 → 240 by D-054, schema shape unchanged)
 **Decision:** Engine telemetry is exposed on the window as a non-writable
 `globalThis.__PARALLAX_TELEMETRY__` object with a versioned snapshot/subscribe contract.
 Schema v1 begins with render lifecycle state, initialization-to-first-frame time,
@@ -1121,7 +1285,7 @@ an implicit main-thread singleton.
 **Reopen if:** CDP bindings or another measured transport proves more reliable without
 making the harness depend on engine internals.
 
-## D-028: M0 local artifact and serving contract  (2026-07-12, accepted)
+## D-028: M0 local artifact and serving contract  (2026-07-12, accepted; metrics endpoint schema advanced to v2 — per-path-class counters — by D-054)
 **Decision:** The M0 build assembles a static `dist/` tree with an unhashed `index.html`
 and all executable modules under `dist/immutable/`. Engine and game
 package builds retain stable, independently loadable entry names; the assembler gives
@@ -1555,7 +1719,7 @@ origin model is decided by this entry, and the rest isn't needed for this explor
 deterministic builds prove impractical for some artifact class (log why — that's a
 finding about the sharing model's feasibility).
 
-## D-009: Install scale — 12 GB content, ≥100 GB architecture floor; gaming-rig baseline; 4K showcase tier  (2026-07-11, superseded by D-018)
+## D-009: Install scale — 12 GB content, ≥100 GB architecture floor; gaming-rig baseline; 4K showcase tier  (2026-07-11, hardware/tier provisions superseded by D-018; install-scale provisions remain in force per D-018)
 **Decision:** The two-district experiment ships ≤ 12 GB of content, but every lifecycle
 system (manifest, resumable install, integrity, update, streaming/eviction) must support
 **at least** 50–100 GB installs — a floor, not a ceiling; no architectural limit may

@@ -5,7 +5,8 @@ in a way that is novel and web-idiomatic — not a downported approximation. Thi
 tracks that coverage and holds the design constraints of build-later features that
 today's code must respect.
 
-**Status legend:** `active` (being built per plan.md) · `designed` (constraints locked,
+**Status legend:** `active` (on the committed mainline plan — see its Milestone column;
+not necessarily in progress yet, plan.md tracks that) · `designed` (constraints locked,
 build later) · `explored` (idea logged, no constraints yet)
 
 ## Matrix
@@ -13,14 +14,14 @@ build later) · `explored` (idea logged, no constraints yet)
 | Feature area | Web-novel angle | Status | Milestone |
 | --- | --- | --- | --- |
 | Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; hard district swaps | active | M1, M4 |
-| Install/update lifecycle | Multi-GB browser-native installer; asset-only updates that never invalidate code caches; full offline; clean confirmed uninstall with measured full-removal (D-024) | active | M2 |
+| Install/update lifecycle | Multi-GB browser-native installer; asset-only updates gated on warm-launch performance staying within budget, with cache-lifecycle evidence recorded best-effort (D-051); full offline; clean confirmed uninstall with measured full-removal (D-024) | active | M2 |
 | High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M5 |
 | Geometry representation & LOD | Open exploration (P-002): classic triangle LOD chains vs. meshlet-based virtualized geometry (nanite-like, GPU-driven culling in WGSL compute) vs. 3D Gaussian splats — likely a hybrid (e.g., splat environments/backdrops + triangle interactives). Splat rendering is compute-native and unusually web-friendly; virtualized geometry stress-tests WebGPU compute limits (finding-rich either way) | active | M1 spike, M5 commit |
 | Conversational NPCs | On-device LLM (Prompt API/Gemini Nano) — no server, works offline, downloaded at install. App-owned in-browser model (WebGPU inference in a worker, optionally persona-tuned) is an open challenger: P-007. Prompt context assembled by the engine/ai knowledge service (D-033), structured game-state tier first. Aspiration (game-design.md): NPCs shouldn't be blindingly distinguishable from real players | active | M0 spike (P-007 A), M3 |
 | Simulation & save | Deterministic fixed-timestep sim worker; input-command log doubles as replay + harness regression format | active | M3 |
 | Character & animation | Babylon animation system + AI-generated rigged characters from the assets pipeline | active | M3, M5 |
 | Physics | Scoped at M3: likely Havok WASM (Babylon-integrated) in/beside the sim worker; determinism requirement may force alternatives — see P-003 implications | explored | M3 |
-| Spatial audio | WebAudio worklets, HRTF panning, underground/surface acoustic contrast as a showcase | designed | M6 |
+| Spatial audio | WebAudio worklets, HRTF panning, underground/surface acoustic contrast as a showcase | explored (direction sketched; no binding constraints recorded yet — promote to `designed` only with a constraints section like Multiplayer's) | M6 |
 | VFX & weather | Full weather system is core creative direction (game-design.md): sun→overcast→storms, lightning, day/night, fire/area lighting; GPU-compute particles. Dynamic-lighting consequence binds the renderer from M1 (architecture.md) | designed (renderer constraint active from M1; full system M6) | M1 constraint, M6 build |
 | Photo mode | Cheap, high-value web flex: canvas capture, offline render-quality crank, shareable output | explored | M6 |
 | P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |

@@ -14,7 +14,7 @@ export interface QualityTierProfile {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 3;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 4;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@5";
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS = 3;
@@ -35,9 +35,12 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
     "Viz trace callbacks omit PresentationFeedback.kFailure, so scan-out success is unobservable",
   ),
   metric("verified gate environment identity", true, "implemented"),
+  metric("core measurement run completion", true, "implemented"),
+  metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
   metric("attributable GPU memory", false, "implemented"),
   metric("Dawn pipeline compile/cache evidence", true, "implemented"),
+  metric("HTTP serving evidence", false, "implemented"),
   metric("V8 code-cache evidence", false, "implemented"),
 ]);
 

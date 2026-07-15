@@ -50,6 +50,15 @@ Any claim that Showcase content is "120 Hz-capable" requires a dedicated
 present-interval p95 ≤ 8.34 ms — CPU/GPU diagnostics on a 60 Hz vsynced run cannot
 establish it.
 
+**Known M1 collision (recorded 2026-07-15):** the walking skeleton's render-worker
+callback-interval p95 on dev-01 measures 16.72–16.76 ms across passing Harness-v1 runs —
+*above* the ≤ 16.67 ms Showcase p95 gate. That signal is a non-gating heuristic under
+D-051 (it is callback spacing, not compositor presentation), but M1's mandated revisit of
+presentation gating will collide with a real number already over the documented
+threshold: either the measurement path must prove true present intervals differ from
+callback spacing, or the tolerance needs recalibrating through a decision — wiring the
+current threshold to the current signal as-is would fail.
+
 ## Memory (high-water marks during the standard flythrough, per tier)
 
 Showcase memory is calibrated to **dev-01 itself** (128 GB RAM, 16 GB VRAM — D-018):
@@ -195,7 +204,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  mandatory metric-set v3. V8 lifecycle checks are diagnostics, not budget checks.
+  the current mandatory metric-set (v4 as of D-054). V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the

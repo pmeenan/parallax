@@ -4,6 +4,7 @@ import {
   TELEMETRY_SCHEMA_VERSION,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
+import { SMOKE_EVIDENCE_METRIC_NAMES } from "../smoke-result.js";
 import {
   parseQualityTier,
   QUALITY_TIER_PROFILES,
@@ -54,7 +55,17 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "all-worker JS heap")?.mandatoryForHarnessV1,
     ).toBe(true);
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(3);
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "render-worker callback-pacing variance"),
+    ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "core measurement run completion"),
+    ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_METRICS.find((metric) => metric.name === "HTTP serving evidence")).toMatchObject({
+      mandatoryForHarnessV1: false,
+      probe: "implemented",
+    });
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(4);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );
@@ -70,6 +81,14 @@ describe("smoke@1 contract", () => {
       SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
         ?.invalidReason,
     ).toContain("PresentationFeedback.kFailure");
+  });
+
+  it("registers every evidence-check metric name the smoke result adapters use", () => {
+    const registered = new Set(SMOKE_METRICS.map((metric) => metric.name));
+    expect(SMOKE_EVIDENCE_METRIC_NAMES.length).toBeGreaterThan(0);
+    for (const name of SMOKE_EVIDENCE_METRIC_NAMES) {
+      expect(registered).toContain(name);
+    }
   });
 
   it("owns exhaustive tier profiles", () => {

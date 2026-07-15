@@ -162,7 +162,8 @@ COS APIs exist):
 ## RE-013: Playwright cannot publicly address a flat child-target CDP session
 
 - **Date / versions:** checked 2026-07-14 against CDP tip-of-tree, pinned Chrome for Testing
-  150.0.7871.115, and local `playwright-core@1.61.1` declarations.
+  150.0.7871.115, and local `playwright-core@1.61.1` declarations. OS/GPU: n/a
+  (protocol/library declarations only — no Dawn/display dependence).
 - **Layer:** CDP Target domain / Playwright transport.
 - **Status:** open; the all-realm heap collector uses the deprecated non-flat nested-session path
   and fails closed if it stops working (D-047).
@@ -361,206 +362,6 @@ COS APIs exist):
   serialize it on the existing URL-attributed trace event, or expose equivalent per-resource
   code-cache consume/reject evidence through a stable CDP or performance API.
 
-## RE-001: Render-worker animation callbacks hold near 32 Hz in automated 4K smoke run
-
-- **Date / Chrome version:** 2026-07-12; Chrome for Testing Stable 150.0.7871.115
-  (revision 1639810); Windows 11 10.0.26200; NVIDIA RTX 4080 Super, driver
-  32.0.15.9649; D3D12; dev-01.
-- **Layer:** scheduler / Babylon / WebGPU-Dawn (attribution open).
-- **Status:** resolved for the harness on 2026-07-13; Chrome-internals display probing
-  must finish before the full warmup.
-- **What we expected / What happened:** Across three fresh and three warm headed-profile
-  runs in a native-fullscreen browser on the dev-01 3840×2160 display, worker
-  `requestAnimationFrame` callback
-  spacing p50 was 31.21-31.28 ms and p95 was 31.57-31.71 ms. These are callback
-  timestamps, not compositor presentation timestamps, so they do not establish a 32 Hz
-  presentation rate and are not compared with the Showcase frame budget. The
-  worker's CPU render/submit-duration p95 was 0.69-0.95 ms, main-thread long tasks over
-  50 ms were zero, and relative p95 range within fresh and warm groups was below 0.15%.
-  Those diagnostics rule out noisy repeats and sustained JS submission cost, but do not
-  distinguish Babylon, GPU execution/presentation, worker rAF pacing, or automation.
-- **Repro:** the original harness opened and polled `chrome://gpu` after its 10-second
-  warmup, briefly backgrounding the fullscreen app, then allowed only two animation frames
-  before beginning measurement. In the corrected runner, Chrome-internals probing completes
-  first and the app receives the full warmup afterward. Run `pnpm harness:smoke` with the
-  pinned CfT and dev-01 identity from `README.md`; the JSON retains every distribution.
-- **Resolution evidence:** after that ordering fix, a physical-console 4K/60 run on the
-  same pinned browser produced worker-callback p95 values of 16.775-16.830 ms across all
-  three fresh/warm pairs, with zero main-thread long tasks and CPU render/submit p95 of
-  0.47-0.57 ms. The prior ~32 Hz result was harness-induced resume/warmup contamination,
-  not evidence of a 32 Hz compositor path.
-- **Impact on Parallax:** worker callback pacing no longer blocks the Showcase smoke run.
-  True compositor presentation timing remains a separate incomplete Harness v1 metric;
-  no budget was changed.
-- **Proposed improvement:** browser diagnostics that require opening an internal page should
-  disclose their foreground/scheduling impact, or CDP should expose the same display data
-  without tab activation. Keep privileged diagnostics outside benchmark warmup and
-  measurement windows.
-
-## RE-002: RDP makes Chrome display timing disagree with Windows' physical mode
-
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
-  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver
-  32.0.15.9649; dev-01 over RDP.
-- **Layer:** display/compositor observability / automation environment.
-- **Status:** open; remote sessions are non-gating per D-034.
-- **What we expected / What happened:** Windows `Win32_VideoController` reported the
-  physical NVIDIA controller at 3840×2160 and 59 Hz, but Chrome GPU Internals' accessibility
-  tree reported three displays at 32 Hz with remote-session bounds/scaling. Windows also
-  exposed an active `Microsoft Remote Display Adapter`; a native-fullscreen browser reported
-  a 6017×3386 device-pixel screen/render surface rather than 3840×2160. A declared 4K@60
-  label or emulated viewport would therefore misidentify the presentation environment and
-  could falsely contextualize the near-32 Hz callback pacing in RE-001.
-- **Repro:** connect to dev-01 over RDP; launch pinned CfT headed; read
-  `SystemInfo.getInfo`, the `chrome://gpu` accessibility tree, and
-  `Win32_VideoController`. The versioned `smoke@1` environment probe is the maintained
-  reproduction: it records the observations and marks remote/indirect-display runs invalid.
-- **Impact on Parallax:** reference-machine gates cannot run through the convenient RDP
-  workflow. The developer must switch to the physical console before a gating smoke run,
-  and automation must distinguish diagnostic remote runs from budget evidence.
-- **Proposed improvement:** expose the active presentation display, refresh behavior, and
-  remote/virtual-display status through a stable CDP or web diagnostics surface tied to the
-  browser window being measured. Today the harness must combine OS-specific probes with
-  browser evidence and reject the ambiguous case.
-
-## RE-003: Native fullscreen WebGPU surface is one pixel larger than the 4K display mode
-
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
-  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
-  dev-01 physical console at 3840×2160/59 Hz.
-- **Layer:** CSS/device-pixel conversion / fullscreen canvas sizing.
-- **Status:** open; measured surface is retained and the registered ±2-pixel display
-  tolerance is applied per D-034.
-- **What we expected / What happened:** In six native-fullscreen fresh/warm launches,
-  `ResizeObserver.devicePixelContentBoxSize` consistently reported the full-window canvas
-  as 3841×2161 although Windows reported a 3840×2160 display. Chrome exposed fractional
-  `devicePixelRatio` 1.3625000715 with a 2819×1586 CSS-pixel screen, whose products require
-  rounding at the physical-pixel boundary.
-- **Repro:** on dev-01's physical console, launch pinned CfT with `--start-fullscreen` and
-  no Playwright viewport emulation; observe a fullscreen canvas using
-  `ResizeObserver({box: "device-pixel-content-box"})`. `smoke@1` records the value for every
-  measurement browser and fails outside the descriptor's ±2-pixel tolerance.
-- **Impact on Parallax:** an exact-equality 4K render-surface gate rejects the real native
-  4K environment, while accepting the observed one-pixel conversion preserves materially
-  identical workload and keeps the discrepancy explicit in every result.
-- **Proposed improvement:** expose a deterministic way for fullscreen content to request
-  the display's exact native pixel extent, or document the rounding contract applications
-  should use when CSS dimensions and fractional device scale do not multiply to the mode.
-
-## RE-004: CDP cannot identify the selected WebGPU backend
-
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
-  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super; dev-01.
-- **Layer:** WebGPU / CDP observability.
-- **Status:** open; the gate uses an isolated developer-mode identity browser per D-034.
-- **What we expected / What happened:** `SystemInfo.getInfo` identifies the physical GPU
-  and driver but does not identify the backend selected for the page's WebGPU adapter.
-  Standard `GPUAdapterInfo` likewise omitted backend and driver. A separate Chrome launch
-  with `--enable-webgpu-developer-features` exposed `GPUAdapterInfo.backend` as D3D12 and
-  the matching driver, but that switch is inappropriate for the measured browser because
-  it changes the runtime configuration under test.
-- **Repro:** launch pinned CfT normally and compare `SystemInfo.getInfo` plus
-  `navigator.gpu.requestAdapter().info` with a second launch using
-  `--enable-webgpu-developer-features`. The versioned `smoke@1` identity probe performs
-  this comparison against the registered machine descriptor.
-- **Impact on Parallax:** a gate cannot prove the selected WebGPU backend from stable CDP
-  alone. The harness needs a second short-lived browser, increasing probe cost and leaving
-  backend identity dependent on a non-standard developer feature.
-- **Proposed improvement:** expose the selected adapter's backend and driver through a
-  stable, page-correlated CDP/WebGPU diagnostics API without changing WebGPU behavior.
-
-## RE-005: Branded Stable Viz-feedback pacing diverges from the current CfT callback baseline
-
-- **Date / Chrome version:** 2026-07-13; branded Chrome Stable 150.0.7871.102;
-  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
-  dev-01 physical console at 3840×2160/59 Hz.
-- **Layer:** scheduler / compositor / release-channel parity (attribution open).
-- **Status:** open; compare the new presentation probe on exact-pinned CfT
-  150.0.7871.115, then run the D-019 branded-Stable parity smoke on a promoted matching
-  release.
-- **What we expected / What happened:** The D-035 diagnostic recorded one GPU-process
-  Viz presentation-feedback callback track during a 120-worker-callback window. It saw
-  107 callbacks over 3.323 seconds, with p50 31.225 ms and p95 31.593 ms. The 120 callback
-  samples immediately before tracing were already at p50 31.180 ms and p95 31.615 ms, so
-  enabling the dedicated presentation trace category did not introduce the ~32 Hz pacing.
-  In contrast, the current CfT 150.0.7871.115 callback-only baseline in RE-001 holds near
-  60 Hz after the harness warmup-order fix. Because the browser patch/build differs and
-  the CfT baseline lacks presentation timestamps, this is divergence evidence, not yet an
-  attribution to branded Chrome or successful display presentation (RE-006).
-- **Repro:** Build and serve the walking skeleton, launch branded Stable with a fresh
-  persistent profile and native fullscreen, allow the full 10-second warmup, then trace
-  only `disabled-by-default-display.framedisplayed` and `blink.user_timing`. Bound 120
-  worker callbacks with user-timing markers and aggregate the intervening GPU-process
-  `Display::FrameDisplayed` timestamps. The maintained implementation is
-  `harness/src/presentation-trace.ts` plus `smoke@1` orchestration.
-- **Impact on Parallax:** The callback diagnostic is locally validated but cannot implement
-  the compositor metric because Chrome omits feedback success/failure (RE-006). A
-  branded/CfT difference at the same promoted version would become a browser parity
-  finding.
-- **Proposed improvement:** expose page-correlated presentation timestamps through a
-  stable CDP or web performance API, and make Chrome/CfT variant differences machine-
-  readable so automation can attribute pacing changes without relying on build branding.
-
-## RE-006: Viz trace omits whether a presentation-feedback callback represents failure
-
-- **Date / Chrome version:** source checked 2026-07-13 at Chromium main; locally observed
-  event shape on branded Chrome Stable 150.0.7871.102, Windows 11, NVIDIA RTX 4080 Super,
-  D3D12.
-- **Layer:** WebGPU/Viz compositor observability.
-- **Status:** open; Harness-v1 records the missing authoritative metric as a non-blocking
-  informational failure per D-051; M1 must revisit it before player-visible frame-budget claims.
-- **What we expected / What happened:** `Display::FrameDisplayed` is emitted at Viz's
-  sanitized presentation-feedback timestamp, but carries no success/failure field.
-  Chromium converts invalid feedback to `PresentationFeedback::Failure()`, timestamped at
-  failure time with `kFailure`; `Display::DidReceivePresentationFeedback` then emits the
-  same trace event without serializing the flag. A callback-time distribution can therefore
-  look regular even if one or more buffers were never scanned out.
-- **Repro:** inspect Chromium
-  `components/viz/service/display/display.cc` (`SanitizePresentationFeedback` and
-  `DidReceivePresentationFeedback`) with `ui/gfx/presentation_feedback.h` (`Failure()` and
-  `kFailure`), then capture `disabled-by-default-display.framedisplayed`. The maintained
-  `smoke@1` collector records the resulting timestamp cadence as the explicitly non-gating
-  `vizPresentationFeedbackCallbackIntervalMs` diagnostic.
-- **Impact on Parallax:** Chrome's available trace cannot satisfy budgets.md's definition
-  of player-visible present-to-present time. Harness v1 keeps the metric visibly `invalid` but
-  non-blocking; worker rAF and feedback-callback cadence remain diagnostics only and are not a
-  passing presentation-budget result.
-- **Proposed improvement:** include presentation flags (at minimum `kFailure`, ideally
-  `kVSync`/`kHWClock`/`kHWCompletion`) and a page/frame-sink identifier in a stable CDP or
-  Perfetto event, or expose successful presentation timing through a web performance API.
-
-## RE-007: CDP omits GPU-process Dawn histograms until Chrome Internals imports subprocesses
-
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
-  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
-  dev-01 remote diagnostic (non-gating).
-- **Layer:** CDP / Chrome metrics / WebGPU-Dawn observability.
-- **Status:** open; Harness v1 synchronizes through `chrome://histograms/` after the
-  measurement window (D-036).
-- **What we expected / What happened:** Dawn records exact shader and D3D12 PSO cache
-  hit/miss UMA in the GPU process, but `Browser.getHistograms` initially returned no
-  `GPU.WebGPU` entries. Loading Histograms Internals with its subprocess checkbox enabled
-  imports shared-memory child-process histograms into the browser statistics recorder;
-  the same CDP query then returned `CompileShader` and `CreateGraphicsPipelineState`
-  hit/miss counts and durations. CDP offers no direct include-subprocesses parameter.
-- **Repro:** launch pinned Chrome with a fresh profile, run the walking skeleton, and call
-  `Browser.getHistograms({query: "GPU.WebGPU.", delta: false})` (empty). Then open
-  `chrome://histograms/#GPU.WebGPU.`, refresh with `#subprocess_checkbox` checked, and
-  repeat the CDP call. The maintained reproduction is the D-036 probe in
-  `harness/src/smoke-run.ts`; the six-launch diagnostic consistently observed fresh
-  6-shader/3-PSO misses and paired warm 6/3 hits.
-- **Impact on Parallax:** exact Dawn cache evidence is obtainable, but only through a
-  privileged Chrome-specific page that creates another tab and synchronously coordinates
-  subprocess metrics. The first synchronization runs after the gameplay marker while tracing
-  remains active; a second stable synchronization after trace completion must match it, so
-  deferred Dawn work cannot fall between the two evidence surfaces. The internals tab cannot
-  contaminate measured focus or pacing and unrelated GPU work is excluded by the Dawn-specific
-  trace/histogram filter, but the mechanism remains unsuitable as a browser-neutral telemetry
-  contract.
-- **Proposed improvement:** let CDP request subprocess histogram synchronization directly,
-  or expose page/origin-correlated WebGPU pipeline-cache hit/miss events through tracing or
-  a stable diagnostics API.
-
 ## RE-008: Browser trace completion becomes intermittently unbounded across category sets
 
 - **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
@@ -654,3 +455,233 @@ COS APIs exist):
   renderer teardown and trace-category combination, or expose which traced process prevents
   `Tracing.tracingComplete` after `Tracing.end` has acknowledged so harnesses can attribute and
   bound the wait safely.
+
+## RE-007: CDP omits GPU-process Dawn histograms until Chrome Internals imports subprocesses
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 remote diagnostic (non-gating).
+- **Layer:** CDP / Chrome metrics / WebGPU-Dawn observability.
+- **Status:** open; Harness v1 synchronizes through `chrome://histograms/` after the
+  measurement window (D-036).
+- **What we expected / What happened:** Dawn records exact shader and D3D12 PSO cache
+  hit/miss UMA in the GPU process, but `Browser.getHistograms` initially returned no
+  `GPU.WebGPU` entries. Loading Histograms Internals with its subprocess checkbox enabled
+  imports shared-memory child-process histograms into the browser statistics recorder;
+  the same CDP query then returned `CompileShader` and `CreateGraphicsPipelineState`
+  hit/miss counts and durations. CDP offers no direct include-subprocesses parameter.
+- **Repro:** launch pinned Chrome with a fresh profile, run the walking skeleton, and call
+  `Browser.getHistograms({query: "GPU.WebGPU.", delta: false})` (empty). Then open
+  `chrome://histograms/#GPU.WebGPU.`, refresh with `#subprocess_checkbox` checked, and
+  repeat the CDP call. The maintained reproduction is the D-036 probe in
+  `harness/src/smoke-run.ts`; the six-launch diagnostic consistently observed fresh
+  6-shader/3-PSO misses and paired warm 6/3 hits.
+- **Impact on Parallax:** exact Dawn cache evidence is obtainable, but only through a
+  privileged Chrome-specific page that creates another tab and synchronously coordinates
+  subprocess metrics. The first synchronization runs after the gameplay marker while tracing
+  remains active; a second stable synchronization after trace completion must match it, so
+  deferred Dawn work cannot fall between the two evidence surfaces. The internals tab cannot
+  contaminate measured focus or pacing and unrelated GPU work is excluded by the Dawn-specific
+  trace/histogram filter, but the mechanism remains unsuitable as a browser-neutral telemetry
+  contract.
+- **Proposed improvement:** let CDP request subprocess histogram synchronization directly,
+  or expose page/origin-correlated WebGPU pipeline-cache hit/miss events through tracing or
+  a stable diagnostics API.
+
+## RE-006: Viz trace omits whether a presentation-feedback callback represents failure
+
+- **Date / Chrome version:** source checked 2026-07-13 at Chromium main; locally observed
+  event shape on branded Chrome Stable 150.0.7871.102, Windows 11, NVIDIA RTX 4080 Super,
+  D3D12.
+- **Layer:** WebGPU/Viz compositor observability.
+- **Status:** open; Harness-v1 records the missing authoritative metric as a non-blocking
+  informational failure per D-051; M1 must revisit it before player-visible frame-budget claims.
+- **What we expected / What happened:** `Display::FrameDisplayed` is emitted at Viz's
+  sanitized presentation-feedback timestamp, but carries no success/failure field.
+  Chromium converts invalid feedback to `PresentationFeedback::Failure()`, timestamped at
+  failure time with `kFailure`; `Display::DidReceivePresentationFeedback` then emits the
+  same trace event without serializing the flag. A callback-time distribution can therefore
+  look regular even if one or more buffers were never scanned out.
+- **Repro:** inspect Chromium
+  `components/viz/service/display/display.cc` (`SanitizePresentationFeedback` and
+  `DidReceivePresentationFeedback`) with `ui/gfx/presentation_feedback.h` (`Failure()` and
+  `kFailure`), then capture `disabled-by-default-display.framedisplayed`. The maintained
+  `smoke@1` collector records the resulting timestamp cadence as the explicitly non-gating
+  `vizPresentationFeedbackCallbackIntervalMs` diagnostic.
+- **Impact on Parallax:** Chrome's available trace cannot satisfy budgets.md's definition
+  of player-visible present-to-present time. Harness v1 keeps the metric visibly `invalid` but
+  non-blocking; worker rAF and feedback-callback cadence remain diagnostics only and are not a
+  passing presentation-budget result.
+- **Proposed improvement:** include presentation flags (at minimum `kFailure`, ideally
+  `kVSync`/`kHWClock`/`kHWCompletion`) and a page/frame-sink identifier in a stable CDP or
+  Perfetto event, or expose successful presentation timing through a web performance API.
+
+## RE-005: Branded Stable Viz-feedback pacing diverges from the current CfT callback baseline
+
+- **Date / Chrome version:** 2026-07-13; branded Chrome Stable 150.0.7871.102;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 physical console at 3840×2160/59 Hz.
+- **Layer:** scheduler / compositor / release-channel parity (attribution open).
+- **Status:** open; compare the new presentation probe on exact-pinned CfT
+  150.0.7871.115, then run the D-019 branded-Stable parity smoke on a promoted matching
+  release.
+- **What we expected / What happened:** The D-035 diagnostic recorded one GPU-process
+  Viz presentation-feedback callback track during a 120-worker-callback window. It saw
+  107 callbacks over 3.323 seconds, with p50 31.225 ms and p95 31.593 ms. The 120 callback
+  samples immediately before tracing were already at p50 31.180 ms and p95 31.615 ms, so
+  enabling the dedicated presentation trace category did not introduce the ~32 Hz pacing.
+  In contrast, the current CfT 150.0.7871.115 callback-only baseline in RE-001 holds near
+  60 Hz after the harness warmup-order fix. Because the browser patch/build differs and
+  the CfT baseline lacks presentation timestamps, this is divergence evidence, not yet an
+  attribution to branded Chrome or successful display presentation (RE-006).
+- **Repro:** Build and serve the walking skeleton, launch branded Stable with a fresh
+  persistent profile and native fullscreen, allow the full 10-second warmup, then trace
+  only `disabled-by-default-display.framedisplayed` and `blink.user_timing`. Bound 120
+  worker callbacks with user-timing markers and aggregate the intervening GPU-process
+  `Display::FrameDisplayed` timestamps. The maintained implementation is
+  `harness/src/presentation-trace.ts` plus `smoke@1` orchestration.
+- **Impact on Parallax:** The callback diagnostic is locally validated but cannot implement
+  the compositor metric because Chrome omits feedback success/failure (RE-006). A
+  branded/CfT difference at the same promoted version would become a browser parity
+  finding.
+- **Proposed improvement:** expose page-correlated presentation timestamps through a
+  stable CDP or web performance API, and make Chrome/CfT variant differences machine-
+  readable so automation can attribute pacing changes without relying on build branding.
+
+## RE-004: CDP cannot identify the selected WebGPU backend
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super; dev-01.
+- **Layer:** WebGPU / CDP observability.
+- **Status:** open; the gate uses an isolated developer-mode identity browser per D-034.
+- **What we expected / What happened:** `SystemInfo.getInfo` identifies the physical GPU
+  and driver but does not identify the backend selected for the page's WebGPU adapter.
+  Standard `GPUAdapterInfo` likewise omitted backend and driver. A separate Chrome launch
+  with `--enable-webgpu-developer-features` exposed `GPUAdapterInfo.backend` as D3D12 and
+  the matching driver, but that switch is inappropriate for the measured browser because
+  it changes the runtime configuration under test.
+- **Repro:** launch pinned CfT normally and compare `SystemInfo.getInfo` plus
+  `navigator.gpu.requestAdapter().info` with a second launch using
+  `--enable-webgpu-developer-features`. The versioned `smoke@1` identity probe performs
+  this comparison against the registered machine descriptor.
+- **Impact on Parallax:** a gate cannot prove the selected WebGPU backend from stable CDP
+  alone. The harness needs a second short-lived browser, increasing probe cost and leaving
+  backend identity dependent on a non-standard developer feature.
+- **Proposed improvement:** expose the selected adapter's backend and driver through a
+  stable, page-correlated CDP/WebGPU diagnostics API without changing WebGPU behavior.
+
+## RE-003: Native fullscreen WebGPU surface is one pixel larger than the 4K display mode
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+  Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
+  dev-01 physical console at 3840×2160/59 Hz.
+- **Layer:** CSS/device-pixel conversion / fullscreen canvas sizing.
+- **Status:** open; measured surface is retained and the registered ±2-pixel display
+  tolerance is applied per D-034.
+- **What we expected / What happened:** In six native-fullscreen fresh/warm launches,
+  `ResizeObserver.devicePixelContentBoxSize` consistently reported the full-window canvas
+  as 3841×2161 although Windows reported a 3840×2160 display. Chrome exposed fractional
+  `devicePixelRatio` 1.3625000715 with a 2819×1586 CSS-pixel screen, whose products require
+  rounding at the physical-pixel boundary.
+- **Repro:** on dev-01's physical console, launch pinned CfT with `--start-fullscreen` and
+  no Playwright viewport emulation; observe a fullscreen canvas using
+  `ResizeObserver({box: "device-pixel-content-box"})`. `smoke@1` records the value for every
+  measurement browser and fails outside the descriptor's ±2-pixel tolerance.
+- **Impact on Parallax:** an exact-equality 4K render-surface gate rejects the real native
+  4K environment, while accepting the observed one-pixel conversion preserves materially
+  identical workload and keeps the discrepancy explicit in every result.
+- **Proposed improvement:** expose a deterministic way for fullscreen content to request
+  the display's exact native pixel extent, or document the rounding contract applications
+  should use when CSS dimensions and fractional device scale do not multiply to the mode.
+
+## RE-002: RDP makes Chrome display timing disagree with Windows' physical mode
+
+- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver
+  32.0.15.9649; dev-01 over RDP.
+- **Layer:** display/compositor observability / automation environment.
+- **Status:** open; remote sessions are non-gating per D-034.
+- **What we expected / What happened:** Windows `Win32_VideoController` reported the
+  physical NVIDIA controller at 3840×2160 and 59 Hz, but Chrome GPU Internals' accessibility
+  tree reported three displays at 32 Hz with remote-session bounds/scaling. Windows also
+  exposed an active `Microsoft Remote Display Adapter`; a native-fullscreen browser reported
+  a 6017×3386 device-pixel screen/render surface rather than 3840×2160. A declared 4K@60
+  label or emulated viewport would therefore misidentify the presentation environment and
+  could falsely contextualize the near-32 Hz callback pacing in RE-001. (Confirmed
+  2026-07-15: this is exactly what happened — RE-001's 32 Hz pacing was RDP-session
+  display timing; see RE-001's resolution evidence.)
+- **Repro:** connect to dev-01 over RDP; launch pinned CfT headed; read
+  `SystemInfo.getInfo`, the `chrome://gpu` accessibility tree, and
+  `Win32_VideoController`. The versioned `smoke@1` environment probe is the maintained
+  reproduction: it records the observations and marks remote/indirect-display runs invalid.
+- **Impact on Parallax:** reference-machine gates cannot run through the convenient RDP
+  workflow. The developer must switch to the physical console before a gating smoke run,
+  and automation must distinguish diagnostic remote runs from budget evidence.
+- **Proposed improvement:** expose the active presentation display, refresh behavior, and
+  remote/virtual-display status through a stable CDP or web diagnostics surface tied to the
+  browser window being measured. Today the harness must combine OS-specific probes with
+  browser evidence and reject the ambiguous case.
+
+## RE-001: Render-worker animation callbacks hold near 32 Hz in automated 4K smoke run
+
+- **Date / Chrome version:** 2026-07-12; Chrome for Testing Stable 150.0.7871.115
+  (revision 1639810); Windows 11 10.0.26200; NVIDIA RTX 4080 Super, driver
+  32.0.15.9649; D3D12; dev-01.
+- **Layer:** scheduler / Babylon / WebGPU-Dawn (attribution open).
+- **Status:** our-bug (measurement environment: the runs were driven over RDP, and the
+  ~32 Hz pacing was the remote session's 32 Hz display honestly reflected by worker rAF
+  spacing — confirmed 2026-07-15 by cross-referencing the retained result JSONs; see
+  resolution evidence. This is RE-002's mechanism and the origin of the
+  physical-console rule, D-034/harness rule 9).
+- **What we expected / What happened:** Across three fresh and three warm headed-profile
+  runs in a native-fullscreen browser on the dev-01 3840×2160 display, worker
+  `requestAnimationFrame` callback
+  spacing p50 was 31.21-31.28 ms and p95 was 31.57-31.71 ms. These are callback
+  timestamps, not compositor presentation timestamps, so they do not establish a 32 Hz
+  presentation rate and are not compared with the Showcase frame budget. The
+  worker's CPU render/submit-duration p95 was 0.69-0.95 ms, main-thread long tasks over
+  50 ms were zero, and relative p95 range within fresh and warm groups was below 0.15%.
+  Those diagnostics rule out noisy repeats and sustained JS submission cost, but do not
+  distinguish Babylon, GPU execution/presentation, worker rAF pacing, or automation.
+- **Repro:** the original harness opened and polled `chrome://gpu` after its 10-second
+  warmup, briefly backgrounding the fullscreen app, then allowed only two animation frames
+  before beginning measurement. In the corrected runner, Chrome-internals probing completes
+  first and the app receives the full warmup afterward. Run `pnpm harness:smoke` with the
+  pinned CfT and dev-01 identity from `README.md`; the JSON retains every distribution.
+- **Resolution evidence (settled 2026-07-15; supersedes the earlier "harness-induced"
+  and interim "driver-update" attributions):** the cause was the **RDP session**, per
+  the developer's recollection and confirmed against the retained result JSONs, which
+  correlate perfectly across every run lineage:
+  - Every ~31.6 ms run — on **both** drivers (32.0.15.9649 and 32.0.16.1074), across
+    result schemas 1-13 — carries the remote-session display fingerprint wherever the
+    environment fields exist: browser refresh probe `[32]` Hz, screen 2760×1553 at
+    devicePixelRatio 2.18 (RDP-scaled 4K). New-driver RDP runs from 2026-07-14 still
+    pace at p95 ≈ 31.6 ms, which eliminates the driver hypothesis directly.
+  - Every ~16.8 ms run carries the physical-console fingerprint: refresh `[60]`,
+    screen 2819×1586 at dpr 1.363 (the physical 3840×2160 display under Windows
+    scaling). The first such runs (2026-07-13T16, driver 32.0.16.1074) are the original
+    "resolution" — which coincided with moving to the physical console, not with the
+    warmup-ordering fix or the driver update that landed in the same interval.
+  - A **falsification run (2026-07-15, physical console, CfT 150.0.7871.115, driver
+    32.0.16.1074, Windows 26200.8875)** temporarily restored the old contaminated
+    ordering (chrome://gpu probed after the full warmup): all six runs paced at native
+    60 Hz (p50 16.665-16.670 ms, p95 16.755-16.830 ms), ruling out warmup ordering as
+    a cause of the 32 Hz pacing. The probe did inject a transient hitch at measurement
+    start (max single frame 166.6-216.6 ms per run), so keeping privileged diagnostics
+    outside the warmup/measurement window remains correct — it just wasn't the cause
+    here. Artifact: `smoke-1-dfa4afe02c16-…-2026-07-15T13-28-39` (schema v17,
+    non-gating; its environment facet failed on OS-build drift 26200.8655 → 26200.8875,
+    since refreshed in `harness/machines/dev-01.json`).
+
+  The original entry's "native-fullscreen browser on the dev-01 3840×2160 display"
+  framing was itself the error RE-002 later exposed: an RDP session can present as a
+  fullscreen 4K surface while presenting at the remote session's 32 Hz. The lasting
+  fixes are environmental, not code: remote/indirect-display sessions invalidate the
+  environment identity (D-034, harness rule 9), which the harness has enforced since.
+- **Impact on Parallax:** worker callback pacing no longer blocks the Showcase smoke run.
+  True compositor presentation timing remains a separate incomplete Harness v1 metric;
+  no budget was changed.
+- **Proposed improvement:** browser diagnostics that require opening an internal page should
+  disclose their foreground/scheduling impact, or CDP should expose the same display data
+  without tab activation. Keep privileged diagnostics outside benchmark warmup and
+  measurement windows.

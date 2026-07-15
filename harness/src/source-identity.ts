@@ -36,10 +36,42 @@ export async function readSourceIdentity(repositoryRoot: string): Promise<Source
 }
 
 async function hashGitDiff(repositoryRoot: string, digest: Hash): Promise<number> {
-  const child = spawn("git", ["diff", "--binary", "HEAD", "--", "."], {
-    cwd: repositoryRoot,
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  // The digest hashes raw diff bytes, so every knob that alters diff rendering is
+  // pinned explicitly — otherwise per-user git config (colors, prefixes, quoting,
+  // diff algorithm, context sizes, external diff drivers, rename detection, order
+  // files, attribute files) would change the digest for identical trees. An empty
+  // core.attributesfile means "no file configured", but an empty diff.orderfile is a
+  // fatal error (git tries to read ""), so the orderfile is cancelled with /dev/null —
+  // the documented cancellation value, which Git for Windows maps internally.
+  const child = spawn(
+    "git",
+    [
+      "-c",
+      "core.attributesfile=",
+      "-c",
+      "core.quotepath=on",
+      "-c",
+      "diff.orderfile=/dev/null",
+      "diff",
+      "--no-color",
+      "--no-ext-diff",
+      "--no-textconv",
+      "--no-renames",
+      "--diff-algorithm=myers",
+      "--src-prefix=a/",
+      "--dst-prefix=b/",
+      "--unified=3",
+      "--inter-hunk-context=0",
+      "--binary",
+      "HEAD",
+      "--",
+      ".",
+    ],
+    {
+      cwd: repositoryRoot,
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   const stderr: Buffer[] = [];
   child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
   const completion = new Promise<number>((resolveExit, rejectExit) => {

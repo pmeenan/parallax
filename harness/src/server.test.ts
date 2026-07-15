@@ -107,7 +107,7 @@ describe("local build server", () => {
       const metricsResponse = await fetch(`${baseUrl}/__parallax/metrics`);
       const metrics = (await metricsResponse.json()) as LocalServerMetrics;
       expect(metricsResponse.status).toBe(200);
-      expect(metrics.schemaVersion).toBe(1);
+      expect(metrics.schemaVersion).toBe(2);
       expect(metrics.requests).toBeGreaterThan(0);
       expect(metrics.bytesServed).toBeGreaterThan(0);
       expect(metrics.metadataCacheHits).toBeGreaterThan(0);
@@ -117,6 +117,24 @@ describe("local build server", () => {
       expect(metrics.statuses["404"]).toBe(1);
       expect(metrics.statuses["405"]).toBe(1);
       expect(metrics.pathClasses.immutable).toBeGreaterThan(0);
+      // Correlated counters attribute each status and byte to its path class.
+      expect(metrics.statusesByPathClass.document["200"]).toBe(1);
+      expect(metrics.statusesByPathClass.immutable["200"]).toBeGreaterThan(0);
+      expect(metrics.statusesByPathClass.immutable["304"]).toBeGreaterThan(0);
+      expect(metrics.bytesServedByPathClass.immutable).toBeGreaterThan(0);
+      for (const pathClass of ["document", "immutable", "other"] as const) {
+        expect(
+          Object.values(metrics.statusesByPathClass[pathClass]).reduce(
+            (total, count) => total + count,
+            0,
+          ),
+        ).toBe(metrics.pathClasses[pathClass]);
+      }
+      expect(
+        metrics.bytesServedByPathClass.document +
+          metrics.bytesServedByPathClass.immutable +
+          metrics.bytesServedByPathClass.other,
+      ).toBe(metrics.bytesServed);
 
       const metricsPostResponse = await fetch(`${baseUrl}/__parallax/metrics`, {
         method: "POST",

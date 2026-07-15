@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
+
+// The manifest itself cannot list its own hash; every other served file must be a
+// listed artifact so the manifest-derived artifactDigest identifies the whole tree.
+const UNLISTED_ALLOWLIST: ReadonlySet<string> = new Set(["build-manifest.json"]);
 
 export interface ManifestArtifact {
   readonly bytes: number;
@@ -63,10 +67,33 @@ export async function readAndValidateBuildManifest(
       throw new Error(`Invalid build-manifest worker entrypoint: ${JSON.stringify(entrypoint)}`);
     }
   }
+  const listed = new Set(manifest.artifacts.map((artifact) => artifact.path));
+  const unexpected = (await listFilesRecursively(resolvedRoot)).filter(
+    (path) => !listed.has(path) && !UNLISTED_ALLOWLIST.has(path),
+  );
+  if (unexpected.length > 0) {
+    throw new Error(
+      `Served build root contains files that are not in the build manifest: ${unexpected.join(", ")}`,
+    );
+  }
   return Object.freeze({
     artifactDigest: sha256Hex(manifestBytes),
     manifest,
   });
+}
+
+async function listFilesRecursively(directory: string, prefix = ""): Promise<readonly string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files: string[] = [];
+  for (const entry of entries) {
+    const relativePath = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      files.push(...(await listFilesRecursively(resolve(directory, entry.name), relativePath)));
+    } else {
+      files.push(relativePath);
+    }
+  }
+  return files;
 }
 
 export async function sha256File(path: string): Promise<FileDigest> {

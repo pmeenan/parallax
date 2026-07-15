@@ -31,22 +31,25 @@ Run `pnpm check` for a clean production build, strict TypeScript, formatting/lin
 server and assembly contract tests, and the same-host engine repeatability gate.
 `pnpm test` is also safe on a clean checkout because it builds its fixture first.
 
-## M0 smoke harness (in progress)
+## M0 smoke harness
 
-The first Harness v1 slice drives the committed `smoke@1` scenario with the exact Chrome
+Harness v1 (complete — see [docs/plan.md](docs/plan.md) for remaining M0 items) drives
+the committed `smoke@1` scenario with the exact Chrome
 for Testing version and platform download URLs in `harness/chrome/stable.json`. Download
-the matching archive, extract it outside the repository, and point the harness at the
-executable. The version check is exact; installed branded Chrome is not accepted for a
+the matching archive and extract the platform directory's contents to
+`harness/chrome/cft/<version>/` (gitignored) — the harness resolves the executable there
+by default, e.g. `harness/chrome/cft/150.0.7871.115/chrome.exe` on win64. Setting
+`PARALLAX_CHROME_PATH` overrides the conventional location. The version check is exact; installed branded Chrome is not accepted for a
 gating run because the current platform's executable SHA-256 must also match. The first
 pin contains a verified win64 digest for dev-01; another platform remains ineligible
 until its downloaded executable digest is promoted into the descriptor. Pin updates come from the
 [official CfT availability data](https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json).
 
 ```powershell
-$env:PARALLAX_CHROME_PATH = 'C:\path\to\chrome-for-testing\chrome.exe'
 $env:PARALLAX_MACHINE_ID = 'dev-01'
 $env:PARALLAX_TIER = 'showcase'
 pnpm harness:smoke
+# Optional: $env:PARALLAX_CHROME_PATH overrides harness/chrome/cft/<version>/chrome.exe
 ```
 
 Run a reference-machine gate only while directly signed in at that machine's physical
@@ -62,5 +65,10 @@ with the required 10-second warm-up, writes ignored JSON and Markdown output und
 Chrome or registered-machine identity mismatch, a remote session, or a still-missing
 mandatory Harness v1 probe. Chrome's narrowly scoped Viz trace is retained as a non-gating
 presentation-feedback callback diagnostic. It cannot satisfy the present-to-present budget
-because the trace omits Chrome's presentation-failure flag; the mandatory metric therefore
-stays explicitly invalid rather than being replaced with callback timing.
+because the trace omits Chrome's presentation-failure flag; the authoritative presentation
+metric is therefore reported as an explicit informational failure (non-blocking for
+Harness v1 per D-051) rather than being replaced with callback timing.
+
+## License
+
+[Apache-2.0](LICENSE) (D-053) — code, docs, and in-tree generated assets.

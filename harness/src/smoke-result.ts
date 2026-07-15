@@ -1,5 +1,6 @@
 import type { BudgetCheck, DiagnosticCheck } from "./budgets.js";
 import type { EnvironmentGateState } from "./environment.js";
+import { evaluateHttpServingEvidence } from "./http-evidence.js";
 import type {
   BinaryResultFacet,
   BudgetEvaluationFacet,
@@ -9,6 +10,37 @@ import type {
   MetricState,
   ResultFacets,
 } from "./result-facets.js";
+import { SMOKE_METRICS } from "./runs/smoke.js";
+import type { LocalServerMetrics } from "./server.js";
+
+// Registry names for every evidence check this module emits. The mandatory flag of each
+// check is derived from SMOKE_METRICS so the versioned mandatory-metric set is the
+// single source of truth for what blocks the evidence facet.
+const EVIDENCE_METRIC_NAMES = Object.freeze({
+  callbackPacingVariance: "render-worker callback-pacing variance",
+  coreRunCompletion: "core measurement run completion",
+  dawnPipeline: "Dawn pipeline compile/cache evidence",
+  gpuMemory: "attributable GPU memory",
+  httpServing: "HTTP serving evidence",
+  jsHeap: "all-worker JS heap",
+  v8CodeCache: "V8 code-cache evidence",
+  vizPresentationFeedback: "compositor presentation interval",
+});
+
+export const SMOKE_EVIDENCE_METRIC_NAMES: readonly string[] = Object.freeze(
+  Object.values(EVIDENCE_METRIC_NAMES),
+);
+
+function registryMandatory(name: string): boolean {
+  const metric = SMOKE_METRICS.find((candidate) => candidate.name === name);
+  if (metric === undefined) {
+    throw new Error(`Evidence check references an unregistered smoke metric: ${name}`);
+  }
+  return metric.mandatoryForHarnessV1;
+}
+
+// Fail loudly at module load if the registry and this module ever drift apart.
+for (const name of SMOKE_EVIDENCE_METRIC_NAMES) registryMandatory(name);
 
 interface EvidenceState {
   readonly reason?: string;
@@ -36,8 +68,15 @@ export interface SmokeInformationalInput {
   readonly v8CodeCacheDiagnostics: readonly DiagnosticRun[];
 }
 
+export interface SmokeCoreRunCompletion {
+  readonly completedRuns: number;
+  readonly expectedRuns: number;
+  readonly failure: string | null;
+}
+
 export interface SmokeEvidenceInput {
   readonly callbackPacingVariance: readonly (EvidenceState & { readonly profile: string })[];
+  readonly coreRunCompletion: SmokeCoreRunCompletion;
   readonly incompleteMetrics: readonly (EvidenceState & {
     readonly mandatoryForHarnessV1: boolean;
     readonly metric: string;
@@ -45,8 +84,9 @@ export interface SmokeEvidenceInput {
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
     readonly gpuMemory: EvidenceState;
+    readonly http: Readonly<{ readonly value: LocalServerMetrics }>;
     readonly jsHeap: EvidenceState;
-    readonly profile: string;
+    readonly profile: "fresh" | "warm";
     readonly repeat: number;
   }[];
   readonly v8CodeCacheDiagnostics: readonly {
@@ -102,15 +142,16 @@ export function collectSmokeEvidenceChecks(
   input: SmokeEvidenceInput,
 ): readonly FacetEvidenceCheck[] {
   return Object.freeze([
+    coreRunCompletionCheck(input.coreRunCompletion),
     ...input.v8CodeCacheDiagnostics.flatMap((run) => [
       evidenceCheck(
         `V8 diagnostic ${run.profile} repeat ${run.repeat}: code-cache production ${run.production.state} (${evidenceReason(run.production)})`,
-        false,
+        registryMandatory(EVIDENCE_METRIC_NAMES.v8CodeCache),
         run.production,
       ),
       evidenceCheck(
         `V8 diagnostic ${run.profile} repeat ${run.repeat}: V8 code-cache evidence ${run.v8CodeCache.state} (${evidenceReason(run.v8CodeCache)})`,
-        false,
+        registryMandatory(EVIDENCE_METRIC_NAMES.v8CodeCache),
         run.v8CodeCache,
       ),
     ]),
@@ -124,39 +165,57 @@ export function collectSmokeEvidenceChecks(
     ...input.callbackPacingVariance.map((metric) =>
       evidenceCheck(
         `${metric.profile} callback pacing variance: ${evidenceReason(metric)}`,
-        true,
+        registryMandatory(EVIDENCE_METRIC_NAMES.callbackPacingVariance),
         metric,
       ),
     ),
     ...input.vizPresentationFeedbackCallbackVariance.map((metric) =>
       evidenceCheck(
         `${metric.profile} presentation-feedback variance: ${evidenceReason(metric)}`,
-        false,
+        registryMandatory(EVIDENCE_METRIC_NAMES.vizPresentationFeedback),
         metric,
       ),
     ),
     ...input.runs.map((run) =>
       evidenceCheck(
         `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${evidenceReason(run.dawnPipeline)})`,
-        true,
+        registryMandatory(EVIDENCE_METRIC_NAMES.dawnPipeline),
         run.dawnPipeline,
       ),
     ),
     ...input.runs.map((run) =>
       evidenceCheck(
         `${run.profile} repeat ${run.repeat}: all-worker JS heap ${run.jsHeap.state} (${evidenceReason(run.jsHeap)})`,
-        true,
+        registryMandatory(EVIDENCE_METRIC_NAMES.jsHeap),
         run.jsHeap,
       ),
     ),
     ...input.runs.map((run) =>
       evidenceCheck(
         `${run.profile} repeat ${run.repeat}: attributable GPU memory ${run.gpuMemory.state} (${evidenceReason(run.gpuMemory)})`,
-        false,
+        registryMandatory(EVIDENCE_METRIC_NAMES.gpuMemory),
         run.gpuMemory,
       ),
     ),
+    ...input.runs.flatMap((run) =>
+      evaluateHttpServingEvidence(run.profile, run.repeat, run.http.value).map((observation) =>
+        Object.freeze({
+          description: observation.description,
+          mandatory: registryMandatory(EVIDENCE_METRIC_NAMES.httpServing),
+          measured: observation.satisfied,
+        }),
+      ),
+    ),
   ]);
+}
+
+function coreRunCompletionCheck(completion: SmokeCoreRunCompletion): FacetEvidenceCheck {
+  const failureSuffix = completion.failure === null ? "" : ` — ${completion.failure}`;
+  return Object.freeze({
+    description: `core measurement runs completed (${completion.completedRuns} of ${completion.expectedRuns})${failureSuffix}`,
+    mandatory: registryMandatory(EVIDENCE_METRIC_NAMES.coreRunCompletion),
+    measured: completion.completedRuns === completion.expectedRuns,
+  });
 }
 
 export function formatSmokeFacetSummary(facets: ResultFacets): readonly string[] {

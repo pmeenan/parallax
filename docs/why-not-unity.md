@@ -25,7 +25,8 @@ makes the rest safe to lean on.
   Player settings" — the wasm32 ceiling. No Memory64/wasm64 support is documented anywhere,
   and a [March 2025 request for it](https://discussions.unity.com/t/wasm-64-for-webgl/1615192)
   drew no official Unity response.
-- **Us:** Chrome ships Memory64; wasm64 is ours to target.
+- **Us:** Chrome ships Memory64 ([shipped in Chrome 133](https://chromestatus.com/feature/5070065734516736),
+  checked 2026-07-15); wasm64 is ours to target.
 - **Say it precisely:** *structurally available to us, structurally closed to Unity.* **Not**
   "we have 16 GB" — P-001 still gates that, and it is proven only by a harness run in which a
   **single module** addresses beyond 4 GiB.
@@ -44,8 +45,11 @@ makes the rest safe to lean on.
   on Web."* True. **Do not claim Unity is single-threaded — that is now false.** The claim is
   about *where* threads may run and *who* schedules them: gameplay C# is still one thread, and
   every job originates on it.
-- **Root cause worth knowing:** the blocker is the absence of multithreaded GC in WebAssembly,
-  not a Unity backlog item. Unity cannot ship its way out of it.
+- **Root cause worth knowing:** Unity itself attributes the blocker to "the lack of a
+  multithreaded garbage collection feature in WebAssembly" — the platform, not its backlog.
+  That it is structurally unfixable for Unity (rather than an engineering choice — native
+  runtimes do run multithreaded GCs over shared linear memory) is our inference layered on
+  Unity's framing (judgment, not a citation).
 
 ### 3. OPFS as the primary asset store
 
@@ -90,8 +94,9 @@ Babylon's `WebGPUEngineOptions.deviceDescriptor.requiredFeatures` takes a `GPUFe
 whose values include **`"subgroups"`, `"shader-f16"`, and `"timestamp-query"`** by name — these
 are ours to request.
 
-**The pattern is the argument, more than any single row.** Chrome shipped f16 roughly two years
-ago and subgroups roughly eighteen months ago, and Unity's current release still cannot use
+**The pattern is the argument, more than any single row.** Chrome shipped f16 about two and a
+half years ago (Chrome 120, December 2023) and subgroups roughly eighteen months ago (Chrome
+134, March 2025), and Unity's current release still cannot use
 either. For a project whose first goal is pushing the newest Chrome to its limits and filing
 findings against it, an engine trailing the browser by that margin is the wrong vehicle by
 construction. When Chrome ships the next thing, we get it the day it lands; Unity users wait for
@@ -183,7 +188,7 @@ would be settled definitively by a 30-minute experiment rather than another doc 
 **Unity — threading, memory, storage, WebGPU status**
 - [Web technical limitations](https://docs.unity3d.com/6000.5/Documentation/Manual/webgl-technical-overview.html) — managed C# threads; Unity `Caching` API unsupported on Web
 - [Multithreading with Burst in Unity Web](https://docs.unity3d.com/6000.5/Documentation/Manual/web-multithreading-burst.html) — jobs scheduled from the main thread
-- [Memory in Unity Web](https://docs.unity3d.com/Manual/webgl-memory.html) — 4 GB heap ceiling; IndexedDB + Cache API data caching
+- [Memory in Unity Web](https://docs.unity3d.com/6000.5/Documentation/Manual/webgl-memory.html) — 4 GB heap ceiling; IndexedDB + Cache API data caching
 - [`Application.persistentDataPath`](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/Application-persistentDataPath.html) — `/idbfs/<hash>`
 - [`Caching`](https://docs.unity3d.com/6000.5/Documentation/ScriptReference/Caching.html) · [Web caching](https://docs.unity3d.com/6000.5/Documentation/Manual/webgl-caching.html)
 - [Interacting with browser JS](https://docs.unity3d.com/6000.5/Documentation/Manual/web-interacting-browser-js.html) — `.jslib` is ES5-only

@@ -39,6 +39,8 @@ measured automatically.
       on a bust. Chrome observability gaps remain explicit informational findings and
       launch performance is the outcome gate (D-051). Completed on registered dev-01 at
       4K/60: schema v16 / metric-set v3 passed all three facets and 24 budget checks.
+      (Contract since advanced to schema v17 / metric-set v4 by D-054's measurement-
+      soundness fixes; the next console run emits v17.)
 
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
@@ -57,12 +59,17 @@ measured automatically.
       compliance, context-window behavior at persona+retrieved-context sizes, baseline
       dialog quality, and model/install size. Device topology (own WebGPU device vs.
       sharing the render device) is an explicit spike variable.
-- [ ] Spike: Rust→WASM module with wasm threads.
+- [ ] Spike: Rust→WASM module with wasm threads (includes scaffolding the
+      `rust-toolchain.toml` + pinned wasm-bindgen/binaryen shape D-014/D-020 specify —
+      deferred until this first Rust code exists).
 - [ ] Spike: memory64 module load and cost; this validates the optional last-resort path
       in P-001, not a default wasm64 target.
 - [ ] Harness result contract implemented (budgets.md → Measurement methodology):
       metric states, environment identity, artifact digest + dirty-tree identity,
       per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.
+      *Note (2026-07-15): everything except the baseline-promotion policy is
+      implemented and exercised by the checked Harness v1 item above; only baseline
+      promotion (budgets.md → "Baseline promotion") remains, so don't rebuild the rest.*
 - [ ] Exit: one command produces a built, locally served build (local serving only at
       M0 per D-011/D-022 — production deployment is M2) and a budget report; all spike
       results recorded in rough-edges.md or decisions.md.
@@ -70,20 +77,31 @@ measured automatically.
 ## M1 — Greybox District 1 streaming  `pending`
 
 - [ ] Procedural greybox content for D1 (cells, LOD tiers, collision) at target world
-      scale.
+      scale. Includes re-grounding D-006's asset-format claims (Babylon glTF/KTX2/
+      meshopt support) against current sources before the first content lands — the
+      entry predates the rule-10 citation requirement and carries none.
 - [ ] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
       movement, inside memory budget with proactive eviction.
 - [ ] Geometry-representation spike (P-002): triangle LOD vs. meshlet-virtualized vs.
-      Gaussian splats on representative content, harness-measured at both quality tiers;
+      Gaussian splats on representative content, harness-measured at both quality tiers
+      and **under dynamic relighting** (game-design.md binding implication — a
+      splat-representation win measured only under static lighting doesn't count);
       results recorded in decisions.md + rough-edges.md.
-- [ ] Scripted harness flythrough as the standard regression run.
+- [ ] Scripted harness flythrough as the standard regression run — sweeping
+      lighting/weather states, not just geography (binding requirement from
+      game-design.md → Design implications; dynamic time-of-day binds the renderer from
+      the M1 greybox onward per architecture.md).
+- [ ] Render-worker robustness for long runs: WebGPU device-loss handling and a
+      restart-after-failure path (the M0 skeleton is deliberately
+      failed-is-terminal; flythrough-length sessions need recovery).
 - [ ] Benchmark mode (D-025): expose that same versioned flythrough, fixed settings,
       warm-up/repeats, environment identity, and JSON + human-readable result export in
       the game; the complete run and measurement path works from in-game with no
       external driver, non-Chrome results are advisory, and missing capabilities/metrics
       remain explicit rather than gaining compatibility fallbacks.
-- [ ] Exit: 10-minute flythrough with zero budget violations; streaming metrics
-      dashboarded.
+- [ ] Exit: 10-minute flythrough — including lighting/weather-state sweeps — with zero
+      budget violations; streaming metrics dashboarded; presentation gating revisited
+      per D-051 (see the recorded M1 collision note in budgets.md → Frame time).
 
 ## M2 — Install/launch/run lifecycle + caches  `pending`
 
@@ -92,7 +110,10 @@ parallax-web.com (D-011) — cache findings measured only against local serving 
 credible.
 
 - [ ] Production deployment to parallax-web.com with versioned nginx/header config;
-      harness can target local and production and labels results accordingly.
+      harness can target local and production and labels results accordingly. (The
+      replacement landing page must not inherit the frozen placeholder's "WebAssembly
+      (threads and memory64)" framing — memory64 is a P-001 last resort, not part of
+      the stack; the placeholder itself stays frozen per D-022.)
 
 - [ ] Installer UX: manifest, resumable multi-GB OPFS pull, integrity check,
       persist-storage. Manifest schema distinguishes common (engine, shared packs,
@@ -149,8 +170,13 @@ credible.
 - [ ] Greybox catacombs district; multiple entrance choke points with different surface
       contexts, driven by world-graph data (game-design.md).
 - [ ] Full resident-set swap meeting the transition contract in budgets.md, per entrance.
+- [ ] Calibrate the per-entrance **prefetch trigger** from greybox transition
+      measurements and add it to the budgets.md transition contract via a decision-log
+      entry (D-055 — the contract element is deliberately undefined until these
+      measurements exist).
 - [ ] Exit: repeated D1↔D2 transitions through every entrance in a harness run with no
-      contract violations.
+      contract violations — including the prefetch-trigger element the calibration task
+      above adds; the exit cannot be declared against a contract that still lacks it.
 
 ## M5 — Art pipeline + District 1 art pass  `pending`
 

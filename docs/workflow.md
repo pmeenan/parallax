@@ -90,8 +90,8 @@ Any prompt requesting a review of uncommitted modifications (e.g., "review the c
   adversarial challenge.
 - **Review thoroughly, not just for bugs.** Correctness first, then check:
   - Root and directory `AGENTS.md` rule violations (e.g., layer violations, lack of instrumentation/telemetry, determinism).
-  - Missing decision-log entries ([decisions.md](file:///d:/src/parallax/docs/decisions.md)) or rough-edges entries ([rough-edges.md](file:///d:/src/parallax/docs/rough-edges.md)).
-  - Budget implications ([budgets.md](file:///d:/src/parallax/docs/budgets.md)).
+  - Missing decision-log entries ([decisions.md](decisions.md)) or rough-edges entries ([rough-edges.md](rough-edges.md)).
+  - Budget implications ([budgets.md](budgets.md)).
   - **Better approaches**: If there is a simpler, more idiomatic, or measurably better way, report it as a suggestion, clearly distinct from a defect.
 - **Verify before you report.** Run the verification checks to validate behavior instead of guessing:
   - Run `pnpm check` (which builds, lints via Biome, and runs unit tests via Vitest).
@@ -127,7 +127,7 @@ address them") makes you the **fix-pass agent**: the findings came from a review
 
 Any prompt requesting to check or verify fixes (e.g., "verify the fixes", "check the fixes", "verify fixes", "verify the resolved issues") triggers **verify-pass mode**. The verification agent evaluates a fix-pass agent's changes and disposition report against the current working tree.
 
-- **Retrieve the context first.** If the original findings and disposition report are not fully detailed in the current prompt, retrieve them from the conversation history logs (e.g., look for `walkthrough.md`, the latest messages, or check `transcript.jsonl` under `<appDataDir>\brain\<conversation-id>\.system_generated\logs/`).
+- **Retrieve the context first.** If the original findings and disposition report are not fully detailed in the current prompt, retrieve them from whatever session/conversation logs your agent runner keeps (runners differ — some expose transcript files, some don't); if you can't recover them, ask the human for the findings rather than guessing.
 - **Verify each fix against the tree, not the report.** Run actual tests and compilation commands (`pnpm check`, `pnpm typecheck`, or `pnpm harness:smoke`) to confirm the change actually resolves the finding and didn't introduce a regression.
 - **Adjudicate each pushback independently.** Evaluate the rebuttal's evidence on the merits; accept it, or make the evidence-backed case for why the finding stands.
 - **Read-only by default,** like reviewer mode — report, don't fix, unless the human explicitly asks you to fix directly.

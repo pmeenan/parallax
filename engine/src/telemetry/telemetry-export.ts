@@ -2,6 +2,12 @@ import type { RenderService, RenderTelemetrySnapshot } from "../render/render-se
 
 export const TELEMETRY_SCHEMA_VERSION = 1;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
+// The render worker publishes frame telemetry once per batch of this many rendered
+// frames, so an observed render.frameCount can trail the true rendered frame count by
+// up to TELEMETRY_FRAME_BATCH_FRAMES - 1 frames. Consumers that need frame windows
+// aligned to an external marker (the harness) must pad the window start by one full
+// batch to guarantee every selected frame was rendered after the marker.
+export const TELEMETRY_FRAME_BATCH_FRAMES = 60;
 
 export interface ParallaxRuntimeIdentity {
   readonly engineVersion: string;

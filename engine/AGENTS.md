@@ -20,11 +20,14 @@ the wrong directory.
 
 ## Planned structure (create directories as their milestone starts; update this list)
 
+Source lives under `engine/src/`. Directories marked ✅ exist (M0 walking skeleton);
+the rest are created as their milestone starts.
+
 ```
-engine/
+engine/src/
   core/        types, ids, math, time, event/command plumbing
-  workers/     worker entrypoints + SAB channel library
-  render/      Babylon integration, pipeline warmup, custom WGSL passes
+  workers/     worker entrypoints + SAB channel library                    ✅ (render worker)
+  render/      Babylon integration, pipeline warmup, custom WGSL passes   ✅ (service + protocol)
   streaming/   cell scheduler, memory budget governor, eviction
   storage/     OPFS, manifest, install/update, integrity
   wasm/        Rust crates (one per module) + JS bindings
@@ -33,7 +36,7 @@ engine/
   audio/       WebAudio graph + worklets
   input/       keyboard/mouse/gamepad → command stream
   save/        snapshot/delta serialization
-  telemetry/   counters, timings, harness export surface
+  telemetry/   counters, timings, harness export surface                   ✅ (export surface)
 ```
 
 ## Rules
@@ -53,8 +56,12 @@ engine/
    the rough-edges entry with the repro before working around it.
 7. **Engine artifacts are shareable by hash (D-010).** Engine bundles build
    deterministically — same source + pinned toolchain ⇒ byte-identical output (no
-   timestamps, build paths, or nondeterministic ordering in artifacts; the pipeline's
-   double-build hash check enforces this). Engine bundles carry explicit versions,
+   timestamps, build paths, or nondeterministic ordering in artifacts). The pipeline's
+   double-build hash check enforces D-020 **level 1** (same-host repeatability): it
+   varies the output directory but builds from the same source path and environment, so
+   it cannot detect source-path or env embedding — those are covered by the D-020
+   level-2 cross-host gate (pre-M8), not by this check. Don't cite the M0 gate as proof
+   of more than same-host repeatability. Engine bundles carry explicit versions,
    contain zero game code or game data, and must load/initialize without any
    game-specific bundle present. This is what lets engine code move to a Cross-Origin
    Storage hash index and be shared across published games.

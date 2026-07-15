@@ -7,7 +7,7 @@ export interface Distribution {
 
 export type VarianceMetric =
   | Readonly<{ relativeRange: number; state: "measured" }>
-  | Readonly<{ reason: string; relativeRange: number; state: "invalid" }>;
+  | Readonly<{ reason: string; relativeRange: number | null; state: "invalid" }>;
 
 export function distribution(values: readonly number[]): Distribution {
   if (values.length === 0) throw new Error("Cannot aggregate an empty sample set");
@@ -25,19 +25,44 @@ function percentile(sorted: readonly number[], fraction: number): number {
   return sorted[Math.max(0, rank)] ?? 0;
 }
 
-export function relativeRange(values: readonly number[]): number {
+// Returns null when the minimum is 0 while the maximum is positive: the ratio is
+// unbounded, and JSON.stringify would silently turn Infinity into null anyway — store
+// the null explicitly so the JSON artifact and the reason text agree.
+export function relativeRange(values: readonly number[]): number | null {
   if (values.length === 0) throw new Error("Cannot calculate variance for no values");
   const minimum = Math.min(...values);
   const maximum = Math.max(...values);
-  return minimum === 0
-    ? maximum === 0
-      ? 0
-      : Number.POSITIVE_INFINITY
-    : (maximum - minimum) / minimum;
+  return minimum === 0 ? (maximum === 0 ? 0 : null) : (maximum - minimum) / minimum;
 }
 
-export function evaluateP95Variance(values: readonly number[]): VarianceMetric {
+// Variance is only meaningful across the full repeat set (budgets require >= 3
+// repeats): a partial set — including a single value, whose range is trivially 0 —
+// must read as invalid, never as a measured low-variance result.
+export function evaluateP95Variance(
+  values: readonly number[],
+  expectedSamples: number,
+): VarianceMetric {
+  if (!Number.isInteger(expectedSamples) || expectedSamples <= 0) {
+    throw new Error(
+      `Expected repeat count must be a positive integer; received ${expectedSamples}`,
+    );
+  }
+  if (values.length !== expectedSamples) {
+    return Object.freeze({
+      reason: `p95 variance requires all ${expectedSamples} expected repeats; received ${values.length}`,
+      relativeRange: null,
+      state: "invalid",
+    });
+  }
   const range = relativeRange(values);
+  if (range === null) {
+    return Object.freeze({
+      reason:
+        "p95 relative range is unbounded: the minimum repeat p95 is 0 while the maximum is positive",
+      relativeRange: null,
+      state: "invalid",
+    });
+  }
   return range > 0.1
     ? Object.freeze({
         reason: `p95 relative range ${range} exceeds the 0.1 variance limit`,

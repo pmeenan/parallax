@@ -14,7 +14,10 @@ budgets.md → pass/fail with a report.
 
 ## Metric surface (grow with the systems; a system without harness coverage is invisible)
 
-- **Frames:** frame-time distribution (p50/p95/p99.9/max), long tasks per thread,
+- **Frames:** frame-time distribution (p50/p95/p99.9/max), long tasks per thread (today:
+  main thread only — the Long Tasks API is a Window-scope observer; worker-side
+  long-task observability is an open question to verify and, if confirmed missing, log
+  as a rough-edge when worker-heavy milestones land),
   pipeline-compile events during gameplay (must be zero).
 - **Memory:** JS heap per thread, WASM linear memory per module, GPU memory as
   attributable, SAB pool sizes, high-water marks per run phase.

@@ -176,9 +176,13 @@ browser games. This needs measurement before it becomes a Parallax architecture 
 ## Resolved locally, still useful context
 
 [RE-001](rough-edges.md#re-001-render-worker-animation-callbacks-hold-near-32-hz-in-automated-4k-smoke-run)
-was harness-induced: moving Chrome-internals diagnostics before the full warmup restored native
-pacing. It is not a Chrome request, but it demonstrates why privileged diagnostics need explicit
-measurement boundaries and observable cost.
+was an RDP-session artifact (settled 2026-07-15): the ~32 Hz pacing was the remote session's
+32 Hz display, confirmed by the retained result JSONs — 31.6 ms runs carry the RDP display
+fingerprint on both driver versions, console runs pace at 60 Hz, and a falsification run ruled
+out the harness's probe ordering (see RE-001/RE-002). The ordering fix was kept anyway: probing
+chrome://gpu near the measurement window injects a 167-217 ms transient hitch. Together with
+RE-002 it demonstrates why measurement environments need positive identification and why
+privileged diagnostics need explicit measurement boundaries and observable cost.
 
 ## Chrome-side workflow
 

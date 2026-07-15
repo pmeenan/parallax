@@ -132,12 +132,21 @@ from Cache Storage than OPFS, move it and record the numbers in the decision log
    interrupted-update fault injection are harness lifecycle tests (M2).
 2. **Launch (every boot):** integrity/version check against manifest → progressive PSO
    warmup from trace → resident-set preload for the player's saved location → gameplay.
-   Launch 2+ must hit the V8 code cache (wasm via `instantiateStreaming`, stable URLs)
-   and Dawn's pipeline cache. The harness measures cold vs. warm launch on every build.
+   Warm-launch performance is gated on the outcome, not the cache mechanism (D-051):
+   warm launch must land within the budgets.md ≤ 10 s budget, with the complete in-app
+   cold/warm launch measurement being M2 scope. The evidence classes differ and must not
+   be conflated: **V8 code-cache lifecycle** (wasm via `instantiateStreaming`, stable
+   URLs) is best-effort, non-gating diagnostics — anomalies are findings, not gates —
+   while **Dawn pipeline/cache evidence stays mandatory** in the smoke metric registry,
+   and zero runtime pipeline/shader compiles during measurement remain blocking budget
+   gates (D-051 kept both).
 3. **Run:** streaming manager keeps the resident set inside the memory budget as the
    player moves; eviction is proactive, never emergency.
 4. **Update:** manifest diff → fetch changed assets only → invalidate affected warmup
-   traces. Design goal: an asset-only update never invalidates the wasm/JS code caches.
+   traces. The former "asset-only update never invalidates the wasm/JS code caches"
+   mechanism goal was replaced by a performance contract (D-051): post-update warm
+   launch stays within the ≤ 10 s budget and the paired pre/post delta is recorded;
+   cache-lifecycle evidence remains best-effort diagnostics.
 5. **Uninstall (user-initiated, D-024):** a native-title lifecycle removes cleanly, not
    just installs. The shell offers uninstall behind an **explicit confirmation** that
    states what is deleted (installed assets, caches, service worker, saves) and offers
@@ -162,8 +171,12 @@ Two streaming regimes, both budget-governed:
 - **Inter-district (hard transition):** full resident-set swap through choke points —
   the catacomb entrances (game-design.md), of which there are several with different
   surface contexts; the transition system handles N entrances as data, not one bespoke
-  passage. Contract lives in [budgets.md](budgets.md): prefetch trigger, memory
-  high-water during overlap, max hitch — applied per entrance. This is deliberately the
+  passage. Contract lives in [budgets.md](budgets.md): memory high-water during overlap,
+  max hitch, and total swap time — applied per entrance. The prefetch-trigger element
+  (when a transition preload must start, per entrance) is deliberately not yet defined
+  (D-055): it needs M4 greybox measurements to set honestly; calibrating and adding it
+  to budgets.md is an explicit plan.md M4 task, and the M4 exit cannot be declared
+  against a contract that still lacks it. This is deliberately the
   hardest case and is exercised early with greybox content (M4) because it shapes asset
   packaging and the streaming manager's design.
 

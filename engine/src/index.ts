@@ -15,6 +15,7 @@ export type {
 } from "./telemetry/telemetry-export";
 export {
   installTelemetryExport,
+  TELEMETRY_FRAME_BATCH_FRAMES,
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
