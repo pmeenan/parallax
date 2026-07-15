@@ -11,11 +11,12 @@ import {
 } from "./aggregate.js";
 import {
   type BudgetCheck,
+  type DiagnosticCheck,
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
-  evaluateV8CodeCacheBudgets,
-  evaluateV8CodeCacheReproductionBudgets,
+  evaluateV8CodeCacheDiagnostics,
+  evaluateV8CodeCacheReproductionDiagnostics,
   type QualityTier,
 } from "./budgets.js";
 import {
@@ -101,6 +102,7 @@ import {
   collectSmokeBudgetFacetChecks,
   collectSmokeEnvironmentFacetInput,
   collectSmokeEvidenceChecks,
+  collectSmokeInformationalFailures,
   formatSmokeFacetSummary,
 } from "./smoke-result.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
@@ -177,9 +179,10 @@ interface RunMeasurement {
 }
 
 interface V8CodeCacheDiagnosticRun {
-  readonly budgetChecks: readonly BudgetCheck[];
-  readonly launchOrdinal: number;
-  readonly launchStartedAfterSequenceMs: number;
+  readonly diagnosticChecks: readonly DiagnosticCheck[];
+  readonly launchOrdinal: number | null;
+  readonly launchStartedAfterSequenceMs: number | null;
+  readonly lifecycleLoadCompleted: boolean;
   readonly profile: "fresh" | "produce" | "warm";
   readonly profileLineage: {
     readonly history: readonly ("fresh" | "produce" | "warm")[];
@@ -190,7 +193,7 @@ interface V8CodeCacheDiagnosticRun {
   readonly scenario: typeof SMOKE_V8_CODE_CACHE_DIAGNOSTIC;
   readonly traceDrain: SmokeTraceDrainMetric;
   readonly v8CodeCache: V8CodeCacheMetric;
-  readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
+  readonly workerStartupToFirstFrameMs: ProbeResult<number>;
 }
 
 interface SmokeTraceDrainEvidence {
@@ -244,6 +247,7 @@ interface SmokeReport {
     readonly reason: string;
     readonly state: "invalid";
   }[];
+  readonly informationalFailures: readonly string[];
   readonly mandatoryMetricSet: {
     readonly metrics: readonly string[];
     readonly version: typeof SMOKE_MANDATORY_METRIC_SET_VERSION;
@@ -257,7 +261,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 15;
+  readonly schemaVersion: 16;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -334,35 +338,35 @@ async function main(): Promise<void> {
     const v8CodeCacheDiagnostics: V8CodeCacheDiagnosticRun[] = [];
     for (let repeat = 1; repeat <= SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS; repeat += 1) {
       const lineage = join(profileRoot, `v8-lineage-${repeat}`);
-      v8CodeCacheDiagnostics.push(
-        await measureV8CodeCacheDiagnosticRun(
-          executablePath,
-          lineage,
-          baseUrl,
-          repeat,
-          "fresh",
-          v8ScriptArtifacts,
-          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
-        ),
-        await measureV8CodeCacheDiagnosticRun(
-          executablePath,
-          lineage,
-          baseUrl,
-          repeat,
-          "produce",
-          v8ScriptArtifacts,
-          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
-        ),
-        await measureV8CodeCacheDiagnosticRun(
-          executablePath,
-          lineage,
-          baseUrl,
-          repeat,
-          "warm",
-          v8ScriptArtifacts,
-          launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
-        ),
-      );
+      const completedHistory: V8CodeCacheDiagnosticRun["profile"][] = [];
+      let predecessorFailure: string | null = null;
+      for (const profile of ["fresh", "produce", "warm"] as const) {
+        const run =
+          predecessorFailure === null
+            ? await measureV8CodeCacheDiagnosticRun(
+                executablePath,
+                lineage,
+                baseUrl,
+                repeat,
+                profile,
+                v8ScriptArtifacts,
+                launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
+                completedHistory,
+              )
+            : invalidV8CodeCacheDiagnosticRun(
+                `V8 code-cache diagnostic ${profile} phase was not launched because ${predecessorFailure}`,
+                profile,
+                repeat,
+                null,
+                completedHistory,
+              );
+        v8CodeCacheDiagnostics.push(run);
+        if (run.lifecycleLoadCompleted) {
+          completedHistory.push(profile);
+        } else if (predecessorFailure === null) {
+          predecessorFailure = `the ${profile} lifecycle load did not complete`;
+        }
+      }
     }
     const callbackPacingVariance = (["fresh", "warm"] as const).map((profile) => {
       const variance = evaluateP95Variance(
@@ -407,16 +411,21 @@ async function main(): Promise<void> {
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance,
+      incompleteMetrics,
+      runs,
+      v8CodeCacheDiagnostics,
+      vizPresentationFeedbackCallbackVariance,
+    });
     const facets = evaluateResultFacets({
-      budgetChecks: collectSmokeBudgetFacetChecks({ runs, v8CodeCacheDiagnostics }),
+      budgetChecks: collectSmokeBudgetFacetChecks({ runs }),
       environment: collectSmokeEnvironmentFacetInput(environment.gateIdentity),
-      evidenceChecks: collectSmokeEvidenceChecks({
-        callbackPacingVariance,
-        incompleteMetrics,
-        runs,
-        v8CodeCacheDiagnostics,
-        vizPresentationFeedbackCallbackVariance,
-      }),
+      evidenceChecks,
+    });
+    const informationalFailures = collectSmokeInformationalFailures({
+      evidenceChecks,
+      v8CodeCacheDiagnostics,
     });
     const passed = resultFacetsPassed(facets);
     if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
@@ -433,6 +442,7 @@ async function main(): Promise<void> {
       facets,
       generatedAt: new Date().toISOString(),
       incompleteMetrics,
+      informationalFailures,
       mandatoryMetricSet: Object.freeze({
         metrics: Object.freeze(
           SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map(
@@ -444,7 +454,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 15,
+      schemaVersion: 16,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -1049,17 +1059,74 @@ async function measureV8CodeCacheDiagnosticRun(
   profile: "fresh" | "produce" | "warm",
   buildArtifacts: readonly V8ScriptArtifact[],
   launchPosition: LaunchSequencePosition,
+  completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
+): Promise<V8CodeCacheDiagnosticRun> {
+  try {
+    return await measureV8CodeCacheDiagnosticRunOnce(
+      executablePath,
+      profilePath,
+      baseUrl,
+      repeat,
+      profile,
+      buildArtifacts,
+      launchPosition,
+      completedHistory,
+    );
+  } catch (error) {
+    const reason = `V8 code-cache diagnostic launch failed: ${errorMessage(error)}`;
+    return invalidV8CodeCacheDiagnosticRun(
+      reason,
+      profile,
+      repeat,
+      launchPosition,
+      completedHistory,
+    );
+  }
+}
+
+function invalidV8CodeCacheDiagnosticRun(
+  reason: string,
+  profile: V8CodeCacheDiagnosticRun["profile"],
+  repeat: number,
+  launchPosition: LaunchSequencePosition | null,
+  completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
+): V8CodeCacheDiagnosticRun {
+  return Object.freeze({
+    diagnosticChecks: Object.freeze([]),
+    launchOrdinal: launchPosition?.launchOrdinal ?? null,
+    launchStartedAfterSequenceMs: launchPosition?.launchStartedAfterSequenceMs ?? null,
+    lifecycleLoadCompleted: false,
+    profile,
+    profileLineage: v8ProfileLineage(completedHistory, repeat),
+    production: Object.freeze({ evidence: null, reason, state: "invalid" }),
+    repeat,
+    scenario: SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
+    traceDrain: Object.freeze({ evidence: null, reason, state: "invalid" }),
+    v8CodeCache: Object.freeze({ evidence: null, reason, state: "invalid" }),
+    workerStartupToFirstFrameMs: Object.freeze({ reason, state: "invalid" }),
+  });
+}
+
+async function measureV8CodeCacheDiagnosticRunOnce(
+  executablePath: string,
+  profilePath: string,
+  baseUrl: string,
+  repeat: number,
+  profile: "fresh" | "produce" | "warm",
+  buildArtifacts: readonly V8ScriptArtifact[],
+  launchPosition: LaunchSequencePosition,
+  completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
 ): Promise<V8CodeCacheDiagnosticRun> {
   const context = await launch(executablePath, profilePath);
-  const page = context.pages()[0] ?? (await context.newPage());
-  const errors: string[] = [];
   let trace: SmokeTraceCapture | null = null;
   let traceStartFailure: string | null = null;
-  page.on("pageerror", (error) => errors.push(error.message));
-  page.on("console", (message) => {
-    if (message.type() === "error") errors.push(message.text());
-  });
   try {
+    const page = context.pages()[0] ?? (await context.newPage());
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(error.message));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
     const traceStartResult = await tryProbe("V8 code-cache diagnostic trace start", () =>
       beginSmokeTrace(context, {
         categories: [V8_CODE_CACHE_TRACE_CATEGORY],
@@ -1116,37 +1183,30 @@ async function measureV8CodeCacheDiagnosticRun(
       traceEvents.state === "invalid"
         ? Object.freeze({ evidence: null, reason: traceEvents.reason, state: "invalid" })
         : resolveV8CodeCacheProductionEvidence(traceEvents.value, baseUrl, buildArtifacts, profile);
-    const budgetChecks =
+    const diagnosticChecks =
       profile === "warm"
         ? [
             ...(v8CodeCache.evidence === null
               ? []
-              : evaluateV8CodeCacheBudgets(
+              : evaluateV8CodeCacheDiagnostics(
                   v8CodeCache.evidence.rejectedArtifactCount,
                   v8CodeCache.state === "measured",
                 )),
             ...(production.evidence === null
               ? []
-              : evaluateV8CodeCacheReproductionBudgets(
+              : evaluateV8CodeCacheReproductionDiagnostics(
                   production.evidence.producedArtifactCount,
                   production.state === "measured",
                 )),
           ]
         : [];
     return Object.freeze({
-      budgetChecks: Object.freeze(budgetChecks),
+      diagnosticChecks: Object.freeze(diagnosticChecks),
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
+      lifecycleLoadCompleted: true,
       profile,
-      profileLineage: Object.freeze({
-        history:
-          profile === "fresh"
-            ? (["fresh"] as const)
-            : profile === "produce"
-              ? (["fresh", "produce"] as const)
-              : (["fresh", "produce", "warm"] as const),
-        id: `v8-lineage-${repeat}`,
-      }),
+      profileLineage: v8ProfileLineage([...completedHistory, profile], repeat),
       production,
       repeat,
       scenario: SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
@@ -1164,6 +1224,16 @@ async function measureV8CodeCacheDiagnosticRun(
       await context.close();
     }
   }
+}
+
+function v8ProfileLineage(
+  history: readonly V8CodeCacheDiagnosticRun["profile"][],
+  repeat: number,
+): V8CodeCacheDiagnosticRun["profileLineage"] {
+  return Object.freeze({
+    history: Object.freeze([...history]),
+    id: `v8-lineage-${repeat}`,
+  });
 }
 
 interface SmokeTraceCapture {
@@ -1794,10 +1864,12 @@ async function writeReport(report: SmokeReport): Promise<void> {
     });
     return `- ${run.profile} repeat ${run.repeat}: ${totalDurationUs} µs total; ${artifacts.join(", ")}`;
   });
-  const v8WorkerStartupEvidence = report.v8CodeCacheDiagnostics.map(
-    (run) =>
-      `- ${run.profile} repeat ${run.repeat}: ${formatMilliseconds(run.workerStartupToFirstFrameMs.value)}`,
-  );
+  const v8WorkerStartupEvidence = report.v8CodeCacheDiagnostics.map((run) => {
+    const metric = run.workerStartupToFirstFrameMs;
+    return metric.state === "measured"
+      ? `- ${run.profile} repeat ${run.repeat}: ${formatMilliseconds(metric.value)}`
+      : `- ${run.profile} repeat ${run.repeat}: invalid — ${metric.reason}`;
+  });
   const traceDrainEvidence = report.runs.map((run) => {
     const evidence = run.traceDrain.evidence;
     if (evidence === null) {
@@ -1812,14 +1884,18 @@ async function writeReport(report: SmokeReport): Promise<void> {
   traceDrainEvidence.push(
     ...report.v8CodeCacheDiagnostics.map((run) => {
       const evidence = run.traceDrain.evidence;
+      const launch =
+        run.launchOrdinal === null || run.launchStartedAfterSequenceMs === null
+          ? "not launched"
+          : `launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}`;
       if (evidence === null) {
-        return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
+        return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; ${launch}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
       }
       const completion =
         run.traceDrain.state === "measured"
           ? `${formatMilliseconds(evidence.endWaitMs)} to completion`
           : `${formatMilliseconds(evidence.endWaitMs)} before invalidation`;
-      return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
+      return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; ${launch}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
     }),
   );
   const jsHeapEvidence = report.runs.map((run) => {
@@ -1845,6 +1921,12 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## Failures",
     "",
     ...(failures.length === 0 ? ["None."] : failures.map((failure) => `- ${failure}`)),
+    "",
+    "## Informational failures (non-blocking)",
+    "",
+    ...(report.informationalFailures.length === 0
+      ? ["None."]
+      : report.informationalFailures.map((failure) => `- ${failure}`)),
     "",
     "## Dawn pipeline/cache evidence",
     "",

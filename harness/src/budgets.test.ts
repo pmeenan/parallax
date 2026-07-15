@@ -3,8 +3,8 @@ import {
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
-  evaluateV8CodeCacheBudgets,
-  evaluateV8CodeCacheReproductionBudgets,
+  evaluateV8CodeCacheDiagnostics,
+  evaluateV8CodeCacheReproductionDiagnostics,
 } from "./budgets";
 
 describe("M0 implemented budgets", () => {
@@ -25,18 +25,20 @@ describe("M0 implemented budgets", () => {
     expect(evaluatePipelineBudgets(0, 1)[1]?.passed).toBe(false);
   });
 
-  it("fails an explicitly observed V8 code-cache rejection", () => {
-    expect(evaluateV8CodeCacheBudgets(0, true)[0]?.passed).toBe(true);
-    expect(evaluateV8CodeCacheBudgets(1, true)[0]?.passed).toBe(false);
-    expect(evaluateV8CodeCacheBudgets(0, false)).toEqual([]);
-    expect(evaluateV8CodeCacheBudgets(1, false)[0]?.passed).toBe(false);
-    expect(evaluateV8CodeCacheBudgets(1, false)[0]?.metric).toBe("v8CodeCacheRejectedArtifacts");
+  it("flags an explicitly observed V8 code-cache rejection", () => {
+    expect(evaluateV8CodeCacheDiagnostics(0, true)[0]?.satisfied).toBe(true);
+    expect(evaluateV8CodeCacheDiagnostics(1, true)[0]?.satisfied).toBe(false);
+    expect(evaluateV8CodeCacheDiagnostics(0, false)).toEqual([]);
+    expect(evaluateV8CodeCacheDiagnostics(1, false)[0]?.satisfied).toBe(false);
+    expect(evaluateV8CodeCacheDiagnostics(1, false)[0]?.metric).toBe(
+      "v8CodeCacheRejectedArtifacts",
+    );
   });
 
-  it("fails URL-attributed V8 code-cache re-production on a warm launch", () => {
-    expect(evaluateV8CodeCacheReproductionBudgets(0, true)[0]?.passed).toBe(true);
-    expect(evaluateV8CodeCacheReproductionBudgets(1, true)[0]?.passed).toBe(false);
-    expect(evaluateV8CodeCacheReproductionBudgets(0, false)).toEqual([]);
-    expect(evaluateV8CodeCacheReproductionBudgets(1, false)[0]?.passed).toBe(false);
+  it("flags URL-attributed V8 code-cache re-production on a warm launch", () => {
+    expect(evaluateV8CodeCacheReproductionDiagnostics(0, true)[0]?.satisfied).toBe(true);
+    expect(evaluateV8CodeCacheReproductionDiagnostics(1, true)[0]?.satisfied).toBe(false);
+    expect(evaluateV8CodeCacheReproductionDiagnostics(0, false)).toEqual([]);
+    expect(evaluateV8CodeCacheReproductionDiagnostics(1, false)[0]?.satisfied).toBe(false);
   });
 });

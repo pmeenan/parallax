@@ -105,14 +105,19 @@ COS APIs exist):
 - **What we expected / What happened:** `Tracing.requestMemoryDump` returned success with GUID
   `0x2` or `0x3`, but the sole allocator-bearing dump exported as event name
   `periodic_interval`, ID `0x0`. Waiting one second after the successful request and explicitly
-  supplying `memoryDumpConfig` did not change the exported identity.
+  supplying `memoryDumpConfig` did not change the exported identity. The final physical-console
+  schema-v16 run extended the ambiguity: one explicit request per launch produced two allocator-
+  bearing GPU-process dumps in 2/6 core traces, so those provider diagnostics were invalid because
+  neither exported dump could be correlated to the returned `0x3` request GUID.
 - **Repro:** start a CDP trace with `disabled-by-default-memory-infra`, load the walking skeleton,
   call `Tracing.requestMemoryDump`, wait for its successful response, stop the trace, and compare
   the returned `dumpGuid` with allocator-bearing `ph: "v"` events. `smoke@1` retains these fields
   in every core-run result.
 - **Impact on Parallax:** dump attribution is safe only while the harness requests exactly one dump
   and observes exactly one allocator-bearing GPU-process event. Multiple phase-specific dumps
-  cannot be correlated through the documented GUID in current JSON export.
+  cannot be correlated through the documented GUID in current JSON export, and Chrome can
+  nondeterministically violate the single-observed-dump condition even when Parallax issues only
+  one request.
 - **Proposed improvement:** preserve the CDP request GUID and explicit trigger name in exported
   events, or return an event timestamp/trace packet sequence that clients can correlate without
   relying on a single-dump invariant.
@@ -258,7 +263,8 @@ COS APIs exist):
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
   dev-01 remote diagnostic (non-gating).
 - **Layer:** V8 / Blink / worker / CDP observability.
-- **Status:** open; blocks the mandatory launch-2 V8 code-cache production metric.
+- **Status:** open; Harness-v1 records the missing launch-2 evidence and any negative cache
+  outcome as non-blocking informational failures per D-051; M2 will gate launch/update performance.
 - **What we expected / What happened:** On the second launch of each persistent-profile
   lineage, every cacheable immutable JavaScript artifact must expose a URL-attributed
   `v8.produceCache` or `v8.produceModuleCache` event with positive `producedCacheSize`.
@@ -285,13 +291,13 @@ COS APIs exist):
   `harness/src/v8-code-cache-trace.ts`. For each of three fresh-profile directories, let launch 1
   establish the hot-resource timestamp, inspect URL-attributed production events on launch 2,
   and retain the same profile for launch 3. The v8 result records each matching process/thread,
-  requires a finite positive `producedCacheSize`, asserts no fresh production, and fails any
+  requires a finite positive `producedCacheSize`, asserts no fresh production, and flags any
   warm re-production. It retains positive app/engine outcomes even though the missing worker
   outcome makes launch-2 production `invalid`.
 - **Impact on Parallax:** the harness proves that main-realm cache production works but cannot
-  establish the write prerequisite for the render worker, so it fails the mandatory production
-  metric closed and independently prevents a worker cache-hit claim even if RE-009's launch-3
-  consumption fields become observable. The measured event is roughly 25 ms, only about 0.25%
+  establish the write prerequisite for the render worker, so Harness v1 reports an informational
+  limitation and prevents a worker cache-hit claim even if RE-009's launch-3 consumption fields
+  become observable. The measured event is roughly 25 ms, only about 0.25%
   of the current ≤10 s warm-launch budget, and the broader warm worker-startup component has
   measured 144–157 ms (about 1.6%), so 99.84% source share does not make this a dominant measured
   launch-time cost. It is still not evidence that all worker code is reparsed/recompiled on every
@@ -307,7 +313,8 @@ COS APIs exist):
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
   dev-01 remote diagnostics plus a physical-console gate reproduction.
 - **Layer:** V8 / Blink / CDP observability.
-- **Status:** open; blocks the mandatory warm V8 code-cache metric.
+- **Status:** open; Harness-v1 records missing or negative warm cache evidence as a non-blocking
+  informational failure per D-051; M2 will gate launch/update performance instead.
 - **What we expected / What happened:** Chrome's `v8.compileModule` trace schema can report
   `consumedCacheSize` and `cacheRejected`, which would provide exact URL-attributed cache-hit
   evidence. Across a persistent-profile five-launch diagnostic, every launch emitted compilation
@@ -335,7 +342,7 @@ COS APIs exist):
   build manifest, uses decoded source-code-unit length for Chrome's cacheability threshold, and
   retains every process/thread compilation when one URL appears in multiple realms. Successful
   consumption requires positive consumed bytes plus `cacheRejected: false`; an explicit
-  rejection is measured and fails the zero-rejection budget even if its size is degenerate. A
+  rejection is measured and flags the expected-zero diagnostic even if its size is degenerate. A
   missing result is invalid. Each lineage uses launch 1 for Blink's hot timestamp, requires
   positive URL-attributed production on launch 2, checks consumption on launch 3, and separately
   requires zero launch-3 re-production. A three-lineage remote diagnostic attributed every
@@ -346,9 +353,10 @@ COS APIs exist):
   page-specific hit.
 - **Impact on Parallax:** the harness can prove which Parallax artifacts compiled and can detect
   a reported rejection, but it cannot prove that warm streamed modules consumed cached code.
-  Harness v1 therefore keeps the mandatory V8 metric invalid rather than substituting HTTP-cache
-  behavior, metadata delivery, or compile timing. The same diagnostic will become measured if
-  Chrome begins emitting the existing consumption fields for these events.
+  Harness v1 therefore retains an explicit informational failure rather than substituting HTTP-
+  cache behavior, metadata delivery, or compile timing. The same diagnostic will become measured
+  if Chrome begins emitting the existing consumption fields for these events; a measured
+  rejection remains a finding and diagnostic signal rather than a product-performance verdict.
 - **Proposed improvement:** populate `V8ConsumeCacheResult` for streamed module compilation and
   serialize it on the existing URL-attributed trace event, or expose equivalent per-resource
   code-cache consume/reject evidence through a stable CDP or performance API.
@@ -499,7 +507,8 @@ COS APIs exist):
   event shape on branded Chrome Stable 150.0.7871.102, Windows 11, NVIDIA RTX 4080 Super,
   D3D12.
 - **Layer:** WebGPU/Viz compositor observability.
-- **Status:** open; blocks the mandatory compositor-presentation metric.
+- **Status:** open; Harness-v1 records the missing authoritative metric as a non-blocking
+  informational failure per D-051; M1 must revisit it before player-visible frame-budget claims.
 - **What we expected / What happened:** `Display::FrameDisplayed` is emitted at Viz's
   sanitized presentation-feedback timestamp, but carries no success/failure field.
   Chromium converts invalid feedback to `PresentationFeedback::Failure()`, timestamped at
@@ -513,8 +522,9 @@ COS APIs exist):
   `smoke@1` collector records the resulting timestamp cadence as the explicitly non-gating
   `vizPresentationFeedbackCallbackIntervalMs` diagnostic.
 - **Impact on Parallax:** Chrome's available trace cannot satisfy budgets.md's definition
-  of player-visible present-to-present time. Harness v1 must keep the mandatory metric
-  `invalid`; worker rAF and feedback-callback cadence remain diagnostics only.
+  of player-visible present-to-present time. Harness v1 keeps the metric visibly `invalid` but
+  non-blocking; worker rAF and feedback-callback cadence remain diagnostics only and are not a
+  passing presentation-budget result.
 - **Proposed improvement:** include presentation flags (at minimum `kFailure`, ideally
   `kVSync`/`kHWClock`/`kHWCompletion`) and a page/frame-sink identifier in a stable CDP or
   Perfetto event, or expose successful presentation timing through a web performance API.
@@ -639,7 +649,7 @@ COS APIs exist):
   category or remote session is required. D-039
   removes V8 from the maintained core trace, so a V8 timeout no longer invalidates presentation
   or Dawn. Core completion failure remains fail-closed for those core probes, and an isolated V8
-  completion failure remains fail-closed for mandatory V8 evidence.
+  completion failure is retained as a non-blocking informational failure per D-051.
 - **Proposed improvement:** make browser-level `Tracing.end` completion independent of traced
   renderer teardown and trace-category combination, or expose which traced process prevents
   `Tracing.tracingComplete` after `Tracing.end` has acknowledged so harnesses can attribute and

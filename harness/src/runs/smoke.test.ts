@@ -54,10 +54,18 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "all-worker JS heap")?.mandatoryForHarnessV1,
     ).toBe(true);
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(2);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(3);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
+        ?.mandatoryForHarnessV1,
+    ).toBe(false);
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")
+        ?.mandatoryForHarnessV1,
+    ).toBe(false);
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "compositor presentation interval")
         ?.invalidReason,

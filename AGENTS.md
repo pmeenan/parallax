@@ -78,6 +78,7 @@ Everything else is on demand. Each doc, and the questions it answers:
 | [docs/budgets.md](docs/budgets.md) | Performance budgets and measurement methodology. Read for any perf-relevant change or harness work |
 | [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
 | [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
+| [docs/chrome-platform-gaps.md](docs/chrome-platform-gaps.md) | Chrome-facing synthesis of missing capabilities, prioritized asks, evidence, and why each change would help |
 | [docs/why-not-unity.md](docs/why-not-unity.md) | The sourced case for Babylon over Unity (evidence pack for D-004/D-046). Read when the engine choice is questioned, or before repeating any "Unity can't do X" claim |
 
 `docs/history/` contains the original ideation chat transcripts. They are **historical

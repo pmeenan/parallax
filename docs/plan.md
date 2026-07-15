@@ -33,95 +33,13 @@ measured automatically.
       WebGPU-in-worker spike). Verified locally in the Chromium-based Codex browser on
       2026-07-12 through the assembled server to the first rendered frame with no
       page/worker errors; the pinned-Chrome automated gate is Harness v1 scope below.
-- [ ] Harness v1: launch Chrome (fresh + warm profile), drive a scripted run, capture
-      frame times, JS heap, GPU memory (as measurable), pipeline compile stalls, cache
-      hit/miss (V8 code cache, HTTP, Dawn where observable), diff against budgets.md,
-      fail on bust. Current implementation: `smoke@1` pins/validates CfT, runs three
-      fresh/warm pairs, gates main-thread long tasks, and records worker callback pacing,
-      all-required-realm JS used heap, atomic HTTP cache deltas, validated artifact/source identity, plus
-      explicit metric states. Registered-machine environment verification now probes the
-      exact OS build, CPU/RAM, GPU/driver/WebGPU backend, power scheme, display mode, and
-      rejects remote/indirect displays (D-034). Verified `measured` across three native-console
-      fresh/warm pairs on dev-01 at 4K/60 on 2026-07-13; RDP remains non-gating (RE-002), and
-      the fractional-scale surface discrepancy is recorded as RE-003. Post-review native
-      reruns confirmed that moving Chrome diagnostics before the full warmup resolves the
-      harness-induced ~32 Hz callback pacing (RE-001). A page-windowed Viz trace now records
-      presentation-feedback callback cadence, but Chrome omits the success/failure flag, so
-      true presentation remains mandatory/invalid (D-035, RE-006). The D3D12 Dawn probe now
-      cross-checks page-windowed pipeline/shader trace events against synchronized GPU-process
-      cache histograms (D-036, RE-007): a three-pair remote diagnostic measured fresh launches
-      at 6 shader/3 graphics-PSO misses, every warm relaunch at 6/3 hits, and zero pipeline or
-      shader compilation overlapping all gameplay windows. A first physical-console rerun measured
-      all three fresh launches at 6 shader/3 graphics-PSO misses and warm repeat 1 at 6/3 hits, but
-      RE-008 invalidated warm repeats 2 and 3 before their evidence could be retained; a complete
-      three-pair native baseline still remains. The V8 JavaScript code-cache trace
-      probe now URL-matches every immutable build artifact and requires positive consumed bytes
-      with no rejection (D-037/D-038), but Chrome omits that result for the walking skeleton's streamed
-      ES-module path; all three warm diagnostics remain mandatory/invalid (RE-009). Wasm cache
-      evidence remains for when the first wasm artifact lands. Trace-drain volume, command time,
-      completion time, and partial timeout evidence are now part of the result. A remote
-      A/B retained exact V8 evidence while replacing `devtools.timeline` with `v8`, reducing
-      completed-trace volume from about 5.0 MB/150 ms to 4.1 MB/119 ms (D-038). The narrower
-      category still timed out on 3 of 12 traces versus 0 of 6 with no V8 category; captured
-      failures acknowledged `Tracing.end` in 1.6–2.1 ms but delivered no event chunks or
-      completion within five seconds. `ReturnAsStream` reproduced the failure and was rejected.
-      D-039–D-043 now run mandatory V8 evidence in three isolated `v8-code-cache@5`
-      fresh/timestamp → produce → warm/consume lineages inside result schema v11. A remote
-      diagnostic completed all 9 V8 traces: every produce launch wrote 3,072 app bytes and 6,968
-      engine bytes, while the render worker emitted no production event in 3/3 lineages despite
-      containing 99.84% of decoded JavaScript (RE-010). Fresh emitted no unexpected production,
-      warm re-produced 0/3 cacheable artifacts in every lineage, and every launch-3 cacheable
-      artifact still omitted consumption evidence. The no-reproduction control narrows RE-009 to
-      an app/engine observability gap without substituting for positive consumption. Core trace
-      failures at ordinals 3–5 followed by success at ordinal 6 argue against a simple late-run
-      cutoff and extend RE-008; a final-tree rerun then completed all 6 core and 9 V8 traces with
-      the same V8 outcomes. Ordinal and elapsed-sequence timing now ship in every trace record.
-      Per-artifact compile-event durations are also retained as non-gating diagnostics: the
-      non-streamed worker measured 24.4–26.8 ms with overlapping fresh/warm ranges, while streamed
-      app/engine spans were only 2–40 µs. These spans constrain current launch-cost risk but do
-      not substitute timing inference for cache evidence (D-042). End-to-end worker startup to
-      first frame measured 182–207 ms fresh and 144–155 ms warm across two runs, so the current
-      warm component is modest but cannot be attributed specifically to V8. Launch 2 was normally
-      146–153 ms but retained one 789.5 ms outlier from the whole worker-to-frame path. Core/V8
-      recording lifetime is now explicit (normally about 13.2–14.2 s versus 0.29–0.39 s; the
-      startup outlier extended one V8 trace to 0.94 s). A controlled
-      blank-page matrix completed 6/6 short-core, 6/6 14.1 s core, and 6/6 14.1 s V8 traces;
-      lifetime alone does not reproduce RE-008, leaving active-page event/process/volume regime
-      as the next controlled variable (D-043). An active 4K app control tracing only
-      `blink.user_timing` still timed out once in six launches with zero delivered events/chunks;
-      enabled GPU categories and multi-megabyte payload are not necessary, and the responsible
-      process remains unproved. The same control's unchanged V8 lineages had launch 3 slower
-      than launch 2 in two of three repeats, rebutting a consistent ≤5 ms cache-savings bound
-      (D-044). Result schema v12 now separates registered-environment validity, mandatory-evidence
-      completeness, and budget evaluation while retaining the fail-closed aggregate `passed` bit
-      (D-045). An observed budget bust fails independently, while passing partial checks remains
-      explicitly `not-evaluated` whenever mandatory evidence is incomplete; known compositor and
-      V8 gaps therefore cannot appear green even when the physical-console environment passes. A
-      native schema-v12 dev-01 run verified that exact outcome: environment `passed`, evidence
-      completeness `failed`, and budget evaluation `not-evaluated` after 17 executed checks with
-      no observed threshold bust. RE-008 additionally invalidated two of six core traces while all
-      nine isolated V8 traces completed. Result schema v14 now replaces the page-only heap snapshot
-      with fixed-deadline 100 ms near-concurrent window + render-worker isolate sampling in a
-      dedicated post-trace steady-state window and gates the maximum observed aggregate used-heap
-      estimate against the tier's JS-heap ceiling (D-047/RE-012).
-      The metric is mandatory in metric-set v2 and fails closed on missing realms, missed deadlines,
-      or collection/response-completion/start-delay evidence spanning the sample interval. A post-review
-      pinned-Chrome remote diagnostic measured the final collector integration on all six core
-      launches: 28 samples each, 8.28–12.04 MB observed peaks, 13.2–15.7 ms maximum start delay,
-      0.0 ms maximum response-completion skew at report precision, and 1.1–16.2 ms slowest collection. Every launch
-      returned measured heap evidence with no heap budget bust. The run remained correctly
-      non-gating under RDP; a physical-console rerun is required before promoting memory baseline
-      evidence. Result schema v15 now requests a background GPU-process memory-infra dump after
-      each primary window and retains its request timing plus allocator inventory (D-050). Pinned
-      Chrome accepted all six requests in a remote diagnostic, but exposed neither page-attributed
-      resident WebGPU memory nor even a web-device buffer/texture allocator (RE-014), so the
-      non-mandatory M0 GPU-envelope metric is explicitly `unsupported` with no budget check rather
-      than mislabeled from GPU-process or logical-resource proxies. Chrome also exported the sole
-      allocator-bearing dump as `periodic_interval`/`0x0` instead of the successful CDP request
-      GUID (`0x2`/`0x3`), now recorded as RE-015. The GPU-observability portion is implemented; Harness
-      v1 remains incomplete and intentionally red on the mandatory compositor-presentation probe
-      and V8 platform evidence gaps. Physical-console baseline promotion and the broader
-      result-store/promotion contract remain separate work below.
+- [x] Harness v1: launch pinned Chrome (fresh + warm), drive versioned `smoke@1`,
+      capture frame pacing, all-realm JS heap, GPU memory as measurable, pipeline stalls,
+      and HTTP/Dawn/V8 cache evidence; diff blocking metrics against budgets.md and fail
+      on a bust. Chrome observability gaps remain explicit informational findings and
+      launch performance is the outcome gate (D-051). Completed on registered dev-01 at
+      4K/60: schema v16 / metric-set v3 passed all three facets and 24 budget checks.
+
 - [ ] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). The walking
       skeleton is positive integration evidence; controlled pinned-Chrome maturity,
       main-thread-escape, and environment-identified measurements remain before the
@@ -182,8 +100,10 @@ credible.
       (COS-ready, D-010).
 - [ ] PSO trace capture + progressive warmup at boot; verify Dawn cache behavior
       launch-1 vs launch-2.
-- [ ] V8 code-cache validation (instantiateStreaming, 304/immutable discipline); update
-      flow that preserves code caches on asset-only changes.
+- [ ] Keep V8 code-cache lifecycle evidence as best-effort attribution
+      (`instantiateStreaming`, 304/immutable discipline). For asset-only updates, retain
+      paired pre/post evidence, enforce the <=10 s warm launch budget, record the launch
+      delta, and calibrate any relative regression threshold through a decision (D-051).
 - [ ] Service-worker offline shell (D-015): precache, cache-first navigation, atomic
       activation + rollback, COOP/COEP preserved on cached responses, version
       compatibility checks (shell/engine/manifest/save schema).

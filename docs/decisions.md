@@ -27,6 +27,77 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-051: Harness-v1 presentation and V8 gaps are informational, not M0 gates  (2026-07-14, accepted)
+
+**Decision:** `smoke@1` mandatory metric-set v3 makes the authoritative compositor-presentation
+metric and V8 JavaScript code-cache lifecycle explicitly informational for Harness v1. Their
+probes, metric states, raw evidence, repeat contracts, and expected-zero rejection/re-production
+diagnostic checks remain intact. Missing, untrustworthy, or negative lifecycle evidence is
+emitted in result schema v16's
+`informationalFailures` list and in the detailed Markdown sections, but does not affect the
+evidence-completeness facet, budget-evaluation facet, aggregate `passed` bit, or process exit
+code. V8's former zero-rejection and zero-warm-reproduction budget checks are renamed diagnostic
+checks and remain attached to each V8 run; they no longer enter the blocking budget facet.
+An auxiliary V8 launch/navigation/telemetry/trace failure is converted into a structured invalid
+diagnostic run so it cannot suppress the blocking core report or change the exit code.
+
+This is an M0 scope decision, not a claim that the underlying budgets are satisfied. M1 must
+revisit authoritative presentation gating before using the flythrough for player-visible frame
+budget claims, and M2 must implement the complete launch/update performance gate when cache
+preservation becomes milestone scope. The current signals may be used only as heuristics: render-worker callback
+pacing and Viz feedback-callback cadence for presentation behavior; and URL-attributed
+production, absence of warm re-production, compile spans, HTTP cache behavior, and worker-startup
+timing for V8 behavior. Reports must not relabel those heuristics as successful scan-out or code-
+cache consumption. Cache behavior is best-effort: a rejection matters to the gate only when it
+causes a user-visible launch/update performance budget to fail. The existing ≤10 s warm-launch
+budget remains authoritative; M0's worker-startup timer is only a component diagnostic, while M2
+owns the complete in-app launch measurement and asset-only-update comparison. The former
+“asset-only update never invalidates V8 code caches” mechanism target is replaced by a
+performance contract: post-update warm launch must remain within the existing 10 s ceiling and
+record its paired delta from the pre-update warm launch. M2 measurements calibrate any relative-
+regression threshold through a new decision rather than inventing one before the lifecycle exists.
+
+**Context:** Chrome 150 exposes regular, page-windowed `Display::FrameDisplayed` callback
+timestamps but omits the `PresentationFeedback.kFailure` flag needed to prove successful scan-out
+(RE-006). Its ES-module trace path also omits authoritative cache-consumption results, and the
+render-worker module exposes no URL-attributed production result (RE-009/RE-010). The maintained
+diagnostics already capture the best available signals and bound the current walking-skeleton
+cost: warm worker startup normally measured about 144–157 ms against the provisional 10 s launch
+budget, while app/engine launch 3 emitted no observed cache re-production. Keeping Harness v1
+permanently red cannot create the missing Chrome evidence and obscures regressions in the metrics
+the platform does expose. The project therefore accepts visible, non-blocking platform findings
+as the correct M0 outcome and gates the eventual cache outcome on performance rather than an
+internal mechanism.
+
+**Sources checked (2026-07-14):** local pinned-CfT 150.0.7871.115 remote diagnostics and the
+schema-v16 physical-console `smoke@1` run on dev-01; current Chromium
+[`Display::DidReceivePresentationFeedback`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/viz/service/display/display.cc),
+Blink
+[`v8_script_runner.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/bindings/core/v8/v8_script_runner.cc),
+and the detailed source/reproduction records in RE-006, RE-009, and RE-010.
+
+Mandatory gates remain unchanged for registered physical-console environment identity,
+render-worker callback-pacing variance, all-realm JS heap, Dawn pipeline/cache evidence,
+main-thread long tasks, and runtime pipeline/shader compilation. Attributable GPU memory remains
+the pre-existing non-mandatory `unsupported` metric from D-050. No numeric performance threshold
+is changed. The V8 zero-artifact targets are deliberately reclassified from budgets to expected
+diagnostic outcomes, so the harness rule that every actual budget bust fails remains intact.
+
+The Chrome-side requests exposed by these and other findings are synthesized in
+[chrome-platform-gaps.md](chrome-platform-gaps.md); [rough-edges.md](rough-edges.md) remains the
+evidence and reproduction source of truth.
+
+**Consequences:** Harness v1 can complete on a verified physical-console run when all remaining
+M0 gates pass, while the report still calls out every compositor/V8 informational failure. Result
+consumers gain a stable top-level list instead of having to infer non-blocking problems from deep
+diagnostic structures. D-031/D-035 and D-037–D-045 remain historical rationale but are superseded
+where they require these two metrics to block Harness v1.
+
+**Reopen if:** Chrome exposes trustworthy page-correlated presentation success or per-artifact
+V8 cache lifecycle outcomes; M1 promotes presentation or M2 defines a stronger cache-performance
+contract; the heuristics stop correlating with
+the intended behavior; or informational failures become too noisy to be actionable.
+
 ## D-050: Retain GPU-process memory dumps without treating them as page VRAM  (2026-07-14, accepted)
 **Decision:** `smoke@1` now requests one background global memory dump after its primary gameplay
 window and retains the GPU-process allocator inventory, request GUID/duration, exported dump

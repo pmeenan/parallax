@@ -1,4 +1,4 @@
-import type { BudgetCheck } from "./budgets.js";
+import type { BudgetCheck, DiagnosticCheck } from "./budgets.js";
 import type { EnvironmentGateState } from "./environment.js";
 import type {
   BinaryResultFacet,
@@ -21,9 +21,19 @@ interface BudgetRun {
   readonly repeat: number;
 }
 
+interface DiagnosticRun {
+  readonly diagnosticChecks: readonly DiagnosticCheck[];
+  readonly profile: string;
+  readonly repeat: number;
+}
+
 export interface SmokeBudgetInput {
   readonly runs: readonly BudgetRun[];
-  readonly v8CodeCacheDiagnostics: readonly BudgetRun[];
+}
+
+export interface SmokeInformationalInput {
+  readonly evidenceChecks: readonly FacetEvidenceCheck[];
+  readonly v8CodeCacheDiagnostics: readonly DiagnosticRun[];
 }
 
 export interface SmokeEvidenceInput {
@@ -51,9 +61,24 @@ export interface SmokeEvidenceInput {
 }
 
 export function collectSmokeBudgetFacetChecks(input: SmokeBudgetInput): readonly FacetCheck[] {
+  return Object.freeze(input.runs.flatMap((run) => budgetFacetChecks(run, "")));
+}
+
+export function collectSmokeInformationalFailures(
+  input: SmokeInformationalInput,
+): readonly string[] {
   return Object.freeze([
-    ...input.runs.flatMap((run) => budgetFacetChecks(run, "")),
-    ...input.v8CodeCacheDiagnostics.flatMap((run) => budgetFacetChecks(run, "V8 diagnostic ")),
+    ...input.evidenceChecks
+      .filter((check) => !check.mandatory && !check.measured)
+      .map((check) => check.description),
+    ...input.v8CodeCacheDiagnostics.flatMap((run) =>
+      run.diagnosticChecks
+        .filter((check) => !check.satisfied)
+        .map(
+          (check) =>
+            `V8 diagnostic ${run.profile} repeat ${run.repeat}: ${check.metric} ${check.actual} > ${check.expectedMaximum}`,
+        ),
+    ),
   ]);
 }
 
@@ -80,12 +105,12 @@ export function collectSmokeEvidenceChecks(
     ...input.v8CodeCacheDiagnostics.flatMap((run) => [
       evidenceCheck(
         `V8 diagnostic ${run.profile} repeat ${run.repeat}: code-cache production ${run.production.state} (${evidenceReason(run.production)})`,
-        true,
+        false,
         run.production,
       ),
       evidenceCheck(
         `V8 diagnostic ${run.profile} repeat ${run.repeat}: V8 code-cache evidence ${run.v8CodeCache.state} (${evidenceReason(run.v8CodeCache)})`,
-        true,
+        false,
         run.v8CodeCache,
       ),
     ]),

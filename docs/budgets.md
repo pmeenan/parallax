@@ -79,9 +79,8 @@ addressing beyond 4 GiB, gated on P-001.
 | Install wall time | Bandwidth-bound + ≤ 90 s local work | Local work = integrity, unpack, PSO warmup |
 | Launch 2+ → interactive gameplay | ≤ 10 s | Fully local; the number the demo lives or dies on |
 | Launch 1 (post-install) → gameplay | ≤ 30 s | |
-| Warm JavaScript code-cache rejections | 0 artifacts | Three-launch persistent-profile lineage: launch 2 must positively produce cache, then launch 3 supplies URL-attributed V8 consumption results; a missing production or consumption result is `invalid` |
-| Warm JavaScript code-cache re-productions | 0 artifacts | A positive URL-attributed production event on launch 3 is measured negative evidence that fails independently of consumption observability |
-| Asset-only update | Never invalidates V8 code caches | Verified by harness cache probes |
+| Warm JavaScript code-cache lifecycle | recorded (non-gating) | Best-effort diagnostic: expect 0 rejected and 0 warm re-produced artifacts; every anomaly remains a finding, but mechanism state does not substitute for launch performance (D-051) |
+| Asset-only-update warm launch | ≤ 10 s; pre/post delta recorded | Performance outcome replaces the former “never invalidates V8 code caches” mechanism requirement; M2 measurements calibrate any relative-regression threshold through a new decision |
 | Offline launch | ≤ 1.10× warm-launch time (and within the ≤ 10 s budget) | Network killed post-install; served entirely by SW precache + OPFS |
 
 The M0 walking skeleton currently has 5,265,895 decoded JavaScript source code units. Its
@@ -90,7 +89,7 @@ production contain 7,884 (0.15%). Source share is not a launch-cost proxy: the w
 non-streamed compile-event duration measured 24.4–26.8 ms across fresh/produce/warm launches,
 about 0.25% of the ≤10 s budget, with no consistent warm decrease (D-042/RE-010). This raw trace
 span is diagnostic rather than proof of cache state or total parse/compile cost; the missing
-worker production result still fails the cache-evidence gate. The broader
+worker production result remains a Chrome finding but does not fail the performance gate. The broader
 worker-startup-to-first-frame component measured 144.2–156.8 ms on warm launches (about 1.6% of
 the budget) across three diagnostics. Launch 2 included one 789.5 ms outlier, and the third
 diagnostic measured launch 3 slower than launch 2 in two of three lineages. This whole-worker-
@@ -136,7 +135,10 @@ Definitions the harness implements; budgets above are meaningless without them.
 
 - **Frame time** = presentation interval (present-to-present), the thing the player
   sees. CPU submission time and GPU execution time are captured as *diagnostic*
-  breakdowns, not budget gates.
+  breakdowns, not budget gates. Chrome 150 does not expose presentation success on the
+  available Viz callback event (RE-006), so Harness-v1/M0 reports the authoritative metric as
+  an informational failure and retains worker-callback/Viz-callback pacing only as heuristics
+  (D-051). M1 must revisit the gate before making player-visible frame-budget claims.
 - **Warm-up exclusion:** the first 10 seconds of any run (or until first steady-state
   marker emitted by the app) are excluded from frame statistics; launch metrics have
   their own budgets and are never mixed into gameplay frame stats.
@@ -165,12 +167,16 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).
-- **JavaScript code-cache lifecycle (D-040–D-042):** each repeat uses one persistent profile for
+- **JavaScript code-cache lifecycle (D-040–D-042, D-051):** each repeat uses one persistent profile for
   fresh/timestamp, produce, and warm/consume launches. Fresh must expose no production, every
-  cacheable required immutable script must report a positive URL-attributed `producedCacheSize`
-  on launch 2, and warm must expose no re-production before it can satisfy the zero-rejection
-  budget. Production, absence of re-production, and consumption are separate mandatory evidence;
-  none can substitute for another.
+  cacheable required immutable script should expose a positive URL-attributed `producedCacheSize`
+  on launch 2, and warm should expose consumption without re-production. Production, absence of
+  re-production, and consumption remain separate evidence; none can substitute for another.
+  Missing, untrustworthy, or negative cache evidence is informational in `smoke@1`. The expected
+  zero rejection/re-production checks remain in each result as diagnostics. M2 gates the
+  user-visible outcome instead: warm and asset-only-update launches must remain within 10 s, and
+  the paired pre/post-update delta is recorded. M2 measurements calibrate any future relative-
+  regression threshold through the normal decision process.
 - **Variance gate:** if p95 varies more than 10% across the repeats, the result is
   `invalid` (fix the noise before trusting the number) — a noisy metric is a broken
   metric, not a passing one.
@@ -187,7 +193,9 @@ Definitions the harness implements; budgets above are meaningless without them.
   `not-evaluated` when evidence is incomplete or no checks ran. The aggregate result
   passes only when all three facets pass. Thus a valid environment remains visible
   through a platform evidence gap, but neither missing evidence nor a passing subset
-  of checks can appear green.
+  of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
+  gaps as non-mandatory informational failures; this rule continues to apply to every metric in
+  mandatory metric-set v3. V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the

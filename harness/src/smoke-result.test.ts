@@ -5,16 +5,24 @@ import {
   collectSmokeBudgetFacetChecks,
   collectSmokeEnvironmentFacetInput,
   collectSmokeEvidenceChecks,
+  collectSmokeInformationalFailures,
   formatSmokeFacetSummary,
 } from "./smoke-result.js";
 
 const measuredEnvironment = collectSmokeEnvironmentFacetInput({ state: "measured", value: true });
 
 describe("smoke result adapters", () => {
-  it("keeps an invalid Viz presentation-feedback diagnostic non-gating per D-035", () => {
+  it("keeps presentation, GPU-memory, and V8 evidence failures informational", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
-      incompleteMetrics: [],
+      incompleteMetrics: [
+        {
+          mandatoryForHarnessV1: false,
+          metric: "compositor presentation interval",
+          reason: "scan-out success is unobservable",
+          state: "invalid",
+        },
+      ],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -26,10 +34,10 @@ describe("smoke result adapters", () => {
       ],
       v8CodeCacheDiagnostics: [
         {
-          production: { state: "measured" },
+          production: { reason: "worker production is unobservable", state: "invalid" },
           profile: "warm",
           repeat: 1,
-          v8CodeCache: { state: "measured" },
+          v8CodeCache: { reason: "consumption is unobservable", state: "invalid" },
         },
       ],
       vizPresentationFeedbackCallbackVariance: [
@@ -53,6 +61,20 @@ describe("smoke result adapters", () => {
     ).toEqual(expect.objectContaining({ mandatory: false, measured: false }));
     expect(facets.evidenceCompleteness.status).toBe("passed");
     expect(facets.budgetEvaluation.status).toBe("passed");
+    expect(
+      collectSmokeInformationalFailures({
+        evidenceChecks,
+        v8CodeCacheDiagnostics: [],
+      }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("compositor presentation interval"),
+        expect.stringContaining("code-cache production invalid"),
+        expect.stringContaining("V8 code-cache evidence invalid"),
+        expect.stringContaining("attributable GPU memory unsupported"),
+        expect.stringContaining("presentation-feedback variance"),
+      ]),
+    );
   });
 
   it("preserves invalid environment state even when its reason list is empty", () => {
@@ -102,7 +124,7 @@ describe("smoke result adapters", () => {
     expect(facets.budgetEvaluation.status).toBe("not-evaluated");
   });
 
-  it("maps core and V8 budget checks with stable failure descriptions", () => {
+  it("separates blocking core budgets from informational V8 diagnostics", () => {
     const budgetChecks = collectSmokeBudgetFacetChecks({
       runs: [
         {
@@ -113,10 +135,18 @@ describe("smoke result adapters", () => {
           repeat: 1,
         },
       ],
+    });
+    const informationalFailures = collectSmokeInformationalFailures({
+      evidenceChecks: [],
       v8CodeCacheDiagnostics: [
         {
-          budgetChecks: [
-            { actual: 1, limit: 0, metric: "v8CodeCacheRejectedArtifacts", passed: false },
+          diagnosticChecks: [
+            {
+              actual: 1,
+              expectedMaximum: 0,
+              metric: "v8CodeCacheRejectedArtifacts",
+              satisfied: false,
+            },
           ],
           profile: "warm",
           repeat: 2,
@@ -129,16 +159,15 @@ describe("smoke result adapters", () => {
         description: "fresh repeat 1: mainThreadLongTasksOver50Ms 0 > 0",
         passed: true,
       },
-      {
-        description: "V8 diagnostic warm repeat 2: v8CodeCacheRejectedArtifacts 1 > 0",
-        passed: false,
-      },
+    ]);
+    expect(informationalFailures).toEqual([
+      "V8 diagnostic warm repeat 2: v8CodeCacheRejectedArtifacts 1 > 0",
     ]);
   });
 
   it("leaves an empty collected budget set explicitly not evaluated", () => {
     const facets = evaluateResultFacets({
-      budgetChecks: collectSmokeBudgetFacetChecks({ runs: [], v8CodeCacheDiagnostics: [] }),
+      budgetChecks: collectSmokeBudgetFacetChecks({ runs: [] }),
       environment: measuredEnvironment,
       evidenceChecks: [],
     });
