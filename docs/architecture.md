@@ -68,7 +68,15 @@ unavailability itself is a standing rough-edges item.
 Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
 sim→render state snapshots); `postMessage` with transferables for bulk handoffs;
 no structured-clone of large objects on hot paths. Every queue instrumented
-(depth, stall counts) for the harness.
+(depth, stall counts) for the harness. D-057 makes the base transport a pair of
+fixed-capacity SPSC rings, one owner per endpoint and direction; setup/control summaries
+stay on `postMessage`, while fixed-width hot records stay in SAB. The M0 implementation
+exercises two 256-record x 4-word rings (8,224 bytes total) against the live render
+worker and exposes correctness, cooperative round-trip rate, waits/stalls, window pump
+duration, and concurrent render-callback diagnostics. The rate includes the bounded
+window pump's scheduling cadence and is not raw SAB bandwidth. That pool is fixed at
+boot; later channels size their own fixed pools from measured workload requirements
+rather than inheriting the spike's test capacity.
 
 The M0 spike is a go (D-056): the controlled walking-skeleton run keeps Babylon scene
 construction, WebGPU device ownership, animation, and render submission in the dedicated

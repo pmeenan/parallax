@@ -1,3 +1,8 @@
+import type {
+  SabRingBufferSpikeConfig,
+  SabRingBufferSpikeWorkerResponse,
+} from "../workers/sab-ring-buffer-spike-protocol";
+
 export interface WalkingSkeletonScene {
   readonly camera: {
     readonly alpha: number;
@@ -17,6 +22,7 @@ export interface RenderStartMessage {
   readonly canvas: OffscreenCanvas;
   readonly height: number;
   readonly kind: "start";
+  readonly sabRingBufferSpike: SabRingBufferSpikeConfig;
   readonly scene: WalkingSkeletonScene;
   readonly width: number;
 }
@@ -51,4 +57,8 @@ export interface RenderErrorMessage {
   readonly message: string;
 }
 
-export type RenderWorkerResponse = RenderErrorMessage | RenderFrameMessage | RenderReadyMessage;
+export type RenderWorkerResponse =
+  | RenderErrorMessage
+  | RenderFrameMessage
+  | RenderReadyMessage
+  | SabRingBufferSpikeWorkerResponse;

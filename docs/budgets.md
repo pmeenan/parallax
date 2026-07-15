@@ -151,6 +151,19 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Warm-up exclusion:** the first 10 seconds of any run (or until first steady-state
   marker emitted by the app) are excluded from frame statistics; launch metrics have
   their own budgets and are never mixed into gameplay frame stats.
+- **SAB transport evidence (D-057):** each `smoke@1` core launch runs 100,000
+  deterministic main→render-worker→main records through paired fixed SPSC rings during
+  warm-up. The mandatory metric is measured only when every echo returns in order with
+  zero payload/sequence errors and elapsed/cooperative-round-trip-rate evidence is
+  present. That rate includes the bounded window pump and its scheduling cadence; it is
+  not raw SAB bandwidth. Results also retain the fixed pool size, waits/stalls,
+  maximum cooperative window-pump duration,
+  and concurrent render-worker callback maxima. Those callback timings are diagnostic,
+  not compositor-presentation evidence (D-051). In the current launch ordering they also
+  overlap RE-001's privileged `chrome://gpu` diagnostic before the harness warm-up, so
+  they cannot attribute callback gaps to SAB; a controlled active-transport comparison
+  is still required for that claim. The ordinary in-window main-thread and frame gates
+  remain authoritative after warm-up.
 - **JavaScript used-heap high-water estimate (D-047):** after the primary frame/trace
   measurement completes, run a dedicated steady-state window over the same 120-frame workload.
   Issue near-concurrent `Runtime.getHeapUsage.usedSize` requests for every required
@@ -204,7 +217,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v4 as of D-054). V8 lifecycle checks are diagnostics, not budget checks.
+  the current mandatory metric-set (v5 as of D-057). V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the

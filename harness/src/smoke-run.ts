@@ -99,6 +99,10 @@ import {
   type SmokeMetricDefinition,
 } from "./runs/smoke.js";
 import {
+  requireSabRingBufferCompleteAtMeasurementBoundary,
+  type SabRingBufferMetric,
+} from "./sab-ring-buffer.js";
+import {
   createLocalServer,
   type LocalServerMetrics,
   listenLocalServer,
@@ -186,6 +190,7 @@ interface RunMeasurement {
   readonly renderSurfaceAfter: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
+  readonly sabRingBuffer: SabRingBufferMetric;
   readonly traceDrain: SmokeTraceDrainMetric;
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
@@ -276,7 +281,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 17;
+  readonly schemaVersion: 18;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
@@ -496,7 +501,7 @@ async function main(): Promise<void> {
       passed,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 17,
+      schemaVersion: 18,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -864,6 +869,9 @@ async function measureRunWithBrowser(
     const displayProbeFailures =
       refreshRateResult.state === "invalid" ? Object.freeze([refreshRateResult.reason]) : [];
     await page.waitForTimeout(SMOKE_WARMUP_MS);
+    const sabRingBuffer = requireSabRingBufferCompleteAtMeasurementBoundary(
+      (await readTelemetry(page)).render.sabRingBufferSpike,
+    );
     await resetSurfaceObserver(page);
     const renderSurfaceBefore = await readSurfaceLatest(page);
     const screenBeforeResult = await tryProbe("Browser screen identity", () =>
@@ -1053,6 +1061,7 @@ async function measureRunWithBrowser(
       renderSurfaceAfter: endSurfaceState.latest,
       renderSurfaceBefore,
       renderSurfaceChanges: endSurfaceState.changes,
+      sabRingBuffer,
       traceDrain,
       workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
       workerStartupToFirstFrameMs: measured(
@@ -2044,6 +2053,13 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const validity = invalidReason === null ? "measured" : `invalid — ${invalidReason}; retained`;
     return `- ${run.profile} repeat ${run.repeat}: ${validity} near-concurrent aggregate used-heap high-water estimate ${formatBytes(evidence.highWaterUsedSizeBytes)} across window + render worker; ${evidence.samples.length} samples over ${formatMilliseconds(evidence.periodicSamplingDurationMs)} at ${evidence.sampleIntervalMs} ms fixed-deadline interval in a dedicated post-trace steady-state window; missed deadlines ${evidence.missedSampleDeadlines}; maximum start delay ${formatMilliseconds(evidence.maximumSamplingStartDelayMs)}; maximum realm response-completion skew ${formatMilliseconds(evidence.maximumRealmResponseCompletionSkewMs)}; slowest collection ${formatMilliseconds(evidence.maximumCollectionDurationMs)}`;
   });
+  const sabRingBufferEvidence = report.runs.map((run) => {
+    if (run.sabRingBuffer.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — ${run.sabRingBuffer.reason}`;
+    }
+    const evidence = run.sabRingBuffer.value;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.responsesReceived}/${evidence.messageCount} validated round trips in ${formatMilliseconds(evidence.elapsedMs)} (${Math.round(evidence.cooperativeRoundTripsPerSecond ?? 0).toLocaleString("en-US")} cooperative round trips/s, including window pump scheduling); ${formatBytes(evidence.totalSABBytes)} fixed SAB pool; main producer stalls ${evidence.mainProducerStalls}, empty polls ${evidence.mainConsumerEmptyPolls}, max pump ${formatMilliseconds(evidence.mainPumpMaxDurationMs)}; worker inbound waits ${evidence.workerInboundWaits}, outbound stalls ${evidence.workerOutboundStalls}; ${evidence.workerConcurrentFrameCount} concurrent render callbacks, max interval/render ${formatMilliseconds(evidence.workerConcurrentFrameIntervalMaxMs)}/${formatMilliseconds(evidence.workerConcurrentRenderDurationMaxMs)}; payload/sequence errors ${evidence.payloadErrors}/${evidence.workerSequenceErrors}`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2096,6 +2112,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## All-worker JavaScript heap",
     "",
     ...jsHeapEvidence,
+    "",
+    "## SAB ring-buffer transport",
+    "",
+    ...sabRingBufferEvidence,
     "",
     "## HTTP serving evidence",
     "",

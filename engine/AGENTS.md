@@ -26,7 +26,7 @@ the rest are created as their milestone starts.
 ```
 engine/src/
   core/        types, ids, math, time, event/command plumbing
-  workers/     worker entrypoints + SAB channel library                    ✅ (render worker)
+  workers/     worker entrypoints + SAB channel library                    ✅ (render worker + SPSC rings)
   render/      Babylon integration, pipeline warmup, custom WGSL passes   ✅ (service + protocol)
   streaming/   cell scheduler, memory budget governor, eviction
   storage/     OPFS, manifest, install/update, integrity

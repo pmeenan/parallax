@@ -27,6 +27,83 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-057: Use paired fixed-capacity SPSC SAB rings for high-rate worker transport  (2026-07-15, accepted)
+
+**Decision:** The worker fabric's high-rate primitive is a pair of fixed-capacity,
+single-producer/single-consumer `SharedArrayBuffer` rings, one per direction. Setup and
+one final result summary use `postMessage`; every workload record uses the rings. Each
+ring uses a power-of-two capacity and stores fixed-width `Int32` records behind unsigned
+monotonic read/write sequences, uses atomic reads/writes for both control and payload
+words, and applies bounded
+backpressure rather than allocating or growing. Waiters use atomic wait/notify without
+ever synchronously blocking the window.
+
+The M0 spike fixes its test pool at two 256-record x 4-word rings (8,224 bytes total)
+and sends 100,000 deterministic command/echo round trips through the existing render
+worker while it continues rendering. Telemetry schema v2 exposes allocation size,
+elapsed time, cooperative round-trip rate, main/worker stalls and waits, correctness
+errors, the maximum window pump duration, and concurrent render-worker callback
+diagnostics. The rate includes the bounded window pump's scheduling cadence and is not
+raw SAB bandwidth. `smoke@1` result schema v18 / mandatory metric-set v5 requires a
+completed, corruption-free SAB
+measurement on every core run; missing or corrupt transport evidence fails closed.
+
+**Context:** D-005 selected SAB channels but did not define or test their protocol.
+The implementation has unit coverage for ordering, full-queue backpressure, descriptor
+validation, asynchronous wakeups, lifecycle cancellation, and unsigned 32-bit sequence
+wrap. Power-of-two capacity is enforced because a wrapped unsigned sequence used
+directly as a slot cursor aliases records at arbitrary capacities. Exact browser
+performance and concurrent-render numbers are deliberately not adopted from development
+diagnostics: the registered physical-console result required below is the first retained,
+source-identified evidence eligible to support those claims. Worker callback timing in
+that result remains diagnostic rather than presentation proof under D-051.
+
+The retained physical-console result is
+`smoke-1-04d5015a975e-dev-01-showcase-2026-07-15T23-21-50-551Z.json`: result schema v18,
+mandatory metric-set v5, artifact digest
+`04d5015a975e31b54f03598558cc99796772a68939740eaaeee96221e1bd558b`, source commit
+`2fbcb768873f34f22b982088c3ff418809c6c71b` plus dirty-tree digest
+`9dbf35e5054112a133d2b25b67048d0db588726c65a72a633ab9543cae841ad6`, exact pinned CfT
+Stable 150.0.7871.115 (executable SHA-256
+`c55dc23c0d6c2b87cf3d056959eb1e351bc98dfb3e5fa5d53aff86a25f1b32c5`), Windows
+26200.8875, and RTX 4080 Super / D3D12 driver 32.0.16.1074 at the registered
+3840x2160@60 Hz target. Environment, mandatory evidence, and all 24 budget checks passed
+across three fresh/warm pairs. Every run returned 100,000/100,000 validated echoes with
+zero payload and sequence errors from the fixed 8,224-byte pool. Cooperative end-to-end
+rate was 45,132-46,708 round trips/s over 2,141-2,216 ms; maximum window pump duration
+was 0.58-1.01 ms, and every gameplay measurement window recorded zero main-thread tasks
+over 50 ms.
+
+The during-spike render-worker callback maximum was 133.29-166.72 ms even though the
+corresponding render/submit maximum was only 2.73-2.92 ms. This does **not** establish
+SAB-caused frame impact: the app starts the spike immediately after its first frame, while
+`smoke@1` performs the privileged `chrome://gpu` refresh-rate probe before its 10-second
+warm-up. RE-001 already measures that probe producing 166.6-216.6 ms launch callback
+gaps. The retained SAB interval is therefore attribution-contaminated and remains a
+workload-presence diagnostic only, not presentation evidence or a hitch-free claim. After
+warm-up, callback maxima were 16.78-17.07 ms with p95 16.72-16.80 ms, but the spike had
+already completed, so those values likewise do not establish active-transport impact.
+
+**Consequences:** The paired SPSC abstraction is now the substrate for later input,
+streaming-queue, and sim-to-render channels. MPMC needs are represented as multiple
+owned SPSC lanes or get a separately measured design; this primitive does not silently
+grow into a contended multi-producer queue. The M0 plan item was held open until a
+registered physical-console `smoke@1` run proved mandatory SAB evidence across all
+fresh/warm repeats without regressing the existing environment, evidence, or budget
+facets. The retained result above satisfies that gate, so the M0 SAB spike is a **go**
+for transport correctness, fixed-pool behavior, and cooperative main-thread scheduling.
+It is not a raw-bandwidth result or proof of hitch-free active transport.
+
+Worker-side spike failures use a dedicated control-plane response and transition SAB
+telemetry to `failed`; they do not masquerade as render-worker failures or tear down a
+render service that remains healthy.
+
+**Reopen if:** a real channel requires variable-width records or unavoidable multiple
+producers/consumers, measured atomic payload access is a bottleneck, sequence-wrap
+testing fails under a browser worker, or a controlled active-transport measurement
+without RE-001's privileged-diagnostics overlap shows unacceptable frame/main-thread
+impact.
+
 ## D-056: Keep Babylon WebGPU rendering in the dedicated render worker  (2026-07-15, accepted)
 
 **Decision:** The M0 WebGPU-in-worker spike is a **go**. Parallax keeps the D-005

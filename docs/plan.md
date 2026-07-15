@@ -50,7 +50,13 @@ measured automatically.
       tasks.
       Babylon/WebGPU rendering remains worker-owned; explicit window orchestration and
       DOM-sensitive future features are scoped in D-056.
-- [ ] Spike: SAB ring buffer main↔worker.
+- [x] Spike: SAB ring buffer main↔worker (D-057). Paired fixed-capacity SPSC transport
+      passed the registered dev-01 physical-console gate across three fresh/warm pairs:
+      schema v18 / metric-set v5, all three facets and 24 budget checks passed, and every
+      run returned 100,000/100,000 records with zero payload/sequence errors. The
+      retained concurrent callback maxima overlap RE-001's privileged-diagnostics
+      contamination and are not evidence of hitch-free active transport; D-057 scopes
+      the go decision accordingly.
 - [ ] Spike: OPFS sync-access-handle read throughput from a worker.
 - [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
       activation for download/create, download flow + model-size reporting, eviction

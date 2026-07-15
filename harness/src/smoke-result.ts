@@ -23,6 +23,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
+  sabRingBuffer: "SAB ring-buffer transport",
   v8CodeCache: "V8 code-cache evidence",
   vizPresentationFeedback: "compositor presentation interval",
 });
@@ -88,6 +89,7 @@ export interface SmokeEvidenceInput {
     readonly jsHeap: EvidenceState;
     readonly profile: "fresh" | "warm";
     readonly repeat: number;
+    readonly sabRingBuffer: EvidenceState;
   }[];
   readonly v8CodeCacheDiagnostics: readonly {
     readonly production: EvidenceState;
@@ -188,6 +190,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: all-worker JS heap ${run.jsHeap.state} (${evidenceReason(run.jsHeap)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.jsHeap),
         run.jsHeap,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: SAB ring-buffer transport ${run.sabRingBuffer.state} (${evidenceReason(run.sabRingBuffer)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.sabRingBuffer),
+        run.sabRingBuffer,
       ),
     ),
     ...input.runs.map((run) =>

@@ -54,6 +54,7 @@ describe("smoke result adapters", () => {
           jsHeap: { state: "measured" },
           profile: "fresh",
           repeat: 1,
+          sabRingBuffer: { state: "measured" },
         },
       ],
       v8CodeCacheDiagnostics: [
@@ -114,6 +115,7 @@ describe("smoke result adapters", () => {
           jsHeap: { state: "measured" },
           profile: "fresh",
           repeat: 1,
+          sabRingBuffer: { state: "measured" },
         },
       ],
       v8CodeCacheDiagnostics: [],
@@ -154,6 +156,7 @@ describe("smoke result adapters", () => {
           jsHeap: { state: "measured" },
           profile: "fresh",
           repeat: 1,
+          sabRingBuffer: { state: "measured" },
         },
       ],
       v8CodeCacheDiagnostics: [],
@@ -194,6 +197,7 @@ describe("smoke result adapters", () => {
           jsHeap: { state: "measured" },
           profile: "warm",
           repeat: 1,
+          sabRingBuffer: { state: "measured" },
         },
       ],
       v8CodeCacheDiagnostics: [],
@@ -245,6 +249,7 @@ describe("smoke result adapters", () => {
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
           profile: "fresh",
           repeat: 1,
+          sabRingBuffer: { state: "measured" },
         },
       ],
       v8CodeCacheDiagnostics: [
@@ -265,6 +270,38 @@ describe("smoke result adapters", () => {
 
     expect(facets.evidenceCompleteness.status).toBe("failed");
     expect(facets.evidenceCompleteness.reasons.join(" ")).toContain("all-worker JS heap invalid");
+    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
+  });
+
+  it("fails closed when the mandatory SAB transport spike is invalid", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta(),
+          jsHeap: { state: "measured" },
+          profile: "fresh",
+          repeat: 1,
+          sabRingBuffer: { reason: "record corruption", state: "invalid" },
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "observed checks passed", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    expect(facets.evidenceCompleteness.status).toBe("failed");
+    expect(facets.evidenceCompleteness.reasons.join(" ")).toContain(
+      "SAB ring-buffer transport invalid",
+    );
     expect(facets.budgetEvaluation.status).toBe("not-evaluated");
   });
 

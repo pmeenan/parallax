@@ -12,6 +12,7 @@ import {
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
+  SMOKE_SAB_TOTAL_BYTES,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
@@ -65,7 +66,11 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: false,
       probe: "implemented",
     });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(4);
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "SAB ring-buffer transport"),
+    ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(5);
+    expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );

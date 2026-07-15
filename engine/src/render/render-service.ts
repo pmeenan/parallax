@@ -1,3 +1,5 @@
+import { createSabRingBufferSpike } from "../workers/sab-ring-buffer-spike";
+import type { SabRingBufferSpikeTelemetrySnapshot } from "../workers/sab-ring-buffer-spike-protocol";
 import type {
   RenderFrameSample,
   RenderWorkerRequest,
@@ -11,6 +13,7 @@ export interface RenderTelemetrySnapshot {
   readonly failureMessage: string | null;
   readonly frameCount: number;
   readonly recentFrames: readonly RenderFrameSample[];
+  readonly sabRingBufferSpike: SabRingBufferSpikeTelemetrySnapshot;
   readonly state: "idle" | "starting" | "ready" | "failed" | "disposed";
   readonly workerInitToFirstFrameMs: number | null;
   readonly workerStartupToFirstFrameMs: number | null;
@@ -64,10 +67,14 @@ function errorMessage(error: unknown): string {
 }
 
 export function createRenderService(): RenderService {
+  const sabRingBufferSpike = createSabRingBufferSpike((sabSnapshot) => {
+    publish({ ...telemetry, sabRingBufferSpike: sabSnapshot });
+  });
   let telemetry: RenderTelemetrySnapshot = Object.freeze({
     failureMessage: null,
     frameCount: 0,
     recentFrames: Object.freeze([]),
+    sabRingBufferSpike: sabRingBufferSpike.snapshot(),
     state: "idle",
     workerInitToFirstFrameMs: null,
     workerStartupToFirstFrameMs: null,
@@ -90,6 +97,7 @@ export function createRenderService(): RenderService {
   };
 
   const teardown = (): void => {
+    sabRingBufferSpike.dispose();
     resizeObserver?.disconnect();
     resizeObserver = null;
     if (worker !== null) {
@@ -164,6 +172,7 @@ export function createRenderService(): RenderService {
                 workerInitToFirstFrameMs: message.workerInitToFirstFrameMs,
                 workerStartupToFirstFrameMs: performance.now() - workerStartupStartedAt,
               });
+              sabRingBufferSpike.start();
               break;
             case "frame":
               publish({
@@ -179,6 +188,12 @@ export function createRenderService(): RenderService {
               break;
             case "error":
               fail(message.message);
+              break;
+            case "sab-ring-buffer-spike-result":
+              sabRingBufferSpike.handleWorkerResult(message);
+              break;
+            case "sab-ring-buffer-spike-failure":
+              sabRingBufferSpike.failFromWorker(message.message);
               break;
           }
         };
@@ -199,6 +214,7 @@ export function createRenderService(): RenderService {
             canvas: offscreenCanvas,
             height: initialSize.height,
             kind: "start",
+            sabRingBufferSpike: sabRingBufferSpike.config,
             scene,
             width: initialSize.width,
           } satisfies RenderWorkerRequest,

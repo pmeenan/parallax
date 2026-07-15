@@ -19,3 +19,4 @@ export {
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
+export type { SabRingBufferSpikeTelemetrySnapshot } from "./workers/sab-ring-buffer-spike-protocol";
