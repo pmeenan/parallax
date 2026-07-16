@@ -94,7 +94,10 @@ export async function readAndValidateBuildManifest(
   });
 }
 
-async function listFilesRecursively(directory: string, prefix = ""): Promise<readonly string[]> {
+export async function listFilesRecursively(
+  directory: string,
+  prefix = "",
+): Promise<readonly string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
   const files: string[] = [];
   for (const entry of entries) {

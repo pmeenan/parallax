@@ -62,9 +62,35 @@ measured automatically.
       validated preflight passed the registered dev-01 physical-console gate: schema
       v19, all three facets and 24 budget checks passed, all reads validated, and every
       fresh/warm sequential/random cohort stayed within the 10% repeatability limit.
-- [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
+- [x] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
       activation for download/create, download flow + model-size reporting, eviction
       + offline reavailability behavior, session limits.
+      **No-go as a required backend** (D-059/RE-019). The schema-v6 pinned-CfT run on
+      registered dev-01 passed the physical environment and launch-contract gates,
+      exposed the API in the window but not a dedicated worker, and reported initial
+      availability `downloadable`. Activation-backed `create()` then remained in
+      `creating` with zero progress events, zero retained samples, and zero installed
+      model bytes until the 120,723 ms no-forward-progress watchdog stopped the run.
+      Download completion, inference, session pressure, and offline reavailability
+      were consequently unmeasurable rather than silently treated as passing. The
+      research spike is complete because its delivery prerequisite produced a valid,
+      reproducible negative result; the separate branded-Chrome install qualification
+      below remains open before the NPC backend choice.
+- [ ] Qualify the Prompt API's production install UX in branded Chrome, separately
+      from the pinned-CfT evidence gate and before choosing the NPC-model backend.
+      Exercise at least two independent fresh branded-Chrome profiles: one uninterrupted
+      install and one browser-restart/resume during download. Each starts from a real
+      install-page gesture, must leave `LanguageModel.create()`'s progress monitor
+      observably live with monotonic 0..1 progress (including at least one intermediate
+      update rather than only endpoints), reach `available`, complete the fixed streamed
+      NPC-dialog fixture, survive a browser restart, and repeat the fixture offline.
+      Record download duration, longest interval without a progress event, availability
+      transitions, model status/component size, and every error. A failure to trigger,
+      expose actionable progress, resume, or remain available—including 120 seconds
+      without forward progress—is backend-selection evidence, not a harness exception,
+      and keeps Prompt API from being a required game dependency regardless of the CfT
+      research outcome. Recalibrate that provisional stall threshold from the
+      successful-run timing evidence before production behavior is chosen.
 - [ ] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
       model via WebGPU inference in a worker against the walking skeleton, head-to-head
       with the Prompt API spike above on a fixed NPC-dialog prompt fixture set:

@@ -1,10 +1,11 @@
 import {
   createOpfsReadSpikeService,
+  createPromptApiSpikeService,
   createRenderService,
   initializeEngine,
   installTelemetryExport,
 } from "@parallax/engine";
-import { createWalkingSkeletonScene, identifyGame } from "@parallax/game";
+import { createWalkingSkeletonScene, identifyGame, PROMPT_API_SPIKE_FIXTURE } from "@parallax/game";
 
 const identity = identifyGame(initializeEngine());
 const status = document.querySelector("#status");
@@ -16,10 +17,50 @@ if (!(status instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement)) 
 
 const renderService = createRenderService();
 const opfsReadSpikeService = createOpfsReadSpikeService();
-installTelemetryExport(renderService, opfsReadSpikeService, {
+const promptApiSpikeService = createPromptApiSpikeService(PROMPT_API_SPIKE_FIXTURE);
+installTelemetryExport(renderService, opfsReadSpikeService, promptApiSpikeService, {
   engineVersion: identity.engine.version,
   gameVersion: identity.version,
 });
+const promptApiSpikePanel = document.querySelector("#prompt-api-spike");
+const promptApiStart = document.querySelector("#prompt-api-start");
+const promptApiOffline = document.querySelector("#prompt-api-offline");
+const promptApiStatus = document.querySelector("#prompt-api-status");
+if (new URL(location.href).searchParams.get("promptApiSpike") === "manual") {
+  if (
+    !(promptApiSpikePanel instanceof HTMLElement) ||
+    !(promptApiStart instanceof HTMLButtonElement) ||
+    !(promptApiOffline instanceof HTMLButtonElement) ||
+    !(promptApiStatus instanceof HTMLElement)
+  ) {
+    throw new Error("Prompt API spike controls are missing");
+  }
+  promptApiSpikePanel.hidden = false;
+  promptApiStart.addEventListener("click", () => promptApiSpikeService.runFromUserActivation());
+  promptApiOffline.addEventListener("click", () =>
+    promptApiSpikeService.runOfflineProbeFromUserActivation(),
+  );
+  promptApiSpikeService.subscribe((prompt) => {
+    promptApiStart.disabled = prompt.state !== "awaiting-user-activation";
+    promptApiOffline.disabled = prompt.state !== "completed" || prompt.offline.state !== "not-run";
+    const availability = prompt.initialAvailability ?? "pending";
+    const inference =
+      prompt.inference === null
+        ? ""
+        : ` · first chunk ${prompt.inference.firstChunkLatencyMs.toFixed(1)} ms · context ${prompt.inference.contextUsageAfter}/${prompt.inference.contextWindow}`;
+    const contexts = prompt.executionContexts;
+    const worker =
+      contexts.dedicatedWorker.state === "measured"
+        ? String(contexts.dedicatedWorker.exposed)
+        : contexts.dedicatedWorker.state;
+    const download =
+      prompt.download.maxProgress === null
+        ? ""
+        : ` · download ${(prompt.download.maxProgress * 100).toFixed(1)}% · ${prompt.download.eventsObserved} progress events`;
+    promptApiStatus.textContent = `${prompt.state} · availability ${availability} · window ${String(contexts.windowExposed)} · worker ${worker}${download}${inference}`;
+  });
+  void promptApiSpikeService.probe();
+}
 const updateStatus = (): void => {
   const render = renderService.snapshot();
   const opfs = opfsReadSpikeService.snapshot();

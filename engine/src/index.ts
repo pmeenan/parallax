@@ -1,3 +1,28 @@
+export type {
+  PromptApiAvailability,
+  PromptApiConcurrentSessionTelemetry,
+  PromptApiDownloadProgressSample,
+  PromptApiDownloadTelemetry,
+  PromptApiExecutionContextTelemetry,
+  PromptApiFactoryAdapter,
+  PromptApiInferenceTelemetry,
+  PromptApiInvalidDownloadSample,
+  PromptApiOfflineTelemetry,
+  PromptApiSessionAdapter,
+  PromptApiSpikeFixture,
+  PromptApiSpikeListener,
+  PromptApiSpikeService,
+  PromptApiSpikeState,
+  PromptApiSpikeTelemetrySnapshot,
+  PromptApiWorkerProbePlatform,
+} from "./ai/prompt-api-spike-service";
+export {
+  createPromptApiSpikeService,
+  PROMPT_API_SPIKE_CONCURRENT_SESSION_TARGET,
+  PROMPT_API_SPIKE_TELEMETRY_SCHEMA_VERSION,
+  PROMPT_API_WORKER_PROBE_TIMEOUT_MS,
+  probeDedicatedWorkerExposure,
+} from "./ai/prompt-api-spike-service";
 export type { EngineIdentity } from "./identity";
 export { ENGINE_VERSION, initializeEngine } from "./identity";
 export type {

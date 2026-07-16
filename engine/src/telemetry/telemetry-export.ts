@@ -1,7 +1,13 @@
+import type {
+  PromptApiSpikeService,
+  PromptApiSpikeTelemetrySnapshot,
+} from "../ai/prompt-api-spike-service";
 import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
 
+// Prompt API telemetry is an additive section under the v3 envelope and carries its
+// own section schema version. Existing v3 consumers may safely ignore the new field.
 export const TELEMETRY_SCHEMA_VERSION = 3;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
@@ -19,14 +25,15 @@ export interface ParallaxRuntimeIdentity {
 export interface ParallaxTelemetrySnapshot {
   readonly identity: ParallaxRuntimeIdentity;
   readonly opfsReadSpike: OpfsReadSpikeTelemetrySnapshot;
+  readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
 }
 
 export interface ParallaxTelemetryExport {
   snapshot(): ParallaxTelemetrySnapshot;
-  // D-058 keeps the M0 spike control explicit and typed. M1 should revisit a source
-  // registry only once production streaming telemetry supplies a second durable case.
+  // D-058 keeps the only remotely driven M0 spike control explicit and typed. The
+  // activation-bound Prompt API probe is app-owned and deliberately absent here.
   startOpfsReadSpike(): void;
   subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void;
 }
@@ -34,15 +41,22 @@ export interface ParallaxTelemetryExport {
 export function installTelemetryExport(
   renderService: RenderService,
   opfsReadSpikeService: OpfsReadSpikeService,
+  promptApiSpikeService: PromptApiSpikeService,
   identity: ParallaxRuntimeIdentity,
+  target: object = globalThis,
 ): ParallaxTelemetryExport {
-  if (Object.hasOwn(globalThis, TELEMETRY_GLOBAL_NAME)) {
+  if (Object.hasOwn(target, TELEMETRY_GLOBAL_NAME)) {
     throw new Error(`${TELEMETRY_GLOBAL_NAME} is already installed in this realm`);
   }
   const frozenIdentity = Object.freeze({ ...identity });
   const telemetryExport: ParallaxTelemetryExport = Object.freeze({
     snapshot: () =>
-      snapshot(renderService.snapshot(), opfsReadSpikeService.snapshot(), frozenIdentity),
+      snapshot(
+        renderService.snapshot(),
+        opfsReadSpikeService.snapshot(),
+        promptApiSpikeService.snapshot(),
+        frozenIdentity,
+      ),
     startOpfsReadSpike(): void {
       opfsReadSpikeService.start();
     },
@@ -50,7 +64,12 @@ export function installTelemetryExport(
       const publish = (): void => {
         try {
           listener(
-            snapshot(renderService.snapshot(), opfsReadSpikeService.snapshot(), frozenIdentity),
+            snapshot(
+              renderService.snapshot(),
+              opfsReadSpikeService.snapshot(),
+              promptApiSpikeService.snapshot(),
+              frozenIdentity,
+            ),
           );
         } catch (error: unknown) {
           console.error("Combined telemetry listener failed", error);
@@ -64,15 +83,17 @@ export function installTelemetryExport(
       };
       const unsubscribeRender = renderService.subscribe(publishAfterWiring);
       const unsubscribeOpfs = opfsReadSpikeService.subscribe(publishAfterWiring);
+      const unsubscribePromptApi = promptApiSpikeService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
         unsubscribeRender();
         unsubscribeOpfs();
+        unsubscribePromptApi();
       };
     },
   });
-  Object.defineProperty(globalThis, TELEMETRY_GLOBAL_NAME, {
+  Object.defineProperty(target, TELEMETRY_GLOBAL_NAME, {
     configurable: false,
     enumerable: false,
     value: telemetryExport,
@@ -84,11 +105,13 @@ export function installTelemetryExport(
 function snapshot(
   render: RenderTelemetrySnapshot,
   opfsReadSpike: OpfsReadSpikeTelemetrySnapshot,
+  promptApiSpike: PromptApiSpikeTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
     identity,
     opfsReadSpike,
+    promptApiSpike,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
   });

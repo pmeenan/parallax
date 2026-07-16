@@ -129,7 +129,8 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 Milestone **M0 (harness + skeleton)** — see [docs/plan.md](docs/plan.md) for what is
 done vs. open. The build/serve pipeline, walking-skeleton app, Harness v1 (`smoke@1` on
-registered dev-01), WebGPU-in-worker/OffscreenCanvas go spike (D-056), and SAB ring-buffer
-go spike (D-057), and worker-owned OPFS sync-read go spike (D-058) are complete; the
-remaining M0 spikes and exit items remain. Keep this paragraph current when plan.md
+registered dev-01), WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer
+go spike (D-057), worker-owned OPFS sync-read go spike (D-058), and Prompt API measured
+no-go spike (D-059/RE-019) are complete; the remaining M0 spikes and exit items remain.
+Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

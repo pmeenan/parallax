@@ -37,6 +37,8 @@ short (each gap in observability is itself a rough-edges finding — log it).
 ## Standard runs (versioned contracts in `src/runs/`; deterministic by construction)
 
 - `smoke` — boot to first interactive frame, budget snapshot (every change).
+- `prompt-api-spike` — activation-bound first download, inference/session pressure,
+  generation impact, and offline reavailability (M0 evidence run).
 - `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
 - `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
 - `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only

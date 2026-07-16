@@ -31,7 +31,7 @@ engine/src/
   streaming/   cell scheduler, memory budget governor, eviction
   storage/     OPFS, manifest, install/update, integrity                    ✅ (M0 read spike)
   wasm/        Rust crates (one per module) + JS bindings
-  ai/          inference backends (Prompt API sessions; P-007), knowledge service /
+  ai/          inference backends (Prompt API sessions; P-007), knowledge service / ✅ (M0 Prompt API spike)
                retrieval context assembly (D-033), schema-constrained output
   audio/       WebAudio graph + worklets
   input/       keyboard/mouse/gamepad → command stream

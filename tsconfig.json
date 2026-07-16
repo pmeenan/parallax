@@ -4,6 +4,7 @@
     { "path": "./engine" },
     { "path": "./game" },
     { "path": "./app" },
-    { "path": "./harness" }
+    { "path": "./harness" },
+    { "path": "./tsconfig.tests.json" }
   ]
 }

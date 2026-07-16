@@ -1,6 +1,14 @@
-import type { EngineIdentity, WalkingSkeletonScene } from "@parallax/engine";
+import type { EngineIdentity, PromptApiSpikeFixture, WalkingSkeletonScene } from "@parallax/engine";
 
 export const GAME_VERSION = "0.0.0";
+
+// Shared by the Prompt API and P-007 phase-A backends so their M0 comparison uses
+// identical game-owned NPC content rather than backend-specific prompts.
+export const PROMPT_API_SPIKE_FIXTURE = Object.freeze({
+  offlinePrompt: "Reply with exactly: offline-ready",
+  prompt:
+    "Reply with one short sentence as a village-gate watch officer reporting that the road is secure.",
+}) satisfies PromptApiSpikeFixture;
 
 export interface GameIdentity {
   readonly engine: EngineIdentity;

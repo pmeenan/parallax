@@ -1,8 +1,9 @@
 # Chrome platform gaps exposed by Parallax
 
 Chrome-facing synthesis of the platform changes that would most improve AAA-scale web games and
-their measurement. Updated 2026-07-14 from Chrome for Testing 150.0.7871.115 experiments on
-Parallax's registered Windows/D3D12 reference machine.
+their measurement. Updated 2026-07-16 from a mix of registered physical-console Chrome for
+Testing 150.0.7871.115 experiments and explicitly labeled local CfT/branded-Chrome diagnostics
+on Parallax's Windows/D3D12 reference machine; each evidence entry states its provenance.
 
 This is the actionable report; [rough-edges.md](rough-edges.md) remains the evidence source of
 truth with exact versions, measurements, reproductions, mitigations, and source links. A request
@@ -104,6 +105,27 @@ and Chromium's
 
 ## P1 requests
 
+### Expose Prompt API model bytes and a deterministic lifecycle test hook
+
+Prompt API download progress is normalized to 0..1 and intentionally omits exact bytes; Chrome
+documents the exact installed size only through `chrome://on-device-internals`. The model may be
+removed for low space, enterprise policy, or 30 days without meeting eligibility, and Chrome says
+deletion can happen even mid-session; related LoRA weights are purged after a 30-day grace period.
+Neither the web API nor automation exposes a supported,
+non-destructive way to force and attribute those transitions. Add downloaded/total byte counters,
+an observable lifecycle reason, and a DevTools/CDP deletion test hook. This would let install UX
+report truthful progress and make offline recovery a repeatable gate without granting production
+pages a deletion control. Evidence:
+[RE-017](rough-edges.md#re-017-prompt-api-download-telemetry-omits-bytes-and-has-no-eviction-test-control).
+
+A fresh CfT 150 physical-console run passed its registered-machine environment and launch-contract
+gates, then reached `downloadable` but left activation-backed `create()` pending for 120,723 ms
+with zero progress events and zero installed model bytes. Add a machine-readable delivery
+state/reason that distinguishes eligibility work, queueing, fetch, verification, unpack, and a
+stalled component, and reject promptly when delivery cannot advance. The separate branded-Chrome
+production-install qualification remains open. Evidence:
+[RE-019](rough-edges.md#re-019-prompt-api-creation-can-remain-pending-without-download-progress-or-model-bytes).
+
 ### Make browser trace completion reliable and diagnosable
 
 `Tracing.end` can be acknowledged in roughly 2 ms while no chunks and no
@@ -146,6 +168,15 @@ semantics would make memory budgets substantially more credible. Evidence:
 [RE-012](rough-edges.md#re-012-cdp-exposes-isolate-used-heap-snapshots-but-no-continuous-live-retention-high-water).
 
 ## P2 requests
+
+### Expose Prompt API sessions in dedicated workers
+
+The window-only API keeps model orchestration and streaming callbacks on the main thread while the
+rest of Parallax's high-rate platform work is worker-owned. Define the worker's responsible
+document/permissions-policy relationship and expose the existing session/streaming shape in
+dedicated workers. Evidence:
+[RE-016](rough-edges.md#re-016-prompt-api-remains-window-only-in-chrome-150) and
+[D-017](decisions.md#d-017-prompt-api-operational-model--window-broker-activation-correct-download-authored-fallback--2026-07-11-accepted-supersedes-d-007).
 
 ### Preserve memory-dump request identity in trace export
 

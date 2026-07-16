@@ -1,18 +1,19 @@
-import { access, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import {
-  type ParallaxTelemetryExport,
-  type ParallaxTelemetrySnapshot,
-  TELEMETRY_FRAME_BATCH_FRAMES,
-} from "@parallax/engine";
-import { type BrowserContext, type CDPSession, chromium, type Page } from "playwright-core";
+import { type ParallaxTelemetryExport, TELEMETRY_FRAME_BATCH_FRAMES } from "@parallax/engine";
+import type { BrowserContext, CDPSession, Page } from "playwright-core";
 import {
   type Distribution,
   distribution,
   evaluateP95Variance,
   type VarianceMetric,
 } from "./aggregate.js";
+import {
+  readBrowserDisplayIdentity,
+  readChromeDisplayRefreshRates,
+  readWebGpuAdapterIdentity,
+} from "./browser-probes.js";
 import {
   type BudgetCheck,
   type DiagnosticCheck,
@@ -23,7 +24,14 @@ import {
   evaluateV8CodeCacheReproductionDiagnostics,
   type QualityTier,
 } from "./budgets.js";
-import { type BuildManifest, readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
+import { type BuildManifest, readAndValidateBuildManifest } from "./build-manifest.js";
+import {
+  type ChromePin,
+  launchPersistentChrome,
+  loadChromePin,
+  resolveChromeExecutablePath,
+  validateChromeExecutable,
+} from "./chrome-pin.js";
 import {
   D3D12_HISTOGRAM_PREFIX,
   DAWN_TRACE_CATEGORY,
@@ -40,7 +48,6 @@ import {
   invalidEnvironmentGate,
   loadMachineDescriptor,
   type MachineDescriptor,
-  parseDisplayRefreshRates,
   safeMachineIdForFilename,
   tryReadWindowsHostIdentity,
   type WebGpuAdapterIdentity,
@@ -118,6 +125,7 @@ import {
   formatSmokeFacetSummary,
 } from "./smoke-result.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
+import { readTelemetry } from "./telemetry.js";
 import {
   decodedSourceCodeUnits,
   resolveV8CodeCacheEvidence,
@@ -162,13 +170,6 @@ interface CoreRunFailure {
 interface LaunchSequencePosition {
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
-}
-
-interface ChromePin {
-  readonly channel: "stable";
-  readonly executableSha256: Readonly<Record<string, string>>;
-  readonly revision: string;
-  readonly version: string;
 }
 
 interface RunMeasurement {
@@ -303,8 +304,8 @@ await main();
 async function main(): Promise<void> {
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
-  const chromePin = JSON.parse(await readFile(chromePinPath, "utf8")) as ChromePin;
-  const executablePath = await resolveChromeExecutablePath(chromePin);
+  const chromePin = await loadChromePin(chromePinPath);
+  const executablePath = await resolveChromeExecutablePath(repositoryRoot, chromePin);
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
   const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest);
@@ -688,17 +689,7 @@ async function inspectEnvironment(
   tier: QualityTier,
   baseUrl: string,
 ): Promise<EnvironmentIdentity> {
-  const platformKey = chromePlatformKey();
-  const expectedExecutableDigest = chromePin.executableSha256[platformKey];
-  if (expectedExecutableDigest === undefined) {
-    throw new Error(`Chrome for Testing executable digest is not pinned for ${platformKey}`);
-  }
-  const executableDigest = await sha256File(executablePath);
-  if (executableDigest.sha256 !== expectedExecutableDigest) {
-    throw new Error(
-      `Chrome executable digest mismatch: expected ${expectedExecutableDigest}, received ${executableDigest.sha256}`,
-    );
-  }
+  const executableSha256 = await validateChromeExecutable(chromePin, executablePath);
   let machine: MachineDescriptor | null = null;
   let machineDescriptorFailure: string | null = null;
   try {
@@ -707,7 +698,9 @@ async function inspectEnvironment(
     machineDescriptorFailure = `Machine descriptor unavailable: ${errorMessage(error)}`;
   }
   const hostResultPromise = tryReadWindowsHostIdentity();
-  const context = await launch(executablePath, profilePath, ["--enable-webgpu-developer-features"]);
+  const context = await launchPersistentChrome(executablePath, profilePath, [
+    "--enable-webgpu-developer-features",
+  ]);
   let session: CDPSession | null = null;
   try {
     const browser = context.browser();
@@ -767,7 +760,7 @@ async function inspectEnvironment(
       browserProduct: version.product,
       browserRevision: version.revision,
       browserUserAgent: version.userAgent,
-      executableSha256: executableDigest.sha256,
+      executableSha256,
       gateIdentity,
       gpuDevices: systemInfo.gpu.devices,
       host,
@@ -782,14 +775,6 @@ async function inspectEnvironment(
     await session?.detach().catch(() => undefined);
     await context.close();
   }
-}
-
-function chromePlatformKey(): string {
-  if (process.platform === "win32" && process.arch === "x64") return "win64";
-  if (process.platform === "linux" && process.arch === "x64") return "linux64";
-  if (process.platform === "darwin" && process.arch === "arm64") return "mac-arm64";
-  if (process.platform === "darwin" && process.arch === "x64") return "mac-x64";
-  throw new Error(`No Chrome for Testing platform mapping for ${process.platform}/${process.arch}`);
 }
 
 async function measureRun(
@@ -836,7 +821,7 @@ async function measureRunWithBrowser(
   renderWorkerUrl: ProbeResult<string>,
   launchPosition: LaunchSequencePosition,
 ): Promise<Omit<RunMeasurement, "http">> {
-  const context = await launch(executablePath, profilePath);
+  const context = await launchPersistentChrome(executablePath, profilePath);
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
   let smokeTrace: SmokeTraceCapture | null = null;
@@ -1271,7 +1256,7 @@ async function measureV8CodeCacheDiagnosticRunOnce(
   launchPosition: LaunchSequencePosition,
   completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
 ): Promise<V8CodeCacheDiagnosticRun> {
-  const context = await launch(executablePath, profilePath);
+  const context = await launchPersistentChrome(executablePath, profilePath);
   let trace: SmokeTraceCapture | null = null;
   let traceStartFailure: string | null = null;
   try {
@@ -1549,49 +1534,6 @@ function markPresentationTrace(page: Page, marker: string): Promise<void> {
   return page.evaluate((name) => performance.mark(name), marker).then(() => undefined);
 }
 
-function launch(
-  executablePath: string,
-  profilePath: string,
-  args: readonly string[] = [],
-): Promise<BrowserContext> {
-  return chromium.launchPersistentContext(profilePath, {
-    executablePath,
-    headless: false,
-    args: ["--start-fullscreen", ...args],
-    viewport: null,
-  });
-}
-
-function readWebGpuAdapterIdentity(page: Page): Promise<WebGpuAdapterIdentity> {
-  return page.evaluate(async () => {
-    const adapter = await navigator.gpu?.requestAdapter();
-    if (adapter === null || adapter === undefined) throw new Error("WebGPU adapter is unavailable");
-    const info = adapter.info;
-    const optionalString = (name: string): string | null => {
-      const value = Reflect.get(info, name);
-      return typeof value === "string" ? value : null;
-    };
-    return Object.freeze({
-      architecture: info.architecture,
-      backend: optionalString("backend"),
-      description: info.description,
-      device: info.device,
-      driver: optionalString("driver"),
-      isFallbackAdapter: info.isFallbackAdapter,
-      type: optionalString("type"),
-      vendor: info.vendor,
-    });
-  });
-}
-
-async function readBrowserDisplayIdentity(
-  context: BrowserContext,
-  page: Page,
-): Promise<BrowserDisplayIdentity> {
-  const refreshRatesHz = await readChromeDisplayRefreshRates(context);
-  return browserDisplay(await readScreenIdentity(page), refreshRatesHz, []);
-}
-
 function readScreenIdentity(page: Page): Promise<NonNullable<BrowserDisplayIdentity["screen"]>> {
   return page.evaluate(() =>
     Object.freeze({
@@ -1703,40 +1645,6 @@ function readSurfaceState(page: Page): Promise<
   });
 }
 
-async function readChromeDisplayRefreshRates(context: BrowserContext): Promise<readonly number[]> {
-  const gpuPage = await context.newPage();
-  try {
-    await gpuPage.goto("chrome://gpu", { waitUntil: "load" });
-    const session = await context.newCDPSession(gpuPage);
-    const document = (await session.send("DOM.getDocument")) as { root: { nodeId: number } };
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const matches = (await session.send("Accessibility.queryAXTree", {
-        accessibleName: "Refresh Rate in Hz",
-        nodeId: document.root.nodeId,
-      })) as { nodes: readonly { name?: { value?: unknown } }[] };
-      const labelIsReady = matches.nodes.some((node) => node.name?.value === "Refresh Rate in Hz");
-      if (!labelIsReady) {
-        await gpuPage.waitForTimeout(250);
-        continue;
-      }
-      const tree = (await session.send("Accessibility.getFullAXTree")) as {
-        nodes: readonly { name?: { value?: unknown } }[];
-      };
-      const names = tree.nodes.flatMap((node) =>
-        typeof node.name?.value === "string" ? [node.name.value] : [],
-      );
-      const refreshRates = parseDisplayRefreshRates(names);
-      if (refreshRates.length > 0) {
-        return Object.freeze([...new Set(refreshRates)]);
-      }
-      await gpuPage.waitForTimeout(250);
-    }
-    return Object.freeze([]);
-  } finally {
-    await gpuPage.close();
-  }
-}
-
 function revalidateHostEnvironment(
   environment: EnvironmentIdentity,
   result: WindowsHostIdentityResult,
@@ -1827,13 +1735,6 @@ function telemetryReady(contract: { expectedSchemaVersion: number; globalName: s
   return (
     snapshot.schemaVersion === contract.expectedSchemaVersion && snapshot.render.state === "ready"
   );
-}
-
-function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapshot> {
-  return page.evaluate((globalName) => {
-    const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
-    return telemetry.snapshot();
-  }, SMOKE_TELEMETRY_GLOBAL_NAME);
 }
 
 async function installLongTaskObserver(page: Page): Promise<void> {
@@ -2240,30 +2141,6 @@ function requiredEnvironment(name: string): string {
   const value = process.env[name];
   if (value === undefined || value === "") throw new Error(`${name} is required`);
   return value;
-}
-
-// Conventional in-repo location for the pinned Chrome for Testing binary (gitignored):
-// the extracted platform directory's contents live at harness/chrome/cft/<version>/.
-// PARALLAX_CHROME_PATH overrides for non-conventional layouts. The digest gate performed
-// during environment inspection remains the authority on whether the binary is the pin.
-async function resolveChromeExecutablePath(chromePin: ChromePin): Promise<string> {
-  const override = process.env.PARALLAX_CHROME_PATH;
-  if (override !== undefined && override !== "") return override;
-  const versionRoot = join(repositoryRoot, "harness/chrome/cft", chromePin.version);
-  const conventional =
-    process.platform === "darwin"
-      ? join(versionRoot, "Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing")
-      : process.platform === "win32"
-        ? join(versionRoot, "chrome.exe")
-        : join(versionRoot, "chrome");
-  try {
-    await access(conventional);
-  } catch {
-    throw new Error(
-      `Pinned Chrome for Testing ${chromePin.version} was not found at the conventional path ${conventional}. Extract the pinned archive's platform directory contents there, or set PARALLAX_CHROME_PATH to the executable.`,
-    );
-  }
-  return conventional;
 }
 
 function requiredNumber(value: number | null): number {

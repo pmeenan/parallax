@@ -41,7 +41,7 @@ numbered finding (or a decisions.md entry) once there's evidence:
 - **wasm64 in anger:** real cost of memory64 (pointer width, perf) in a hot Rust module.
 - **Prompt API under load:** inference/render GPU contention; session limits vs.
   many-NPC designs; download/availability UX during install; main-thread cost of the
-  window-owned broker (worker unavailability is itself the first finding here, D-017);
+  window-owned broker (worker unavailability is recorded as RE-016);
   eviction and offline-reavailability behavior.
 - **CPU SIMD width ceiling:** wasm tops out at 128-bit vectors (simd128 + relaxed-simd;
   the flexible-vectors proposal for wider/length-agnostic SIMD is still design-stage,
@@ -91,6 +91,158 @@ COS APIs exist):
   hash-based sharing index?
 
 ## Findings
+
+## RE-019: Prompt API creation can remain pending without download progress or model bytes
+
+- **Date / Chrome version:** 2026-07-16; Chrome for Testing Stable 150.0.7871.115 on
+  Windows 11/dev-01/RTX 4080 Super, physical console. Result schema v6 artifact
+  `prompt-api-spike-1-b68bd86a977a-dev-01-2026-07-16T23-41-28-710Z.json`; the registered
+  environment gate was measured and passed with full D3D12 adapter/driver identity.
+- **Layer:** Prompt API / Chrome model delivery.
+- **Status:** open; CfT reproduction confirmed, and the independent branded-Chrome
+  production-install qualification remains to determine the player-facing impact.
+- **What we expected / What happened:** a fresh-profile, activation-backed
+  `LanguageModel.create()` should begin observable model delivery. The API reported
+  `downloadable`, the window exposed `LanguageModel`, the dedicated worker did not, and
+  the effective Chrome command line passed D-059's model-delivery contract with all 15
+  unrelated Playwright feature suppressions retained. After the real click, `create()`
+  remained in `creating` for 120,723 ms while the monitor received exactly zero
+  `downloadprogress` events. The profile's `OptGuideOnDeviceModel` component still
+  contained zero files and zero bytes; the developer also observed no corresponding
+  sustained router traffic.
+- **Repro:** from a physical console run `PARALLAX_MACHINE_ID=dev-01`,
+  `PARALLAX_TIER=showcase`, then `pnpm harness:prompt-api`. Schema v6 polls the exported
+  progress maximum and fails after the `budgets.md` 120-second no-forward-progress
+  limit while preserving partial telemetry. This run stopped at 120,723 ms with max
+  progress null, zero valid/invalid/regressive events, zero retained samples, initial
+  availability `downloadable`, and final state `creating`.
+  An earlier schema-v5 reproduction had the same delivery outcome but an invalid
+  environment facet because the runner queried adapter identity on the already-running
+  app page after its render worker acquired WebGPU. The schema-v6 rerun uses the inert
+  `/__parallax/identity` control-page probe and validated WebGPU developer-identity
+  switch, and passed every registered-machine identity comparison.
+- **Impact on Parallax:** the documented trigger/progress surface did not provide a
+  usable install experience in a valid CfT run. The M0 research spike is therefore
+  complete as a measured no-go for a required backend. Prompt API remains optional and
+  cannot become required unless the independent fresh branded-Chrome qualification
+  demonstrates reliable trigger, actionable progress, resume, restart, and offline
+  reuse. P-007's app-owned model remains the lifecycle-control challenger.
+- **Proposed improvement:** when an eligible `create()` cannot start or advance model
+  delivery, reject it promptly with a machine-readable delivery/eligibility reason.
+  Expose a stable download state that distinguishes queued, resolving eligibility,
+  fetching, verifying, unpacking, and stalled component delivery; progress events
+  should remain live while bytes or local installation work advances.
+
+## RE-018: Playwright defaults disabled Prompt API component delivery in fresh Chrome profiles
+
+- **Date / Chrome version:** 2026-07-16; Chrome for Testing Stable 150.0.7871.115 and
+  exact-version branded Chrome 150.0.7871.115 on Windows 11/dev-01/RTX 4080 Super.
+  Local compatibility diagnostics only; no physical-console evidence claim.
+- **Layer:** harness automation / Prompt API component delivery.
+- **Status:** our-bug; fixed in the working-tree `prompt-api-spike@1` launcher (D-059).
+- **What we expected / What happened:** fresh exact-version CfT and branded Chrome
+  profiles exposed `LanguageModel` but initially returned only `unavailable`, despite
+  dev-01 meeting the documented OS/CPU/RAM/GPU/storage requirements. Inspection then
+  showed both launches inherited Playwright defaults for `--disable-component-update`,
+  `--disable-background-networking`,
+  `--disable-component-extensions-with-background-pages`, and a
+  `--disable-features` list containing `OptimizationHints`. An equivalent new branded
+  profile with those four defaults removed returned `downloadable` immediately and in
+  13 consecutive checks over about one minute.
+- **Repro:** launch a fresh profile with Playwright's ordinary defaults, navigate to the
+  localhost app, and observe `availability() === "unavailable"`; inspect
+  `chrome://version` for the disabling switches. Repeat while using
+  `ignoreDefaultArgs` for those exact defaults and observe `downloadable`.
+  `chrome://policy` showed no configured policy entries; `chrome://flags` contributed
+  no switches (`--flag-switches-begin --flag-switches-end` was empty); and
+  `chrome://on-device-internals` reported that internal debug pages were disabled for
+  the automation session, so it supplied no component state.
+- **Impact on Parallax:** the earlier availability blocker and proposed P1 eligibility
+  ask were false. The first fix also ignored Playwright's whole combined
+  `--disable-features` switch, unintentionally re-enabling 15 unrelated features; the
+  corrected runner restores all 15 and enables only `OptimizationHints`. It records
+  the effective `chrome://version` command line and disabled-feature set, then fails
+  closed if model-delivery switches reappear or preserved render/navigation/profile
+  suppressions disappear. Ordinary `smoke@1` launches retain standard Playwright
+  defaults. The corrected schema-v6 physical-console run verified all 15 preserved
+  suppressions and returned `downloadable`; RE-019 records the subsequent delivery
+  stall.
+- **Proposed improvement:** none platform-side from this result. The launch switches
+  are now part of result schema v6 and fail closed at runtime if component delivery or
+  Playwright-default matching regresses.
+- **Sources checked:** Chrome
+  [Prompt API requirements](https://developer.chrome.com/docs/ai/prompt-api),
+  [built-in AI setup](https://developer.chrome.com/docs/ai/get-started), and
+  [model management](https://developer.chrome.com/docs/ai/understand-built-in-model-management),
+  checked 2026-07-16; local exact-version diagnostics above.
+
+## RE-017: Prompt API download telemetry omits bytes and has no eviction test control
+
+- **Date / Chrome version:** 2026-07-16; current Prompt API documentation/proposal and
+  Chrome for Testing Stable 150.0.7871.115 on Windows 11/dev-01/RTX 4080 Super. A same-version branded
+  Chrome profile contained a 4,269,934,835-byte `OptGuideOnDeviceModel` component; this
+  profile inspection was a local diagnostic, not the registered spike gate.
+- **Layer:** Prompt API / Chrome model lifecycle.
+- **Status:** open; `prompt-api-spike@1` records normalized download evidence, measures
+  component bytes after Chrome exits, and labels forced eviction `unsupported` (D-059).
+- **What we expected / What happened:** an install UI and lifecycle harness need exact
+  downloaded/total bytes and a reproducible eviction transition. The web API exposes
+  only aggregate `ProgressEvent.loaded` values from 0 to 1 (`total` is 1), explicitly
+  omits byte counts, and exposes no supported control for forcing the documented
+  model deletion. Chrome documents the exact installed size only through
+  `chrome://on-device-internals`; deletion can follow low free space, enterprise policy,
+  or 30 days without meeting other eligibility criteria, and can occur at any time —
+  even during an active session and prompt.
+- **Repro:** create a fresh Prompt API session with a `downloadprogress` monitor and
+  inspect every event; then compare the API fields with the component directory and
+  `chrome://on-device-internals`. The versioned repro lives in
+  `harness/src/prompt-api-spike-run.ts`; its post-shutdown profile scan is explicitly
+  privileged evidence.
+- **Impact on Parallax:** the installer cannot report truthful model byte progress from
+  web content, and CI cannot deterministically exercise eviction/recovery without a
+  destructive machine-level setup. An install-once/launch-many game must also treat
+  model presence as revocable during launch and mid-session rather than a durable
+  install bit. Parallax must keep model bytes separate from app telemetry and retain
+  authored offline dialog fallback; recovery requires a new application `create()`
+  call and is not an automatic browser redownload. Related LoRA weights are removed
+  with the base model after a documented 30-day grace period.
+- **Proposed improvement:** expose downloaded and total byte counters with resource
+  categories, plus a DevTools/CDP test hook and observable lifecycle reason for model
+  eviction. The production web surface need not permit eviction itself.
+- **Sources checked:** Chrome
+  [built-in AI setup](https://developer.chrome.com/docs/ai/get-started),
+  [model management](https://developer.chrome.com/docs/ai/understand-built-in-model-management),
+  and the WICG
+  [Prompt API proposal](https://github.com/webmachinelearning/prompt-api), checked
+  2026-07-16.
+
+## RE-016: Prompt API remains window-only in Chrome 150
+
+- **Date / Chrome version:** 2026-07-16; Chrome for Testing Stable 150.0.7871.115 on
+  Windows 11/dev-01/RTX 4080 Super. Local result is a compatibility diagnostic; the registered
+  physical-console M0 evidence run is pending.
+- **Layer:** Prompt API / workers.
+- **Status:** open; inference remains behind the D-017 window-owned broker.
+- **What we expected / What happened:** current Chrome documentation says the Prompt API
+  is available to top-level windows/same-origin frames but not Web Workers. A clean
+  pinned-CfT profile exposed `LanguageModel` in the window, returned `unavailable` from
+  `availability()`, and did not expose `LanguageModel` in a dedicated worker.
+- **Repro:** launch the pinned browser with a clean external profile, read
+  `typeof LanguageModel` and `await LanguageModel.availability()` in the page, then
+  create a blob-backed dedicated worker that posts `typeof LanguageModel !==
+  "undefined"`. `prompt-api-spike@1` records the two contexts independently and treats
+  worker-probe failure as diagnostic rather than blocking the window measurement.
+- **Impact on Parallax:** NPC inference orchestration and stream callbacks remain on the
+  window main thread, so generation-window long tasks are mandatory budgets while
+  marker-aligned render-worker callback pacing remains a non-gating D-051 diagnostic.
+  The game cannot place the built-in model behind the normal worker topology.
+- **Proposed improvement:** expose the API in dedicated workers with a defined
+  responsible-document/permissions-policy relationship; preserving the session and
+  streaming shape would let the broker migrate without changing game consumers.
+- **Sources checked:** Chrome
+  [Prompt API documentation](https://developer.chrome.com/docs/ai/prompt-api) and the
+  WICG [Prompt API proposal](https://github.com/webmachinelearning/prompt-api), checked
+  2026-07-16.
 
 ## RE-015: CDP memory-dump request GUID is not preserved in JSON trace export
 

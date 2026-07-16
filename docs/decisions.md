@@ -27,6 +27,171 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-059: Prompt API M0 evidence is a standalone, activation-driven run  (2026-07-16, accepted)
+
+**Decision:** Implement the M0 Prompt API spike as versioned scenario
+`prompt-api-spike@1`, separate from `smoke@1`, with a window-owned engine service and
+real app buttons for both creation and the offline follow-up. The fixed NPC-dialog
+fixture is game-owned and exported for reuse by P-007. Prompt telemetry is an additive
+section with its own schema v3 under the existing aggregate telemetry envelope v3, so
+the temporary spike does not invalidate unrelated smoke history. The launch-evidence
+and progress-liveness shape advances the standalone result schema to v6.
+
+The evidence runner uses the exact digest-gated Chrome for Testing pin and the common
+registered-machine environment gate. Every execution creates a distinct temporary
+profile under a dedicated external root, records lineage `fresh`, measures the model
+component after Chrome exits, then removes that exact child profile. This prevents both
+permanent warm-run failures and multi-gigabyte profile accumulation. A run must observe
+normalized progress endpoints 0 and 1, at least one intermediate update, monotonic
+forward motion, and no invalid events. The recorder retains timestamped samples,
+maximum progress, the longest interval between advances, and exact invalid/regressive
+event counts while coalescing UI publication. Model bytes are labeled privileged
+evidence, never web-visible telemetry.
+
+Prompt model delivery requires three Playwright defaults to be absent (background
+networking, component updates, and component-extension background-page suppression)
+and requires `OptimizationHints` to remain enabled. Because Playwright combines
+`OptimizationHints` with 15 unrelated disabled features, the runner replaces that one
+combined switch with the same list minus `OptimizationHints`; it does not re-enable
+`PaintHolding`, `RenderDocument`, `DestroyProfileOnBrowserClose`, or the other
+automation suppressions. Before measurement it reads the effective command line from
+`chrome://version`, records it plus the disabled-feature set in result schema v6, and
+fails closed if a model-delivery switch reappears or any preserved suppression is
+missing. This runtime assertion detects private Playwright-default churn independently
+of the copied exact string.
+
+The Prompt context also enables `--enable-webgpu-developer-features`, the same switch
+used by `smoke@1`'s environment inspection, so `GPUAdapter.info` exposes the registered
+device, description, backend, and driver fields instead of Chrome's sanitized blanks.
+The runner validates and records that effective switch; Parallax requests no
+developer-only GPU capability. Adapter identity is read from the inert
+`/__parallax/identity` control page rather than the already-running app, while the
+unchanged registered-machine comparisons remain authoritative.
+
+The inference window ends before session-pressure probing. The pressure probe attempts
+at most eight clones, reports the actual attempt/success counts, and destroys the
+primary and every clone before the offline probe. Eight is a bounded M0 pressure sample,
+not a claimed platform limit. The run allows 30 minutes for a first model download only
+while forward progress remains live. A provisional 120-second watchdog starts at the
+activation click and resets only when normalized progress increases; endpoints,
+duplicates, invalid values, and regressions do not mask a stall. On expiry the runner
+closes Chrome early but preserves the partial telemetry and an exact stall reason in the
+failure artifact. The threshold lives in `budgets.md` and is recalibrated from successful
+fresh-profile downloads rather than weakened in harness code. The run
+gates the existing 1.5 s dialog first-token and main-thread long-task budgets. Render-
+worker callback pacing is marker-aligned but remains a **non-gating heuristic** under
+D-051: it is not compositor presentation, and dev-01's known idle p95 already exceeds
+the presentation threshold. The short generation scenario cannot supply the 1,000
+samples needed to distinguish nearest-rank p99.9 from maximum, so it reports p50, p95,
+and maximum and explicitly declares p99.9 inapplicable. A full telemetry-batch guard
+band prevents pre-inference callbacks entering the window; if it consumes the whole
+short window, the metric is invalid with the observed and excluded frame counts.
+At least 30 retained marker-aligned intervals are required before callback pacing is
+labeled a distribution; smaller samples remain an explicit invalid diagnostic rather
+than presenting one or two observations as p50/p95/max evidence.
+The main-thread long-task observer attaches before navigation and is valid only when
+Chrome advertises `longtask` support, observer installation succeeds, and inference
+start/end markers are all verified. Dedicated-worker exposure is evidence,
+not a requirement that today's expected `false` remain true. Forced eviction is
+`unsupported`: neither the Prompt API surface nor the automation contract provides a
+non-destructive eviction control, so offline reavailability is measured after network
+isolation while browser-managed deletion remains a separate manual exercise. Engine
+compilation pins `@types/dom-chromium-ai@0.0.17`; adapter fakes and all repository tests
+are included in a typechecked test project.
+
+The pinned-CfT run is research evidence, not by itself a production-install
+qualification. Before resolving P-007 or making Prompt API a required game dependency,
+M0 separately exercises the real install UX in at least two independent fresh
+branded-Chrome profiles: one uninterrupted download and one browser-restart/resume.
+Both must provide actionable monotonic progress with an intermediate update, reach an
+available model, stream the shared NPC fixture, survive restart, and repeat offline.
+Silent or untriggered delivery is negative backend-selection evidence even if the CfT
+gate passes.
+
+**Context:** Folding this into the already dense `smoke@1` contract would make a
+potentially multi-gigabyte, activation-bound download part of every change and couple
+its profile history to unrelated baselines. Review also found that retaining the online
+session cohort contaminated the offline result, a worker diagnostic could block the
+primary probe, measured budgets were advisory, download evidence silently vanished on
+warm profiles, callback pacing was incorrectly made a presentation gate, and the first
+draft advanced the global telemetry schema for an additive field. The standalone
+contract isolates those concerns while still sharing Chrome launch, digest,
+environment, browser-probe, telemetry-read, and file-walk code with the harness.
+
+**Sources and evidence checked (2026-07-16):** Chrome's current
+[Prompt API documentation](https://developer.chrome.com/docs/ai/prompt-api) documents
+window exposure, current worker unavailability, user-activation-bound `create()`, and
+the recommended ambient types. Chrome's
+[built-in AI setup guide](https://developer.chrome.com/docs/ai/get-started) documents
+the 22 GB free-space precondition, variable model size, `chrome://on-device-internals`
+as the exact-size surface, and removal below 10 GB free. Chrome's
+[model-management guide](https://developer.chrome.com/docs/ai/understand-built-in-model-management)
+also documents deletion after 30 days without meeting eligibility, deletion at any time
+including mid-session, and application-triggered redownload through a new `create()`
+call rather than automatic recovery. The Prompt API page separately documents that
+`create()` must be called under user activation.
+The WICG [Prompt API proposal](https://github.com/webmachinelearning/prompt-api)
+specifies normalized 0..1 progress, mandatory 0/1 events, no exact byte exposure,
+session destruction, and current worker scope.
+
+A local investigation found those initial `unavailable` results were invalidated by
+Playwright defaults on both launches: `chrome://version` showed component updates,
+background networking, component-extension background pages, and `OptimizationHints`
+disabled. `chrome://policy` showed no configured policy, `chrome://flags` contributed
+no command-line switches, and `chrome://on-device-internals` reported that internal
+debug pages were disabled. With the four contaminating defaults removed, an otherwise
+equivalent new branded-Chrome 150 profile returned `downloadable` immediately and in
+13 consecutive checks over about one minute. RE-018 records this as our harness bug.
+The Prompt runner now opts out of only those Prompt-incompatible Playwright defaults,
+restores the other disabled features, and verifies the effective command line before
+measurement; ordinary smoke launches retain their existing automation contract. The
+three necessary service-level switch differences are reported environment evidence,
+so Prompt callback diagnostics are not directly comparable with `smoke@1` results as
+if their launch environments matched. A local corrected-launch check read back all 15
+preserved suppressions, no disabled `OptimizationHints`, a verified model-delivery
+switch contract, and fresh-profile availability `downloadable`. At that point these
+remained local diagnostics, not the required physical-console evidence run.
+
+The first schema-v5 physical-console attempt then exercised the liveness contract:
+fresh-profile availability was `downloadable`, but activation-backed `create()` stayed
+pending for 120,683 ms with zero progress events and zero model-component bytes. The
+watchdog retained that exact partial state and closed Chrome instead of waiting 30
+minutes (RE-019). The run is not promotable M0 evidence because the separate environment
+facet was invalid: the Prompt runner's main-window WebGPU adapter probe returned blank
+identity fields. That first artifact remains explicitly labeled local diagnostic
+evidence; it is not substituted for the corrected environment run below.
+The environment root cause was harness placement, not a relaxed machine contract:
+`smoke@1` probes WebGPU on the inert `/__parallax/identity` control page before workload
+navigation, while the Prompt runner queried the live app after its render worker had
+already acquired WebGPU. The Prompt runner now uses the same isolated control-page
+probe, enables and validates the same developer identity switch as `smoke@1`, and
+retains every existing adapter comparison.
+
+The corrected schema-v6 physical-console run
+`prompt-api-spike-1-b68bd86a977a-dev-01-2026-07-16T23-41-28-710Z.json` passed the
+registered dev-01 environment gate with the full RTX 4080 Super D3D12 adapter/driver
+identity and verified the effective Prompt launch contract. It again began from a fresh
+profile with availability `downloadable`; activation-backed `create()` remained
+`creating` for 120,723 ms with zero progress events, zero retained samples, and zero
+files/bytes under the model-component root. The liveness abort preserved that evidence.
+Because model delivery never began, inference, session pressure, and offline
+reavailability were invalid or not run; these are explicit downstream consequences of
+the failed prerequisite, not passing results.
+
+**Consequences:** the Prompt API research-spike plan item is complete with a measured
+no-go for use as a required backend: the valid physical run could neither start
+observable delivery nor reach the later inference/session/offline checks. The separate
+branded-Chrome production-UX qualification remains open because it tests the actual
+player install path rather than CfT automation; it must pass before Prompt API can be a
+required game dependency. The P-007 comparison imports the same game fixture and treats
+a branded-install failure as evidence favoring the app-owned model.
+
+**Reopen if:** worker exposure lands; the platform exposes attributable byte progress or
+a supported eviction test/control; eight clones no longer provide useful pressure
+evidence; successful first-download event timing shows the provisional 120-second stall
+threshold or 30-minute completion ceiling is inadequate; or Playwright/Chrome changes
+the component-delivery launch requirements.
+
 ## D-058: Isolate the M0 OPFS sync-read spike and advance worker contracts  (2026-07-15, accepted)
 
 **Decision:** Measure worker-owned OPFS synchronous reads with a dedicated, temporary

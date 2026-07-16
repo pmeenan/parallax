@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist/types",
     "rootDir": "src",
-    "tsBuildInfoFile": "dist/types.tsbuildinfo"
+    "tsBuildInfoFile": "dist/types.tsbuildinfo",
+    "types": ["dom-chromium-ai"]
   },
   "include": ["src/**/*.ts"]
 }

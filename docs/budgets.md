@@ -137,6 +137,20 @@ lifecycle or streaming architecture quietly assumes "a few GB."
 | --- | --- | --- |
 | Dialog first-token latency p95 | ≤ 1.5 s | Backend-neutral: applies to any on-device backend (Prompt API per D-017, or an app-owned model if P-007 wins) |
 | Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget. Backend-neutral, but the metric surface differs: the Prompt API broker runs on the main thread (D-017), so main-thread long-task metrics apply to it; a worker-hosted backend (P-007) shifts measurement to worker and GPU contention |
+| Prompt model-download forward-progress gap (M0 spike) | < 120 s | Provisional test-liveness gate under D-059. The 30-minute completion ceiling remains while normalized progress advances; the run aborts after 120 s without an increase. Recalibrate from successful fresh-profile downloads, never by changing runner code alone. |
+
+For the M0 Prompt API spike under D-059, first-token latency and main-thread long tasks are gating.
+Download evidence is mandatory and must contain valid, monotonic normalized endpoints
+plus an intermediate update. The runner retains progress timestamps and aborts at 120
+seconds without forward progress while preserving the partial telemetry in its failure
+report; the 30-minute ceiling applies only while the download remains live.
+Render-worker callback pacing is retained as a marker-aligned, **non-gating diagnostic**
+under D-051; it is not compositor presentation, and dev-01's idle callback p95 is already
+16.72–16.76 ms. The short scenario cannot reach the 1,000 marker-aligned samples needed
+to distinguish nearest-rank p99.9 from maximum, so its callback diagnostic reports p50,
+p95, and maximum and declares p99.9 inapplicable. M1 still owns the documented
+presentation-gate revisit. Fewer than 30 marker-aligned intervals is an invalid
+diagnostic rather than a measured distribution.
 
 ## Measurement methodology
 
@@ -241,7 +255,11 @@ Definitions the harness implements; budgets above are meaningless without them.
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the
   artifact digest of the exact build measured (see harness/AGENTS.md — includes
-  dirty-tree identity, since agent work is measured pre-commit).
+  dirty-tree identity, since agent work is measured pre-commit). Prompt API result
+  schema v6 additionally records the effective Chrome command line, disabled-feature
+  set, and verified WebGPU developer-identity switch because model delivery and complete
+  adapter identity require explicit differences from ordinary Playwright
+  smoke launches (D-059).
 - **Comparison eligibility (D-025):** benchmark results are directly comparable only
   when artifact digest, scenario version, quality/resolution, warm-up/repeat policy, and
   relevant environment fields match. Chrome reference-machine runs alone carry budget
@@ -249,6 +267,8 @@ Definitions the harness implements; budgets above are meaningless without them.
   substitute estimates for unavailable measurements. The benchmark is executed and
   measured in-game; optional launcher/collector automation is outside the measurement
   window and does not supply scenario pacing, metric aggregation, or result timings.
+  In particular, Prompt callback-pacing diagnostics are not directly comparable with
+  `smoke@1` pacing unless their recorded launch-switch environments also match.
 - **Baseline promotion:** when Chrome stable advances, the first run on the new version
   is compared against the old baseline but does not replace it until explicitly
   promoted (a human or lead-agent action recorded in the result store); regressions
