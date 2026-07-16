@@ -42,6 +42,14 @@ export function evaluateP95Variance(
   values: readonly number[],
   expectedSamples: number,
 ): VarianceMetric {
+  return evaluateRelativeVariance(values, expectedSamples, "p95");
+}
+
+export function evaluateRelativeVariance(
+  values: readonly number[],
+  expectedSamples: number,
+  metricLabel: string,
+): VarianceMetric {
   if (!Number.isInteger(expectedSamples) || expectedSamples <= 0) {
     throw new Error(
       `Expected repeat count must be a positive integer; received ${expectedSamples}`,
@@ -49,7 +57,7 @@ export function evaluateP95Variance(
   }
   if (values.length !== expectedSamples) {
     return Object.freeze({
-      reason: `p95 variance requires all ${expectedSamples} expected repeats; received ${values.length}`,
+      reason: `${metricLabel} variance requires all ${expectedSamples} expected repeats; received ${values.length}`,
       relativeRange: null,
       state: "invalid",
     });
@@ -57,15 +65,14 @@ export function evaluateP95Variance(
   const range = relativeRange(values);
   if (range === null) {
     return Object.freeze({
-      reason:
-        "p95 relative range is unbounded: the minimum repeat p95 is 0 while the maximum is positive",
+      reason: `${metricLabel} relative range is unbounded: the minimum repeat ${metricLabel} is 0 while the maximum is positive`,
       relativeRange: null,
       state: "invalid",
     });
   }
   return range > 0.1
     ? Object.freeze({
-        reason: `p95 relative range ${range} exceeds the 0.1 variance limit`,
+        reason: `${metricLabel} relative range ${range} exceeds the 0.1 variance limit`,
         relativeRange: range,
         state: "invalid",
       })

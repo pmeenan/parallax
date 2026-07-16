@@ -41,4 +41,9 @@ export default defineConfig([
     plugins: createPlugins(),
     output: { ...sharedOutput, entryFileNames: "render-worker.js", inlineDynamicImports: true },
   },
+  {
+    input: "src/workers/storage-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "storage-worker.js", inlineDynamicImports: true },
+  },
 ]);

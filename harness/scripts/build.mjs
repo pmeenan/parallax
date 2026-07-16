@@ -40,17 +40,23 @@ runPnpm(["--filter", "@parallax/app", "build"]);
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
 
-const workerInput = join(repositoryRoot, "engine/dist/render-worker.js");
-const workerBytes = await readFile(workerInput);
-const workerOutputName = contentAddressedNameFromBytes("render-worker", workerBytes);
-await writeFile(join(outputRoot, "immutable", workerOutputName), workerBytes);
+const workerDescriptors = [];
+for (const role of ["render", "storage"]) {
+  const bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
+  const outputName = contentAddressedNameFromBytes(`${role}-worker`, bytes);
+  await writeFile(join(outputRoot, "immutable", outputName), bytes);
+  workerDescriptors.push({ outputName, role });
+}
 
 const engineInput = join(repositoryRoot, "engine/dist/engine.js");
-const engineSource = replaceExactlyOnce(
-  await readFile(engineInput, "utf8"),
-  "__RENDER_WORKER_ARTIFACT__",
-  workerOutputName,
-);
+let engineSource = await readFile(engineInput, "utf8");
+for (const worker of workerDescriptors) {
+  engineSource = replaceExactlyOnce(
+    engineSource,
+    `__${worker.role.toUpperCase()}_WORKER_ARTIFACT__`,
+    worker.outputName,
+  );
+}
 const engineOutputName = contentAddressedNameFromBytes("engine", Buffer.from(engineSource));
 await writeFile(join(outputRoot, "immutable", engineOutputName), engineSource);
 
@@ -90,14 +96,12 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 2,
-      workerEntrypoints: [
-        {
-          path: `immutable/${workerOutputName}`,
-          role: "render",
-          targetType: "worker",
-        },
-      ],
+      schemaVersion: 3,
+      workerEntrypoints: workerDescriptors.map((worker) => ({
+        path: `immutable/${worker.outputName}`,
+        role: worker.role,
+        targetType: "worker",
+      })),
       artifacts,
     },
     null,

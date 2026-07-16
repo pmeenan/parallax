@@ -164,6 +164,22 @@ Definitions the harness implements; budgets above are meaningless without them.
   they cannot attribute callback gaps to SAB; a controlled active-transport comparison
   is still required for that claim. The ordinary in-window main-thread and frame gates
   remain authoritative after warm-up.
+- **OPFS sync-access-handle evidence:** each `smoke@1` core launch runs a dedicated
+  storage-worker probe during warm-up against a deterministic 64 MiB fixture. Fresh
+  profiles must provision exactly 64 MiB; their paired warm profiles must reuse it.
+  The probe performs one untimed, fully validated sequential preflight, then twelve
+  measured sequential passes with 1 MiB reads and 4,096 deterministic random 64 KiB
+  reads. Every operation must return its full byte count and every read is validated
+  outside its timed `read()` call. Results retain both summed time inside
+  `read()` (API-path throughput) and validation-inclusive worker wall time, plus
+  provisioning time and reuse state. Only read-call throughput is variance-gated;
+  wall throughput is diagnostic. The mandatory metric requires complete,
+  corruption-free evidence and ≤10% relative throughput range across all three repeats
+  for each fresh/warm and sequential/random cohort. The harness starts this phase only
+  after privileged display diagnostics and SAB transport complete, leaving the live
+  renderer as its intentional concurrent workload. This M0 micro-workload describes
+  warm OS-cache behavior; it does not establish cold-disk throughput, multi-reader
+  contention, or representative M1 cell-load latency.
 - **JavaScript used-heap high-water estimate (D-047):** after the primary frame/trace
   measurement completes, run a dedicated steady-state window over the same 120-frame workload.
   Issue near-concurrent `Runtime.getHeapUsage.usedSize` requests for every required
@@ -217,7 +233,10 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v5 as of D-057). V8 lifecycle checks are diagnostics, not budget checks.
+  the current mandatory metric-set (v8, which adds the OPFS sync-access-handle spike
+  with an explicit untimed warm-path preflight and a twelve-pass sequential sample;
+  D-058).
+  V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the

@@ -12,6 +12,9 @@ import {
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
+  SMOKE_OPFS_COMPLETION_TIMEOUT_MS,
+  SMOKE_OPFS_FILE_BYTES,
+  SMOKE_OPFS_RANDOM_READS,
   SMOKE_SAB_TOTAL_BYTES,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
@@ -29,7 +32,7 @@ describe("smoke@1 contract", () => {
   });
 
   it("versions the isolated V8 diagnostic and its repeat contract", () => {
-    expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC).toBe("v8-code-cache@5");
+    expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC).toBe("v8-code-cache@6");
     expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS).toBe(3);
   });
 
@@ -69,8 +72,14 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "SAB ring-buffer transport"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(5);
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "OPFS sync-access-handle read throughput"),
+    ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(8);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
+    expect(SMOKE_OPFS_FILE_BYTES).toBe(64 * 1024 * 1024);
+    expect(SMOKE_OPFS_COMPLETION_TIMEOUT_MS).toBe(17_000);
+    expect(SMOKE_OPFS_RANDOM_READS).toBe(4_096);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );

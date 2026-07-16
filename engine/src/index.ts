@@ -9,6 +9,15 @@ export type {
 } from "./render/render-service";
 export { createRenderService } from "./render/render-service";
 export type {
+  OpfsReadPhaseTelemetry,
+  OpfsReadSpikeTelemetrySnapshot,
+} from "./storage/opfs-read-spike-protocol";
+export type {
+  OpfsReadSpikeListener,
+  OpfsReadSpikeService,
+} from "./storage/opfs-read-spike-service";
+export { createOpfsReadSpikeService } from "./storage/opfs-read-spike-service";
+export type {
   ParallaxRuntimeIdentity,
   ParallaxTelemetryExport,
   ParallaxTelemetrySnapshot,

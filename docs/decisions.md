@@ -27,6 +27,100 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-058: Isolate the M0 OPFS sync-read spike and advance worker contracts  (2026-07-15, accepted)
+
+**Decision:** Measure worker-owned OPFS synchronous reads with a dedicated, temporary
+storage worker under the live walking-skeleton renderer. `smoke@1` finishes its
+privileged display diagnostics and mandatory SAB transport before explicitly starting
+the OPFS phase; continuous rendering is the only intentional concurrent workload. A
+fresh profile provisions one deterministic 64 MiB fixture, and its paired warm profile
+must reuse that exact file. Each launch first performs one untimed, fully validated
+sequential preflight, then reads it sequentially twelve measured times in 1 MiB
+operations and performs 4,096 deterministic random 64 KiB reads. The fixture stores an
+absolute-position `Uint32` pattern, so every returned word is checked against its
+requested offset. Short reads, corruption, lifecycle drift, or missing timings make the
+mandatory evidence invalid.
+
+Time summed directly around `FileSystemSyncAccessHandle.read()` is the primary API-path
+throughput metric and must stay within the existing 10% repeat-variance policy for all
+fresh/warm × sequential/random cohorts. Validation-inclusive worker wall throughput and
+fixture-provisioning time are retained as diagnostics, not variance gates. The probe is
+explicitly a warm OS-cache microbenchmark; cold-disk behavior, N-reader contention, and
+representative cell-load latency remain M1 questions.
+
+This change advances the public engine telemetry schema from v2 to v3, `smoke@1`'s
+mandatory metric set from v5 to v8, and the result schema from v18 to v19. Metric-set
+v6 was the first physical calibration attempt; v7 lengthened only the sequential sample
+after v6 showed that three passes produced too little timed work for the unchanged 10%
+repeatability gate. Metric-set v8 adds the explicit preflight after v7 isolated the
+remaining outlier to the first measured sequential phase. It also
+advances build-manifest v2 (D-048) to v3: v3 requires exactly one distinct `render` and
+one distinct `storage` worker entrypoint. The storage worker terminates before the
+post-measurement all-realm JS-heap window, whose required live topology remains the page
+plus render worker.
+
+**Context:** The production streaming worker is planned to own sync access handles, so
+testing OPFS in the render worker would validate the wrong ownership boundary. Starting
+the first implementation automatically at render-ready also overlapped the privileged
+`chrome://gpu` display probe and the SAB spike; review rejected that contaminated timing
+before any reference result was retained. Build-manifest v2 deliberately limited its
+role vocabulary to the then-only render worker and required an explicit contract change
+when topology expanded.
+
+**Evidence checked (2026-07-15):** the assembled local app in the Chromium-based Codex
+browser successfully created the worker-only sync access handle, completed the
+position-validated fixture reads, and reported no page/worker errors. That is a
+compatibility diagnostic only.
+
+The first registered dev-01 physical-console calibration (`smoke@1`, schema v19,
+metric-set v6, artifact `9f5107d155d0`, Chrome 150) completed all six fresh/warm core
+runs with no OPFS payload errors and would have passed all 24 budget checks. It correctly
+failed mandatory-evidence completeness because the fresh sequential read-call cohort
+spanned 5.90-6.75 GiB/s, a 14.42% relative range. The three-pass sample accumulated only
+about 30 ms inside `read()`, so v7 increases it to twelve passes without changing the
+10% variance policy. Fresh random and both warm cohorts were repeatable (1.94%, 3.11%,
+and 3.87% relative range respectively).
+
+The second physical calibration (`smoke@1`, schema v19, metric-set v7, artifact
+`4dab6c1f7e1b`, Chrome 150) again completed every core run without payload errors and
+would have passed all 24 budget checks. Its twelve-pass fresh sequential cohort was
+5.92, 6.59, and 6.63 GiB/s (12.03% relative range), while fresh random and both warm
+cohorts remained repeatable at 3.11%, 3.98%, and 3.50%. Because only the first measured
+sequential phase remains low, v8 adds one untimed, fully validated sequential preflight
+to every launch. This preserves the twelve-pass measured workload and existing 10%
+gate while making the stated warm-path scope explicit. The registered schema-v19 / v8
+rerun was therefore required before accepting the decision.
+
+The final registered dev-01 physical-console gate (`smoke@1`, schema v19, metric-set
+v8, artifact `bf83d4c84358`, exact CfT Stable 150.0.7871.115) passed environment,
+mandatory-evidence, and budget facets with all 24 checks passing. All six OPFS phases
+completed with zero validation errors. Read-call throughput ranged 6.65-6.72 GiB/s for
+fresh sequential, 5.48-5.68 GiB/s for fresh random, 6.50-6.69 GiB/s for warm sequential,
+and 5.58-5.64 GiB/s for warm random; their relative ranges were 1.08%, 3.62%, 2.95%,
+and 1.21% respectively. Fresh fixture provisioning took 40.5-53.9 ms. Two immediately
+preceding runs of the unchanged artifact were invalidated only by the existing RE-008
+Chrome trace-completion gap; both still completed every OPFS phase without validation
+errors and kept every OPFS cohort below 5% relative range. This is a go for
+the worker-owned sync-access-handle boundary, within the explicitly limited warm-cache
+micro-workload scope.
+
+**Consequences:** Ordinary app and V8-diagnostic launches do not run the destructive
+microbenchmark; the harness starts it through the public telemetry control surface after
+the contaminating probes finish, waits up to 17 seconds for an explicit completed/failed
+state, and still preserves a 10-second warm-up floor before gameplay measurement.
+The isolated V8 lifecycle diagnostic advances to `v8-code-cache@6` and excludes the
+core-only storage entrypoint, which is intentionally not started during that diagnostic;
+all scripts expected there must belong to active realms. Manifest-v2 consumers must
+reject v3 rather than
+silently interpreting its expanded role vocabulary. The observed reference range is
+evidence for this micro-workload, not an M1 minimum-throughput budget; representative
+cell bundles still require their own measured latency and contention gates.
+
+**Reopen if:** the physical gate cannot complete within the 17-second completion window,
+read-call variance is too noisy to trust, representative M1 bundles require a materially
+different operation shape, or controlled cold-cache/multi-reader experiments reverse
+the storage placement.
+
 ## D-057: Use paired fixed-capacity SPSC SAB rings for high-rate worker transport  (2026-07-15, accepted)
 
 **Decision:** The worker fabric's high-rate primitive is a pair of fixed-capacity,
@@ -490,7 +584,7 @@ reviews would have caught, long-lived uncommitted trees prove fragile in practic
 (lost work, unexplainable state), or the adversarial challenge pass consistently finds
 nothing and becomes ceremony.
 
-## D-048: Declare runtime worker entrypoints semantically in build-manifest v2  (2026-07-14, accepted)
+## D-048: Declare runtime worker entrypoints semantically in build-manifest v2  (2026-07-14, accepted; manifest format advanced to v3 by D-058)
 **Decision:** build-manifest schema v2 adds `workerEntrypoints`, whose records name the artifact
 path, target type, and runtime role. The walking skeleton declares its one dedicated `worker`
 entrypoint with role `render`; harness code consumes that declaration instead of inferring engine

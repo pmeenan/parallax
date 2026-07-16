@@ -57,7 +57,11 @@ measured automatically.
       retained concurrent callback maxima overlap RE-001's privileged-diagnostics
       contamination and are not evidence of hitch-free active transport; D-057 scopes
       the go decision accordingly.
-- [ ] Spike: OPFS sync-access-handle read throughput from a worker.
+- [x] Spike: OPFS sync-access-handle read throughput from a worker (D-058). After two
+      calibration runs exposed first-phase measurement noise, metric-set v8's untimed
+      validated preflight passed the registered dev-01 physical-console gate: schema
+      v19, all three facets and 24 budget checks passed, all reads validated, and every
+      fresh/warm sequential/random cohort stayed within the 10% repeatability limit.
 - [ ] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
       activation for download/create, download flow + model-size reporting, eviction
       + offline reavailability behavior, session limits.

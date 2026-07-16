@@ -23,12 +23,7 @@ import {
   evaluateV8CodeCacheReproductionDiagnostics,
   type QualityTier,
 } from "./budgets.js";
-import {
-  type BuildManifest,
-  type ManifestArtifact,
-  readAndValidateBuildManifest,
-  sha256File,
-} from "./build-manifest.js";
+import { type BuildManifest, readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
 import {
   D3D12_HISTOGRAM_PREFIX,
   DAWN_TRACE_CATEGORY,
@@ -69,6 +64,12 @@ import {
   prepareJsHeapSampler,
 } from "./js-heap.js";
 import {
+  evaluateOpfsThroughputVariance,
+  type OpfsReadSpikeMetric,
+  type OpfsThroughputVariance,
+  requireOpfsReadSpikeCompleteAtMeasurementBoundary,
+} from "./opfs-read-spike.js";
+import {
   type ChromeTraceEvent,
   extractVizPresentationFeedbackCallbackIntervalsMs,
   PRESENTATION_TRACE_CATEGORY,
@@ -86,6 +87,7 @@ import {
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_MEASUREMENT_FRAMES,
   SMOKE_METRICS,
+  SMOKE_OPFS_COMPLETION_TIMEOUT_MS,
   SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
   SMOKE_PRESENTATION_TRACE_TAIL_MS,
   SMOKE_REPEATS,
@@ -126,6 +128,7 @@ import {
   type V8CodeCacheProductionMetric,
   type V8ScriptArtifact,
 } from "./v8-code-cache-trace.js";
+import { selectV8ScriptManifestArtifacts } from "./v8-script-artifacts.js";
 import { errorMessage } from "./value-utils.js";
 
 interface MeasuredMetric<T> {
@@ -180,6 +183,7 @@ interface RunMeasurement {
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
+  readonly opfsReadSpike: OpfsReadSpikeMetric;
   readonly workerAnimationCallbackIntervalMs: MeasuredMetric<Distribution>;
   readonly profile: "fresh" | "warm";
   readonly profileLineage: {
@@ -281,9 +285,10 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 18;
+  readonly schemaVersion: 19;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
+  readonly opfsThroughputVariance: readonly OpfsThroughputVariance[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
 }
 
@@ -302,7 +307,7 @@ async function main(): Promise<void> {
   const executablePath = await resolveChromeExecutablePath(chromePin);
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
-  const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest.artifacts);
+  const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest);
   const renderWorkerArtifact = await tryProbe("Build-manifest render-worker entrypoint", async () =>
     renderWorkerArtifactPath(validatedBuild.manifest),
   );
@@ -446,6 +451,25 @@ async function main(): Promise<void> {
       );
       return summarizeP95Variance(profile, variance);
     });
+    const opfsThroughputVariance = (["fresh", "warm"] as const).flatMap((profile) =>
+      (["sequential", "random"] as const).map((mode) =>
+        evaluateOpfsThroughputVariance(
+          profile,
+          mode,
+          runs
+            .filter((run) => run.profile === profile && run.opfsReadSpike.state === "measured")
+            .map((run) => {
+              if (run.opfsReadSpike.state !== "measured") {
+                throw new Error("OPFS read metric state changed during aggregation");
+              }
+              const phase = run.opfsReadSpike.value[mode];
+              if (phase === null) throw new Error(`Measured OPFS ${mode} phase disappeared`);
+              return phase.readCallThroughputBytesPerSecond;
+            }),
+          SMOKE_REPEATS,
+        ),
+      ),
+    );
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
@@ -460,6 +484,7 @@ async function main(): Promise<void> {
             : `core ${coreRunFailure.profile} repeat ${coreRunFailure.repeat} failed: ${coreRunFailure.message}`,
       },
       incompleteMetrics,
+      opfsThroughputVariance,
       runs,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -499,9 +524,10 @@ async function main(): Promise<void> {
         version: SMOKE_MANDATORY_METRIC_SET_VERSION,
       }),
       passed,
+      opfsThroughputVariance,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 18,
+      schemaVersion: 19,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -542,23 +568,19 @@ function launchSequencePosition(
 }
 
 async function readV8ScriptArtifacts(
-  artifacts: readonly ManifestArtifact[],
+  manifest: BuildManifest,
 ): Promise<readonly V8ScriptArtifact[]> {
   return Object.freeze(
     await Promise.all(
-      artifacts
-        .filter(
-          (artifact) => artifact.path.startsWith("immutable/") && artifact.path.endsWith(".js"),
-        )
-        .map(async (artifact) =>
-          Object.freeze({
-            bytes: artifact.bytes,
-            path: artifact.path,
-            sourceCodeUnits: decodedSourceCodeUnits(
-              await readFile(join(buildRoot, artifact.path), "utf8"),
-            ),
-          }),
-        ),
+      selectV8ScriptManifestArtifacts(manifest).map(async (artifact) =>
+        Object.freeze({
+          bytes: artifact.bytes,
+          path: artifact.path,
+          sourceCodeUnits: decodedSourceCodeUnits(
+            await readFile(join(buildRoot, artifact.path), "utf8"),
+          ),
+        }),
+      ),
     ),
   );
 }
@@ -868,10 +890,37 @@ async function measureRunWithBrowser(
       refreshRateResult.state === "measured" ? refreshRateResult.value : Object.freeze([]);
     const displayProbeFailures =
       refreshRateResult.state === "invalid" ? Object.freeze([refreshRateResult.reason]) : [];
-    await page.waitForTimeout(SMOKE_WARMUP_MS);
+    await page.waitForFunction(
+      (globalName) => {
+        const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+        return telemetry.snapshot().render.sabRingBufferSpike.state === "completed";
+      },
+      SMOKE_TELEMETRY_GLOBAL_NAME,
+      { timeout: 15_000 },
+    );
     const sabRingBuffer = requireSabRingBufferCompleteAtMeasurementBoundary(
       (await readTelemetry(page)).render.sabRingBufferSpike,
     );
+    await page.evaluate((globalName) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      telemetry.startOpfsReadSpike();
+    }, SMOKE_TELEMETRY_GLOBAL_NAME);
+    const opfsStartedAt = performance.now();
+    await page.waitForFunction(
+      (globalName) => {
+        const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+        const state = telemetry.snapshot().opfsReadSpike.state;
+        return state === "completed" || state === "failed";
+      },
+      SMOKE_TELEMETRY_GLOBAL_NAME,
+      { timeout: SMOKE_OPFS_COMPLETION_TIMEOUT_MS },
+    );
+    const opfsReadSpike = requireOpfsReadSpikeCompleteAtMeasurementBoundary(
+      (await readTelemetry(page)).opfsReadSpike,
+      profile,
+    );
+    const remainingWarmupMs = SMOKE_WARMUP_MS - (performance.now() - opfsStartedAt);
+    if (remainingWarmupMs > 0) await page.waitForTimeout(remainingWarmupMs);
     await resetSurfaceObserver(page);
     const renderSurfaceBefore = await readSurfaceLatest(page);
     const screenBeforeResult = await tryProbe("Browser screen identity", () =>
@@ -1052,6 +1101,7 @@ async function measureRunWithBrowser(
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
+      opfsReadSpike,
       profile,
       profileLineage: Object.freeze({
         history: profile === "fresh" ? (["fresh"] as const) : (["fresh", "warm"] as const),
@@ -2060,6 +2110,24 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const evidence = run.sabRingBuffer.value;
     return `- ${run.profile} repeat ${run.repeat}: ${evidence.responsesReceived}/${evidence.messageCount} validated round trips in ${formatMilliseconds(evidence.elapsedMs)} (${Math.round(evidence.cooperativeRoundTripsPerSecond ?? 0).toLocaleString("en-US")} cooperative round trips/s, including window pump scheduling); ${formatBytes(evidence.totalSABBytes)} fixed SAB pool; main producer stalls ${evidence.mainProducerStalls}, empty polls ${evidence.mainConsumerEmptyPolls}, max pump ${formatMilliseconds(evidence.mainPumpMaxDurationMs)}; worker inbound waits ${evidence.workerInboundWaits}, outbound stalls ${evidence.workerOutboundStalls}; ${evidence.workerConcurrentFrameCount} concurrent render callbacks, max interval/render ${formatMilliseconds(evidence.workerConcurrentFrameIntervalMaxMs)}/${formatMilliseconds(evidence.workerConcurrentRenderDurationMaxMs)}; payload/sequence errors ${evidence.payloadErrors}/${evidence.workerSequenceErrors}`;
   });
+  const opfsReadEvidence = report.runs.map((run) => {
+    if (run.opfsReadSpike.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — ${run.opfsReadSpike.reason}`;
+    }
+    const evidence = run.opfsReadSpike.value;
+    if (evidence.sequential === null || evidence.random === null) {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — completed evidence omitted a read phase`;
+    }
+    const provision = evidence.fileReused
+      ? "reused the existing fixture"
+      : `provisioned ${formatBytes(evidence.provisioningBytesWritten ?? 0)} in ${formatMilliseconds(evidence.provisioningElapsedMs)}`;
+    return `- ${run.profile} repeat ${run.repeat}: ${provision}; sequential ${formatThroughput(evidence.sequential.readCallThroughputBytesPerSecond)} read-call / ${formatThroughput(evidence.sequential.wallThroughputBytesPerSecond)} wall over ${formatBytes(evidence.sequential.bytesRead)}; random 64 KiB ${formatThroughput(evidence.random.readCallThroughputBytesPerSecond)} read-call / ${formatThroughput(evidence.random.wallThroughputBytesPerSecond)} wall over ${evidence.random.operations.toLocaleString("en-US")} reads; validation errors ${evidence.sequential.validationErrors + evidence.random.validationErrors}`;
+  });
+  const opfsVarianceEvidence = report.opfsThroughputVariance.map((variance) =>
+    variance.state === "measured"
+      ? `- ${variance.profile} ${variance.mode} ${variance.timingScope}: ${(variance.relativeRange * 100).toFixed(2)}% relative range`
+      : `- ${variance.profile} ${variance.mode} ${variance.timingScope}: invalid — ${variance.reason}`,
+  );
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2117,6 +2185,14 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...sabRingBufferEvidence,
     "",
+    "## OPFS sync-access-handle read throughput",
+    "",
+    ...opfsReadEvidence,
+    "",
+    "### Read-call throughput variance",
+    "",
+    ...opfsVarianceEvidence,
+    "",
     "## HTTP serving evidence",
     "",
     ...httpServingEvidence,
@@ -2154,6 +2230,10 @@ function formatMilliseconds(value: number | null): string {
 
 function formatBytes(value: number): string {
   return `${value.toLocaleString("en-US")} bytes`;
+}
+
+function formatThroughput(bytesPerSecond: number): string {
+  return `${(bytesPerSecond / 1024 ** 3).toFixed(2)} GiB/s`;
 }
 
 function requiredEnvironment(name: string): string {

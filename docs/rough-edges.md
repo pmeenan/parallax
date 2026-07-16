@@ -426,12 +426,17 @@ COS APIs exist):
   delivered 40,793–41,583 events / 6.80–6.93 MB and completed 179.0–185.9 ms after the end
   command; all nine isolated V8 traces completed. The registered environment was `measured`
   (`remoteSession: false`, native 3840×2160 at observed 59 Hz), so remote display/session state is
-  not necessary for RE-008 and the issue can invalidate a real reference gate.
+  not necessary for RE-008 and the issue can invalidate a real reference gate. The D-058 final
+  artifact (`bf83d4c84358`) then reproduced the same gap in two consecutive physical-console
+  gates: the first lost core ordinal 5, and the second lost ordinals 2 and 5. Each acknowledged
+  `Tracing.end` in 1.8–2.4 ms, delivered zero events/chunks, and timed out after 5,003.7–5,009.8
+  ms; the unchanged artifact's third attempt completed all six core traces in 231.9–235.7 ms and
+  passed. This adds both a consecutive-gate burst and unchanged-artifact recovery to the finding.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second
   completion bound. Maintained `smoke@1` instead traces the first three categories without `v8`
-  for its core run, then runs the isolated `v8-code-cache@5` lineages. The v12 result records
+  for its core run, then runs the isolated `v8-code-cache@6` lineages. The v12 result records
   categories, event/chunk/serialized-byte volume, end-command and completion latency, and data
   loss plus recording lifetime, launch ordinal, and elapsed sequence time for both sets. To
   reproduce the lifetime control, launch a fresh pinned browser on `about:blank`, start a

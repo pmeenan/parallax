@@ -86,6 +86,17 @@ verified rendering-core boundary, not a blanket claim that DOM-bound Babylon fea
 worker-safe; new input, GUI, accessibility, and loader paths must cross explicit protocols
 or be re-verified when they land.
 
+The M0 OPFS spike exercises the planned storage boundary with a dedicated storage
+worker rather than borrowing the render worker. After privileged display diagnostics
+and the SAB spike finish, the harness starts it against the live renderer; it provisions
+(fresh profile only) and synchronously reads a deterministic 64 MiB
+OPFS fixture through `createSyncAccessHandle()`. It reports twelve 1 MiB sequential
+passes after one untimed, fully validated sequential preflight, followed by 4,096
+deterministic 64 KiB random reads. It separates time inside `read()`
+from validation-inclusive worker wall time. The worker terminates before the gameplay
+measurement window; M1's long-lived streaming worker will own production handles and
+queue telemetry. (D-058.)
+
 ## Storage map
 
 | Data | Location | Why |

@@ -15,13 +15,13 @@ export interface ManifestArtifact {
 
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
 }
 
 export interface ManifestWorkerEntrypoint {
   readonly path: string;
-  readonly role: "render";
+  readonly role: "render" | "storage";
   readonly targetType: "worker";
 }
 
@@ -42,11 +42,23 @@ export async function readAndValidateBuildManifest(
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
   if (
-    manifest.schemaVersion !== 2 ||
+    manifest.schemaVersion !== 3 ||
     !Array.isArray(manifest.artifacts) ||
     !Array.isArray(manifest.workerEntrypoints)
   ) {
     throw new Error(`Unsupported build manifest ${String(manifest.schemaVersion)}`);
+  }
+  const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
+  const workerPaths = new Set(
+    manifest.workerEntrypoints.map((entrypoint) => resolve(resolvedRoot, entrypoint.path)),
+  );
+  if (
+    manifest.workerEntrypoints.length !== 2 ||
+    workerRoles.filter((role) => role === "render").length !== 1 ||
+    workerRoles.filter((role) => role === "storage").length !== 1 ||
+    workerPaths.size !== 2
+  ) {
+    throw new Error("Build manifest v3 requires exactly one distinct render and storage worker");
   }
   for (const artifact of manifest.artifacts) {
     const artifactPath = resolve(resolvedRoot, artifact.path);
@@ -60,7 +72,7 @@ export async function readAndValidateBuildManifest(
   }
   for (const entrypoint of manifest.workerEntrypoints) {
     if (
-      entrypoint.role !== "render" ||
+      (entrypoint.role !== "render" && entrypoint.role !== "storage") ||
       entrypoint.targetType !== "worker" ||
       !manifest.artifacts.some((artifact) => artifact.path === entrypoint.path)
     ) {

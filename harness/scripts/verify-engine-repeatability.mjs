@@ -8,7 +8,7 @@ const repositoryRoot = resolve(import.meta.dirname, "../..");
 const shippedDirectory = join(repositoryRoot, "engine/dist");
 // Keep this exact allowlist aligned with engine/rollup.config.mjs: unexpected chunks
 // would weaken the self-contained, independently addressable engine artifact contract.
-const expectedOutputs = Object.freeze(["engine.js", "render-worker.js"]);
+const expectedOutputs = Object.freeze(["engine.js", "render-worker.js", "storage-worker.js"]);
 const pnpmCli = process.env.npm_execpath;
 if (pnpmCli === undefined) {
   throw new Error("pnpm CLI path is unavailable; run this script through pnpm verify:repeatable");
@@ -58,7 +58,7 @@ async function buildAndDigestTemporary() {
     runEngineBuild(outputDirectory);
     const outputs = (await readdir(outputDirectory)).sort();
     if (outputs.join(",") !== expectedOutputs.join(",")) {
-      throw new Error(`Expected engine.js and render-worker.js; received: ${outputs.join(", ")}`);
+      throw new Error(`Expected ${expectedOutputs.join(", ")}; received: ${outputs.join(", ")}`);
     }
     return await Promise.all(outputs.map((name) => digestFile(outputDirectory, name)));
   } finally {

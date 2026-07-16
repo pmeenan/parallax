@@ -29,7 +29,7 @@ engine/src/
   workers/     worker entrypoints + SAB channel library                    ✅ (render worker + SPSC rings)
   render/      Babylon integration, pipeline warmup, custom WGSL passes   ✅ (service + protocol)
   streaming/   cell scheduler, memory budget governor, eviction
-  storage/     OPFS, manifest, install/update, integrity
+  storage/     OPFS, manifest, install/update, integrity                    ✅ (M0 read spike)
   wasm/        Rust crates (one per module) + JS bindings
   ai/          inference backends (Prompt API sessions; P-007), knowledge service /
                retrieval context assembly (D-033), schema-constrained output

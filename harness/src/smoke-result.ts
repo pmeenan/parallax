@@ -23,6 +23,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
+  opfsReadSpike: "OPFS sync-access-handle read throughput",
   sabRingBuffer: "SAB ring-buffer transport",
   v8CodeCache: "V8 code-cache evidence",
   vizPresentationFeedback: "compositor presentation interval",
@@ -82,11 +83,17 @@ export interface SmokeEvidenceInput {
     readonly mandatoryForHarnessV1: boolean;
     readonly metric: string;
   })[];
+  readonly opfsThroughputVariance: readonly (EvidenceState & {
+    readonly mode: "random" | "sequential";
+    readonly profile: "fresh" | "warm";
+    readonly timingScope: "read-call";
+  })[];
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
     readonly gpuMemory: EvidenceState;
     readonly http: Readonly<{ readonly value: LocalServerMetrics }>;
     readonly jsHeap: EvidenceState;
+    readonly opfsReadSpike: EvidenceState;
     readonly profile: "fresh" | "warm";
     readonly repeat: number;
     readonly sabRingBuffer: EvidenceState;
@@ -171,6 +178,13 @@ export function collectSmokeEvidenceChecks(
         metric,
       ),
     ),
+    ...input.opfsThroughputVariance.map((metric) =>
+      evidenceCheck(
+        `${metric.profile} ${metric.mode} OPFS ${metric.timingScope} throughput variance: ${evidenceReason(metric)}`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.opfsReadSpike),
+        metric,
+      ),
+    ),
     ...input.vizPresentationFeedbackCallbackVariance.map((metric) =>
       evidenceCheck(
         `${metric.profile} presentation-feedback variance: ${evidenceReason(metric)}`,
@@ -197,6 +211,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: SAB ring-buffer transport ${run.sabRingBuffer.state} (${evidenceReason(run.sabRingBuffer)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.sabRingBuffer),
         run.sabRingBuffer,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: OPFS sync-access-handle read throughput ${run.opfsReadSpike.state} (${evidenceReason(run.opfsReadSpike)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.opfsReadSpike),
+        run.opfsReadSpike,
       ),
     ),
     ...input.runs.map((run) =>

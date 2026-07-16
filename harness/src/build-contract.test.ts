@@ -13,7 +13,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(2);
+    expect(manifest.schemaVersion).toBe(3);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -29,15 +29,20 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(1);
-    const workerEntrypoint = manifest.workerEntrypoints[0];
-    expect(workerEntrypoint).toMatchObject({ role: "render", targetType: "worker" });
-    const workerArtifact = manifest.artifacts.find(
-      (artifact) => artifact.path === workerEntrypoint?.path,
-    );
-    expect(workerArtifact).toBeDefined();
-    const workerSource = await readFile(join(buildRoot, workerArtifact?.path ?? ""), "utf8");
-    expect(workerSource).not.toContain('from "@babylonjs/core');
+    expect(manifest.workerEntrypoints).toHaveLength(2);
+    expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
+      "render",
+      "storage",
+    ]);
+    for (const workerEntrypoint of manifest.workerEntrypoints) {
+      expect(workerEntrypoint.targetType).toBe("worker");
+      const workerArtifact = manifest.artifacts.find(
+        (artifact) => artifact.path === workerEntrypoint.path,
+      );
+      expect(workerArtifact).toBeDefined();
+      const workerSource = await readFile(join(buildRoot, workerArtifact?.path ?? ""), "utf8");
+      expect(workerSource).not.toContain('from "@babylonjs/core');
+    }
 
     for (const artifact of manifest.artifacts) {
       if (artifact.path.startsWith("immutable/")) {
@@ -60,7 +65,10 @@ describe("assembled build contract", () => {
     const engineSource = await readFile(join(buildRoot, engineArtifact?.path ?? ""), "utf8");
     expect(engineSource).not.toContain("@parallax/game");
     expect(engineSource).not.toContain("__RENDER_WORKER_ARTIFACT__");
-    expect(engineSource).toContain(`./${workerArtifact?.path.replace("immutable/", "")}`);
+    expect(engineSource).not.toContain("__STORAGE_WORKER_ARTIFACT__");
+    for (const worker of manifest.workerEntrypoints) {
+      expect(engineSource).toContain(`./${worker.path.replace("immutable/", "")}`);
+    }
     expect(engineSource).toContain("__PARALLAX_TELEMETRY__");
 
     const immutableReferences = index.match(/\/immutable\/[^"'\s<]+/g) ?? [];
