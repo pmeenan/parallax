@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { extname, resolve, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
 
 const CONTENT_TYPES: Readonly<Record<string, string>> = Object.freeze({
   ".css": "text/css; charset=utf-8",
@@ -55,11 +57,24 @@ export interface LocalServerMetrics {
 }
 
 export interface LocalServerOptions {
+  readonly externalModel?: Readonly<{
+    readonly artifacts: readonly Readonly<{
+      readonly bytes: number;
+      readonly path: string;
+      readonly sha256: string;
+    }>[];
+    readonly root: string;
+  }>;
   readonly root: string;
 }
 
 export function createLocalServer(options: LocalServerOptions): Server {
   const root = resolve(options.root);
+  const externalModelRoot =
+    options.externalModel === undefined ? null : resolve(options.externalModel.root);
+  const externalModelArtifacts = new Map(
+    (options.externalModel?.artifacts ?? []).map((artifact) => [artifact.path, artifact]),
+  );
   const metadataCache = new Map<string, CachedMetadata>();
   const metrics: MutableMetrics = {
     bytesServed: 0,
@@ -80,11 +95,12 @@ export function createLocalServer(options: LocalServerOptions): Server {
     let pathClass: PathClass = "other";
     let requestMetadataCacheHits = 0;
     let requestMetadataCacheMisses = 0;
-    const send = (status: number, body?: Buffer): void => {
-      const responseBody = request.method === "HEAD" ? undefined : body;
-      response.once("finish", () => {
-        const statusKey = String(status);
-        const bodyBytes = responseBody?.byteLength ?? 0;
+    const recordResponse = (status: number, bodyBytes: number): void => {
+      let recorded = false;
+      const record = (completedStatus: number, completedBodyBytes: number): void => {
+        if (recorded) return;
+        recorded = true;
+        const statusKey = String(completedStatus);
         const classStatuses = metrics.statusesByPathClass[pathClass];
         metrics.requests += 1;
         metrics.statuses[statusKey] = (metrics.statuses[statusKey] ?? 0) + 1;
@@ -92,9 +108,20 @@ export function createLocalServer(options: LocalServerOptions): Server {
         classStatuses[statusKey] = (classStatuses[statusKey] ?? 0) + 1;
         metrics.metadataCacheHits += requestMetadataCacheHits;
         metrics.metadataCacheMisses += requestMetadataCacheMisses;
-        metrics.bytesServed += bodyBytes;
-        metrics.bytesServedByPathClass[pathClass] += bodyBytes;
+        metrics.bytesServed += completedBodyBytes;
+        metrics.bytesServedByPathClass[pathClass] += completedBodyBytes;
+      };
+      response.once("finish", () => record(status, bodyBytes));
+      // Node does not emit `finish` when the peer aborts or a source stream fails.
+      // Retain the request as an explicit client-closed result instead of silently
+      // dropping it from the harness evidence. Partial bytes are conservatively 0.
+      response.once("close", () => {
+        if (!response.writableFinished) record(499, 0);
       });
+    };
+    const send = (status: number, body?: Buffer): void => {
+      const responseBody = request.method === "HEAD" ? undefined : body;
+      recordResponse(status, responseBody?.byteLength ?? 0);
       response.writeHead(status).end(responseBody);
     };
 
@@ -136,6 +163,49 @@ export function createLocalServer(options: LocalServerOptions): Server {
       if (request.method !== "GET" && request.method !== "HEAD") {
         response.setHeader("Allow", "GET, HEAD");
         send(405);
+        return;
+      }
+
+      const externalModelPrefix = "/__parallax/models/";
+      if (pathname.startsWith(externalModelPrefix)) {
+        const relativePath = pathname.slice(externalModelPrefix.length);
+        const artifact = externalModelArtifacts.get(relativePath);
+        if (externalModelRoot === null || artifact === undefined) {
+          send(404);
+          return;
+        }
+        const filePath = resolve(externalModelRoot, relativePath);
+        if (filePath !== externalModelRoot && !filePath.startsWith(`${externalModelRoot}${sep}`)) {
+          send(403);
+          return;
+        }
+        const fileStat = await stat(filePath);
+        if (!fileStat.isFile() || fileStat.size !== artifact.bytes) {
+          send(409);
+          return;
+        }
+        const etag = `"sha256-${artifact.sha256}"`;
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Content-Length", artifact.bytes);
+        response.setHeader("Content-Type", "application/octet-stream");
+        response.setHeader("ETag", etag);
+        if (matchesIfNoneMatch(request.headers["if-none-match"], etag)) {
+          send(304);
+          return;
+        }
+        if (request.method === "HEAD") {
+          send(200);
+          return;
+        }
+        recordResponse(200, artifact.bytes);
+        response.writeHead(200);
+        try {
+          await pipeline(createReadStream(filePath), response);
+        } catch (error: unknown) {
+          if (!response.destroyed) {
+            response.destroy(error instanceof Error ? error : new Error(String(error)));
+          }
+        }
         return;
       }
 

@@ -1,3 +1,5 @@
+import type { AppOwnedLlmSpikeTelemetrySnapshot } from "../ai/app-owned-llm-spike-protocol";
+import type { AppOwnedLlmSpikeService } from "../ai/app-owned-llm-spike-service";
 import type {
   PromptApiSpikeService,
   PromptApiSpikeTelemetrySnapshot,
@@ -6,9 +8,9 @@ import type { RenderService, RenderTelemetrySnapshot } from "../render/render-se
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
 
-// The v4 envelope adds OPFS per-batch timing diagnostics. Prompt API telemetry retains
-// its own section schema version so changes to that lifecycle remain independently pinned.
-export const TELEMETRY_SCHEMA_VERSION = 4;
+// The v5 envelope adds P-007's app-owned LLM section. Each AI backend retains its own
+// section schema so model/runtime iteration does not silently rewrite unrelated history.
+export const TELEMETRY_SCHEMA_VERSION = 5;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -23,6 +25,7 @@ export interface ParallaxRuntimeIdentity {
 }
 
 export interface ParallaxTelemetrySnapshot {
+  readonly appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
   readonly opfsReadSpike: OpfsReadSpikeTelemetrySnapshot;
   readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
@@ -42,6 +45,7 @@ export function installTelemetryExport(
   renderService: RenderService,
   opfsReadSpikeService: OpfsReadSpikeService,
   promptApiSpikeService: PromptApiSpikeService,
+  appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
 ): ParallaxTelemetryExport {
@@ -55,6 +59,7 @@ export function installTelemetryExport(
         renderService.snapshot(),
         opfsReadSpikeService.snapshot(),
         promptApiSpikeService.snapshot(),
+        appOwnedLlmSpikeService.snapshot(),
         frozenIdentity,
       ),
     startOpfsReadSpike(): void {
@@ -68,6 +73,7 @@ export function installTelemetryExport(
               renderService.snapshot(),
               opfsReadSpikeService.snapshot(),
               promptApiSpikeService.snapshot(),
+              appOwnedLlmSpikeService.snapshot(),
               frozenIdentity,
             ),
           );
@@ -84,12 +90,14 @@ export function installTelemetryExport(
       const unsubscribeRender = renderService.subscribe(publishAfterWiring);
       const unsubscribeOpfs = opfsReadSpikeService.subscribe(publishAfterWiring);
       const unsubscribePromptApi = promptApiSpikeService.subscribe(publishAfterWiring);
+      const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
         unsubscribeRender();
         unsubscribeOpfs();
         unsubscribePromptApi();
+        unsubscribeAppOwnedLlm();
       };
     },
   });
@@ -106,9 +114,11 @@ function snapshot(
   render: RenderTelemetrySnapshot,
   opfsReadSpike: OpfsReadSpikeTelemetrySnapshot,
   promptApiSpike: PromptApiSpikeTelemetrySnapshot,
+  appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
+    appOwnedLlmSpike,
     identity,
     opfsReadSpike,
     promptApiSpike,

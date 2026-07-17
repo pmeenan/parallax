@@ -92,6 +92,242 @@ COS APIs exist):
 
 ## Findings
 
+## RE-033: wllama inference is worker-hosted but its controller requires a Window
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  wllama 3.5.1.
+- **Layer:** wllama integration / worker topology.
+- **Status:** library limitation; worked around by supported window-controller
+  placement, with heavy execution still worker-hosted.
+- **What we expected / What happened:** Parallax initially constructed wllama inside
+  its existing dedicated AI worker because wllama documents worker-hosted inference.
+  Both cold and warm attempts failed immediately with `ReferenceError: document is not
+  defined`. wllama's `absoluteUrl()` resolves its WASM path against
+  `document.baseURI`; the controller therefore assumes a Window even though it creates
+  workers for llama.cpp, OPFS downloads, and pthread execution.
+- **Repro:** instantiate `new Wllama(...)` from a dedicated worker and call
+  `loadModelFromUrl`; D-074's first artifact
+  `app-owned-llm-spike-1-36a921860759-dev-01-2026-07-17T18-11-24-086Z.json` retains the
+  two exact failures. The relevant current source was checked in the pinned npm
+  package and is also documented at https://github.ngxson.com/wllama/docs/.
+- **Impact on Parallax:** the engine service must keep a small asynchronous wllama
+  controller on the window rather than using the uniform Parallax AI-worker entrypoint.
+  Inference still runs off-thread, and D-074's successful artifact measured healthy
+  render-worker callback pacing, but the topology exception is permanent until the
+  library accepts a worker-safe base URL.
+- **Proposed improvement:** accept already-absolute resource URLs without consulting
+  `document`, or resolve relative URLs against `globalThis.location.href` when running
+  in a worker. Document controller-realm requirements separately from inference-worker
+  behavior.
+
+## RE-032: Browser model loaders materialize multi-gigabyte ONNX shards as single buffers
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / ONNX Runtime Web 1.27.0.
+- **Layer:** Transformers.js / V8 allocation / OPFS model loading.
+- **Status:** confirmed browser/library allocation cliff; q8 CPU profile superseded by
+  D-073's smaller failure reproducer.
+- **What we expected / What happened:** the streaming OPFS cache was expected to keep
+  a 6.24 GB q8 install off the JS heap until ORT consumed it. Both cold attempts emitted
+  `Array buffer allocation failed` near 62% load progress. The final bounded run stopped
+  after 120,569 ms at 0.6205 with 10/12 artifacts verified, 1,797,484,666 bytes written,
+  and zero integrity failures. The two missing artifacts were the export's largest
+  external-data shards, including one 2,348,810,240-byte file. Transformers.js 4.2.0
+  preallocates `new Uint8Array(total)` in browser `readResponse()` and model components
+  load concurrently, defeating streaming at the consumer boundary.
+- **Repro:** run the D-072 q8 WASM profile on a fresh persistent profile; artifact
+  `app-owned-llm-spike-1-a6ea4cbdc9e6-dev-01-2026-07-17T17-31-17-052Z.json`. The
+  official file sizes are visible at
+  https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/tree/main/onnx.
+- **Impact on Parallax:** OPFS can store and stream the bytes, but the JS model-loading
+  API still imposes a multi-gigabyte contiguous-allocation peak before session creation.
+  Export sharding therefore becomes a browser compatibility constraint independent of
+  total model size.
+- **Proposed improvement:** let ORT Web consume external data from streams, OPFS handles,
+  or range-readable blobs without first constructing one `Uint8Array` per shard; publish
+  browser-safe maximum shard guidance and make loaders serialize large allocations.
+
+## RE-031: Gemma 4 mobile-QAT has no ONNX Runtime WASM CPU kernel
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / ONNX Runtime Web 1.27.0.
+- **Layer:** ONNX Runtime Web / WASM CPU execution provider.
+- **Status:** confirmed ONNX operator gap across mobile q2f16 and standard q4; D-074's
+  GGUF/llama.cpp CPU route bypasses rather than fixes it.
+- **What we expected / What happened:** moving the E2B mobile-QAT pipeline from WebGPU
+  to Transformers.js's WASM device was expected to trade speed for graphics headroom.
+  Session creation failed instead because the CPU provider has no kernel for
+  `com.microsoft.GatherBlockQuantized(1)` in the embedding graph.
+- **Repro:** set `PARALLAX_APP_OWNED_LLM_DEVICE=wasm`. The D-071 mobile manifest and
+  D-073 standard-q4 artifact
+  `app-owned-llm-spike-1-5aa7eed16ab4-dev-01-2026-07-17T17-36-44-003Z.json` both retain
+  the exact kernel error; q4 fails both cold and restart-warm session creation.
+- **Impact on Parallax:** one compact 2.32 GB ONNX install cannot serve as both GPU and
+  CPU fallback. The standard export's q4 graph also uses the custom embedding operator,
+  so smaller shards and a 3.65 GB install do not produce a CPU-compatible ORT session.
+  D-074 qualifies a separately pinned 2.62 GB split GGUF on both placements.
+- **Proposed improvement:** implement the mobile quantization operator for the WASM CPU
+  provider, or publish a small cross-provider export and machine-readable execution-
+  provider compatibility metadata.
+
+## RE-030: E2B WebGPU fails at 6,456 tokens independent of prior generations
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / ONNX Runtime Web 1.27.0.
+- **Layer:** ONNX Runtime Web / WebGPU context allocation.
+- **Status:** confirmed context-size failure; root allocation/validation error remains
+  opaque.
+- **What we expected / What happened:** E2B's smaller weights were expected to leave
+  enough GPU headroom for all fixed context tiers. It completed 256 and 1,656 tokens in
+  normal order but lost an invalid GPU buffer at 6,456. A context-first run then failed
+  at the same 6,456-token case immediately after the excluded 256-token warmup in both
+  cold and warm phases. This rules out cumulative retention from the 28 earlier
+  generations as the necessary cause.
+- **Repro:** normal artifact
+  `app-owned-llm-spike-1-2b912b1a0d56-dev-01-2026-07-17T16-39-02-164Z.json`; non-gating
+  context-first artifact
+  `app-owned-llm-spike-1-767efbd56b0d-dev-01-2026-07-17T16-43-05-283Z.json`.
+- **Impact on Parallax:** E2B WebGPU meets the latency target (206.90 ms warm TTFT p95)
+  and saves model bytes, but cannot satisfy the unchanged retrieved-context tier.
+  D-074's wllama/GGUF route passes its same-content 4,805-token tokenizer rendering;
+  this does not identify or repair ORT's invalid-buffer cause.
+- **Proposed improvement:** surface the first WebGPU validation/allocation failure,
+  publish session memory estimates by input shape, and allow applications to query a
+  safe allocation limit before invalidating a buffer/device.
+
+## RE-029: Gemma 4 E4B mobile-QAT exhausts allocation at the large context tier
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / pinned ONNX Runtime Web 1.27.0.
+- **Layer:** ONNX Runtime Web / WebGPU memory and cross-device contention.
+- **Status:** confirmed for E4B own-device topology; E2B headroom branch selected by
+  D-071.
+- **What we expected / What happened:** ORT 1.27 plus the model-owned chat template
+  allowed the 3.36 GB E4B mobile graph to complete 28 generations, including the
+  1,656-token medium context. Both cold and restart-warm phases failed the next large-
+  context generation with `std::bad_alloc`. During the warm failure the render worker,
+  which owns a separate logical `GPUDevice` on the same adapter, also reported a
+  JavaScript failure. The web platform exposes no allocation total to distinguish
+  model weights, KV cache, transient buffers, and Babylon allocations (RE-014).
+- **Repro:** artifact
+  `app-owned-llm-spike-1-172a264d5607-dev-01-2026-07-17T16-33-33-429Z.json` retains the
+  valid environment, complete ten-artifact OPFS lifecycle, 28 generations per phase,
+  E4B latency/throughput/callback evidence, and both allocation failures.
+- **Impact on Parallax:** E4B's fast first token does not compensate for failing the
+  unchanged context workload and threatening the concurrently rendering game. D-071
+  tests the 2.32 GB E2B mobile export to recover roughly 1.04 GB of installed/model
+  headroom without weakening the workload.
+- **Proposed improvement:** expose per-device and per-origin live/peak WebGPU allocation,
+  return an attributable allocation failure before device collateral damage, and make
+  logical-device competition on one physical adapter observable.
+
+## RE-028: Gemma 4 E4B q4f16 loses its WebGPU buffer at the large context tier
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / its bundled ONNX Runtime Web 1.26 development build.
+- **Layer:** ONNX Runtime Web / WebGPU resource management.
+- **Status:** open; failed diagnostic cohort retained, mobile-QAT/ORT-1.27 branch now
+  tests whether the issue reproduces with lower model pressure.
+- **What we expected / What happened:** the q4f16 E4B branch completed 28 generations,
+  including a 1,656-token medium-context case, then failed deterministically in both
+  fresh and browser-restart phases when starting the large-context case. ONNX Runtime
+  reported an invalid GPU buffer while downloading output through `mapAsync`. The
+  advertised model context is much larger, but this result does not yet distinguish a
+  context allocation limit from cumulative resource retention across prior generations.
+- **Repro:** artifact
+  `app-owned-llm-spike-1-48812e6c72bd-dev-01-2026-07-17T15-55-10-760Z.json` retains
+  both failures, 28 raw generation records per phase, and the complete OPFS lifecycle.
+- **Impact on Parallax:** q4f16 is not a qualifying fallback despite excellent TTFT;
+  its 4.92 GB install and lost-device behavior threaten game GPU headroom. D-069/D-070
+  return to the smaller mobile-QAT graph on the publisher-required runtime; E2B is the
+  next declared headroom candidate.
+- **Proposed improvement:** report the WebGPU validation error that first invalidated
+  the buffer, expose live session/device allocation telemetry, and make resource release
+  across sequential generations observable.
+
+## RE-027: Transformers.js misses Gemma 4's standalone chat template
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / ONNX Runtime Web 1.27.0.
+- **Layer:** model packaging / Transformers.js tokenizer loading.
+- **Status:** open ecosystem gap; revision-pinned OPFS adapter added by D-070.
+- **What we expected / What happened:** after ORT 1.27 successfully created the q2f16
+  sessions, the model's tokenizer was expected to format its documented chat messages.
+  Both cold and warm phases instead failed before warmup because
+  `tokenizer.chat_template` was unset. The repository contains
+  `chat_template.jinja`, but the JavaScript loader did not attach it; the small
+  `tokenizer_config.json` intentionally does not embed a duplicate.
+- **Repro:** run D-069's nine-file model manifest. Artifact
+  `app-owned-llm-spike-1-e7e0cdf0b1ac-dev-01-2026-07-17T16-24-33-709Z.json` proves all
+  nine cold writes and warm reads, followed by the exact `apply_chat_template()` error.
+- **Impact on Parallax:** no token can be generated without loading a model-owned
+  template. D-070 adds the tenth repository artifact to the same integrity/offline
+  contract and assigns its verified text to the tokenizer.
+- **Proposed improvement:** Transformers.js should implement the same standalone
+  `chat_template.jinja` discovery as the current Python processor and include that file
+  in its progress/cache lifecycle automatically.
+
+## RE-026: Pre-1.27 ONNX Runtime WebGPU rejects Gemma 4's 2-bit mobile-QAT graph
+
+- **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox;
+  Transformers.js 4.2.0 / bundled ONNX Runtime Web
+  1.26.0-dev.20260416-b7804b056c.
+- **Layer:** ONNX Runtime Web / WebGPU inference tooling.
+- **Status:** confirmed version mismatch; required 1.27.0 retest selected by D-069.
+- **What we expected / What happened:** the public mobile-QAT Gemma 4 E4B export and
+  its advertised `q2f16` text path were expected to create a WebGPU session. Both a
+  fresh-profile attempt and a browser-restart attempt failed session creation at ONNX
+  Runtime's `GatherBlockQuantized` kernel because it accepts only 4- or 8-bit weights.
+  No inference token was produced.
+- **Repro:** run `PARALLAX_MACHINE_ID=dev-01`, `PARALLAX_TIER=showcase`, then
+  `pnpm harness:app-owned-llm` with D-067's pinned q2f16 manifest. Result artifact
+  `app-owned-llm-spike-1-4ae4fc26627f-dev-01-2026-07-17T15-44-56-168Z.json` records
+  `bits_ == 4 || bits_ == 8 was false` from
+  `onnxruntime/contrib_ops/webgpu/quantization/gather_block_quantized.h:55` in both
+  phases. The fresh phase hash-verified eight entries with zero integrity failures
+  before session creation failed; this was a diagnostic failure, not a valid budget
+  cohort.
+- **Impact on Parallax:** the smaller 3.36 GB E4B mobile export cannot be the app-owned
+  WebGPU candidate with Transformers.js's bundled runtime. The model card explicitly
+  requires ONNX Runtime 1.27.0 or newer; D-069 pins that now-published browser runtime
+  and reruns the same export before falling back to E2B.
+- **Proposed improvement:** ONNX export catalogs should publish execution-provider
+  compatibility per quantization, and the JS runtime should reject an unsupported
+  graph before multi-gigabyte artifact delivery when the kernel constraint is known.
+
+## RE-025: Transformers.js 4.2 declarations do not typecheck under TypeScript 7
+
+- **Date / versions:** 2026-07-17; `@huggingface/transformers` 4.2.0,
+  `@huggingface/tokenizers` 0.1.3, and TypeScript 7.0.2 on Windows 11.
+- **Layer:** third-party web inference tooling / TypeScript declarations.
+- **Status:** open upstream compatibility gap; narrowly worked around in Parallax.
+- **What we expected / What happened:** importing the supported browser
+  `pipeline`, `env`, and `TextStreamer` surface into a strict worker should typecheck.
+  Instead, TypeScript follows Transformers.js's public declaration graph into broken
+  tokenizer aliases and unrelated model declarations, producing errors before any
+  Parallax call-site is checked. The runtime bundle succeeds, so this is a declaration
+  compatibility failure rather than a browser-runtime failure.
+- **Repro:** remove the `@huggingface/transformers` path mapping from
+  `engine/tsconfig.json`, import the three symbols used by `engine/src/workers/ai-worker.ts`,
+  and run `pnpm typecheck`. With the mapping present, the same strict worker and full
+  repository typecheck use the local declaration in
+  `engine/src/types/huggingface-transformers.d.ts` and can proceed.
+- **Impact on Parallax:** P-007 cannot consume the package's published declarations
+  directly under the pinned compiler. Parallax uses a narrow, strict declaration of
+  only the exercised API instead of enabling `skipLibCheck`, which would hide errors
+  across the entire dependency graph.
+- **Proposed improvement:** publish a TypeScript-7-compatible declaration graph and a
+  small stable public worker-inference surface that does not pull every model family
+  into consumers' typechecking.
+
 ## RE-024: Retained Prompt progress samples overstated no-progress time
 
 - **Date / Chrome version:** 2026-07-16; branded Chrome Stable 150.0.7871.128 on

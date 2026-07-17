@@ -40,9 +40,23 @@ runPnpm(["--filter", "@parallax/app", "build"]);
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
 
+const wllamaWasmBytes = await readFile(
+  join(repositoryRoot, "engine/node_modules/@wllama/wllama/esm/wasm/wllama.wasm"),
+);
+const wllamaWasmOutputName = contentAddressedNameFromBytes("wllama", wllamaWasmBytes).replace(
+  /\.js$/,
+  ".wasm",
+);
+await writeFile(join(outputRoot, "immutable", wllamaWasmOutputName), wllamaWasmBytes);
+
 const workerDescriptors = [];
-for (const role of ["render", "storage"]) {
-  const bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
+for (const role of ["ai", "render", "storage"]) {
+  let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
+  if (role === "ai" && bytes.includes("__WLLAMA_WASM_ARTIFACT__")) {
+    bytes = Buffer.from(
+      replaceExactlyOnce(bytes.toString("utf8"), "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName),
+    );
+  }
   const outputName = contentAddressedNameFromBytes(`${role}-worker`, bytes);
   await writeFile(join(outputRoot, "immutable", outputName), bytes);
   workerDescriptors.push({ outputName, role });
@@ -50,6 +64,7 @@ for (const role of ["render", "storage"]) {
 
 const engineInput = join(repositoryRoot, "engine/dist/engine.js");
 let engineSource = await readFile(engineInput, "utf8");
+engineSource = replaceExactlyOnce(engineSource, "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName);
 for (const worker of workerDescriptors) {
   engineSource = replaceExactlyOnce(
     engineSource,
@@ -96,7 +111,7 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 3,
+      schemaVersion: 4,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,
         role: worker.role,

@@ -47,6 +47,10 @@ inherit. Planned topology (revise here as it evolves; requires COOP/COEP for SAB
 ```
 main thread        UI shell, input capture, orchestration only. Never blocks.
 render worker      Babylon.js scene + WebGPU device on OffscreenCanvas.
+AI workers         P-007 wllama/llama.cpp execution + OPFS model cache; wllama creates
+                   its own inference worker/pthreads and, for the default D-074 path,
+                   a separate WebGPU device. ONNX diagnostics retain a dedicated
+                   Parallax AI worker.
 streaming worker   Owns OPFS handles; schedules loads/evictions against the
                    memory budget; feeds decode pool.
 decode pool (N)    Texture transcode (KTX2/BasisU), mesh decompress (meshopt),
@@ -56,7 +60,7 @@ sim worker         Fixed-timestep gameplay simulation. Deliberately isolated so 
                    (see features.md → Multiplayer).
 ```
 
-**AI inference is the exception to the worker rule (D-017):** the Prompt API is not
+**Prompt API inference is the exception to the worker rule (D-017):** the Prompt API is not
 currently available in Web Workers (checked 2026-07-11,
 developer.chrome.com/docs/ai/prompt-api), so NPC inference runs as a **window-owned
 broker** on the main thread — behind an `engine/ai` service interface identical to what
@@ -64,6 +68,16 @@ a worker would expose, so it migrates the day worker support lands. The broker i
 strictly decoupled from the frame loop (queued requests, streamed responses, no sync
 waits), and its main-thread impact is a first-class harness metric. Worker
 unavailability itself is a standing rough-edges item.
+
+P-007's D-074 backend keeps heavy inference off the main thread, but wllama's small
+controller is window-owned because the library resolves resources through
+`document.baseURI`; it then creates the llama.cpp inference worker, OPFS worker, and
+pthread pool. The measured placements are all-layer WebGPU offload on an independently
+created logical device and CPU/WASM with `n_gpu_layers: 0`. D-073's Transformers.js/
+ONNX reproductions retain Parallax's dedicated AI worker. “Same physical GPU” is not
+shared-device scheduling: a true shared-device branch requires render-worker
+colocation and an explicit Babylon-to-inference-engine device handoff, and remains a
+measured future variable rather than an assumed capability.
 
 Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
 sim→render state snapshots); `postMessage` with transferables for bulk handoffs;

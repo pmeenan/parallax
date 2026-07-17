@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-service";
 import {
   createPromptApiSpikeService,
   type PromptApiSpikeService,
@@ -21,6 +22,7 @@ describe("combined telemetry export", () => {
           userActivationIsActive: () => false,
         },
       ),
+      createAppOwnedLlmSpikeService(),
       {
         engineVersion: "test",
         gameVersion: "test",
@@ -97,6 +99,7 @@ function installTestTelemetry(promptApiSpikeService: PromptApiSpikeService) {
     createRenderService(),
     createOpfsReadSpikeService(),
     promptApiSpikeService,
+    createAppOwnedLlmSpikeService(),
     { engineVersion: "test", gameVersion: "test" },
     {},
   );

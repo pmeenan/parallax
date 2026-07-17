@@ -7,7 +7,7 @@ function artifact(path: string): ManifestArtifact {
 }
 
 describe("V8 script artifact selection", () => {
-  it("keeps active immutable scripts and excludes the inactive storage worker", () => {
+  it("keeps active immutable scripts and excludes inactive spike workers", () => {
     const manifest: BuildManifest = Object.freeze({
       artifacts: Object.freeze([
         artifact("index.html"),
@@ -16,10 +16,16 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/game.js"),
         artifact("immutable/render-worker.js"),
         artifact("immutable/storage-worker.js"),
+        artifact("immutable/ai-worker.js"),
         artifact("immutable/module.wasm"),
       ]),
-      schemaVersion: 3,
+      schemaVersion: 4,
       workerEntrypoints: Object.freeze([
+        Object.freeze({
+          path: "immutable/ai-worker.js",
+          role: "ai",
+          targetType: "worker",
+        }),
         Object.freeze({
           path: "immutable/render-worker.js",
           role: "render",

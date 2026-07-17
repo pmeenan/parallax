@@ -4,7 +4,13 @@ packages:
   - game
   - harness
 
+overrides:
+  onnxruntime-web: 1.27.0
+
 allowBuilds:
   esbuild: true
+  onnxruntime-node: false
+  protobufjs: false
+  sharp: false
 
 engineStrict: true

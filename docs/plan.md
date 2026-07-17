@@ -127,7 +127,7 @@ measured automatically.
       is 5.00x the largest observed true gap. First-token samples measured
       3,543.6-3,877.2 ms and remain backend-selection
       evidence (RE-021).
-- [ ] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
+- [x] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
       model via WebGPU inference in a worker against the walking skeleton, head-to-head
       with the Prompt API spike above on a fixed NPC-dialog prompt fixture set:
       first-token latency p95 vs. the budgets.md dialog budget, tokens/s, frame impact
@@ -135,6 +135,34 @@ measured automatically.
       compliance, context-window behavior at persona+retrieved-context sizes, baseline
       dialog quality, and model/install size. Device topology (own WebGPU device vs.
       sharing the render device) is an explicit spike variable.
+      **Qualified (D-074; ONNX negative evidence retained by D-073/RE-030/RE-031/
+      RE-032):** wllama 3.5.1 plus the pinned QAT-derived Gemma 4 E2B `UD-Q4_K_XL`
+      GGUF passed the unchanged physical-console gate on WebGPU: 119.64 ms warm TTFT
+      p95, 60.27 mean tokens/s, all structured/grounding/context checks, exact five-
+      shard cold and restart-warm OPFS evidence, and 16.79 ms render-callback p95.
+      Native JSON-schema response constraints are part of the measured backend.
+      The same GGUF completed all context tiers on CPU/WASM with no inference GPU and
+      383.30 ms TTFT p95, but only 9.60 mean tokens/s and a 311.20 s large-context
+      prefill, so CPU is a measured headroom mode rather than an automatic fallback.
+      The 120-second no-progress load boundary remains. ONNX's context, missing-kernel,
+      and whole-buffer failures remain valid engine/export findings rather than being
+      rewritten by the successful GGUF route.
+- [ ] Spike: app-owned NPC context-prefill caching (P-007 optimization, D-075), kept as
+      a distinct post-qualification task so D-074's uncached baseline remains
+      comparable. First measure wllama/llama.cpp live exact-prefix reuse with a shared
+      world/persona prefix and changing user suffixes, reporting cold-prefill and
+      warm-prefix TTFT separately plus reused-token evidence. Then qualify restart-
+      persistent, per-character KV snapshots through OPFS, adding only the minimal
+      wllama state/slot binding needed for the experiment. Measure snapshot bytes per
+      token, save/restore latency, JS/WASM/GPU memory and transfer behavior, render
+      contention, and a bounded multi-character hot-set/eviction policy against fresh
+      prefill on both WebGPU and CPU/WASM. Cache identity must bind the exact model and
+      GGUF digest, runtime/llama.cpp build, tokenizer/chat template, token prefix, and
+      context/KV parameters; mismatches invalidate the disposable derived cache. Do
+      not promote persistent caching unless restore is materially faster than fresh
+      prefill without violating gameplay frame budgets, and retain player-derived
+      context under save-data privacy/lifecycle rules rather than shared static-cache
+      rules.
 - [ ] Spike: Rust→WASM module with wasm threads (includes scaffolding the
       `rust-toolchain.toml` + pinned wasm-bindgen/binaryen shape D-014/D-020 specify —
       deferred until this first Rust code exists).

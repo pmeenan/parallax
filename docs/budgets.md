@@ -138,6 +138,7 @@ lifecycle or streaming architecture quietly assumes "a few GB."
 | Dialog first-token latency p95 | ≤ 1.5 s | Backend-neutral: applies to any on-device backend (Prompt API per D-017, or an app-owned model if P-007 wins) |
 | Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget. Backend-neutral, but the metric surface differs: the Prompt API broker runs on the main thread (D-017), so main-thread long-task metrics apply to it; a worker-hosted backend (P-007) shifts measurement to worker and GPU contention |
 | Prompt model-download forward-progress gap (M0 spike) | < 120 s | Calibrated by D-061/D-064/D-065 from raw phase-local telemetry across eight same-version delivering branded profiles: the true maxima were 16.7-24.0 s, so 120 s (5.00x the largest gap) remains a conservative no-forward-progress failure boundary rather than an expected cadence. Schema v2 records the observer-free browser-restart interval separately and does not call it a stall. The 30-minute completion ceiling remains while normalized progress advances. |
+| App-owned model-load forward-progress gap (M0 spike) | < 120 s | D-073 applies the same evidence-preserving boundary while `loading-model`; a cold stall skips the redundant warm retry. The overall 45-minute ceiling remains for advancing loads and later phases. |
 
 For the M0 Prompt API spike under D-059, first-token latency and main-thread long tasks are gating.
 Download evidence is mandatory and must contain valid, monotonic normalized endpoints
@@ -151,6 +152,26 @@ to distinguish nearest-rank p99.9 from maximum, so its callback diagnostic repor
 p95, and maximum and declares p99.9 inapplicable. M1 still owns the documented
 presentation-gate revisit. Fewer than 30 marker-aligned intervals is an invalid
 diagnostic rather than a measured distribution.
+
+For P-007 phase A under D-074, the app-owned backend must retain at least twenty
+post-warmup samples of the exact shared gate-watch fixture; first-token p95 remains
+gating at 1.5 seconds. Exact output-token counts and decode duration make tokens/s
+mandatory evidence but do not yet impose a throughput threshold. Fresh qualifying
+WebGPU evidence must hash-verify and write all five pinned `UD-Q4_K_XL` GGUF splits
+(2,620,371,552 bytes) to OPFS; the paired browser-restart run must read all five from
+OPFS with zero remote misses. Strict JSON-schema constrained decoding is part of the
+backend for structured fixtures. D-074's CPU/WASM mode reuses that exact GGUF with
+`n_gpu_layers: 0`; it is a measured headroom placement, not an automatic fallback.
+D-073's independently pinned ONNX q4 diagnostic remains the missing-CPU-kernel
+reproduction and does not redefine the qualifying identity.
+Structured-output validity, semantic grounding failures, prompt-token counts at every
+context tier, raw quality outputs, model-to-session load time, and token-gap scheduling
+diagnostics are mandatory evidence. Page-attributable VRAM remains `unsupported` under
+D-050 unless Chrome exposes it; a declared model requirement is not measured VRAM.
+Render-worker callback pacing during generation is retained as the same non-gating
+D-051 contention diagnostic used by the Prompt spike until M1 provides the presentation
+gate. Missing worker Long Tasks observability is explicit rather than replaced by main-
+thread observations.
 
 ## Measurement methodology
 

@@ -9,6 +9,7 @@ import {
 } from "./js-heap.js";
 
 const workerUrl = "http://127.0.0.1:8000/immutable/render-worker-hash.js";
+const aiWorkerUrl = "http://127.0.0.1:8000/immutable/ai-worker-hash.js";
 
 describe("all-realm JS heap sampler", () => {
   afterEach(() => vi.useRealTimers());
@@ -56,6 +57,42 @@ describe("all-realm JS heap sampler", () => {
       },
     ]);
     expect(browser.attachments).toEqual([{ flatten: false, targetId: "worker-0" }]);
+    expect(browser.detached).toBe(true);
+  });
+
+  it("samples the expected render and AI workers alongside the window", async () => {
+    const browser = new FakeBrowserSession(
+      [workerUrl, aiWorkerUrl],
+      [
+        [heapUsage(50, 60), heapUsage(45, 70)],
+        [heapUsage(30, 40), heapUsage(35, 50)],
+      ],
+      { pageUrl: "http://127.0.0.1:8000/" },
+    );
+    const page = new FakePageSession([heapUsage(20, 30), heapUsage(15, 25)], {
+      pageUrl: "http://127.0.0.1:8000/",
+    });
+    const sampler = await prepareJsHeapSampler(
+      asCdp(browser),
+      asCdp(page),
+      "http://127.0.0.1:8000/",
+      [workerUrl, aiWorkerUrl],
+      60_000,
+    );
+
+    sampler.start();
+    const evidence = await sampler.finish();
+
+    expect(evidence.highWaterUsedSizeBytes).toBe(100);
+    expect(evidence.samples[1]?.realms).toMatchObject([
+      { kind: "window", url: "http://127.0.0.1:8000/", usage: { usedSizeBytes: 15 } },
+      { kind: "dedicated-worker", url: workerUrl, usage: { usedSizeBytes: 45 } },
+      { kind: "dedicated-worker", url: aiWorkerUrl, usage: { usedSizeBytes: 35 } },
+    ]);
+    expect(browser.attachments).toEqual([
+      { flatten: false, targetId: "worker-0" },
+      { flatten: false, targetId: "worker-1" },
+    ]);
     expect(browser.detached).toBe(true);
   });
 
@@ -469,14 +506,18 @@ class FakeBrowserSession {
   readonly #pageUrl: string;
   readonly #targetCount: number;
   targetLookupCount = 0;
-  readonly #values: HeapUsageResponse[];
-  readonly #workerUrl: string;
+  readonly #valuesByWorker: HeapUsageResponse[][];
+  readonly #workerUrls: readonly string[];
   readonly #respond: boolean;
   readonly #responseDelayMs: number;
   readonly #sendAckDelayMs: number;
   workerCommandCount = 0;
 
-  constructor(workerUrl: string, values: HeapUsageResponse[], options: FakeBrowserOptions = {}) {
+  constructor(
+    workerUrls: string | readonly string[],
+    values: HeapUsageResponse[] | readonly HeapUsageResponse[][],
+    options: FakeBrowserOptions = {},
+  ) {
     this.#extraWorkerTargets = options.extraWorkerTargets ?? [];
     this.#extraWorkerTargetsAfterFirstLookup = options.extraWorkerTargetsAfterFirstLookup ?? [];
     this.#hangSend = options.hangSend ?? false;
@@ -486,9 +527,11 @@ class FakeBrowserSession {
     this.#respond = options.respond ?? true;
     this.#responseDelayMs = options.responseDelayMs ?? 0;
     this.#sendAckDelayMs = options.sendAckDelayMs ?? 0;
-    this.#targetCount = options.targetCount ?? 1;
-    this.#values = [...values];
-    this.#workerUrl = workerUrl;
+    this.#workerUrls = typeof workerUrls === "string" ? [workerUrls] : workerUrls;
+    this.#targetCount = options.targetCount ?? this.#workerUrls.length;
+    this.#valuesByWorker = Array.isArray(values[0])
+      ? (values as readonly HeapUsageResponse[][]).map((workerValues) => [...workerValues])
+      : [[...(values as HeapUsageResponse[])]];
   }
 
   on(_event: string, listener: (payload: unknown) => void): void {
@@ -518,7 +561,7 @@ class FakeBrowserSession {
             browserContextId: "app-context",
             targetId: `worker-${index}`,
             type: "worker",
-            url: this.#workerUrl,
+            url: this.#workerUrls[index] ?? this.#workerUrls[0],
           })),
           ...extraWorkerTargets.map((target, index) => ({
             browserContextId: target.browserContextId ?? "app-context",
@@ -531,20 +574,25 @@ class FakeBrowserSession {
     }
     if (method === "Target.attachToTarget") {
       this.attachments.push(Object.freeze({ ...params }));
-      return { sessionId: "worker-session" };
+      const targetId = params?.targetId;
+      if (typeof targetId !== "string") throw new Error("Worker target ID was omitted");
+      const workerIndex = Number(targetId.replace("worker-", ""));
+      return { sessionId: workerIndex === 0 ? "worker-session" : `worker-session-${workerIndex}` };
     }
     if (method === "Target.detachFromTarget") {
       this.detached = true;
       return {};
     }
     if (method === "Target.sendMessageToTarget") {
-      if (params?.sessionId !== "worker-session") {
+      const sessionId = params?.sessionId;
+      if (typeof sessionId !== "string" || !/^worker-session(?:-\d+)?$/.test(sessionId)) {
         throw new Error(`Unexpected nested session ${String(params?.sessionId)}`);
       }
+      const workerIndex = sessionId === "worker-session" ? 0 : Number(sessionId.slice(15));
       this.workerCommandCount += 1;
       if (this.#hangSend) return new Promise(() => undefined);
       const request = JSON.parse(String(params?.message)) as { id: number };
-      const value = this.#values.shift();
+      const value = this.#valuesByWorker[workerIndex]?.shift();
       if (value === undefined) throw new Error("No worker heap value remains");
       if (!this.#respond) return {};
       const emitResponse = (): void => {
@@ -555,7 +603,7 @@ class FakeBrowserSession {
               : JSON.stringify(
                   this.#omitResult ? { id: request.id } : { id: request.id, result: value },
                 ),
-            sessionId: "worker-session",
+            sessionId,
           });
         }
       };

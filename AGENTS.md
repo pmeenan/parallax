@@ -134,6 +134,8 @@ Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
 production-install qualification (D-065), Harness v1's sandboxed `smoke@1` replacement
 gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
 repeatability remains an informational platform finding rather than a promoted
-baseline; the remaining M0 spikes and exit items remain open.
+baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified, with
+D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained; the
+remaining M0 spikes and exit items remain open.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

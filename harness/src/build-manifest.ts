@@ -15,13 +15,13 @@ export interface ManifestArtifact {
 
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: 3;
+  readonly schemaVersion: 4;
   readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
 }
 
 export interface ManifestWorkerEntrypoint {
   readonly path: string;
-  readonly role: "render" | "storage";
+  readonly role: "ai" | "render" | "storage";
   readonly targetType: "worker";
 }
 
@@ -42,7 +42,7 @@ export async function readAndValidateBuildManifest(
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
   if (
-    manifest.schemaVersion !== 3 ||
+    manifest.schemaVersion !== 4 ||
     !Array.isArray(manifest.artifacts) ||
     !Array.isArray(manifest.workerEntrypoints)
   ) {
@@ -53,12 +53,15 @@ export async function readAndValidateBuildManifest(
     manifest.workerEntrypoints.map((entrypoint) => resolve(resolvedRoot, entrypoint.path)),
   );
   if (
-    manifest.workerEntrypoints.length !== 2 ||
+    manifest.workerEntrypoints.length !== 3 ||
+    workerRoles.filter((role) => role === "ai").length !== 1 ||
     workerRoles.filter((role) => role === "render").length !== 1 ||
     workerRoles.filter((role) => role === "storage").length !== 1 ||
-    workerPaths.size !== 2
+    workerPaths.size !== 3
   ) {
-    throw new Error("Build manifest v3 requires exactly one distinct render and storage worker");
+    throw new Error(
+      "Build manifest v4 requires exactly one distinct AI, render, and storage worker",
+    );
   }
   for (const artifact of manifest.artifacts) {
     const artifactPath = resolve(resolvedRoot, artifact.path);
@@ -72,7 +75,7 @@ export async function readAndValidateBuildManifest(
   }
   for (const entrypoint of manifest.workerEntrypoints) {
     if (
-      (entrypoint.role !== "render" && entrypoint.role !== "storage") ||
+      (entrypoint.role !== "ai" && entrypoint.role !== "render" && entrypoint.role !== "storage") ||
       entrypoint.targetType !== "worker" ||
       !manifest.artifacts.some((artifact) => artifact.path === entrypoint.path)
     ) {

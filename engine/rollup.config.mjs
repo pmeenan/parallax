@@ -46,4 +46,9 @@ export default defineConfig([
     plugins: createPlugins(),
     output: { ...sharedOutput, entryFileNames: "storage-worker.js", inlineDynamicImports: true },
   },
+  {
+    input: "src/workers/ai-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "ai-worker.js", inlineDynamicImports: true },
+  },
 ]);

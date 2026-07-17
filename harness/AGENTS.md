@@ -31,7 +31,8 @@ budgets.md → pass/fail with a report.
 - **Streaming:** cell load latency distribution, queue depths/stalls, eviction events
   (emergency count must be zero), transition-contract measurements (D1↔D2).
 - **Sim:** determinism hash (same command log ⇒ same state hash), step-time distribution.
-- **AI:** Prompt API first-token/total latency, frame impact during generation.
+- **AI:** Prompt API and app-owned-model first-token/total latency, throughput, model
+  install/cache evidence, structured/context behavior, and frame impact during generation.
 
 Sources: CDP (tracing, Performance domains), in-app telemetry exported by
 `engine/telemetry/` on a stable schema, and Chrome internals surfaces where CDP falls
@@ -46,6 +47,9 @@ short (each gap in observability is itself a rough-edges finding — log it).
   branded Chrome: uninterrupted delivery, restart/resume, post-install restart, and
   an offline repeat of the same NPC fixture (M0 backend-selection evidence; not a
   pinned-CfT budget gate).
+- `app-owned-llm-spike` — exact-manifest cold install into OPFS, browser-restart warm
+  load, fixed Gemma dialog/schema/context fixtures, and render-worker impact (M0 P-007
+  phase-A evidence run).
 - `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
 - `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
 - `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only

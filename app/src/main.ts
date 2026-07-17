@@ -1,4 +1,5 @@
 import {
+  createAppOwnedLlmSpikeService,
   createOpfsReadSpikeService,
   createPromptApiSpikeService,
   createRenderService,
@@ -6,6 +7,8 @@ import {
   installTelemetryExport,
 } from "@parallax/engine";
 import {
+  APP_OWNED_LLM_CONTEXT_FIRST_FIXTURE_SET,
+  APP_OWNED_LLM_SPIKE_FIXTURE_SET,
   createWalkingSkeletonScene,
   identifyGame,
   PROMPT_API_BRANDED_FIXTURE,
@@ -34,10 +37,64 @@ const promptApiMode = promptApiModeValue;
 const promptApiSpikeService = createPromptApiSpikeService(
   promptApiMode === "branded" ? PROMPT_API_BRANDED_FIXTURE : PROMPT_API_SPIKE_FIXTURE,
 );
-installTelemetryExport(renderService, opfsReadSpikeService, promptApiSpikeService, {
-  engineVersion: identity.engine.version,
-  gameVersion: identity.version,
-});
+const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
+installTelemetryExport(
+  renderService,
+  opfsReadSpikeService,
+  promptApiSpikeService,
+  appOwnedLlmSpikeService,
+  {
+    engineVersion: identity.engine.version,
+    gameVersion: identity.version,
+  },
+);
+const appOwnedLlmMode = new URL(location.href).searchParams.get("appOwnedLlmSpike");
+const appOwnedLlmDevice = new URL(location.href).searchParams.get("appOwnedLlmDevice") ?? "webgpu";
+const appOwnedLlmModelUrl =
+  new URL(location.href).searchParams.get("appOwnedLlmModelUrl") ?? undefined;
+if (
+  appOwnedLlmDevice !== "webgpu" &&
+  appOwnedLlmDevice !== "wasm" &&
+  appOwnedLlmDevice !== "wllama-webgpu" &&
+  appOwnedLlmDevice !== "wllama-wasm"
+) {
+  throw new Error(`Unsupported app-owned LLM device ${JSON.stringify(appOwnedLlmDevice)}`);
+}
+if (
+  appOwnedLlmMode !== null &&
+  appOwnedLlmMode !== "manual" &&
+  appOwnedLlmMode !== "context-first"
+) {
+  throw new Error(`Unsupported app-owned LLM scenario mode ${JSON.stringify(appOwnedLlmMode)}`);
+}
+const appOwnedLlmPanel = document.querySelector("#app-owned-llm-spike");
+const appOwnedLlmStart = document.querySelector("#app-owned-llm-start");
+const appOwnedLlmStatus = document.querySelector("#app-owned-llm-status");
+if (appOwnedLlmMode === "manual" || appOwnedLlmMode === "context-first") {
+  if (
+    !(appOwnedLlmPanel instanceof HTMLElement) ||
+    !(appOwnedLlmStart instanceof HTMLButtonElement) ||
+    !(appOwnedLlmStatus instanceof HTMLElement)
+  ) {
+    throw new Error("App-owned LLM spike controls are missing");
+  }
+  appOwnedLlmPanel.hidden = false;
+  appOwnedLlmStart.addEventListener("click", () => {
+    appOwnedLlmSpikeService.start(
+      appOwnedLlmMode === "context-first"
+        ? APP_OWNED_LLM_CONTEXT_FIRST_FIXTURE_SET
+        : APP_OWNED_LLM_SPIKE_FIXTURE_SET,
+      appOwnedLlmDevice,
+      appOwnedLlmModelUrl,
+    );
+  });
+  appOwnedLlmSpikeService.subscribe((llm) => {
+    appOwnedLlmStart.disabled = llm.state !== "idle";
+    const load = llm.loadElapsedMs === null ? "" : ` · load ${llm.loadElapsedMs.toFixed(0)} ms`;
+    const active = llm.activeFixtureId === null ? "" : ` · ${llm.activeFixtureId}`;
+    appOwnedLlmStatus.textContent = `${llm.state} · ${(llm.progress * 100).toFixed(1)}% · ${llm.generations.length} samples${load}${active}`;
+  });
+}
 const promptApiSpikePanel = document.querySelector("#prompt-api-spike");
 const promptApiStart = document.querySelector("#prompt-api-start");
 const promptApiOffline = document.querySelector("#prompt-api-offline");

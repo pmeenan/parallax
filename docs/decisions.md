@@ -27,6 +27,403 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-075: Measure NPC KV-prefix reuse and OPFS persistence as a separate optimization spike (2026-07-17, accepted)
+
+**Decision:** Keep D-074's app-owned backend qualification unchanged and schedule
+context-prefill caching as a distinct M0 optimization spike. The spike first measures
+in-process exact-prefix reuse for shared world/persona tokens, with cold-prefill and
+warm-prefix TTFT reported separately. It then tests restart-persistent per-character
+KV snapshots in OPFS through the smallest practical wllama state/slot extension. A
+snapshot is disposable derived data, never authoritative NPC or player state, and is
+valid only for an exact model/GGUF, runtime, tokenizer/chat-template, token-prefix,
+context, and KV-configuration identity.
+
+**Context:** The pinned `@wllama/wllama` 3.5.1 package exposes `cache_prompt` for live
+reuse but its public action surface does not expose llama.cpp state or slot
+save/restore, and the current wrapper configures one parallel slot; these points were
+verified against the installed source on 2026-07-17. Upstream llama.cpp documents
+largest-prefix prompt reuse and server slot save/restore, while its public API exposes
+state size/get/set and file save/load operations; the official
+[server documentation](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md)
+and [`llama.h`](https://github.com/ggml-org/llama.cpp/blob/master/include/llama.h) were
+checked the same day. Those capabilities establish feasibility, not a Parallax result:
+snapshot size, OPFS transfer behavior, GPU rehydration, multi-character residency, and
+render contention remain measurement targets.
+
+**Consequences:** The optimization is not folded into the current D-074 change or its
+119.64 ms short-fixture / 15,653.09 ms large-context baseline. The follow-up must retain
+uncached controls, measure WebGPU and CPU/WASM placements, and test a bounded hot set
+rather than assume every character context can remain resident. Player-derived prompt
+content follows save-data privacy and lifecycle rules if it is ever persisted; only
+static, non-private character prefixes are candidates for install-time prebuilding.
+
+**Reopen if:** wllama exposes stable persistent-slot APIs before the spike, llama.cpp
+changes state compatibility or streaming semantics, exact-prefix reuse does not reduce
+the representative prefill outcome, or saved-state restoration costs more than fresh
+prefill once storage and graphics contention are included.
+
+---
+
+## D-074: Qualify Gemma 4 E2B QAT GGUF on wllama WebGPU; retain CPU/WASM as a headroom mode (2026-07-17, accepted)
+
+**Decision:** Select `@wllama/wllama` 3.5.1 with Unsloth's QAT-derived Gemma 4 E2B
+`UD-Q4_K_XL` GGUF as P-007 phase A's qualifying app-owned backend. Pin
+`unsloth/gemma-4-E2B-it-qat-GGUF` at revision
+`66a399f68ddd113b06dff02fca9523e55465d11d`. The 2,620,370,976-byte source GGUF has
+SHA-256 `e531007218dfab990486a5de7676a6932d6ea8dea233d1f698d7c21cf8a16889`.
+`llama-gguf-split` from llama.cpp b10064 deterministically produces five exact-manifest
+shards totaling 2,620,371,552 bytes; the largest is 1,321,205,952 bytes, below
+wllama's 2 GiB per-file ceiling.
+
+Use all-layer WebGPU offload as the qualifying placement and retain `n_gpu_layers: 0`
+as an explicit CPU/WASM measurement mode, never an automatic fallback. wllama's
+controller remains window-owned because its URL resolver reads `document.baseURI`;
+llama.cpp execution, WebGPU, OPFS access, and pthread work remain in wllama-created
+workers. Structured cases use wllama/llama.cpp's native strict JSON-schema response
+constraint. D-073's 120-second no-forward-progress load boundary remains unchanged.
+
+**Context / evidence:** Physical-console artifact
+`app-owned-llm-spike-1-fd85032d3831-dev-01-2026-07-17T18-57-21-704Z.json` passed the
+full unchanged fixture on sandboxed Chrome for Testing 150.0.7871.115. Warm TTFT p95
+was 119.64 ms across twenty samples; mean decode throughput across all thirty
+generations was 60.27 tokens/s. All schema, grounding, and short/medium/large context
+checks passed. The 4,805-token GGUF-tokenized large case completed with 15,653.09 ms
+TTFT. Cold and restart-warm model loads were 9,319.87 ms and 3,996.48 ms, with exact
+five-shard OPFS write/read evidence. The concurrent render-worker callback diagnostic
+retained 2,580 samples at 16.79 ms p95.
+
+The CPU/WASM artifact
+`app-owned-llm-spike-1-4e24f4809c68-dev-01-2026-07-17T18-39-34-316Z.json` proved that
+the same GGUF loads and completes every context tier without an inference GPU. Warm
+TTFT p95 was 383.30 ms and mean decode throughput was 9.60 tokens/s, but the 4,805-token
+large-context prefill took 311,200.58 ms. That artifact predates the JSON-schema
+constraint and therefore remains a non-qualifying topology measurement rather than a
+second pass artifact.
+
+This reverses only D-073's backend-selection conclusion, not its ONNX findings. The
+ONNX mobile-QAT graph still fails at its 6,456-token tier on WebGPU, and ORT WASM still
+lacks `GatherBlockQuantized`. The GGUF route succeeds because it uses a different model
+container and llama.cpp kernels, not because those ONNX gaps disappeared. The current
+[wllama documentation](https://github.ngxson.com/wllama/docs/) confirms WebGPU,
+CPU-only `n_gpu_layers: 0`, split GGUF, OPFS-backed model management, and the per-file
+limit. The pinned
+[Unsloth QAT GGUF repository](https://huggingface.co/unsloth/gemma-4-E2B-it-qat-GGUF)
+provided the exact source identity; both were checked 2026-07-17 and the local run is
+the controlling evidence.
+
+**Consequences:** P-007 phase A now has a qualifying app-owned backend without
+weakening the 1.5-second TTFT, structured-output, context, exact-cache, or render
+diagnostics. It outperforms the measured Prompt API TTFT and the ONNX E2B TTFT on
+dev-01, but page-attributable VRAM remains unavailable, and the walking skeleton is
+not evidence of contention against final game assets. WebGPU is the current default
+candidate; CPU/WASM is a deliberate graphics-headroom option whose long-context cost
+must be acceptable to the calling gameplay system.
+
+**Reopen if:** an official Google GGUF or another quant materially improves quality or
+memory at the same fixture, wllama removes its window-bound controller, a later game
+workload reveals unacceptable GPU contention, Chrome exposes attributable VRAM, or an
+ONNX/LiteRT/WebNN route passes the same gate with a better measured tradeoff.
+
+---
+
+## D-073: Bound app-owned model-load stalls; published Gemma 4 CPU/WASM quantizations are a no-go (2026-07-17, superseded by D-074)
+
+**Decision:** Apply the Prompt spike's fail-closed loading discipline to the app-owned
+runner: while `loading-model`, abort after 120 seconds without a strictly higher
+aggregate progress value, retain the partial cache/model telemetry, close the browser,
+and skip the warm phase when the cold load stalls. The existing 45-minute completion
+ceiling remains for phases that continue making load progress or have advanced to
+warmup/generation.
+
+Close the published Gemma 4 E2B WASM/CPU experiment as a measured no-go. Preserve a
+reproducible CPU diagnostic using the standard repository's smaller q4 graph, pinned at
+D-072's revision with nine exact artifacts totaling 3,646,892,071 bytes. It is not a
+qualification candidate and is never an automatic fallback. WebGPU remains on D-071's
+mobile-QAT q2f16 graph.
+
+**Context / evidence:** The q8 physical-console artifact
+`app-owned-llm-spike-1-a6ea4cbdc9e6-dev-01-2026-07-17T17-31-17-052Z.json` stopped at
+0.6205 progress after `Array buffer allocation failed`, with 10/12 artifacts verified,
+1,797,484,666 bytes written, and zero integrity failures. Its published embedding
+external-data shard is 2,348,810,240 bytes. Transformers.js 4.2.0's browser
+`readResponse()` preallocates `new Uint8Array(total)` and returns each complete model
+file as one buffer; this makes the export's shard size and concurrent model loading a
+browser/library allocation problem rather than an OPFS streaming or hash failure. The
+120,569 ms watchdog then ended the run and correctly skipped the warm retry.
+
+The smaller-shard q4 artifact
+`app-owned-llm-spike-1-5aa7eed16ab4-dev-01-2026-07-17T17-36-44-003Z.json` got past
+that allocation cliff but failed session creation in both phases: ORT's WASM CPU
+provider has no implementation for `GatherBlockQuantized(1)` in
+`/model/embed_tokens/Gather_Quant`. D-071's mobile q2f16 graph fails on the same missing
+CPU kernel. The repository's published q4 files top out at 1,864,102,912 and
+1,762,656,256 bytes; the file listing and Transformers.js usage surface were checked on
+2026-07-17 at
+https://huggingface.co/onnx-community/gemma-4-E2B-it-ONNX/tree/main/onnx.
+
+**Consequences:** M0 has a bounded, evidence-preserving failure path instead of waiting
+45 minutes on a dead model load. The CPU topology would need a CPU-specific ONNX export
+using supported operators, or an ORT WASM kernel for `GatherBlockQuantized`; QAT itself
+is not the blocker. P-007 phase A is a valid negative spike result: E2B WebGPU is fast
+but fails the unchanged 6,456-token context, while all tested published CPU
+quantizations fail before inference. No backend is selected by this decision.
+
+**Reopen if:** ORT adds the missing WASM kernel, a CPU-targeted Gemma export appears,
+Transformers.js gains a path-based/streaming external-data handoff that avoids whole-
+file buffers, or a new app-owned candidate can satisfy the unchanged fixture and
+budgets.
+
+---
+
+## D-072: Add a CPU/WASM E2B q8 topology branch and a context-first diagnostic (2026-07-17, superseded by D-073)
+
+**Decision:** Keep D-071's E2B mobile-QAT q2f16 graph as the WebGPU branch and add an
+explicit WASM/CPU branch using the standard E2B ONNX export's q8 files. Pin
+`onnx-community/gemma-4-E2B-it-ONNX` at revision
+`9f4bef82ea6e296bc69f8a2f5939f73af81b07a6`, dtype `q8`, with an exact twelve-file
+text manifest of 6,240,975,994 bytes and per-file SHA-256. Device selection is part of
+the worker request and telemetry; it is never an automatic fallback.
+
+Add a reproducible, explicitly non-gating context-first fixture order. It uses the same
+cases and repetitions, but a 256-token short context supplies the excluded warmup and
+the unchanged 6,456-token large case runs first. The runner injects a permanent error
+for this order so its artifact cannot pass qualification even if all metrics complete.
+
+**Context / evidence:** D-071's normal-order E2B WebGPU artifact
+`app-owned-llm-spike-1-2b912b1a0d56-dev-01-2026-07-17T16-39-02-164Z.json` completed
+28 generations per phase and then lost a WebGPU buffer on the large case. Context-first
+artifact `app-owned-llm-spike-1-767efbd56b0d-dev-01-2026-07-17T16-43-05-283Z.json`
+failed the same case immediately after short warmup in both phases, ruling out retained
+state from the prior 28 generations. The pinned tokenizer measured short/medium/large
+inputs at 256/1,656/6,456 tokens.
+
+Trying the mobile-QAT graph unchanged on WASM was also fail-closed: ONNX Runtime 1.27's
+CPU execution provider has no kernel for its custom `com.microsoft.GatherBlockQuantized`
+operator. The current Transformers.js guidance identifies q8 as the usual WASM dtype;
+the standard E2B repository supplies a `quantized` graph for that path. Its substantially
+larger install is recorded rather than hidden behind the mobile model's size.
+
+**Consequences:** the CPU branch can answer whether preserving GPU headroom is worth
+CPU/system-memory/latency costs, but it must first prove operator compatibility and the
+6,456-token diagnostic before a full cohort. WebGPU and WASM cache evidence are checked
+against different pinned identities. E2B WebGPU remains fast at 206.90 ms warm TTFT p95
+but cannot qualify at the current context tier.
+
+**Reopen if:** ORT adds a WASM kernel for the mobile operator, a smaller CPU-compatible
+QAT export appears, context behavior changes in Chrome/ORT, or measured q8 CPU costs make
+the branch clearly nonviable.
+
+---
+
+## D-071: Test Gemma 4 E2B mobile-QAT for game GPU headroom (2026-07-17, superseded by D-072)
+
+**Decision:** Move the P-007 phase-A candidate from E4B to the smaller Gemma 4 E2B
+mobile-QAT q2f16 export while retaining ONNX Runtime Web 1.27.0, the standalone-template
+adapter, all fixtures, thresholds, topology, and fail-closed cache/result contracts.
+Pin `onnx-community/gemma-4-E2B-it-qat-mobile-ONNX` at revision
+`5cd5514efd375abf2801c856a3936b259cc00133` and its exact nine-file text manifest:
+2,324,194,278 bytes with per-file SHA-256.
+
+**Context / evidence:** the corrected E4B run on ORT 1.27 and the pinned template
+completed 28 generations in both phases, measured warm TTFT p95 at 250.95 ms over
+twenty samples, and proved all ten 3.36 GB cold writes and warm reads. Both phases then
+failed the large-context case with ONNX Runtime `std::bad_alloc`; the warm phase also
+reported a render-worker failure after the allocation event. Artifact
+`app-owned-llm-spike-1-172a264d5607-dev-01-2026-07-17T16-33-33-429Z.json` is the valid-
+environment failed cohort. This directly confirms the GPU/memory-headroom concern that
+motivated the user's E2B suggestion; no threshold or context case is being reduced.
+
+The pinned [E2B mobile-QAT ONNX repository](https://huggingface.co/onnx-community/gemma-4-E2B-it-qat-mobile-ONNX/tree/5cd5514efd375abf2801c856a3936b259cc00133)
+uses the same q2f16/runtime/template family at 1.04 GB fewer installed bytes. The
+repository API tree supplied sizes and LFS SHA-256 values; the small Git-backed files
+were downloaded and hashed locally.
+
+**Consequences:** E4B remains strong latency evidence but is not safe for the complete
+game-concurrent workload on dev-01. E2B must earn selection on the unchanged grounding,
+JSON, context, raw-quality, throughput, cache, and render-impact contract. Its lower
+published capability is not assumed acceptable.
+
+**Reopen if:** E2B fails quality or context, a browser/runtime fix makes E4B allocation
+stable with sufficient render headroom, or measured shared-device scheduling changes
+the memory tradeoff.
+
+---
+
+## D-070: Pin and install Gemma 4 mobile-QAT's standalone chat template (2026-07-17, superseded by D-071)
+
+**Decision:** Extend D-069's exact E4B mobile-QAT install manifest with the ONNX
+repository's `chat_template.jinja` at the same pinned revision: 17,336 bytes,
+SHA-256 `2f1b4d75d067bae3fe44e676721c7f077d243bc007156cb9c2f8b5836613d082`.
+The exact ten-file install is 3,361,444,702 bytes. Cold install fetches, hashes, and
+publishes the template through the same OPFS cache; warm launch must read it from OPFS.
+After pipeline creation, the worker assigns those verified template bytes to the
+tokenizer before warmup or measured generation.
+
+**Context / evidence:** D-069's physical-console ORT 1.27 run proved that the 2-bit
+embed and decoder sessions now create: all nine prior artifacts were verified on cold
+write and warm read. Both phases then failed before warmup because
+`tokenizer.chat_template` was unset. The pinned ONNX repository contains a standalone
+[chat_template.jinja](https://huggingface.co/onnx-community/gemma-4-E4B-it-qat-mobile-ONNX/blob/4d18aa8b54e354bec4705e4a4894f5bbf8956c3d/chat_template.jinja),
+and the official parent checkpoint uses the same standalone-file layout. Python's
+current processor loads that repository file, while Transformers.js 4.2.0 only exposed
+the tokenizer without attaching it. Artifact
+`app-owned-llm-spike-1-e7e0cdf0b1ac-dev-01-2026-07-17T16-24-33-709Z.json` retains the
+fail-closed cold/warm error and complete cache evidence.
+
+**Consequences:** the template is model data, not hand-written application prompt
+logic. It is revision-pinned, hash-verified, offline-reavailable, and included in install
+size/cache qualification. A future Transformers.js version that loads the standalone
+file itself must produce the same bytes or trigger an explicit manifest/decision update.
+
+**Reopen if:** Transformers.js natively loads the pinned template, the ONNX export
+embeds it in tokenizer metadata, or a different runtime removes this adapter boundary.
+
+---
+
+## D-069: Retest mobile-QAT Gemma 4 E4B on its required ONNX Runtime 1.27 (2026-07-17, superseded by D-070)
+
+**Decision:** Restore D-067's pinned E4B mobile-QAT q2f16 text manifest and override
+Transformers.js's older ONNX Runtime Web dependency with pinned `onnxruntime-web`
+1.27.0. The exact nine-file install is 3,361,427,366 bytes. Keep D-067's dedicated
+worker, OPFS-integrity, fixture, telemetry, and gate contracts unchanged. Keep E2B
+mobile-QAT as the next candidate if E4B fails the complete context run or leaves
+impractical GPU headroom; do not switch merely to make this run pass.
+
+**Context / evidence:** the ONNX Community
+[mobile-QAT E4B model card](https://huggingface.co/onnx-community/gemma-4-E4B-it-qat-mobile-ONNX)
+explicitly requires ONNX Runtime 1.27.0 or newer and shows the q2f16 graphs with the
+WebGPU execution provider. The underlying official Google
+[mobile-QAT checkpoint](https://huggingface.co/google/gemma-4-E4B-it-qat-mobile-transformers)
+describes its custom `wNa8o8` layout as intentionally using targeted two-bit decoder
+layers, optimized KV caches, and static activations. The built Parallax AI worker
+identified its Transformers.js-supplied runtime as
+`1.26.0-dev.20260416-b7804b056c`; that predates the model's stated runtime floor and
+explains RE-026's explicit 4/8-bit kernel rejection. ONNX Runtime Web 1.27.0 is now a
+published stable browser package, so a pinned override is narrower and more faithful
+to the requested model than abandoning mobile-QAT.
+
+The intervening D-068 q4f16 run remains useful evidence. On a valid physical-console
+environment it completed all nine cold OPFS writes and nine browser-restart OPFS reads,
+measured warm gate-watch TTFT p95 at 302.79 ms over twenty samples, and retained 4,980
+render-worker callback intervals at 16.74 ms p95. It failed exact JSON (the model added
+Markdown fences in all five cases) and deterministically invalidated a WebGPU buffer
+on the large context after completing the 1,656-token medium context. Artifact
+`app-owned-llm-spike-1-48812e6c72bd-dev-01-2026-07-17T15-55-10-760Z.json` is a failed
+cohort, not a promoted baseline.
+
+**Consequences:** P-007 again tests the user's preferred 3.36 GB mobile export, now on
+the runtime version its publisher requires. The dependency override and runtime version
+are part of the result identity. If 1.27 still rejects or loses the device, that is
+stronger export/runtime evidence and triggers the smaller E2B candidate rather than a
+silent fallback.
+
+**Reopen if:** Transformers.js publishes a release on an equal/newer compatible runtime,
+the override breaks its public pipeline contract, E4B fails the full gate, or E2B's
+measured game-headroom tradeoff is superior.
+
+---
+
+## D-068: P-007 switches Gemma 4 E4B from q2f16 mobile-QAT to q4f16 (2026-07-17, superseded by D-069)
+
+**Decision:** Keep Gemma 4 E4B, Transformers.js 4.2.0, the dedicated AI-worker
+topology, fixtures, and fail-closed OPFS contract selected by D-067, but replace the
+incompatible mobile-QAT q2f16 export with the standard export's q4f16 text path. Pin
+`onnx-community/gemma-4-E4B-it-ONNX` at revision
+`843f250f23bc91754def1e0f0db390dacd1e6b05`, dtype `q4f16`, and its exact nine-file
+text-only manifest: 4,924,946,442 bytes with a SHA-256 for every file.
+
+**Context / evidence:** the first physical-console diagnostic used pinned Chrome for
+Testing 150.0.7871.115 and the normal browser sandbox. ONNX Runtime rejected session
+creation for the q2f16 graph at `gather_block_quantized.h:55`: its WebGPU kernel
+requires `bits == 4 || bits == 8`. Artifact
+`app-owned-llm-spike-1-4ae4fc26627f-dev-01-2026-07-17T15-44-56-168Z.json` retains the
+exact error from both the fresh and browser-restart phases. The q2 attempt verified
+eight cache entries without hash failures before the session error, but produced no
+inference samples and is not qualification evidence. The same run exposed a harness
+omission: unlike `smoke@1`, this new runner had not enabled Chrome's WebGPU developer
+identity fields, so the environment gate was independently invalid. The runner now
+uses the same identity flag; no machine labels or thresholds were relaxed.
+
+The pinned [standard E4B ONNX repository](https://huggingface.co/onnx-community/gemma-4-E4B-it-ONNX/tree/843f250f23bc91754def1e0f0db390dacd1e6b05/onnx)
+contains the q4f16 embed and decoder graphs selected here. Its API tree supplied the
+LFS object SHA-256 and exact sizes for large files; the three small non-LFS JSON files
+were downloaded and SHA-256 hashed locally. q4f16 is the narrowest model-preserving
+response to the observed 4-or-8-bit runtime constraint, but it remains a candidate
+until the full gate succeeds.
+
+**Consequences:** the exact install grows from 3.36 GB to 4.92 GB. The first q4f16 run
+must still prove every runtime, cache, quality, latency, and contention requirement;
+selection does not imply compatibility or a pass. The q2f16 failure is RE-026 rather
+than hidden by an automatic runtime fallback.
+
+**Reopen if:** q4f16 fails session creation, exceeds practical memory/install costs, or
+cannot meet the existing latency/quality contract. In that case test the predeclared
+E2B branch or a different measured runtime/export through another decision.
+
+---
+
+## D-067: P-007 phase A starts with mobile-QAT Gemma 4 E4B in a dedicated WebGPU worker (2026-07-17, superseded by D-068)
+
+**Decision:** Run P-007 phase A first with the instruction-tuned Gemma 4 E4B mobile-QAT
+text path, converted to ONNX and executed by `@huggingface/transformers` 4.2.0 over
+ONNX Runtime Web/WebGPU in a dedicated AI worker. Pin model
+`onnx-community/gemma-4-E4B-it-qat-mobile-ONNX` at revision
+`4d18aa8b54e354bec4705e4a4894f5bbf8956c3d`, dtype `q2f16`, and the exact nine-file
+text-only manifest: 3,361,427,366 bytes with a SHA-256 for every file. The first install
+streams each artifact through an incremental hash into an OPFS temporary file and only
+publishes the verified cache entry after an OPFS-local move. Warm runs must read all
+nine artifacts from OPFS with zero remote misses.
+
+The experiment uses greedy decoding with thinking disabled for performance/schema
+samples, twenty repetitions of the exact branded-Prompt gate-watch fixture for a real
+nearest-rank p95, plus fixed grounding, JSON-intent, context-size, and raw dialog-quality
+cases. Raw outputs and exact input/output token counts remain result evidence. The model
+is an install resource, not a multi-gigabyte build artifact; its revision, manifest, and
+OPFS evidence are part of the result contract. The engine build gains a content-addressed
+AI worker, advancing the build manifest to v4 and the additive telemetry envelope to v5.
+
+Treat device topology honestly. The initial branch is an AI-worker-owned logical
+`GPUDevice`, separate from Babylon's render-worker device. A true shared-device branch
+requires colocating inference with rendering and assigning Babylon's device to ONNX
+Runtime before session creation. A second device on the same adapter is not “shared.” If
+Babylon cannot expose the device through a supported boundary, phase A records that
+branch as unsupported and scopes the integration/fork rather than fabricating a
+comparison.
+
+**Context / evidence checked 2026-07-17:** Google's current
+[Gemma 4 documentation](https://ai.google.dev/gemma/docs/core) identifies E4B as the
+4.5B-effective/8B-total, 128K-context on-device member and lists mobile/text-only
+memory variants. The official
+[Gemma 4 E4B model card](https://huggingface.co/google/gemma-4-E4B-it) uses Apache-2.0.
+The pinned [mobile-QAT ONNX repository](https://huggingface.co/onnx-community/gemma-4-E4B-it-qat-mobile-ONNX)
+is public and reports 3.65 GB including unused audio/vision files; its API manifest and
+Transformers.js `ModelRegistry` locally identified the nine text-generation files and
+the exact 3,361,427,366-byte total recorded above. Transformers.js 4.1 added Gemma 4;
+4.2 exposes worker-compatible WebGPU execution and a custom Cache-like backend. Current
+ONNX Runtime Web documentation exposes an existing-device setter, but WebGPU objects do
+not cross the current worker boundary.
+
+Chrome's current [Prompt API documentation](https://developer.chrome.com/docs/ai/prompt-api)
+still names a browser-selected Gemini Nano and explicitly leaves exact model size/version
+under browser control. Gemma 4 E4B is therefore a comparable Google on-device
+size/capability class and a user-selected challenger, **not** claimed to be Chrome's
+exact checkpoint.
+
+**Consequences:** P-007 remains open until physical-console fresh/warm evidence exists;
+this decision selects the experiment, not its winner. E4B is tested first as requested.
+If it misses memory, frame, or first-token constraints, E2B is the predeclared smaller
+candidate; changing model/runtime/quantization or weakening a budget requires another
+decision. `onnxruntime-node`, `sharp`, and `protobufjs` install scripts remain disabled:
+the browser worker uses their web/runtime artifacts and needs none of those native
+postinstall paths.
+
+**Reopen if:** the pinned export is corrupt/incompatible, the mobile quantization loses
+required dialog/schema quality, a supported Gemma 4 WebLLM build becomes materially
+simpler, Transformers.js gains an app-owned OPFS/integrity contract that supersedes the
+adapter, or shared-device evidence changes the preferred placement.
+
+---
+
 ## D-066: OPFS spike closes on capability evidence, not a stable microbenchmark baseline  (2026-07-17, accepted)
 
 **Decision:** Close the M0 worker-owned OPFS spike as a qualified go for the planned M1

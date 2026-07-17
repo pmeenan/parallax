@@ -78,48 +78,47 @@ export async function prepareJsHeapSampler(
   browserSession: CDPSession,
   pageSession: CDPSession,
   pageUrl: string,
-  expectedWorkerUrl: string,
+  expectedWorkerUrls: string | readonly string[],
   sampleIntervalMs: number,
 ): Promise<JsHeapSampler> {
   if (!Number.isFinite(sampleIntervalMs) || sampleIntervalMs <= 0) {
     throw new Error(`JS heap sample interval must be positive; received ${sampleIntervalMs}`);
   }
+  const workerUrls = normalizeExpectedWorkerUrls(expectedWorkerUrls);
   const pageTarget = await readPageTarget(pageSession, pageUrl);
-  const workerTarget = await requireExpectedWorkerTopology(
-    browserSession,
-    pageTarget,
-    expectedWorkerUrl,
-  );
-  const attachment = (await withTimeout(
-    browserSession.send("Target.attachToTarget", {
-      flatten: false,
-      targetId: workerTarget.targetId,
-    }),
-    HEAP_COMMAND_TIMEOUT_MS,
-    "Target.attachToTarget",
-  )) as { sessionId?: unknown };
-  if (typeof attachment.sessionId !== "string" || attachment.sessionId.length === 0) {
-    throw new Error("Target.attachToTarget omitted its session ID");
-  }
-
+  const workerTargets = await requireExpectedWorkerTopology(browserSession, pageTarget, workerUrls);
+  const attachments = await attachWorkers(browserSession, workerTargets);
   try {
     return createSampler(
       browserSession,
       pageSession,
       pageUrl,
       pageTarget,
-      workerTarget,
-      attachment.sessionId,
+      attachments,
       sampleIntervalMs,
     );
   } catch (error) {
-    await withTimeout(
-      browserSession.send("Target.detachFromTarget", { sessionId: attachment.sessionId }),
-      HEAP_COMMAND_TIMEOUT_MS,
-      "Target.detachFromTarget after sampler setup failure",
-    ).catch(() => undefined);
+    await detachWorkerSessions(
+      browserSession,
+      attachments.map((attachment) => attachment.sessionId),
+    );
     throw error;
   }
+}
+
+function normalizeExpectedWorkerUrls(
+  expectedWorkerUrls: string | readonly string[],
+): readonly string[] {
+  const urls = typeof expectedWorkerUrls === "string" ? [expectedWorkerUrls] : expectedWorkerUrls;
+  if (urls.length === 0)
+    throw new Error("JS heap sampler requires at least one expected worker URL");
+  if (urls.some((url) => typeof url !== "string" || url.length === 0)) {
+    throw new Error("JS heap sampler expected worker URLs must be non-empty strings");
+  }
+  if (new Set(urls).size !== urls.length) {
+    throw new Error("JS heap sampler expected worker URLs must be unique");
+  }
+  return Object.freeze([...urls]);
 }
 
 async function readPageTarget(pageSession: CDPSession, pageUrl: string): Promise<TargetInfo> {
@@ -143,9 +142,9 @@ async function readPageTarget(pageSession: CDPSession, pageUrl: string): Promise
 async function requireExpectedWorkerTopology(
   browserSession: CDPSession,
   pageTarget: TargetInfo,
-  expectedWorkerUrl: string,
-  expectedTargetId?: string,
-): Promise<TargetInfo> {
+  expectedWorkerUrls: readonly string[],
+  expectedWorkerTargetIds?: ReadonlyMap<string, string>,
+): Promise<readonly TargetInfo[]> {
   const targets = (await withTimeout(
     browserSession.send("Target.getTargets"),
     HEAP_COMMAND_TIMEOUT_MS,
@@ -162,24 +161,82 @@ async function requireExpectedWorkerTopology(
       target.type === pageTarget.type &&
       target.url === pageTarget.url,
   );
-  const expectedWorkerTargets = contextTargets.filter(
-    (target) =>
-      target.type === "worker" &&
-      target.url === expectedWorkerUrl &&
-      (expectedTargetId === undefined || target.targetId === expectedTargetId),
+  const expectedWorkerTargets = expectedWorkerUrls.map((expectedWorkerUrl) =>
+    contextTargets.filter(
+      (target) =>
+        target.type === "worker" &&
+        target.url === expectedWorkerUrl &&
+        (expectedWorkerTargetIds === undefined ||
+          target.targetId === expectedWorkerTargetIds.get(expectedWorkerUrl)),
+    ),
   );
   if (
     expectedPageTargets.length !== 1 ||
-    expectedWorkerTargets.length !== 1 ||
-    contextTargets.length !== 2
+    expectedWorkerTargets.some((targets) => targets.length !== 1) ||
+    contextTargets.length !== expectedWorkerUrls.length + 1
   ) {
     throw new Error(
-      `Expected the app context to contain only page ${pageTarget.url} and render worker ${expectedWorkerUrl}; received ${contextTargets.length} target(s): ${contextTargets.map((target) => `${target.type}:${target.url}`).join(", ") || "none"}`,
+      `Expected the app context to contain only page ${pageTarget.url} and dedicated worker(s) ${expectedWorkerUrls.join(", ")}; received ${contextTargets.length} target(s): ${contextTargets.map((target) => `${target.type}:${target.url}`).join(", ") || "none"}`,
     );
   }
-  const workerTarget = expectedWorkerTargets[0];
-  if (workerTarget === undefined) throw new Error("Render-worker target disappeared");
-  return workerTarget;
+  const workerTargets = expectedWorkerTargets.map((targets) => targets[0]);
+  if (workerTargets.some((target) => target === undefined)) {
+    throw new Error("Expected dedicated-worker target disappeared");
+  }
+  return workerTargets as readonly TargetInfo[];
+}
+
+interface WorkerAttachment {
+  readonly sessionId: string;
+  readonly target: TargetInfo;
+}
+
+async function attachWorkers(
+  browserSession: CDPSession,
+  workerTargets: readonly TargetInfo[],
+): Promise<readonly WorkerAttachment[]> {
+  const results = await Promise.allSettled(
+    workerTargets.map(async (target): Promise<WorkerAttachment> => {
+      const attachment = (await withTimeout(
+        browserSession.send("Target.attachToTarget", { flatten: false, targetId: target.targetId }),
+        HEAP_COMMAND_TIMEOUT_MS,
+        "Target.attachToTarget",
+      )) as { sessionId?: unknown };
+      if (typeof attachment.sessionId !== "string" || attachment.sessionId.length === 0) {
+        throw new Error("Target.attachToTarget omitted its session ID");
+      }
+      return Object.freeze({ sessionId: attachment.sessionId, target });
+    }),
+  );
+  const attachments = results.flatMap((result) =>
+    result.status === "fulfilled" ? [result.value] : [],
+  );
+  const failure = results.find(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
+  if (failure !== undefined) {
+    await detachWorkerSessions(
+      browserSession,
+      attachments.map((attachment) => attachment.sessionId),
+    );
+    throw failure.reason;
+  }
+  return Object.freeze(attachments);
+}
+
+async function detachWorkerSessions(
+  browserSession: CDPSession,
+  sessionIds: readonly string[],
+): Promise<void> {
+  await Promise.all(
+    sessionIds.map((sessionId) =>
+      withTimeout(
+        browserSession.send("Target.detachFromTarget", { sessionId }),
+        HEAP_COMMAND_TIMEOUT_MS,
+        "Target.detachFromTarget",
+      ).catch(() => undefined),
+    ),
+  );
 }
 
 export function invalidateJsHeapMetric(metric: JsHeapMetric, reason: string): JsHeapMetric {
@@ -254,8 +311,7 @@ function createSampler(
   pageSession: CDPSession,
   pageUrl: string,
   pageTarget: TargetInfo,
-  workerTarget: TargetInfo,
-  workerSessionId: string,
+  workerAttachments: readonly WorkerAttachment[],
   sampleIntervalMs: number,
 ): JsHeapSampler {
   let state: "finished" | "prepared" | "running" = "prepared";
@@ -270,14 +326,13 @@ function createSampler(
   const detach = async (): Promise<void> => {
     if (detached) return;
     detached = true;
-    await withTimeout(
-      browserSession.send("Target.detachFromTarget", { sessionId: workerSessionId }),
-      HEAP_COMMAND_TIMEOUT_MS,
-      "Target.detachFromTarget",
-    ).catch(() => undefined);
+    await detachWorkerSessions(
+      browserSession,
+      workerAttachments.map((attachment) => attachment.sessionId),
+    );
   };
 
-  const workerHeapUsage = async (): Promise<unknown> => {
+  const workerHeapUsage = async (workerSessionId: string): Promise<unknown> => {
     const commandId = nextCommandId;
     nextCommandId += 1;
     let listener: ((payload: unknown) => void) | null = null;
@@ -335,14 +390,22 @@ function createSampler(
     scheduledAfterMeasurementStartMs: number,
   ): Promise<void> => {
     const collectionStartedAtMs = performance.now();
-    const [pageResult, workerResult] = await Promise.all([
+    const realmResults = await Promise.all([
       withTimeout(
         pageSession.send("Runtime.getHeapUsage"),
         HEAP_COMMAND_TIMEOUT_MS,
         "Window Runtime.getHeapUsage",
       ).then((usage) => ({ completedAtMs: performance.now(), usage })),
-      workerHeapUsage().then((usage) => ({ completedAtMs: performance.now(), usage })),
+      ...workerAttachments.map((attachment) =>
+        workerHeapUsage(attachment.sessionId).then((usage) => ({
+          completedAtMs: performance.now(),
+          usage,
+        })),
+      ),
     ]);
+    const pageResult = realmResults[0];
+    if (pageResult === undefined) throw new Error("Window heap usage response disappeared");
+    const workerResults = realmResults.slice(1);
     const realms = Object.freeze([
       Object.freeze({
         completedAfterCollectionStartMs: pageResult.completedAtMs - collectionStartedAtMs,
@@ -350,11 +413,15 @@ function createSampler(
         url: pageUrl,
         usage: normalize(pageResult.usage),
       }),
-      Object.freeze({
-        completedAfterCollectionStartMs: workerResult.completedAtMs - collectionStartedAtMs,
-        kind: "dedicated-worker" as const,
-        url: workerTarget.url,
-        usage: normalize(workerResult.usage),
+      ...workerResults.map((workerResult, index) => {
+        const attachment = workerAttachments[index];
+        if (attachment === undefined) throw new Error("Worker heap usage response was unpaired");
+        return Object.freeze({
+          completedAfterCollectionStartMs: workerResult.completedAtMs - collectionStartedAtMs,
+          kind: "dedicated-worker" as const,
+          url: attachment.target.url,
+          usage: normalize(workerResult.usage),
+        });
       }),
     ]);
     const capturedAfterMeasurementStartMs = collectionStartedAtMs - measurementStartedAtMs;
@@ -367,9 +434,9 @@ function createSampler(
         capturedAfterMeasurementStartMs,
         collectionDurationMs: performance.now() - collectionStartedAtMs,
         phase,
-        realmResponseCompletionSkewMs: Math.abs(
-          pageResult.completedAtMs - workerResult.completedAtMs,
-        ),
+        realmResponseCompletionSkewMs:
+          Math.max(...realmResults.map((result) => result.completedAtMs)) -
+          Math.min(...realmResults.map((result) => result.completedAtMs)),
         realms,
         scheduledAfterMeasurementStartMs,
         samplingStartDelayMs: capturedAfterMeasurementStartMs - scheduledAfterMeasurementStartMs,
@@ -421,8 +488,13 @@ function createSampler(
           await requireExpectedWorkerTopology(
             browserSession,
             pageTarget,
-            workerTarget.url,
-            workerTarget.targetId,
+            workerAttachments.map((attachment) => attachment.target.url),
+            new Map(
+              workerAttachments.map((attachment) => [
+                attachment.target.url,
+                attachment.target.targetId,
+              ]),
+            ),
           );
         } catch (error) {
           topologyFailure = error;

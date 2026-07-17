@@ -1,4 +1,40 @@
 export type {
+  AppOwnedLlmCacheTelemetry,
+  AppOwnedLlmDeviceTopologyTelemetry,
+  AppOwnedLlmFixtureCase,
+  AppOwnedLlmFixtureSet,
+  AppOwnedLlmGenerationTelemetry,
+  AppOwnedLlmInferenceDevice,
+  AppOwnedLlmMessage,
+  AppOwnedLlmModelArtifact,
+  AppOwnedLlmSpikeState,
+  AppOwnedLlmSpikeTelemetrySnapshot,
+  AppOwnedLlmValidationSpec,
+} from "./ai/app-owned-llm-spike-protocol";
+export {
+  APP_OWNED_LLM_MODEL_ARTIFACTS,
+  APP_OWNED_LLM_MODEL_DTYPE,
+  APP_OWNED_LLM_MODEL_ID,
+  APP_OWNED_LLM_MODEL_INSTALL_BYTES,
+  APP_OWNED_LLM_MODEL_REVISION,
+  APP_OWNED_LLM_SPIKE_TELEMETRY_SCHEMA_VERSION,
+  APP_OWNED_LLM_WASM_MODEL_ARTIFACTS,
+  APP_OWNED_LLM_WASM_MODEL_DTYPE,
+  APP_OWNED_LLM_WASM_MODEL_ID,
+  APP_OWNED_LLM_WASM_MODEL_INSTALL_BYTES,
+  APP_OWNED_LLM_WASM_MODEL_REVISION,
+  APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS,
+  APP_OWNED_LLM_WLLAMA_MODEL_DTYPE,
+  APP_OWNED_LLM_WLLAMA_MODEL_ID,
+  APP_OWNED_LLM_WLLAMA_MODEL_INSTALL_BYTES,
+  APP_OWNED_LLM_WLLAMA_MODEL_REVISION,
+} from "./ai/app-owned-llm-spike-protocol";
+export type {
+  AppOwnedLlmSpikeListener,
+  AppOwnedLlmSpikeService,
+} from "./ai/app-owned-llm-spike-service";
+export { createAppOwnedLlmSpikeService } from "./ai/app-owned-llm-spike-service";
+export type {
   PromptApiAvailability,
   PromptApiConcurrentSessionTelemetry,
   PromptApiDownloadProgressSample,

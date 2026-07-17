@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -18,6 +19,89 @@ afterEach(async () => {
 });
 
 describe("local build server", () => {
+  it("streams only exact-manifest external model artifacts", async () => {
+    const root = await mkdtemp(join(tmpdir(), "parallax-server-"));
+    const modelRoot = await mkdtemp(join(tmpdir(), "parallax-model-"));
+    cleanup.push(root, modelRoot);
+    await writeFile(join(root, "index.html"), "<!doctype html><title>Parallax</title>");
+    const modelBody = Buffer.from("GGUF-test-shard");
+    const modelName = "model-00001-of-00001.gguf";
+    const sha256 = createHash("sha256").update(modelBody).digest("hex");
+    await writeFile(join(modelRoot, modelName), modelBody);
+    const server = createLocalServer({
+      externalModel: {
+        artifacts: [{ bytes: modelBody.byteLength, path: modelName, sha256 }],
+        root: modelRoot,
+      },
+      root,
+    });
+    const address = await listenLocalServer(server);
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+    const modelUrl = `${baseUrl}/__parallax/models/${modelName}`;
+
+    try {
+      const head = await fetch(modelUrl, { method: "HEAD" });
+      expect(head.status).toBe(200);
+      expect(head.headers.get("content-length")).toBe(String(modelBody.byteLength));
+      expect(head.headers.get("etag")).toBe(`"sha256-${sha256}"`);
+
+      const response = await fetch(modelUrl);
+      expect(response.status).toBe(200);
+      expect(Buffer.from(await response.arrayBuffer())).toEqual(modelBody);
+
+      const revalidated = await fetch(modelUrl, {
+        headers: { "If-None-Match": `"sha256-${sha256}"` },
+      });
+      expect(revalidated.status).toBe(304);
+      expect((await fetch(`${baseUrl}/__parallax/models/not-in-manifest.gguf`)).status).toBe(404);
+    } finally {
+      await stopLocalServer(server);
+    }
+  });
+
+  it("records an aborted external-model transfer and closes its pipeline", async () => {
+    const root = await mkdtemp(join(tmpdir(), "parallax-server-"));
+    const modelRoot = await mkdtemp(join(tmpdir(), "parallax-model-"));
+    cleanup.push(root, modelRoot);
+    await writeFile(join(root, "index.html"), "<!doctype html><title>Parallax</title>");
+    const modelBody = Buffer.alloc(8 * 1024 * 1024, 0x5a);
+    const modelName = "large-model.gguf";
+    const sha256 = createHash("sha256").update(modelBody).digest("hex");
+    await writeFile(join(modelRoot, modelName), modelBody);
+    const server = createLocalServer({
+      externalModel: {
+        artifacts: [{ bytes: modelBody.byteLength, path: modelName, sha256 }],
+        root: modelRoot,
+      },
+      root,
+    });
+    const address = await listenLocalServer(server);
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    try {
+      await new Promise<void>((resolveAbort, rejectAbort) => {
+        const request = httpRequest(`${baseUrl}/__parallax/models/${modelName}`, (response) => {
+          response.once("data", () => response.destroy());
+          response.once("close", resolveAbort);
+          response.on("error", () => undefined);
+        });
+        request.once("error", rejectAbort);
+        request.end();
+      });
+
+      await expect
+        .poll(async () => {
+          const metrics = (await (
+            await fetch(`${baseUrl}/__parallax/metrics`)
+          ).json()) as LocalServerMetrics;
+          return metrics.statuses["499"] ?? 0;
+        })
+        .toBe(1);
+    } finally {
+      await stopLocalServer(server);
+    }
+  });
+
   it("serves isolation and cache headers on 200 and 304 responses", async () => {
     const root = await mkdtemp(join(tmpdir(), "parallax-server-"));
     cleanup.push(root);

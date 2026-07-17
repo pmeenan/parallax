@@ -8,7 +8,12 @@ const repositoryRoot = resolve(import.meta.dirname, "../..");
 const shippedDirectory = join(repositoryRoot, "engine/dist");
 // Keep this exact allowlist aligned with engine/rollup.config.mjs: unexpected chunks
 // would weaken the self-contained, independently addressable engine artifact contract.
-const expectedOutputs = Object.freeze(["engine.js", "render-worker.js", "storage-worker.js"]);
+const expectedOutputs = Object.freeze([
+  "ai-worker.js",
+  "engine.js",
+  "render-worker.js",
+  "storage-worker.js",
+]);
 const pnpmCli = process.env.npm_execpath;
 if (pnpmCli === undefined) {
   throw new Error("pnpm CLI path is unavailable; run this script through pnpm verify:repeatable");
