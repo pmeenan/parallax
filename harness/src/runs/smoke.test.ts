@@ -14,7 +14,9 @@ import {
   SMOKE_METRICS,
   SMOKE_OPFS_COMPLETION_TIMEOUT_MS,
   SMOKE_OPFS_FILE_BYTES,
+  SMOKE_OPFS_RANDOM_BATCH_READS,
   SMOKE_OPFS_RANDOM_READS,
+  SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SAB_TOTAL_BYTES,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
@@ -26,6 +28,10 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
   SMOKE_TELEMETRY_SCHEMA_VERSION;
 
 describe("smoke@1 contract", () => {
+  it("versions sandbox launch evidence in the result contract", () => {
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(22);
+  });
+
   it("stays synchronized with the public engine telemetry contract", () => {
     expect(SMOKE_TELEMETRY_GLOBAL_NAME).toBe(TELEMETRY_GLOBAL_NAME);
     expect(expectedSchemaVersion).toBe(TELEMETRY_SCHEMA_VERSION);
@@ -75,11 +81,17 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "OPFS sync-access-handle read throughput"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(8);
+    expect(
+      SMOKE_METRICS.find(
+        (metric) => metric.name === "OPFS sync-access-handle throughput repeatability",
+      ),
+    ).toMatchObject({ mandatoryForHarnessV1: false, probe: "implemented" });
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(10);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
     expect(SMOKE_OPFS_FILE_BYTES).toBe(64 * 1024 * 1024);
     expect(SMOKE_OPFS_COMPLETION_TIMEOUT_MS).toBe(17_000);
     expect(SMOKE_OPFS_RANDOM_READS).toBe(4_096);
+    expect(SMOKE_OPFS_RANDOM_BATCH_READS).toBe(256);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );

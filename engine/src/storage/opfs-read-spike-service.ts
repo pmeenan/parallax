@@ -106,8 +106,8 @@ export function createOpfsReadSpikeService(): OpfsReadSpikeService {
             fileReused: message.fileReused,
             provisioningBytesWritten: message.provisioningBytesWritten,
             provisioningElapsedMs: message.provisioningElapsedMs,
-            random: Object.freeze({ ...message.random }),
-            sequential: Object.freeze({ ...message.sequential }),
+            random: freezePhase(message.random),
+            sequential: freezePhase(message.sequential),
             state: "completed",
           });
         };
@@ -143,6 +143,15 @@ function freezeTelemetry(
   telemetry: OpfsReadSpikeTelemetrySnapshot,
 ): OpfsReadSpikeTelemetrySnapshot {
   return Object.freeze(telemetry);
+}
+
+function freezePhase(
+  phase: NonNullable<OpfsReadSpikeTelemetrySnapshot["sequential"]>,
+): NonNullable<OpfsReadSpikeTelemetrySnapshot["sequential"]> {
+  return Object.freeze({
+    ...phase,
+    batches: Object.freeze(phase.batches.map((batch) => Object.freeze({ ...batch }))),
+  });
 }
 
 function isRunning(telemetry: OpfsReadSpikeTelemetrySnapshot): boolean {

@@ -6,9 +6,9 @@ import type { RenderService, RenderTelemetrySnapshot } from "../render/render-se
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
 
-// Prompt API telemetry is an additive section under the v3 envelope and carries its
-// own section schema version. Existing v3 consumers may safely ignore the new field.
-export const TELEMETRY_SCHEMA_VERSION = 3;
+// The v4 envelope adds OPFS per-batch timing diagnostics. Prompt API telemetry retains
+// its own section schema version so changes to that lifecycle remain independently pinned.
+export const TELEMETRY_SCHEMA_VERSION = 4;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by

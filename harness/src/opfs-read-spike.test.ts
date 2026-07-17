@@ -10,7 +10,18 @@ const sequentialBytes = 64 * 1024 * 1024 * 12;
 const randomBytes = 64 * 1024 * 4_096;
 
 function phase(bytesRead: number, operations: number) {
+  const batchCount = operations === 768 ? 12 : 16;
   return Object.freeze({
+    batches: Object.freeze(
+      Array.from({ length: batchCount }, () =>
+        Object.freeze({
+          bytesRead: bytesRead / batchCount,
+          operations: operations / batchCount,
+          readCallElapsedMs: 100 / batchCount,
+          wallElapsedMs: 200 / batchCount,
+        }),
+      ),
+    ),
     bytesRead,
     operations,
     readCallElapsedMs: 100,
@@ -80,6 +91,9 @@ describe("OPFS read spike evidence", () => {
       {
         sequential: {
           ...sequentialPhase,
+          batches: sequentialPhase.batches.map((batch, index) =>
+            index === 0 ? { ...batch, bytesRead: batch.bytesRead - 1 } : batch,
+          ),
           wallThroughputBytesPerSecond: 1,
         },
       },
@@ -89,6 +103,15 @@ describe("OPFS read spike evidence", () => {
         state: "invalid",
       });
     }
+    expect(
+      resolveOpfsReadSpikeMetric(
+        {
+          ...freshSnapshot,
+          sequential: { ...sequentialPhase, batches: sequentialPhase.batches.slice(1) },
+        },
+        "fresh",
+      ),
+    ).toMatchObject({ state: "invalid" });
   });
 
   it("fails an unfinished spike at the measurement boundary", () => {

@@ -23,6 +23,13 @@ export interface PromptApiChromeLaunchEvidence {
   readonly webGpuDeveloperFeaturesEnabled: true;
 }
 
+export function validateChromeSandboxCommandLine(commandLine: string): true {
+  if (hasCommandLineSwitch(commandLine, "--no-sandbox")) {
+    throw new Error("Chrome launch disabled process sandboxing with --no-sandbox");
+  }
+  return true;
+}
+
 const PLAYWRIGHT_DISABLED_FEATURES = Object.freeze([
   "AvoidUnnecessaryBeforeUnloadCheckSync",
   "BoundaryEventDispatchTracksNodeRemoval",
@@ -66,6 +73,7 @@ export const PROMPT_API_CHROME_LAUNCH_ARGS = Object.freeze([
 export function validatePromptApiChromeCommandLine(
   commandLine: string,
 ): PromptApiChromeLaunchEvidence {
+  validateChromeSandboxCommandLine(commandLine);
   for (const forbiddenSwitch of [
     "--disable-background-networking",
     "--disable-component-update",
@@ -114,7 +122,9 @@ function readDisabledFeatures(commandLine: string): string[] {
 }
 
 function hasCommandLineSwitch(commandLine: string, expected: string): boolean {
-  return commandLine.split(/\s+/).includes(expected);
+  return commandLine
+    .split(/\s+/)
+    .some((token) => token === expected || token.startsWith(`${expected}=`));
 }
 
 export async function loadChromePin(path: string): Promise<ChromePin> {
@@ -173,16 +183,34 @@ export function launchPersistentChrome(
   profilePath: string,
   options: readonly string[] | PersistentChromeLaunchOptions = [],
 ): Promise<BrowserContext> {
+  return chromium.launchPersistentContext(
+    profilePath,
+    createPersistentChromeLaunchOptions(executablePath, options),
+  );
+}
+
+export function createPersistentChromeLaunchOptions(
+  executablePath: string,
+  options: readonly string[] | PersistentChromeLaunchOptions = [],
+) {
   const normalized: PersistentChromeLaunchOptions = Array.isArray(options)
     ? { args: options as readonly string[] }
     : (options as PersistentChromeLaunchOptions);
-  return chromium.launchPersistentContext(profilePath, {
+  if (
+    normalized.args?.some(
+      (argument) => argument === "--no-sandbox" || argument.startsWith("--no-sandbox="),
+    )
+  ) {
+    throw new Error("Parallax Chrome launches may not disable process sandboxing");
+  }
+  return {
     args: ["--start-fullscreen", ...(normalized.args ?? [])],
+    chromiumSandbox: true,
     executablePath,
     headless: false,
     ...(normalized.ignoreDefaultArgs === undefined
       ? {}
       : { ignoreDefaultArgs: [...normalized.ignoreDefaultArgs] }),
     viewport: null,
-  });
+  };
 }

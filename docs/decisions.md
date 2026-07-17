@@ -27,6 +27,370 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-066: OPFS spike closes on capability evidence, not a stable microbenchmark baseline  (2026-07-17, accepted)
+
+**Decision:** Close the M0 worker-owned OPFS spike as a qualified go for the planned M1
+storage boundary. Every launch must still complete the exact fixture lifecycle, return
+every requested byte, validate every word, retain finite read-call and wall timings, and
+publish the per-run raw throughput; those checks remain mandatory. Keep the existing
+10% cross-repeat throughput calculation unchanged, but classify its result as an
+informational platform-research metric in `smoke@1` metric-set v10. An invalid
+repeatability result is reported, never converted to measured, trimmed, or promoted as
+a baseline. M1's representative OPFS-to-renderable cell-load p95 is the user-outcome
+gate.
+
+Advance the public telemetry envelope to v4 and the smoke report to schema v22. Retain
+each of the twelve sequential-pass timings, each 256-operation random-read batch, and a
+one-second Windows physical-disk activity sample overlapping every OPFS window. The
+host sample is attribution-only and non-mandatory because it is currently Windows-
+specific and coarser than the sub-second micro-workload.
+
+**Context / evidence:** D-063 correctly refused to promote two sandboxed schema-v20
+cohorts that missed the then-mandatory 10% gate, including a 3.45 GiB/s fresh-
+sequential outlier. Retrying that unchanged contract until it happened to pass would
+have selected a favorable sample. Instead, schema-v21 physical-console artifact
+`smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T14-53-51-392Z.json` added the
+attribution RE-023 requested. All six sandboxed core runs completed, all reads validated,
+all traces drained, the registered environment passed, and all 24 budget checks passed.
+Five OPFS cohorts stayed within 3.30-6.03%; warm-random spanned 5.25-5.81 GiB/s and
+missed the variance limit at 10.62%.
+
+The low warm-random run was not a sustained storage slowdown: one 256-read batch took
+4.925 ms while its other batches took 2.565-3.305 ms; its sequential phase remained
+normal at 6.71 GiB/s. The overlapping host sample measured 32,259 B/s physical reads,
+88,712 B/s physical writes, zero disk queue, and 1.161 ms average physical-read latency.
+Across all six windows, physical reads were only 16-109 KiB/s while the worker reported
+5.25-7.15 GiB/s, confirming the intended warm-cache scope and excluding sustained
+physical I/O as the attribution for this cohort. The experiment still cannot distinguish
+browser broker/service scheduling from other sub-millisecond host scheduling, which is
+the platform observability gap RE-023 records.
+
+**Consequences:** M0 no longer claims a stable OPFS throughput baseline. It does claim,
+with sandboxed evidence, that a dedicated worker can own a sync access handle, preserve
+fresh/warm lifecycle semantics, and deliver validated warm-cache reads with multi-GiB/s
+raw throughput under the live renderer. OPFS repeatability remains visible in every
+report and in RE-023 without indefinitely blocking unrelated Harness-v1 evidence. The
+next sandboxed schema-v22 run must pass every still-mandatory facet before replacing the
+unsandboxed aggregate gate; D-066 does not retroactively promote schema v20/v21.
+
+That replacement subsequently passed in physical-console artifact
+`smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T15-00-16-046Z.json`: schema v22 /
+metric-set v10 passed the registered environment, mandatory evidence, and all 24 budget
+checks. Every read validated and every trace drained. Its four OPFS repeatability ranges
+were 6.58%, 1.10%, 2.64%, and 2.21%; this favorable cohort does not erase RE-023's
+retained invalid cohorts or create a throughput baseline.
+
+**Reopen if:** per-run correctness or throughput evidence becomes invalid; representative
+M1 cell-load p95 misses its budget; the batch/host attribution identifies a controlled
+project-side source; or Chrome exposes operation/service-queue telemetry that supports a
+stable attribution-aware baseline.
+
+---
+
+## D-065: Sandboxed schema-v2 branded Prompt lifecycle qualifies production install  (2026-07-16, accepted)
+
+**Decision:** Accept physical-console artifact
+`prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json` as the
+current branded-Chrome production-install qualification and close that M0 plan item.
+Both independent fresh-profile lineages passed the schema-v2 contract with the normal
+Chrome sandbox, measured registered-machine environment, consistent Chrome
+150.0.7871.128 identity/hash, exact online/restart/offline fixture, settled availability,
+and nonzero privileged model-component evidence.
+
+**Context / evidence:** the uninterrupted profile downloaded in 102.6 s, observed 852
+progress events, and measured a 24.0 s longest phase-local forward-progress gap. The
+restart/resume profile downloaded in 161.9 s, observed 1,045 progress events, measured a
+17.8 s longest phase-local gap, and separately recorded a 4.7 s restart observation
+window. Each profile installed 4,269,934,835 bytes across six files, initially reported
+`downloading` after the post-install browser restart, settled to `available` after the
+fixture, and streamed the same fixture offline with availability `available`. The known
+exact `chrome://debug-webuis-disabled` redirect remained explicit `unsupported`
+diagnostic evidence under D-061.
+
+The four first-token samples were 3,543.6, 3,682.8, 3,877.2, and 3,603.2 ms. They all
+exceed the 1.5 s dialog target and remain RE-021/P-007 backend-selection evidence; this
+lifecycle qualification is not a latency pass. Adding this cohort expands the
+same-version delivery calibration to eight profiles with true phase-local gaps of
+16.7-24.0 s, leaving the unchanged 120-second boundary at 5.00x the largest observation.
+
+**Consequences:** the Prompt production-install checkbox is complete. Schema-v1
+artifacts remain diagnostic history, while this schema-v2 artifact is the current
+qualification. The OPFS and aggregate smoke gates remain independently open under
+D-063/RE-023; this run exercises neither and does not re-qualify them.
+
+**Reopen if:** a later branded-Chrome lifecycle fails the schema-v2 contract, delivery
+approaches the 120-second phase-local boundary, model bytes/availability cease to
+survive restart/offline use, or the exact internal status page becomes available and
+can replace the current unsupported diagnostic.
+
+---
+
+## D-064: Branded Prompt schema v2 separates measured progress from restart observability  (2026-07-16, accepted; qualification fulfilled by D-065)
+
+**Decision:** Advance `prompt-api-branded@1` to report schema v2. Gate the 120-second
+download liveness boundary only on the engine's phase-local forward-progress timer,
+which advances on every strictly larger normalized progress value. Do not reconstruct
+silence from the engine's retained samples: those samples are deliberately quantized at
+roughly one-percent progress increments and their spacing is not a no-progress measure.
+Record the interval from the last retained pre-restart sample to the first retained
+post-restart sample separately as `restartObservationGapMs`. That interval includes
+browser shutdown, relaunch, environment probes, and time during which no page observer
+exists, so it is a non-gating observability upper bound rather than a Chrome stall.
+
+Schema v2 also records aggregate post-run identity failures without discarding completed
+profiles, types and retains every availability phase even when availability is null,
+adds the target display mode to branded environment identity, restricts the known
+internal-page exception to the exact redirect, and rejects invalid Chrome-version and
+availability values. Restart interruption requires the current normalized maximum to
+remain strictly between 0 and 1, rather than accepting a historical intermediate sample
+after delivery has reached 1. Browser close now detaches live error listeners and escalates to a
+browser close on context-close failure. Profile cleanup is non-gating post-measurement
+housekeeping, with a guarded startup sweep for stale `run-*` children older than one day.
+
+**Context / evidence:** Review of the four schema-v1 artifacts exposed the retained-
+sample error. Across the six same-version profiles used for calibration, it overstated
+the engine's actual no-forward-progress maxima by 7.6-10.1 seconds. In the sandboxed lifecycle artifact
+`prompt-api-branded-1-2296afdeaa23-dev-01-2026-07-17T01-16-45-160Z.json`, the report
+claimed 26.3 s and 25.3 s while raw phase-local telemetry measured 16.7 s and 17.1 s.
+Across all six same-version delivering profiles in the `00-31-55`, `00-38-47`, and
+`01-16-45` artifacts, phase-local maxima were 16.7-17.3 s and total delivery durations
+were 101.3-263.7 s. The 120-second boundary is therefore 6.92x the largest observed
+true forward-progress gap. The 263.7-second delivery came from a profile that failed a
+separate settled-availability criterion; excluding its valid delivery telemetry would
+be selection on an unrelated outcome.
+
+The same review reproduced a false `Infinity` restart gap when the first resumed sample
+was already 1, showed that schema-v1 artifacts predated current settled-availability
+evidence while retaining the same version stamp, and identified failure paths that
+could discard completed evidence or freeze arrays still referenced by page listeners.
+Local unit tests now cover the corrected timing semantics, completed-on-resume case,
+terminal failure propagation, exact redirect, primitive availability values, nonempty
+version floors, and stale-profile pruning.
+
+**Consequences:** schema-v1 artifacts remain raw lifecycle, latency, and browser-
+behavior evidence, but none is a current production-install qualification for the
+schema-v2 contract. Reopen that plan item until a physical-console schema-v2 sandboxed
+run passes both fresh-profile lineages. D-061's 120-second value remains calibrated, but
+its rationale and multiplier are corrected here. D-060's result-shape and restart-gap
+language are amended by this decision.
+
+**Reopen if:** Chrome exposes a persistent delivery job with timestamps across browser
+lifetimes, allowing restart delivery silence to be measured rather than bounded by an
+observer-free wall-clock interval; or additional valid delivery profiles approach the
+120-second phase-local threshold.
+
+---
+
+## D-063: Sandboxed smoke evidence replaces, rather than inherits, the unsandboxed gate  (2026-07-16, accepted; amended by D-066)
+
+**Decision:** Do not promote the earlier schema-v19 `smoke@1` pass as the reference
+result after D-062 changed the browser process topology. The replacement must be a
+sandbox-verified schema-v20 run that passes the unchanged metric-set-v8 contract. Two
+physical-console schema-v20 attempts are retained as negative evidence rather than
+retried until one happens to pass: both verified the sandbox and registered environment,
+but both failed mandatory OPFS repeatability; the second also reproduced RE-008. Reopen
+the Harness-v1 aggregate gate and OPFS performance qualification in `plan.md`. Do not
+change the 10% variance limit or the five-second trace transaction bound to accept this
+cohort.
+
+**Context / evidence:** Artifact
+`smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-06-27-753Z.json` completed all six
+core runs and all trace drains, but fresh-random OPFS read-call throughput varied 10.30%
+and warm-sequential varied 10.61%. The unchanged confirmation artifact
+`smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-09-09-623Z.json` recorded a fresh
+sequential outlier at 3.45 GiB/s versus 5.99 and 6.53 GiB/s (89.44% relative range),
+fresh-random variance of 30.84%, and one core trace that acknowledged `Tracing.end` in
+2.5 ms but delivered zero events/chunks before the 5,001.6 ms timeout. All reads in both
+runs validated, the environment facet passed, `sandboxVerified` was true, and the
+effective command line omitted `--no-sandbox`.
+
+**Consequences:** the sandboxed core measurements remain useful subsystem data: WebGPU
+rendering, SAB transport, JS heap, Dawn cache behavior in measured traces, and HTTP
+serving completed. They are not an aggregate budget pass. RE-023 tracks the new OPFS
+instability and RE-008 retains the trace failure. Further work must isolate whether the
+OPFS outliers arise from sandbox topology, storage scheduling, or an uncontrolled host
+factor before a replacement baseline is promoted.
+
+**Reopen if:** a controlled cause is identified, or a sandbox-verified schema-v20 run
+passes the unchanged contract after that cause is addressed.
+
+---
+
+## D-062: Reference Chrome launches keep the process sandbox enabled  (2026-07-16, accepted)
+
+**Decision:** Every Parallax Playwright Chrome launch sets `chromiumSandbox: true`.
+The shared launcher rejects caller-supplied `--no-sandbox`; Prompt API launch-contract
+inspection also rejects the switch if it appears in Chrome's effective command line.
+`smoke@1` schema v20 records that effective command line and a sandbox-verification
+field in the environment identity. Sandboxing is part of the measured browser contract,
+not an optional automation convenience.
+
+**Context:** Playwright 1.61.1 defaults `chromiumSandbox` to false and consequently
+added `--no-sandbox` to every shared harness launch. Branded Chrome surfaced its
+unsupported-flag warning, revealing that all prior CfT and branded measurements used a
+different child-process security topology from ordinary production Chrome (RE-022).
+Chromium's Windows sandbox requires neither elevation nor a special driver, and current
+Chromium source assigns the on-device-model execution utility an AppContainer sandbox.
+A local disposable probe on dev-01 successfully launched and controlled both ordinary
+and persistent branded Chrome 150.0.7871.128 contexts with `chromiumSandbox: true`.
+
+**Sources checked (2026-07-16):** Playwright's current
+[BrowserType API](https://playwright.dev/docs/api/class-browsertype) documents the
+`chromiumSandbox` option and its false default. Chromium's
+[sandbox design](https://chromium.googlesource.com/chromium/src/+/main/docs/design/sandbox.md)
+documents that the Windows sandbox works without administrator privileges and that
+`--no-sandbox` removes renderer target-process isolation. Chromium's
+[Windows sandbox launcher](https://chromium.googlesource.com/chromium/src/+/main/sandbox/policy/win/sandbox_win.cc)
+shows that the switch bypasses sandbox policy, disables CET compatibility for child
+processes, and that on-device-model execution normally selects an AppContainer.
+
+**Consequences:** lifecycle evidence from earlier unsandboxed runs remains useful as
+diagnostic history. D-061 now records the passing sandboxed branded-Chrome production
+qualification, while D-063 retains two failed sandboxed schema-v20 smoke attempts and
+reopens the aggregate/OPFS baseline instead of inheriting its unsandboxed predecessor.
+A sandbox-related failure becomes measured platform evidence; it is not bypassed by
+restoring `--no-sandbox`.
+
+**Reopen if:** Chrome cannot exercise a required web-platform capability under its
+normal Windows sandbox. Any exception requires a new decision, isolated diagnostic
+scenario, and explicit non-production label.
+
+---
+
+## D-061: Web-visible availability plus component bytes gate branded model status  (2026-07-16, accepted; amended by D-064)
+
+**Decision:** Refine D-060's model-status requirement after the first physical-console
+qualification. `chrome://on-device-internals` remains recorded, but an exact redirect
+to `chrome://debug-webuis-disabled/?host=chrome://on-device-internals/` is
+`unsupported` diagnostic evidence rather than a production-UX failure. A branded
+profile gates model readiness on the web-visible lifecycle instead: `available` after
+install, successful streamed inference after browser restart followed by `available`,
+and a successful exact-fixture repeat while network-isolated. Chrome 150 may initially
+report transient `downloading` immediately after restart even though the installed
+session then creates successfully (RE-020); that transition is retained and does not
+substitute for the required settled `available`. Post-shutdown privileged
+inspection must independently measure nonzero `OptGuideOnDeviceModel` bytes/files.
+Other internal-page failures remain invalid; arbitrary or label-only status text never
+passes.
+
+The same-version delivery cohorts calibrate and retain the 120-second
+no-forward-progress boundary. Raw phase-local telemetry from all six delivering
+profiles in the `00-31-55`, `00-38-47`, and sandboxed `01-16-45` artifacts measured
+true forward-progress maxima of 16.7-17.3 s while total deliveries ranged from
+101.3-263.7 s. The existing threshold is 6.92x the largest observed gap, leaving ample
+delivery jitter while still rejecting the 120-second silence reproduced by the CfT
+spike. D-064 corrects the schema-v1 retained-sample calculation and changes the
+threshold from provisional to calibrated without changing its value.
+
+**Context / evidence:** Sandboxed schema-v1 physical-console lifecycle artifact
+`prompt-api-branded-1-2296afdeaa23-dev-01-2026-07-17T01-16-45-160Z.json` installed
+4,269,934,835 bytes (6 files) in each independent fresh profile, captured 1,041 and 1,489
+normalized progress events, completed initial and post-restart NPC fixtures, and
+repeated the fixture offline with settled availability `available`. Both profiles used
+branded Chrome 150.0.7871.128 with the same executable hash, and every effective command
+line omitted `--no-sandbox`. The initial post-restart availability was transiently
+`downloading` before successful inference and a settled `available` check (RE-020). The
+internal debug URL was disabled in both automation sessions, matching the already-recorded
+RE-018 behavior. Its four first-token samples measured 3,382.3-3,514.5 ms (RE-021).
+
+The earlier unsandboxed schema-v1 passing artifact
+`prompt-api-branded-1-2296afdeaa23-dev-01-2026-07-17T00-38-47-623Z.json` remains useful
+diagnostic history but is superseded for production qualification by the sandboxed
+schema-v1 artifact above. D-064 subsequently reopens production qualification for the
+corrected schema-v2 contract.
+
+The earlier diagnostic artifact
+`prompt-api-branded-1-2296afdeaa23-dev-01-2026-07-17T00-23-02-899Z.json` installed
+4,269,934,835 bytes in each independent branded profile, captured 913 and 747 normalized
+progress events, completed the initial and post-restart NPC fixtures, and repeated the
+fixture offline with availability `available`. The internal debug URL was disabled in
+both automation sessions, matching the already-recorded RE-018 behavior. The overall
+artifact failed both because Chrome auto-updated from 150.0.7871.115 to 150.0.7871.128
+during the run and because both internal-page redirects were then classified `invalid`.
+D-061 deliberately changes the latter exact automation redirect to `unsupported`; it
+does not characterize model-status relaxation as unrelated to that failed result.
+
+**Consequences:** the branded runner preserves the internal-page reason in JSON and
+Markdown, but does not require a debug-only Chrome surface unavailable to its launch
+environment. `budgets.md` records the now-calibrated 120-second boundary. D-060's
+same-version/hash rule and all web-visible restart/offline/component requirements remain
+unchanged. D-064 later advances the report contract and reopens the branded
+production-install plan item; the schema-v1 first-token measurements remain open
+backend-selection evidence under RE-021.
+
+**Reopen if:** Chrome enables the internal page under automation (promote it back to a
+measured diagnostic), or additional valid installs show a legitimate phase-local
+progress gap near 120 seconds.
+
+---
+
+## D-060: Branded Prompt qualification is a two-profile lifecycle scenario  (2026-07-16, accepted; amended by D-064)
+
+**Decision:** Implement the production-install qualification required by D-059 as the
+separate versioned scenario `prompt-api-branded@1`. It launches the installed branded
+Chrome executable against two independent disposable profiles outside the repository:
+one uninterrupted install and one install deliberately interrupted only after a live
+intermediate progress update, then resumed with the same profile after browser restart.
+Both profiles run the same game-owned NPC-dialog prompt during initial creation, close
+and relaunch Chrome after installation, repeat that prompt, isolate the browser from the
+network, and repeat the exact prompt again offline. The runner records each availability
+transition, phase-local progress telemetry, total download duration across restart, the
+  longest phase-local interval without forward progress, the separately labeled
+  observer-free restart interval,
+the effective Chrome launch contract, `chrome://on-device-internals` status text, and
+  post-shutdown `OptGuideOnDeviceModel` bytes/files/versions. It attempts non-gating
+  cleanup of each exact child profile only after privileged inspection and writes JSON
+  plus Markdown evidence; a guarded later-run sweep removes stale children.
+Every browser launch re-hashes the installed executable, the two profiles must retain
+the same version/hash, and each profile carries the registered-machine host, GPU,
+driver, power, display, remote-session, and post-run identity gate used by the standard
+harness. Caller-supplied machine/tier labels cannot make an indirect session valid.
+
+Progress is evaluated per browser lifetime before aggregation: a resumed monitor may
+legitimately begin again at normalized 0, so that phase-local reset is not called a
+cross-restart regression. The combined evidence still requires a 0 endpoint, at least
+one intermediate update, a 1 endpoint, no invalid/regressive event within either
+  phase, and the D-059 120-second phase-local liveness bound. The restart profile is not
+valid unless the first browser was closed after observable intermediate progress and
+the second phase completed. This scenario is backend-selection and production-UX
+evidence, not a pinned-CfT performance gate; it still records artifact/source identity
+and fails closed on missing lifecycle evidence. The plan checkbox stays open until two
+physical-console results exist and the successful-run timings either recalibrate or
+confirm the provisional stall threshold through a follow-up decision.
+
+**Context:** Reusing `prompt-api-spike@1` would delete its fresh CfT profile after one
+browser lifetime and would either lose restart evidence or weaken that research gate's
+digest-pinned environment contract. A manual checklist would also fail the project's
+requirement that performance and lifecycle claims land as diffable artifacts. Phase-
+aware aggregation is necessary because the browser, page, engine service, and progress
+monitor are all recreated at the restart boundary while Chrome-managed model delivery
+persists in the profile.
+
+**Sources checked (2026-07-16):** Chrome's current
+[Prompt API documentation](https://developer.chrome.com/docs/ai/prompt-api) requires a
+user-activation-backed `LanguageModel.create()` and documents normalized progress
+monitoring. Chrome's
+[model-management guide](https://developer.chrome.com/docs/ai/understand-built-in-model-management)
+states that download continues after a tab closes and resumes after a browser restart
+within 30 days. The
+[built-in AI setup guide](https://developer.chrome.com/docs/ai/get-started) documents
+offline inference after initial delivery, variable model size, the 22 GB free-space
+precondition, and `chrome://on-device-internals` as the exact-size/status surface.
+
+**Consequences:** `harness:prompt-api-branded` is the operator command; D-064 advances
+its harness result to schema v2, independently of `prompt-api-spike@1` schema v6.
+Its branded-only offline fixture intentionally equals its online NPC fixture so "repeat
+offline" measures the same workload without changing `prompt-api-spike@1`'s versioned
+sentinel fixture. A failure to trigger, expose actionable progress, resume,
+remain available after restart, expose model status, or stream offline is retained as
+negative backend-selection evidence rather than bypassed.
+
+**Reopen if:** Chrome exposes a supported persistent download job/status API that spans
+browser lifetimes, making page-monitor phase aggregation unnecessary; or successful
+qualification data requires a different interruption point or liveness threshold.
+
+---
+
 ## D-059: Prompt API M0 evidence is a standalone, activation-driven run  (2026-07-16, accepted)
 
 **Decision:** Implement the M0 Prompt API spike as versioned scenario

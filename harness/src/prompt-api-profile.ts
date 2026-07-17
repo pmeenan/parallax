@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { PROMPT_API_SPIKE_PROFILE_LINEAGE_SCHEMA_VERSION } from "./runs/prompt-api-spike.js";
 
@@ -22,6 +22,8 @@ export const PROMPT_API_PROFILE_REMOVE_OPTIONS = Object.freeze({
   retryDelay: 200,
 });
 
+export const PROMPT_API_STALE_PROFILE_AGE_MS = 24 * 60 * 60 * 1_000;
+
 export async function createFreshPromptApiProfile(parent: string): Promise<FreshPromptApiProfile> {
   const resolvedParent = resolve(parent);
   await mkdir(resolvedParent, { recursive: true });
@@ -40,6 +42,36 @@ export async function createFreshPromptApiProfile(parent: string): Promise<Fresh
     },
     root,
   });
+}
+
+export async function pruneStalePromptApiProfiles(
+  parent: string,
+  options: Readonly<{
+    maxAgeMs?: number;
+    now?: () => number;
+    warn?: (message: string) => void;
+  }> = {},
+): Promise<readonly string[]> {
+  const resolvedParent = resolve(parent);
+  const maxAgeMs = options.maxAgeMs ?? PROMPT_API_STALE_PROFILE_AGE_MS;
+  const now = options.now ?? Date.now;
+  const warn = options.warn ?? console.warn;
+  await mkdir(resolvedParent, { recursive: true });
+  const removed: string[] = [];
+  for (const entry of await readdir(resolvedParent, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !entry.name.startsWith("run-")) continue;
+    const candidate = join(resolvedParent, entry.name);
+    assertChildPath(resolvedParent, candidate);
+    try {
+      const identity = await stat(candidate);
+      if (now() - identity.mtimeMs < maxAgeMs) continue;
+      await rm(candidate, PROMPT_API_PROFILE_REMOVE_OPTIONS);
+      removed.push(entry.name);
+    } catch (error: unknown) {
+      warn(`Prompt API stale-profile cleanup failed for ${candidate}: ${String(error)}`);
+    }
+  }
+  return Object.freeze(removed);
 }
 
 function assertChildPath(parent: string, child: string): void {

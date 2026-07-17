@@ -93,9 +93,12 @@ and the SAB spike finish, the harness starts it against the live renderer; it pr
 OPFS fixture through `createSyncAccessHandle()`. It reports twelve 1 MiB sequential
 passes after one untimed, fully validated sequential preflight, followed by 4,096
 deterministic 64 KiB random reads. It separates time inside `read()`
-from validation-inclusive worker wall time. The worker terminates before the gameplay
-measurement window; M1's long-lived streaming worker will own production handles and
-queue telemetry. (D-058.)
+from validation-inclusive worker wall time, retains every sequential pass and 256-read
+random batch, and correlates the sub-second window with coarse host physical-disk
+activity on Windows. The worker terminates before the gameplay measurement window;
+M1's long-lived streaming worker will own production handles and queue telemetry. The
+microbenchmark's sandbox-sensitive repeatability remains an informational finding;
+M1's representative OPFS-to-renderable cell-load p95 is the outcome gate. (D-058/D-066.)
 
 ## Storage map
 

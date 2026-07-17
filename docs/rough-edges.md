@@ -92,6 +92,186 @@ COS APIs exist):
 
 ## Findings
 
+## RE-024: Retained Prompt progress samples overstated no-progress time
+
+- **Date / Chrome version:** 2026-07-16; branded Chrome Stable 150.0.7871.128 on
+  Windows 11/dev-01/RTX 4080 Super. Review of all four schema-v1 branded artifacts.
+- **Layer:** harness aggregation / Prompt API progress telemetry.
+- **Status:** our-bug; fixed in `prompt-api-branded@1` report schema v2 (D-064).
+- **What we expected / What happened:** the branded report labeled wall-clock spacing
+  between retained progress samples as its longest no-forward-progress gap. The engine
+  intentionally retains samples only after roughly one percentage point of additional
+  progress, while its separate timer advances on every strictly larger normalized
+  value. Across the six same-version calibration profiles, schema-v1 reports therefore
+  overstated true gaps by 7.6-10.1 s. The sandboxed
+  artifact reported 26.3 s and 25.3 s although its raw engine telemetry measured 16.7 s
+  and 17.1 s. A slow but continuously advancing link could falsely fail the 120-second
+  boundary merely because one percent of a multi-gigabyte model took that long.
+- **Repro:** compare each schema-v1 profile's aggregate
+  `download.value.longestProgressGapMs` with the maximum
+  `segments[].telemetry.download.longestProgressGapMs`. Across the six same-version
+  delivering profiles in the `00-31-55`, `00-38-47`, and `01-16-45` artifacts, the
+  phase-local values were 16.7-17.3 s while total delivery lasted 101.3-263.7 s.
+  A synthetic schema-v2 test spaces retained samples by 60 s while preserving a 17 s
+  engine gap and verifies that the result reports 17 s.
+- **Impact on Parallax:** prior lifecycle and latency observations remain useful, but
+  schema-v1 download-gap fields are not performance evidence. Schema v2 gates only the
+  phase-local engine timer and records the observer-free restart interval separately as
+  a non-gating upper bound. Production-install qualification is reopened for a schema-v2
+  physical-console run. D-065's passing schema-v2 artifact subsequently measured true
+  phase-local gaps of 24.0 s and 17.8 s plus a separately labeled 4.7 s restart
+  observation window, closing the qualification without reviving the conflated metric.
+- **Proposed improvement:** none platform-side. Keep raw-event progress timing and
+  downsampled report/UI samples as explicitly separate contracts.
+
+## RE-023: Sandboxed OPFS read-call throughput misses the repeatability gate
+
+- **Date / Chrome version:** 2026-07-16 through 2026-07-17; Chrome for Testing Stable 150.0.7871.115 on
+  Windows 11/dev-01/RTX 4080 Super, physical console, normal Chrome sandbox. Schema-v20
+  results
+  `smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-06-27-753Z.json` and
+  `smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-09-09-623Z.json`, plus
+  attribution schema-v21 result
+  `smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T14-53-51-392Z.json` and passing
+  schema-v22 replacement
+  `smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T15-00-16-046Z.json`.
+- **Layer:** OPFS / storage worker / browser process topology / host scheduling.
+- **Status:** confirmed platform-observability/repeatability gap; no longer blocks M0
+  after D-066's qualified capability decision, but remains open for M1 outcome and
+  queue/service attribution.
+- **What we expected / What happened:** each fresh/warm sequential/random read-call
+  cohort must remain within 10% relative range after an untimed validated preflight.
+  The first sandboxed run completed every read and all six core traces but measured
+  fresh-random variance of 10.30% and warm-sequential variance of 10.61%. An unchanged
+  confirmation run again validated every read but measured fresh-sequential values of
+  5.99, 6.53, and 3.45 GiB/s (89.44% range) and fresh-random values of 5.35, 5.50, and
+  4.20 GiB/s (30.84% range). Warm cohorts in the confirmation stayed within 4.04% and
+  3.47%. The effective command lines omitted `--no-sandbox`; both registered
+  environment facets passed.
+  Schema v21 retained per-batch and host-disk attribution. Five cohorts stayed within
+  3.30-6.03%, while warm-random missed narrowly at 10.62% (5.25-5.81 GiB/s). The low
+  run contained one 4.925 ms 256-read batch among 2.565-3.305 ms peers, with normal
+  sequential throughput. Its overlapping one-second host sample measured only 32,259
+  B/s physical reads, 88,712 B/s writes, zero disk queue, and 1.161 ms average read
+  latency; all six host samples were similarly far below the worker's multi-GiB/s
+  warm-cache throughput.
+  The subsequent schema-v22 cohort passed the revised aggregate contract and also kept
+  all four OPFS ranges within 1.10-6.58%. That favorable sample does not supersede the
+  prior invalid cohorts and is not promoted as a throughput baseline.
+- **Repro:** at the dev-01 physical console run `PARALLAX_MACHINE_ID=dev-01`,
+  `PARALLAX_TIER=showcase`, then `pnpm harness:smoke`. Schema v20 records the sandbox
+  contract, twelve-pass sequential and 4,096-operation random read-call samples, full
+  validation counts, per-profile variance, per-batch timings, and overlapping host
+  physical-disk activity.
+- **Impact on Parallax:** worker-owned synchronous OPFS remains functional and fast in
+  most samples, but the current harness cannot promote a stable production-sandbox
+  throughput baseline. Retrying until a favorable three-sample cohort appears would
+  conceal the instability. D-066 therefore closes the capability spike without
+  promoting a repeatability baseline: exact per-run lifecycle/correctness/raw evidence
+  stays mandatory, the unchanged variance result stays visible but informational, and
+  M1 gates representative OPFS-to-renderable cell-load p95.
+- **Proposed improvement:** expose OPFS operation latency and queue/service attribution
+  through DevTools tracing or a performance surface. Parallax now retains per-batch and
+  host-disk attribution, but the browser/broker scheduling layer remains opaque.
+
+## RE-022: Playwright disabled Chrome's process sandbox in reference launches
+
+- **Date / versions:** 2026-07-16; Playwright 1.61.1 with branded Chrome Stable
+  150.0.7871.128 and pinned CfT 150.0.7871.115 on Windows 11/dev-01.
+- **Layer:** harness automation / browser process topology.
+- **Status:** our-bug; fixed in the shared launcher (D-062). The sandboxed Prompt
+  schema-v2 qualification passed under D-065, and the schema-v22 aggregate smoke
+  replacement passed under D-066. Earlier sandboxed failures remain retained evidence.
+- **What we expected / What happened:** reference automation was expected to preserve
+  production Chrome's process topology. Playwright's `chromiumSandbox` option defaults
+  to false, so its generated arguments silently added `--no-sandbox` to every shared
+  persistent-context launch. Branded Chrome exposed the unsupported-flag warning. The
+  effective command lines retained in the Prompt artifacts confirm the switch was
+  present; ordinary and persistent local probes both launched successfully after
+  setting `chromiumSandbox: true`.
+- **Repro:** call Playwright 1.61.1 `launchPersistentContext()` without setting
+  `chromiumSandbox`, then inspect `chrome://version`; `--no-sandbox` is present. Repeat
+  with `chromiumSandbox: true`; Chrome launches without the switch. The shared Parallax
+  launcher now forces the latter and rejects an effective Prompt command line if the
+  switch returns. `smoke@1` schema v20 and later persist the effective command line and
+  verified sandbox state.
+- **Impact on Parallax:** prior download/restart/offline results remain diagnostic
+  history, but the on-device-model utility, renderer, GPU, and other child processes
+  did not use the same security topology as production Chrome. The sandboxed branded
+  schema-v2 artifact now qualifies the production-sandbox lifecycle; the two sandboxed
+  smoke artifacts preserve their failures rather than inheriting the old aggregate pass.
+- **Proposed improvement:** Playwright should enable the sandbox by default for
+  installed Windows Chrome, or make the security/topology change prominent when it
+  injects `--no-sandbox`.
+- **Sources checked:** Playwright
+  [BrowserType API](https://playwright.dev/docs/api/class-browsertype), Chromium
+  [sandbox design](https://chromium.googlesource.com/chromium/src/+/main/docs/design/sandbox.md),
+  and Chromium's
+  [Windows sandbox launcher](https://chromium.googlesource.com/chromium/src/+/main/sandbox/policy/win/sandbox_win.cc),
+  checked 2026-07-16.
+
+## RE-021: Branded Prompt API first-token samples exceed the dialog target
+
+- **Date / Chrome version:** 2026-07-16; branded Chrome Stable 150.0.7871.128 on
+  Windows 11/dev-01/RTX 4080 Super, physical console. Passing sandboxed schema-v2
+  lifecycle result
+  `prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json`.
+- **Layer:** Prompt API / NPC-dialog latency.
+- **Status:** open; carry into P-007's fixed-fixture head-to-head rather than treating
+  the production-install qualification as a latency pass.
+- **What we expected / What happened:** the backend-neutral dialog target is first-token
+  latency p95 <= 1.5 s. The branded qualification was scoped to install lifecycle, but
+  retained four exact-fixture latency samples under the production sandbox: 3543.6 ms
+  and 3682.8 ms in the uninterrupted profile, and 3877.2 ms and 3603.2 ms in the
+  restart/resume profile. Every observed sample exceeded 1.5 s; the range was
+  3543.6-3877.2 ms. The earlier same-digest schema-v1 sandbox/unsandbox comparison
+  remains the controlled topology correlation: its unsandboxed cohort ranged
+  1575.1-1650.8 ms, so the sandboxed mean was 2.15x higher. This is a strong correlation
+  with the topology correction, not yet causal attribution; four samples per cohort
+  are not a sufficient p95 population.
+- **Repro:** from a physical console run `PARALLAX_MACHINE_ID=dev-01`,
+  `PARALLAX_TIER=showcase`, then `pnpm harness:prompt-api-branded`. Inspect each
+  profile's initial and post-restart `firstChunkLatencyMs` values.
+- **Impact on Parallax:** D-065's schema-v2 cohort qualifies reliable branded delivery.
+  The production-sandbox samples fail to establish acceptable NPC
+  dialog responsiveness and strengthen the case for P-007. A controlled sandbox A/B
+  may isolate the 2.15x correlation, but backend selection must use the production
+  topology regardless of its cause.
+- **Proposed improvement:** expose lower-overhead session warmup/preparation and
+  inference diagnostics so applications can distinguish model/session initialization
+  from generation latency and schedule readiness before dialog begins.
+
+## RE-020: Installed Prompt API model reports transient `downloading` after browser restart
+
+- **Date / Chrome version:** 2026-07-16; branded Chrome Stable 150.0.7871.128 on
+  Windows 11/dev-01/RTX 4080 Super, physical console. Passing sandboxed schema-v2
+  same-version result
+  `prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json`.
+- **Layer:** Prompt API / Chrome model lifecycle.
+- **Status:** open; production UX must preserve and tolerate the transition while
+  requiring settled `available` before declaring readiness.
+- **What we expected / What happened:** after each fresh profile installed the
+  4,269,934,835-byte model, completed streamed inference, and restarted Chrome, the
+  first `LanguageModel.availability()` returned `downloading` rather than `available`.
+  Activation-backed `create()` nevertheless completed the same NPC fixture, the next
+  availability check settled to `available`, and the exact fixture then streamed again
+  offline with availability `available`. The behavior reproduced in both the
+  uninterrupted and restart/resume profiles and also appeared in the earlier
+  cross-version diagnostic.
+- **Repro:** run `PARALLAX_MACHINE_ID=dev-01`, `PARALLAX_TIER=showcase`, then
+  `pnpm harness:prompt-api-branded`. Inspect each profile's availability transitions:
+  the post-install browser restart records `downloading`, followed by successful
+  inference and settled `available`.
+- **Impact on Parallax:** installed-model restart UX cannot equate an initial
+  `downloading` response with a new multi-gigabyte install or a failed persistence
+  check. The branded schema-v2 contract records the transition, exercises `create()`
+  from a real gesture, and gates the settled post-fixture `available` state plus offline
+  success and component bytes. A state that never settles still fails the existing
+  liveness/completion contract.
+- **Proposed improvement:** distinguish model rehydration/verification from network
+  download, or make an already-installed model report `available` when a session can be
+  created without new delivery.
+
 ## RE-019: Prompt API creation can remain pending without download progress or model bytes
 
 - **Date / Chrome version:** 2026-07-16; Chrome for Testing Stable 150.0.7871.115 on
@@ -99,8 +279,10 @@ COS APIs exist):
   `prompt-api-spike-1-b68bd86a977a-dev-01-2026-07-16T23-41-28-710Z.json`; the registered
   environment gate was measured and passed with full D3D12 adapter/driver identity.
 - **Layer:** Prompt API / Chrome model delivery.
-- **Status:** open; CfT reproduction confirmed, and the independent branded-Chrome
-  production-install qualification remains to determine the player-facing impact.
+- **Status:** open; CfT reproduction confirmed. The independent branded-Chrome
+  schema-v2 cohort passed production qualification under D-065, proving the
+  player-facing delivery path while preserving this CfT/branded divergence as a
+  platform finding.
 - **What we expected / What happened:** a fresh-profile, activation-backed
   `LanguageModel.create()` should begin observable model delivery. The API reported
   `downloadable`, the window exposed `LanguageModel`, the dedicated worker did not, and
@@ -123,10 +305,12 @@ COS APIs exist):
   switch, and passed every registered-machine identity comparison.
 - **Impact on Parallax:** the documented trigger/progress surface did not provide a
   usable install experience in a valid CfT run. The M0 research spike is therefore
-  complete as a measured no-go for a required backend. Prompt API remains optional and
-  cannot become required unless the independent fresh branded-Chrome qualification
-  demonstrates reliable trigger, actionable progress, resume, restart, and offline
-  reuse. P-007's app-owned model remains the lifecycle-control challenger.
+  complete as a measured no-go for a required backend. The independent fresh
+  branded-Chrome qualification subsequently demonstrated reliable trigger, actionable
+  progress, resume, restart, and offline reuse; D-065's schema-v2 result formally clears
+  that production-lifecycle capability.
+  Prompt API still remains optional until P-007 compares latency, frame impact, quality,
+  and app-owned lifecycle control (including RE-021).
 - **Proposed improvement:** when an eligible `create()` cannot start or advance model
   delivery, reject it promptly with a machine-readable delivery/eligibility reason.
   Expose a stable download state that distinguishes queued, resolving eligibility,
@@ -157,6 +341,15 @@ COS APIs exist):
   no switches (`--flag-switches-begin --flag-switches-end` was empty); and
   `chrome://on-device-internals` reported that internal debug pages were disabled for
   the automation session, so it supplied no component state.
+  The physical-console `prompt-api-branded@1` result
+  `prompt-api-branded-1-2296afdeaa23-dev-01-2026-07-17T00-23-02-899Z.json` reproduced
+  that redirect after both profiles had installed and streamed successfully. It recorded
+  initial post-restart `downloading` and offline `available`, but did not yet record the
+  later settled-availability transition added to the runner. The sandboxed `01-16-45`
+  schema-v1 artifact subsequently recorded post-fixture `available`; post-shutdown
+  inspection measured 4,269,934,835 component bytes in every cited profile.
+  D-061 therefore keeps the debug page explicit but non-gating rather than mistaking an
+  automation restriction for failed player-facing model status.
 - **Impact on Parallax:** the earlier availability blocker and proposed P1 eligibility
   ask were false. The first fix also ignored Playwright's whole combined
   `--disable-features` switch, unintentionally re-enabling 15 unrelated features; the
@@ -584,6 +777,15 @@ COS APIs exist):
   `Tracing.end` in 1.8–2.4 ms, delivered zero events/chunks, and timed out after 5,003.7–5,009.8
   ms; the unchanged artifact's third attempt completed all six core traces in 231.9–235.7 ms and
   passed. This adds both a consecutive-gate burst and unchanged-artifact recovery to the finding.
+  D-063's sandboxed schema-v20 confirmation artifact
+  (`smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-09-09-623Z.json`) reproduced the
+  same signature at fresh core ordinal 1: the trace was open for 15,749.9 ms,
+  `Tracing.end` returned in 2.5 ms, zero events/chunks arrived, and completion timed out
+  after 5,001.6 ms. The other five core traces and all nine isolated V8 traces completed.
+  The immediately preceding sandboxed run
+  (`smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-06-27-753Z.json`) completed every
+  trace, so retaining Chrome's normal sandbox neither removes the failure nor makes it
+  deterministic.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second

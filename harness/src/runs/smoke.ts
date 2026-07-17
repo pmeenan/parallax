@@ -14,7 +14,7 @@ export interface QualityTierProfile {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 8;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 10;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@6";
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS = 3;
@@ -31,6 +31,7 @@ export const SMOKE_SAB_TOTAL_BYTES =
   2 * (4 + SMOKE_SAB_CAPACITY_RECORDS * SMOKE_SAB_RECORD_WORDS) * Int32Array.BYTES_PER_ELEMENT;
 export const SMOKE_OPFS_FILE_BYTES = 64 * 1024 * 1024;
 export const SMOKE_OPFS_COMPLETION_TIMEOUT_MS = 17_000;
+export const SMOKE_OPFS_RANDOM_BATCH_READS = 256;
 export const SMOKE_OPFS_RANDOM_READ_BYTES = 64 * 1024;
 export const SMOKE_OPFS_RANDOM_READS = 4_096;
 export const SMOKE_OPFS_SEQUENTIAL_PASSES = 12;
@@ -39,7 +40,8 @@ export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 3;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 4;
+export const SMOKE_REPORT_SCHEMA_VERSION = 22;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -52,6 +54,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("core measurement run completion", true, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("OPFS sync-access-handle read throughput", true, "implemented"),
+  metric("OPFS sync-access-handle throughput repeatability", false, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
   metric("attributable GPU memory", false, "implemented"),

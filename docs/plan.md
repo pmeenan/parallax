@@ -41,6 +41,14 @@ measured automatically.
       4K/60: schema v16 / metric-set v3 passed all three facets and 24 budget checks.
       After D-054's measurement-soundness fixes, a current schema v17 / metric-set v4
       physical-console gate also passed all three facets and 24 checks on 2026-07-15.
+      The prior passes inherited Playwright's `--no-sandbox` default and were replaced,
+      not promoted (D-062/D-063). After two schema-v20 failures and schema-v21 OPFS
+      attribution established RE-023, D-066 separated mandatory per-run OPFS
+      correctness/raw evidence from the still-visible informational repeatability
+      finding. Physical-console artifact
+      `smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T15-00-16-046Z.json` passed the
+      production sandbox under schema v22 / metric-set v10: registered environment,
+      mandatory evidence, all six core traces, and all 24 budget checks passed.
 
 - [x] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). **Go** for the
       rendering core (D-056): a schema v17 / metric-set v4 pinned CfT 150 / Babylon
@@ -57,11 +65,23 @@ measured automatically.
       retained concurrent callback maxima overlap RE-001's privileged-diagnostics
       contamination and are not evidence of hitch-free active transport; D-057 scopes
       the go decision accordingly.
-- [x] Spike: OPFS sync-access-handle read throughput from a worker (D-058). After two
+- [x] Spike: OPFS sync-access-handle read throughput from a worker (D-058/D-066).
+      **Qualified go for the M1 storage boundary; no stable microbenchmark baseline.** After two
       calibration runs exposed first-phase measurement noise, metric-set v8's untimed
       validated preflight passed the registered dev-01 physical-console gate: schema
       v19, all three facets and 24 budget checks passed, all reads validated, and every
       fresh/warm sequential/random cohort stayed within the 10% repeatability limit.
+      D-063 reopened the performance qualification under the production sandbox: two
+      schema-v20 attempts validated every read but exceeded the unchanged variance
+      limit, including one fresh-sequential 3.45 GiB/s outlier against 5.99 and
+      6.53 GiB/s peers (RE-023). Schema v21 then retained every sequential pass,
+      256-read random batch, and overlapping host-disk sample: it isolated another miss
+      to one 4.925 ms random batch without sustained physical I/O. D-066 keeps exact
+      per-run lifecycle, validation, and raw timings mandatory, retains the unchanged
+      repeatability result as an informational finding, and defers the user-outcome gate
+      to M1's representative OPFS-to-renderable cell-load p95. The passing schema-v22
+      sandboxed replacement above validated every read; its four cohort ranges happened
+      to remain within 1.10-6.58% but do not erase the retained instability.
 - [x] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
       activation for download/create, download flow + model-size reporting, eviction
       + offline reavailability behavior, session limits.
@@ -74,9 +94,10 @@ measured automatically.
       Download completion, inference, session pressure, and offline reavailability
       were consequently unmeasurable rather than silently treated as passing. The
       research spike is complete because its delivery prerequisite produced a valid,
-      reproducible negative result; the separate branded-Chrome install qualification
-      below remains open before the NPC backend choice.
-- [ ] Qualify the Prompt API's production install UX in branded Chrome, separately
+      reproducible negative result; the separate branded-Chrome lifecycle was
+      demonstrated under schema v1 and qualified under schema v2, while the NPC backend
+      choice remains open below.
+- [x] Qualify the Prompt API's production install UX in branded Chrome, separately
       from the pinned-CfT evidence gate and before choosing the NPC-model backend.
       Exercise at least two independent fresh branded-Chrome profiles: one uninterrupted
       install and one browser-restart/resume during download. Each starts from a real
@@ -84,13 +105,28 @@ measured automatically.
       observably live with monotonic 0..1 progress (including at least one intermediate
       update rather than only endpoints), reach `available`, complete the fixed streamed
       NPC-dialog fixture, survive a browser restart, and repeat the fixture offline.
-      Record download duration, longest interval without a progress event, availability
+      Record download duration, longest phase-local interval without forward progress,
+      the separate observer-free restart interval, availability
       transitions, model status/component size, and every error. A failure to trigger,
       expose actionable progress, resume, or remain available—including 120 seconds
       without forward progress—is backend-selection evidence, not a harness exception,
       and keeps Prompt API from being a required game dependency regardless of the CfT
-      research outcome. Recalibrate that provisional stall threshold from the
-      successful-run timing evidence before production behavior is chosen.
+      research outcome. The 120-second phase-local boundary is calibrated from the
+      same-version delivery evidence under D-064/D-065.
+      **Passed under schema v2 with the production sandbox (D-065).** Physical-console
+      artifact
+      `prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json`
+      qualified both independent fresh profiles on branded Chrome 150.0.7871.128 with a
+      stable executable hash and no `--no-sandbox` switch. Uninterrupted and
+      restart/resume delivery completed in 102.6 s and 161.9 s; their true phase-local
+      forward-progress gaps were 24.0 s and 17.8 s, and the restart lineage separately
+      recorded a 4.7 s observer-free restart window. Both installed 4,269,934,835 bytes,
+      completed the exact streamed fixture before and after restart, settled to
+      `available` after a transient restart state (RE-020), and repeated the fixture
+      offline. Across eight same-version delivering profiles, the 120-second boundary
+      is 5.00x the largest observed true gap. First-token samples measured
+      3,543.6-3,877.2 ms and remain backend-selection
+      evidence (RE-021).
 - [ ] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
       model via WebGPU inference in a worker against the walking skeleton, head-to-head
       with the Prompt API spike above on a fixed NPC-dialog prompt fixture set:

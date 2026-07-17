@@ -34,6 +34,7 @@ export type {
 } from "./render/render-service";
 export { createRenderService } from "./render/render-service";
 export type {
+  OpfsReadBatchTelemetry,
   OpfsReadPhaseTelemetry,
   OpfsReadSpikeTelemetrySnapshot,
 } from "./storage/opfs-read-spike-protocol";

@@ -5,7 +5,12 @@ import {
   initializeEngine,
   installTelemetryExport,
 } from "@parallax/engine";
-import { createWalkingSkeletonScene, identifyGame, PROMPT_API_SPIKE_FIXTURE } from "@parallax/game";
+import {
+  createWalkingSkeletonScene,
+  identifyGame,
+  PROMPT_API_BRANDED_FIXTURE,
+  PROMPT_API_SPIKE_FIXTURE,
+} from "@parallax/game";
 
 const identity = identifyGame(initializeEngine());
 const status = document.querySelector("#status");
@@ -17,7 +22,18 @@ if (!(status instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement)) 
 
 const renderService = createRenderService();
 const opfsReadSpikeService = createOpfsReadSpikeService();
-const promptApiSpikeService = createPromptApiSpikeService(PROMPT_API_SPIKE_FIXTURE);
+const promptApiModeValue = new URL(location.href).searchParams.get("promptApiSpike");
+if (
+  promptApiModeValue !== null &&
+  promptApiModeValue !== "manual" &&
+  promptApiModeValue !== "branded"
+) {
+  throw new Error(`Unsupported Prompt API scenario mode ${JSON.stringify(promptApiModeValue)}`);
+}
+const promptApiMode = promptApiModeValue;
+const promptApiSpikeService = createPromptApiSpikeService(
+  promptApiMode === "branded" ? PROMPT_API_BRANDED_FIXTURE : PROMPT_API_SPIKE_FIXTURE,
+);
 installTelemetryExport(renderService, opfsReadSpikeService, promptApiSpikeService, {
   engineVersion: identity.engine.version,
   gameVersion: identity.version,
@@ -26,7 +42,7 @@ const promptApiSpikePanel = document.querySelector("#prompt-api-spike");
 const promptApiStart = document.querySelector("#prompt-api-start");
 const promptApiOffline = document.querySelector("#prompt-api-offline");
 const promptApiStatus = document.querySelector("#prompt-api-status");
-if (new URL(location.href).searchParams.get("promptApiSpike") === "manual") {
+if (promptApiMode === "manual" || promptApiMode === "branded") {
   if (
     !(promptApiSpikePanel instanceof HTMLElement) ||
     !(promptApiStart instanceof HTMLButtonElement) ||

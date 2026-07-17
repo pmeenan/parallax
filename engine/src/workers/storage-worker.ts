@@ -6,6 +6,7 @@ import {
   type OpfsReadSpikeWorkerResult,
 } from "../storage/opfs-read-spike-protocol";
 import {
+  batchTelemetry,
   measureSequentialReads,
   type OpfsSyncAccessHandle,
   validatePositionPattern,
@@ -122,14 +123,21 @@ function measureRandomReads(
   let bytesRead = 0;
   let readCallElapsedMs = 0;
   let validationErrors = 0;
+  const batches: OpfsReadPhaseTelemetry["batches"][number][] = [];
   const wallStartedAt = performance.now();
+  let batchWallStartedAt = performance.now();
+  let batchBytesRead = 0;
+  let batchOperations = 0;
+  let batchReadCallElapsedMs = 0;
   for (let operation = 0; operation < config.randomReads; operation += 1) {
     ensureBeforeDeadline(deadline);
     randomState = xorshift32(randomState);
     const offset = (randomState % slots) * config.randomReadBytes;
     const readStartedAt = performance.now();
     const read = accessHandle.read(buffer, { at: offset });
-    readCallElapsedMs += performance.now() - readStartedAt;
+    const readElapsedMs = performance.now() - readStartedAt;
+    readCallElapsedMs += readElapsedMs;
+    batchReadCallElapsedMs += readElapsedMs;
     if (read !== buffer.byteLength) {
       throw new Error(
         `OPFS random short read at ${offset}: expected ${buffer.byteLength}, read ${read}`,
@@ -137,8 +145,28 @@ function measureRandomReads(
     }
     validationErrors += validatePositionPattern(buffer, offset);
     bytesRead += read;
+    batchBytesRead += read;
+    batchOperations += 1;
+    if (batchOperations === config.randomBatchReads) {
+      batches.push(
+        batchTelemetry(
+          batchBytesRead,
+          batchOperations,
+          batchReadCallElapsedMs,
+          performance.now() - batchWallStartedAt,
+        ),
+      );
+      batchWallStartedAt = performance.now();
+      batchBytesRead = 0;
+      batchOperations = 0;
+      batchReadCallElapsedMs = 0;
+    }
+  }
+  if (batchOperations !== 0) {
+    throw new Error("OPFS random read count was not divisible by the configured batch size");
   }
   return readPhase(
+    batches,
     bytesRead,
     config.randomReads,
     readCallElapsedMs,
@@ -148,6 +176,7 @@ function measureRandomReads(
 }
 
 function readPhase(
+  batches: readonly OpfsReadPhaseTelemetry["batches"][number][],
   bytesRead: number,
   operations: number,
   readCallElapsedMs: number,
@@ -160,6 +189,7 @@ function readPhase(
     );
   }
   return Object.freeze({
+    batches: Object.freeze([...batches]),
     bytesRead,
     operations,
     readCallElapsedMs,
@@ -173,6 +203,7 @@ function readPhase(
 function validateConfig(config: OpfsReadSpikeConfig): void {
   const values = [
     config.fileBytes,
+    config.randomBatchReads,
     config.randomReadBytes,
     config.randomReads,
     config.sequentialPasses,
@@ -183,6 +214,7 @@ function validateConfig(config: OpfsReadSpikeConfig): void {
   }
   if (
     config.fileBytes % config.sequentialReadBytes !== 0 ||
+    config.randomReads % config.randomBatchReads !== 0 ||
     config.sequentialReadBytes % config.randomReadBytes !== 0 ||
     config.fileBytes % Uint32Array.BYTES_PER_ELEMENT !== 0 ||
     config.randomReadBytes % Uint32Array.BYTES_PER_ELEMENT !== 0 ||

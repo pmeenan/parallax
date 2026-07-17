@@ -42,7 +42,7 @@ describe("prompt-api-spike@1 contract", () => {
   it("pins its scenario, report, telemetry, and completion contracts", () => {
     expect(PROMPT_API_SPIKE_SCENARIO).toBe("prompt-api-spike@1");
     expect(PROMPT_API_SPIKE_REPORT_SCHEMA_VERSION).toBe(6);
-    expect(TELEMETRY_SCHEMA_VERSION).toBe(3);
+    expect(TELEMETRY_SCHEMA_VERSION).toBe(4);
     expect(PROMPT_API_SPIKE_TELEMETRY_SCHEMA_VERSION).toBe(3);
     expect(PROMPT_API_SPIKE_COMPLETION_TIMEOUT_MS).toBe(1_800_000);
     expect(PROMPT_API_PROGRESS_STALL_TIMEOUT_MS).toBe(120_000);
@@ -86,6 +86,9 @@ describe("prompt-api-spike@1 contract", () => {
         surgicalCommandLine.replace(" --enable-webgpu-developer-features", ""),
       ),
     ).toThrow(/enable-webgpu-developer-features/);
+    expect(() => validatePromptApiChromeCommandLine(`${surgicalCommandLine} --no-sandbox`)).toThrow(
+      /sandbox/,
+    );
   });
 
   it("passes the gating Prompt API budgets when both boundaries are satisfied", () => {
@@ -361,6 +364,17 @@ describe("prompt-api-spike@1 contract", () => {
     expect(result.snapshot.state).toBe("completed");
   });
 
+  it("preserves the engine failure reason from a terminal failed state", async () => {
+    const failed = {
+      ...progressSnapshot("failed", 0.4, 8),
+      failureMessage: "NotSupportedError: component delivery failed",
+    };
+
+    const result = await waitForPromptApiCompletion(async () => failed);
+
+    expect(result.failureMessage).toBe("NotSupportedError: component delivery failed");
+  });
+
   it("rejects first-download evidence from a warm profile at runtime", () => {
     expect(
       evaluatePromptApiDownloadEvidence({
@@ -388,7 +402,7 @@ describe("prompt-api-spike@1 contract", () => {
 });
 
 function progressSnapshot(
-  state: "creating" | "completed",
+  state: "creating" | "completed" | "failed",
   maxProgress: number | null,
   eventsObserved: number,
 ): import("@parallax/engine").PromptApiSpikeTelemetrySnapshot {

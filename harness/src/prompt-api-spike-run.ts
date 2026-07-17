@@ -1,4 +1,4 @@
-import { access, mkdir, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import {
@@ -17,7 +17,7 @@ import {
   readWebGpuAdapterIdentityFromProbePage,
 } from "./browser-probes.js";
 import type { BudgetCheck, DiagnosticCheck, QualityTier } from "./budgets.js";
-import { listFilesRecursively, readAndValidateBuildManifest } from "./build-manifest.js";
+import { readAndValidateBuildManifest } from "./build-manifest.js";
 import {
   type ChromePin,
   launchPersistentChrome,
@@ -43,6 +43,10 @@ import {
   type WindowsHostIdentity,
   type WindowsHostIdentityResult,
 } from "./environment.js";
+import {
+  measurePromptApiModelComponent,
+  type PromptApiModelComponentMetric,
+} from "./prompt-api-model-component.js";
 import {
   createFreshPromptApiProfile,
   type FreshPromptApiProfile,
@@ -102,12 +106,6 @@ export interface PromptEnvironmentIdentity {
   readonly targetDisplayMode: string;
 }
 
-interface ModelComponentValue {
-  readonly bytes: number;
-  readonly files: number;
-  readonly versions: readonly string[];
-}
-
 export interface RuntimeCollectors {
   readonly frameWindowFailureMessage: string | null;
   readonly frames: readonly RenderFrameSample[];
@@ -137,7 +135,7 @@ interface PromptApiSpikeReport {
   readonly frameImpact: Metric<PromptApiCallbackPacing>;
   readonly generatedAt: string;
   readonly longTasks: Metric<readonly number[]>;
-  readonly modelComponent: Metric<ModelComponentValue>;
+  readonly modelComponent: PromptApiModelComponentMetric;
   readonly passed: boolean;
   readonly scenario: typeof PROMPT_API_SPIKE_SCENARIO;
   readonly schemaVersion: typeof PROMPT_API_SPIKE_REPORT_SCHEMA_VERSION;
@@ -307,7 +305,7 @@ async function runPromptApiSpike(
 
   environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
   await validatePostRunIdentity(validatedBuild.artifactDigest, source, errors);
-  const modelComponent = await measureModelComponent(profileRoot);
+  const modelComponent = await measurePromptApiModelComponent(profileRoot);
   const generatedAt = new Date().toISOString();
   const report = createReport(
     validatedBuild.artifactDigest,
@@ -461,7 +459,7 @@ function createReport(
   generatedAt: string,
   environment: PromptEnvironmentIdentity,
   capture: RuntimeCapture | null,
-  modelComponent: Metric<ModelComponentValue>,
+  modelComponent: PromptApiModelComponentMetric,
   errors: readonly string[],
 ): PromptApiSpikeReport {
   const missingDownload = invalid<PromptApiSpikeTelemetrySnapshot["download"]>(
@@ -646,39 +644,6 @@ function readRuntimeCollectors(page: Page): Promise<RuntimeCollectors> {
     };
     return collectors.snapshot();
   });
-}
-
-async function measureModelComponent(profileRoot: string): Promise<Metric<ModelComponentValue>> {
-  const root = join(profileRoot, "OptGuideOnDeviceModel");
-  try {
-    await access(root);
-  } catch {
-    return Object.freeze({
-      reason: "No OptGuideOnDeviceModel component exists in the dedicated browser data root",
-      state: "unsupported",
-    });
-  }
-  try {
-    const paths = (await listFilesRecursively(root)).map((path) => join(root, path));
-    const sizes = await Promise.all(paths.map(async (path) => (await stat(path)).size));
-    const entries = await readdir(root, { withFileTypes: true });
-    return measured(
-      Object.freeze({
-        bytes: sizes.reduce((sum, size) => sum + size, 0),
-        files: paths.length,
-        versions: Object.freeze(
-          entries
-            .filter((entry) => entry.isDirectory())
-            .map((entry) => entry.name)
-            .sort(),
-        ),
-      }),
-    );
-  } catch (error: unknown) {
-    return invalid(
-      `Model-component inspection failed after browser shutdown: ${errorMessage(error)}`,
-    );
-  }
 }
 
 function resolvePromptProfileRoot(): string {

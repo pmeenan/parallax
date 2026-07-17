@@ -317,7 +317,7 @@ describe("smoke result adapters", () => {
     expect(facets.budgetEvaluation.status).toBe("not-evaluated");
   });
 
-  it("fails closed when mandatory OPFS throughput evidence is invalid", () => {
+  it("fails closed when mandatory per-run OPFS throughput evidence is invalid", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
@@ -355,6 +355,49 @@ describe("smoke result adapters", () => {
     expect(facets.evidenceCompleteness.status).toBe("failed");
     expect(facets.evidenceCompleteness.reasons.join(" ")).toContain("OPFS");
     expect(facets.budgetEvaluation.status).toBe("not-evaluated");
+  });
+
+  it("retains OPFS repeatability failures as informational findings", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      opfsThroughputVariance: [
+        {
+          mode: "random",
+          profile: "warm",
+          reason: "throughput relative range exceeded 10%",
+          state: "invalid",
+          timingScope: "read-call",
+        },
+      ],
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta(),
+          jsHeap: { state: "measured" },
+          opfsReadSpike: { state: "measured" },
+          profile: "warm",
+          repeat: 1,
+          sabRingBuffer: { state: "measured" },
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [{ profile: "warm", state: "measured" }],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "observed checks passed", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+    const repeatability = evidenceChecks.find((check) =>
+      check.description.includes("OPFS read-call throughput variance"),
+    );
+
+    expect(repeatability).toMatchObject({ mandatory: false, measured: false });
+    expect(facets.evidenceCompleteness.status).toBe("passed");
+    expect(facets.budgetEvaluation.status).toBe("passed");
   });
 
   it("separates blocking core budgets from informational V8 diagnostics", () => {

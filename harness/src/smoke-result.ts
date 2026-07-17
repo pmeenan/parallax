@@ -24,6 +24,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
   opfsReadSpike: "OPFS sync-access-handle read throughput",
+  opfsThroughputVariance: "OPFS sync-access-handle throughput repeatability",
   sabRingBuffer: "SAB ring-buffer transport",
   v8CodeCache: "V8 code-cache evidence",
   vizPresentationFeedback: "compositor presentation interval",
@@ -181,7 +182,7 @@ export function collectSmokeEvidenceChecks(
     ...input.opfsThroughputVariance.map((metric) =>
       evidenceCheck(
         `${metric.profile} ${metric.mode} OPFS ${metric.timingScope} throughput variance: ${evidenceReason(metric)}`,
-        registryMandatory(EVIDENCE_METRIC_NAMES.opfsReadSpike),
+        registryMandatory(EVIDENCE_METRIC_NAMES.opfsThroughputVariance),
         metric,
       ),
     ),

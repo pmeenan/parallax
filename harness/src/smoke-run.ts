@@ -11,6 +11,7 @@ import {
 } from "./aggregate.js";
 import {
   readBrowserDisplayIdentity,
+  readChromeCommandLine,
   readChromeDisplayRefreshRates,
   readWebGpuAdapterIdentity,
 } from "./browser-probes.js";
@@ -31,6 +32,7 @@ import {
   loadChromePin,
   resolveChromeExecutablePath,
   validateChromeExecutable,
+  validateChromeSandboxCommandLine,
 } from "./chrome-pin.js";
 import {
   D3D12_HISTOGRAM_PREFIX,
@@ -98,6 +100,7 @@ import {
   SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
   SMOKE_PRESENTATION_TRACE_TAIL_MS,
   SMOKE_REPEATS,
+  SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
@@ -138,6 +141,10 @@ import {
 } from "./v8-code-cache-trace.js";
 import { selectV8ScriptManifestArtifacts } from "./v8-script-artifacts.js";
 import { errorMessage } from "./value-utils.js";
+import {
+  type WindowsStorageActivityMetric,
+  withWindowsStorageActivity,
+} from "./windows-storage-activity.js";
 
 interface MeasuredMetric<T> {
   readonly state: "measured";
@@ -180,6 +187,7 @@ interface RunMeasurement {
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly gpuMemory: GpuMemoryMetric;
   readonly http: MeasuredMetric<LocalServerMetrics>;
+  readonly hostStorageActivity: WindowsStorageActivityMetric;
   readonly jsHeap: JsHeapMetric;
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
@@ -244,6 +252,7 @@ type SmokeTraceDrainMetric =
 interface EnvironmentIdentity {
   readonly adapter: WebGpuAdapterIdentity | null;
   readonly browserDisplay: BrowserDisplayIdentity | null;
+  readonly browserCommandLine: string;
   readonly browserProduct: string;
   readonly browserRevision: string;
   readonly browserUserAgent: string;
@@ -256,6 +265,7 @@ interface EnvironmentIdentity {
   readonly machine: MachineDescriptor | null;
   readonly machineId: string;
   readonly requestedTier: QualityTier;
+  readonly sandboxVerified: true;
   readonly targetDisplayMode: string;
 }
 
@@ -286,7 +296,7 @@ interface SmokeReport {
   }[];
   readonly runs: readonly RunMeasurement[];
   readonly scenario: typeof SMOKE_SCENARIO;
-  readonly schemaVersion: 19;
+  readonly schemaVersion: typeof SMOKE_REPORT_SCHEMA_VERSION;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
   readonly opfsThroughputVariance: readonly OpfsThroughputVariance[];
@@ -528,7 +538,7 @@ async function main(): Promise<void> {
       opfsThroughputVariance,
       runs,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: 19,
+      schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -721,6 +731,8 @@ async function inspectEnvironment(
     const systemInfo = (await session.send("SystemInfo.getInfo")) as {
       gpu: { devices: readonly CdpGpuDevice[] };
     };
+    const browserCommandLine = await readChromeCommandLine(context);
+    const sandboxVerified = validateChromeSandboxCommandLine(browserCommandLine);
     const primaryGpu = systemInfo.gpu.devices[0];
     if (primaryGpu === undefined) throw new Error("CDP did not report a primary GPU");
     const page = context.pages()[0] ?? (await context.newPage());
@@ -757,6 +769,7 @@ async function inspectEnvironment(
     return Object.freeze({
       adapter,
       browserDisplay,
+      browserCommandLine,
       browserProduct: version.product,
       browserRevision: version.revision,
       browserUserAgent: version.userAgent,
@@ -769,6 +782,7 @@ async function inspectEnvironment(
       machine,
       machineId: machine?.id ?? machineId,
       requestedTier: tier,
+      sandboxVerified,
       targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
     });
   } finally {
@@ -886,24 +900,27 @@ async function measureRunWithBrowser(
     const sabRingBuffer = requireSabRingBufferCompleteAtMeasurementBoundary(
       (await readTelemetry(page)).render.sabRingBufferSpike,
     );
-    await page.evaluate((globalName) => {
-      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
-      telemetry.startOpfsReadSpike();
-    }, SMOKE_TELEMETRY_GLOBAL_NAME);
     const opfsStartedAt = performance.now();
-    await page.waitForFunction(
-      (globalName) => {
+    const opfsMeasurement = await withWindowsStorageActivity(async () => {
+      await page.evaluate((globalName) => {
         const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
-        const state = telemetry.snapshot().opfsReadSpike.state;
-        return state === "completed" || state === "failed";
-      },
-      SMOKE_TELEMETRY_GLOBAL_NAME,
-      { timeout: SMOKE_OPFS_COMPLETION_TIMEOUT_MS },
-    );
-    const opfsReadSpike = requireOpfsReadSpikeCompleteAtMeasurementBoundary(
-      (await readTelemetry(page)).opfsReadSpike,
-      profile,
-    );
+        telemetry.startOpfsReadSpike();
+      }, SMOKE_TELEMETRY_GLOBAL_NAME);
+      await page.waitForFunction(
+        (globalName) => {
+          const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+          const state = telemetry.snapshot().opfsReadSpike.state;
+          return state === "completed" || state === "failed";
+        },
+        SMOKE_TELEMETRY_GLOBAL_NAME,
+        { timeout: SMOKE_OPFS_COMPLETION_TIMEOUT_MS },
+      );
+      return requireOpfsReadSpikeCompleteAtMeasurementBoundary(
+        (await readTelemetry(page)).opfsReadSpike,
+        profile,
+      );
+    });
+    const opfsReadSpike = opfsMeasurement.value;
     const remainingWarmupMs = SMOKE_WARMUP_MS - (performance.now() - opfsStartedAt);
     if (remainingWarmupMs > 0) await page.waitForTimeout(remainingWarmupMs);
     await resetSurfaceObserver(page);
@@ -1082,6 +1099,7 @@ async function measureRunWithBrowser(
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
       gpuMemory,
+      hostStorageActivity: opfsMeasurement.activity,
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
@@ -2029,12 +2047,34 @@ async function writeReport(report: SmokeReport): Promise<void> {
       ? `- ${variance.profile} ${variance.mode} ${variance.timingScope}: ${(variance.relativeRange * 100).toFixed(2)}% relative range`
       : `- ${variance.profile} ${variance.mode} ${variance.timingScope}: invalid — ${variance.reason}`,
   );
+  const opfsBatchEvidence = report.runs.map((run) => {
+    if (run.opfsReadSpike.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: unavailable because OPFS evidence is invalid`;
+    }
+    const sequential = run.opfsReadSpike.value.sequential;
+    const random = run.opfsReadSpike.value.random;
+    if (sequential === null || random === null) {
+      return `- ${run.profile} repeat ${run.repeat}: unavailable because a phase is missing`;
+    }
+    return `- ${run.profile} repeat ${run.repeat}: sequential pass read-call ms [${sequential.batches.map((batch) => batch.readCallElapsedMs.toFixed(3)).join(", ")}]; random 256-read batch ms [${random.batches.map((batch) => batch.readCallElapsedMs.toFixed(3)).join(", ")}]`;
+  });
+  const hostStorageActivityEvidence = report.runs.map((run) => {
+    if (run.hostStorageActivity.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: ${run.hostStorageActivity.state} — ${run.hostStorageActivity.reason}`;
+    }
+    const samples = run.hostStorageActivity.samples.map(
+      (sample) =>
+        `${formatThroughput(sample.diskReadBytesPerSecond)} physical reads, ${formatThroughput(sample.diskWriteBytesPerSecond)} physical writes, ${(sample.averageReadLatencySeconds * 1_000).toFixed(3)} ms avg read latency, queue ${sample.currentQueueLength.toFixed(2)}`,
+    );
+    return `- ${run.profile} repeat ${run.repeat}: ${samples.join(" | ")}`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
     `Verdict: **${report.passed ? "PASS" : "FAIL"}**`,
     `Artifact: \`${report.artifactDigest}\``,
     `Chrome: \`${report.environment.browserProduct}\``,
+    `Sandbox: **${report.environment.sandboxVerified ? "verified" : "invalid"}**`,
     "",
     "## Result facets",
     "",
@@ -2089,6 +2129,14 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## OPFS sync-access-handle read throughput",
     "",
     ...opfsReadEvidence,
+    "",
+    "### Per-batch timing attribution",
+    "",
+    ...opfsBatchEvidence,
+    "",
+    "### Host physical-disk activity overlapping the OPFS window",
+    "",
+    ...hostStorageActivityEvidence,
     "",
     "### Read-call throughput variance",
     "",

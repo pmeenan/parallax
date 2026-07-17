@@ -122,7 +122,13 @@ export async function waitForPromptApiCompletion(
       lastAdvanceAt = observedAt;
     }
     if (["completed", "failed"].includes(snapshot.state)) {
-      return Object.freeze({ failureMessage: null, snapshot });
+      return Object.freeze({
+        failureMessage:
+          snapshot.state === "failed"
+            ? (snapshot.failureMessage ?? "Prompt API entered failed state without a reason")
+            : null,
+        snapshot,
+      });
     }
     if (
       ["awaiting-user-activation", "creating"].includes(snapshot.state) &&

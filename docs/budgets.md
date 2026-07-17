@@ -137,7 +137,7 @@ lifecycle or streaming architecture quietly assumes "a few GB."
 | --- | --- | --- |
 | Dialog first-token latency p95 | ≤ 1.5 s | Backend-neutral: applies to any on-device backend (Prompt API per D-017, or an app-owned model if P-007 wins) |
 | Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget. Backend-neutral, but the metric surface differs: the Prompt API broker runs on the main thread (D-017), so main-thread long-task metrics apply to it; a worker-hosted backend (P-007) shifts measurement to worker and GPU contention |
-| Prompt model-download forward-progress gap (M0 spike) | < 120 s | Provisional test-liveness gate under D-059. The 30-minute completion ceiling remains while normalized progress advances; the run aborts after 120 s without an increase. Recalibrate from successful fresh-profile downloads, never by changing runner code alone. |
+| Prompt model-download forward-progress gap (M0 spike) | < 120 s | Calibrated by D-061/D-064/D-065 from raw phase-local telemetry across eight same-version delivering branded profiles: the true maxima were 16.7-24.0 s, so 120 s (5.00x the largest gap) remains a conservative no-forward-progress failure boundary rather than an expected cadence. Schema v2 records the observer-free browser-restart interval separately and does not call it a stall. The 30-minute completion ceiling remains while normalized progress advances. |
 
 For the M0 Prompt API spike under D-059, first-token latency and main-thread long tasks are gating.
 Download evidence is mandatory and must contain valid, monotonic normalized endpoints
@@ -183,13 +183,18 @@ Definitions the harness implements; budgets above are meaningless without them.
   profiles must provision exactly 64 MiB; their paired warm profiles must reuse it.
   The probe performs one untimed, fully validated sequential preflight, then twelve
   measured sequential passes with 1 MiB reads and 4,096 deterministic random 64 KiB
-  reads. Every operation must return its full byte count and every read is validated
+  reads. Schema-v22 evidence retains every sequential pass and each 256-read random
+  batch, plus a coarse overlapping Windows physical-disk sample for attribution. Every
+  operation must return its full byte count and every read is validated
   outside its timed `read()` call. Results retain both summed time inside
   `read()` (API-path throughput) and validation-inclusive worker wall time, plus
-  provisioning time and reuse state. Only read-call throughput is variance-gated;
-  wall throughput is diagnostic. The mandatory metric requires complete,
-  corruption-free evidence and ≤10% relative throughput range across all three repeats
-  for each fresh/warm and sequential/random cohort. The harness starts this phase only
+  provisioning time and reuse state. The mandatory metric requires complete,
+  corruption-free per-run evidence. The unchanged 10% relative-range calculation for
+  each fresh/warm and sequential/random cohort remains an explicit `invalid` finding
+  when missed, but is informational in M0 metric-set v10 after the sandboxed
+  qualification demonstrated topology-sensitive scheduling tails without a user-
+  outcome throughput budget (D-066/RE-023). Wall throughput and the host sample are
+  diagnostic. The harness starts this phase only
   after privileged display diagnostics and SAB transport complete, leaving the live
   renderer as its intentional concurrent workload. This M0 micro-workload describes
   warm OS-cache behavior; it does not establish cold-disk throughput, multi-reader
@@ -231,7 +236,10 @@ Definitions the harness implements; budgets above are meaningless without them.
   regression threshold through the normal decision process.
 - **Variance gate:** if p95 varies more than 10% across the repeats, the result is
   `invalid` (fix the noise before trusting the number) — a noisy metric is a broken
-  metric, not a passing one.
+  metric, not a passing one. D-066's M0 OPFS microbenchmark is the explicit scoped
+  exception to *mandatory* status: its unchanged relative-range result remains invalid
+  and visible but informational, while per-run correctness/raw throughput stay
+  mandatory and M1's representative cell-load p95 uses this ordinary blocking rule.
 - **Metric states:** every metric in a result is `measured`, `unsupported` (platform
   provides no way to observe it — itself a rough-edges candidate), `invalid` (observed
   but untrustworthy, with reason), or `not-applicable`. Budget gating fails on a busted
@@ -247,9 +255,9 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v8, which adds the OPFS sync-access-handle spike
-  with an explicit untimed warm-path preflight and a twelve-pass sequential sample;
-  D-058).
+  the current mandatory metric-set (v10, which keeps OPFS per-run correctness and raw
+  throughput mandatory while separating its sandbox-sensitive repeatability finding as
+  informational; D-058/D-066).
   V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
@@ -259,7 +267,10 @@ Definitions the harness implements; budgets above are meaningless without them.
   schema v6 additionally records the effective Chrome command line, disabled-feature
   set, and verified WebGPU developer-identity switch because model delivery and complete
   adapter identity require explicit differences from ordinary Playwright
-  smoke launches (D-059).
+  smoke launches (D-059). Reference Chrome launches retain the process sandbox; an
+  effective `--no-sandbox` switch invalidates production qualification and performance
+  evidence. `smoke@1` schema v22 records the effective command line and verified
+  sandbox state under D-062/D-066.
 - **Comparison eligibility (D-025):** benchmark results are directly comparable only
   when artifact digest, scenario version, quality/resolution, warm-up/repeat policy, and
   relevant environment fields match. Chrome reference-machine runs alone carry budget

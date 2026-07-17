@@ -122,9 +122,17 @@ A fresh CfT 150 physical-console run passed its registered-machine environment a
 gates, then reached `downloadable` but left activation-backed `create()` pending for 120,723 ms
 with zero progress events and zero installed model bytes. Add a machine-readable delivery
 state/reason that distinguishes eligibility work, queueing, fetch, verification, unpack, and a
-stalled component, and reject promptly when delivery cannot advance. The separate branded-Chrome
-production-install qualification remains open. Evidence:
-[RE-019](rough-edges.md#re-019-prompt-api-creation-can-remain-pending-without-download-progress-or-model-bytes).
+stalled component, and reject promptly when delivery cannot advance. A separate sandboxed
+branded-Chrome schema-v2 cohort subsequently passed on two fresh profiles, demonstrating that
+this remains a CfT/branded delivery divergence rather than a player-facing install blocker. That cohort also found
+transient `downloading` immediately after restart despite successful session creation and four
+first-token samples of 3.54–3.88 seconds, all more than twice the 1.5-second dialog target. An
+earlier same-digest sandbox/unsandbox cohort measured a 2.15x mean correlation, which does not
+establish sandbox causation. Expose a distinct installed-model
+rehydration/verification state and session-readiness diagnostics. Evidence:
+[RE-019](rough-edges.md#re-019-prompt-api-creation-can-remain-pending-without-download-progress-or-model-bytes),
+[RE-020](rough-edges.md#re-020-installed-prompt-api-model-reports-transient-downloading-after-browser-restart),
+and [RE-021](rough-edges.md#re-021-branded-prompt-api-first-token-samples-exceed-the-dialog-target).
 
 ### Make browser trace completion reliable and diagnosable
 

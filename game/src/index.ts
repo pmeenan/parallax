@@ -4,10 +4,19 @@ export const GAME_VERSION = "0.0.0";
 
 // Shared by the Prompt API and P-007 phase-A backends so their M0 comparison uses
 // identical game-owned NPC content rather than backend-specific prompts.
+const PROMPT_API_NPC_DIALOG_PROMPT =
+  "Reply with one short sentence as a village-gate watch officer reporting that the road is secure.";
+
 export const PROMPT_API_SPIKE_FIXTURE = Object.freeze({
   offlinePrompt: "Reply with exactly: offline-ready",
-  prompt:
-    "Reply with one short sentence as a village-gate watch officer reporting that the road is secure.",
+  prompt: PROMPT_API_NPC_DIALOG_PROMPT,
+}) satisfies PromptApiSpikeFixture;
+
+// The branded qualification is a separate scenario contract: unlike the pinned-CfT
+// spike, it must repeat the exact online NPC workload after restart and offline.
+export const PROMPT_API_BRANDED_FIXTURE = Object.freeze({
+  offlinePrompt: PROMPT_API_NPC_DIALOG_PROMPT,
+  prompt: PROMPT_API_NPC_DIALOG_PROMPT,
 }) satisfies PromptApiSpikeFixture;
 
 export interface GameIdentity {

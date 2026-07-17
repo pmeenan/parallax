@@ -22,7 +22,10 @@ budgets.md → pass/fail with a report.
 - **Memory:** JS heap per thread, WASM linear memory per module, GPU memory as
   attributable, SAB pool sizes, high-water marks per run phase.
 - **Caches:** V8 wasm/JS code cache hit evidence, HTTP 304 discipline, Dawn pipeline
-  cache behavior (launch-1 vs launch-2 compile counts), OPFS read throughput.
+  cache behavior (launch-1 vs launch-2 compile counts), OPFS read throughput and
+  per-batch/host-storage attribution. M0 OPFS repeatability is an explicit
+  informational finding under D-066; per-run integrity/raw evidence remains mandatory,
+  and M1 gates representative cell-load p95.
 - **Lifecycle:** install wall time and phase breakdown, launch-1/launch-2/offline-launch
   to gameplay, update-flow cache preservation.
 - **Streaming:** cell load latency distribution, queue depths/stalls, eviction events
@@ -39,6 +42,10 @@ short (each gap in observability is itself a rough-edges finding — log it).
 - `smoke` — boot to first interactive frame, budget snapshot (every change).
 - `prompt-api-spike` — activation-bound first download, inference/session pressure,
   generation impact, and offline reavailability (M0 evidence run).
+- `prompt-api-branded` — two-profile production-install qualification in installed
+  branded Chrome: uninterrupted delivery, restart/resume, post-install restart, and
+  an offline repeat of the same NPC fixture (M0 backend-selection evidence; not a
+  pinned-CfT budget gate).
 - `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
 - `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
 - `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only
@@ -60,8 +67,9 @@ reference machines gate budgets.
    version per report — operationally, archived Chrome for Testing binaries at the
    current stable milestone (D-019), so any past result can be re-run; the exact
    version is recorded in every result and a periodic parity smoke runs on installed
-   branded stable. Variance across repeats is itself a tracked metric — a noisy metric
-   is a broken metric.
+   branded stable. All launches retain Chrome's process sandbox; an effective
+   `--no-sandbox` switch invalidates reference evidence (D-062). Variance across
+   repeats is itself a tracked metric — a noisy metric is a broken metric.
 2. **Results are diffable artifacts** (JSON + human-readable report), keyed by
    **artifact digest**, not commit: the hash of the exact built artifacts measured,
    plus source identity = last commit + a digest of the dirty working tree (agent work

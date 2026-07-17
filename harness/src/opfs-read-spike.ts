@@ -2,6 +2,7 @@ import type { OpfsReadSpikeTelemetrySnapshot } from "@parallax/engine";
 import { evaluateRelativeVariance } from "./aggregate.js";
 import {
   SMOKE_OPFS_FILE_BYTES,
+  SMOKE_OPFS_RANDOM_BATCH_READS,
   SMOKE_OPFS_RANDOM_READ_BYTES,
   SMOKE_OPFS_RANDOM_READS,
   SMOKE_OPFS_SEQUENTIAL_PASSES,
@@ -55,8 +56,18 @@ export function resolveOpfsReadSpikeMetric(
     !validProvisioningDuration(snapshot.provisioningElapsedMs, profile) ||
     sequential === null ||
     random === null ||
-    !validPhase(sequential, expectedSequentialBytes, expectedSequentialOperations) ||
-    !validPhase(random, expectedRandomBytes, SMOKE_OPFS_RANDOM_READS)
+    !validPhase(
+      sequential,
+      expectedSequentialBytes,
+      expectedSequentialOperations,
+      SMOKE_OPFS_SEQUENTIAL_PASSES,
+    ) ||
+    !validPhase(
+      random,
+      expectedRandomBytes,
+      SMOKE_OPFS_RANDOM_READS,
+      SMOKE_OPFS_RANDOM_READS / SMOKE_OPFS_RANDOM_BATCH_READS,
+    )
   ) {
     return invalid("OPFS read spike completed with missing, invalid, or contract-drifted evidence");
   }
@@ -105,8 +116,10 @@ function validPhase(
   phase: NonNullable<OpfsReadSpikeTelemetrySnapshot["sequential"]>,
   expectedBytes: number,
   expectedOperations: number,
+  expectedBatches: number,
 ): boolean {
   return (
+    validBatches(phase, expectedBytes, expectedOperations, expectedBatches) &&
     phase.bytesRead === expectedBytes &&
     phase.operations === expectedOperations &&
     phase.validationErrors === 0 &&
@@ -121,6 +134,39 @@ function validPhase(
       phase.readCallThroughputBytesPerSecond,
     ) &&
     throughputMatches(phase.bytesRead, phase.wallElapsedMs, phase.wallThroughputBytesPerSecond)
+  );
+}
+
+function validBatches(
+  phase: NonNullable<OpfsReadSpikeTelemetrySnapshot["sequential"]>,
+  expectedBytes: number,
+  expectedOperations: number,
+  expectedBatches: number,
+): boolean {
+  if (phase.batches.length !== expectedBatches) return false;
+  let bytesRead = 0;
+  let operations = 0;
+  let readCallElapsedMs = 0;
+  for (const batch of phase.batches) {
+    if (
+      !Number.isSafeInteger(batch.bytesRead) ||
+      batch.bytesRead <= 0 ||
+      !Number.isSafeInteger(batch.operations) ||
+      batch.operations <= 0 ||
+      !positiveFinite(batch.readCallElapsedMs) ||
+      !positiveFinite(batch.wallElapsedMs) ||
+      batch.wallElapsedMs < batch.readCallElapsedMs
+    ) {
+      return false;
+    }
+    bytesRead += batch.bytesRead;
+    operations += batch.operations;
+    readCallElapsedMs += batch.readCallElapsedMs;
+  }
+  return (
+    bytesRead === expectedBytes &&
+    operations === expectedOperations &&
+    Math.abs(readCallElapsedMs - phase.readCallElapsedMs) <= phase.readCallElapsedMs * 1e-9
   );
 }
 

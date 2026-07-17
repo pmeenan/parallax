@@ -128,9 +128,12 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 ## Current status
 
 Milestone **M0 (harness + skeleton)** — see [docs/plan.md](docs/plan.md) for what is
-done vs. open. The build/serve pipeline, walking-skeleton app, Harness v1 (`smoke@1` on
-registered dev-01), WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer
-go spike (D-057), worker-owned OPFS sync-read go spike (D-058), and Prompt API measured
-no-go spike (D-059/RE-019) are complete; the remaining M0 spikes and exit items remain.
+done vs. open. The build/serve pipeline, walking-skeleton app,
+WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer go spike (D-057),
+Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
+production-install qualification (D-065), Harness v1's sandboxed `smoke@1` replacement
+gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
+repeatability remains an informational platform finding rather than a promoted
+baseline; the remaining M0 spikes and exit items remain open.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

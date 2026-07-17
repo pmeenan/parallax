@@ -7,6 +7,7 @@ import {
 
 const config: OpfsReadSpikeConfig = Object.freeze({
   fileBytes: 16,
+  randomBatchReads: 1,
   randomReadBytes: 4,
   randomReads: 1,
   sequentialPasses: 1,
@@ -43,7 +44,7 @@ class FakeSyncAccessHandle implements OpfsSyncAccessHandle {
 describe("OPFS sequential worker core", () => {
   it("validates one untimed preflight and excludes it from measured telemetry", () => {
     const handle = new FakeSyncAccessHandle();
-    const timestamps = [10, 11, 13, 14, 17, 20];
+    const timestamps = [10, 11, 12, 14, 15, 18, 20, 21];
     let timestampIndex = 0;
     const result = measureSequentialReads(
       handle,
@@ -62,10 +63,18 @@ describe("OPFS sequential worker core", () => {
     expect(timestampIndex).toBe(timestamps.length);
     expect(result).toMatchObject({
       bytesRead: 16,
+      batches: [
+        {
+          bytesRead: 16,
+          operations: 2,
+          readCallElapsedMs: 5,
+          wallElapsedMs: 9,
+        },
+      ],
       operations: 2,
       readCallElapsedMs: 5,
       validationErrors: 0,
-      wallElapsedMs: 10,
+      wallElapsedMs: 11,
     });
   });
 

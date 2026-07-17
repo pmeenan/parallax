@@ -36,6 +36,9 @@ class FakeErrorEvent {
 }
 
 const sequential: OpfsReadPhaseTelemetry = Object.freeze({
+  batches: Object.freeze([
+    Object.freeze({ bytesRead: 192, operations: 3, readCallElapsedMs: 1, wallElapsedMs: 2 }),
+  ]),
   bytesRead: 192,
   operations: 3,
   readCallElapsedMs: 1,
@@ -46,6 +49,9 @@ const sequential: OpfsReadPhaseTelemetry = Object.freeze({
 });
 const random: OpfsReadPhaseTelemetry = Object.freeze({
   ...sequential,
+  batches: Object.freeze([
+    Object.freeze({ bytesRead: 256, operations: 4, readCallElapsedMs: 1, wallElapsedMs: 2 }),
+  ]),
   bytesRead: 256,
   operations: 4,
 });

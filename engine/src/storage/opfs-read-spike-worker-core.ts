@@ -1,4 +1,8 @@
-import type { OpfsReadPhaseTelemetry, OpfsReadSpikeConfig } from "./opfs-read-spike-protocol";
+import type {
+  OpfsReadBatchTelemetry,
+  OpfsReadPhaseTelemetry,
+  OpfsReadSpikeConfig,
+} from "./opfs-read-spike-protocol";
 
 // TypeScript's ES2024 DOM library does not yet declare the worker-only OPFS sync
 // access handle surface. Keep the local declaration minimal and structurally cast at
@@ -45,13 +49,20 @@ export function measureSequentialReads(
   let operations = 0;
   let readCallElapsedMs = 0;
   let validationErrors = 0;
+  const batches: OpfsReadBatchTelemetry[] = [];
   const wallStartedAt = now();
   for (let pass = 0; pass < config.sequentialPasses; pass += 1) {
+    const batchWallStartedAt = now();
+    let batchBytesRead = 0;
+    let batchOperations = 0;
+    let batchReadCallElapsedMs = 0;
     for (let offset = 0; offset < config.fileBytes; offset += buffer.byteLength) {
       guardDeadline(deadline);
       const readStartedAt = now();
       const read = accessHandle.read(buffer, { at: offset });
-      readCallElapsedMs += now() - readStartedAt;
+      const readElapsedMs = now() - readStartedAt;
+      readCallElapsedMs += readElapsedMs;
+      batchReadCallElapsedMs += readElapsedMs;
       if (read !== buffer.byteLength) {
         throw new Error(
           `OPFS sequential short read at ${offset}: expected ${buffer.byteLength}, read ${read}`,
@@ -60,9 +71,20 @@ export function measureSequentialReads(
       validationErrors += validatePositionPattern(buffer, offset);
       bytesRead += read;
       operations += 1;
+      batchBytesRead += read;
+      batchOperations += 1;
     }
+    batches.push(
+      batchTelemetry(
+        batchBytesRead,
+        batchOperations,
+        batchReadCallElapsedMs,
+        now() - batchWallStartedAt,
+      ),
+    );
   }
   return readPhase(
+    batches,
     bytesRead,
     operations,
     readCallElapsedMs,
@@ -81,6 +103,7 @@ export function validatePositionPattern(buffer: Uint8Array, offset: number): num
 }
 
 function readPhase(
+  batches: readonly OpfsReadBatchTelemetry[],
   bytesRead: number,
   operations: number,
   readCallElapsedMs: number,
@@ -93,6 +116,7 @@ function readPhase(
     );
   }
   return Object.freeze({
+    batches: Object.freeze([...batches]),
     bytesRead,
     operations,
     readCallElapsedMs,
@@ -101,6 +125,25 @@ function readPhase(
     wallElapsedMs,
     wallThroughputBytesPerSecond: (bytesRead * 1_000) / wallElapsedMs,
   });
+}
+
+export function batchTelemetry(
+  bytesRead: number,
+  operations: number,
+  readCallElapsedMs: number,
+  wallElapsedMs: number,
+): OpfsReadBatchTelemetry {
+  if (
+    !Number.isSafeInteger(bytesRead) ||
+    bytesRead <= 0 ||
+    !Number.isSafeInteger(operations) ||
+    operations <= 0 ||
+    readCallElapsedMs <= 0 ||
+    wallElapsedMs < readCallElapsedMs
+  ) {
+    throw new Error("OPFS batch timing was invalid");
+  }
+  return Object.freeze({ bytesRead, operations, readCallElapsedMs, wallElapsedMs });
 }
 
 function defaultNow(): number {
