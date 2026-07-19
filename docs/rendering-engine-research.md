@@ -22,13 +22,16 @@ inference* (searched, found nothing — not proof).
 
 ---
 
-## 1. The decision (D-004, re-grounded by D-046)
+## 1. The decision (D-004, re-grounded by D-046; core updated by D-078/D-080)
 
-**TypeScript + Babylon.js as scene/material/animation core; WebGPU backend
-exclusively; Parallax owns scheduling, streaming, memory, and the worker fabric.**
-Rejected: Unity, Godot, Bevy, from-scratch (D-004, 2026-07-11) — and, evaluated
-post-hoc, three.js (2026-07-19; it was not considered in the original decision,
-see §4).
+**TypeScript + exactly pinned Babylon Lite as scene/material/animation core; WebGPU
+exclusively; Parallax owns scheduling, streaming, memory, the frame loop, and the worker
+fabric.** D-078 replaced D-004's classic-Babylon component after a same-gate M0
+head-to-head; the rest of D-004 stands. Rejected: Unity, Godot, Bevy, from-scratch
+(D-004, 2026-07-11) — and, evaluated post-hoc, three.js (2026-07-19; it was not
+considered in the original decision, see §4). D-080 removed the spike's classic
+comparison adapter: Lite is the sole maintained renderer, not one interchangeable
+implementation behind an engine-neutral layer.
 
 Accepted consequence, unchanged since D-004: we hand-build LOD, occlusion/culling,
 streaming, and world partitioning. Those systems had to be browser-custom anyway,
@@ -40,14 +43,11 @@ locally or bypass, and log the gap.
 - **Unity:** ships **all three** of Memory64/wasm64, managed C# threads (requires
   multithreaded GC in wasm), and a non-experimental WebGPU backend. Any one alone
   does not reopen; together they would.
-- **Babylon:** proves unable to run in a worker, or blocks required WebGPU features
-  at a structural level.
-- **Babylon Lite** (see §7): being evaluated *now* — D-077 pulled the
-  head-to-head forward into M0 as the next task rather than waiting for Lite to
-  stabilize, because switching cost is at its lifetime minimum at the
-  walking-skeleton stage. Qualification criteria (same harness gate, feature-floor
-  audit, bounded-plan rule for gaps) are in plan.md M0; the verdict lands as its
-  own decision entry and updates this doc.
+- **Babylon Lite** (see §7): a pinned upgrade breaks beyond the bounded interop seam;
+  M1 asset fixtures, P-002 native interop, or M3 animation expose an unbounded gap;
+  or a measured evaluation shows another web-native core materially better on our
+  axes. A challenger is evaluated in a bounded spike and, if selected, through an
+  explicit migration—not through continuously maintained backend parity.
 - **Bevy:** becomes interesting if/when wasm multithreading lands there.
 - **three.js:** WebGPURenderer loses its official "experimental" label **and** a
   supported raw-WGSL/raw-pipeline path outside TSL exists **and** the
@@ -431,36 +431,74 @@ anywhere (root rule 3). Forum-sourced numbers are anecdotes until reproduced.*
    `requiredFeatures` and instrument ourselves — capability confirmed at the API
    level, end-to-end measurement still owed (rule 3).
 
-## 7. Active evaluation: Babylon Lite
+## 7. Selected core: Babylon Lite (D-078)
 
-*Checked 2026-07-19 — repo verified first-hand
-([github.com/BabylonJS/Babylon-Lite](https://github.com/BabylonJS/Babylon-Lite),
-Apache-2.0, v1.11.0 July 2026); performance numbers are vendor-reported and
-unverified.*
+*Checked and measured 2026-07-19 against exactly pinned `@babylonjs/lite` 1.11.0,
+source tag `npm-lite-v1.11.0`, commit
+[`b7993d5`](https://github.com/BabylonJS/Babylon-Lite/commit/b7993d58a709edc4c3299014d300b992ee0b8e7c),
+and the [official feature comparison](https://github.com/BabylonJS/Babylon-Lite/blob/npm-lite-v1.11.0/docs/lite/02-feature-comparison.md).
+The vendor's headline multipliers were not used for the decision.*
 
-In June 2026 the Babylon team shipped **Babylon Lite**: a from-scratch,
-**WebGPU-exclusive, data-oriented ("no classes: pure data + functions"), fully
-tree-shakable** engine with pixel-parity tests against classic Babylon.
-Self-reported medians across 100+ scenes: 19× smaller gzipped JS, 3.6× faster
-CPU frame time, 2.5× faster startup, 5× less memory *(vendor claims)*. Already
-present: OffscreenCanvas-in-worker, thin instances, compute shaders, node
-materials, KTX2/Draco/meshopt, floating-origin large-world. Missing at v1.11.0:
-LOD, octree culling, particles, GUI, WebXR, several post-effects, full Havok;
-APIs declared unstable. The team states classic Babylon.js and Lite will advance
-side by side.
+D-077's M0 spike ported the same box-and-light walking skeleton behind one shared worker
+protocol/telemetry/RAF core, with only thin classic and Lite backend adapters differing.
+Each production build then ran the identical schema-v23 / mandatory-metric-set-v10
+physical-console gate on registered dev-01 (Chrome 150.0.7871.115,
+3840x2160@60 Hz, production sandbox, three fresh/warm pairs). Both passed the environment
+and evidence facets, all six core runs, all 24 budget checks, the exact page+dedicated-
+render-worker topology, and the 100,000/100,000 SAB exchange with zero payload/sequence
+errors.
 
-**Why it matters here:** it is effectively the Babylon team's own confirmation of
-§6's core critique — the classic class-based, WebGL-era architecture can't be
-incrementally fixed for WebGPU-first, CPU-lean workloads. Its missing features
-are largely systems we hand-build anyway, which makes it a credible base — and
-**as of 2026-07-19 it is under active evaluation as the next M0 task (D-077)**:
-walking skeleton ported to Lite, identical `smoke@1` physical-console gate on
-both implementations, feature-floor audit against the roadmap (glTF, KTX2/Draco/
-meshopt, thin instances, compute, skeletal animation, raw device/queue interop),
-and a switch only on measured results plus no unbounded feature gap. The known
-costs the spike must price: declared-unstable APIs (exact pinning, no compat
-promise) and unverified vendor performance claims. Verdict will replace this
-paragraph.
+| Measured outcome | Classic 9.16.1 | Lite 1.11.0 | Lite delta |
+| --- | ---: | ---: | ---: |
+| Render-worker artifact | 5,266,167 B | 161,033 B | -96.94% (32.7× smaller) |
+| Engine + render worker | 5,686,348 B | 581,214 B | -89.78% (9.78× smaller) |
+| Fresh startup, mean | 211.31 ms | 170.87 ms | -19.1% |
+| Warm startup, mean | 149.90 ms | 123.24 ms | -17.8% |
+| Render CPU p50, mean | 0.246 ms | 0.103 ms | -58.0% |
+| Render CPU p95, mean | 0.431 ms | 0.203 ms | -53.0% |
+| Render callback p95, mean | 16.762 ms | 16.735 ms | effectively equal |
+| All-realm JS heap, mean | 9.37 MB | 3.89 MB | -58.5% |
+
+Lite's internal worker-init-to-first-frame interval was worse (fresh 97.28→149.04 ms;
+warm 93.38→112.99 ms), but lower worker-bootstrap overhead made total startup better.
+The V8 trace's render-worker compile event was ~1.4–1.9 ms for Lite versus
+~23.8–25.4 ms for classic; the wider bootstrap interval is not attributed to compile
+alone. Dawn saw
+four fresh shader misses and two graphics-PSO misses for Lite against classic's six and
+three; both were hits warm. GPU-memory attribution was unsupported for both, so no GPU-
+memory advantage is claimed. Evidence artifacts:
+`smoke-1-f7e08a362e94-dev-01-showcase-2026-07-19T19-27-01-694Z.json` (Lite) and
+`smoke-1-106bd4023874-dev-01-showcase-2026-07-19T19-29-39-539Z.json` (classic).
+The spike adapters and selector were then removed by D-080: they remain represented by
+the two raw comparison artifacts above, not as a product parity obligation. Final
+Lite-only replacement
+`smoke-1-a4824e1bef7e-dev-01-showcase-2026-07-19T20-33-11-523Z.json` passed all three
+facets, six core runs, and 24 checks at 581,328 combined engine+render-worker bytes
+(420,117 + 161,211), 14 fewer than the selector-enabled Lite build.
+
+**Roadmap floor, audited against the exact published package source:**
+
+| Capability | Classification | Evidence / bounded plan |
+| --- | --- | --- |
+| glTF/GLB | present | Public `loadGltf`; materials, skins, morph targets, animations |
+| KTX2/BasisU | partial in worker | Loader and `KHR_texture_basisu` are present, but decoder bootstrap falls back to `document` unless `globalThis.KTX2DECODER` is preinstalled. M1 bundles/installs the pinned decoder and gates a worker fixture; fallback is a patch limited to this bootstrap's dynamic import. |
+| Draco | partial in worker | `KHR_draco_mesh_compression` is present, but its bootstrap similarly needs a preinstalled `globalThis.DracoDecoderModule` to avoid `document`. Same M1 fixture and bounded bootstrap-patch plan. |
+| meshopt | partial | `EXT_meshopt_compression` needs a preinstalled `globalThis.MeshoptDecoder` in the worker and works only for canonical single-buffer GLB; v1.11.0 rejects other-buffer views. M1 gates the bundled decoder plus supported asset shape; upstream or patch only if either route fails. |
+| Thin instances | present | Add/remove/set/flush APIs, dynamic draw count, GPU culling |
+| Compute / raw device+queue | partial | Lite uses compute internally but exposes no generic public compute or device/queue API. Before P-002, isolate the pinned internal device access in one guarded native adapter and add a runtime harness probe while seeking an upstream accessor. |
+| Indirect draw | present for thin instances; generic path partial | GPU-culling uses `drawIndexedIndirect`; arbitrary submission shares the bounded native adapter above. |
+| Skeletal/animation system | partial | GPU bone textures, 4/8-bone skinning, animation groups, interpolation, blending/cross-fade/additive/masks/weights, and VAT are present. Animation events are absent; game events stay in the fixed-timestep sim, and M3 adds a tested engine timestamp-marker utility only if visual callbacks are needed. Morphs are capped at four active targets; asset QA enforces that bound, with skeletal/VAT authoring or a justified shader extension for an over-cap character. |
+| Worker ownership | present and measured | Public OffscreenCanvas path; local gate proves dedicated-worker WebGPU ownership and unchanged telemetry/SAB behavior |
+
+**Costs and operating rule:** Lite says its young API is not backward-compatible. The
+package is therefore exact-pinned; upgrades are deliberate reviewed changes, Lite calls
+remain confined to `engine/`, and compatibility code is limited to the bounded
+native-interop adapter. D-080 deliberately removes renderer swappability so streaming,
+asset, and render data can use Lite's data-oriented model without a classic-shaped common
+denominator. Missing LOD, octree culling, GUI, and related classic systems do
+not change the plan because Parallax already owns those browser-specific systems. D-078
+selects Lite because the local results are materially better and every roadmap gap has a
+bounded plan—not because the vendor says Lite is faster.
 
 ## 8. Gaussian splats and dynamic relighting (P-002 evidence)
 

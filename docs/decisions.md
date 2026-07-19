@@ -27,7 +27,167 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
-## D-077: Pull the Babylon Lite evaluation forward into M0 as the next task  (2026-07-19, accepted; challenger spike — D-004 stays authoritative until spike evidence)
+## D-080: Commit exclusively to Babylon Lite; remove renderer swappability  (2026-07-19, accepted; supersedes D-078's retained classic comparison path)
+**Decision:** Babylon Lite is Parallax's sole rendering core. Remove the classic Babylon
+dependency and adapter, the `PARALLAX_RENDERER` build/development selector, the
+engine-neutral `RenderWorkerBackend` interface, and the manifest/telemetry identity
+contract that existed only to verify a selected backend. Rendering code may use Lite's
+data structures and APIs directly inside `engine/`; it does not preserve parity with a
+hypothetical second engine. Keep the game-facing render service, worker message protocol,
+frame/telemetry loop, and SAB transport because those are Parallax subsystem and process
+boundaries, not renderer-swapping abstractions.
+
+**Context:** D-078's classic adapter was a useful controlled-spike instrument: it let the
+same walking skeleton measure Lite and classic at the same worker boundary. It is not a
+sustainable product architecture. M1's Lite-specific decoder bootstrap and data flow,
+P-002's native WebGPU interop, and later streaming/render data structures would either
+grow a common-denominator interface or require a second implementation and fixture
+matrix for a renderer that never ships. That cost would also work against the root
+constraint forbidding build-time engine abstraction layers. The local D-078 comparison
+already supplied the evidence needed to select Lite; preserving its two raw result
+artifacts preserves the finding without preserving the tested implementations.
+
+**Consequences:** The render worker is one Lite-specific entrypoint. The preexisting
+manifest v4 and telemetry v5 contracts remain sufficient; `smoke@1` still records exact
+engine/render-worker artifact paths and bytes, but no longer negotiates or cross-checks a
+renderer identity. Future Lite capabilities go directly into the `engine/render` and
+render-worker implementation while game code continues to depend only on Parallax
+services and typed snapshots. A future Chrome issue that needs cross-engine isolation
+gets a bounded reproduction built for that finding; it does not make the product carry a
+permanent second backend. If the engine choice itself must be revisited, make a new
+measured migration decision rather than maintaining speculative compatibility today.
+
+The final Lite-only production build passed `smoke@1` schema v24 / mandatory-metric-set
+v10 on registered dev-01 under Chrome 150.0.7871.115 and the production sandbox: all
+three facets, six core runs, and 24 budget checks passed. Artifact
+`smoke-1-a4824e1bef7e-dev-01-showcase-2026-07-19T20-33-11-523Z.json` records 581,328
+combined engine+render-worker bytes (420,117 + 161,211), 14 fewer than the final
+selector-enabled Lite build. One same-artifact schema-v23 attempt was invalidated when
+one warm trace produced no chunks before the existing five-second drain bound; its exact
+rerun and the final schema-v24 run completed normally. The existing informational
+V8-code-cache, compositor,
+GPU-memory-attribution, OPFS-repeatability, and trace-drain limitations remain
+non-blocking; no new platform finding arose.
+
+**Reopen if:** Lite develops an unbounded roadmap blocker or a measured challenger is
+materially better enough to justify an engine migration. Reopening selects or migrates
+the rendering core; it does not reinstate standing multi-engine parity by default.
+
+## D-079: Review all versioned dependencies at milestone boundaries and every 28 days  (2026-07-19, accepted)
+**Decision:** Generalize D-078's deliberate Babylon Lite upgrade rule to every versioned
+external input selected or pinned by the repository: direct and security-relevant
+transitive packages, browser/CfT pins, models and their tokenizer/chat-template identity,
+decoder/WASM assets, and future Rust toolchains/crates. Run a repository-wide currency
+checkpoint at each milestone entry and every 28 calendar days during an active milestone,
+whichever comes first; credible security advisories, due deferral triggers/dates, and
+releases that credibly fix or unblock an issue affecting planned or implemented work
+trigger an immediate review. Exact pins remain mandatory. Each candidate is adopted,
+explicitly deferred with evidence plus a recheck trigger/date, or marked not applicable;
+nothing auto-merges or refreshes the lockfile unattended. The complete tiering, procedure,
+and living review ledger are in [dependencies.md](dependencies.md).
+
+**Context:** D-020 made builds repeatable by exact-pinning dependencies, but defined no
+currency mechanism. D-078 similarly said Lite upgrades must be deliberate reviewed
+changes without ensuring that a review would recur. Over a multi-month project, those
+rules prevent silent drift but can silently fossilize the engine, inference stack,
+browser/toolchain, and asset decoders. A calendar-only cadence can interrupt milestone
+work, while milestone-only reviews can be months apart; the earlier-of rule bounds both
+failure modes. The policy covers non-package inputs because model revisions, decoder
+binaries, CfT, and future wasm tooling can change runtime behavior as materially as an
+npm package.
+
+**Consequences:** Runtime/platform-critical component families upgrade one at a time
+with upstream-note/API review, `pnpm check`, repeatability, relevant subsystem fixtures,
+and same-scenario physical-harness comparison against the old pin when performance or
+runtime behavior can move. Build/measurement tooling uses a proportionate gate but must
+run a physical smoke whenever emitted bytes, browser launch/tracing, serving, or metric
+semantics may change. Supporting tools may batch only while bisectable. Transitive pins
+move through their owning direct dependency unless a concrete advisory/bug justifies an
+isolated change. Every milestone exit requires a checkpoint no more than 28 days old;
+one full checkpoint may cover both an exit and the immediately following milestone entry
+when they occur in the same transition change. A targeted trigger review does not reset
+the full-repository cadence. M0 gains the first full review, due by 2026-08-16. Reviews
+and deferrals update the dependency ledger; behavior/constraint changes still update
+decisions, architecture, budgets, plan, or findings under the existing rules.
+
+**Reopen if:** the cadence produces churn without catching meaningful changes, a class
+of external inputs needs a different interval, official release channels cannot support
+same-scenario old/new evaluation, or project automation can safely prepare evidence-
+complete upgrade changes without weakening the human commit gate.
+
+## D-078: Adopt Babylon Lite as the rendering core  (2026-07-19, accepted; supersedes D-004's classic-Babylon component choice and concludes D-077; retained classic path superseded by D-080; recurring upgrade cadence generalized by D-079)
+**Decision:** Make exactly pinned `@babylonjs/lite` 1.11.0 the default
+scene/material/animation core. Keep Parallax's render service, worker protocol, frame
+loop, scheduling, streaming, memory ownership, and telemetry boundary unchanged. Retain
+the classic-Babylon adapter and exact dependency only as an explicitly selected
+comparison path (`PARALLAX_RENDERER=babylon-classic`) in production builds or Vite
+development; it is not in the default shipped render worker. The build manifest and
+runtime telemetry name the selected renderer, and
+`smoke@1` rejects a mismatch.
+
+**Context — measured gate:** Both implementations ran the same schema-v23 / mandatory-
+metric-set-v10 production-sandbox physical-console gate on registered dev-01, Chrome
+150.0.7871.115 at 3840x2160@60 Hz, three fresh/warm pairs each. Both passed environment,
+evidence-completeness, all six core runs, all 24 budget checks, the exact dedicated-
+worker topology, and the 100,000/100,000 SAB exchange with zero payload or sequence
+errors. Lite's render worker was 161,033 bytes against classic's 5,266,167 (96.94%
+smaller); combined engine+render-worker bytes were 581,214 against 5,686,348 (89.78%
+smaller). Across the six core runs, Lite reduced mean fresh startup 211.31→170.87 ms
+(19.1%), mean warm startup 149.90→123.24 ms (17.8%), mean render CPU p95
+0.431→0.203 ms (53.0%), and mean all-realm JS heap 9.37→3.89 MB (58.5%). Render-
+callback p95 was effectively equal (16.762 vs. 16.735 ms). Lite's internal worker-init
+interval was slower (fresh 97.28→149.04 ms; warm 93.38→112.99 ms), but its much smaller
+worker-bootstrap overhead still produced the better end-to-end startup outcome. GPU-memory
+attribution remained unsupported for both and is not claimed as a Lite win. Raw
+artifacts: `smoke-1-f7e08a362e94-dev-01-showcase-2026-07-19T19-27-01-694Z.json`
+(Lite) and `smoke-1-106bd4023874-dev-01-showcase-2026-07-19T19-29-39-539Z.json`
+(classic). After the renderer selector was also wired through Vite development, final
+default-build replacement artifact
+`smoke-1-9f1b9ff3f0f3-dev-01-showcase-2026-07-19T20-10-32-910Z.json` passed the same
+three-facet, six-run, 24-check gate at 581,342 combined bytes; the Lite render-worker
+artifact remained unchanged.
+
+**Context — roadmap floor:** The official repository/docs and the exact published
+package source at tag `npm-lite-v1.11.0` / commit
+`b7993d58a709edc4c3299014d300b992ee0b8e7c` were checked 2026-07-19. Uncompressed
+glTF/GLB, thin instances (including GPU-culling indirect draw), skeletal animation,
+morphs, and animation groups are present. KTX2 (`KHR_texture_basisu`), Draco, and
+meshopt decode paths are partial in the selected worker topology: their decoder
+bootstraps fall back to `document`, which is absent in a module worker, unless the
+expected `KTX2DECODER`, `DracoDecoderModule`, or `MeshoptDecoder` global is already
+installed. M1 therefore bundles and preinstalls the pinned decoders before loading one
+fixture of each type; if a decoder cannot initialize that way, the bounded fallback is
+to patch only its bootstrap to use a worker-safe dynamic import. Meshopt also handles
+only canonical single-buffer GLB; M1's exporter/QA gate constrains and fixtures that path,
+with upstreaming or a local loader patch if multi-buffer content becomes necessary.
+Compute is used internally, but a generic public compute/raw-device/queue API is absent.
+Before P-002 needs it, one pinned, isolated native-interop adapter will expose
+the internal device with compile-time and runtime guards plus a harness probe while we
+seek an upstream supported accessor. Thin-instance indirect draw is present; arbitrary
+custom indirect submission shares that bounded native-interop seam. Skeletal animation
+is present, but animation events are absent and morph targets are capped at four. Game-
+state events remain fixed-timestep simulation data; M3 adds a representative character
+fixture and, if visual-only clip callbacks are needed, a small engine-owned timestamp-
+marker utility with loop/seek/cross-fade tests. Asset QA enforces the four-active-morph
+limit; a character that exceeds it must use skeletal/VAT animation or first justify a
+bounded shader-path extension. No required roadmap capability is absent without a
+bounded plan.
+
+**Consequences:** D-004's rejection of Unity, Godot, Bevy, and from-scratch and its
+ownership boundary still stand; only the classic-Babylon component is superseded. Lite's
+unstable API is a real maintenance cost: exact version only, upgrades reviewed as explicit
+changes, all Lite calls confined to `engine/`, and no compatibility wrapper beyond the
+small renderer/native-interop adapters. The much smaller default artifact is a measured
+structural advantage for launch-2+ as well as a CPU/heap win. No Chrome rough-edge entry
+is added: the unresolved items here are library API gaps, while the equal GPU-memory
+attribution limitation is already represented by the harness's informational evidence.
+
+**Reopen if:** a pinned Lite upgrade breaks outside the bounded adapters, the M1 asset
+fixture or P-002 interop probe cannot be supported with a spike-sized patch, M3 animation
+requirements expose an unbounded gap, or a same-gate comparison shows classic Babylon or
+another web-native core materially better on Parallax's axes.
+
+## D-077: Pull the Babylon Lite evaluation forward into M0 as the next task  (2026-07-19, accepted; concluded by D-078)
 **Decision:** Do not wait for D-076's Babylon Lite reopen trigger (API stability + feature
 floor) to fire on its own. M0 gains a go/no-go spike, ordered as the next task: port the
 walking skeleton to Babylon Lite behind the unchanged `engine/` boundary, run the identical
@@ -1679,7 +1839,7 @@ removes non-flat routing produces explicit invalid evidence and cannot be promot
 Playwright exposes flat child sessions, sampling cost affects the measured workload, or the M0 SAB
 and wasm spikes require separating backing stores/linear memories from the JS-heap sub-budget.
 
-## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; re-grounds the technology claims in D-004 and D-005; its evidence pack why-not-unity.md was folded into rendering-engine-research.md by D-076)
+## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; comparison remains current, while D-004's classic-Babylon component was superseded by D-078; evidence folded into rendering-engine-research.md by D-076)
 **Decision:** D-004 stands — TypeScript + Babylon.js, WebGPU-only. Its supporting technology
 claims are re-verified against **Unity 6.5 (6000.5)**, the current release, and two of them are
 corrected. The sourced differentiator list now lives in
@@ -2716,7 +2876,7 @@ the game's serving, and are unaffected by it.
 **Reopen if:** the site needs a build step or more than a few pages, or when the M2
 deployment pipeline exists — supersede with a unified publish path then.
 
-## D-020: Toolchain refinements — Rollup, exact pins, reproducibility levels  (2026-07-11, accepted; supersedes D-014)
+## D-020: Toolchain refinements — Rollup, exact pins, reproducibility levels  (2026-07-11, accepted; supersedes D-014; currency cadence added by D-079)
 **Decision:** As D-014, with three refinements. (1) The engine library bundler is
 **Rollup** (chosen over esbuild for deterministic, timestamp-free output; exact version
 pinned in the lockfile). (2) Pinning is by **exact version** everywhere (`.nvmrc` +
@@ -3004,7 +3164,7 @@ infrastructure; every queue/boundary instrumented.
 **Reopen if:** WebGPU-in-worker or Babylon-in-worker spikes (M0) fail — fallback is
 render on main thread with everything else in workers, logged as a major finding.
 
-## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted; technology claims re-grounded against Unity 6.5 by D-046; evidence pack now rendering-engine-research.md per D-076, which also adds a post-hoc three.js evaluation and a Babylon Lite reopen trigger)
+## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted except classic-Babylon component superseded by D-078; technology claims re-grounded by D-046 and evidence consolidated by D-076)
 **Decision:** Babylon.js as scene/material/animation core; Parallax owns scheduling,
 streaming, memory, and the worker fabric. WebGPU backend exclusively — no WebGL2 path.
 **Context:** Unity's web export blocks the project's core needs (no C# threads on web,

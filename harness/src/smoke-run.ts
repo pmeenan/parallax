@@ -269,8 +269,16 @@ interface EnvironmentIdentity {
   readonly targetDisplayMode: string;
 }
 
+interface RenderBuildEvidence {
+  readonly engineAndRenderWorkerBytes: number;
+  readonly engineArtifact: Readonly<{ bytes: number; path: string }>;
+  readonly renderWorkerArtifact: Readonly<{ bytes: number; path: string }>;
+  readonly totalBuildBytes: number;
+}
+
 interface SmokeReport {
   readonly artifactDigest: string;
+  readonly build: RenderBuildEvidence;
   readonly chromePin: ChromePin;
   readonly coreRunFailure: CoreRunFailure | null;
   readonly environment: EnvironmentIdentity;
@@ -318,6 +326,7 @@ async function main(): Promise<void> {
   const executablePath = await resolveChromeExecutablePath(repositoryRoot, chromePin);
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
+  const build = renderBuildEvidence(validatedBuild.manifest);
   const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest);
   const renderWorkerArtifact = await tryProbe("Build-manifest render-worker entrypoint", async () =>
     renderWorkerArtifactPath(validatedBuild.manifest),
@@ -518,6 +527,7 @@ async function main(): Promise<void> {
     }
     const report: SmokeReport = Object.freeze({
       artifactDigest,
+      build,
       callbackPacingVariance,
       chromePin,
       coreRunFailure,
@@ -594,6 +604,32 @@ async function readV8ScriptArtifacts(
       ),
     ),
   );
+}
+
+function renderBuildEvidence(manifest: BuildManifest): RenderBuildEvidence {
+  const renderWorkerPath = renderWorkerArtifactPath(manifest);
+  const renderWorkerArtifact = manifest.artifacts.find(
+    (artifact) => artifact.path === renderWorkerPath,
+  );
+  const engineArtifacts = manifest.artifacts.filter((artifact) =>
+    /^immutable\/engine-[a-f0-9]{64}\.js$/.test(artifact.path),
+  );
+  if (renderWorkerArtifact === undefined || engineArtifacts.length !== 1) {
+    throw new Error(
+      `Expected one engine and one render-worker artifact; received ${engineArtifacts.length} engine and ${renderWorkerArtifact === undefined ? 0 : 1} render-worker artifacts`,
+    );
+  }
+  const engineArtifact = engineArtifacts[0];
+  if (engineArtifact === undefined) throw new Error("Engine artifact disappeared");
+  return Object.freeze({
+    engineAndRenderWorkerBytes: engineArtifact.bytes + renderWorkerArtifact.bytes,
+    engineArtifact: Object.freeze({ bytes: engineArtifact.bytes, path: engineArtifact.path }),
+    renderWorkerArtifact: Object.freeze({
+      bytes: renderWorkerArtifact.bytes,
+      path: renderWorkerArtifact.path,
+    }),
+    totalBuildBytes: manifest.artifacts.reduce((total, artifact) => total + artifact.bytes, 0),
+  });
 }
 
 function renderWorkerArtifactPath(manifest: BuildManifest): string {
@@ -2073,6 +2109,7 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     `Verdict: **${report.passed ? "PASS" : "FAIL"}**`,
     `Artifact: \`${report.artifactDigest}\``,
+    `Engine + render worker: **${formatBytes(report.build.engineAndRenderWorkerBytes)}** (${formatBytes(report.build.engineArtifact.bytes)} engine service + ${formatBytes(report.build.renderWorkerArtifact.bytes)} render worker)`,
     `Chrome: \`${report.environment.browserProduct}\``,
     `Sandbox: **${report.environment.sandboxVerified ? "verified" : "invalid"}**`,
     "",

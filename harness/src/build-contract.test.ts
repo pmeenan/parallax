@@ -43,6 +43,11 @@ describe("assembled build contract", () => {
       expect(workerArtifact).toBeDefined();
       const workerSource = await readFile(join(buildRoot, workerArtifact?.path ?? ""), "utf8");
       expect(workerSource).not.toContain('from "@babylonjs/core');
+      if (workerEntrypoint.role === "render") {
+        // Rollup removes package import specifiers. This retained classic engine symbol
+        // makes accidental @babylonjs/core inclusion observable in the emitted artifact.
+        expect(workerSource).not.toContain("WebGPUEngine");
+      }
     }
 
     for (const artifact of manifest.artifacts) {

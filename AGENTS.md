@@ -32,7 +32,7 @@ updating the affected docs. Until that happens, the constraints below govern.
 - **Chrome-only, latest release or newer.** Canary/Origin-Trial features are allowed.
   Never add Firefox/Safari fallbacks, WebGL2 paths, or feature-detection compatibility
   shims. If an API is missing, that is a finding — log it, don't work around it silently.
-- **Stack:** TypeScript + Babylon.js (WebGPU backend only) as the engine core, a custom
+- **Stack:** TypeScript + Babylon Lite (WebGPU only, D-078) as the engine core, a custom
   worker topology designed by this project (SharedArrayBuffer, OffscreenCanvas,
   WebGPU-in-worker), and Rust→WASM modules for hot paths. Wasm SIMD (128-bit) + threads
   are baseline machine requirements, and per-subsystem placement is performance-driven
@@ -79,7 +79,8 @@ Everything else is on demand. Each doc, and the questions it answers:
 | [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
 | [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
 | [docs/chrome-platform-gaps.md](docs/chrome-platform-gaps.md) | Chrome-facing synthesis of missing capabilities, prioritized asks, evidence, and why each change would help |
-| [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076): sourced cases against Unity, three.js, Godot, Bevy; Babylon's known weaknesses and roll-our-own areas; the active Babylon Lite evaluation (D-077); splat-relighting state for P-002. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
+| [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076/D-078/D-080): sourced cases against Unity, three.js, Godot, Bevy; the measured Babylon Lite selection, sole-renderer commitment, and bounded interop gaps; splat-relighting state for P-002. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
+| [docs/dependencies.md](docs/dependencies.md) | Exact-pin currency policy, risk-tier upgrade gates, 28-day/milestone cadence, and review ledger. Read at dependency checkpoints or before changing any external version pin |
 
 `docs/history/` contains the original ideation chat transcripts. They are **historical
 context only** — several technical claims in them are outdated or unverified (they predate
@@ -135,8 +136,10 @@ production-install qualification (D-065), Harness v1's sandboxed `smoke@1` repla
 gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
 repeatability remains an informational platform finding rather than a promoted
 baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified, with
-D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained; the
-remaining M0 spikes and exit items remain open, with the Babylon Lite vs. classic
-Babylon rendering-core spike (D-077) queued as the next task.
+D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained. The D-077
+head-to-head selected exactly pinned Babylon Lite 1.11.0 as the rendering core (D-078),
+and D-080 removed the comparison-only classic path and renderer abstraction;
+the remaining M0 spikes and exit items remain open, with D-075's NPC context-prefill
+caching spike queued as the next task.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

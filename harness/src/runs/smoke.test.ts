@@ -28,8 +28,8 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
   SMOKE_TELEMETRY_SCHEMA_VERSION;
 
 describe("smoke@1 contract", () => {
-  it("versions sandbox launch evidence in the result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(22);
+  it("versions the Lite-only build evidence in the result contract", () => {
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(24);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {

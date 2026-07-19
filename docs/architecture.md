@@ -10,7 +10,7 @@ system that touches another system reads it first (root doc map, D-023).
 ┌───────────────────────────────────────────────────────────────┐
 │ game/      World definition, gameplay, NPCs, quests, UI logic │  ← no platform APIs
 ├───────────────────────────────────────────────────────────────┤
-│ engine/    Scene & render orchestration (Babylon.js WebGPU),  │
+│ engine/    Scene & render orchestration (Babylon Lite WebGPU),│
 │            streaming, storage, worker fabric, WASM modules,   │
 │            audio, input, save, AI-inference services          │  ← all platform APIs
 ├───────────────────────────────────────────────────────────────┤
@@ -46,7 +46,7 @@ inherit. Planned topology (revise here as it evolves; requires COOP/COEP for SAB
 
 ```
 main thread        UI shell, input capture, orchestration only. Never blocks.
-render worker      Babylon.js scene + WebGPU device on OffscreenCanvas.
+render worker      Babylon Lite scene + WebGPU device on OffscreenCanvas.
 AI workers         P-007 wllama/llama.cpp execution + OPFS model cache; wllama creates
                    its own inference worker/pthreads and, for the default D-074 path,
                    a separate WebGPU device. ONNX diagnostics retain a dedicated
@@ -76,7 +76,7 @@ pthread pool. The measured placements are all-layer WebGPU offload on an indepen
 created logical device and CPU/WASM with `n_gpu_layers: 0`. D-073's Transformers.js/
 ONNX reproductions retain Parallax's dedicated AI worker. “Same physical GPU” is not
 shared-device scheduling: a true shared-device branch requires render-worker
-colocation and an explicit Babylon-to-inference-engine device handoff, and remains a
+colocation and an explicit render-to-inference-engine device handoff, and remains a
 measured future variable rather than an assumed capability.
 
 Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
@@ -92,11 +92,12 @@ window pump's scheduling cadence and is not raw SAB bandwidth. That pool is fixe
 boot; later channels size their own fixed pools from measured workload requirements
 rather than inheriting the spike's test capacity.
 
-The M0 spike is a go (D-056): the controlled walking-skeleton run keeps Babylon scene
+The M0 worker spike is a go (D-056), and D-078's same-boundary head-to-head selected
+Babylon Lite: the controlled walking-skeleton run keeps scene
 construction, WebGPU device ownership, animation, and render submission in the dedicated
 render worker. The window retains only explicit orchestration — worker/canvas setup,
 device-pixel resize forwarding, batched telemetry reception, and shell UI. This is the
-verified rendering-core boundary, not a blanket claim that DOM-bound Babylon features are
+verified rendering-core boundary, not a blanket claim that DOM-bound engine features are
 worker-safe; new input, GUI, accessibility, and loader paths must cross explicit protocols
 or be re-verified when they land.
 
@@ -233,12 +234,19 @@ and keeps the packaging honest.
 
 ## Rendering
 
-Babylon.js WebGPU backend, treated as a scene/material/animation library — Parallax owns
-scheduling, streaming, and memory. Custom passes (culling, terrain, VFX) are WGSL compute
-integrated through Babylon's API where possible; where Babylon blocks a needed WebGPU
-feature, we fork locally or bypass — and log the gap. Material policy: aggressively
-minimize pipeline permutations (uber-shader mindset) to keep Dawn's cache warm; the
-harness tracks pipeline-count and compile-stall metrics per build.
+Babylon Lite's WebGPU-only core is treated as a scene/material/animation library —
+Parallax owns scheduling, streaming, memory, and the frame loop (D-078/D-080). Lite is
+the sole renderer: code inside `engine/` uses its data structures and APIs directly, with
+no engine selector or common-denominator backend interface. Game code still crosses the
+Parallax render-service, worker-protocol, and typed-snapshot boundaries; those isolate
+processes and layers rather than engines. Custom passes (culling, terrain, VFX) use Lite's
+public surface where possible. M1's asset path must preinstall pinned KTX2/Draco/meshopt
+decoder globals in the module worker and pass compressed fixtures before content lands;
+Lite's fallback bootstrap uses `document` and is not worker-safe. Its v1.11.0 generic
+compute and raw-device/queue gap is bounded to one exactly pinned native-interop adapter
+with compile/runtime guards and a harness probe before P-002 needs it. Material policy:
+aggressively minimize pipeline permutations (uber-shader mindset) to keep Dawn's cache
+warm; the harness tracks pipeline-count and compile-stall metrics per build.
 
 **Dynamic lighting is a day-one requirement**, not an optimization decision: the game's
 full day/night cycle and weather system (game-design.md) rule out fully-baked lighting.

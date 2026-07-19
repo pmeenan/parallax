@@ -1,0 +1,86 @@
+# Dependency currency
+
+The operating policy for keeping Parallax's versioned external inputs current without
+giving up exact builds or silently changing measured behavior. D-079 governs; D-020's
+exact-pin and reproducibility rules remain unchanged.
+
+## Scope and cadence
+
+The source-of-truth inventory is every pin selected by repository configuration or code,
+not just package manifests: package manifests/lockfile, `.nvmrc`, browser pin files,
+embedded model IDs/revisions/artifact hashes, decoder URLs/assets, and future Rust
+toolchain/crate manifests. Start from the prior ledger, then search the repository for
+version, revision, digest, and remote-artifact constants and confirm their live consumers;
+do not maintain a second hand-copied version inventory here.
+
+A **full currency checkpoint** is required:
+
+- at the start of every milestone;
+- every 28 calendar days while a milestone is active, whichever comes first.
+
+A **targeted currency review** is required:
+
+- when a recorded deferral recheck date or trigger becomes due; and
+- immediately for a credible security advisory or a release that credibly fixes or
+  unblocks an issue affecting planned or implemented work.
+
+One full checkpoint may satisfy both a milestone exit and the immediately following
+milestone entry when both happen in the same transition change. A targeted deferral or
+advisory review does not reset the 28-day full-repository cadence unless it actually
+covers the full inventory.
+
+Every full checkpoint reviews all direct dependencies and versioned external inputs, plus
+transitive packages implicated by advisories or release notes. "Review" does not mean
+"upgrade to latest": every candidate ends as **adopted**, **deferred** with evidence and
+a recheck trigger/date, or **not applicable**. Exact pins move only in reviewed change
+units; no floating ranges, unattended lockfile refreshes, or automatic merges.
+
+## Risk tiers and required gates
+
+| Tier | What belongs here | Upgrade gate |
+| --- | --- | --- |
+| Runtime/platform critical | Rendering and asset runtimes (Babylon Lite); AI inference runtimes, model/tokenizer/chat-template pins; compression decoders; storage/crypto libraries; Chrome/CfT; future Rust/WASM runtime crates | One component family per change. Read upstream release/migration/security notes, audit affected local APIs and capability gaps, run `pnpm check` and engine repeatability, then run the relevant physical harness and subsystem fixtures against old and new pins. Keep budgets unchanged; record measured regressions as well as wins. |
+| Build and measurement critical | Node, pnpm, TypeScript, Rollup, esbuild, Vite, Playwright, Biome, Vitest, future Rust toolchain/wasm-bindgen/binaryen, deployment and measurement tools | Exact-pin change with `pnpm check`, repeatability, and the harness contract tests. Run a physical smoke when emitted bytes, browser launch/trace behavior, serving, or measurement semantics can change. Tool upgrades that change a result schema or baseline require the corresponding docs/decision update. |
+| Development/supporting | Types-only packages and tooling that cannot affect shipped artifacts or measurement semantics | May be batched when the diff remains bisectable; exact pins, `pnpm check`, and repeatability are still mandatory. Escalate to a higher tier if emitted artifacts or harness evidence change. |
+| Transitive | Lockfile-only packages not directly selected by Parallax | Review through the owning direct dependency. Update independently only for a concrete advisory/bug, with the owning subsystem's tier gate; never refresh the lockfile merely to make it newer. |
+
+An upgrade is not accepted merely because tests compile. Runtime/platform-critical
+changes must preserve the relevant worker topology, telemetry identity, feature floor,
+and milestone fixtures. Performance-sensitive changes use the same scenario and
+registered machine for the before/after comparison; a budget bust is handled through
+the normal decision process, never by weakening the check.
+
+## Review procedure
+
+For a full checkpoint, perform every step. A targeted review applies steps 2-6 to the
+affected component family and does not reset the full-checkpoint clock.
+
+1. Enumerate current exact pins from every configuration/code source described above and
+   query current supported releases and advisories from official sources.
+2. Read release and migration notes across the full skipped range. Identify API,
+   artifact-format, browser-feature, worker, storage, threading, and measurement changes.
+3. Classify candidates by the tiers above. Record deferrals before starting upgrades so
+   "no diff" cannot erase the review result.
+4. Upgrade one runtime-critical component family at a time. Preserve an old-pin build or
+   result artifact long enough to run the required same-scenario comparison.
+5. Run the tier gate and any milestone-specific fixtures. For Babylon Lite this includes
+   the render-worker `smoke@1` gate and, as they exist, M1 compressed assets, P-002 native
+   WebGPU interop, and M3 character animation.
+6. Update architecture, plan status, budgets, findings, and decisions in the same change
+   wherever behavior or constraints moved. Update the ledger below even when every
+   candidate was deferred.
+
+## Review ledger
+
+| Review date | Scope and outcome | Next checkpoint |
+| --- | --- | --- |
+| 2026-07-19 | Babylon Lite-only selection review (D-078): adopted 1.11.0 after a classic/Lite physical-gate comparison. This was not a full-repository currency review. | Full repository review by 2026-08-16 or before M1 starts, whichever comes first. |
+
+Each full checkpoint adds a dated subsection below this table. For every direct package
+or other repository-selected versioned input, record the current pin, candidate checked,
+official source/review date, adopted/deferred/not-applicable outcome and reason, relevant
+verification or artifact, and next recheck trigger/date. Group unchanged supporting
+packages only when they share the same source, outcome, and gate; runtime-critical
+components always get individual rows. A targeted review records the same fields for its
+affected inputs in a ledger row or dated subsection, explicitly labeled as targeted so it
+cannot be mistaken for a full checkpoint.

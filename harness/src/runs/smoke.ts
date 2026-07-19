@@ -41,7 +41,8 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 export const SMOKE_TELEMETRY_SCHEMA_VERSION = 5;
-export const SMOKE_REPORT_SCHEMA_VERSION = 22;
+// v24 removes v23's comparison-renderer identity while retaining exact build-artifact bytes.
+export const SMOKE_REPORT_SCHEMA_VERSION = 24;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

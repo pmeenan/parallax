@@ -8,7 +8,7 @@ worker topology defined there govern this directory.
 
 ## Scope
 
-**In:** render orchestration (Babylon.js WebGPU), worker fabric (SAB channels,
+**In:** render orchestration (Babylon Lite WebGPU), worker fabric (SAB channels,
 lifecycle), streaming manager, storage (OPFS/Cache/manifest/install), Rust→WASM modules,
 sim-runtime scaffolding (scheduler, snapshots, command transport), audio, input, save
 serialization, AI services (inference sessions, knowledge/retrieval context assembly —
@@ -27,7 +27,7 @@ the rest are created as their milestone starts.
 engine/src/
   core/        types, ids, math, time, event/command plumbing
   workers/     worker entrypoints + SAB channel library                    ✅ (render worker + SPSC rings)
-  render/      Babylon integration, pipeline warmup, custom WGSL passes   ✅ (service + protocol)
+  render/      Babylon Lite integration, pipeline warmup, custom WGSL passes ✅ (service + protocol)
   streaming/   cell scheduler, memory budget governor, eviction
   storage/     OPFS, manifest, install/update, integrity                    ✅ (M0 read spike)
   wasm/        Rust crates (one per module) + JS bindings
@@ -49,9 +49,10 @@ engine/src/
    at boot; SAB sizes are boot-time constants recorded in telemetry.
 4. **Instrument as you build** (root rule 5): a subsystem without telemetry counters is
    incomplete. Telemetry is exported through `telemetry/` in the harness's format.
-5. **Babylon is a dependency, not a framework.** Parallax owns the loop, scheduling, and
-   memory. If Babylon blocks a needed WebGPU feature: bypass or patch locally, and log
-   the gap in [docs/rough-edges.md](../docs/rough-edges.md).
+5. **Babylon Lite is a dependency, not a framework.** Parallax owns the loop, scheduling,
+   and memory. If Lite blocks a needed feature, bypass or patch locally and record the
+   library gap in rendering-engine-research.md plus any resulting decision. Reserve
+   [docs/rough-edges.md](../docs/rough-edges.md) for browser/platform gaps.
 6. **Failed platform experiments are findings.** If an API can't do what we need, write
    the rough-edges entry with the repro before working around it.
 7. **Engine artifacts are shareable by hash (D-010).** Engine bundles build

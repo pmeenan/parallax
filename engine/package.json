@@ -20,7 +20,7 @@
     "rollup": "4.62.2"
   },
   "dependencies": {
-    "@babylonjs/core": "9.16.1",
+    "@babylonjs/lite": "1.11.0",
     "@huggingface/transformers": "4.2.0",
     "@noble/hashes": "2.0.1",
     "@wllama/wllama": "3.5.1"

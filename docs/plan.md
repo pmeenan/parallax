@@ -13,10 +13,23 @@ done items stay unchecked, optionally with a note.
 
 **Status legend:** `pending` · `in progress` · `done` · `parked`
 
+## Standing gate — dependency currency
+
+D-079 and [dependencies.md](dependencies.md) apply to every milestone. Review all direct
+dependencies and versioned external inputs at milestone entry and every 28 days while a
+milestone is active, whichever comes first; credible security advisories trigger an
+immediate review, as do due deferral triggers and releases that credibly fix or unblock
+an issue affecting planned or implemented work. Candidates are adopted or explicitly
+deferred under risk-tier gates, never auto-updated. A milestone cannot exit with a
+currency checkpoint older than 28 days; one full checkpoint may cover an exit and the
+immediately following milestone entry in the same transition change. Runtime-critical
+upgrades require same-scenario before/after evidence on the relevant registered machine;
+exact pins and D-020 repeatability remain mandatory.
+
 ## M0 — Harness + skeleton  `in progress`
 
 The measurement loop everything else depends on, plus the thinnest possible end-to-end
-app: a Babylon.js WebGPU scene in a render worker, served with COOP/COEP, deployed and
+app: a Babylon Lite WebGPU scene in a render worker, served with COOP/COEP, deployed and
 measured automatically.
 
 - [x] Build/serve pipeline (per D-014/D-020 toolchain) with immutable-URL output and correct
@@ -27,7 +40,7 @@ measured automatically.
 - [x] Engine/game bundle separation with deterministic engine builds (D-010): same
       source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
       double-build hash check in the pipeline.
-- [x] Walking-skeleton app: the render-worker Babylon.js WebGPU scene from the preamble,
+- [x] Walking-skeleton app: the render-worker Babylon Lite WebGPU scene from the preamble,
       booting through the real build/serve pipeline with COOP/COEP intact — the target
       the harness and spikes run against (integrated deliverable, not just the
       WebGPU-in-worker spike). Verified locally in the Chromium-based Codex browser on
@@ -147,30 +160,27 @@ measured automatically.
       The 120-second no-progress load boundary remains. ONNX's context, missing-kernel,
       and whole-buffer failures remain valid engine/export findings rather than being
       rewritten by the successful GGUF route.
-- [ ] **Next up.** Spike: Babylon Lite vs. classic Babylon.js for the rendering core
-      (go/no-go, D-077). Lite is the Babylon team's WebGPU-exclusive, data-oriented,
-      tree-shakable engine ([rendering-engine-research.md](rendering-engine-research.md)
-      §7); its feature gaps are mostly systems we hand-build anyway, and the walking
-      skeleton is the cheapest the switch will ever be, so the evaluation is pulled
-      forward from D-004's reopen trigger instead of waiting for Lite to stabilize.
-      Port the walking skeleton to Lite behind the same `engine/` boundary and run the
-      identical `smoke@1` physical-console gate (current schema/metric set, fresh/warm
-      pairs, production sandbox per D-062/D-063) on both implementations on registered
-      dev-01. Measured head-to-head, not vendor claims: engine bundle bytes,
-      launch/startup, CPU frame time and render-callback pacing, JS/GPU memory, worker
-      behavior, and all budget checks. Alongside the numbers, audit Lite's feature
-      floor against the roadmap — M1: glTF loading, KTX2/Draco/meshopt, thin
-      instances, compute (P-002); M3+: skeletal animation/animation system; interop:
-      raw device/queue access and indirect-draw prospects (§6 of the research doc) —
-      classifying each as present / partial / absent-with-bounded-build-plan, and
-      record the API-instability cost (Lite declares APIs unstable; exact-version
-      pinning required). **Switch only if** Lite passes the same gate with materially
-      better or equal-with-structural-advantage results **and** no roadmap feature is
-      absent without a bounded plan; either verdict gets a decision-log entry and
-      updates rendering-engine-research.md (§1 trigger, §7). A switch additionally
-      updates architecture.md, this milestone's walking-skeleton item, and the M0
-      preamble; a no-switch verdict records the re-check condition.
-- [ ] Spike: app-owned NPC context-prefill caching (P-007 optimization, D-075), kept as
+- [x] Spike: Babylon Lite vs. classic Babylon.js for the rendering core (D-077/D-078).
+      **Switch to Lite.** Both schema-v23 / metric-set-v10 production-sandbox gates on
+      registered dev-01 passed all six core runs and 24 budget checks. Against classic,
+      Lite's render worker was 96.94% smaller, combined engine+worker bytes were 89.78%
+      smaller, mean fresh/warm startup improved 19.1%/17.8%, mean render CPU p95 improved
+      53.0%, and mean all-realm JS heap improved 58.5%; callback pacing was equal.
+      GPU-memory attribution remained unsupported for both rather than being counted as
+      a win. The exact v1.11.0 source audit found bounded gaps: compressed-asset decoder
+      bootstrap is DOM-based unless pinned globals are preinstalled in the render worker,
+      meshopt additionally assumes a single-buffer GLB, animation events are absent and
+      morphs capped at four, and generic compute/raw-device/queue access is not public.
+      Their M1 worker-fixture/asset-QA and M3/P-002 adapter plans are recorded in D-078
+      and [rendering-engine-research.md](rendering-engine-research.md) §7. D-080 then
+      removed the comparison-only classic dependency, selector, backend abstraction, and
+      renderer identity contract; classic is not a maintained engine path. Final Lite-only
+      artifact `smoke-1-a4824e1bef7e-dev-01-showcase-2026-07-19T20-33-11-523Z.json`
+      passed all three facets, six core runs, and 24 checks at 581,328 combined
+      engine+render-worker bytes. The historical A/B artifacts remain the selection
+      evidence.
+- [ ] **Next up.** Spike: app-owned NPC context-prefill caching (P-007 optimization,
+      D-075), kept as
       a distinct post-qualification task so D-074's uncached baseline remains
       comparable. First measure wllama/llama.cpp live exact-prefix reuse with a shared
       world/persona prefix and changing user suffixes, reporting cold-prefill and
@@ -197,6 +207,9 @@ measured automatically.
       *Note (2026-07-15): everything except the baseline-promotion policy is
       implemented and exercised by the checked Harness v1 item above; only baseline
       promotion (budgets.md → "Baseline promotion") remains, so don't rebuild the rest.*
+- [ ] Run the first full-repository dependency currency checkpoint (D-079), including
+      runtime/model/browser inputs as well as npm tooling. Record adopted and deferred
+      candidates in dependencies.md. Due before M0 exit and no later than 2026-08-16.
 - [ ] Exit: one command produces a built, locally served build (local serving only at
       M0 per D-011/D-022 — production deployment is M2) and a budget report; all spike
       results recorded in rough-edges.md or decisions.md.
@@ -204,9 +217,12 @@ measured automatically.
 ## M1 — Greybox District 1 streaming  `pending`
 
 - [ ] Procedural greybox content for D1 (cells, LOD tiers, collision) at target world
-      scale. Includes re-grounding D-006's asset-format claims (Babylon glTF/KTX2/
+      scale. Includes re-grounding D-006's asset-format claims (Babylon Lite glTF/KTX2/
       meshopt support) against current sources before the first content lands — the
-      entry predates the rule-10 citation requirement and carries none.
+      entry predates the rule-10 citation requirement and carries none. Before content
+      lands, bundle and preinstall the pinned KTX2/Draco/meshopt decoder globals in the
+      module render worker and gate one fixture per compression path plus meshopt's
+      canonical single-buffer constraint (D-078).
 - [ ] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
       movement, inside memory budget with proactive eviction.
 - [ ] Geometry-representation spike (P-002): triangle LOD vs. meshlet-virtualized vs.

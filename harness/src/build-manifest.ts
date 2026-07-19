@@ -41,12 +41,11 @@ export async function readAndValidateBuildManifest(
   const resolvedRoot = resolve(buildRoot);
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
-  if (
-    manifest.schemaVersion !== 4 ||
-    !Array.isArray(manifest.artifacts) ||
-    !Array.isArray(manifest.workerEntrypoints)
-  ) {
-    throw new Error(`Unsupported build manifest ${String(manifest.schemaVersion)}`);
+  if (manifest.schemaVersion !== 4) {
+    throw new Error(`Unsupported build manifest schema ${String(manifest.schemaVersion)}`);
+  }
+  if (!Array.isArray(manifest.artifacts) || !Array.isArray(manifest.workerEntrypoints)) {
+    throw new Error("Build manifest v4 requires artifact and worker-entrypoint arrays");
   }
   const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
   const workerPaths = new Set(
