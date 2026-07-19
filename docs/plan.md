@@ -189,9 +189,14 @@ measured automatically.
       wllama state/slot binding needed for the experiment. Measure snapshot bytes per
       token, save/restore latency, JS/WASM/GPU memory and transfer behavior, render
       contention, and a bounded multi-character hot-set/eviction policy against fresh
-      prefill on both WebGPU and CPU/WASM. Cache identity must bind the exact model and
+      prefill on both WebGPU and CPU/WASM. Include the D-082 axes: flash attention
+      off/on (its own before/after column against D-074's FA-off baseline) and
+      KV-cache type f16 vs q8_0 (optionally q8_0-K/q4_0-V), with every quantized
+      configuration re-passing the unchanged D-074 quality fixture. Cache identity
+      must bind the exact model and
       GGUF digest, runtime/llama.cpp build, tokenizer/chat template, token prefix, and
-      context/KV parameters; mismatches invalidate the disposable derived cache. Do
+      context/KV parameters including cache types and the flash-attention setting;
+      mismatches invalidate the disposable derived cache. Do
       not promote persistent caching unless restore is materially faster than fresh
       prefill without violating gameplay frame budgets, and retain player-derived
       context under save-data privacy/lifecycle rules rather than shared static-cache

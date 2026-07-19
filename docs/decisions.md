@@ -27,6 +27,86 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-082: Add KV-cache-quantization and flash-attention axes to the D-075 prefill spike; TurboQuant is a no-go  (2026-07-19, accepted; extends D-075)
+
+**Decision:** Extend the D-075 spike matrix with two measurement axes on both the
+WebGPU and CPU/WASM placements: flash attention off/on, and KV-cache type `f16`
+(baseline) vs `q8_0`, with an optional asymmetric `q8_0`-K/`q4_0`-V point if `q8_0`
+alone leaves the snapshot budget short. Every quantized-cache configuration must
+re-pass the unchanged D-074 schema/grounding/context fixture — a cache type that
+degrades those checks is disqualified regardless of its memory win. Snapshot identity
+(D-075) explicitly includes the K and V cache types and the flash-attention setting.
+Do not adopt TurboQuant or any out-of-tree KV-compression fork.
+
+**Context:** All claims checked 2026-07-19. The pinned `@wllama/wllama` 3.5.1 already
+exposes `cache_type_k`/`cache_type_v` (`f16`/`q8_0`/`q5_x`/`q4_x`) and `flash_attn`
+in `LoadModelConfig`, wired to llama.cpp context params (verified in the installed
+package source). llama.cpp requires flash attention for a quantized V cache, and the
+ggml WebGPU backend's `supports_op` accepts `FLASH_ATTN_EXT` with K/V in exactly
+`f16`/`q4_0`/`q8_0` — no `q5` variants — per
+[ggml-webgpu.cpp on master](https://github.com/ggml-org/llama.cpp/blob/master/ggml/src/ggml-webgpu/ggml-webgpu.cpp);
+the CPU backend covers quantized KV via a dequantize-then-dot fallback. The pinned
+wllama wasm binary embeds the WebGPU flash-attention shader family including
+block-quantized-KV variants (`flash_attn_vec_blk` et al.) and contains the
+`llama_state_seq_save_file`/`load_file` symbols unexposed by the JS action surface,
+consistent with D-075. `llama_kv_cache::state_write_data`
+([llama-kv-cache.cpp](https://github.com/ggml-org/llama.cpp/blob/master/src/llama-kv-cache.cpp))
+serializes K/V rows at the cache's native storage row size and embeds the type ids,
+so `q8_0` roughly halves and `q4_0` roughly quarters OPFS snapshot bytes versus
+`f16`, and restore requires identical cache types. TurboQuant (Zandieh et al., ICLR
+2026): upstream [PR #21089](https://github.com/ggml-org/llama.cpp/pull/21089)
+(`tbq3_0`/`tbq4_0`, CPU kernels only) was closed unmerged 2026-06-02 with
+maintainers unconvinced it beats existing types at equal bitwidth
+([tracking discussion #20969](https://github.com/ggml-org/llama.cpp/discussions/20969));
+community forks target CUDA/Metal/ROCm only, so adoption would mean maintaining a
+patched llama.cpp inside a custom wllama build for a marginal gain over `q4_0`.
+
+**Consequences:** The spike gains a cheap, fork-free lever that directly reduces the
+persistent-cache memory footprint and OPFS transfer volume D-075 measures. Flash
+attention is itself a new variable — D-074's 119.64 ms warm-TTFT baseline was
+measured without it — so it gets its own before/after column prior to any quantized
+run. Community measurements warn that `q4_0` K-cache hurts quality (K is more
+sensitive than V) and that dequant overhead can slow long-context attention; both
+are measurement targets at our fixture sizes, not assumptions. Uncached and
+`f16`-cache controls remain so D-074 comparability is preserved.
+
+**Reopen if:** TurboQuant or a comparable sub-4-bit KV method lands in upstream
+llama.cpp and ships in a pinned wllama release, the WebGPU backend's supported
+flash-attention cache types change, or spike measurements show quantized KV
+regressing TTFT or fixture quality with no acceptable configuration.
+
+---
+
+## D-081: Raw harness result artifacts stay out of version control  (2026-07-19, accepted)
+**Decision:** `harness/results/` stays untracked, and no tracked evidence mirror is
+added. The doc that cites a result — decision entry, finding, budgets baseline,
+research doc — must itself record the load-bearing numbers and context, because the
+documented top-line results are the durable record. Raw result JSONs and report files
+are per-machine byproducts; recovering raw detail means re-running the pinned scenario
+(harness rule 1: pinned Chrome, versioned run contracts, recorded environment), not
+consulting an archive.
+
+**Context:** A 2026-07-19 review found that every doc-cited artifact (27 files,
+~14 MB, spanning the spike evidence through D-080) existed only on dev-01 and was one
+`git clean` from loss; a tracked `harness/evidence/` mirror with a citation contract
+test was prototyped in-tree. Pat rejected it: planned write-ups need only the
+documented top-line results, and multi-megabyte measurement JSONs (a single
+app-owned-LLM run reaches 6.6 MB) would grow the repository indefinitely for data
+nobody re-reads. This is a deliberate decision *not* to preserve raw artifacts (root
+rule 1), so the gap is not rediscovered and the mirror re-added.
+
+**Consequences:** Losing a machine's results directory loses raw detail but not the
+record. The citation discipline carries the weight: an entry that leans on a
+measurement must quote the figures it relies on (as D-056 through D-080 already do)
+rather than deferring to the raw file; a bare filename citation identifies the run but
+is not, by itself, durable evidence. Local results directories are still kept on the
+machines that produced them on a best-effort basis.
+
+**Reopen if:** an external consumer (a Chrome bug report, fact-checking a publication)
+needs raw artifacts the docs did not capture, a disputed result can no longer be
+reproduced by re-running its pinned scenario, or low-cost external archival (LFS, an
+artifact store keyed by the recorded digests) becomes worth the setup.
+
 ## D-080: Commit exclusively to Babylon Lite; remove renderer swappability  (2026-07-19, accepted; supersedes D-078's retained classic comparison path)
 **Decision:** Babylon Lite is Parallax's sole rendering core. Remove the classic Babylon
 dependency and adapter, the `PARALLAX_RENDERER` build/development selector, the
