@@ -147,6 +147,29 @@ measured automatically.
       The 120-second no-progress load boundary remains. ONNX's context, missing-kernel,
       and whole-buffer failures remain valid engine/export findings rather than being
       rewritten by the successful GGUF route.
+- [ ] **Next up.** Spike: Babylon Lite vs. classic Babylon.js for the rendering core
+      (go/no-go, D-077). Lite is the Babylon team's WebGPU-exclusive, data-oriented,
+      tree-shakable engine ([rendering-engine-research.md](rendering-engine-research.md)
+      §7); its feature gaps are mostly systems we hand-build anyway, and the walking
+      skeleton is the cheapest the switch will ever be, so the evaluation is pulled
+      forward from D-004's reopen trigger instead of waiting for Lite to stabilize.
+      Port the walking skeleton to Lite behind the same `engine/` boundary and run the
+      identical `smoke@1` physical-console gate (current schema/metric set, fresh/warm
+      pairs, production sandbox per D-062/D-063) on both implementations on registered
+      dev-01. Measured head-to-head, not vendor claims: engine bundle bytes,
+      launch/startup, CPU frame time and render-callback pacing, JS/GPU memory, worker
+      behavior, and all budget checks. Alongside the numbers, audit Lite's feature
+      floor against the roadmap — M1: glTF loading, KTX2/Draco/meshopt, thin
+      instances, compute (P-002); M3+: skeletal animation/animation system; interop:
+      raw device/queue access and indirect-draw prospects (§6 of the research doc) —
+      classifying each as present / partial / absent-with-bounded-build-plan, and
+      record the API-instability cost (Lite declares APIs unstable; exact-version
+      pinning required). **Switch only if** Lite passes the same gate with materially
+      better or equal-with-structural-advantage results **and** no roadmap feature is
+      absent without a bounded plan; either verdict gets a decision-log entry and
+      updates rendering-engine-research.md (§1 trigger, §7). A switch additionally
+      updates architecture.md, this milestone's walking-skeleton item, and the M0
+      preamble; a no-switch verdict records the re-check condition.
 - [ ] Spike: app-owned NPC context-prefill caching (P-007 optimization, D-075), kept as
       a distinct post-qualification task so D-074's uncached baseline remains
       comparable. First measure wllama/llama.cpp live exact-prefix reuse with a shared

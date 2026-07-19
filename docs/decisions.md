@@ -27,6 +27,64 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-077: Pull the Babylon Lite evaluation forward into M0 as the next task  (2026-07-19, accepted; challenger spike — D-004 stays authoritative until spike evidence)
+**Decision:** Do not wait for D-076's Babylon Lite reopen trigger (API stability + feature
+floor) to fire on its own. M0 gains a go/no-go spike, ordered as the next task: port the
+walking skeleton to Babylon Lite behind the unchanged `engine/` boundary, run the identical
+`smoke@1` physical-console gate on both implementations, audit Lite's feature floor against
+the roadmap (M1 asset path: glTF/KTX2/Draco/meshopt, thin instances, compute; M3+: skeletal
+animation; interop: raw device/queue access, indirect-draw prospects), and switch the
+platform to Lite only if it passes the same gate with materially better or
+equal-with-structural-advantage measurements **and** no roadmap feature is absent without a
+bounded build-it-ourselves plan. Full criteria in plan.md M0; verdict lands as its own
+decision entry either way.
+**Context:** Lite's design goals line up with this project's axes point-for-point —
+WebGPU-exclusive (D-002/D-004), data-oriented/CPU-lean and tree-shakable (the top classic-
+Babylon weaknesses in rendering-engine-research.md §6), OffscreenCanvas-in-worker as a
+design goal (D-056 topology) — and its missing systems (LOD, octree culling, particles,
+GUI) overlap almost entirely with what we hand-build or cannot use in a worker anyway. The
+deciding argument for *now* rather than *later*: switching cost is at its lifetime minimum
+at the walking-skeleton stage and grows with every milestone. Known risks the spike must
+price rather than assume away: Lite declares its APIs unstable (exact-version pinning, no
+compat promise — a real cost against classic Babylon's compat policy), its feature floor
+for M3+ animation is unverified, and all headline performance multipliers are vendor
+self-reported (root rule 3: the harness decides). Checked 2026-07-19:
+github.com/BabylonJS/Babylon-Lite (v1.11.0, Apache-2.0), its feature-comparison doc, and
+the June 2026 announcement — full sourcing in rendering-engine-research.md §7.
+**Consequences:** plan.md M0 gains the spike (scope change logged per plan.md's own rule);
+rendering-engine-research.md §1/§7 updated — the passive watch item becomes an active M0
+evaluation. D-075's KV-prefill spike and the remaining M0 items queue behind it.
+**Reopen if:** the spike stalls on Lite immaturity for more than a spike-sized effort —
+then revert to the passive D-076 trigger and record what blocked it.
+
+## D-076: Consolidate rendering-engine research into rendering-engine-research.md; three.js evaluated post-hoc, choice stands  (2026-07-19, accepted)
+**Decision:** All rendering-engine-choice knowledge lives in one living doc,
+[rendering-engine-research.md](rendering-engine-research.md), which folds in and replaces
+`why-not-unity.md` (D-046's evidence pack) and adds three new sections: a post-hoc three.js
+evaluation, an honest Babylon weaknesses / roll-our-own list, and a Babylon Lite watch item.
+The doc is maintained by deletion — stale content is removed when corrections or newer
+information land; git history is the archive (same model as decision-log culling, D-023).
+**Context:** three.js was never considered in D-004 (it appears nowhere in the repo,
+including the ideation history) — a real gap, since it is the most popular web 3D library by
+~55x npm downloads and "why not three.js?" is the first public question the engine choice
+draws. Researched 2026-07-19 (three.js r185, Babylon 9.17.0): the choice stands. three.js
+shares all of Babylon's Tier-1 structural advantages over Unity, but loses on our axes —
+WebGPURenderer officially "experimental" and opt-in, custom shading locked behind TSL with
+no raw-pipeline path, worker/OffscreenCanvas unofficial and broken for a full release in
+r179 (issue #31605), breaking changes every release, JS with lagging external types, and
+renderer-not-engine scope. It genuinely beats classic Babylon on one axis — a public
+indirect-draw API (`IndirectStorageBufferAttribute`) — which is recorded as a Babylon
+weakness (roll-our-own area, P-002), not a switch reason. The same research surfaced
+**Babylon Lite** (June 2026, verified: WebGPU-exclusive, data-oriented, tree-shakable,
+pixel-parity goal, v1.11.0, APIs unstable) — added as a new D-004 reopen trigger with a
+harness-measured head-to-head as the gate.
+**Consequences:** `why-not-unity.md` is deleted; AGENTS.md doc map and RE-011's reference
+updated to point at the new doc. D-004/D-046 status lines annotated. Future engine-state
+research (re-verifications, new alternatives, Babylon Lite tracking) updates the doc in
+place rather than spawning new files.
+**Reopen if:** the doc grows past usefulness as a single file (split by vendor then), or a
+future engine decision (e.g., adopting Babylon Lite) warrants its own evidence pack.
+
 ## D-075: Measure NPC KV-prefix reuse and OPFS persistence as a separate optimization spike (2026-07-17, accepted)
 
 **Decision:** Keep D-074's app-owned backend qualification unchanged and schedule
@@ -1621,11 +1679,12 @@ removes non-flat routing produces explicit invalid evidence and cannot be promot
 Playwright exposes flat child sessions, sampling cost affects the measured workload, or the M0 SAB
 and wasm spikes require separating backing stores/linear memories from the JS-heap sub-budget.
 
-## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; re-grounds the technology claims in D-004 and D-005)
+## D-046: Engine choice re-grounded against Unity 6.5; two D-004/D-005 claims corrected  (2026-07-14, accepted; re-grounds the technology claims in D-004 and D-005; its evidence pack why-not-unity.md was folded into rendering-engine-research.md by D-076)
 **Decision:** D-004 stands — TypeScript + Babylon.js, WebGPU-only. Its supporting technology
 claims are re-verified against **Unity 6.5 (6000.5)**, the current release, and two of them are
 corrected. The sourced differentiator list now lives in
-[why-not-unity.md](why-not-unity.md), which is the canonical artifact for defending the engine
+why-not-unity.md (since folded into rendering-engine-research.md by D-076), which at the
+time was the canonical artifact for defending the engine
 choice; this entry records what changed and why the verdict didn't.
 **Context — two corrections, both against us:**
 1. **D-005's "No popular engine ships real multithreading on the web today" is wrong as
@@ -2945,7 +3004,7 @@ infrastructure; every queue/boundary instrumented.
 **Reopen if:** WebGPU-in-worker or Babylon-in-worker spikes (M0) fail — fallback is
 render on main thread with everything else in workers, logged as a major finding.
 
-## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted; technology claims re-grounded against Unity 6.5 by D-046; sourced differentiator list in why-not-unity.md)
+## D-004: Engine — TypeScript + Babylon.js (WebGPU only); not Unity, Godot, Bevy, or from-scratch  (2026-07-11, accepted; technology claims re-grounded against Unity 6.5 by D-046; evidence pack now rendering-engine-research.md per D-076, which also adds a post-hoc three.js evaluation and a Babylon Lite reopen trigger)
 **Decision:** Babylon.js as scene/material/animation core; Parallax owns scheduling,
 streaming, memory, and the worker fabric. WebGPU backend exclusively — no WebGL2 path.
 **Context:** Unity's web export blocks the project's core needs (no C# threads on web,
@@ -3015,14 +3074,24 @@ a small portfolio site) judged negligible.
   exploration of (a) classic triangle LOD chains, (b) meshlet-based virtualized geometry
   (nanite-like: GPU-driven culling, visibility buffer, WGSL compute), and (c) 3D Gaussian
   splats, including hybrids (e.g., splat environments + triangle interactives — splats
-  are weak on dynamic relighting, collision, and animation; triangles stay for anything
-  interactive). Includes the original question of GPU-driven culling/instancing and
-  whether Babylon's frame graph accommodates it or needs bypass. Evaluation axes: frame
-  budget at both quality tiers, streaming/storage cost per visual quality (splats are
-  storage-heavy — interacts with D-009 scale), asset-pipeline fit (AI generation
-  produces meshes; splats come from capture/reconstruction), and WebGPU compute limits.
-  M1 runs the comparative spike on representative content; M5 commits per content class.
-  The splat branch also gates the scan-your-world UGC feature (features.md).
+  remain weak on collision and animation, so triangles stay for anything interactive;
+  dynamic relighting, formerly listed alongside those as a static weakness, is now a
+  fast-moving research front — see rendering-engine-research.md §8 for the sourced
+  2026-07-19 state: research prototypes demonstrate real-time relit splats at desktop-GPU
+  rates, no engine or WebGPU renderer ships it, and the game-design.md requirement that
+  the splat branch be evaluated *under dynamic relighting* stands unchanged). Includes
+  the original question of GPU-driven culling/instancing and whether Babylon's frame
+  graph accommodates it or needs bypass. Evaluation axes: frame budget at both quality
+  tiers, streaming/storage cost per visual quality (splats are storage-heavy, and
+  relightable variants more so — interacts with D-009 scale), asset-pipeline fit
+  (AI generation produces meshes; the former "splats come from capture/reconstruction"
+  objection is retired — EA SEED's open-source mesh2splat converts glTF meshes to
+  PBR-material-carrying, explicitly relightable splats in <0.5 ms, checked 2026-07-19,
+  github.com/electronicarts/mesh2splat — making splat relighting a renderer problem
+  rather than a reconstruction problem for our synthetic assets), and WebGPU compute
+  limits. M1 runs the comparative spike on representative content; M5 commits per
+  content class. The splat branch also gates the scan-your-world UGC feature
+  (features.md).
 - **P-003: Multiplayer topology** — pure P2P mesh vs. host-authoritative peer for the
   M7 exploration. Decide when M3 determinism results are in.
 - **P-004: Binary asset storage** — git LFS vs. external content store + manifest for

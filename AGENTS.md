@@ -79,7 +79,7 @@ Everything else is on demand. Each doc, and the questions it answers:
 | [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
 | [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
 | [docs/chrome-platform-gaps.md](docs/chrome-platform-gaps.md) | Chrome-facing synthesis of missing capabilities, prioritized asks, evidence, and why each change would help |
-| [docs/why-not-unity.md](docs/why-not-unity.md) | The sourced case for Babylon over Unity (evidence pack for D-004/D-046). Read when the engine choice is questioned, or before repeating any "Unity can't do X" claim |
+| [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076): sourced cases against Unity, three.js, Godot, Bevy; Babylon's known weaknesses and roll-our-own areas; the active Babylon Lite evaluation (D-077); splat-relighting state for P-002. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
 
 `docs/history/` contains the original ideation chat transcripts. They are **historical
 context only** — several technical claims in them are outdated or unverified (they predate
@@ -136,6 +136,7 @@ gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
 repeatability remains an informational platform finding rather than a promoted
 baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified, with
 D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained; the
-remaining M0 spikes and exit items remain open.
+remaining M0 spikes and exit items remain open, with the Babylon Lite vs. classic
+Babylon rendering-core spike (D-077) queued as the next task.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

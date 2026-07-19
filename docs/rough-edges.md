@@ -835,7 +835,7 @@ COS APIs exist):
   "Async compute" as unsupported, which reads like an engine gap and is not one. This is a
   *platform* limit binding every web engine, Babylon and Parallax included. It must never be
   cited as an argument against Unity — see the "Not on this list" section of
-  [why-not-unity.md](why-not-unity.md) and D-046.
+  [rendering-engine-research.md](rendering-engine-research.md) and D-046.
 
 ## RE-010: Render-worker module exposes no URL-attributed code-cache production event
 
