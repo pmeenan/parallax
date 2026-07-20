@@ -27,6 +27,145 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-084: Do not promote restart-persistent NPC KV snapshots  (2026-07-19, accepted; closes D-075 and extends D-082/D-083)
+
+**Decision:** Keep llama.cpp live exact-prefix reuse and make idle pre-seeding the
+preferred follow-up: after model load, build a clean resident context containing
+static world knowledge, tools, and the next character's persona while inference is
+otherwise idle, then consume that staged context when the next conversation starts.
+Rebuild it after launch or invalidation rather than persisting its KV bytes. Do not
+promote D-075's OPFS slot snapshots for the pinned Gemma 4 E2B hybrid model/runtime
+combination into the gameplay architecture. Remove the experiment-only service, store,
+harness, fixtures, package/source patches, and custom WASM after recording the durable
+results; keep no dormant runtime path. Do not run the optional `q8_0`-K/`q4_0`-V point:
+symmetric `q8_0` already cuts
+snapshot bytes by about 47%, passes quality, and cannot repair the load-bearing partial
+restore. Reopen persistent snapshots only when the pinned runtime can restore the full
+exact prefix on the target hybrid model and the WebGPU path is stable with the selected
+attention configuration.
+
+**Context:** On 2026-07-19, physical-console `npc-prefill-cache-spike@1` runs used
+Chrome 150.0.7871.115 Stable on dev-01 (i9-14900KF, RTX 4080 SUPER, 128 GB class RAM,
+3840x2160@60 Hz), the five exact D-074 GGUF shards, the checked D-083 WASM
+`7723f56e7eeff507c3db43b5f58791cada24954f9591cf3e7e9a8050ca001382`, and final
+artifact prefix `a7c4c4e56ed6`. All stable f16/q8_0 and WebGPU/CPU restore cells reported
+only 409 cached tokens against 914-916-token exact reusable prefixes. Live same-session
+reuse did preserve 914-916 tokens, so the loss is specific to restart persistence, not
+fixture tokenization or cache accounting.
+
+The stable cells were faster despite that incomplete state: end-to-first-token ratios
+(OPFS read + native restore + generation TTFT, paired to the same character's cold
+prefill) were 0.653/0.680 for WebGPU f16 + flash attention, 0.628/0.655 for WebGPU
+q8_0, 0.670/0.643 for CPU f16 + flash attention, 0.543/0.612 for CPU f16 without it,
+and 0.516/0.569 for CPU q8_0. Those figures satisfy D-083's timing threshold in
+isolation but cannot qualify a cache that fails exact-prefix reuse. WebGPU f16 without
+flash attention was worse: native restore returned, then first generation repeatedly
+aborted inside the pinned llama.cpp/WebGPU module, so it produced no two-restore
+result.
+
+F16 snapshots were 12,039,128-12,137,688 bytes (median 12,867 bytes/token); q8_0
+snapshots were 6,405,848-6,458,328 bytes (median 6,846-6,873 bytes/token). OPFS reads
+were 10.29-25.12 ms and writes 15.74-53.56 ms in completed cells, so storage I/O was
+not the blocker. Both WebGPU and CPU q8_0 cells passed all 30 unchanged D-074 quality
+generations. Median aggregate user-agent/WASM-memory estimates were about
+5.83/1.99 GB on WebGPU and 57.3-59.6/3.39-3.53 GB on CPU; page-attributable VRAM
+remained unsupported under D-050. Render callback maxima were 33.35-50.04 ms on the
+stable WebGPU cells and 16.92-17.02 ms on CPU, but remain D-051 diagnostics rather
+than presentation evidence.
+
+The six final reports are:
+`npc-prefill-cache-spike-1-wllama-webgpu-f16-f16-fa-off-a7c4c4e56ed6-dev-01-2026-07-20T00-02-42-366Z.json`,
+`npc-prefill-cache-spike-1-wllama-webgpu-f16-f16-fa-on-a7c4c4e56ed6-dev-01-2026-07-19T23-06-03-732Z.json`,
+`npc-prefill-cache-spike-1-wllama-webgpu-q8_0-q8_0-fa-on-a7c4c4e56ed6-dev-01-2026-07-19T23-09-44-104Z.json`,
+`npc-prefill-cache-spike-1-wllama-wasm-f16-f16-fa-off-a7c4c4e56ed6-dev-01-2026-07-19T23-02-50-702Z.json`,
+`npc-prefill-cache-spike-1-wllama-wasm-f16-f16-fa-on-a7c4c4e56ed6-dev-01-2026-07-19T23-18-48-260Z.json`,
+and
+`npc-prefill-cache-spike-1-wllama-wasm-q8_0-q8_0-fa-on-a7c4c4e56ed6-dev-01-2026-07-19T23-39-21-313Z.json`.
+
+**Consequences:** D-074 remains the production-direction app-owned LLM baseline with
+ordinary live `cache_prompt` reuse. A future scheduler may pre-seed one or more clean
+conversation contexts during measured idle headroom, but that work must define
+cancellation, character priority, memory bounds, and render contention before it is
+promoted. No restart-persistent KV dependency, cache budget, or save-data lifecycle is
+added. The experiment-only code, dependency patch, and 7.7 MB custom WASM are removed;
+the six ignored raw reports remain local on dev-01 under D-081, while this entry carries
+the durable figures. This is deliberately a Gemma 4 E2B result, not a claim that persistent KV state
+is impossible for every model architecture; separate model-size/performance evaluation
+may revisit it for candidates such as Llama 3 3B. A future persistence attempt starts
+from a fresh bounded implementation and must first demonstrate full-prefix restore on its exact pinned
+model/runtime, then re-run correctness, timing, quality, memory, and real presentation
+gates.
+
+**Reopen if:** upstream llama.cpp/wllama changes hybrid-model sequence-state
+serialization, a local reproduction restores all exact prefix tokens after restart, or
+a separately evaluated pinned model/runtime (including a Llama 3 3B candidate) supplies
+portable full-prefix state with a stable WebGPU restore path.
+
+---
+
+## D-083: Bound D-075 to a minimal wllama slot patch and a 20% restore threshold  (2026-07-19, superseded by D-084; extends D-075/D-082)
+
+**Supersession:** D-084 removed the experimental patch, binary, store, fixtures, and
+harness after measurement. The entry below describes the bounded measurement setup,
+not the current repository runtime.
+
+**Decision:** Keep D-075 on exactly pinned `@wllama/wllama` 3.5.1 and its pinned
+llama.cpp submodule, and carry a repository-owned package patch plus WASM binary that
+adds only exact chat tokenization and slot-state save/restore actions. The patch also
+fixes the raw-field GLUE deserializer fallthrough exposed by the new binary payload;
+it does not add another inference backend or a general cache abstraction. Treat a
+persistent snapshot as disposable derived data under an exact identity over model and
+all GGUF digests, runtime/llama.cpp build, chat template, common token prefix, context
+size, K/V cache types, flash attention, device placement, and template arguments. Keep
+an LRU hot set of two character snapshots.
+
+For this spike, “materially faster than fresh prefill” means every paired
+restart-restore end-to-first-token sample (OPFS read + native restore + generation
+TTFT) is at most 80% of the same character's cold-prefill TTFT. This threshold is a
+D-075 promotion criterion, not a production dialog budget. Even a faster result cannot
+be promoted from M0 alone because D-051 exposes render-worker callback pacing rather
+than compositor presentation.
+
+**Context:** The installed wllama source and exact 3.5.1 checkout were inspected on
+2026-07-19. Its public TypeScript surface has live `cache_prompt` reuse but no slot
+state binding; the pinned llama.cpp server already carries slot save/restore tasks.
+The local extension compiled from wllama commit
+`766d28e03eeac044fe055327d06b83d3f9b84544` and llama.cpp commit
+`dd4623a74f0c85e6b1dd9ee99a92b9c67cac3708` with Emscripten 4.0.20 and Dawn
+`v20260317.182325`; the checked binary identity is recorded beside the artifact. The
+native wllama build is not byte-repeatable: repeated clean same-path builds of the
+initial extension, including single-job builds, alternated between two 7,675,431-byte
+digests (`d3a7fa5e…` and `d940e16e…`). Physical preflight then exposed that wllama's
+native-read bridge treats a llama.cpp slot filename as a missing model blob. The
+bounded correction uses llama.cpp's in-memory sequence-state API and carries the
+slot's token history beside the KV bytes; the checked 7,671,921-byte `7723f56e…`
+binary therefore adds no snapshot filesystem dependency. That binary remains an
+opaque exact input; D-020
+level-1 verifies Parallax's packaging of that input and is not cited as source-build
+reproducibility. The
+memory probe uses the current experimental
+[`Performance.measureUserAgentSpecificMemory()` contract](https://developer.mozilla.org/en-US/docs/Web/API/Performance/measureUserAgentSpecificMemory),
+which estimates the whole cross-origin-isolated application rather than attributing
+one worker. That is why the report separates user-agent aggregate memory from the
+WASM heap and continues to mark page-attributable VRAM unsupported under D-050.
+
+**Consequences:** The custom binary and package patch are runtime-critical dependency
+inputs and receive targeted ledger review. D-074 continues to package the unmodified
+wllama 3.5.1 WASM; only D-075 resolves the custom superset binary, preserving the
+qualified uncached baseline. The versioned `npc-prefill-cache-spike@1`
+run cold-installs the model, populates three static game-owned personas, evicts one,
+restarts Chrome on the same profile, restores two, fresh-prefills the miss, and reports
+raw identity, reuse, storage, timing, memory, quality, and callback evidence. Quantized
+KV configurations re-run the unchanged 30-generation D-074 quality fixture. No
+player-derived prompt content enters this cache.
+
+**Reopen if:** wllama publishes a compatible stable slot API, llama.cpp changes state
+compatibility or server-slot semantics, measurements justify a different hot-set or
+materiality threshold, or Chrome adds attributable worker/GPU memory and presentation
+evidence that can replace the current diagnostics.
+
+---
+
 ## D-082: Add KV-cache-quantization and flash-attention axes to the D-075 prefill spike; TurboQuant is a no-go  (2026-07-19, accepted; extends D-075)
 
 **Decision:** Extend the D-075 spike matrix with two measurement axes on both the

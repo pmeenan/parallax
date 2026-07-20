@@ -179,7 +179,7 @@ measured automatically.
       passed all three facets, six core runs, and 24 checks at 581,328 combined
       engine+render-worker bytes. The historical A/B artifacts remain the selection
       evidence.
-- [ ] **Next up.** Spike: app-owned NPC context-prefill caching (P-007 optimization,
+- [x] Spike: app-owned NPC context-prefill caching (P-007 optimization,
       D-075), kept as
       a distinct post-qualification task so D-074's uncached baseline remains
       comparable. First measure wllama/llama.cpp live exact-prefix reuse with a shared
@@ -201,6 +201,17 @@ measured automatically.
       prefill without violating gameplay frame budgets, and retain player-derived
       context under save-data privacy/lifecycle rules rather than shared static-cache
       rules.
+      D-084 closes this as a measured no-go for restart persistence. The complete
+      physical Chrome 150 matrix found that stable configurations restored only 409 of
+      914-916 exact reusable tokens; WebGPU f16 without flash attention additionally
+      aborted on first generation after native restore. Symmetric q8_0 cut snapshot
+      bytes about 47% and passed all 30 quality cases on both placements, but could not
+      fix correctness. Live same-session exact-prefix reuse remains viable; the
+      experiment-only store, harness, runtime patches, fixtures, and custom WASM were
+      removed after measurement. The preferred follow-up is model-specific idle pre-seeding of a
+      clean resident world/tool/persona context for the next conversation; separate
+      model evaluation may revisit persistence for other architectures rather than
+      generalizing this Gemma 4 E2B result.
 - [ ] Spike: Rust→WASM module with wasm threads (includes scaffolding the
       `rust-toolchain.toml` + pinned wasm-bindgen/binaryen shape D-014/D-020 specify —
       deferred until this first Rust code exists).

@@ -74,6 +74,7 @@ affected component family and does not reset the full-checkpoint clock.
 
 | Review date | Scope and outcome | Next checkpoint |
 | --- | --- | --- |
+| 2026-07-19 | **Targeted D-075 review:** retained stock `@wllama/wllama` 3.5.1 at commit `766d28e03eeac044fe055327d06b83d3f9b84544` and its llama.cpp `dd4623a74f0c85e6b1dd9ee99a92b9c67cac3708`. The measurement temporarily used bounded package/llama.cpp state patches and an Emscripten 4.0.20/Dawn `v20260317.182325` WASM (`7723f56e7eeff507c3db43b5f58791cada24954f9591cf3e7e9a8050ca001382`). D-084 rejected the result and removed the patches and binary, leaving no added runtime dependency. No candidate upgrade was evaluated and this was not a full-repository currency review. | Recheck at the full repository review, or earlier if a future model-specific persistence spike is approved. |
 | 2026-07-19 | Babylon Lite-only selection review (D-078): adopted 1.11.0 after a classic/Lite physical-gate comparison. This was not a full-repository currency review. | Full repository review by 2026-08-16 or before M1 starts, whichever comes first. |
 
 Each full checkpoint adds a dated subsection below this table. For every direct package

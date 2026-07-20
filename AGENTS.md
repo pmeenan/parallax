@@ -139,7 +139,8 @@ baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified,
 D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained. The D-077
 head-to-head selected exactly pinned Babylon Lite 1.11.0 as the rendering core (D-078),
 and D-080 removed the comparison-only classic path and renderer abstraction;
-the remaining M0 spikes and exit items remain open, with D-075's NPC context-prefill
-caching spike queued as the next task.
+the D-075/D-084 NPC context-prefill spike is now a measured restart-persistence no-go
+for the pinned Gemma 4 E2B runtime (live idle pre-seeding remains the preferred
+direction), and the remaining M0 spikes and exit items remain open.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

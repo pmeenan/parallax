@@ -173,6 +173,20 @@ D-051 contention diagnostic used by the Prompt spike until M1 provides the prese
 gate. Missing worker Long Tasks observability is explicit rather than replaced by main-
 thread observations.
 
+The removed D-075/D-082 experiment required three cold generations, six live
+exact-prefix samples, three snapshot saves, a deterministic two-character hot set,
+two restart restores, one fresh miss, exact model-cache continuity, and the unchanged
+30-generation quality fixture for quantized KV. D-083 defined material restore as OPFS
+read plus native restore plus TTFT at no more than 80% of paired same-character cold
+TTFT. The 2026-07-19 dev-01 matrix closed that gate as a D-084 no-go. Every stable placement
+and cache type restored only 409 of the 914-916-token exact prefix, even though paired
+end-to-first-token ratios were 0.516-0.680 and therefore faster than the 0.8 timing
+threshold. WebGPU f16 without flash attention aborted on generation after native
+restore. F16 snapshots measured 12.04-12.14 MB; q8_0 measured 6.41-6.46 MB and passed
+the unchanged 30-generation quality fixture on both placements. Timing, size, and
+quality do not override the exact-prefix correctness failure; no baseline is promoted.
+The experiment-specific harness and runtime patch were removed after measurement.
+
 ## Measurement methodology
 
 Definitions the harness implements; budgets above are meaningless without them.

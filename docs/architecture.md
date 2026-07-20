@@ -79,6 +79,16 @@ shared-device scheduling: a true shared-device branch requires render-worker
 colocation and an explicit render-to-inference-engine device handoff, and remains a
 measured future variable rather than an assumed capability.
 
+D-084 rejects restart-persistent KV snapshots for the pinned Gemma 4 E2B runtime after
+restore recovered just 409 of 914-916 exact reusable tokens. The experiment's store,
+runtime patch, and harness were removed after measurement; production has no persistent
+KV dependency. The preferred follow-up is a clean live context pre-seeded with static
+world knowledge, tools, and the next persona while the model is idle, then consumed by
+the next conversation and rebuilt after launch or invalidation. That scheduler remains
+measurement-gated and model-specific; this Gemma result does not pre-judge separately
+evaluated candidates. Player-derived context remains governed by the save-data
+privacy/lifecycle rules.
+
 Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
 sim→render state snapshots); `postMessage` with transferables for bulk handoffs;
 no structured-clone of large objects on hot paths. Every queue instrumented
@@ -282,6 +292,12 @@ An **app-owned in-browser model** (WebGPU inference in a worker, optionally LoRA
 for persona/voice/format) is an open challenger — P-007; phase A is an M0 spike. D-017
 remains authoritative until that produces evidence; `engine/ai` is a backend-hiding
 service interface precisely so the backend can swap.
+
+The completed D-075 optimization spike measured live exact-prefix reuse and
+restart-persistent per-character KV snapshots separately from D-074's uncached
+qualification. D-084 records the persistent-cache no-go and removal of its experimental
+implementation. Live same-session prefix reuse remains the viable result and supports
+the idle pre-seeding direction.
 
 **Knowledge & retrieval (D-033):** NPC prompts are assembled by a **knowledge service**
 in `engine/ai` — persona card + context retrieved through an explicit interface, never

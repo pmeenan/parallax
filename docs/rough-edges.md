@@ -92,6 +92,42 @@ COS APIs exist):
 
 ## Findings
 
+## RE-034: Pinned Gemma 4 sequence snapshots restore only part of an exact prefix
+
+- **Date / Chrome version:** 2026-07-19; Chrome for Testing Stable 150.0.7871.115,
+  Windows 11/dev-01/RTX 4080 SUPER, physical console, normal Chrome sandbox;
+  wllama 3.5.1 / llama.cpp b9640-dd4623a / Gemma 4 E2B QAT GGUF.
+- **Layer:** wllama/llama.cpp state serialization / WebGPU and WASM inference.
+- **Status:** open upstream-runtime limitation; D-084 measured no-go for this exact
+  model/runtime, not attributed to Chrome and not generalized to other model families.
+- **What we expected / What happened:** three live same-session generations reused
+  each character's 914-916-token exact common prefix. After exporting the idle slot to
+  bytes, writing it to OPFS, restarting Chrome on the same profile, and restoring into
+  an identical context, every stable WebGPU/CPU and f16/q8_0 cell reused exactly 409
+  tokens. Native restore itself returned successfully in 1.00-2.85 ms. WebGPU f16
+  without flash attention was less stable: native restore returned in 5.29 ms, then
+  first generation repeatedly aborted inside the pinned module. With flash attention,
+  WebGPU generation remained stable but retained the same 409-token ceiling.
+- **Repro:** the completed D-082 matrix's final source-identity reports have artifact
+  prefix `a7c4c4e56ed6`; D-084 records all six filenames and durable top-line
+  measurements. The now-removed experiment used
+  llama.cpp's in-memory `llama_state_seq_get_data`/`set_data` path, carried the slot's
+  exact token history beside the opaque state, bound model/runtime/context parameters
+  into the cache identity, and verified the same five GGUF shards before and after the
+  browser restart. Reopening requires a fresh bounded implementation; no dormant
+  package patch or harness command remains in the tree.
+- **Impact on Parallax:** restart-persistent KV snapshots are not viable for the pinned
+  Gemma 4 E2B stack despite materially lower partial-prefill TTFT. Symmetric q8_0 cuts
+  snapshot size about 47% and passes all 30 quality cases, but cannot repair missing
+  prefix state. Parallax will prefer clean live world/tool/persona pre-seeding during
+  idle headroom and evaluate other models separately.
+- **Proposed improvement:** llama.cpp/wllama should expose a portable-state capability
+  check and either preserve all prompt-reusable state for hybrid-memory models or
+  return the exact restorable token span before export. A WebGPU restore should fail
+  explicitly before generation when its attention configuration cannot consume the
+  restored state. Re-test separately evaluated model families rather than assuming
+  this hybrid-model result is universal.
+
 ## RE-033: wllama inference is worker-hosted but its controller requires a Window
 
 - **Date / Chrome version:** 2026-07-17; Chrome for Testing Stable 150.0.7871.115,
