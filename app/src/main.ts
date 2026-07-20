@@ -1,5 +1,6 @@
 import {
   createAppOwnedLlmSpikeService,
+  createMemory64SpikeService,
   createOpfsReadSpikeService,
   createPromptApiSpikeService,
   createRenderService,
@@ -40,12 +41,14 @@ const promptApiSpikeService = createPromptApiSpikeService(
 );
 const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
 const wasmThreadSpikeService = createWasmThreadSpikeService();
+const memory64SpikeService = createMemory64SpikeService();
 installTelemetryExport(
   renderService,
   opfsReadSpikeService,
   promptApiSpikeService,
   appOwnedLlmSpikeService,
   wasmThreadSpikeService,
+  memory64SpikeService,
   {
     engineVersion: identity.engine.version,
     gameVersion: identity.version,
@@ -141,12 +144,14 @@ const updateStatus = (): void => {
   const render = renderService.snapshot();
   const opfs = opfsReadSpikeService.snapshot();
   const wasmThreads = wasmThreadSpikeService.snapshot();
+  const memory64 = memory64SpikeService.snapshot();
   status.dataset.state = render.state;
   status.dataset.frameCount = render.frameCount.toString();
   status.dataset.opfsState = opfs.state;
   status.dataset.wasmThreadState = wasmThreads.state;
   status.dataset.wasmThreadCompletedTasks = wasmThreads.completedTasks.toString();
   status.dataset.wasmThreadWorkerMask = wasmThreads.workerMask.toString();
+  status.dataset.memory64State = memory64.state;
   const buildIdentity = `${identity.name} ${identity.version} / engine ${identity.engine.version}`;
   if (render.state === "ready") {
     const storageStatus =
@@ -181,9 +186,16 @@ wasmThreadSpikeService.subscribe(() => {
 opfsReadSpikeService.subscribe(() => {
   updateStatus();
 });
+memory64SpikeService.subscribe(() => {
+  updateStatus();
+});
 let wasmThreadSpikeStarted = false;
+const memory64SpikeMode = new URL(location.href).searchParams.get("memory64Spike");
+const memory64SpikeOwnsSyntheticWorkload =
+  memory64SpikeMode === "auto" || memory64SpikeMode === "dedicated";
 renderService.subscribe((telemetry) => {
   if (
+    !memory64SpikeOwnsSyntheticWorkload &&
     telemetry.state === "ready" &&
     telemetry.sabRingBufferSpike.state === "completed" &&
     !wasmThreadSpikeStarted
@@ -200,5 +212,8 @@ if (new URL(location.href).searchParams.get("opfsSpike") === "auto") {
       opfsReadSpikeService.start();
     }
   });
+}
+if (memory64SpikeMode === "auto") {
+  memory64SpikeService.start();
 }
 renderService.start(canvas, createWalkingSkeletonScene());

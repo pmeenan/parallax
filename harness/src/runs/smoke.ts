@@ -46,7 +46,7 @@ export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 6;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 7;
 // v25 adds exact Rust/WASM threads correctness, participation, memory, and timing evidence.
 export const SMOKE_REPORT_SCHEMA_VERSION = 25;
 

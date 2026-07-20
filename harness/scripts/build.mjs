@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { buildRustWasm } from "./build-wasm.mjs";
+import { buildMemory64Wasm, buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const outputRoot = join(repositoryRoot, "dist");
@@ -34,6 +34,7 @@ await Promise.all([
 ]);
 
 await buildRustWasm();
+await buildMemory64Wasm();
 runPnpm(["exec", "tsc", "-b"]);
 runPnpm(["--filter", "@parallax/engine", "build"]);
 runPnpm(["--filter", "@parallax/game", "build"]);
@@ -61,8 +62,27 @@ const wasmThreadOutputName = contentAddressedNameFromBytes(
 );
 await writeFile(join(outputRoot, "immutable", wasmThreadOutputName), wasmThreadBytes);
 
+const memory32SpikeBytes = await readFile(
+  join(repositoryRoot, "engine/wasm/memory64-spike/pkg/memory32.wasm"),
+);
+const memory32SpikeOutputName = contentAddressedNameFromBytes(
+  "memory32-spike",
+  memory32SpikeBytes,
+  ".wasm",
+);
+await writeFile(join(outputRoot, "immutable", memory32SpikeOutputName), memory32SpikeBytes);
+const memory64SpikeBytes = await readFile(
+  join(repositoryRoot, "engine/wasm/memory64-spike/pkg/memory64.wasm"),
+);
+const memory64SpikeOutputName = contentAddressedNameFromBytes(
+  "memory64-spike",
+  memory64SpikeBytes,
+  ".wasm",
+);
+await writeFile(join(outputRoot, "immutable", memory64SpikeOutputName), memory64SpikeBytes);
+
 const workerDescriptors = [];
-for (const role of ["ai", "render", "storage", "wasm-thread"]) {
+for (const role of ["ai", "memory64-spike", "render", "storage", "wasm-thread"]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
   if (role === "ai" && bytes.includes("__WLLAMA_WASM_ARTIFACT__")) {
     bytes = Buffer.from(
@@ -88,6 +108,16 @@ engineSource = replaceExactlyOnce(
   engineSource,
   "__WASM_THREAD_SPIKE_ARTIFACT__",
   wasmThreadOutputName,
+);
+engineSource = replaceExactlyOnce(
+  engineSource,
+  "__MEMORY32_SPIKE_ARTIFACT__",
+  memory32SpikeOutputName,
+);
+engineSource = replaceExactlyOnce(
+  engineSource,
+  "__MEMORY64_SPIKE_ARTIFACT__",
+  memory64SpikeOutputName,
 );
 const engineOutputName = contentAddressedNameFromBytes("engine", Buffer.from(engineSource));
 await writeFile(join(outputRoot, "immutable", engineOutputName), engineSource);
@@ -128,7 +158,7 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 5,
+      schemaVersion: 6,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,
         role: worker.role,

@@ -27,6 +27,83 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-086: Qualify memory64 feasibility without adopting wasm64  (2026-07-19, accepted; informs P-001)
+
+**Decision:** Keep memory32 as the production default and keep P-001 open until M1
+representative data demonstrates an unavoidable single-module requirement beyond 4 GiB.
+Qualify the optional memory64 path with the dedicated `memory64-spike@1` scenario rather
+than adding it to `smoke@1`. The measurement apparatus is a Binaryen-assembled WAT pair
+whose prepare/scan instructions, working set, and deterministic checksum are identical
+except for i32 versus i64 linear-memory addresses. Each run retains one cold, two warm-up,
+and thirty measured samples. Measured compile and instantiate phases batch 2,048 synchronous
+module constructions and 32,768 instances inside one short-lived nested worker per paired
+sample; terminating that worker before the outer 64 MiB, eight-fill prepare and sixteen-scan
+kernel phases prevents load-test allocation garbage from contaminating the hot-path sample.
+Only the final memory64 instance's additional proof export grows to 65,537 pages and
+round-trips `0x0badc0de` at byte address `0x1_0000_0000`; the worker then independently reads
+that exact offset through a JavaScript `DataView` and requires it to match the value returned
+by Wasm. Production modules remain Rust-authored. WAT is deliberately confined to this
+paired experiment so the prepare/kernel comparison does not also measure different compiler
+code generation. Because only memory64 contains the proof export, total module bytes and
+compile/instantiate timings are end-to-end apparatus observations rather than an isolated
+pointer-width delta.
+
+The blocking cost metric is computed in paired order: memory64/memory32 for each adjacent
+sample, then p95 within each run, then the ordinary 10% repeat-variance gate separately for
+fresh and warm profiles. Absolute arm timings retain their own per-run p95 and variance state
+as diagnostic evidence; they are never pooled across launches or substituted for the paired
+comparison. A dedicated query mode suppresses the unrelated D-085 synthetic spike, and
+measurement browsers use normal Chrome flags; only the short-lived identity browser enables
+developer WebGPU fields. Chrome-internals display diagnostics complete before warmup, and
+screen plus device-pixel canvas identity are checked before, during, and after the memory64
+window under D-034.
+
+**Context:** Pinned Chrome for Testing 150.0.7871.115 on registered physical dev-01
+(i9-14900KF, RTX 4080 SUPER, 128 GB class RAM, 3840x2160@60 Hz) passed all six sandboxed
+fresh/warm runs in artifact
+`memory64-spike-1-a05e3d13d506-dev-01-showcase-2026-07-20T12-25-10.882Z.json`. Every
+variant/sample produced checksum `1705018643`; every memory64 run wrote and read the
+sentinel at exactly 4 GiB with a 4,295,032,832-byte logical memory. Across 180 measured
+samples per variant, the median/worst per-run kernel p95 was 116.190/116.815 ms for memory32
+and 115.350/117.660 ms for memory64. Median per-run paired-p95 memory64/memory32 ratios were
+1.125x compile, 1.294x instantiate, 1.002x prepare, and 1.030x kernel; every fresh/warm
+paired-ratio relative range was at most 4.93%. The separately retained absolute timing
+diagnostic was invalid only for fresh memory32 prepare at 10.98% relative range; per the
+decision above, that diagnostic is not substituted for or allowed to block the measured
+paired comparison. Those results qualify this synthetic apparatus only,
+not a general production performance claim. The optimized memory64 module was 294 bytes
+versus 211 bytes (1.393x); sparse grow-and-touch took 2.405-3.405 ms, while its 4+ GiB
+`byteLength` proves an address range rather than physical commitment or residency.
+
+Current technology state was checked 2026-07-19. Chrome's official release notes and
+Blink intent record memory64 enabled by default from Chrome 133; the pinned Chrome 150
+run required no memory64 feature flag. V8's current limits define 65,536 pages for
+memory32 and 262,144 for memory64. The current WebAssembly memory64 proposal defines i64
+load/store addresses and notes memory32's smaller pointer representation. Rust's current
+platform-support page still lists `wasm64-unknown-unknown` as Tier 3 without distributed
+artifacts, so it was not made the build default. Sources:
+developer.chrome.com/release-notes/133,
+groups.google.com/a/chromium.org/g/blink-dev/c/5vTbd1dttwc/m/Z4UFehJBAgAJ,
+chromium.googlesource.com/v8/v8/+/refs/heads/main/src/wasm/wasm-limits.h,
+github.com/WebAssembly/memory64/blob/main/proposals/memory64/Overview.md, and
+doc.rust-lang.org/nightly/rustc/platform-support/wasm64-unknown-unknown.html.
+
+**Consequences:** The content-addressed memory32/memory64 pair, positive feature reporting plus
+negative validation that memory64 cannot parse without its feature enabled,
+same-host byte-repeatability check, engine worker/service telemetry, raw report, and
+three-pair physical runner are retained. The scenario is explicitly invoked with
+`pnpm harness:memory64`; ordinary launch and `smoke@1` do not reserve the 4+ GiB logical
+memory. This resolves the M0 feasibility/cost spike but neither resolves P-001 nor assigns
+a performance budget or production wasm64 module.
+
+**Reopen if:** M1 representative memory measurements identify a single module that
+cannot meet its requirement through partitioning, streaming, multiple memory32 modules,
+or a smaller resident set; a production kernel shows materially different pointer-width
+cost; Chrome/V8 changes memory64 limits or semantics; or Rust promotes and distributes a
+supported wasm64 target.
+
+---
+
 ## D-085: Pin a nightly Rust build-std pipeline for browser wasm threads  (2026-07-19, accepted; extends D-020/D-032)
 
 **Decision:** Author engine WebAssembly in Rust under an exact dated
@@ -3480,18 +3557,14 @@ a small portfolio site) judged negligible.
 *(Move to accepted with a date when resolved; spikes in plan.md M0 feed these.)*
 
 - **P-001: wasm64 (memory64) adoption per module** — which Rust modules, if any, justify
-  the pointer-width overhead for >4 GB address space. Decide after M0 spike + M1 memory
-  data. Note: aggregate memory budgets prove nothing about memory64 (multiple memory32
-  modules can sum past 4 GB); the actual exercise is a dedicated harness run in which a
-  single module addresses data beyond 4 GiB. **Compatibility gate:** adopting memory64
-  currently makes that module unloadable in Safari (MDN browser-compat-data
-  `webassembly/memory64`, checked 2026-07-12:
-  github.com/mdn/browser-compat-data/blob/main/webassembly/memory64.json — Chrome 133+,
-  Firefox 134+, Safari false).
-  Therefore memory64 is a last resort: adopt it only when measurements show an
-  unavoidable single-module >4 GiB requirement and memory32 alternatives (partitioning
-  data/modules, streaming, or reducing the resident set) cannot meet the same requirement
-  within budget. Record that evidence when resolving P-001.
+  the pointer-width overhead for >4 GiB address space. D-086 qualifies the Chrome/V8 and
+  pinned-Binaryen path with an exact beyond-4-GiB access and paired synthetic costs, but
+  deliberately does not adopt wasm64. Decide after M1 representative memory data. Aggregate
+  memory budgets prove nothing about memory64: multiple memory32 modules can sum past 4 GiB,
+  while adoption must be justified by one module's unavoidable address-space requirement.
+  Memory64 remains a last resort; adopt it only when partitioning, streaming, multiple
+  memory32 modules, and reducing the resident set cannot meet the same requirement within
+  budget. Record representative need and production-kernel cost when resolving P-001.
 - **P-002: Geometry representation & rendering-scale strategy** — comparative
   exploration of (a) classic triangle LOD chains, (b) meshlet-based virtualized geometry
   (nanite-like: GPU-driven culling, visibility buffer, WGSL compute), and (c) 3D Gaussian

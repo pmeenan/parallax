@@ -60,4 +60,13 @@ export default defineConfig([
       inlineDynamicImports: true,
     },
   },
+  {
+    input: "src/workers/memory64-spike-worker.ts",
+    plugins: createPlugins(),
+    output: {
+      ...sharedOutput,
+      entryFileNames: "memory64-spike-worker.js",
+      inlineDynamicImports: true,
+    },
+  },
 ]);

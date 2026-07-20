@@ -112,6 +112,26 @@ checksum/correctness, module bytes, and the fixed memory allocation. M1 sizes an
 assigns production decode workers from representative decode measurements rather than
 inheriting two workers or this synthetic task count.
 
+The P-001 memory64 proof is a separate on-demand worker and versioned harness scenario,
+not an ordinary launch phase. Paired Binaryen-built modules use the same 64 MiB working set,
+eight-fill prepare, and sixteen-scan functions, changing their linear-memory addresses from
+i32 to i64. Compile/instantiate batches run in short-lived nested copies of the same
+content-addressed worker so their allocation garbage is destroyed before the outer worker's
+prepare/kernel phase. Only the memory64 module also owns a proof export that reserves 65,537 pages and
+touches a single sentinel at byte address `0x1_0000_0000`; after the Wasm load returns it,
+the worker independently reads that exact exported-memory offset through a JavaScript
+`DataView`. This isolates pointer width for the prepare/kernel phases, avoids committing a
+multi-gigabyte fixture, and keeps the large logical reservation out of `smoke@1`;
+module-size and compile/instantiate ratios include the proof export and are reported only
+as end-to-end apparatus observations. Per-ordinal memory64/memory32 ratios are aggregated
+before the repeat-variance gate; absolute-arm p95s retain separate diagnostic variance states.
+The dedicated app mode suppresses unrelated synthetic spikes during this scenario, while
+rendering remains live and D-034 surface/display checks remain mandatory. The WAT pair is
+measurement apparatus; production
+engine modules remain Rust-authored and memory32 by default. D-086's six-run registered
+physical-console gate qualified this path in pinned Chrome 150, including the exact
+`0x1_0000_0000` access; it did not adopt wasm64 for a production module.
+
 The M0 worker spike is a go (D-056), and D-078's same-boundary head-to-head selected
 Babylon Lite: the controlled walking-skeleton run keeps scene
 construction, WebGPU device ownership, animation, and render submission in the dedicated
@@ -343,8 +363,9 @@ observed is logged as a rough-edges data point.
 - **wasm64 (P-001):** Rust modules isolate memory-size assumptions so an individual
   module *can* move to memory64, but memory32 remains the default. A switch requires an
   unavoidable measured single-module >4 GiB need after partitioning/streaming/resident-
-  set alternatives fail; it is known to make that module unloadable in Safari as of
-  2026-07-12, so it is the last resort rather than a scale target.
+  set alternatives fail. The M0 dedicated scenario qualifies browser/toolchain feasibility
+  and cost only; M1 representative module data still decides whether any real module has that
+  need. Memory64 is therefore a last resort rather than a scale target.
 - **NPC knowledge retrieval (D-033):** the prompt/persona-card schema carries a
   retrieved-context slot from M3 even while only tier-1 (structured state queries)
   exists; lore is authored chunked + tagged in `game/` from the first writing; embedding

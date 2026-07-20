@@ -223,8 +223,22 @@ measured automatically.
       completed all 262,144 tasks with checksum `0xb5140000`, nonzero participation by
       both workers, 30.8-35.8 ms total time and 15.9-17.6 ms parallel execution, a
       12,680-byte optimized module, and fixed 2,162,688-byte shared linear memory.
-- [ ] Spike: memory64 module load and cost; this validates the optional last-resort path
-      in P-001, not a default wasm64 target.
+- [x] Spike: memory64 module load and cost; this validates the optional last-resort path
+      in P-001, not a default wasm64 target. **Qualified under D-086:** dedicated
+      `memory64-spike@1` artifact
+      `memory64-spike-1-a05e3d13d506-dev-01-showcase-2026-07-20T12-25-10.882Z.json`
+      passed all six physical-console runs. Every run round-tripped `0x0badc0de` at byte
+      address `0x1_0000_0000` in one 4,295,032,832-byte logical memory, and an independent
+      JavaScript read observed the same value at that exact offset. Across 180 measured
+      samples per variant, memory32 versus memory64 median/worst per-run kernel p95 was
+      116.190/116.815 ms versus 115.350/117.660 ms. Median per-run paired-p95
+      compile/instantiate/prepare/kernel ratios were 1.125x/1.294x/1.002x/1.030x; every
+      blocking paired cohort passed the 10% repeat-variance gate. The separate absolute
+      diagnostic was invalid only for fresh memory32 prepare at 10.98% and is not a blocking
+      cost claim. Optimized module
+      size was 211 versus 294 bytes; memory64's load/size figures include its high-address
+      proof export. P-001 remains open for representative M1 need and production-kernel
+      evidence.
 - [ ] Harness result contract implemented (budgets.md → Measurement methodology):
       metric states, environment identity, artifact digest + dirty-tree identity,
       per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.

@@ -223,6 +223,37 @@ Definitions the harness implements; budgets above are meaningless without them.
   and parallel-execution phases are mandatory evidence. This synthetic correctness
   proof sets no throughput budget or production pool size; M1 measures representative
   decode work.
+- **Memory64 evidence (P-001):** the dedicated `memory64-spike@1` scenario runs outside
+  `smoke@1` in three fresh/warm profile pairs. A dedicated worker loads content-addressed
+  memory32 and memory64 modules, retains one cold, two warm-up, and thirty measured samples
+  per variant, and requires identical checksums. Each measured sample times 2,048 synchronous
+  module constructions and 32,768 same-memory instances in a short-lived nested worker,
+  terminates that worker, then prepares the same 64 MiB working set with eight deterministic
+  fill passes and runs sixteen pointer-heavy scans in the outer worker. This keeps load-test
+  allocation/GC out of the hot-path phase. Only after that cohort, the memory64 instance grows to
+  65,537 pages and round-trips a fixed sentinel at `0x1_0000_0000`. The worker also reads
+  that exact offset independently through a JavaScript `DataView`; both observed values are
+  mandatory evidence. Logical linear-memory size and sparse grow/touch time are reported
+  separately: the 4+ GiB `byteLength` is a reserved address range, not an assertion that
+  Chrome committed or made resident that many bytes. This feasibility spike has no
+  performance budget or adoption threshold. Each run first computes memory64/memory32 for
+  every adjacent measured sample, then p95; those paired p95 ratios and each absolute arm's
+  per-run p95 retain separate fresh/warm 10% repeat-variance states. Reports aggregate the
+  median and worst repeat p95 rather than pooling samples across launches. The paired ratio
+  is the blocking P-001 cost comparison; noisy absolute timing remains explicitly invalid
+  diagnostic evidence and cannot support an absolute-cost claim. P-001 remains open until M1
+  supplies a representative unavoidable single-module need.
+
+  D-086's accepted physical artifact retained 180 measured samples per variant. Memory32
+  versus memory64 median/worst per-run kernel p95 was 116.190/116.815 ms versus
+  115.350/117.660 ms; median per-run paired-p95 compile/instantiate/prepare/kernel ratios
+  were 1.125x/1.294x/1.002x/1.030x, and module size was 211 versus 294 bytes. Every blocking
+  paired cohort passed the 10% gate. The separate absolute diagnostic was invalid only for
+  fresh memory32 prepare at 10.98%, so the artifact supports no absolute prepare-cost claim.
+  These are feasibility
+  observations, not budgets or a general claim about production pointer-width cost;
+  memory64's module size and load phases also include its additional high-address proof
+  export.
 - **OPFS sync-access-handle evidence:** each `smoke@1` core launch runs a dedicated
   storage-worker probe during warm-up against a deterministic 64 MiB fixture. Fresh
   profiles must provision exactly 64 MiB; their paired warm profiles must reuse it.

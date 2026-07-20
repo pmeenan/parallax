@@ -18,13 +18,19 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/storage-worker.js"),
         artifact("immutable/ai-worker.js"),
         artifact("immutable/wasm-thread-worker.js"),
+        artifact("immutable/memory64-spike-worker.js"),
         artifact("immutable/module.wasm"),
       ]),
-      schemaVersion: 5,
+      schemaVersion: 6,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/ai-worker.js",
           role: "ai",
+          targetType: "worker",
+        }),
+        Object.freeze({
+          path: "immutable/memory64-spike-worker.js",
+          role: "memory64-spike",
           targetType: "worker",
         }),
         Object.freeze({

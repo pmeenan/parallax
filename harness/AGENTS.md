@@ -50,6 +50,9 @@ short (each gap in observability is itself a rough-edges finding — log it).
 - `app-owned-llm-spike` — exact-manifest cold install into OPFS, browser-restart warm
   load, fixed Gemma dialog/schema/context fixtures, and render-worker impact (M0 P-007
   phase-A evidence run).
+- `memory64-spike` — paired memory32/memory64 compile, instantiate, prepare, and
+  pointer-width kernel costs plus one sparse beyond-4-GiB address proof (M0 P-001
+  feasibility evidence; never part of ordinary smoke).
 - `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
 - `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
 - `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only

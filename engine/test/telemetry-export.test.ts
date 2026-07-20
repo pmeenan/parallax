@@ -7,6 +7,7 @@ import {
 import { createRenderService } from "../src/render/render-service";
 import { createOpfsReadSpikeService } from "../src/storage/opfs-read-spike-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
+import { createMemory64SpikeService } from "../src/wasm/memory64-spike-service";
 import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-service";
 
 describe("combined telemetry export", () => {
@@ -25,6 +26,7 @@ describe("combined telemetry export", () => {
       ),
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
+      createMemory64SpikeService(),
       {
         engineVersion: "test",
         gameVersion: "test",
@@ -103,6 +105,7 @@ function installTestTelemetry(promptApiSpikeService: PromptApiSpikeService) {
     promptApiSpikeService,
     createAppOwnedLlmSpikeService(),
     createWasmThreadSpikeService(),
+    createMemory64SpikeService(),
     { engineVersion: "test", gameVersion: "test" },
     {},
   );

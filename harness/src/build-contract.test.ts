@@ -13,7 +13,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(5);
+    expect(manifest.schemaVersion).toBe(6);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -29,9 +29,10 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(4);
+    expect(manifest.workerEntrypoints).toHaveLength(5);
     expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
       "ai",
+      "memory64-spike",
       "render",
       "storage",
       "wasm-thread",
@@ -75,6 +76,9 @@ describe("assembled build contract", () => {
     expect(engineSource).not.toContain("__STORAGE_WORKER_ARTIFACT__");
     expect(engineSource).not.toContain("__WASM_THREAD_WORKER_ARTIFACT__");
     expect(engineSource).not.toContain("__WASM_THREAD_SPIKE_ARTIFACT__");
+    expect(engineSource).not.toContain("__MEMORY64_SPIKE_WORKER_ARTIFACT__");
+    expect(engineSource).not.toContain("__MEMORY32_SPIKE_ARTIFACT__");
+    expect(engineSource).not.toContain("__MEMORY64_SPIKE_ARTIFACT__");
     for (const worker of manifest.workerEntrypoints) {
       expect(engineSource).toContain(`./${worker.path.replace("immutable/", "")}`);
     }

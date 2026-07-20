@@ -90,6 +90,33 @@ export {
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
+export type {
+  Memory64SpikeHighAddressTelemetry,
+  Memory64SpikeSample,
+  Memory64SpikeSamplePhase,
+  Memory64SpikeTelemetrySnapshot,
+  Memory64SpikeVariant,
+  Memory64SpikeVariantTelemetry,
+} from "./wasm/memory64-spike-protocol";
+export {
+  MEMORY64_SPIKE_COLD_SAMPLE_COUNT,
+  MEMORY64_SPIKE_COMPILE_BATCH_ITERATIONS,
+  MEMORY64_SPIKE_HIGH_ADDRESS,
+  MEMORY64_SPIKE_HIGH_PAGES,
+  MEMORY64_SPIKE_HIGH_SENTINEL,
+  MEMORY64_SPIKE_INSTANTIATE_BATCH_ITERATIONS,
+  MEMORY64_SPIKE_KERNEL_ROUNDS,
+  MEMORY64_SPIKE_MEASURED_SAMPLE_COUNT,
+  MEMORY64_SPIKE_PREPARE_ROUNDS,
+  MEMORY64_SPIKE_PREPARED_PAGES,
+  MEMORY64_SPIKE_TELEMETRY_SCHEMA_VERSION,
+  MEMORY64_SPIKE_WARMUP_SAMPLE_COUNT,
+} from "./wasm/memory64-spike-protocol";
+export type {
+  Memory64SpikeListener,
+  Memory64SpikeService,
+} from "./wasm/memory64-spike-service";
+export { createMemory64SpikeService } from "./wasm/memory64-spike-service";
 export type { WasmThreadSpikeTelemetrySnapshot } from "./wasm/wasm-thread-spike-protocol";
 export {
   WASM_THREAD_SPIKE_MEMORY_PAGES,

@@ -15,13 +15,13 @@ export interface ManifestArtifact {
 
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: 5;
+  readonly schemaVersion: 6;
   readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
 }
 
 export interface ManifestWorkerEntrypoint {
   readonly path: string;
-  readonly role: "ai" | "render" | "storage" | "wasm-thread";
+  readonly role: "ai" | "memory64-spike" | "render" | "storage" | "wasm-thread";
   readonly targetType: "worker";
 }
 
@@ -41,26 +41,27 @@ export async function readAndValidateBuildManifest(
   const resolvedRoot = resolve(buildRoot);
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
-  if (manifest.schemaVersion !== 5) {
+  if (manifest.schemaVersion !== 6) {
     throw new Error(`Unsupported build manifest schema ${String(manifest.schemaVersion)}`);
   }
   if (!Array.isArray(manifest.artifacts) || !Array.isArray(manifest.workerEntrypoints)) {
-    throw new Error("Build manifest v5 requires artifact and worker-entrypoint arrays");
+    throw new Error("Build manifest v6 requires artifact and worker-entrypoint arrays");
   }
   const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
   const workerPaths = new Set(
     manifest.workerEntrypoints.map((entrypoint) => resolve(resolvedRoot, entrypoint.path)),
   );
   if (
-    manifest.workerEntrypoints.length !== 4 ||
+    manifest.workerEntrypoints.length !== 5 ||
     workerRoles.filter((role) => role === "ai").length !== 1 ||
+    workerRoles.filter((role) => role === "memory64-spike").length !== 1 ||
     workerRoles.filter((role) => role === "render").length !== 1 ||
     workerRoles.filter((role) => role === "storage").length !== 1 ||
     workerRoles.filter((role) => role === "wasm-thread").length !== 1 ||
-    workerPaths.size !== 4
+    workerPaths.size !== 5
   ) {
     throw new Error(
-      "Build manifest v5 requires exactly one distinct AI, render, storage, and WASM-thread worker",
+      "Build manifest v6 requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
     );
   }
   for (const artifact of manifest.artifacts) {
@@ -76,6 +77,7 @@ export async function readAndValidateBuildManifest(
   for (const entrypoint of manifest.workerEntrypoints) {
     if (
       (entrypoint.role !== "ai" &&
+        entrypoint.role !== "memory64-spike" &&
         entrypoint.role !== "render" &&
         entrypoint.role !== "storage" &&
         entrypoint.role !== "wasm-thread") ||

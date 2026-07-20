@@ -142,7 +142,9 @@ and D-080 removed the comparison-only classic path and renderer abstraction;
 the D-075/D-084 NPC context-prefill spike is now a measured restart-persistence no-go
 for the pinned Gemma 4 E2B runtime (live idle pre-seeding remains the preferred
 direction), and the D-085 Rust/WASM threads spike is qualified by the passing
-schema-v25/metric-set-v11 physical-console gate; the remaining M0 spikes and exit items
-remain open.
+schema-v25/metric-set-v11 physical-console gate. D-086 qualifies the optional memory64
+path with a passing six-run physical-console cost comparison and exact beyond-4-GiB
+access while leaving P-001 open for representative M1 adoption evidence; the remaining
+M0 spikes and exit items remain open.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

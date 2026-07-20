@@ -21,12 +21,14 @@ async function writeFixture(): Promise<string> {
   const storageWorkerPath = `immutable/storage-worker-${workerDigest}.js`;
   const aiWorkerPath = `immutable/ai-worker-${workerDigest}.js`;
   const wasmThreadWorkerPath = `immutable/wasm-thread-worker-${workerDigest}.js`;
+  const memory64SpikeWorkerPath = `immutable/memory64-spike-worker-${workerDigest}.js`;
   await mkdir(join(root, "immutable"));
   await writeFile(join(root, "index.html"), index);
   await writeFile(join(root, workerPath), workerBody);
   await writeFile(join(root, storageWorkerPath), workerBody);
   await writeFile(join(root, aiWorkerPath), workerBody);
   await writeFile(join(root, wasmThreadWorkerPath), workerBody);
+  await writeFile(join(root, memory64SpikeWorkerPath), workerBody);
   await writeFile(
     join(root, "build-manifest.json"),
     JSON.stringify({
@@ -52,14 +54,20 @@ async function writeFixture(): Promise<string> {
           sha256: workerDigest,
         },
         {
+          bytes: Buffer.byteLength(workerBody),
+          path: memory64SpikeWorkerPath,
+          sha256: workerDigest,
+        },
+        {
           bytes: Buffer.byteLength(index),
           path: "index.html",
           sha256: createHash("sha256").update(index).digest("hex"),
         },
       ],
-      schemaVersion: 5,
+      schemaVersion: 6,
       workerEntrypoints: [
         { path: aiWorkerPath, role: "ai", targetType: "worker" },
+        { path: memory64SpikeWorkerPath, role: "memory64-spike", targetType: "worker" },
         { path: workerPath, role: "render", targetType: "worker" },
         { path: storageWorkerPath, role: "storage", targetType: "worker" },
         { path: wasmThreadWorkerPath, role: "wasm-thread", targetType: "worker" },
@@ -73,7 +81,7 @@ describe("build manifest validation", () => {
   it("accepts a served tree whose files are all listed in the manifest", async () => {
     const root = await writeFixture();
     const validated = await readAndValidateBuildManifest(root);
-    expect(validated.manifest.artifacts).toHaveLength(5);
+    expect(validated.manifest.artifacts).toHaveLength(6);
     expect(validated.artifactDigest).toMatch(/^[a-f0-9]{64}$/);
   });
 
@@ -93,7 +101,7 @@ describe("build manifest validation", () => {
     );
   });
 
-  it("rejects missing or duplicate worker roles in manifest v5", async () => {
+  it("rejects missing or duplicate worker roles in manifest v6", async () => {
     const root = await writeFixture();
     const manifestPath = join(root, "build-manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
@@ -103,7 +111,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct AI, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
     );
 
     const duplicateRoot = await writeFixture();
@@ -117,7 +125,7 @@ describe("build manifest validation", () => {
     await writeFile(duplicateManifestPath, JSON.stringify(duplicateManifest));
 
     await expect(readAndValidateBuildManifest(duplicateRoot)).rejects.toThrow(
-      "requires exactly one distinct AI, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
     );
   });
 
@@ -150,7 +158,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct AI, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
     );
   });
 });

@@ -38,7 +38,6 @@ numbered finding (or a decisions.md entry) once there's evidence:
   + 304 setup reliably preserve the code cache across launches and asset-only updates?
 - **OPFS throughput ceilings:** sync access handle read bandwidth from decode-pool
   workers; contention behavior with N readers; OPFS vs Cache Storage per asset class.
-- **wasm64 in anger:** real cost of memory64 (pointer width, perf) in a hot Rust module.
 - **Prompt API under load:** inference/render GPU contention; session limits vs.
   many-NPC designs; download/availability UX during install; main-thread cost of the
   window-owned broker (worker unavailability is recorded as RE-016);
@@ -91,6 +90,75 @@ COS APIs exist):
   hash-based sharing index?
 
 ## Findings
+
+## RE-038: TypeScript's WebAssembly declarations omit the standardized memory64 descriptor
+
+- **Date / Chrome version:** 2026-07-19; TypeScript 7.0.2 typecheck and pinned Chrome for
+  Testing 150.0.7871.115 runtime on Windows 11/dev-01.
+- **Layer:** TypeScript DOM/WebWorker declarations for the WebAssembly JavaScript API.
+- **Status:** open ecosystem typing gap; locally worked around at one constructor boundary.
+- **What we expected / What happened:** current WebAssembly JS API memory64 construction uses
+  `{ address: "i64", initial: 1n, maximum: ...n }`, and Chrome 150 accepts it without a flag.
+  TypeScript's `WebAssembly.MemoryDescriptor` still requires Number-valued `initial` and
+  `maximum`; strict typecheck rejected both BigInts (`TS2322: Type 'bigint' is not assignable
+  to type 'number'`).
+- **Repro:** remove the documented `unknown as WebAssembly.MemoryDescriptor` boundary in
+  `engine/src/workers/memory64-spike-worker.ts` and run `pnpm typecheck`. Runtime behavior is
+  qualified by D-086. The WebAssembly JS API memory/address conversions were checked
+  2026-07-19 at webassembly.github.io/spec/js-api/#memories.
+- **Impact on Parallax:** production remains memory32, so the gap is confined to the optional
+  P-001 experiment. Any future JS-created memory64 needs the same audited cast until the
+  library declaration catches up.
+- **Proposed improvement:** add the address-width discriminator and BigInt-valued memory64
+  descriptor/grow overloads to TypeScript's WebAssembly declarations.
+
+## RE-037: In-process load churn contaminated later Wasm hot-path measurements
+
+- **Date / Chrome version:** 2026-07-19; pinned Chrome for Testing 150.0.7871.115 on the
+  dev-01 physical console.
+- **Layer:** harness / V8 Wasm compilation, instantiation, tiering, and garbage collection.
+- **Status:** our-bug measurement design, fixed in `memory64-spike@1`; retained as a harness
+  lesson rather than attributed to a Chrome defect.
+- **What we expected / What happened:** batching thousands of module constructions and
+  instances inside the same long-lived worker made the later prepare/kernel cohort vary with
+  allocation and tiering state. One rejected artifact reported a repeatable 85 ms memory32
+  kernel beside 30 ms memory64; after moving each load batch into a disposable nested worker,
+  the same paired kernels returned to near-unity. Dividing independently aggregated arm p95s
+  also lost ordinal pairing and amplified unrelated outliers.
+- **Repro:** compare invalid artifact
+  `memory64-spike-1-f47c8305d390-dev-01-showcase-2026-07-20T01-56-02.743Z.json` with accepted
+  `memory64-spike-1-a05e3d13d506-dev-01-showcase-2026-07-20T12-25-10.882Z.json`. The accepted
+  runner constructs/instantiates in a nested copy of the content-addressed worker, terminates
+  it before prepare/kernel, computes a memory64/memory32 ratio for each adjacent sample, then
+  applies p95 and the 10% repeat gate. Raw absolute-arm p95/variance remains separate.
+- **Impact on Parallax:** no production path changed. The corrected gate prevents GC/tiering
+  garbage and cross-ordinal aggregation from becoming false pointer-width claims.
+- **Proposed improvement:** keep disposable-isolate load probes and paired-first aggregation
+  as the default pattern for future sub-millisecond or allocation-heavy Wasm comparisons.
+
+## RE-036: An unrelated synthetic Wasm-thread warmup intermittently blocked a dedicated spike
+
+- **Date / Chrome version:** 2026-07-19; pinned Chrome for Testing 150.0.7871.115 on the
+  dev-01 physical console.
+- **Layer:** app launch / V8 Wasm workers / harness orchestration.
+- **Status:** open attribution; isolated from the memory64 scenario, not fixed by raising a
+  timeout.
+- **What we expected / What happened:** the first three six-launch memory64 attempts each had
+  one app launch fail before memory64 began. After the runner exposed terminal telemetry, one
+  retained failure was the already-qualified D-085 Rust/WASM synthetic worker exceeding its
+  10,000 ms service timeout. The memory64 worker itself had not started. Both memory64 query
+  modes now leave that unrelated synthetic spike idle while rendering stays live; later
+  memory64 attempts reached 6/6 launch eligibility.
+- **Repro:** artifact
+  `memory64-spike-1-484004247a41-dev-01-showcase-2026-07-20T01-58-04.766Z.json`, warm repeat 3.
+  The accepted D-086 artifact uses `?memory64Spike=dedicated` and verifies the unrelated
+  telemetry section remains idle; `?memory64Spike=auto` applies the same isolation for manual
+  reproductions.
+- **Impact on Parallax:** no accepted D-085 result is invalidated, but running independent
+  synthetic spikes in every app launch can make a dedicated experiment flaky and contaminate
+  its CPU state.
+- **Proposed improvement:** investigate D-085's timeout separately with its own raw worker
+  phase evidence; keep dedicated scenarios explicit about which synthetic services are active.
 
 ## RE-035: Rust browser threads still require a nightly rebuilt standard library
 

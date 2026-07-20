@@ -7,12 +7,14 @@ import type {
 import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
+import type { Memory64SpikeTelemetrySnapshot } from "../wasm/memory64-spike-protocol";
+import type { Memory64SpikeService } from "../wasm/memory64-spike-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v6 envelope adds the Rust/WASM threads spike. Subsystems retain their own section
+// The v7 envelope adds the dedicated memory64 spike. Subsystems retain their own section
 // schemas so platform experiments do not silently rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 6;
+export const TELEMETRY_SCHEMA_VERSION = 7;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -29,6 +31,7 @@ export interface ParallaxRuntimeIdentity {
 export interface ParallaxTelemetrySnapshot {
   readonly appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
+  readonly memory64Spike: Memory64SpikeTelemetrySnapshot;
   readonly opfsReadSpike: OpfsReadSpikeTelemetrySnapshot;
   readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
@@ -38,9 +41,10 @@ export interface ParallaxTelemetrySnapshot {
 
 export interface ParallaxTelemetryExport {
   snapshot(): ParallaxTelemetrySnapshot;
-  // D-058 keeps the only remotely driven M0 spike control explicit and typed. The
-  // activation-bound Prompt API probe is app-owned and deliberately absent here.
+  // Remotely driven M0 spike controls stay explicit and typed. The activation-bound
+  // Prompt API probe is app-owned and deliberately absent here.
   startOpfsReadSpike(): void;
+  startMemory64Spike(): void;
   subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void;
 }
 
@@ -50,6 +54,7 @@ export function installTelemetryExport(
   promptApiSpikeService: PromptApiSpikeService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
+  memory64SpikeService: Memory64SpikeService,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
 ): ParallaxTelemetryExport {
@@ -65,10 +70,14 @@ export function installTelemetryExport(
         promptApiSpikeService.snapshot(),
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
+        memory64SpikeService.snapshot(),
         frozenIdentity,
       ),
     startOpfsReadSpike(): void {
       opfsReadSpikeService.start();
+    },
+    startMemory64Spike(): void {
+      memory64SpikeService.start();
     },
     subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void {
       const publish = (): void => {
@@ -80,6 +89,7 @@ export function installTelemetryExport(
               promptApiSpikeService.snapshot(),
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
+              memory64SpikeService.snapshot(),
               frozenIdentity,
             ),
           );
@@ -98,6 +108,7 @@ export function installTelemetryExport(
       const unsubscribePromptApi = promptApiSpikeService.subscribe(publishAfterWiring);
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
+      const unsubscribeMemory64 = memory64SpikeService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
@@ -106,6 +117,7 @@ export function installTelemetryExport(
         unsubscribePromptApi();
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
+        unsubscribeMemory64();
       };
     },
   });
@@ -124,11 +136,13 @@ function snapshot(
   promptApiSpike: PromptApiSpikeTelemetrySnapshot,
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
+  memory64Spike: Memory64SpikeTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
     appOwnedLlmSpike,
     identity,
+    memory64Spike,
     opfsReadSpike,
     promptApiSpike,
     render,
