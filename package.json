@@ -9,6 +9,7 @@
   },
   "scripts": {
     "build": "node harness/scripts/build.mjs",
+    "build:wasm": "node harness/scripts/build-wasm.mjs",
     "check": "pnpm build && pnpm lint && pnpm test:unit",
     "dev": "pnpm --filter @parallax/app dev",
     "harness:smoke": "pnpm build && node harness/dist/types/smoke-run.js",
@@ -26,6 +27,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.3",
     "@types/node": "24.13.3",
+    "binaryen": "131.0.0",
     "typescript": "7.0.2",
     "vitest": "4.1.10"
   }

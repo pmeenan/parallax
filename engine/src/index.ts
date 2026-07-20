@@ -90,4 +90,16 @@ export {
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
+export type { WasmThreadSpikeTelemetrySnapshot } from "./wasm/wasm-thread-spike-protocol";
+export {
+  WASM_THREAD_SPIKE_MEMORY_PAGES,
+  WASM_THREAD_SPIKE_TASK_COUNT,
+  WASM_THREAD_SPIKE_THREAD_STACK_BYTES,
+  WASM_THREAD_SPIKE_WORKER_COUNT,
+} from "./wasm/wasm-thread-spike-protocol";
+export type {
+  WasmThreadSpikeListener,
+  WasmThreadSpikeService,
+} from "./wasm/wasm-thread-spike-service";
+export { createWasmThreadSpikeService } from "./wasm/wasm-thread-spike-service";
 export type { SabRingBufferSpikeTelemetrySnapshot } from "./workers/sab-ring-buffer-spike-protocol";

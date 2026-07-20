@@ -17,9 +17,10 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/render-worker.js"),
         artifact("immutable/storage-worker.js"),
         artifact("immutable/ai-worker.js"),
+        artifact("immutable/wasm-thread-worker.js"),
         artifact("immutable/module.wasm"),
       ]),
-      schemaVersion: 4,
+      schemaVersion: 5,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/ai-worker.js",
@@ -36,6 +37,11 @@ describe("V8 script artifact selection", () => {
           role: "storage",
           targetType: "worker",
         }),
+        Object.freeze({
+          path: "immutable/wasm-thread-worker.js",
+          role: "wasm-thread",
+          targetType: "worker",
+        }),
       ]),
     });
 
@@ -44,6 +50,7 @@ describe("V8 script artifact selection", () => {
       "immutable/engine.js",
       "immutable/game.js",
       "immutable/render-worker.js",
+      "immutable/wasm-thread-worker.js",
     ]);
   });
 });

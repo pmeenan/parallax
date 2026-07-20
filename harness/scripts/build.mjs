@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const outputRoot = join(repositoryRoot, "dist");
@@ -32,6 +33,7 @@ await Promise.all([
   rm(join(repositoryRoot, "harness/dist"), { force: true, recursive: true }),
 ]);
 
+await buildRustWasm();
 runPnpm(["exec", "tsc", "-b"]);
 runPnpm(["--filter", "@parallax/engine", "build"]);
 runPnpm(["--filter", "@parallax/game", "build"]);
@@ -49,8 +51,18 @@ const wllamaWasmOutputName = contentAddressedNameFromBytes("wllama", wllamaWasmB
 );
 await writeFile(join(outputRoot, "immutable", wllamaWasmOutputName), wllamaWasmBytes);
 
+const wasmThreadBytes = await readFile(
+  join(repositoryRoot, "engine/wasm/thread-spike/pkg/thread_spike_bg.wasm"),
+);
+const wasmThreadOutputName = contentAddressedNameFromBytes(
+  "wasm-thread-spike",
+  wasmThreadBytes,
+  ".wasm",
+);
+await writeFile(join(outputRoot, "immutable", wasmThreadOutputName), wasmThreadBytes);
+
 const workerDescriptors = [];
-for (const role of ["ai", "render", "storage"]) {
+for (const role of ["ai", "render", "storage", "wasm-thread"]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
   if (role === "ai" && bytes.includes("__WLLAMA_WASM_ARTIFACT__")) {
     bytes = Buffer.from(
@@ -68,10 +80,15 @@ engineSource = replaceExactlyOnce(engineSource, "__WLLAMA_WASM_ARTIFACT__", wlla
 for (const worker of workerDescriptors) {
   engineSource = replaceExactlyOnce(
     engineSource,
-    `__${worker.role.toUpperCase()}_WORKER_ARTIFACT__`,
+    `__${worker.role.toUpperCase().replaceAll("-", "_")}_WORKER_ARTIFACT__`,
     worker.outputName,
   );
 }
+engineSource = replaceExactlyOnce(
+  engineSource,
+  "__WASM_THREAD_SPIKE_ARTIFACT__",
+  wasmThreadOutputName,
+);
 const engineOutputName = contentAddressedNameFromBytes("engine", Buffer.from(engineSource));
 await writeFile(join(outputRoot, "immutable", engineOutputName), engineSource);
 
@@ -111,7 +128,7 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 4,
+      schemaVersion: 5,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,
         role: worker.role,
@@ -146,9 +163,9 @@ async function contentAddressedName(scope, path) {
   return contentAddressedNameFromBytes(scope, bytes);
 }
 
-function contentAddressedNameFromBytes(scope, bytes) {
+function contentAddressedNameFromBytes(scope, bytes, extension = ".js") {
   const digest = createHash("sha256").update(bytes).digest("hex");
-  return `${scope}-${digest}.js`;
+  return `${scope}-${digest}${extension}`;
 }
 
 function replaceExactlyOnce(source, token, replacement) {

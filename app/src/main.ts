@@ -3,6 +3,7 @@ import {
   createOpfsReadSpikeService,
   createPromptApiSpikeService,
   createRenderService,
+  createWasmThreadSpikeService,
   initializeEngine,
   installTelemetryExport,
 } from "@parallax/engine";
@@ -38,11 +39,13 @@ const promptApiSpikeService = createPromptApiSpikeService(
   promptApiMode === "branded" ? PROMPT_API_BRANDED_FIXTURE : PROMPT_API_SPIKE_FIXTURE,
 );
 const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
+const wasmThreadSpikeService = createWasmThreadSpikeService();
 installTelemetryExport(
   renderService,
   opfsReadSpikeService,
   promptApiSpikeService,
   appOwnedLlmSpikeService,
+  wasmThreadSpikeService,
   {
     engineVersion: identity.engine.version,
     gameVersion: identity.version,
@@ -137,9 +140,13 @@ if (promptApiMode === "manual" || promptApiMode === "branded") {
 const updateStatus = (): void => {
   const render = renderService.snapshot();
   const opfs = opfsReadSpikeService.snapshot();
+  const wasmThreads = wasmThreadSpikeService.snapshot();
   status.dataset.state = render.state;
   status.dataset.frameCount = render.frameCount.toString();
   status.dataset.opfsState = opfs.state;
+  status.dataset.wasmThreadState = wasmThreads.state;
+  status.dataset.wasmThreadCompletedTasks = wasmThreads.completedTasks.toString();
+  status.dataset.wasmThreadWorkerMask = wasmThreads.workerMask.toString();
   const buildIdentity = `${identity.name} ${identity.version} / engine ${identity.engine.version}`;
   if (render.state === "ready") {
     const storageStatus =
@@ -150,7 +157,15 @@ const updateStatus = (): void => {
           : opfs.state === "running"
             ? " · OPFS spike running"
             : "";
-    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${storageStatus}`;
+    const wasmStatus =
+      wasmThreads.state === "completed"
+        ? ` · WASM threads ${wasmThreads.completedTasks.toLocaleString()}/${wasmThreads.taskCount.toLocaleString()} tasks in ${wasmThreads.elapsedMs?.toFixed(1) ?? "?"} ms`
+        : wasmThreads.state === "failed"
+          ? ` · WASM threads failed: ${wasmThreads.failureMessage ?? "unknown error"}`
+          : wasmThreads.state === "running"
+            ? " · WASM threads running"
+            : "";
+    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${storageStatus}${wasmStatus}`;
   } else if (render.state === "failed") {
     status.textContent = `${buildIdentity} · Render worker failed: ${render.failureMessage ?? "unknown error"}`;
   } else {
@@ -160,8 +175,22 @@ const updateStatus = (): void => {
 renderService.subscribe(() => {
   updateStatus();
 });
+wasmThreadSpikeService.subscribe(() => {
+  updateStatus();
+});
 opfsReadSpikeService.subscribe(() => {
   updateStatus();
+});
+let wasmThreadSpikeStarted = false;
+renderService.subscribe((telemetry) => {
+  if (
+    telemetry.state === "ready" &&
+    telemetry.sabRingBufferSpike.state === "completed" &&
+    !wasmThreadSpikeStarted
+  ) {
+    wasmThreadSpikeStarted = true;
+    wasmThreadSpikeService.start();
+  }
 });
 if (new URL(location.href).searchParams.get("opfsSpike") === "auto") {
   let opfsSpikeStarted = false;

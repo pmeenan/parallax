@@ -7,6 +7,7 @@ import {
 import { createRenderService } from "../src/render/render-service";
 import { createOpfsReadSpikeService } from "../src/storage/opfs-read-spike-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
+import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-service";
 
 describe("combined telemetry export", () => {
   it("delivers one initial snapshot and returns teardown when the listener throws", () => {
@@ -23,6 +24,7 @@ describe("combined telemetry export", () => {
         },
       ),
       createAppOwnedLlmSpikeService(),
+      createWasmThreadSpikeService(),
       {
         engineVersion: "test",
         gameVersion: "test",
@@ -100,6 +102,7 @@ function installTestTelemetry(promptApiSpikeService: PromptApiSpikeService) {
     createOpfsReadSpikeService(),
     promptApiSpikeService,
     createAppOwnedLlmSpikeService(),
+    createWasmThreadSpikeService(),
     { engineVersion: "test", gameVersion: "test" },
     {},
   );

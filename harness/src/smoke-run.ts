@@ -108,6 +108,7 @@ import {
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS,
   SMOKE_WARMUP_MS,
+  SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS,
   type SmokeMetricDefinition,
 } from "./runs/smoke.js";
 import {
@@ -141,6 +142,10 @@ import {
 } from "./v8-code-cache-trace.js";
 import { selectV8ScriptManifestArtifacts } from "./v8-script-artifacts.js";
 import { errorMessage } from "./value-utils.js";
+import {
+  requireWasmThreadSpikeCompleteAtMeasurementBoundary,
+  type WasmThreadSpikeMetric,
+} from "./wasm-thread-spike.js";
 import {
   type WindowsStorageActivityMetric,
   withWindowsStorageActivity,
@@ -204,6 +209,7 @@ interface RunMeasurement {
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly sabRingBuffer: SabRingBufferMetric;
+  readonly wasmThreads: WasmThreadSpikeMetric;
   readonly traceDrain: SmokeTraceDrainMetric;
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
@@ -936,6 +942,18 @@ async function measureRunWithBrowser(
     const sabRingBuffer = requireSabRingBufferCompleteAtMeasurementBoundary(
       (await readTelemetry(page)).render.sabRingBufferSpike,
     );
+    await page.waitForFunction(
+      (globalName) => {
+        const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+        const state = telemetry.snapshot().wasmThreadSpike.state;
+        return state === "completed" || state === "failed";
+      },
+      SMOKE_TELEMETRY_GLOBAL_NAME,
+      { timeout: SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS },
+    );
+    const wasmThreads = requireWasmThreadSpikeCompleteAtMeasurementBoundary(
+      (await readTelemetry(page)).wasmThreadSpike,
+    );
     const opfsStartedAt = performance.now();
     const opfsMeasurement = await withWindowsStorageActivity(async () => {
       await page.evaluate((globalName) => {
@@ -1151,6 +1169,7 @@ async function measureRunWithBrowser(
       renderSurfaceBefore,
       renderSurfaceChanges: endSurfaceState.changes,
       sabRingBuffer,
+      wasmThreads,
       traceDrain,
       workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
       workerStartupToFirstFrameMs: measured(
@@ -2065,6 +2084,13 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const evidence = run.sabRingBuffer.value;
     return `- ${run.profile} repeat ${run.repeat}: ${evidence.responsesReceived}/${evidence.messageCount} validated round trips in ${formatMilliseconds(evidence.elapsedMs)} (${Math.round(evidence.cooperativeRoundTripsPerSecond ?? 0).toLocaleString("en-US")} cooperative round trips/s, including window pump scheduling); ${formatBytes(evidence.totalSABBytes)} fixed SAB pool; main producer stalls ${evidence.mainProducerStalls}, empty polls ${evidence.mainConsumerEmptyPolls}, max pump ${formatMilliseconds(evidence.mainPumpMaxDurationMs)}; worker inbound waits ${evidence.workerInboundWaits}, outbound stalls ${evidence.workerOutboundStalls}; ${evidence.workerConcurrentFrameCount} concurrent render callbacks, max interval/render ${formatMilliseconds(evidence.workerConcurrentFrameIntervalMaxMs)}/${formatMilliseconds(evidence.workerConcurrentRenderDurationMaxMs)}; payload/sequence errors ${evidence.payloadErrors}/${evidence.workerSequenceErrors}`;
   });
+  const wasmThreadEvidence = report.runs.map((run) => {
+    if (run.wasmThreads.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: invalid — ${run.wasmThreads.reason}`;
+    }
+    const evidence = run.wasmThreads.value;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.completedTasks.toLocaleString("en-US")}/${evidence.taskCount.toLocaleString("en-US")} SIMD tasks across ${evidence.workerCount} Rust/WASM instances in ${formatMilliseconds(evidence.elapsedMs)} total (${formatMilliseconds(evidence.moduleLoadAndCompileElapsedMs)} load+compile, ${formatMilliseconds(evidence.workerInitializationElapsedMs)} worker init, ${formatMilliseconds(evidence.parallelExecutionElapsedMs)} parallel execution); per-worker claims [${evidence.processedTasksByWorker.map((count) => count.toLocaleString("en-US")).join(", ")}]; worker mask 0x${evidence.workerMask.toString(16)}; checksum 0x${(evidence.checksum ?? 0).toString(16)} matched reference; ${formatBytes(evidence.memoryBytes)} fixed shared linear memory; ${formatBytes(evidence.moduleBytes ?? 0)} optimized module`;
+  });
   const opfsReadEvidence = report.runs.map((run) => {
     if (run.opfsReadSpike.state !== "measured") {
       return `- ${run.profile} repeat ${run.repeat}: invalid — ${run.opfsReadSpike.reason}`;
@@ -2162,6 +2188,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## SAB ring-buffer transport",
     "",
     ...sabRingBufferEvidence,
+    "",
+    "## Rust/WASM threads",
+    "",
+    ...wasmThreadEvidence,
     "",
     "## OPFS sync-access-handle read throughput",
     "",

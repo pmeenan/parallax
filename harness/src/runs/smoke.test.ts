@@ -22,6 +22,10 @@ import {
   SMOKE_TELEMETRY_SCHEMA_VERSION,
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS,
+  SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS,
+  SMOKE_WASM_THREAD_MEMORY_PAGES,
+  SMOKE_WASM_THREAD_TASK_COUNT,
+  SMOKE_WASM_THREAD_WORKER_COUNT,
 } from "./smoke.js";
 
 const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
@@ -29,7 +33,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions the Lite-only build evidence in the result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(24);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(25);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -78,6 +82,10 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "SAB ring-buffer transport"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_METRICS.find((metric) => metric.name === "Rust/WASM threads")).toMatchObject({
+      mandatoryForHarnessV1: true,
+      probe: "implemented",
+    });
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "OPFS sync-access-handle read throughput"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
@@ -86,8 +94,12 @@ describe("smoke@1 contract", () => {
         (metric) => metric.name === "OPFS sync-access-handle throughput repeatability",
       ),
     ).toMatchObject({ mandatoryForHarnessV1: false, probe: "implemented" });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(10);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(11);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
+    expect(SMOKE_WASM_THREAD_MEMORY_PAGES).toBe(33);
+    expect(SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS).toBe(12_000);
+    expect(SMOKE_WASM_THREAD_TASK_COUNT).toBe(262_144);
+    expect(SMOKE_WASM_THREAD_WORKER_COUNT).toBe(2);
     expect(SMOKE_OPFS_FILE_BYTES).toBe(64 * 1024 * 1024);
     expect(SMOKE_OPFS_COMPLETION_TIMEOUT_MS).toBe(17_000);
     expect(SMOKE_OPFS_RANDOM_READS).toBe(4_096);

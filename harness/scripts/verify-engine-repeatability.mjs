@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const shippedDirectory = join(repositoryRoot, "engine/dist");
@@ -13,6 +14,7 @@ const expectedOutputs = Object.freeze([
   "engine.js",
   "render-worker.js",
   "storage-worker.js",
+  "wasm-thread-worker.js",
 ]);
 const pnpmCli = process.env.npm_execpath;
 if (pnpmCli === undefined) {
@@ -44,6 +46,8 @@ for (const artifact of shipped) {
 }
 console.log("Engine repeatability: shipped engine/dist bytes match an independent rebuild");
 
+await verifyWasmRepeatability();
+
 async function tryDigestShipped() {
   const digests = [];
   for (const name of expectedOutputs) {
@@ -68,6 +72,29 @@ async function buildAndDigestTemporary() {
     return await Promise.all(outputs.map((name) => digestFile(outputDirectory, name)));
   } finally {
     await rm(outputDirectory, { force: true, recursive: true });
+  }
+}
+
+async function verifyWasmRepeatability() {
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "parallax-wasm-build-"));
+  try {
+    await buildRustWasm({
+      outputDirectory: join(temporaryRoot, "pkg"),
+      targetDirectory: join(temporaryRoot, "target"),
+    });
+    const shippedWasm = await digestFile(
+      join(repositoryRoot, "engine/wasm/thread-spike/pkg"),
+      "thread_spike_bg.wasm",
+    );
+    const rebuiltWasm = await digestFile(join(temporaryRoot, "pkg"), "thread_spike_bg.wasm");
+    if (shippedWasm.sha256 !== rebuiltWasm.sha256) {
+      throw new Error(
+        `WASM repeatability check failed: ${shippedWasm.sha256} != ${rebuiltWasm.sha256}`,
+      );
+    }
+    console.log(`WASM repeatability: thread_spike_bg.wasm sha256=${shippedWasm.sha256}`);
+  } finally {
+    await rm(temporaryRoot, { force: true, recursive: true });
   }
 }
 

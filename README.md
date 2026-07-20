@@ -23,7 +23,15 @@ project documentation.
 ## Local M0 build
 
 Use the exact Node version in `.nvmrc`, then install the pinned pnpm toolchain and
-dependencies. `pnpm start` builds the separated engine, game, and app artifacts and
+dependencies. Install rustup, then provision the first Rust/WASM module's exact toolchain
+and binding CLI:
+
+```powershell
+rustup toolchain install nightly-2026-07-16 --profile minimal --component rust-src,rustfmt --target wasm32-unknown-unknown
+cargo +nightly-2026-07-16 install --locked wasm-bindgen-cli --version 0.2.126
+```
+
+`pnpm start` builds the separated engine, game, and app artifacts and
 serves them at `http://127.0.0.1:4173` with the required cross-origin-isolation and
 cache headers.
 

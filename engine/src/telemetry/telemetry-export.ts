@@ -7,10 +7,12 @@ import type {
 import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
+import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
+import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v5 envelope adds P-007's app-owned LLM section. Each AI backend retains its own
-// section schema so model/runtime iteration does not silently rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 5;
+// The v6 envelope adds the Rust/WASM threads spike. Subsystems retain their own section
+// schemas so platform experiments do not silently rewrite unrelated history.
+export const TELEMETRY_SCHEMA_VERSION = 6;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -31,6 +33,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
+  readonly wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot;
 }
 
 export interface ParallaxTelemetryExport {
@@ -46,6 +49,7 @@ export function installTelemetryExport(
   opfsReadSpikeService: OpfsReadSpikeService,
   promptApiSpikeService: PromptApiSpikeService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
+  wasmThreadSpikeService: WasmThreadSpikeService,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
 ): ParallaxTelemetryExport {
@@ -60,6 +64,7 @@ export function installTelemetryExport(
         opfsReadSpikeService.snapshot(),
         promptApiSpikeService.snapshot(),
         appOwnedLlmSpikeService.snapshot(),
+        wasmThreadSpikeService.snapshot(),
         frozenIdentity,
       ),
     startOpfsReadSpike(): void {
@@ -74,6 +79,7 @@ export function installTelemetryExport(
               opfsReadSpikeService.snapshot(),
               promptApiSpikeService.snapshot(),
               appOwnedLlmSpikeService.snapshot(),
+              wasmThreadSpikeService.snapshot(),
               frozenIdentity,
             ),
           );
@@ -91,6 +97,7 @@ export function installTelemetryExport(
       const unsubscribeOpfs = opfsReadSpikeService.subscribe(publishAfterWiring);
       const unsubscribePromptApi = promptApiSpikeService.subscribe(publishAfterWiring);
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
+      const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
@@ -98,6 +105,7 @@ export function installTelemetryExport(
         unsubscribeOpfs();
         unsubscribePromptApi();
         unsubscribeAppOwnedLlm();
+        unsubscribeWasmThread();
       };
     },
   });
@@ -115,6 +123,7 @@ function snapshot(
   opfsReadSpike: OpfsReadSpikeTelemetrySnapshot,
   promptApiSpike: PromptApiSpikeTelemetrySnapshot,
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
+  wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
@@ -124,5 +133,6 @@ function snapshot(
     promptApiSpike,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
+    wasmThreadSpike,
   });
 }

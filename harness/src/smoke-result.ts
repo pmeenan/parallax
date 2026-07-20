@@ -26,6 +26,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   opfsReadSpike: "OPFS sync-access-handle read throughput",
   opfsThroughputVariance: "OPFS sync-access-handle throughput repeatability",
   sabRingBuffer: "SAB ring-buffer transport",
+  wasmThreads: "Rust/WASM threads",
   v8CodeCache: "V8 code-cache evidence",
   vizPresentationFeedback: "compositor presentation interval",
 });
@@ -98,6 +99,7 @@ export interface SmokeEvidenceInput {
     readonly profile: "fresh" | "warm";
     readonly repeat: number;
     readonly sabRingBuffer: EvidenceState;
+    readonly wasmThreads: EvidenceState;
   }[];
   readonly v8CodeCacheDiagnostics: readonly {
     readonly production: EvidenceState;
@@ -198,6 +200,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${evidenceReason(run.dawnPipeline)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.dawnPipeline),
         run.dawnPipeline,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: Rust/WASM threads ${run.wasmThreads.state} (${evidenceReason(run.wasmThreads)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.wasmThreads),
+        run.wasmThreads,
       ),
     ),
     ...input.runs.map((run) =>

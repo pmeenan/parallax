@@ -102,6 +102,16 @@ window pump's scheduling cadence and is not raw SAB bandwidth. That pool is fixe
 boot; later channels size their own fixed pools from measured workload requirements
 rather than inheriting the spike's test capacity.
 
+The first Rust/WASM threads proof (D-085) is a separate bounded two-worker pool, not the
+production decode pool. Both dedicated workers instantiate one content-addressed
+Rust-authored module over a fixed 33-page shared linear memory, synchronize through
+wasm atomics, and execute an explicit SIMD kernel. It starts after the SAB transport
+proof and terminates before OPFS and the gameplay measurement window. Telemetry retains
+load/compile, worker-init and parallel-execution timings, exact per-worker participation,
+checksum/correctness, module bytes, and the fixed memory allocation. M1 sizes and
+assigns production decode workers from representative decode measurements rather than
+inheriting two workers or this synthetic task count.
+
 The M0 worker spike is a go (D-056), and D-078's same-boundary head-to-head selected
 Babylon Lite: the controlled walking-skeleton run keeps scene
 construction, WebGPU device ownership, animation, and render submission in the dedicated

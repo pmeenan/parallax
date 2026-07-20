@@ -27,6 +27,49 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-085: Pin a nightly Rust build-std pipeline for browser wasm threads  (2026-07-19, accepted; extends D-020/D-032)
+
+**Decision:** Author engine WebAssembly in Rust under an exact dated
+`nightly-2026-07-16` toolchain (rustc 1.99.0-nightly `d0babd8b6`), rebuild
+`std`/`panic_abort` for `wasm32-unknown-unknown`, pin the crate and CLI sides of
+wasm-bindgen to 0.2.126, and optimize with pinned Binaryen 131.0.0. Builds enable
+`atomics`, `bulk-memory`, `mutable-globals`, `simd128`, and `relaxed-simd`
+unconditionally, remap the repository path, and verify the optimized artifact's feature
+section and byte repeatability. The M0 proof uses two dedicated module workers over one
+fixed 33-page shared linear memory and a 64 KiB per-worker stack. Rust atomics claim and
+reduce 262,144 SIMD tasks; exact completion, checksum, nonzero work on both instances,
+worker mask, module/memory bytes, and phase timings are mandatory `smoke@1` evidence.
+
+**Context:** A local 2026-07-19 build with current stable Rust 1.97.1 plus atomic target
+features produced a shared-memory module, but wasm-bindgen 0.2.126 rejected its thread
+transform for missing `__wasm_init_tls`. Rebuilding the standard library with the same
+feature floor on the dated nightly produced the required TLS/thread initialization.
+This matches wasm-bindgen's current official threads guide, which states that Rust does
+not ship a precompiled threading-enabled web stdlib and prescribes nightly
+`-Z build-std`. The current official release surfaces checked the same day listed Rust
+1.97.1 stable, wasm-bindgen 0.2.126, and Binaryen `version_131`. The first assembled
+in-app-Chromium diagnostic also caught and fixed an async-initializer race before any
+result was promoted. The final schema-v25 / metric-set-v11 physical-console `smoke@1`
+artifact `smoke-1-9a863a19906d-dev-01-showcase-2026-07-20T01-09-27-205Z.json` then
+passed all three facets and 24 budget checks. Across six sandboxed runs, both workers
+claimed nonzero work, all 262,144 tasks and checksum `0xb5140000` matched, and total
+time ranged from 30.8 to 35.8 ms. Review corrected the parallel-execution endpoint to
+the second worker completion, before the coordinator's serial reference checksum;
+the replacement artifact measured that phase at 15.9-17.6 ms.
+
+**Consequences:** `pnpm build` now owns Rust compilation, wasm-bindgen generation,
+Binaryen optimization, content addressing, and a second output-directory rebuild.
+Generated bindings and Cargo targets stay ignored. The engine owns worker orchestration;
+the Rust crate forbids unsafe code and exposes numeric/atomic operations only. This is
+the first concrete Rust pin under D-020 and a targeted dependency review, not the full
+M0 currency checkpoint.
+
+**Reopen if:** Rust ships a supported precompiled atomics-enabled browser target,
+stable Cargo can rebuild the required stdlib, wasm-bindgen removes the build-std/TLS
+requirement, or a measured production module needs a different fixed pool/stack shape.
+
+---
+
 ## D-084: Do not promote restart-persistent NPC KV snapshots  (2026-07-19, accepted; closes D-075 and extends D-082/D-083)
 
 **Decision:** Keep llama.cpp live exact-prefix reuse and make idle pre-seeding the

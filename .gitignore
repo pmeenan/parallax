@@ -2,6 +2,8 @@ node_modules/
 dist/
 */dist/
 *.tsbuildinfo
+engine/wasm/*/pkg/
+engine/wasm/*/target/
 harness/results/
 harness/chrome/cft/
 *.patch

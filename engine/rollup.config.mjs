@@ -51,4 +51,13 @@ export default defineConfig([
     plugins: createPlugins(),
     output: { ...sharedOutput, entryFileNames: "ai-worker.js", inlineDynamicImports: true },
   },
+  {
+    input: "src/workers/wasm-thread-spike-worker.ts",
+    plugins: createPlugins(),
+    output: {
+      ...sharedOutput,
+      entryFileNames: "wasm-thread-worker.js",
+      inlineDynamicImports: true,
+    },
+  },
 ]);

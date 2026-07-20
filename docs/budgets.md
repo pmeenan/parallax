@@ -213,6 +213,16 @@ Definitions the harness implements; budgets above are meaningless without them.
   they cannot attribute callback gaps to SAB; a controlled active-transport comparison
   is still required for that claim. The ordinary in-window main-thread and frame gates
   remain authoritative after warm-up.
+- **Rust/WASM threads evidence (D-085):** after SAB transport and before OPFS, every
+  `smoke@1` core launch compiles one content-addressed Rust module and instantiates it in
+  two dedicated workers over one fixed 33-page shared linear memory. Both instances
+  must claim nonzero work from the 262,144-task atomic queue, their counts and atomic
+  completion must equal the task total, the worker mask must be `0x3`, and the
+  order-independent SIMD checksum must match a separately executed reference pass.
+  Module bytes, fixed memory bytes, total elapsed time, and load/compile, worker-init,
+  and parallel-execution phases are mandatory evidence. This synthetic correctness
+  proof sets no throughput budget or production pool size; M1 measures representative
+  decode work.
 - **OPFS sync-access-handle evidence:** each `smoke@1` core launch runs a dedicated
   storage-worker probe during warm-up against a deterministic 64 MiB fixture. Fresh
   profiles must provision exactly 64 MiB; their paired warm profiles must reuse it.

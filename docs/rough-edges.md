@@ -92,6 +92,37 @@ COS APIs exist):
 
 ## Findings
 
+## RE-035: Rust browser threads still require a nightly rebuilt standard library
+
+- **Date / Chrome version:** 2026-07-19; toolchain reproduction on Windows 11/dev-01;
+  final browser evidence from pinned Chrome for Testing 150.0.7871.115 on the dev-01
+  physical console.
+- **Layer:** Rust/LLVM/wasm-bindgen toolchain for V8/wasm threads.
+- **Status:** open ecosystem/toolchain limitation; worked around with an exact dated
+  nightly under D-085.
+- **What we expected / What happened:** current stable Rust 1.97.1 accepted
+  `+atomics,+bulk-memory,+mutable-globals,+simd128,+relaxed-simd` and emitted a shared
+  memory, but wasm-bindgen 0.2.126 could not prepare the module for threading because
+  the precompiled web standard library omitted threaded TLS initialization
+  (`failed to find __wasm_init_tls`). The current official wasm-bindgen guide confirms
+  that browser threads require rebuilding `std` with atomic features on nightly.
+- **Repro:** build `engine/wasm/thread-spike` on stable with the repository's encoded
+  Rust flags but without `-Z build-std`; then run wasm-bindgen 0.2.126 with target
+  `web`. The command fails before binding generation. The repository build succeeds
+  with pinned `nightly-2026-07-16` and `-Z build-std=std,panic_abort`, then Binaryen's
+  feature printer confirms threads, SIMD, relaxed SIMD, and bulk memory.
+- **Qualification evidence:** schema-v25 / metric-set-v11 artifact
+  `smoke-1-9a863a19906d-dev-01-showcase-2026-07-20T01-09-27-205Z.json` passed all
+  three facets and 24 checks. Six production-sandbox runs completed all 262,144 tasks
+  with both workers active and an exact checksum in 30.8-35.8 ms total; the parallel
+  worker phase alone measured 15.9-17.6 ms.
+- **Impact on Parallax:** the first Rust module adds a nightly toolchain and a costly
+  stdlib rebuild to clean/repeatability builds. Exact pins and path remapping keep the
+  output repeatable, but every Rust toolchain upgrade is build/measurement-critical.
+- **Proposed improvement:** Rust should ship a maintained threading-enabled browser
+  target/stdlib, or stabilize the build-std path needed to construct one. wasm-bindgen
+  should retain its explicit diagnostic and ideally identify the required target recipe.
+
 ## RE-034: Pinned Gemma 4 sequence snapshots restore only part of an exact prefix
 
 - **Date / Chrome version:** 2026-07-19; Chrome for Testing Stable 150.0.7871.115,
@@ -873,9 +904,9 @@ COS APIs exist):
   cited as an argument against Unity — see the "Not on this list" section of
   [rendering-engine-research.md](rendering-engine-research.md) and D-046.
 
-## RE-010: Render-worker module exposes no URL-attributed code-cache production event
+## RE-010: Module workers expose incomplete URL-attributed V8 code-cache events
 
-- **Date / Chrome version:** 2026-07-14; Chrome for Testing Stable 150.0.7871.115;
+- **Date / Chrome version:** 2026-07-14 and 2026-07-20; Chrome for Testing Stable 150.0.7871.115;
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
   dev-01 remote diagnostic (non-gating).
 - **Layer:** V8 / Blink / worker / CDP observability.
@@ -903,7 +934,14 @@ COS APIs exist):
   consistent launch-2 → launch-3 saving: launch 2 measured 148.7/150.7/150.4 ms and launch 3
   145.3/156.8/151.4 ms, with launch 3 slower in two lineages. The data therefore cannot bound
   V8 cache savings or assign the 789.5 ms spike to cache serialization.
-- **Repro:** run `smoke@1` with `v8-code-cache@5` in
+  The schema-v25 physical-console gate added a small dedicated module worker for the
+  Rust/WASM proof. Across all three V8 diagnostic lineages Chrome emitted zero
+  URL-attributed compilation events for that worker, while the same worker executed and
+  completed mandatory telemetry in every core run. Launch-2 production therefore also
+  remained unobservable. This broadens the finding from the large render worker's missing
+  production event to a second, independently bundled module worker and an earlier
+  compilation-attribution gap; worker size is not a sufficient explanation.
+- **Repro:** run `smoke@1` with `v8-code-cache@6` in
   `harness/src/v8-code-cache-trace.ts`. For each of three fresh-profile directories, let launch 1
   establish the hot-resource timestamp, inspect URL-attributed production events on launch 2,
   and retain the same profile for launch 3. The v8 result records each matching process/thread,

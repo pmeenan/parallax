@@ -14,7 +14,7 @@ export interface QualityTierProfile {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 10;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 11;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@6";
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS = 3;
@@ -29,6 +29,12 @@ export const SMOKE_SAB_MESSAGE_COUNT = 100_000;
 export const SMOKE_SAB_RECORD_WORDS = 4;
 export const SMOKE_SAB_TOTAL_BYTES =
   2 * (4 + SMOKE_SAB_CAPACITY_RECORDS * SMOKE_SAB_RECORD_WORDS) * Int32Array.BYTES_PER_ELEMENT;
+export const SMOKE_WASM_THREAD_MEMORY_PAGES = 33;
+export const SMOKE_WASM_THREAD_TASK_COUNT = 262_144;
+export const SMOKE_WASM_THREAD_WORKER_COUNT = 2;
+// Keep diagnostic headroom beyond the page-owned 10 s failure timer so the harness
+// observes the service's actionable failureMessage instead of racing waitForFunction.
+export const SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS = 12_000;
 export const SMOKE_OPFS_FILE_BYTES = 64 * 1024 * 1024;
 export const SMOKE_OPFS_COMPLETION_TIMEOUT_MS = 17_000;
 export const SMOKE_OPFS_RANDOM_BATCH_READS = 256;
@@ -40,9 +46,9 @@ export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 5;
-// v24 removes v23's comparison-renderer identity while retaining exact build-artifact bytes.
-export const SMOKE_REPORT_SCHEMA_VERSION = 24;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 6;
+// v25 adds exact Rust/WASM threads correctness, participation, memory, and timing evidence.
+export const SMOKE_REPORT_SCHEMA_VERSION = 25;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -54,6 +60,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("verified gate environment identity", true, "implemented"),
   metric("core measurement run completion", true, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
+  metric("Rust/WASM threads", true, "implemented"),
   metric("OPFS sync-access-handle read throughput", true, "implemented"),
   metric("OPFS sync-access-handle throughput repeatability", false, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),

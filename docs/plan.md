@@ -212,9 +212,17 @@ measured automatically.
       clean resident world/tool/persona context for the next conversation; separate
       model evaluation may revisit persistence for other architectures rather than
       generalizing this Gemma 4 E2B result.
-- [ ] Spike: Rust→WASM module with wasm threads (includes scaffolding the
+- [x] Spike: Rust→WASM module with wasm threads (includes scaffolding the
       `rust-toolchain.toml` + pinned wasm-bindgen/binaryen shape D-014/D-020 specify —
-      deferred until this first Rust code exists).
+      deferred until this first Rust code exists). **Qualified under D-085/RE-035:**
+      the exact pinned build, two-worker shared-memory SIMD/atomic proof, content-addressed
+      artifact, telemetry, mandatory `smoke@1` contract, and same-host byte-repeatability
+      gate are in place. Schema-v25 / metric-set-v11 physical-console artifact
+      `smoke-1-9a863a19906d-dev-01-showcase-2026-07-20T01-09-27-205Z.json` passed all
+      three facets and 24 budget checks across six production-sandbox runs. Every run
+      completed all 262,144 tasks with checksum `0xb5140000`, nonzero participation by
+      both workers, 30.8-35.8 ms total time and 15.9-17.6 ms parallel execution, a
+      12,680-byte optimized module, and fixed 2,162,688-byte shared linear memory.
 - [ ] Spike: memory64 module load and cost; this validates the optional last-resort path
       in P-001, not a default wasm64 target.
 - [ ] Harness result contract implemented (budgets.md → Measurement methodology):
