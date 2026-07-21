@@ -1,3 +1,5 @@
+import { SMOKE_BUDGET_METRICS } from "./runs/smoke.js";
+
 export type QualityTier = "showcase" | "standard";
 
 export interface BudgetCheck {
@@ -24,12 +26,18 @@ export function evaluateJsHeapBudget(
   tier: QualityTier,
 ): readonly BudgetCheck[] {
   return Object.freeze([
-    check("allRealmJsHeapHighWaterBytes", highWaterUsedSizeBytes, JS_HEAP_LIMIT_BYTES[tier]),
+    check(
+      SMOKE_BUDGET_METRICS.allRealmJsHeapHighWaterBytes,
+      highWaterUsedSizeBytes,
+      JS_HEAP_LIMIT_BYTES[tier],
+    ),
   ]);
 }
 
 export function evaluateMainThreadBudgets(mainThreadLongTasks: number): readonly BudgetCheck[] {
-  return Object.freeze([check("mainThreadLongTasksOver50Ms", mainThreadLongTasks, 0)]);
+  return Object.freeze([
+    check(SMOKE_BUDGET_METRICS.mainThreadLongTasksOver50Ms, mainThreadLongTasks, 0),
+  ]);
 }
 
 export function evaluatePipelineBudgets(
@@ -38,11 +46,15 @@ export function evaluatePipelineBudgets(
 ): readonly BudgetCheck[] {
   return Object.freeze([
     check(
-      "pipelineCreationActivityOverlappingMeasurement",
+      SMOKE_BUDGET_METRICS.pipelineCreationActivityOverlappingMeasurement,
       pipelineCreationActivityOverlappingMeasurement,
       0,
     ),
-    check("shaderCompilationsOverlappingMeasurement", shaderCompilationsOverlappingMeasurement, 0),
+    check(
+      SMOKE_BUDGET_METRICS.shaderCompilationsOverlappingMeasurement,
+      shaderCompilationsOverlappingMeasurement,
+      0,
+    ),
   ]);
 }
 

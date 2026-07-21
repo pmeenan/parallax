@@ -10,6 +10,12 @@ import {
   type VarianceMetric,
 } from "./aggregate.js";
 import {
+  type BaselineEvaluation,
+  baselineStorePath,
+  evaluateBaseline,
+  loadBaselineStore,
+} from "./baseline-store.js";
+import {
   readBrowserDisplayIdentity,
   readChromeCommandLine,
   readChromeDisplayRefreshRates,
@@ -25,7 +31,7 @@ import {
   evaluateV8CodeCacheReproductionDiagnostics,
   type QualityTier,
 } from "./budgets.js";
-import { type BuildManifest, readAndValidateBuildManifest } from "./build-manifest.js";
+import { type BuildManifest, readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
 import {
   type ChromePin,
   launchPersistentChrome,
@@ -284,12 +290,14 @@ interface RenderBuildEvidence {
 
 interface SmokeReport {
   readonly artifactDigest: string;
+  readonly baseline: BaselineEvaluation;
   readonly build: RenderBuildEvidence;
   readonly chromePin: ChromePin;
   readonly coreRunFailure: CoreRunFailure | null;
   readonly environment: EnvironmentIdentity;
   readonly facets: ResultFacets;
   readonly generatedAt: string;
+  readonly harnessRuntime: HarnessRuntimeIdentity;
   readonly incompleteMetrics: readonly {
     readonly mandatoryForHarnessV1: boolean;
     readonly metric: string;
@@ -317,6 +325,11 @@ interface SmokeReport {
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
 }
 
+interface HarnessRuntimeIdentity {
+  readonly nodeExecutableSha256: string;
+  readonly nodeVersion: string;
+}
+
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const buildRoot = join(repositoryRoot, "dist");
 const chromePinPath = join(repositoryRoot, "harness/chrome/stable.json");
@@ -338,6 +351,10 @@ async function main(): Promise<void> {
     renderWorkerArtifactPath(validatedBuild.manifest),
   );
   const source = await readSourceIdentity(repositoryRoot);
+  const harnessRuntime = Object.freeze({
+    nodeExecutableSha256: (await sha256File(process.execPath)).sha256,
+    nodeVersion: process.version,
+  });
   const server = createLocalServer({ root: buildRoot });
   const address = await listenLocalServer(server);
   const baseUrl = `http://127.0.0.1:${address.port}`;
@@ -531,7 +548,7 @@ async function main(): Promise<void> {
     if (JSON.stringify(await readSourceIdentity(repositoryRoot)) !== JSON.stringify(source)) {
       throw new Error("Source identity changed during the smoke run");
     }
-    const report: SmokeReport = Object.freeze({
+    const reportWithoutBaseline = {
       artifactDigest,
       build,
       callbackPacingVariance,
@@ -540,6 +557,7 @@ async function main(): Promise<void> {
       environment,
       facets,
       generatedAt: new Date().toISOString(),
+      harnessRuntime,
       incompleteMetrics,
       informationalFailures,
       mandatoryMetricSet: Object.freeze({
@@ -558,7 +576,12 @@ async function main(): Promise<void> {
       source,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
-    });
+    } satisfies Omit<SmokeReport, "baseline">;
+    const baseline = evaluateBaseline(
+      reportWithoutBaseline,
+      await loadBaselineStore(baselineStorePath(repositoryRoot)),
+    );
+    const report: SmokeReport = Object.freeze({ ...reportWithoutBaseline, baseline });
     await writeReport(report);
     process.exitCode = passed ? 0 : 1;
   } finally {
@@ -2137,7 +2160,12 @@ async function writeReport(report: SmokeReport): Promise<void> {
     `Artifact: \`${report.artifactDigest}\``,
     `Engine + render worker: **${formatBytes(report.build.engineAndRenderWorkerBytes)}** (${formatBytes(report.build.engineArtifact.bytes)} engine service + ${formatBytes(report.build.renderWorkerArtifact.bytes)} render worker)`,
     `Chrome: \`${report.environment.browserProduct}\``,
+    `Harness runtime: \`${report.harnessRuntime.nodeVersion}\` (executable SHA-256 \`${report.harnessRuntime.nodeExecutableSha256}\`)`,
     `Sandbox: **${report.environment.sandboxVerified ? "verified" : "invalid"}**`,
+    "",
+    "## Baseline policy",
+    "",
+    ...formatBaselineEvaluation(report.baseline),
     "",
     "## Result facets",
     "",
@@ -2220,6 +2248,29 @@ async function writeReport(report: SmokeReport): Promise<void> {
   ];
   await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
   console.log(lines.join("\n"));
+}
+
+function formatBaselineEvaluation(evaluation: BaselineEvaluation): readonly string[] {
+  if (evaluation.state === "untracked") {
+    return [`- **UNTRACKED** — ${evaluation.reason}; this report was not promoted automatically.`];
+  }
+  if (evaluation.state === "ineligible") {
+    return [`- **INELIGIBLE** — ${evaluation.reason}; this report was not promoted automatically.`];
+  }
+  const heading =
+    evaluation.state === "candidate"
+      ? `- **CANDIDATE** — compared with promoted Chrome ${evaluation.baseline.browser.version}; explicit review and promotion are required.`
+      : `- **CURRENT** — compared with the promoted Chrome ${evaluation.baseline.browser.version} baseline.`;
+  return [
+    heading,
+    ...evaluation.metrics.map((metric) => {
+      const relative =
+        metric.relativeDelta === null
+          ? "relative delta unavailable (baseline is zero)"
+          : `${(metric.relativeDelta * 100).toFixed(2)}%`;
+      return `  - ${metric.key}: ${metric.candidate} vs ${metric.baseline} (${metric.absoluteDelta >= 0 ? "+" : ""}${metric.absoluteDelta}; ${relative})`;
+    }),
+  ];
 }
 
 function formatV8ArtifactOutcome(artifact: V8CodeCacheArtifactEvidence): string {

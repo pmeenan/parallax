@@ -142,6 +142,18 @@ and transport modes, can occur in bursts, and can recover on the next launch. Ex
 completion or a terminal error plus per-process stop/flush acknowledgement so the responsible
 participant is identifiable. Evidence: [RE-008](rough-edges.md#re-008-browser-trace-completion-becomes-intermittently-unbounded-across-category-sets).
 
+### Make module-worker initialization terminal and diagnosable
+
+A tiny shared-memory Wasm module can finish fetch/compile and then wait the full 10-second
+application bound during instantiation. Phase evidence captured both module scripts and
+initialization messages, with one worker ready while its peer never returned from
+`WebAssembly.Instance`; independently compiling the bytes in each worker still reproduced the
+stall after compilation. The failure occurred without CDP tracing on warmed-profile relaunches,
+while other launches completed in roughly 29–45 ms. Expose a terminal instantiation failure and
+per-instance deserialization/compile/instantiate/startup phases so applications can distinguish
+a scheduler stall, module-transfer problem, and V8 instantiation failure. Evidence:
+[RE-036](rough-edges.md#re-036-rustwasm-module-worker-initialization-intermittently-stalls-until-timeout).
+
 ### Let CDP synchronize and query subprocess histograms directly
 
 Dawn's useful shader/PSO cache histograms live in the GPU process, but CDP omits them until

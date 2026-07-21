@@ -110,7 +110,10 @@ proof and terminates before OPFS and the gameplay measurement window. Telemetry 
 load/compile, worker-init and parallel-execution timings, exact per-worker participation,
 checksum/correctness, module bytes, and the fixed memory allocation. M1 sizes and
 assigns production decode workers from representative decode measurements rather than
-inheriting two workers or this synthetic task count.
+inheriting two workers or this synthetic task count. D-088 additionally retains
+per-worker script-evaluated, initialization-received, instantiated, and ready phase
+markers in timeout diagnostics after Chrome 151 exposed intermittent unbounded
+instantiation; the timeout and correctness gate remain fail-closed.
 
 The P-001 memory64 proof is a separate on-demand worker and versioned harness scenario,
 not an ordinary launch phase. Paired Binaryen-built modules use the same 64 MiB working set,

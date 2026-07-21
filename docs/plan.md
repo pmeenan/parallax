@@ -13,6 +13,11 @@ done items stay unchecked, optionally with a note.
 
 **Status legend:** `pending` · `in progress` · `done` · `parked`
 
+Active milestones retain task-level progress notes. Once a milestone is complete, compress
+it to its delivered scope, final outcomes, unresolved carry-forwards, and exit evidence;
+incremental run history remains in decisions.md, rough-edges.md, dependencies.md, and the
+harness result artifacts.
+
 ## Standing gate — dependency currency
 
 D-079 and [dependencies.md](dependencies.md) apply to every milestone. Review all direct
@@ -26,231 +31,54 @@ immediately following milestone entry in the same transition change. Runtime-cri
 upgrades require same-scenario before/after evidence on the relevant registered machine;
 exact pins and D-020 repeatability remain mandatory.
 
-## M0 — Harness + skeleton  `in progress`
+## M0 — Harness + skeleton  `done`
 
 The measurement loop everything else depends on, plus the thinnest possible end-to-end
 app: a Babylon Lite WebGPU scene in a render worker, served with COOP/COEP, deployed and
 measured automatically.
 
-- [x] Build/serve pipeline (per D-014/D-020 toolchain) with immutable-URL output and correct
-      headers; local server at this stage (D-011).
-- [x] Public landing page (`site/`, D-021/D-022): brief project description + link to
-      the GitHub repo, published once to parallax-web.com 2026-07-12 and frozen; the
-      harness-deployed game landing page replaces it at M2.
-- [x] Engine/game bundle separation with deterministic engine builds (D-010): same
-      source + pinned toolchain ⇒ byte-identical engine artifacts, verified by a
-      double-build hash check in the pipeline.
-- [x] Walking-skeleton app: the render-worker Babylon Lite WebGPU scene from the preamble,
-      booting through the real build/serve pipeline with COOP/COEP intact — the target
-      the harness and spikes run against (integrated deliverable, not just the
-      WebGPU-in-worker spike). Verified locally in the Chromium-based Codex browser on
-      2026-07-12 through the assembled server to the first rendered frame with no
-      page/worker errors; the pinned-Chrome automated gate is Harness v1 scope below.
-- [x] Harness v1: launch pinned Chrome (fresh + warm), drive versioned `smoke@1`,
-      capture frame pacing, all-realm JS heap, GPU memory as measurable, pipeline stalls,
-      and HTTP/Dawn/V8 cache evidence; diff blocking metrics against budgets.md and fail
-      on a bust. Chrome observability gaps remain explicit informational findings and
-      launch performance is the outcome gate (D-051). Completed on registered dev-01 at
-      4K/60: schema v16 / metric-set v3 passed all three facets and 24 budget checks.
-      After D-054's measurement-soundness fixes, a current schema v17 / metric-set v4
-      physical-console gate also passed all three facets and 24 checks on 2026-07-15.
-      The prior passes inherited Playwright's `--no-sandbox` default and were replaced,
-      not promoted (D-062/D-063). After two schema-v20 failures and schema-v21 OPFS
-      attribution established RE-023, D-066 separated mandatory per-run OPFS
-      correctness/raw evidence from the still-visible informational repeatability
-      finding. Physical-console artifact
-      `smoke-1-7d4974355d92-dev-01-showcase-2026-07-17T15-00-16-046Z.json` passed the
-      production sandbox under schema v22 / metric-set v10: registered environment,
-      mandatory evidence, all six core traces, and all 24 budget checks passed.
+- [x] Build/serve and app skeleton: deterministic separated engine/game bundles under the
+      pinned D-014/D-020 toolchain, immutable local serving with COOP/COEP (D-010/D-011),
+      and a Babylon Lite WebGPU scene running in the render worker. The frozen public
+      placeholder was published once at parallax-web.com (D-021/D-022).
+- [x] Harness v1: sandboxed pinned-Chrome fresh/warm `smoke@1`, registered environment
+      identity, artifact plus dirty-tree identity, versioned mandatory metrics, diffable
+      JSON/Markdown reports, blocking budgets, and explicit informational observability
+      gaps (D-051/D-062/D-063). D-087 added the locked machine-local baseline store and
+      separate actor/reason promotion transition.
+- [x] Worker substrate spikes: dedicated-worker WebGPU + OffscreenCanvas **go** (D-056),
+      paired fixed-capacity SPSC SAB rings **go** (D-057), and worker OPFS sync reads a
+      **qualified go** for M1's storage boundary (D-058/D-066). OPFS microbenchmark
+      repeatability remains informational (RE-023); M1 owns the representative
+      OPFS-to-renderable cell-load p95 gate.
+- [x] Browser AI spike: Prompt API is a measured **no-go as a required backend** in
+      pinned CfT (D-059/RE-019), while its sandboxed branded-Chrome install,
+      restart/resume, post-restart, and offline lifecycle qualified separately (D-065).
+- [x] App-owned AI spike: pinned Gemma 4 E2B QAT GGUF on wllama WebGPU qualified with
+      structured-output and OPFS lifecycle evidence; CPU/WASM remains measured headroom,
+      not an automatic fallback (D-073/D-074; RE-030/RE-031/RE-032). Restart-persistent
+      KV snapshots were a measured no-go for this runtime; live idle pre-seeding remains
+      the preferred follow-up (D-075/D-084).
+- [x] Rendering-core selection: the measured head-to-head selected exactly pinned Babylon
+      Lite 1.11.0 (D-077/D-078); D-080 removed classic Babylon and renderer swappability.
+      Bounded Lite integration gaps and M1/M3 follow-ups remain in D-078 and
+      [rendering-engine-research.md](rendering-engine-research.md) §7.
+- [x] Rust/WASM capability spikes: reproducible threaded SIMD/atomic modules qualified
+      under the mandatory smoke contract (D-085/RE-035), with fail-closed worker-startup
+      phase evidence retained for intermittent Chrome stalls (D-088/RE-036). The optional
+      memory64 path demonstrated exact beyond-4-GiB access and passed its paired cost gate
+      (D-086); P-001 remains open for representative M1 adoption evidence.
+- [x] M0 exit dependency checkpoint completed under D-079. Node 24.18.0 and CfT
+      151.0.7922.34 were adopted; bounded deferrals and recheck triggers remain in
+      [dependencies.md](dependencies.md).
 
-- [x] Spike: WebGPU-in-worker + OffscreenCanvas with Babylon (go/no-go). **Go** for the
-      rendering core (D-056): a schema v17 / metric-set v4 pinned CfT 150 / Babylon
-      9.16.1 physical-console run on registered dev-01 passed all facets and 24 budget
-      checks across three fresh/warm pairs; the harness verified the exact page +
-      dedicated-worker topology and every measurement window recorded zero >50 ms long
-      tasks.
-      Babylon/WebGPU rendering remains worker-owned; explicit window orchestration and
-      DOM-sensitive future features are scoped in D-056.
-- [x] Spike: SAB ring buffer main↔worker (D-057). Paired fixed-capacity SPSC transport
-      passed the registered dev-01 physical-console gate across three fresh/warm pairs:
-      schema v18 / metric-set v5, all three facets and 24 budget checks passed, and every
-      run returned 100,000/100,000 records with zero payload/sequence errors. The
-      retained concurrent callback maxima overlap RE-001's privileged-diagnostics
-      contamination and are not evidence of hitch-free active transport; D-057 scopes
-      the go decision accordingly.
-- [x] Spike: OPFS sync-access-handle read throughput from a worker (D-058/D-066).
-      **Qualified go for the M1 storage boundary; no stable microbenchmark baseline.** After two
-      calibration runs exposed first-phase measurement noise, metric-set v8's untimed
-      validated preflight passed the registered dev-01 physical-console gate: schema
-      v19, all three facets and 24 budget checks passed, all reads validated, and every
-      fresh/warm sequential/random cohort stayed within the 10% repeatability limit.
-      D-063 reopened the performance qualification under the production sandbox: two
-      schema-v20 attempts validated every read but exceeded the unchanged variance
-      limit, including one fresh-sequential 3.45 GiB/s outlier against 5.99 and
-      6.53 GiB/s peers (RE-023). Schema v21 then retained every sequential pass,
-      256-read random batch, and overlapping host-disk sample: it isolated another miss
-      to one 4.925 ms random batch without sustained physical I/O. D-066 keeps exact
-      per-run lifecycle, validation, and raw timings mandatory, retains the unchanged
-      repeatability result as an informational finding, and defers the user-outcome gate
-      to M1's representative OPFS-to-renderable cell-load p95. The passing schema-v22
-      sandboxed replacement above validated every read; its four cohort ranges happened
-      to remain within 1.10-6.58% but do not erase the retained instability.
-- [x] Spike: Prompt API — execution contexts (confirm window-only, D-017), user
-      activation for download/create, download flow + model-size reporting, eviction
-      + offline reavailability behavior, session limits.
-      **No-go as a required backend** (D-059/RE-019). The schema-v6 pinned-CfT run on
-      registered dev-01 passed the physical environment and launch-contract gates,
-      exposed the API in the window but not a dedicated worker, and reported initial
-      availability `downloadable`. Activation-backed `create()` then remained in
-      `creating` with zero progress events, zero retained samples, and zero installed
-      model bytes until the 120,723 ms no-forward-progress watchdog stopped the run.
-      Download completion, inference, session pressure, and offline reavailability
-      were consequently unmeasurable rather than silently treated as passing. The
-      research spike is complete because its delivery prerequisite produced a valid,
-      reproducible negative result; the separate branded-Chrome lifecycle was
-      demonstrated under schema v1 and qualified under schema v2, while the NPC backend
-      choice remains open below.
-- [x] Qualify the Prompt API's production install UX in branded Chrome, separately
-      from the pinned-CfT evidence gate and before choosing the NPC-model backend.
-      Exercise at least two independent fresh branded-Chrome profiles: one uninterrupted
-      install and one browser-restart/resume during download. Each starts from a real
-      install-page gesture, must leave `LanguageModel.create()`'s progress monitor
-      observably live with monotonic 0..1 progress (including at least one intermediate
-      update rather than only endpoints), reach `available`, complete the fixed streamed
-      NPC-dialog fixture, survive a browser restart, and repeat the fixture offline.
-      Record download duration, longest phase-local interval without forward progress,
-      the separate observer-free restart interval, availability
-      transitions, model status/component size, and every error. A failure to trigger,
-      expose actionable progress, resume, or remain available—including 120 seconds
-      without forward progress—is backend-selection evidence, not a harness exception,
-      and keeps Prompt API from being a required game dependency regardless of the CfT
-      research outcome. The 120-second phase-local boundary is calibrated from the
-      same-version delivery evidence under D-064/D-065.
-      **Passed under schema v2 with the production sandbox (D-065).** Physical-console
-      artifact
-      `prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json`
-      qualified both independent fresh profiles on branded Chrome 150.0.7871.128 with a
-      stable executable hash and no `--no-sandbox` switch. Uninterrupted and
-      restart/resume delivery completed in 102.6 s and 161.9 s; their true phase-local
-      forward-progress gaps were 24.0 s and 17.8 s, and the restart lineage separately
-      recorded a 4.7 s observer-free restart window. Both installed 4,269,934,835 bytes,
-      completed the exact streamed fixture before and after restart, settled to
-      `available` after a transient restart state (RE-020), and repeated the fixture
-      offline. Across eight same-version delivering profiles, the 120-second boundary
-      is 5.00x the largest observed true gap. First-token samples measured
-      3,543.6-3,877.2 ms and remain backend-selection
-      evidence (RE-021).
-- [x] Spike: app-owned in-browser LLM inference (P-007 phase A) — small open-weight
-      model via WebGPU inference in a worker against the walking skeleton, head-to-head
-      with the Prompt API spike above on a fixed NPC-dialog prompt fixture set:
-      first-token latency p95 vs. the budgets.md dialog budget, tokens/s, frame impact
-      during generation, VRAM, OPFS model-load time, structured-output/schema
-      compliance, context-window behavior at persona+retrieved-context sizes, baseline
-      dialog quality, and model/install size. Device topology (own WebGPU device vs.
-      sharing the render device) is an explicit spike variable.
-      **Qualified (D-074; ONNX negative evidence retained by D-073/RE-030/RE-031/
-      RE-032):** wllama 3.5.1 plus the pinned QAT-derived Gemma 4 E2B `UD-Q4_K_XL`
-      GGUF passed the unchanged physical-console gate on WebGPU: 119.64 ms warm TTFT
-      p95, 60.27 mean tokens/s, all structured/grounding/context checks, exact five-
-      shard cold and restart-warm OPFS evidence, and 16.79 ms render-callback p95.
-      Native JSON-schema response constraints are part of the measured backend.
-      The same GGUF completed all context tiers on CPU/WASM with no inference GPU and
-      383.30 ms TTFT p95, but only 9.60 mean tokens/s and a 311.20 s large-context
-      prefill, so CPU is a measured headroom mode rather than an automatic fallback.
-      The 120-second no-progress load boundary remains. ONNX's context, missing-kernel,
-      and whole-buffer failures remain valid engine/export findings rather than being
-      rewritten by the successful GGUF route.
-- [x] Spike: Babylon Lite vs. classic Babylon.js for the rendering core (D-077/D-078).
-      **Switch to Lite.** Both schema-v23 / metric-set-v10 production-sandbox gates on
-      registered dev-01 passed all six core runs and 24 budget checks. Against classic,
-      Lite's render worker was 96.94% smaller, combined engine+worker bytes were 89.78%
-      smaller, mean fresh/warm startup improved 19.1%/17.8%, mean render CPU p95 improved
-      53.0%, and mean all-realm JS heap improved 58.5%; callback pacing was equal.
-      GPU-memory attribution remained unsupported for both rather than being counted as
-      a win. The exact v1.11.0 source audit found bounded gaps: compressed-asset decoder
-      bootstrap is DOM-based unless pinned globals are preinstalled in the render worker,
-      meshopt additionally assumes a single-buffer GLB, animation events are absent and
-      morphs capped at four, and generic compute/raw-device/queue access is not public.
-      Their M1 worker-fixture/asset-QA and M3/P-002 adapter plans are recorded in D-078
-      and [rendering-engine-research.md](rendering-engine-research.md) §7. D-080 then
-      removed the comparison-only classic dependency, selector, backend abstraction, and
-      renderer identity contract; classic is not a maintained engine path. Final Lite-only
-      artifact `smoke-1-a4824e1bef7e-dev-01-showcase-2026-07-19T20-33-11-523Z.json`
-      passed all three facets, six core runs, and 24 checks at 581,328 combined
-      engine+render-worker bytes. The historical A/B artifacts remain the selection
-      evidence.
-- [x] Spike: app-owned NPC context-prefill caching (P-007 optimization,
-      D-075), kept as
-      a distinct post-qualification task so D-074's uncached baseline remains
-      comparable. First measure wllama/llama.cpp live exact-prefix reuse with a shared
-      world/persona prefix and changing user suffixes, reporting cold-prefill and
-      warm-prefix TTFT separately plus reused-token evidence. Then qualify restart-
-      persistent, per-character KV snapshots through OPFS, adding only the minimal
-      wllama state/slot binding needed for the experiment. Measure snapshot bytes per
-      token, save/restore latency, JS/WASM/GPU memory and transfer behavior, render
-      contention, and a bounded multi-character hot-set/eviction policy against fresh
-      prefill on both WebGPU and CPU/WASM. Include the D-082 axes: flash attention
-      off/on (its own before/after column against D-074's FA-off baseline) and
-      KV-cache type f16 vs q8_0 (optionally q8_0-K/q4_0-V), with every quantized
-      configuration re-passing the unchanged D-074 quality fixture. Cache identity
-      must bind the exact model and
-      GGUF digest, runtime/llama.cpp build, tokenizer/chat template, token prefix, and
-      context/KV parameters including cache types and the flash-attention setting;
-      mismatches invalidate the disposable derived cache. Do
-      not promote persistent caching unless restore is materially faster than fresh
-      prefill without violating gameplay frame budgets, and retain player-derived
-      context under save-data privacy/lifecycle rules rather than shared static-cache
-      rules.
-      D-084 closes this as a measured no-go for restart persistence. The complete
-      physical Chrome 150 matrix found that stable configurations restored only 409 of
-      914-916 exact reusable tokens; WebGPU f16 without flash attention additionally
-      aborted on first generation after native restore. Symmetric q8_0 cut snapshot
-      bytes about 47% and passed all 30 quality cases on both placements, but could not
-      fix correctness. Live same-session exact-prefix reuse remains viable; the
-      experiment-only store, harness, runtime patches, fixtures, and custom WASM were
-      removed after measurement. The preferred follow-up is model-specific idle pre-seeding of a
-      clean resident world/tool/persona context for the next conversation; separate
-      model evaluation may revisit persistence for other architectures rather than
-      generalizing this Gemma 4 E2B result.
-- [x] Spike: Rust→WASM module with wasm threads (includes scaffolding the
-      `rust-toolchain.toml` + pinned wasm-bindgen/binaryen shape D-014/D-020 specify —
-      deferred until this first Rust code exists). **Qualified under D-085/RE-035:**
-      the exact pinned build, two-worker shared-memory SIMD/atomic proof, content-addressed
-      artifact, telemetry, mandatory `smoke@1` contract, and same-host byte-repeatability
-      gate are in place. Schema-v25 / metric-set-v11 physical-console artifact
-      `smoke-1-9a863a19906d-dev-01-showcase-2026-07-20T01-09-27-205Z.json` passed all
-      three facets and 24 budget checks across six production-sandbox runs. Every run
-      completed all 262,144 tasks with checksum `0xb5140000`, nonzero participation by
-      both workers, 30.8-35.8 ms total time and 15.9-17.6 ms parallel execution, a
-      12,680-byte optimized module, and fixed 2,162,688-byte shared linear memory.
-- [x] Spike: memory64 module load and cost; this validates the optional last-resort path
-      in P-001, not a default wasm64 target. **Qualified under D-086:** dedicated
-      `memory64-spike@1` artifact
-      `memory64-spike-1-a05e3d13d506-dev-01-showcase-2026-07-20T12-25-10.882Z.json`
-      passed all six physical-console runs. Every run round-tripped `0x0badc0de` at byte
-      address `0x1_0000_0000` in one 4,295,032,832-byte logical memory, and an independent
-      JavaScript read observed the same value at that exact offset. Across 180 measured
-      samples per variant, memory32 versus memory64 median/worst per-run kernel p95 was
-      116.190/116.815 ms versus 115.350/117.660 ms. Median per-run paired-p95
-      compile/instantiate/prepare/kernel ratios were 1.125x/1.294x/1.002x/1.030x; every
-      blocking paired cohort passed the 10% repeat-variance gate. The separate absolute
-      diagnostic was invalid only for fresh memory32 prepare at 10.98% and is not a blocking
-      cost claim. Optimized module
-      size was 211 versus 294 bytes; memory64's load/size figures include its high-address
-      proof export. P-001 remains open for representative M1 need and production-kernel
-      evidence.
-- [ ] Harness result contract implemented (budgets.md → Measurement methodology):
-      metric states, environment identity, artifact digest + dirty-tree identity,
-      per-milestone mandatory-metric sets, variance gate, baseline-promotion policy.
-      *Note (2026-07-15): everything except the baseline-promotion policy is
-      implemented and exercised by the checked Harness v1 item above; only baseline
-      promotion (budgets.md → "Baseline promotion") remains, so don't rebuild the rest.*
-- [ ] Run the first full-repository dependency currency checkpoint (D-079), including
-      runtime/model/browser inputs as well as npm tooling. Record adopted and deferred
-      candidates in dependencies.md. Due before M0 exit and no later than 2026-08-16.
-- [ ] Exit: one command produces a built, locally served build (local serving only at
-      M0 per D-011/D-022 — production deployment is M2) and a budget report; all spike
-      results recorded in rough-edges.md or decisions.md.
+**Exit evidence:** `pnpm m0:gate` produced
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` on registered
+dev-01's physical console under pinned Chrome 151 and Node 24.18.0. All three facets,
+all six core runs, and all 24 blocking checks passed. The result was explicitly promoted
+after comparison with the same-artifact Chrome 150 anchor. RE-008 and RE-036 retain the
+intermittent trace-completion and Wasm-instantiation failures rather than treating the
+passing replacement as erasure.
 
 ## M1 — Greybox District 1 streaming  `pending`
 

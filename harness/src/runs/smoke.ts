@@ -16,6 +16,13 @@ export interface QualityTierProfile {
 export const SMOKE_SCENARIO = "smoke@1";
 export const SMOKE_MANDATORY_METRIC_SET_VERSION = 11;
 export const SMOKE_REPEATS = 3;
+export const SMOKE_BUDGET_METRICS = Object.freeze({
+  allRealmJsHeapHighWaterBytes: "allRealmJsHeapHighWaterBytes",
+  mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
+  pipelineCreationActivityOverlappingMeasurement: "pipelineCreationActivityOverlappingMeasurement",
+  shaderCompilationsOverlappingMeasurement: "shaderCompilationsOverlappingMeasurement",
+} as const);
+export const SMOKE_BUDGET_METRIC_NAMES = Object.freeze(Object.values(SMOKE_BUDGET_METRICS));
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@6";
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS = 3;
 export const SMOKE_WARMUP_MS = 10_000;
@@ -47,8 +54,9 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 export const SMOKE_TELEMETRY_SCHEMA_VERSION = 7;
-// v25 adds exact Rust/WASM threads correctness, participation, memory, and timing evidence.
-export const SMOKE_REPORT_SCHEMA_VERSION = 25;
+// v26 records result-store baseline state, old-vs-candidate metric deltas, and the exact
+// Node collector identity without silently promoting a Chrome-version advance.
+export const SMOKE_REPORT_SCHEMA_VERSION = 26;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

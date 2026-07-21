@@ -40,6 +40,17 @@ export interface WasmThreadSpikeReadyResponse {
   readonly workerIndex: number;
 }
 
+export type WasmThreadSpikeWorkerPhase =
+  | "script-evaluated"
+  | "initialize-received"
+  | "module-instantiated";
+
+export interface WasmThreadSpikePhaseResponse {
+  readonly kind: "phase";
+  readonly phase: WasmThreadSpikeWorkerPhase;
+  readonly workerIndex: number | null;
+}
+
 export interface WasmThreadSpikeResetResponse {
   readonly kind: "reset-complete";
 }
@@ -66,6 +77,7 @@ export interface WasmThreadSpikeFailureResponse {
 
 export type WasmThreadSpikeWorkerResponse =
   | WasmThreadSpikeFailureResponse
+  | WasmThreadSpikePhaseResponse
   | WasmThreadSpikeReadyResponse
   | WasmThreadSpikeResetResponse
   | WasmThreadSpikeRunResponse

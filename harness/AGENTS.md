@@ -90,7 +90,13 @@ reference machines gate budgets.
    milestone-mandatory metric that isn't `measured` is a failure (silence is not a
    pass), and each milestone's mandatory-metric set is versioned here alongside the
    run scripts. Baseline promotion on Chrome-stable updates follows the budgets.md
-   policy (explicit promotion, never automatic).
+   policy (explicit promotion, never automatic). `harness:smoke`/`m0:gate` only write
+   `untracked`, `current`, `candidate`, or `ineligible` comparison evidence; promotion
+   is the separate actor/reason-bearing `harness:baseline:promote` command. It rejects
+   stale observed-anchor digests under the store lock; an intentional incomparable
+   anchor also requires `--rebaseline`. Candidate
+   eligibility includes the exact Node collector version and executable digest as well
+   as artifact, metric-set, and registered-machine identity.
 4. **Reference machines are pinned** (specs recorded in `machines/`); add machines,
    don't silently swap them.
 5. **The harness may not depend on `engine/` or `game/` internals** — only on the

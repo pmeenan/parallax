@@ -110,7 +110,7 @@ describe("Rust/WASM thread spike service", () => {
     await drainMicrotasks();
 
     expect(service.snapshot()).toMatchObject({
-      failureMessage: `WASM thread spike exceeded ${WASM_THREAD_SPIKE_TIMEOUT_MS} ms`,
+      failureMessage: `WASM thread spike exceeded ${WASM_THREAD_SPIKE_TIMEOUT_MS} ms; worker phases [0:not-created,1:not-created]`,
       moduleBytes: null,
       state: "failed",
     });

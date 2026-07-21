@@ -136,29 +136,61 @@ COS APIs exist):
 - **Proposed improvement:** keep disposable-isolate load probes and paired-first aggregation
   as the default pattern for future sub-millisecond or allocation-heavy Wasm comparisons.
 
-## RE-036: An unrelated synthetic Wasm-thread warmup intermittently blocked a dedicated spike
+## RE-036: Rust/Wasm module-worker initialization intermittently stalls until timeout
 
-- **Date / Chrome version:** 2026-07-19; pinned Chrome for Testing 150.0.7871.115 on the
-  dev-01 physical console.
+- **Date / Chrome version:** 2026-07-19 through 2026-07-21 UTC; pinned Chrome for Testing
+  150.0.7871.115 and candidate Stable 151.0.7922.34 on the dev-01 physical console.
 - **Layer:** app launch / V8 Wasm workers / harness orchestration.
-- **Status:** open attribution; isolated from the memory64 scenario, not fixed by raising a
-  timeout.
+- **Status:** open V8/Wasm instantiation attribution; isolated from the memory64 scenario, not
+  fixed or hidden by raising a timeout.
 - **What we expected / What happened:** the first three six-launch memory64 attempts each had
   one app launch fail before memory64 began. After the runner exposed terminal telemetry, one
   retained failure was the already-qualified D-085 Rust/WASM synthetic worker exceeding its
   10,000 ms service timeout. The memory64 worker itself had not started. Both memory64 query
   modes now leave that unrelated synthetic spike idle while rendering stays live; later
   memory64 attempts reached 6/6 launch eligibility.
-- **Repro:** artifact
+- **Original memory64-isolation repro:** artifact
   `memory64-spike-1-484004247a41-dev-01-showcase-2026-07-20T01-58-04.766Z.json`, warm repeat 3.
   The accepted D-086 artifact uses `?memory64Spike=dedicated` and verifies the unrelated
   telemetry section remains idle; `?memory64Spike=auto` applies the same isolation for manual
   reproductions.
+- **Chrome 151 transition evidence:** the first exact-artifact/same-Node Chrome 150 anchor
+  passed 6/6. Of the next five Chrome 151 gates, three stopped at the 10,000 ms Wasm service
+  boundary and two completed all six Wasm workloads but failed independently on RE-008. A
+  no-tracing isolation completed 4/4 new-profile launches in 32.7–34.6 ms, while one of four
+  sequential relaunches of an already-warmed profile timed out after the 12,680-byte module
+  compiled in 2.43 ms but before either worker reported ready; later relaunches recovered.
+  This falsifies a one-time browser install or first-profile warmup explanation.
+- **Phase isolation:** schema-v26 report
+  `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json` retained worker
+  phases `[0:ready,1:initialize-received]`: both module scripts evaluated and received
+  initialization, one instance became ready, and the peer never completed
+  `WebAssembly.Instance`. Independently compiling the same bytes in each worker did not fix
+  the boundary: one of eight no-tracing retained-profile relaunches stalled after the peer
+  reported `module-compiled`. Serial initialization failed both attempted relaunches with the
+  second worker stuck after `initialize-received`, so it was rejected rather than promoted as
+  a workaround. D-088 retains concurrent startup, the unchanged timeout, no within-run retry,
+  and the phase markers.
+- **Qualification/recovery:** exact-artifact Chrome 150 anchor
+  `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-46-41-973Z.json` and Chrome 151
+  candidate `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` each
+  passed all six core launches, all three facets, and 24 checks under Node 24.18.0. The
+  Chrome 151 result is promoted; the passing sample qualifies M0 but does not erase the
+  intermittent failure or establish that Chrome 151 increased its underlying rate.
+- **Current smoke/relaunch repro:** run `pnpm m0:gate` repeatedly, or launch the built app without tracing in four
+  distinct temporary profiles followed by four sequential relaunches of one retained profile;
+  wait for `__PARALLAX_TELEMETRY__.snapshot().wasmThreadSpike` to become terminal and retain its
+  phase timings. Representative Chrome 151 failed artifacts
+  `smoke-1-a05e3d13d506-dev-01-showcase-2026-07-21T00-22-43-440Z.json` and
+  `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json` retain the
+  coarse and exact-phase gate failures; schema v26 includes terminal subsystem and worker
+  phase evidence.
 - **Impact on Parallax:** no accepted D-085 result is invalidated, but running independent
   synthetic spikes in every app launch can make a dedicated experiment flaky and contaminate
   its CPU state.
-- **Proposed improvement:** investigate D-085's timeout separately with its own raw worker
-  phase evidence; keep dedicated scenarios explicit about which synthetic services are active.
+- **Proposed improvement:** V8 should make threaded Wasm instantiation terminal or expose a
+  per-instance phase/error when it cannot complete. Parallax keeps dedicated scenarios explicit
+  about which synthetic services are active and will reduce this to a Chromium reproduction.
 
 ## RE-035: Rust browser threads still require a nightly rebuilt standard library
 
@@ -1085,7 +1117,8 @@ COS APIs exist):
 
 ## RE-008: Browser trace completion becomes intermittently unbounded across category sets
 
-- **Date / Chrome version:** 2026-07-13; Chrome for Testing Stable 150.0.7871.115;
+- **Date / Chrome version:** 2026-07-13 through 2026-07-20; Chrome for Testing Stable
+  150.0.7871.115 and candidate Stable 151.0.7922.34;
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
   dev-01 remote diagnostic (non-gating).
 - **Layer:** CDP tracing / browser-renderer-GPU process coordination.
@@ -1163,7 +1196,21 @@ COS APIs exist):
   The immediately preceding sandboxed run
   (`smoke-1-2296afdeaa23-dev-01-showcase-2026-07-17T01-06-27-753Z.json`) completed every
   trace, so retaining Chrome's normal sandbox neither removes the failure nor makes it
-  deterministic.
+  deterministic. The M0 Chrome 151 candidate artifact
+  `smoke-1-a05e3d13d506-dev-01-showcase-2026-07-21T00-25-46-151Z.json` reproduced the same
+  signature on physical-console fresh repeat 2: `Tracing.end` returned in 2.4 ms, then zero
+  events/chunks and no completion arrived during 5,013.4 ms. The other five core traces
+  completed in 287.2–296.2 ms, all six Wasm workloads completed, and the exact Chrome 150
+  anchor had passed immediately beforehand. RE-008 therefore survives the Chrome 151
+  transition and remains independently nondeterministic rather than a Chrome 150-only issue.
+  A second same-artifact attempt,
+  `smoke-1-a05e3d13d506-dev-01-showcase-2026-07-21T00-34-57-688Z.json`, repeated the
+  signature at fresh repeat 3: `Tracing.end` returned in 1.8 ms, no events/chunks or
+  completion followed for 5,011.2 ms, and all six Wasm workloads had completed. The final
+  phase-instrumented Chrome 151 candidate
+  `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` then completed all
+  six core traces in 286.2–309.1 ms and was promoted after passing all facets and budgets.
+  Recovery qualifies the artifact; it does not close this burst-capable finding.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second

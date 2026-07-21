@@ -331,7 +331,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v10, which keeps OPFS per-run correctness and raw
+  the current mandatory metric-set (v11, which keeps OPFS per-run correctness and raw
   throughput mandatory while separating its sandbox-sensitive repeatability finding as
   informational; D-058/D-066).
   V8 lifecycle checks are diagnostics, not budget checks.
@@ -356,7 +356,18 @@ Definitions the harness implements; budgets above are meaningless without them.
   window and does not supply scenario pacing, metric aggregation, or result timings.
   In particular, Prompt callback-pacing diagnostics are not directly comparable with
   `smoke@1` pacing unless their recorded launch-switch environments also match.
-- **Baseline promotion:** when Chrome stable advances, the first run on the new version
-  is compared against the old baseline but does not replace it until explicitly
-  promoted (a human or lead-agent action recorded in the result store); regressions
-  attributable to the Chrome update are rough-edges findings, not build regressions.
+- **Baseline promotion (D-087):** `smoke@1` keeps one promoted machine-local result-store
+  record per scenario/registered-machine/tier. Promotion is a separate explicit human
+  or lead-agent command, accepts only an aggregate pass with all three facets passing,
+  and records actor, reason, report digest, artifact/source/browser identity, result and
+  metric-set versions, exact Node collector identity, and comparison environment. A
+  Chrome advance is labeled `candidate` only when the artifact digest, Node executable
+  and version, registered host/GPU/display identity, and mandatory metric set match; its
+  fresh/warm mean budget observations and build byte totals are compared with the prior
+  snapshot. It never replaces that snapshot automatically. Promotion rechecks the
+  report's observed anchor digest under the store lock, so a stale report cannot replace
+  a newer promotion. Environment or metric-set drift is `ineligible`, not a comparison;
+  intentionally starting a new incomparable anchor additionally requires `--rebaseline`.
+  Chrome-attributable regressions become rough-edges findings; unchanged budget failures
+  remain ordinary blocking failures. The command is
+  `pnpm harness:baseline:promote <report.json> --actor <name> --reason <reason> [--rebaseline]`.

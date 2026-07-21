@@ -14,9 +14,9 @@ export function resolveWasmThreadSpikeMetric(
 ): WasmThreadSpikeMetric {
   const expectedMask = (1 << SMOKE_WASM_THREAD_WORKER_COUNT) - 1;
   if (snapshot.state !== "completed") {
-    return invalid(
-      snapshot.failureMessage ?? `WASM thread spike did not complete; observed ${snapshot.state}`,
-    );
+    const failure =
+      snapshot.failureMessage ?? `WASM thread spike did not complete; observed ${snapshot.state}`;
+    return invalid(`${failure}; terminal phase evidence: ${formatTerminalPhaseEvidence(snapshot)}`);
   }
   if (
     snapshot.failureMessage !== null ||
@@ -59,4 +59,29 @@ function positiveFinite(value: number | null): value is number {
 
 function invalid(reason: string): WasmThreadSpikeMetric {
   return Object.freeze({ reason, state: "invalid" });
+}
+
+function formatTerminalPhaseEvidence(snapshot: WasmThreadSpikeTelemetrySnapshot): string {
+  const phase =
+    snapshot.moduleLoadAndCompileElapsedMs === null
+      ? "module-fetch-or-compile"
+      : snapshot.workerInitializationElapsedMs === null
+        ? "worker-initialization"
+        : snapshot.parallelExecutionElapsedMs === null
+          ? "reset-or-parallel-execution"
+          : "final-snapshot";
+  return [
+    `phase=${phase}`,
+    `moduleBytes=${formatNullable(snapshot.moduleBytes)}`,
+    `moduleLoadAndCompileMs=${formatNullable(snapshot.moduleLoadAndCompileElapsedMs)}`,
+    `workerInitializationMs=${formatNullable(snapshot.workerInitializationElapsedMs)}`,
+    `parallelExecutionMs=${formatNullable(snapshot.parallelExecutionElapsedMs)}`,
+    `completedTasks=${snapshot.completedTasks}`,
+    `processedTasksByWorker=[${snapshot.processedTasksByWorker.join(",")}]`,
+    `workerMask=0x${snapshot.workerMask.toString(16)}`,
+  ].join(", ");
+}
+
+function formatNullable(value: number | null): string {
+  return value === null ? "null" : value.toFixed(3);
 }

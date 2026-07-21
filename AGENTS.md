@@ -128,8 +128,8 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 ## Current status
 
-Milestone **M0 (harness + skeleton)** — see [docs/plan.md](docs/plan.md) for what is
-done vs. open. The build/serve pipeline, walking-skeleton app,
+Milestone **M0 (harness + skeleton) is complete**; M1 is next — see
+[docs/plan.md](docs/plan.md). The build/serve pipeline, walking-skeleton app,
 WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer go spike (D-057),
 Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
 production-install qualification (D-065), Harness v1's sandboxed `smoke@1` replacement
@@ -144,7 +144,11 @@ for the pinned Gemma 4 E2B runtime (live idle pre-seeding remains the preferred
 direction), and the D-085 Rust/WASM threads spike is qualified by the passing
 schema-v25/metric-set-v11 physical-console gate. D-086 qualifies the optional memory64
 path with a passing six-run physical-console cost comparison and exact beyond-4-GiB
-access while leaving P-001 open for representative M1 adoption evidence; the remaining
-M0 spikes and exit items remain open.
+access while leaving P-001 open for representative M1 adoption evidence. D-087's
+schema-v26 result store and explicit promotion workflow closed the final harness-contract
+gap; the full dependency checkpoint adopted Node 24.18.0 and CfT 151.0.7922.34. The
+same-artifact Chrome 150 anchor and Chrome 151 candidate passed all facets and 24 checks,
+and Chrome 151 is promoted; intermittent RE-008 trace completion and RE-036 Wasm
+instantiation failures remain fail-closed platform findings.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

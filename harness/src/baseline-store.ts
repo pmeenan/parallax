@@ -1,0 +1,705 @@
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+import type { BudgetCheck, QualityTier } from "./budgets.js";
+import {
+  SMOKE_BUDGET_METRIC_NAMES,
+  SMOKE_MANDATORY_METRIC_SET_VERSION,
+  SMOKE_REPEATS,
+  SMOKE_REPORT_SCHEMA_VERSION,
+  SMOKE_SCENARIO,
+} from "./runs/smoke.js";
+
+export const BASELINE_STORE_SCHEMA_VERSION = 1;
+
+interface BaselineSourceIdentity {
+  readonly commit: string;
+  readonly dirtyTreeDigest: string | null;
+}
+
+interface BaselineReportRun {
+  readonly budgetChecks: readonly BudgetCheck[];
+  readonly profile: "fresh" | "warm";
+  readonly repeat: number;
+}
+
+export interface BaselineEligibleReport {
+  readonly artifactDigest: string;
+  readonly baseline: BaselineEvaluation;
+  readonly build: {
+    readonly engineAndRenderWorkerBytes: number;
+    readonly totalBuildBytes: number;
+  };
+  readonly chromePin: {
+    readonly revision: string;
+    readonly version: string;
+  };
+  readonly environment: {
+    readonly adapter: unknown;
+    readonly executableSha256: string;
+    readonly hostAfterRuns: unknown;
+    readonly machine: unknown;
+    readonly machineId: string;
+    readonly requestedTier: QualityTier;
+    readonly targetDisplayMode: string;
+  };
+  readonly facets: {
+    readonly budgetEvaluation: {
+      readonly evaluatedChecks: number;
+      readonly reasons: readonly string[];
+      readonly status: string;
+    };
+    readonly environment: { readonly reasons: readonly string[]; readonly status: string };
+    readonly evidenceCompleteness: {
+      readonly reasons: readonly string[];
+      readonly status: string;
+    };
+  };
+  readonly generatedAt: string;
+  readonly harnessRuntime: HarnessRuntimeIdentity;
+  readonly mandatoryMetricSet: { readonly version: number };
+  readonly passed: boolean;
+  readonly runs: readonly BaselineReportRun[];
+  readonly scenario: string;
+  readonly schemaVersion: number;
+  readonly source: BaselineSourceIdentity;
+}
+
+export interface BaselineMetricSummary {
+  readonly key: string;
+  readonly value: number;
+}
+
+export interface BaselineRecord {
+  readonly artifactDigest: string;
+  readonly browser: {
+    readonly executableSha256: string;
+    readonly revision: string;
+    readonly version: string;
+  };
+  readonly mandatoryMetricSetVersion: number;
+  readonly metrics: readonly BaselineMetricSummary[];
+  readonly comparisonEnvironment: BaselineComparisonEnvironment;
+  readonly promotedAt: string;
+  readonly promotedBy: string;
+  readonly promotionReason: string;
+  readonly reportDigest: string;
+  readonly reportFile: string;
+  readonly reportGeneratedAt: string;
+  readonly reportSchemaVersion: number;
+  readonly source: BaselineSourceIdentity;
+}
+
+export interface BaselineStore {
+  readonly entries: Readonly<Record<string, BaselineRecord>>;
+  readonly schemaVersion: typeof BASELINE_STORE_SCHEMA_VERSION;
+}
+
+export interface BaselineMetricComparison {
+  readonly absoluteDelta: number;
+  readonly baseline: number;
+  readonly candidate: number;
+  readonly key: string;
+  readonly relativeDelta: number | null;
+}
+
+export type BaselineEvaluation =
+  | Readonly<{ readonly reason: string; readonly state: "untracked" }>
+  | Readonly<{
+      readonly baseline: BaselineRecord;
+      readonly reason: string;
+      readonly state: "ineligible";
+    }>
+  | Readonly<{
+      readonly baseline: BaselineRecord;
+      readonly metrics: readonly BaselineMetricComparison[];
+      readonly state: "current" | "candidate";
+    }>;
+
+export interface BaselineComparisonEnvironment {
+  readonly adapter: unknown;
+  readonly hostAfterRuns: unknown;
+  readonly machine: unknown;
+  readonly machineId: string;
+  readonly requestedTier: QualityTier;
+  readonly targetDisplayMode: string;
+  readonly harnessRuntime: HarnessRuntimeIdentity;
+}
+
+export interface HarnessRuntimeIdentity {
+  readonly nodeExecutableSha256: string;
+  readonly nodeVersion: string;
+}
+
+export function baselineStorePath(repositoryRoot: string): string {
+  return join(repositoryRoot, "harness/results/baseline-store-v1.json");
+}
+
+export async function loadBaselineStore(path: string): Promise<BaselineStore> {
+  let source: string;
+  try {
+    source = await readFile(path, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return emptyBaselineStore();
+    throw error;
+  }
+  const parsed: unknown = JSON.parse(source);
+  if (!isRecord(parsed) || parsed.schemaVersion !== BASELINE_STORE_SCHEMA_VERSION) {
+    throw new Error(`Unsupported or invalid baseline store at ${path}`);
+  }
+  if (!isRecord(parsed.entries)) throw new Error(`Baseline store entries are invalid at ${path}`);
+  return parsed as unknown as BaselineStore;
+}
+
+export function evaluateBaseline(
+  report: Omit<BaselineEligibleReport, "baseline">,
+  store: BaselineStore,
+): BaselineEvaluation {
+  const baseline = store.entries[baselineKey(report)];
+  if (baseline === undefined) {
+    return Object.freeze({
+      reason: "No promoted baseline exists for this scenario, machine, and quality tier",
+      state: "untracked" as const,
+    });
+  }
+  if (baseline.mandatoryMetricSetVersion !== report.mandatoryMetricSet.version) {
+    return Object.freeze({
+      baseline,
+      reason: `Promoted metric-set v${baseline.mandatoryMetricSetVersion} is not comparable with candidate metric-set v${report.mandatoryMetricSet.version}`,
+      state: "ineligible" as const,
+    });
+  }
+  if (baseline.artifactDigest !== report.artifactDigest) {
+    return Object.freeze({
+      baseline,
+      reason: `Promoted artifact ${baseline.artifactDigest} is not comparable with candidate artifact ${report.artifactDigest}`,
+      state: "ineligible" as const,
+    });
+  }
+  const candidateEnvironment = comparisonEnvironment(report);
+  if (
+    canonicalJsonStringify(baseline.comparisonEnvironment) !==
+    canonicalJsonStringify(candidateEnvironment)
+  ) {
+    return Object.freeze({
+      baseline,
+      reason:
+        "Registered machine, host, adapter, display, or Node collector identity differs from the promoted baseline",
+      state: "ineligible" as const,
+    });
+  }
+  const metrics = compareMetricSummaries(baseline.metrics, summarizeBaselineMetrics(report));
+  const sameBrowser =
+    baseline.browser.version === report.chromePin.version &&
+    baseline.browser.revision === report.chromePin.revision &&
+    baseline.browser.executableSha256 === report.environment.executableSha256;
+  return Object.freeze({
+    baseline,
+    metrics,
+    state: sameBrowser ? ("current" as const) : ("candidate" as const),
+  });
+}
+
+export async function promoteBaseline(options: {
+  readonly actor: string;
+  readonly allowIneligible?: boolean;
+  readonly reason: string;
+  readonly reportBytes: Uint8Array;
+  readonly reportPath: string;
+  readonly storePath: string;
+  readonly promotedAt?: string;
+}): Promise<BaselineRecord> {
+  const report = parseBaselineEligibleReport(
+    JSON.parse(Buffer.from(options.reportBytes).toString("utf8")) as unknown,
+  );
+  assertPromotionEligible(report);
+  const actor = requiredText(options.actor, "promotion actor");
+  const reason = requiredText(options.reason, "promotion reason");
+  const record = Object.freeze({
+    artifactDigest: report.artifactDigest,
+    browser: Object.freeze({
+      executableSha256: report.environment.executableSha256,
+      revision: report.chromePin.revision,
+      version: report.chromePin.version,
+    }),
+    mandatoryMetricSetVersion: report.mandatoryMetricSet.version,
+    metrics: summarizeBaselineMetrics(report),
+    comparisonEnvironment: comparisonEnvironment(report),
+    promotedAt: options.promotedAt ?? new Date().toISOString(),
+    promotedBy: actor,
+    promotionReason: reason,
+    reportDigest: createHash("sha256").update(options.reportBytes).digest("hex"),
+    reportFile: basename(options.reportPath),
+    reportGeneratedAt: report.generatedAt,
+    reportSchemaVersion: report.schemaVersion,
+    source: Object.freeze({ ...report.source }),
+  });
+  await withBaselineStoreLock(options.storePath, async () => {
+    const store = await loadBaselineStore(options.storePath);
+    assertPromotionTransition(report, store, options.allowIneligible ?? false);
+    const updated: BaselineStore = Object.freeze({
+      entries: Object.freeze({ ...store.entries, [baselineKey(report)]: record }),
+      schemaVersion: BASELINE_STORE_SCHEMA_VERSION,
+    });
+    await writeBaselineStore(options.storePath, updated);
+  });
+  return record;
+}
+
+export function parseBaselineEligibleReport(value: unknown): BaselineEligibleReport {
+  if (!isRecord(value)) throw new Error("Baseline report must be a JSON object");
+  requireSha256(value.artifactDigest, "artifactDigest");
+  requireRecord(value.baseline, "baseline");
+  if (
+    value.baseline.state !== "untracked" &&
+    value.baseline.state !== "current" &&
+    value.baseline.state !== "candidate" &&
+    value.baseline.state !== "ineligible"
+  ) {
+    invalidReport("baseline.state must be untracked, current, candidate, or ineligible");
+  }
+  if (value.baseline.state !== "untracked") {
+    requireRecord(value.baseline.baseline, "baseline.baseline");
+    requireSha256(value.baseline.baseline.reportDigest, "baseline.baseline.reportDigest");
+  }
+  requireRecord(value.build, "build");
+  requireFiniteNonnegative(
+    value.build.engineAndRenderWorkerBytes,
+    "build.engineAndRenderWorkerBytes",
+  );
+  requireFiniteNonnegative(value.build.totalBuildBytes, "build.totalBuildBytes");
+  requireRecord(value.chromePin, "chromePin");
+  requireText(value.chromePin.revision, "chromePin.revision");
+  requireText(value.chromePin.version, "chromePin.version");
+  requireRecord(value.environment, "environment");
+  requireRecord(value.environment.adapter, "environment.adapter");
+  requireSha256(value.environment.executableSha256, "environment.executableSha256");
+  requireRecord(value.environment.hostAfterRuns, "environment.hostAfterRuns");
+  requireRecord(value.environment.machine, "environment.machine");
+  requireText(value.environment.machineId, "environment.machineId");
+  if (
+    value.environment.requestedTier !== "showcase" &&
+    value.environment.requestedTier !== "standard"
+  ) {
+    invalidReport("environment.requestedTier must be showcase or standard");
+  }
+  requireText(value.environment.targetDisplayMode, "environment.targetDisplayMode");
+  requireRecord(value.facets, "facets");
+  const budgetFacet = value.facets.budgetEvaluation;
+  const environmentFacet = value.facets.environment;
+  const evidenceFacet = value.facets.evidenceCompleteness;
+  requireRecord(budgetFacet, "facets.budgetEvaluation");
+  requireRecord(environmentFacet, "facets.environment");
+  requireRecord(evidenceFacet, "facets.evidenceCompleteness");
+  requireText(budgetFacet.status, "facets.budgetEvaluation.status");
+  requireText(environmentFacet.status, "facets.environment.status");
+  requireText(evidenceFacet.status, "facets.evidenceCompleteness.status");
+  if (environmentFacet.status !== "passed" && environmentFacet.status !== "failed") {
+    invalidReport("facets.environment.status must be passed or failed");
+  }
+  if (evidenceFacet.status !== "passed" && evidenceFacet.status !== "failed") {
+    invalidReport("facets.evidenceCompleteness.status must be passed or failed");
+  }
+  if (
+    budgetFacet.status !== "passed" &&
+    budgetFacet.status !== "failed" &&
+    budgetFacet.status !== "not-evaluated"
+  ) {
+    invalidReport("facets.budgetEvaluation.status must be passed, failed, or not-evaluated");
+  }
+  const generatedAt = requireText(value.generatedAt, "generatedAt");
+  if (!Number.isFinite(Date.parse(generatedAt)))
+    invalidReport("generatedAt must be an ISO timestamp");
+  requireRecord(value.mandatoryMetricSet, "mandatoryMetricSet");
+  if (value.mandatoryMetricSet.version !== SMOKE_MANDATORY_METRIC_SET_VERSION) {
+    invalidReport(`mandatoryMetricSet.version must be ${SMOKE_MANDATORY_METRIC_SET_VERSION}`);
+  }
+  if (typeof value.passed !== "boolean") invalidReport("passed must be boolean");
+  requireRecord(value.harnessRuntime, "harnessRuntime");
+  requireSha256(value.harnessRuntime.nodeExecutableSha256, "harnessRuntime.nodeExecutableSha256");
+  const nodeVersion = requireText(value.harnessRuntime.nodeVersion, "harnessRuntime.nodeVersion");
+  if (!/^v\d+\.\d+\.\d+$/.test(nodeVersion)) {
+    invalidReport("harnessRuntime.nodeVersion must be an exact Node version");
+  }
+  if (value.scenario !== SMOKE_SCENARIO) invalidReport(`scenario must be ${SMOKE_SCENARIO}`);
+  if (
+    typeof value.schemaVersion !== "number" ||
+    !Number.isInteger(value.schemaVersion) ||
+    value.schemaVersion !== SMOKE_REPORT_SCHEMA_VERSION
+  ) {
+    invalidReport(`schemaVersion must be ${SMOKE_REPORT_SCHEMA_VERSION}`);
+  }
+  requireRecord(value.source, "source");
+  requireGitCommit(value.source.commit, "source.commit");
+  if (value.source.dirtyTreeDigest !== null) {
+    requireSha256(value.source.dirtyTreeDigest, "source.dirtyTreeDigest");
+  }
+  if (!Array.isArray(value.runs) || value.runs.length === 0) {
+    invalidReport("runs must contain at least one measured run");
+  }
+  const repeats = new Map<"fresh" | "warm", Set<number>>([
+    ["fresh", new Set<number>()],
+    ["warm", new Set<number>()],
+  ]);
+  let evaluatedChecks = 0;
+  for (const [runIndex, run] of value.runs.entries()) {
+    requireRecord(run, `runs[${runIndex}]`);
+    if (run.profile !== "fresh" && run.profile !== "warm") {
+      invalidReport(`runs[${runIndex}].profile must be fresh or warm`);
+    }
+    if (
+      typeof run.repeat !== "number" ||
+      !Number.isInteger(run.repeat) ||
+      run.repeat < 1 ||
+      run.repeat > SMOKE_REPEATS
+    ) {
+      invalidReport(`runs[${runIndex}].repeat must be from 1 through ${SMOKE_REPEATS}`);
+    }
+    const profileRepeats = repeats.get(run.profile);
+    if (profileRepeats?.has(run.repeat)) {
+      invalidReport(`runs contains duplicate ${run.profile} repeat ${run.repeat}`);
+    }
+    profileRepeats?.add(run.repeat);
+    if (!Array.isArray(run.budgetChecks) || run.budgetChecks.length === 0) {
+      invalidReport(`runs[${runIndex}].budgetChecks must contain measured observations`);
+    }
+    const observedMetrics = new Set<string>();
+    evaluatedChecks += run.budgetChecks.length;
+    for (const [checkIndex, check] of run.budgetChecks.entries()) {
+      const path = `runs[${runIndex}].budgetChecks[${checkIndex}]`;
+      requireRecord(check, path);
+      const actual = check.actual;
+      const limit = check.limit;
+      requireFiniteNonnegative(actual, `${path}.actual`);
+      requireFiniteNonnegative(limit, `${path}.limit`);
+      const metric = requireText(check.metric, `${path}.metric`);
+      if (typeof check.passed !== "boolean") invalidReport(`${path}.passed must be boolean`);
+      if (check.passed !== actual <= limit) {
+        invalidReport(`${path}.passed must agree with actual <= limit`);
+      }
+      if (observedMetrics.has(metric)) invalidReport(`${path}.metric must not be duplicated`);
+      observedMetrics.add(metric);
+    }
+    const expectedMetrics = [...SMOKE_BUDGET_METRIC_NAMES].sort();
+    if (JSON.stringify([...observedMetrics].sort()) !== JSON.stringify(expectedMetrics)) {
+      invalidReport(
+        `runs[${runIndex}].budgetChecks must contain exactly ${expectedMetrics.join(", ")}`,
+      );
+    }
+  }
+  for (const profile of ["fresh", "warm"] as const) {
+    if (repeats.get(profile)?.size !== SMOKE_REPEATS) {
+      invalidReport(`${profile} runs must contain repeats 1 through ${SMOKE_REPEATS}`);
+    }
+  }
+  requireStringArray(environmentFacet.reasons, "facets.environment.reasons");
+  requireStringArray(evidenceFacet.reasons, "facets.evidenceCompleteness.reasons");
+  requireStringArray(budgetFacet.reasons, "facets.budgetEvaluation.reasons");
+  if (
+    typeof budgetFacet.evaluatedChecks !== "number" ||
+    !Number.isInteger(budgetFacet.evaluatedChecks) ||
+    budgetFacet.evaluatedChecks !== evaluatedChecks
+  ) {
+    invalidReport(`facets.budgetEvaluation.evaluatedChecks must equal ${evaluatedChecks}`);
+  }
+  return value as unknown as BaselineEligibleReport;
+}
+
+function summarizeBaselineMetrics(
+  report: Omit<BaselineEligibleReport, "baseline">,
+): readonly BaselineMetricSummary[] {
+  const samples = new Map<string, number[]>();
+  for (const run of report.runs) {
+    for (const check of run.budgetChecks) {
+      const key = `${run.profile}.${check.metric}`;
+      const values = samples.get(key) ?? [];
+      values.push(check.actual);
+      samples.set(key, values);
+    }
+  }
+  const metrics: BaselineMetricSummary[] = [
+    { key: "build.engineAndRenderWorkerBytes", value: report.build.engineAndRenderWorkerBytes },
+    { key: "build.totalBuildBytes", value: report.build.totalBuildBytes },
+  ];
+  for (const [key, values] of samples) {
+    metrics.push({ key, value: values.reduce((sum, value) => sum + value, 0) / values.length });
+  }
+  return Object.freeze(
+    metrics
+      .sort((left, right) => left.key.localeCompare(right.key))
+      .map((metric) => Object.freeze(metric)),
+  );
+}
+
+function compareMetricSummaries(
+  baseline: readonly BaselineMetricSummary[],
+  candidate: readonly BaselineMetricSummary[],
+): readonly BaselineMetricComparison[] {
+  const baselineByKey = new Map(baseline.map((metric) => [metric.key, metric.value] as const));
+  return Object.freeze(
+    candidate.flatMap((metric) => {
+      const prior = baselineByKey.get(metric.key);
+      if (prior === undefined) return [];
+      const absoluteDelta = metric.value - prior;
+      return [
+        Object.freeze({
+          absoluteDelta,
+          baseline: prior,
+          candidate: metric.value,
+          key: metric.key,
+          relativeDelta: prior === 0 ? null : absoluteDelta / prior,
+        }),
+      ];
+    }),
+  );
+}
+
+function assertPromotionEligible(report: BaselineEligibleReport): void {
+  const facetStatuses = [
+    report.facets.environment.status,
+    report.facets.evidenceCompleteness.status,
+    report.facets.budgetEvaluation.status,
+  ];
+  if (!report.passed || facetStatuses.some((status) => status !== "passed")) {
+    throw new Error(
+      "Only an aggregate-passing report with all three passing facets can be promoted",
+    );
+  }
+  if (
+    report.runs.some((run) => run.budgetChecks.some((check) => !check.passed)) ||
+    report.facets.environment.reasons.length > 0 ||
+    report.facets.evidenceCompleteness.reasons.length > 0 ||
+    report.facets.budgetEvaluation.reasons.length > 0
+  ) {
+    throw new Error("A promotable report must have no failed checks or passing-facet reasons");
+  }
+}
+
+function assertPromotionTransition(
+  report: BaselineEligibleReport,
+  store: BaselineStore,
+  allowIneligible: boolean,
+): void {
+  const current = store.entries[baselineKey(report)];
+  const observedDigest =
+    report.baseline.state === "untracked" ? null : report.baseline.baseline.reportDigest;
+  if (current === undefined && observedDigest !== null) {
+    throw new Error(
+      "Baseline promotion is stale: the report observed an anchor that no longer exists",
+    );
+  }
+  if (current !== undefined && observedDigest !== current.reportDigest) {
+    throw new Error(
+      "Baseline promotion is stale: the report was not generated against the currently promoted anchor",
+    );
+  }
+  const evaluation = evaluateBaseline(report, store);
+  if (evaluation.state === "ineligible" && !allowIneligible) {
+    throw new Error(
+      `Baseline promotion is ineligible: ${evaluation.reason}; pass --rebaseline only for an intentional reviewed rebaseline`,
+    );
+  }
+}
+
+function baselineKey(report: Omit<BaselineEligibleReport, "baseline">): string {
+  return [report.scenario, report.environment.machineId, report.environment.requestedTier].join(
+    "|",
+  );
+}
+
+function comparisonEnvironment(
+  report: Omit<BaselineEligibleReport, "baseline">,
+): BaselineComparisonEnvironment {
+  return Object.freeze({
+    adapter: report.environment.adapter,
+    hostAfterRuns: report.environment.hostAfterRuns,
+    machine: report.environment.machine,
+    machineId: report.environment.machineId,
+    requestedTier: report.environment.requestedTier,
+    targetDisplayMode: report.environment.targetDisplayMode,
+    harnessRuntime: report.harnessRuntime,
+  });
+}
+
+function emptyBaselineStore(): BaselineStore {
+  return Object.freeze({
+    entries: Object.freeze({}),
+    schemaVersion: BASELINE_STORE_SCHEMA_VERSION,
+  });
+}
+
+async function writeBaselineStore(path: string, store: BaselineStore): Promise<void> {
+  await mkdir(dirname(path), { recursive: true });
+  const temporaryPath = `${path}.${process.pid}.tmp`;
+  await writeFile(temporaryPath, `${JSON.stringify(store, null, 2)}\n`, { flag: "wx" });
+  try {
+    await rename(temporaryPath, path);
+  } finally {
+    await rm(temporaryPath, { force: true });
+  }
+}
+
+async function withBaselineStoreLock<T>(path: string, action: () => Promise<T>): Promise<T> {
+  const lockPath = `${path}.lock`;
+  await mkdir(dirname(path), { recursive: true });
+  const token = randomUUID();
+  const deadline = Date.now() + 10_000;
+  while (!(await tryAcquireBaselineStoreLock(lockPath, token))) {
+    await clearStaleBaselineStoreLock(lockPath);
+    if (Date.now() >= deadline)
+      throw new Error(`Timed out acquiring baseline store lock ${lockPath}`);
+    await delay(25);
+  }
+  try {
+    return await action();
+  } finally {
+    await releaseBaselineStoreLock(lockPath, token);
+  }
+}
+
+async function tryAcquireBaselineStoreLock(path: string, token: string): Promise<boolean> {
+  let created = false;
+  try {
+    const handle = await open(path, "wx");
+    created = true;
+    try {
+      await handle.writeFile(
+        `${JSON.stringify({ createdAt: new Date().toISOString(), pid: process.pid, token })}\n`,
+      );
+    } finally {
+      await handle.close();
+    }
+    return true;
+  } catch (error) {
+    if (created) await rm(path, { force: true });
+    if (isNodeError(error) && error.code === "EEXIST") return false;
+    throw error;
+  }
+}
+
+async function clearStaleBaselineStoreLock(path: string): Promise<void> {
+  let source: string;
+  try {
+    source = await readFile(path, "utf8");
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return;
+    throw error;
+  }
+  let metadata: { readonly createdAt?: unknown };
+  try {
+    metadata = JSON.parse(source) as typeof metadata;
+  } catch {
+    const age = await fileAgeMilliseconds(path);
+    if (age !== null && age > 300_000) await removeLockIfUnchanged(path, source);
+    return;
+  }
+  const createdAt = typeof metadata.createdAt === "string" ? Date.parse(metadata.createdAt) : NaN;
+  if (!Number.isFinite(createdAt) || Date.now() - createdAt <= 300_000) return;
+  await removeLockIfUnchanged(path, source);
+}
+
+async function releaseBaselineStoreLock(path: string, token: string): Promise<void> {
+  try {
+    const metadata = JSON.parse(await readFile(path, "utf8")) as { readonly token?: unknown };
+    if (metadata.token === token) await rm(path, { force: true });
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return;
+    console.warn(
+      `Could not verify ownership while releasing baseline store lock ${path}: ${formatError(error)}. The promotion action's outcome is preserved, and the lock will be eligible for stale recovery after five minutes.`,
+    );
+  }
+}
+
+async function removeLockIfUnchanged(path: string, expectedSource: string): Promise<void> {
+  try {
+    if ((await readFile(path, "utf8")) === expectedSource) await rm(path, { force: true });
+  } catch (error) {
+    if (!isNodeError(error) || error.code !== "ENOENT") throw error;
+  }
+}
+
+async function fileAgeMilliseconds(path: string): Promise<number | null> {
+  try {
+    return Date.now() - (await stat(path)).mtimeMs;
+  } catch (error) {
+    if (isNodeError(error) && error.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
+}
+
+function requiredText(value: string, label: string): string {
+  const trimmed = value.trim();
+  if (trimmed === "") throw new Error(`Baseline ${label} must not be empty`);
+  return trimmed;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function canonicalJsonStringify(value: unknown): string {
+  const serialized = JSON.stringify(canonicalJsonValue(value));
+  if (serialized === undefined) throw new Error("Comparison environment must be JSON-serializable");
+  return serialized;
+}
+
+function canonicalJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalJsonValue);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, canonicalJsonValue(value[key])]),
+  );
+}
+
+function formatError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return error instanceof Error;
+}
+
+function requireRecord(value: unknown, path: string): asserts value is Record<string, unknown> {
+  if (!isRecord(value)) invalidReport(`${path} must be an object`);
+}
+
+function requireText(value: unknown, path: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidReport(`${path} must be a nonempty string`);
+  }
+  return value;
+}
+
+function requireStringArray(value: unknown, path: string): void {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    invalidReport(`${path} must be an array of strings`);
+  }
+}
+
+function requireFiniteNonnegative(value: unknown, path: string): asserts value is number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    invalidReport(`${path} must be a finite nonnegative number`);
+  }
+}
+
+function requireSha256(value: unknown, path: string): void {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) {
+    invalidReport(`${path} must be a lowercase SHA-256 digest`);
+  }
+}
+
+function requireGitCommit(value: unknown, path: string): void {
+  if (typeof value !== "string" || !/^[a-f0-9]{40,64}$/.test(value)) {
+    invalidReport(`${path} must be a lowercase Git commit object ID`);
+  }
+}
+
+function invalidReport(reason: string): never {
+  throw new Error(`Report does not implement the smoke baseline contract: ${reason}`);
+}

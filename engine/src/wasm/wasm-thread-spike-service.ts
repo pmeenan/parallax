@@ -5,6 +5,7 @@ import {
   WASM_THREAD_SPIKE_TIMEOUT_MS,
   WASM_THREAD_SPIKE_WORKER_COUNT,
   type WasmThreadSpikeTelemetrySnapshot,
+  type WasmThreadSpikeWorkerPhase,
   type WasmThreadSpikeWorkerRequest,
   type WasmThreadSpikeWorkerResponse,
 } from "./wasm-thread-spike-protocol";
@@ -35,6 +36,8 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
   let completedWorkers = 0;
   let workerInitializationStartedAt: number | null = null;
   let executionStartedAt: number | null = null;
+  const workerPhases: Array<"not-created" | "created" | WasmThreadSpikeWorkerPhase | "ready"> =
+    Array.from({ length: WASM_THREAD_SPIKE_WORKER_COUNT }, () => "not-created");
   let telemetry = freezeTelemetry({
     checksum: null,
     completedTasks: 0,
@@ -87,7 +90,13 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
       case "failure":
         fail(`worker ${String(message.workerIndex ?? workerIndex)}: ${message.message}`);
         break;
+      case "phase": {
+        const phaseWorkerIndex = message.workerIndex ?? workerIndex;
+        workerPhases[phaseWorkerIndex] = message.phase;
+        break;
+      }
       case "ready":
+        workerPhases[message.workerIndex] = "ready";
         readyWorkers += 1;
         if (readyWorkers === WASM_THREAD_SPIKE_WORKER_COUNT) {
           if (workerInitializationStartedAt === null) {
@@ -174,10 +183,14 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
       if (disposed || telemetry.state !== "idle") return;
       startedAt = performance.now();
       publish({ ...telemetry, state: "running" });
-      timeout = setTimeout(
-        () => fail(`WASM thread spike exceeded ${WASM_THREAD_SPIKE_TIMEOUT_MS} ms`),
-        WASM_THREAD_SPIKE_TIMEOUT_MS,
-      );
+      timeout = setTimeout(() => {
+        const phases = workerPhases
+          .map((phase, workerIndex) => `${String(workerIndex)}:${phase}`)
+          .join(",");
+        fail(
+          `WASM thread spike exceeded ${WASM_THREAD_SPIKE_TIMEOUT_MS} ms; worker phases [${phases}]`,
+        );
+      }, WASM_THREAD_SPIKE_TIMEOUT_MS);
       void (async (): Promise<void> => {
         const moduleLoadStartedAt = performance.now();
         const response = await fetch(wasmArtifactUrl());
@@ -208,6 +221,7 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
             type: "module",
           });
           workers.push(worker);
+          workerPhases[workerIndex] = "created";
           worker.onmessage = (event: MessageEvent<WasmThreadSpikeWorkerResponse>): void => {
             try {
               handleMessage(workerIndex, event.data);

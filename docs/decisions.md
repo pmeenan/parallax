@@ -27,6 +27,107 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-088: Keep Rust/Wasm worker startup fail-closed after intermittent instantiation stalls  (2026-07-20, accepted; extends D-085)
+
+**Decision:** Retain D-085's concurrent two-worker initialization, 10,000 ms service
+boundary, mandatory participation/correctness checks, and no within-run retry. Add
+per-worker `script-evaluated`, `initialize-received`, `module-instantiated`, and `ready`
+phase evidence to timeout failures. Do not raise the timeout, automatically retry a
+failed launch, or replace the concurrent topology with either independent byte
+compilation or serial instantiation merely to make the M0 gate pass.
+
+**Context:** During the same-artifact Chrome 150→151 transition on registered dev-01,
+Chrome 151 repeatedly left the D-085 workload nonterminal after the 12,680-byte module
+had loaded and compiled. Schema-v26 report
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json`
+narrowed one physical-console failure to worker phases `[0:ready,1:initialize-received]`:
+both module scripts evaluated and received their initialization messages, one instance
+became ready, and its peer did not finish `WebAssembly.Instance` within 10 seconds. A
+no-tracing retained-profile arm that compiled the same bytes independently in each
+worker still failed one of eight relaunches after the affected worker reported
+`module-compiled`; serial initialization then failed both attempted relaunches with the
+second worker stuck after `initialize-received`, so neither arm is an evidenced safe
+mitigation. Separate clean/retained-profile runs also falsified a one-time browser-install
+or first-profile explanation. RE-036 carries the full negative evidence and RE-008
+separately carries trace-completion failures from the same transition.
+
+The unchanged concurrent topology then passed all six core launches in Chrome 150 anchor
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-46-41-973Z.json`
+and in Chrome 151 candidate
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json`.
+Both reports passed all three facets and 24 blocking checks under Node 24.18.0; the
+Chrome 151 result was explicitly promoted. This qualifies M0 without erasing the
+intermittent platform failure or pretending a retry is correctness.
+
+**Consequences:** A stalled instance invalidates the entire report with enough phase
+evidence to distinguish worker-script loading, message delivery, instantiation, and
+later execution. M1 production pools must define their own restart/failure policy from
+representative workloads; they do not inherit an automatic retry from this synthetic
+proof. Chrome 151 remains the promoted baseline because a complete unchanged-artifact
+gate passed and the negative runs remain first-class platform evidence.
+
+**Reopen if:** a minimal Chromium reproduction identifies a deterministic trigger or
+fix, a current wasm-bindgen/Rust toolchain changes threaded instantiation semantics, or
+representative M1 modules demonstrate a safe startup/recovery topology under the same
+physical-console gate.
+
+## D-087: Make Chrome baseline promotion an explicit result-store transition  (2026-07-20, accepted)
+
+**Decision:** `smoke@1` records one promoted baseline per scenario, registered machine,
+and quality tier in the machine-local ignored result store. Only an aggregate-passing
+report with all three facets passing and the complete three-fresh/three-warm measured-run
+contract is promotable. The promotion command requires an actor and reason and records
+the report filename, report
+SHA-256, artifact/source identities, schema and mandatory-metric-set versions, browser
+pin/executable identity, and the registered host/GPU/display comparison identity. It
+also records the Node collector version and executable digest. It never runs as part of
+`m0:gate` or `harness:smoke`. Under the store lock it requires the report's observed
+anchor digest to match the currently promoted record; stale reports are rejected.
+An `ineligible` passing report can start a deliberately incomparable anchor only with
+the additional `--rebaseline` acknowledgement.
+
+Every smoke report labels its baseline state. With no prior promotion it is `untracked`.
+With a matching browser it is `current`. A different Chrome executable/version is a
+`candidate` only when the artifact digest, mandatory metric set, exact Node collector,
+and registered comparison environment match; otherwise it is `ineligible`. Current and
+candidate reports compare the fresh/warm mean of each matching budget observation plus
+build byte totals against the promoted snapshot. Zero-valued baselines retain an
+absolute delta and report the relative delta as unavailable. These deltas are diagnostic attribution evidence; the
+unchanged budgets remain the blocking gate. A lead or human reviews a passing candidate,
+logs any Chrome-attributable regression as a rough edge, and then explicitly runs
+`pnpm harness:baseline:promote <report> --actor <name> --reason <reason> [--rebaseline]`.
+
+**Context:** The methodology already prohibited automatic promotion but no result-store
+implementation existed. Chrome Stable advanced from CfT 150.0.7871.115 to
+151.0.7922.34 on 2026-07-20 while M0 was closing, making the gap concrete: replacing the
+pin without first retaining the old result would erase the comparison point, while
+leaving Chrome 150 selected would violate the latest-Chrome project constraint.
+Exact-artifact Chrome 150 report
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-46-41-973Z.json` was explicitly
+promoted before changing the pin. Chrome 151 report
+`smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` then passed all
+three facets and 24 checks and was explicitly promoted after review. Current Stable
+identity came from Chrome for Testing's official
+`last-known-good-versions-with-downloads.json` endpoint, checked 2026-07-20.
+
+**Consequences:** Result schema advances to v26; mandatory metric-set v11 is unchanged.
+Promotion revalidates the complete three-fresh/three-warm run contract and serializes
+result-store updates under a stale-recoverable exclusive lock. A lock is an intentionally
+short five-minute lease: after expiry it is recoverable regardless of PID reuse, and its
+contents are re-read before removal so changed ownership detected there is retained.
+Failure to verify lock ownership during release warns without changing an
+already-persisted promotion into a reported failure. The local store remains
+ignored because physical result artifacts are machine-local, but its records are
+self-identifying and digest the source report. Chrome advances now produce an inspectable
+old/new candidate section and cannot silently become the baseline. `pnpm m0:gate`
+composes the existing build, local COOP/COEP server, six-run physical measurement, budget
+evaluation, and JSON/Markdown report; promotion remains a separate reviewed action.
+
+**Reopen if:** results gain a shared artifact service that can provide transactional
+promotion/audit history, the comparison eligibility contract grows beyond the recorded
+host/GPU/display identity, or calibrated relative regression thresholds become useful
+enough to add as explicit budgets through a separate decision.
+
 ## D-086: Qualify memory64 feasibility without adopting wasm64  (2026-07-19, accepted; informs P-001)
 
 **Decision:** Keep memory32 as the production default and keep P-001 open until M1

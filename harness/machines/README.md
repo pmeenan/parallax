@@ -9,10 +9,13 @@ reproducible baseline; a periodic parity smoke run on it guards against divergen
 "Same version" across platforms = same milestone + V8 revision. Canary is permitted
 only when testing Chrome-side changes and is always labeled as such (D-019).
 
-The current M0 automation pin is Chrome for Testing **150.0.7871.115**, revision
-**1639810** (`harness/chrome/stable.json`, promoted 2026-07-12 from the official CfT
-Stable availability endpoint). Archived binaries are machine-local and are not checked
-into this repository.
+The current automation pin is Chrome for Testing **151.0.7922.34**, revision
+**1654411** (`harness/chrome/stable.json`, selected 2026-07-20 from the official CfT
+Stable availability endpoint and promoted after the M0-exit physical gate). Schema-v26
+artifact `1e01757c47269eb6bd09077a1a71b5571b22580908d00c7729b2610d8f6665f8`
+passed all six core runs and 24 blocking checks on dev-01 under Node 24.18.0 before its
+2026-07-20 promotion. Archived binaries are machine-local and are not checked into this
+repository.
 
 ## dev-01 — primary dev machine; Showcase-tier gate and calibration reference
 

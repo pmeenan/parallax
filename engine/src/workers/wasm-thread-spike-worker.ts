@@ -23,6 +23,8 @@ let initialized = false;
 let workerIndex: number | null = null;
 let workerCount: number | null = null;
 
+workerScope.postMessage({ kind: "phase", phase: "script-evaluated", workerIndex });
+
 function postFailure(error: unknown): void {
   workerScope.postMessage({
     kind: "failure",
@@ -43,11 +45,13 @@ workerScope.onmessage = (event): void => {
         if (initialized) throw new Error("WASM thread-spike worker initialized more than once");
         workerIndex = message.workerIndex;
         workerCount = message.workerCount;
+        workerScope.postMessage({ kind: "phase", phase: "initialize-received", workerIndex });
         initSync({
           memory: message.memory,
           module: message.module,
           thread_stack_size: message.threadStackBytes,
         });
+        workerScope.postMessage({ kind: "phase", phase: "module-instantiated", workerIndex });
         initialized = true;
         workerScope.postMessage({ kind: "ready", workerIndex });
         break;

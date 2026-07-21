@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@11.12.0",
   "engines": {
-    "node": "24.13.1"
+    "node": "24.18.0"
   },
   "scripts": {
     "build": "node harness/scripts/build.mjs",
@@ -14,10 +14,12 @@
     "dev": "pnpm --filter @parallax/app dev",
     "harness:smoke": "pnpm build && node harness/dist/types/smoke-run.js",
     "harness:app-owned-llm": "pnpm build && node harness/dist/types/app-owned-llm-spike-bin.js",
+    "harness:baseline:promote": "pnpm build && node harness/dist/types/baseline-promote-bin.js",
     "harness:memory64": "pnpm build && node harness/dist/types/memory64-spike-bin.js",
     "harness:prompt-api-branded": "pnpm build && node harness/dist/types/prompt-api-branded-bin.js",
     "harness:prompt-api": "pnpm build && node harness/dist/types/prompt-api-spike-bin.js",
     "lint": "biome check .",
+    "m0:gate": "pnpm harness:smoke",
     "serve": "node harness/scripts/serve.mjs",
     "start": "pnpm build && pnpm serve",
     "test": "pnpm build && pnpm test:unit",

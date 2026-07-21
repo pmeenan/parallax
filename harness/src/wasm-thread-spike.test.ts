@@ -34,4 +34,22 @@ describe("Rust/WASM threads smoke evidence", () => {
       }),
     ).toMatchObject({ state: "invalid" });
   });
+
+  it("retains the terminal phase when a page-owned timeout fires", () => {
+    expect(
+      resolveWasmThreadSpikeMetric({
+        ...complete,
+        completedTasks: 0,
+        failureMessage: "WASM thread spike exceeded 10000 ms",
+        parallelExecutionElapsedMs: null,
+        processedTasksByWorker: Object.freeze([0, 0]),
+        state: "failed",
+        workerInitializationElapsedMs: null,
+        workerMask: 0,
+      }),
+    ).toMatchObject({
+      reason: expect.stringContaining("phase=worker-initialization"),
+      state: "invalid",
+    });
+  });
 });
