@@ -12,9 +12,10 @@ import type { Memory64SpikeService } from "../wasm/memory64-spike-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v7 envelope adds the dedicated memory64 spike. Subsystems retain their own section
-// schemas so platform experiments do not silently rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 7;
+// The v8 envelope adds render-worker decoder bootstrap and real-fixture evidence.
+// Subsystems retain their own section schemas so platform experiments do not silently
+// rewrite unrelated history.
+export const TELEMETRY_SCHEMA_VERSION = 8;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by

@@ -137,8 +137,9 @@ gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
 repeatability remains an informational platform finding rather than a promoted
 baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified, with
 D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained. The D-077
-head-to-head selected exactly pinned Babylon Lite 1.11.0 as the rendering core (D-078),
-and D-080 removed the comparison-only classic path and renderer abstraction;
+head-to-head selected Babylon Lite 1.11.0 as the rendering core (D-078), D-080 removed
+the comparison-only classic path and renderer abstraction, and D-089 upgraded the sole
+renderer to exactly pinned 1.12.0 while qualifying its worker-safe self-hosted decoders;
 the D-075/D-084 NPC context-prefill spike is now a measured restart-persistence no-go
 for the pinned Gemma 4 E2B runtime (live idle pre-seeding remains the preferred
 direction), and the D-085 Rust/WASM threads spike is qualified by the passing

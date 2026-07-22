@@ -40,6 +40,9 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
 - Naming, pivot, orientation conventions (defined in `qa/` config).
 - Export integrity: valid glTF/GLB, KTX2 textures, meshopt-compressed; round-trips
   through the engine's loader in a headless check.
+- Meshopt layout: exactly one glTF buffer; every compressed source and uncompressed
+  buffer view references buffer 0. The QA implementation must call the engine's
+  `canonicalMeshoptLayoutErrors` validator (D-089).
 - LOD chain present and within reduction targets for streamable classes.
 
 ## Rules

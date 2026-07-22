@@ -2,6 +2,7 @@ import type {
   SabRingBufferSpikeConfig,
   SabRingBufferSpikeWorkerResponse,
 } from "../workers/sab-ring-buffer-spike-protocol";
+import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
 
 export interface WalkingSkeletonScene {
   readonly camera: {
@@ -41,6 +42,8 @@ export interface RenderFrameSample {
 }
 
 export interface RenderReadyMessage {
+  readonly decoderBootstrap: DecoderBootstrapTelemetry;
+  readonly decoderFixtures: DecoderFixtureTelemetry;
   readonly firstFrame: RenderFrameSample;
   readonly kind: "ready";
   readonly workerInitToFirstFrameMs: number;

@@ -20,6 +20,53 @@ const moduleDescriptors = Object.freeze([
     token: "__GAME_ARTIFACT__",
   },
 ]);
+const decoderWasmDescriptors = Object.freeze([
+  {
+    input: "engine/node_modules/draco3dgltf/draco_decoder_gltf.wasm",
+    scope: "draco-decoder",
+    token: "__DRACO_DECODER_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/msc_basis_transcoder.wasm",
+    scope: "msc-transcoder",
+    token: "__MSC_TRANSCODER_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_astc.wasm",
+    scope: "uastc-astc",
+    token: "__UASTC_ASTC_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_bc7.wasm",
+    scope: "uastc-bc7",
+    token: "__UASTC_BC7_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_r8_unorm.wasm",
+    scope: "uastc-r8",
+    token: "__UASTC_R8_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_rg8_unorm.wasm",
+    scope: "uastc-rg8",
+    token: "__UASTC_RG8_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm",
+    scope: "uastc-rgba-srgb",
+    token: "__UASTC_RGBA_SRGB_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_rgba8_unorm_v2.wasm",
+    scope: "uastc-rgba-unorm",
+    token: "__UASTC_RGBA_UNORM_WASM_ARTIFACT__",
+  },
+  {
+    input: "engine/node_modules/@babylonjs/ktx2decoder/wasm/zstddec.wasm",
+    scope: "zstd-decoder",
+    token: "__ZSTD_DECODER_WASM_ARTIFACT__",
+  },
+]);
 
 process.env.LANG = "C";
 process.env.LC_ALL = "C";
@@ -42,6 +89,14 @@ runPnpm(["--filter", "@parallax/app", "build"]);
 
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
+
+const decoderWasmArtifacts = [];
+for (const descriptor of decoderWasmDescriptors) {
+  const bytes = await readFile(join(repositoryRoot, descriptor.input));
+  const outputName = contentAddressedNameFromBytes(descriptor.scope, bytes, ".wasm");
+  await writeFile(join(outputRoot, "immutable", outputName), bytes);
+  decoderWasmArtifacts.push({ ...descriptor, outputName });
+}
 
 const wllamaWasmBytes = await readFile(
   join(repositoryRoot, "engine/node_modules/@wllama/wllama/esm/wasm/wllama.wasm"),
@@ -88,6 +143,13 @@ for (const role of ["ai", "memory64-spike", "render", "storage", "wasm-thread"])
     bytes = Buffer.from(
       replaceExactlyOnce(bytes.toString("utf8"), "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName),
     );
+  }
+  if (role === "render") {
+    let source = bytes.toString("utf8");
+    for (const artifact of decoderWasmArtifacts) {
+      source = replaceExactlyOnce(source, artifact.token, artifact.outputName);
+    }
+    bytes = Buffer.from(source);
   }
   const outputName = contentAddressedNameFromBytes(`${role}-worker`, bytes);
   await writeFile(join(outputRoot, "immutable", outputName), bytes);

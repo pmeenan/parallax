@@ -1,3 +1,4 @@
+import { installDecoderGlobals, runDecoderFixtures } from "../render/decoder-bootstrap";
 import {
   createLiteWalkingSkeleton,
   renderLiteWalkingSkeleton,
@@ -110,6 +111,8 @@ function startRenderWorker(): void {
   ): Promise<void> => {
     const initStartedAt = performance.now();
     try {
+      const decoderBootstrap = installDecoderGlobals();
+      const decoderFixtures = await runDecoderFixtures();
       const renderer = await createLiteWalkingSkeleton(canvas, width, height, config);
 
       resizeScene = (nextWidth, nextHeight): void => {
@@ -154,6 +157,8 @@ function startRenderWorker(): void {
         frameCount += 1;
         if (frameCount === 1) {
           workerScope.postMessage({
+            decoderBootstrap,
+            decoderFixtures,
             firstFrame: sample,
             kind: "ready",
             workerInitToFirstFrameMs: performance.now() - initStartedAt,

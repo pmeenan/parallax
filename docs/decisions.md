@@ -27,6 +27,59 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-089: Self-host and preinstall compressed-asset decoders in the module render worker  (2026-07-20, accepted; re-grounds D-006 and executes D-078's M1 prerequisite)
+
+**Decision:** Adopt Babylon Lite 1.12.0 and exact decoder pins
+`@babylonjs/ktx2decoder` 9.17.0, `draco3dgltf` 1.5.7, and `meshoptimizer` 1.2.0. The build
+content-addresses every decoder WASM binary. The module render worker installs the
+decoder factories/globals before any scene or asset load and fails readiness unless a
+real Draco mesh, BasisLZ KTX2 texture, and meshopt vertex buffer decode successfully.
+Public telemetry schema v8 records versions, installation path, decode durations, and
+decoded facts. The future asset QA gate is required to reject meshopt glTF that is not
+canonical single-buffer by calling the engine's shared validator.
+
+**Context:** Pinned Babylon Lite's Draco, KTX2, and meshopt loaders first consult globals,
+but their fallback path creates a classic `<script>` through `document`, which is absent
+in the module render worker. The pinned Draco and MSC packages publish generated
+CommonJS/AMD wrappers rather than ESM browser factories. A narrow Rollup adapter exports
+those exact factories without modifying `node_modules`; all local divergence and
+upstream-ready proposals are recorded in [upstream-contributions.md](upstream-contributions.md).
+The old 1.11.0 physical artifact `1e01757c4726…` passed before the isolated 1.12.0
+candidate `23e3b2d0be3c…`; the latter raised engine + render-worker bytes from 597,345 to
+606,811 and passed all three facets, six runs, and 24 checks. With decoders, the shared QA
+validator, and schema v8, final artifact `040677b31910…` is 831,188 bytes and passed the
+same gate
+under Chrome 151.0.7922.34 on dev-01. Budgets were unchanged. One preceding same-artifact
+attempt retained an RE-036 Wasm-instantiation stall and another retained two RE-008 trace
+completion timeouts; the passing replacement does not erase either finding.
+
+**Sources checked (2026-07-20):** the exact installed Lite 1.12.0 loader source and its
+[official release](https://github.com/BabylonJS/Babylon-Lite/releases/tag/npm-lite-v1.12.0)
+and [1.11→1.12 comparison](https://github.com/BabylonJS/Babylon-Lite/compare/npm-lite-v1.11.0...npm-lite-v1.12.0);
+the Khronos [`KHR_texture_basisu`](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_texture_basisu/README.md),
+[`KHR_draco_mesh_compression`](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Khronos/KHR_draco_mesh_compression/README.md),
+and [`EXT_meshopt_compression`](https://github.com/KhronosGroup/glTF/blob/main/extensions/2.0/Vendor/EXT_meshopt_compression/README.md)
+specifications; official [Draco 1.5.7](https://github.com/google/draco/releases/tag/1.5.7)
+and [meshoptimizer 1.2](https://github.com/zeux/meshoptimizer/releases/tag/v1.2)
+releases; and Khronos
+[glTF-Sample-Assets commit `2bac6f8c…`](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/2bac6f8c57bf471df0d2a1e8a8ec023c7801dddf).
+The local worker fixture is controlling evidence for this topology.
+
+**Consequences:** Compressed assets never depend on a CDN or DOM script injection.
+Decoder code and binaries are install-manifest artifacts and materially increase shipped
+bytes; later install/streaming work can cache them normally. The KTX2 gate currently
+covers BasisLZ/MSC while all pinned UASTC and Zstd binaries are self-hosted; representative
+content must extend fixtures when it adopts another path. Multi-buffer meshopt glTF must
+become a build-time QA error when the first asset pipeline slice lands; it has no runtime
+fallback. `@babylonjs/core` 9.17.0 is an auto-installed
+peer used by the decoder package's shared enum module; Parallax still imports no classic
+scene/renderer API and D-080 remains intact.
+
+**Reopen if:** an upstream package ships worker-native ESM injection (remove the matching
+adapter after the same fixtures pass), a decoder upgrade changes wrapper shape, another
+KTX2 supercompression/transcode path is selected, or representative cell-load p95 shows
+decoder initialization must move out of render startup.
+
 ## D-088: Keep Rust/Wasm worker startup fail-closed after intermittent instantiation stalls  (2026-07-20, accepted; extends D-085)
 
 **Decision:** Retain D-085's concurrent two-worker initialization, 10,000 ms service
@@ -3582,10 +3635,17 @@ measurement target; NPC design must tolerate nano-class model quality.
 **Reopen if:** quality is unusable for even constrained NPC dialog, or the API's session
 limits make per-NPC state impractical (either outcome is itself a finding).
 
-## D-006: Asset formats — glTF/GLB, KTX2 (BasisU), meshopt; content-addressed per-cell bundles  (2026-07-11, accepted)
-**Decision:** As stated. Packaging is per streaming cell with shared kits deduplicated.
-**Context:** Native Babylon.js support, GPU-friendly transcode in workers, and
-content-addressing enables asset-only updates that never touch code caches.
+## D-006: Asset formats — glTF/GLB, KTX2 (BasisU), meshopt; content-addressed per-cell bundles  (2026-07-11, accepted; technology claims re-grounded by D-089)
+**Decision:** Packaging is per streaming cell with shared kits deduplicated. Geometry is
+glTF/GLB with optional `KHR_draco_mesh_compression` or `EXT_meshopt_compression`;
+textures use KTX2 through `KHR_texture_basisu`. D-089 owns exact decoder pins, module-
+worker injection, fixtures, and Lite's canonical single-buffer meshopt constraint.
+**Context:** The Khronos extension specifications define the interoperable compressed
+payloads; the exact pinned Babylon Lite source and D-089's Chrome fixture establish the
+implemented subset. Content addressing enables asset-only updates that do not change
+code artifacts. Sources rechecked 2026-07-20: Khronos `KHR_texture_basisu`,
+`KHR_draco_mesh_compression`, and `EXT_meshopt_compression` specifications plus the
+installed Babylon Lite 1.12.0 loaders; no broader “native Babylon.js” claim is relied on.
 **Reopen if:** harness shows decode/transcode dominating cell-load p95.
 
 ## D-005: Multithreading via explicit worker topology (SAB + OffscreenCanvas + WebGPU-in-worker)  (2026-07-11, accepted; the "no engine ships web multithreading" claim below is corrected by D-046 — Unity 6.4 ships Burst/Job-System threads; the decision is unaffected)

@@ -53,7 +53,7 @@ export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 7;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 8;
 // v26 records result-store baseline state, old-vs-candidate metric deltas, and the exact
 // Node collector identity without silently promoting a Chrome-version advance.
 export const SMOKE_REPORT_SCHEMA_VERSION = 26;

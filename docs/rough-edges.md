@@ -177,6 +177,11 @@ COS APIs exist):
   passed all six core launches, all three facets, and 24 checks under Node 24.18.0. The
   Chrome 151 result is promoted; the passing sample qualifies M0 but does not erase the
   intermittent failure or establish that Chrome 151 increased its underlying rate.
+  The final D-089 artifact reproduced the same stall on warm repeat 2 in
+  `smoke-1-040677b31910-dev-01-showcase-2026-07-21T02-23-23-644Z.json`: the 12,680-byte
+  module compiled in 2.365 ms, one worker remained at `initialize-received`, and the
+  service failed closed at 10,000 ms. The exact artifact later passed 6/6 in
+  `smoke-1-040677b31910-dev-01-showcase-2026-07-21T02-28-50-631Z.json`.
 - **Current smoke/relaunch repro:** run `pnpm m0:gate` repeatedly, or launch the built app without tracing in four
   distinct temporary profiles followed by four sequential relaunches of one retained profile;
   wait for `__PARALLAX_TELEMETRY__.snapshot().wasmThreadSpike` to become terminal and retain its
@@ -1211,6 +1216,11 @@ COS APIs exist):
   `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` then completed all
   six core traces in 286.2–309.1 ms and was promoted after passing all facets and budgets.
   Recovery qualifies the artifact; it does not close this burst-capable finding.
+  D-089's final artifact reproduced the signature twice in one otherwise complete
+  six-run gate: warm repeats 1 and 2 acknowledged `Tracing.end` in 2.9/2.1 ms, delivered
+  zero events/chunks, and timed out at five seconds in
+  `smoke-1-040677b31910-dev-01-showcase-2026-07-21T02-26-10-634Z.json`. The unchanged
+  artifact then passed every trace and all 24 checks in the 02:28:50 replacement above.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second

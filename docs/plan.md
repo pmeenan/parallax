@@ -83,12 +83,13 @@ passing replacement as erasure.
 ## M1 — Greybox District 1 streaming  `pending`
 
 - [ ] Procedural greybox content for D1 (cells, LOD tiers, collision) at target world
-      scale. Includes re-grounding D-006's asset-format claims (Babylon Lite glTF/KTX2/
-      meshopt support) against current sources before the first content lands — the
-      entry predates the rule-10 citation requirement and carries none. Before content
-      lands, bundle and preinstall the pinned KTX2/Draco/meshopt decoder globals in the
-      module render worker and gate one fixture per compression path plus meshopt's
-      canonical single-buffer constraint (D-078).
+      scale.
+  - [x] M1 compressed-asset prerequisite: re-ground D-006, adopt and self-host the exact
+        KTX2/Draco/meshopt pins, preinstall their globals in the module render worker,
+        gate one real fixture per path, and establish the shared validator plus mandatory
+        future QA rejection for meshopt's canonical single-buffer constraint (D-078/D-089).
+        Qualified by schema-v8 physical artifact
+        `040677b31910…` on 2026-07-20.
 - [ ] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
       movement, inside memory budget with proactive eviction.
 - [ ] Geometry-representation spike (P-002): triangle LOD vs. meshlet-virtualized vs.

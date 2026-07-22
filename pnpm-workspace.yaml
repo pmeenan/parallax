@@ -14,3 +14,7 @@ allowBuilds:
   sharp: false
 
 engineStrict: true
+
+# pnpm 11.12.0 has a built-in 24-hour minimumReleaseAge; D-089 reviewed this exact pin.
+minimumReleaseAgeExclude:
+  - '@babylonjs/lite@1.12.0'

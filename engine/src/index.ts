@@ -59,6 +59,12 @@ export {
   PROMPT_API_WORKER_PROBE_TIMEOUT_MS,
   probeDedicatedWorkerExposure,
 } from "./ai/prompt-api-spike-service";
+export type {
+  MeshoptBufferView,
+  MeshoptCompressionExtension,
+  MeshoptDocumentLayout,
+} from "./assets/meshopt-layout";
+export { canonicalMeshoptLayoutErrors } from "./assets/meshopt-layout";
 export type { EngineIdentity } from "./identity";
 export { ENGINE_VERSION, initializeEngine } from "./identity";
 export type {

@@ -1,5 +1,6 @@
 import { createSabRingBufferSpike } from "../workers/sab-ring-buffer-spike";
 import type { SabRingBufferSpikeTelemetrySnapshot } from "../workers/sab-ring-buffer-spike-protocol";
+import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
 import type {
   RenderFrameSample,
   RenderWorkerRequest,
@@ -10,6 +11,8 @@ import type {
 export type { RenderFrameSample, WalkingSkeletonScene } from "./render-protocol";
 
 export interface RenderTelemetrySnapshot {
+  readonly decoderBootstrap: DecoderBootstrapTelemetry | null;
+  readonly decoderFixtures: DecoderFixtureTelemetry | null;
   readonly failureMessage: string | null;
   readonly frameCount: number;
   readonly recentFrames: readonly RenderFrameSample[];
@@ -71,6 +74,8 @@ export function createRenderService(): RenderService {
     publish({ ...telemetry, sabRingBufferSpike: sabSnapshot });
   });
   let telemetry: RenderTelemetrySnapshot = Object.freeze({
+    decoderBootstrap: null,
+    decoderFixtures: null,
     failureMessage: null,
     frameCount: 0,
     recentFrames: Object.freeze([]),
@@ -166,6 +171,8 @@ export function createRenderService(): RenderService {
             case "ready":
               publish({
                 ...telemetry,
+                decoderBootstrap: Object.freeze(message.decoderBootstrap),
+                decoderFixtures: Object.freeze(message.decoderFixtures),
                 frameCount: 1,
                 recentFrames: Object.freeze([Object.freeze(message.firstFrame)]),
                 state: "ready",

@@ -52,6 +52,37 @@ describe("assembled build contract", () => {
       }
     }
 
+    const decoderScopes = [
+      "draco-decoder",
+      "msc-transcoder",
+      "uastc-astc",
+      "uastc-bc7",
+      "uastc-r8",
+      "uastc-rg8",
+      "uastc-rgba-srgb",
+      "uastc-rgba-unorm",
+      "zstd-decoder",
+    ];
+    const renderEntrypoint = manifest.workerEntrypoints.find(
+      (entrypoint) => entrypoint.role === "render",
+    );
+    expect(renderEntrypoint).toBeDefined();
+    const renderSource = await readFile(
+      join(buildRoot, renderEntrypoint?.path ?? "missing-render-worker"),
+      "utf8",
+    );
+    expect(renderSource).toContain('draco: "preinstalled-global"');
+    expect(renderSource).toContain('ktx2: "preinstalled-global"');
+    expect(renderSource).toContain('meshopt: "preinstalled-global"');
+    for (const scope of decoderScopes) {
+      const matches = manifest.artifacts.filter((artifact) =>
+        new RegExp(`^immutable/${scope}-[a-f0-9]{64}\\.wasm$`).test(artifact.path),
+      );
+      expect(matches).toHaveLength(1);
+      expect(renderSource).toContain(matches[0]?.path.replace("immutable/", ""));
+    }
+    expect(renderSource).not.toMatch(/__[A-Z0-9_]+_WASM_ARTIFACT__/);
+
     for (const artifact of manifest.artifacts) {
       if (artifact.path.startsWith("immutable/")) {
         expect(artifact.path).toContain(`-${artifact.sha256}.`);

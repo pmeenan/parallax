@@ -42,9 +42,12 @@ importers:
 
   engine:
     dependencies:
+      '@babylonjs/ktx2decoder':
+        specifier: 9.17.0
+        version: 9.17.0(@babylonjs/core@9.17.0)
       '@babylonjs/lite':
-        specifier: 1.11.0
-        version: 1.11.0
+        specifier: 1.12.0
+        version: 1.12.0
       '@huggingface/transformers':
         specifier: 4.2.0
         version: 4.2.0
@@ -54,6 +57,12 @@ importers:
       '@wllama/wllama':
         specifier: 3.5.1
         version: 3.5.1
+      draco3dgltf:
+        specifier: 1.5.7
+        version: 1.5.7
+      meshoptimizer:
+        specifier: 1.2.0
+        version: 1.2.0
     devDependencies:
       '@rollup/plugin-node-resolve':
         specifier: 16.0.3
@@ -95,8 +104,16 @@ importers:
 
 packages:
 
-  '@babylonjs/lite@1.11.0':
-    resolution: {integrity: sha512-i5LD8i2B3fkzrS47y4MW3qEf4VwP7cn3e/IeTTvAF1jPysEXu7kRF9MRWena3bT7abSqdq0/pe4GUK0Dw2IDCg==}
+  '@babylonjs/core@9.17.0':
+    resolution: {integrity: sha512-+yXYuQC6l9FbVeGWtYd4mcY3IJsfDc/R5Re6YtVT1t3ox3WgfaOVYMTjlUcqrG35wp6FbIANqVcos5EPt/IF8A==}
+
+  '@babylonjs/ktx2decoder@9.17.0':
+    resolution: {integrity: sha512-cKQ223fywAiz7G/wYrfQoJu/PYA2JeUfG162D63z+TY5W1aafNXD6oacDmzH0OnTUFBPa3EBtKeEhkUzM2c4iw==}
+    peerDependencies:
+      '@babylonjs/core': ^9.0.0
+
+  '@babylonjs/lite@1.12.0':
+    resolution: {integrity: sha512-1SlbO3V3PhX4SY725y5uON7IM7Z2eNXxdFp7tC/PFn/dJ0X6ZBTveG7lGqEgK6/bCDBHoaU6GhydRb0XkAfb9A==}
     peerDependencies:
       '@babylonjs/havok': ^1.3.0
       '@webgpu/types': ^0.1.52
@@ -1006,6 +1023,9 @@ packages:
   detect-node@2.1.0:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==}
 
+  draco3dgltf@1.5.7:
+    resolution: {integrity: sha512-LeqcpmoHIyYUi0z70/H3tMkGj8QhqVxq6FJGPjlzR24BNkQ6jyMheMvFKJBI0dzGZrEOUyQEmZ8axM1xRrbRiw==}
+
   es-define-property@1.0.1:
     resolution: {integrity: sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==}
     engines: {node: '>= 0.4'}
@@ -1174,6 +1194,9 @@ packages:
   matcher@3.0.0:
     resolution: {integrity: sha512-OkeDaAZ/bQCxeFAozM55PKcKU0yJMPGifLwV4Qgjitu+5MoAfSQN4lsLJeXZ1b8w0x+/Emda6MZgXS1jvsapng==}
     engines: {node: '>=10'}
+
+  meshoptimizer@1.2.0:
+    resolution: {integrity: sha512-davRZeIJbxJrE24cwQle7ZDsxjdk/OphNOV83oX+efQinyoHY9Jcyz3MHbaoG0qySZajldGztNZ1RN/T19PZsg==}
 
   nanoid@3.3.15:
     resolution: {integrity: sha512-y7Wygv/7mEOvxTuEQDB8StXdMRBWf1kR/tlhAzBRUFkB2jfcLOAxO/SHmOO2zgz1pVgK29/kyupn059/bCHdjA==}
@@ -1406,7 +1429,13 @@ packages:
 
 snapshots:
 
-  '@babylonjs/lite@1.11.0': {}
+  '@babylonjs/core@9.17.0': {}
+
+  '@babylonjs/ktx2decoder@9.17.0(@babylonjs/core@9.17.0)':
+    dependencies:
+      '@babylonjs/core': 9.17.0
+
+  '@babylonjs/lite@1.12.0': {}
 
   '@biomejs/biome@2.5.3':
     optionalDependencies:
@@ -1979,6 +2008,8 @@ snapshots:
 
   detect-node@2.1.0: {}
 
+  draco3dgltf@1.5.7: {}
+
   es-define-property@1.0.1: {}
 
   es-errors@1.3.0: {}
@@ -2129,6 +2160,8 @@ snapshots:
   matcher@3.0.0:
     dependencies:
       escape-string-regexp: 4.0.0
+
+  meshoptimizer@1.2.0: {}
 
   nanoid@3.3.15: {}
 
