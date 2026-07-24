@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { type GreyboxCell, type GreyboxDistrict, validateGreyboxDistrict } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import { readAndValidateBuildManifest } from "./build-manifest.js";
 
@@ -13,7 +15,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(6);
+    expect(manifest.schemaVersion).toBe(7);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -88,6 +90,83 @@ describe("assembled build contract", () => {
         expect(artifact.path).toContain(`-${artifact.sha256}.`);
       }
     }
+
+    expect(manifest.gameContentEntrypoints).toEqual([
+      expect.objectContaining({
+        districtId: "district-1-surface",
+        schemaVersion: 1,
+        scope: "game-specific",
+        targetType: "district",
+      }),
+    ]);
+    const districtEntrypoint = manifest.gameContentEntrypoints[0];
+    expect(districtEntrypoint?.path).toMatch(
+      /^immutable\/district-1-surface-index-[a-f0-9]{64}\.json$/,
+    );
+    const districtIndexBytes = await readFile(
+      join(buildRoot, districtEntrypoint?.path ?? "missing"),
+    );
+    const districtIndex = JSON.parse(districtIndexBytes.toString("utf8")) as Omit<
+      GreyboxDistrict,
+      "cells" | "id"
+    > & {
+      districtId: string;
+      cells: readonly Readonly<{
+        bytes: number;
+        cellId: string;
+        coordinate: readonly [number, number];
+        path: string;
+        sha256: string;
+      }>[];
+    };
+    expect(districtIndex).toMatchObject({ districtId: "district-1-surface", schemaVersion: 1 });
+    expect(districtIndex.districtId).toBe(districtEntrypoint?.districtId);
+    expect(districtIndex.schemaVersion).toBe(districtEntrypoint?.schemaVersion);
+    const districtIndexArtifact = manifest.artifacts.find(
+      (artifact) => artifact.path === districtEntrypoint?.path,
+    );
+    expect(districtIndexArtifact).toBeDefined();
+    expect(createHash("sha256").update(districtIndexBytes).digest("hex")).toBe(
+      districtIndexArtifact?.sha256,
+    );
+    expect(districtEntrypoint?.path).toContain(`-${districtIndexArtifact?.sha256}.json`);
+    expect(districtIndex.cells).toHaveLength(256);
+    const cells: GreyboxCell[] = [];
+    const coordinates = new Set<string>();
+    for (const cellEntry of districtIndex.cells) {
+      expect(cellEntry.path).toMatch(
+        /^immutable\/district-1-surface-cell-\d{2}-\d{2}-[a-f0-9]{64}\.json$/,
+      );
+      expect(cellEntry.path).toContain(`-${cellEntry.sha256}.json`);
+      const cellArtifact = manifest.artifacts.find((artifact) => artifact.path === cellEntry.path);
+      expect(cellArtifact).toMatchObject({ bytes: cellEntry.bytes, sha256: cellEntry.sha256 });
+      const cellBytes = await readFile(join(buildRoot, cellEntry.path));
+      expect(cellBytes.byteLength).toBe(cellEntry.bytes);
+      expect(createHash("sha256").update(cellBytes).digest("hex")).toBe(cellEntry.sha256);
+      const wrapper = JSON.parse(cellBytes.toString("utf8")) as {
+        cell: GreyboxCell;
+        districtId: string;
+        schemaVersion: number;
+      };
+      expect(wrapper.districtId).toBe(districtIndex.districtId);
+      expect(wrapper.schemaVersion).toBe(districtIndex.schemaVersion);
+      expect(wrapper.cell.id).toBe(cellEntry.cellId);
+      expect(wrapper.cell.coordinate).toEqual(cellEntry.coordinate);
+      const coordinateKey = cellEntry.coordinate.join(",");
+      expect(coordinates.has(coordinateKey)).toBe(false);
+      coordinates.add(coordinateKey);
+      cells.push(wrapper.cell);
+    }
+    expect(coordinates).toEqual(
+      new Set(
+        Array.from({ length: 16 }, (_, row) =>
+          Array.from({ length: 16 }, (_unused, column) => `${column},${row}`),
+        ).flat(),
+      ),
+    );
+    const { districtId, ...districtMetadata } = districtIndex;
+    const reconstructedDistrict: GreyboxDistrict = { ...districtMetadata, cells, id: districtId };
+    expect(validateGreyboxDistrict(reconstructedDistrict)).toMatchObject({ cellCount: 256 });
 
     const appArtifact = manifest.artifacts.find((artifact) =>
       artifact.path.startsWith("immutable/app-"),

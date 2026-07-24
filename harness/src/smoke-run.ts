@@ -69,6 +69,8 @@ import {
   type MemoryDumpRequest,
   resolveGpuMemoryMetric,
 } from "./gpu-memory.js";
+import { analyzeGreyboxRenderedOutput } from "./greybox-rendered-output.js";
+import { type GreyboxWorldEvidence, requireGreyboxWorld } from "./greybox-world-evidence.js";
 import { formatHttpServingEvidence } from "./http-evidence.js";
 import {
   invalidateJsHeapMetric,
@@ -197,6 +199,7 @@ interface RunMeasurement {
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly gpuMemory: GpuMemoryMetric;
+  readonly greyboxWorld: MeasuredMetric<GreyboxWorldEvidence>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
   readonly hostStorageActivity: WindowsStorageActivityMetric;
   readonly jsHeap: JsHeapMetric;
@@ -1057,6 +1060,10 @@ async function measureRunWithBrowser(
         snapshot.render.failureMessage ?? `Unexpected render state ${snapshot.render.state}`,
       );
     }
+    const greyboxTelemetry = snapshot.render.greyboxWorld;
+    if (greyboxTelemetry === null) {
+      throw new Error("Ready render telemetry omitted the greybox world");
+    }
     const frames = selectMeasurementFrameWindow({
       measurementFrames: SMOKE_MEASUREMENT_FRAMES,
       recentFrames: snapshot.render.recentFrames,
@@ -1139,6 +1146,10 @@ async function measureRunWithBrowser(
     if (errors.length > 0) {
       throw new Error(`Browser errors after the measurement window: ${errors.join(" | ")}`);
     }
+    const renderedOutput = await analyzeGreyboxRenderedOutput(
+      await page.locator("#render-canvas").screenshot({ type: "png" }),
+      greyboxTelemetry.clearColor,
+    );
     const browserErrorsBeforeJsHeap = errors.length;
     let jsHeap: JsHeapMetric =
       renderWorkerUrl.state === "measured"
@@ -1176,6 +1187,7 @@ async function measureRunWithBrowser(
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
       gpuMemory,
+      greyboxWorld: measured(requireGreyboxWorld(greyboxTelemetry, frames, renderedOutput)),
       hostStorageActivity: opfsMeasurement.activity,
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
@@ -2153,6 +2165,12 @@ async function writeReport(report: SmokeReport): Promise<void> {
     );
     return `- ${run.profile} repeat ${run.repeat}: ${samples.join(" | ")}`;
   });
+  const greyboxWorldEvidence = report.runs.map((run) => {
+    const evidence = run.greyboxWorld.value;
+    const lighting = evidence.observedLighting;
+    const output = evidence.renderedOutput;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.districtId}; ${evidence.cellCount} cells; LOD cells [${evidence.selectedLodCellCounts.join(", ")}]; ${evidence.renderedTerrainPatchCount.toLocaleString("en-US")} terrain patches / ${evidence.renderedFeaturePrimitiveCount.toLocaleString("en-US")} box features / ${evidence.renderedTriangleCount.toLocaleString("en-US")} triangles; ${evidence.colliderCount.toLocaleString("en-US")} colliders / ${evidence.heightSampleCount.toLocaleString("en-US")} height samples; ${evidence.materialCount} materials; ${formatMilliseconds(evidence.mainThreadWorldGenerationMs)} main-thread generation / ${formatMilliseconds(evidence.mainThreadScenePostMessageMs)} main-thread scene postMessage / ${formatMilliseconds(evidence.materializationMs)} worker materialization; canvas ${output.width}×${output.height}, clear RGB [${output.clearColorRgb.join(", ")}], ${output.visiblePixelCount.toLocaleString("en-US")} visible pixels (${(output.visiblePixelRatio * 100).toFixed(2)}%), PNG SHA-256 \`${output.pngSha256}\`; ${lighting.sampleCount} lighting samples, phase ${lighting.phaseMinimum.toFixed(6)}–${lighting.phaseMaximum.toFixed(6)} (range ${lighting.phaseRange.toFixed(6)}), intensity ${lighting.intensityMinimum.toFixed(6)}–${lighting.intensityMaximum.toFixed(6)} (range ${lighting.intensityRange.toFixed(6)})`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2184,6 +2202,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     ...(report.informationalFailures.length === 0
       ? ["None."]
       : report.informationalFailures.map((failure) => `- ${failure}`)),
+    "",
+    "## D1 greybox rendered-world evidence",
+    "",
+    ...greyboxWorldEvidence,
     "",
     "## Dawn pipeline/cache evidence",
     "",

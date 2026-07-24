@@ -68,11 +68,11 @@ export { canonicalMeshoptLayoutErrors } from "./assets/meshopt-layout";
 export type { EngineIdentity } from "./identity";
 export { ENGINE_VERSION, initializeEngine } from "./identity";
 export type {
+  GreyboxRenderTelemetry,
   RenderFrameSample,
   RenderService,
   RenderServiceListener,
   RenderTelemetrySnapshot,
-  WalkingSkeletonScene,
 } from "./render/render-service";
 export { createRenderService } from "./render/render-service";
 export type {
@@ -136,3 +136,26 @@ export type {
 } from "./wasm/wasm-thread-spike-service";
 export { createWasmThreadSpikeService } from "./wasm/wasm-thread-spike-service";
 export type { SabRingBufferSpikeTelemetrySnapshot } from "./workers/sab-ring-buffer-spike-protocol";
+export type {
+  GreyboxAabbCollider,
+  GreyboxCell,
+  GreyboxCollisionPayload,
+  GreyboxDistrict,
+  GreyboxGaussianSplatPayload,
+  GreyboxHeightfieldCollider,
+  GreyboxHeightfieldGridPayload,
+  GreyboxLodSelectionOptions,
+  GreyboxLodTier,
+  GreyboxMaterial,
+  GreyboxMeshletPayload,
+  GreyboxPrimitive,
+  GreyboxRepresentationPayload,
+  GreyboxSceneConfig,
+  GreyboxTriangleBoxPayload,
+  GreyboxWorldMarker,
+  GreyboxWorldValidationSummary,
+  SelectedGreyboxCellLod,
+  WorldBounds,
+  WorldVec3,
+} from "./world/world-contract";
+export { selectGreyboxCellLod, validateGreyboxDistrict } from "./world/world-contract";

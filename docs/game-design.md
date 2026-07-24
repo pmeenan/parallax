@@ -18,6 +18,30 @@ A **medieval-era fantasy village on the shore**, with:
   surfacing in different parts of the world (castle, village, forest…). Each entrance is
   a hard-transition choke point.
 
+## D1 greybox scale and layout (D-090)
+
+The M1 playable surface is a 4,096 m × 4,096 m square centered at the world origin,
+using Y-up coordinates and one world unit per metre. Its 16 × 16 grid of 256 m cells is
+a streaming and packaging structure, not a visible design grid. The standard greybox
+traversal moves at 12 m/s so a ten-minute run crosses a representative share of the
+district and repeatedly exercises cell and LOD boundaries.
+
+Generator/schema v1 with fixed seed `0x5eedD101` lays out the central hilltop castle and
+moat, village, fields, forest, south shore, connecting paths, and mountain-vista
+metadata. The village begins outside the complete castle-and-moat footprint; moat cells
+are never also village cells. Three distinct catacomb entrance markers sit in castle,
+village, and forest contexts; later transition work treats them as data and applies the
+same contract to each. All of those district-specific choices live in a versioned data
+descriptor consumed by a district-agnostic generator. Visual content starts as three
+hybrid terrain-grid and triangle-box LOD tiers (maximum distances 320 m, 960 m, and
+4,096 m with 64 m hysteresis), while collision is authored separately and does not
+change with visual LOD. Compound landmarks are reduced as tagged feature groups, so a
+tree never separates into a trunk-only or foliage-only proxy and castle far LODs retain
+castle geometry even in cells that also carry paths. The visual terrain reads those
+collision samples so the streaming grid is not exposed by surface discontinuities.
+These greybox choices establish representative scale without deciding the final geometry
+representation or M3 physics runtime.
+
 ## Genre and mechanics
 
 Fantasy in the **D&D tradition — but original**: multiple playable races, monsters,

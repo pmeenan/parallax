@@ -566,6 +566,13 @@ COS APIs exist):
   The subsequent schema-v22 cohort passed the revised aggregate contract and also kept
   all four OPFS ranges within 1.10-6.58%. That favorable sample does not supersede the
   prior invalid cohorts and is not promoted as a throughput baseline.
+  The D-090 schema-v27/metric-set-v12 physical-console pass
+  `smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-55-57-222Z.json` again reproduced
+  the split: fresh sequential/random relative ranges were 20.73%/16.36%, while warm
+  sequential/random stayed within 7.75%/4.89%. All reads completed with zero validation
+  errors, host samples showed no material physical-disk traffic, and the aggregate gate
+  passed because D-066 keeps repeatability informational while retaining raw correctness
+  evidence.
 - **Repro:** at the dev-01 physical console run `PARALLAX_MACHINE_ID=dev-01`,
   `PARALLAX_TIER=showcase`, then `pnpm harness:smoke`. Schema v20 records the sandbox
   contract, twelve-pass sequential and 4,096-operation random read-call samples, full
@@ -1221,6 +1228,13 @@ COS APIs exist):
   zero events/chunks, and timed out at five seconds in
   `smoke-1-040677b31910-dev-01-showcase-2026-07-21T02-26-10-634Z.json`. The unchanged
   artifact then passed every trace and all 24 checks in the 02:28:50 replacement above.
+  D-090's schema-v27/metric-set-v12 physical-console attempt
+  `smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-52-32-648Z.json` reproduced the
+  same signature immediately: fresh ordinal 1 acknowledged `Tracing.end` in 2.1 ms,
+  delivered zero events/chunks, and timed out after 5,015.4 ms. The unchanged artifact
+  then completed all six core traces in 282.5–291.6 ms and passed all three facets and
+  24 checks in
+  `smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-55-57-222Z.json`.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second

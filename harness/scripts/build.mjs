@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { buildMemory64Wasm, buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
@@ -89,6 +90,7 @@ runPnpm(["--filter", "@parallax/app", "build"]);
 
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
+const gameContentEntrypoints = await writeGreyboxWorldArtifacts();
 
 const decoderWasmArtifacts = [];
 for (const descriptor of decoderWasmDescriptors) {
@@ -220,7 +222,8 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 6,
+      schemaVersion: 7,
+      gameContentEntrypoints,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,
         role: worker.role,
@@ -233,6 +236,105 @@ await writeFile(
   )}\n`,
 );
 runPnpm(["verify:repeatable"]);
+
+async function writeGreyboxWorldArtifacts() {
+  const gameModuleUrl = pathToFileURL(join(repositoryRoot, "game/dist/game.js"));
+  const engineModuleUrl = pathToFileURL(join(repositoryRoot, "engine/dist/engine.js"));
+  const [gameModule, engineModule] = await Promise.all([
+    import(gameModuleUrl.href),
+    import(engineModuleUrl.href),
+  ]);
+  if (
+    typeof gameModule.createGreyboxScene !== "function" ||
+    !Array.isArray(gameModule.GREYBOX_DISTRICT_SPECS)
+  ) {
+    throw new Error("Game build does not export the greybox generator and district registry");
+  }
+  if (typeof engineModule.validateGreyboxDistrict !== "function") {
+    throw new Error("Engine build does not export validateGreyboxDistrict");
+  }
+  if (gameModule.GREYBOX_DISTRICT_SPECS.length === 0) {
+    throw new Error("Game greybox district registry is empty");
+  }
+  const districtIds = new Set();
+  const artifactScopes = new Set();
+  const entrypoints = [];
+  for (const districtSpec of gameModule.GREYBOX_DISTRICT_SPECS) {
+    const district = gameModule.createGreyboxScene(districtSpec).world;
+    engineModule.validateGreyboxDistrict(district);
+    if (districtIds.has(district.id))
+      throw new Error(`Duplicate greybox district id ${district.id}`);
+    districtIds.add(district.id);
+    const artifactScope = contentArtifactScope(district.id);
+    if (artifactScopes.has(artifactScope)) {
+      throw new Error(`Greybox district artifact scope collides: ${artifactScope}`);
+    }
+    artifactScopes.add(artifactScope);
+    const cellEntries = [];
+    for (const cell of district.cells) {
+      const bytes = Buffer.from(
+        `${JSON.stringify({ districtId: district.id, schemaVersion: district.schemaVersion, cell })}\n`,
+      );
+      const coordinate = cell.coordinate.map(coordinateArtifactToken).join("-");
+      const outputName = contentAddressedNameFromBytes(
+        `${artifactScope}-cell-${coordinate}`,
+        bytes,
+        ".json",
+      );
+      await writeFile(join(outputRoot, "immutable", outputName), bytes);
+      cellEntries.push({
+        bytes: bytes.byteLength,
+        cellId: cell.id,
+        coordinate: cell.coordinate,
+        path: `immutable/${outputName}`,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+      });
+    }
+    const indexBytes = Buffer.from(
+      `${JSON.stringify({
+        bounds: district.bounds,
+        cellSizeMeters: district.cellSizeMeters,
+        cells: cellEntries,
+        districtId: district.id,
+        generator: district.generator,
+        lodHysteresisMeters: district.lodHysteresisMeters,
+        markers: district.markers,
+        materials: district.materials,
+        schemaVersion: district.schemaVersion,
+        standardTraversalMetersPerSecond: district.standardTraversalMetersPerSecond,
+        units: district.units,
+      })}\n`,
+    );
+    const indexName = contentAddressedNameFromBytes(`${artifactScope}-index`, indexBytes, ".json");
+    await writeFile(join(outputRoot, "immutable", indexName), indexBytes);
+    entrypoints.push(
+      Object.freeze({
+        districtId: district.id,
+        path: `immutable/${indexName}`,
+        schemaVersion: district.schemaVersion,
+        scope: "game-specific",
+        targetType: "district",
+      }),
+    );
+  }
+  return Object.freeze(entrypoints);
+}
+
+function contentArtifactScope(id) {
+  const scope = id
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-|-$/g, "");
+  if (scope === "") throw new Error(`Greybox district id has no safe artifact scope: ${id}`);
+  return scope;
+}
+
+function coordinateArtifactToken(value) {
+  if (!Number.isInteger(value))
+    throw new Error(`Greybox cell coordinate is not an integer: ${value}`);
+  const magnitude = String(Math.abs(value)).padStart(2, "0");
+  return value < 0 ? `n${magnitude}` : magnitude;
+}
 
 function runPnpm(arguments_) {
   const pnpmCli = process.env.npm_execpath;

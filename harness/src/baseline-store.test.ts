@@ -9,8 +9,51 @@ import {
   parseBaselineEligibleReport,
   promoteBaseline,
 } from "./baseline-store.js";
+import { SMOKE_METRICS } from "./runs/smoke.js";
 
 const cleanup: string[] = [];
+
+const validGreyboxWorld = Object.freeze({
+  cellCount: 256,
+  clearColor: Object.freeze([0.32, 0.64, 0.92, 1] as const),
+  colliderCount: 708,
+  districtId: "district-1-surface",
+  dynamicLighting: true,
+  heightSampleCount: 256 * 17 * 17,
+  materialCount: 8,
+  mainThreadWorldGenerationMs: 20,
+  mainThreadScenePostMessageMs: 4,
+  materializationMs: 12.5,
+  observedLighting: Object.freeze({
+    intensityMaximum: 0.8,
+    intensityMinimum: 0.6,
+    intensityRange: 0.2,
+    phaseMaximum: 0.7,
+    phaseMinimum: 0.5,
+    phaseRange: 0.2,
+    sampleCount: 120,
+  }),
+  renderedOutput: Object.freeze({
+    clearColorRgb: Object.freeze([82, 163, 235] as const),
+    height: 720,
+    pngSha256: "d".repeat(64),
+    visiblePixelCount: 500_000,
+    visiblePixelRatio: 500_000 / (1_280 * 720),
+    width: 1_280,
+  }),
+  renderedFeaturePrimitiveCount: 318,
+  renderedTerrainPatchCount: 256,
+  renderedTriangleCount: 10_000,
+  selectedLodCellCounts: Object.freeze([12, 48, 196] as const),
+  worldBoundsMeters: Object.freeze({
+    maximum: Object.freeze([2_048, 256, 2_048] as const),
+    minimum: Object.freeze([-2_048, -32, -2_048] as const),
+  }),
+});
+
+const mandatoryMetricNames = Object.freeze(
+  SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map((metric) => metric.name),
+);
 
 afterEach(async () => {
   await Promise.all(cleanup.splice(0).map((path) => rm(path, { force: true, recursive: true })));
@@ -36,11 +79,13 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
   const runs = [
     ...[10, 11, 12].map((actual, index) => ({
       budgetChecks: budgetChecks(actual),
+      greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "fresh" as const,
       repeat: index + 1,
     })),
     ...[8, 9, 10].map((actual, index) => ({
       budgetChecks: budgetChecks(actual),
+      greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "warm" as const,
       repeat: index + 1,
     })),
@@ -70,11 +115,11 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     },
     generatedAt: "2026-07-20T00:00:00.000Z",
     harnessRuntime: { nodeExecutableSha256: "e".repeat(64), nodeVersion: "v24.18.0" },
-    mandatoryMetricSet: { version: 11 },
+    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 12 },
     passed: true,
     runs,
     scenario: "smoke@1",
-    schemaVersion: 26,
+    schemaVersion: 27,
     source: { commit: "c".repeat(40), dirtyTreeDigest: null },
     ...overrides,
   };
@@ -221,6 +266,51 @@ describe("baseline result store", () => {
         runs: [{ budgetChecks: [], profile: "fresh", repeat: 1 }],
       }),
     ).toThrow(/budgetChecks must contain measured observations/);
+  });
+
+  it("requires the exact v12 mandatory metric list and measured D-090 evidence in every run", () => {
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        mandatoryMetricSet: {
+          metrics: mandatoryMetricNames.filter((metric) => metric !== "greybox world content"),
+          version: 12,
+        },
+      }),
+    ).toThrow(/mandatoryMetricSet\.metrics must contain exactly.*greybox world content/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        mandatoryMetricSet: {
+          metrics: [...mandatoryMetricNames, "greybox world content"],
+          version: 12,
+        },
+      }),
+    ).toThrow(/mandatoryMetricSet\.metrics must contain exactly/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0 ? { ...run, greyboxWorld: { state: "invalid" } } : run,
+        ),
+      }),
+    ).toThrow(/runs\[0\]\.greyboxWorld\.state must be measured/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 5
+            ? {
+                ...run,
+                greyboxWorld: {
+                  state: "measured",
+                  value: { ...validGreyboxWorld, heightSampleCount: 17 * 17 },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/runs\[5\]\.greyboxWorld\.value is invalid/);
   });
 
   it("validates the same report bytes recorded by the audit digest", async () => {

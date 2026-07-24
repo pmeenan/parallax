@@ -33,7 +33,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(26);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(27);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -75,6 +75,10 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "core measurement run completion"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_METRICS.find((metric) => metric.name === "greybox world content")).toMatchObject({
+      mandatoryForHarnessV1: true,
+      probe: "implemented",
+    });
     expect(SMOKE_METRICS.find((metric) => metric.name === "HTTP serving evidence")).toMatchObject({
       mandatoryForHarnessV1: false,
       probe: "implemented",
@@ -94,7 +98,7 @@ describe("smoke@1 contract", () => {
         (metric) => metric.name === "OPFS sync-access-handle throughput repeatability",
       ),
     ).toMatchObject({ mandatoryForHarnessV1: false, probe: "implemented" });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(11);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(12);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
     expect(SMOKE_WASM_THREAD_MEMORY_PAGES).toBe(33);
     expect(SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS).toBe(12_000);

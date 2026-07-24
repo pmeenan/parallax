@@ -27,6 +27,130 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-090: Fix the D1 procedural-greybox scale, cells, LOD, and collision contract  (2026-07-21, accepted)
+
+**Decision:** District 1's M1 playable surface is a **4,096 m × 4,096 m square** centered
+at the world origin. Parallax world coordinates are Y-up and one world unit is one
+metre. D1 is partitioned into a row-major 16 × 16 grid of 256 m square cells. Generator
+and schema version 1 use the fixed seed `0x5eedD101`; generation, validation, and
+serialization have stable ordering so identical inputs produce byte-identical output.
+The build emits one canonical, content-addressed JSON artifact per cell rather than
+shipping one monolithic district object.
+
+The initial render representation is a three-tier hybrid greybox chain: a terrain grid
+reads the collision height samples at strides 1, 2, and 4 while triangle-box payloads
+carry authored features. A tier contains a collection of representation-tagged payloads,
+not one assumed mesh type. The tiers' maximum observer distances are 320 m, 960 m, and
+4,096 m, with a 64 m hysteresis band at each transition. Selection takes one or more
+observers, uses the nearest distance, retains prior-tier state through the hysteresis
+band, and returns an explicit culled result beyond the far tier. Complexity may stay
+equal or decrease as distance increases, but may never increase. The standard traversal
+speed used to validate cell and LOD coverage is 12 m/s. Collision is independent of
+visual LOD: every cell carries a 17 × 17 sample heightfield at 16 m spacing plus static
+axis-aligned bounding boxes for authored solid features. This defines portable collision
+content only; it does not select the M3 physics runtime or resolve P-003's determinism
+implications.
+
+The generated district contains the central hilltop castle and moat, surrounding
+village, outer fields, forest, south shoreline, connecting paths, and distant-mountain
+vista metadata. It also contains three D2 transition-entrance markers in distinct
+castle, village, and forest surface contexts. These are game-owned world data. The
+engine consumes cells through a generic representation union so the M1 P-002 comparison
+can substitute triangle-box, heightfield-grid, meshlet, splat, or hybrid payloads without
+changing the world graph or collision data. A versioned game-owned descriptor contains
+the district-specific terrain layers, zones, feature rules, graph markers, and tunables;
+a district-agnostic seeded generator interprets it. Spatial range bounds are inclusive.
+The D1 village rule separately excludes the full castle-and-moat footprint, so inclusive
+range boundaries cannot classify moat cells as village or place village features there.
+Multi-primitive authored units such as a tree's trunk and foliage are feature groups:
+LOD sampling selects whole groups, and tag-directed far LODs select the first group
+whose own tag matches rather than the first primitive in a multi-tagged cell.
+
+The M1 runtime preview materializes selected heightfield grids and triangle-box features
+in the render worker, batches them by material, and animates dynamic lighting from the
+first greybox slice. Heightfield batches add single-sided downward edge skirts only at
+district/cull boundaries and between cells at different sample strides, so adjacent
+mixed-LOD cells cannot expose a fine-to-coarse T-junction without duplicating skirts at
+same-tier interior edges. Their triangle winding follows the terrain surface's front-face
+convention so Babylon's backface culling retains both surfaces and skirts. The overview
+camera uses a 5 m near plane against the 10 km far plane; this cannot clip the current
+radius-1,100 m authored view and gives the depth buffer more separation than the original
+0.5 m value.
+
+Per-frame telemetry exports observed lighting phase and intensity; the smoke gate
+requires both to change during the measurement window rather than trusting an asserted
+capability flag. Telemetry separately names terrain patches, box features, total
+triangles, main-thread deterministic-generation time, synchronous scene-`postMessage`
+time, and worker materialization time.
+The gate also captures the canvas alone after measurement, hashes its PNG, and requires
+at least 35% but less than 99.9% of pixels to differ by RGB distance greater than 24 from
+the clear RGB derived from renderer telemetry. The synthetic all-clear negative fixture
+reproduces and rejects the reversed-winding/clear-canvas failure, while the 99.9% ceiling
+makes a mismatched clear color fail closed unless more than 0.1% clear-color headroom remains.
+Screenshot capture and decode stay outside timed work. The 35% lower bound remains
+provisional until the first registered physical run records its actual ratio and
+headroom.
+
+Procedural descriptors live in `game/`; their build-generated, validated per-cell
+bundles are the greybox library/package output. The build iterates the N-district
+registry, gives each district its own content-addressed index and cell scope, and rejects
+duplicate IDs or normalized artifact-scope collisions.
+Until M5 introduces Blender-authored binaries, the greybox QA gate validates the
+structural requirements in this decision
+(schema/version, deterministic canonical serialization, cell coverage, bounds,
+landmarks, LOD monotonicity, and collision layout) in place of Blender-specific mesh,
+UV, and export checks. It does not waive the `assets/` gate or permit hand-authored
+files to enter the library directly.
+
+**Context:** M1's first task required “target world scale” without defining the target,
+which left cell count, traversal coverage, LOD thresholds, collision density, packaging,
+and smoke acceptance free to drift independently. A 4,096 m square makes the ten-minute
+12 m/s path long enough to cross many cell and LOD boundaries while retaining room for
+all required surface contexts. The 256 m cell grid yields 256 independently packaged
+units and aligns the 16 m collision sampling interval exactly at both cell edges. The
+contract deliberately supplies representative classic geometry for M1 without deciding
+P-002 or coupling collision content to a renderer or physics library.
+
+**Consequences:** Acceptance for the procedural-content task requires deterministic
+generation and validation, exact 256-cell coverage with no gaps or overlaps, the named
+landmarks and three transition contexts, content-addressed per-cell packaging, exported
+render/world telemetry including main-thread generation cost, semantic landmark
+retention at reduced LOD, mixed-LOD edge-skirt coverage, and a passing physical-console
+smoke gate with hashed visible-pixel proof of the target-scale preview and observed
+animated-lighting ranges. The first passing run also records whether the provisional
+35% visible-pixel floor has sufficient headroom.
+
+Registered physical-console artifact
+`smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-55-57-222Z.json` supplies that
+evidence under exact Chrome 151.0.7922.34 and Node 24.18.0. All six fresh/warm core runs,
+all three facets, and all 24 blocking checks passed. Each run retained 87.78% visible
+canvas coverage, 256 terrain patches, 394 box features, 25,224 triangles, changing
+lighting phase/intensity, and 98.2–109.5 ms worker materialization. This measured ratio
+leaves 52.78 percentage points above the provisional floor and 12.12 points below the
+99.9% ceiling. The immediately preceding same-artifact attempt
+`smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-52-32-648Z.json` failed closed when
+RE-008 returned zero trace events/chunks after `Tracing.end`; retaining both reports
+records unchanged-artifact recovery without erasing the platform failure.
+
+This content contract advances the build manifest to v7, the public telemetry envelope
+to v9, and `smoke@1` to result schema v27 / mandatory metric-set v12; promotion
+revalidates the exact mandatory-metric name list and measured, structurally valid
+greybox evidence in every fresh and warm run. The accepted result is correctly
+`ineligible` for automatic comparison with the promoted metric-set-v11 baseline.
+D-087's explicit `--rebaseline` acknowledgement remains a separate reviewed promotion
+action; this gate did not rewrite the anchor. Any future D1 schema migration must advance
+the affected versioned contracts. Existing promotions then become intentionally
+incomparable and their reviewed replacement requires the same acknowledgement rather
+than inheriting or silently rewriting the old anchor.
+Representative OPFS-to-renderable cell-load latency, decode-pool behavior, and
+proactive eviction belong to the immediately following M1 streaming task; this decision
+does not claim or defer its ≤ 250 ms p95 budget.
+
+**Reopen if:** representative flythrough measurements show the playable extent, cell
+granularity, traversal speed, LOD thresholds/hysteresis, collision density, or packaging
+shape cannot meet the frame, memory, streaming, or visual-continuity budgets. Revisions
+require a new decision and generator/schema version; never reinterpret version 1 output.
+
 ## D-089: Self-host and preinstall compressed-asset decoders in the module render worker  (2026-07-20, accepted; re-grounds D-006 and executes D-078's M1 prerequisite)
 
 **Decision:** Adopt Babylon Lite 1.12.0 and exact decoder pins

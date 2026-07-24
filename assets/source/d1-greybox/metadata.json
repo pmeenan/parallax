@@ -1,0 +1,18 @@
+{
+  "assetClass": "procedural-greybox-world",
+  "descriptor": "game/src/world/district-1.data.ts",
+  "generator": "game/src/world/greybox-generator.ts",
+  "generatorSeed": "0x5eedD101",
+  "generatorVersion": 1,
+  "license": "Apache-2.0",
+  "provenance": {
+    "generatingModel": null,
+    "prompt": null,
+    "referenceInputs": [
+      "assets/reference/d1-greybox.md",
+      "docs/game-design.md",
+      "docs/decisions.md#d-090"
+    ]
+  },
+  "rightsReview": "approved-original-procedural-content"
+}

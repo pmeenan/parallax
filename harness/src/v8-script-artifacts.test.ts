@@ -21,7 +21,16 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/memory64-spike-worker.js"),
         artifact("immutable/module.wasm"),
       ]),
-      schemaVersion: 6,
+      gameContentEntrypoints: Object.freeze([
+        Object.freeze({
+          districtId: "district-1-surface",
+          path: "immutable/district-1.json",
+          schemaVersion: 1,
+          scope: "game-specific",
+          targetType: "district",
+        }),
+      ]),
+      schemaVersion: 7,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/ai-worker.js",

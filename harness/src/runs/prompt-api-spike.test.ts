@@ -42,7 +42,7 @@ describe("prompt-api-spike@1 contract", () => {
   it("pins its scenario, report, telemetry, and completion contracts", () => {
     expect(PROMPT_API_SPIKE_SCENARIO).toBe("prompt-api-spike@1");
     expect(PROMPT_API_SPIKE_REPORT_SCHEMA_VERSION).toBe(6);
-    expect(TELEMETRY_SCHEMA_VERSION).toBe(8);
+    expect(TELEMETRY_SCHEMA_VERSION).toBe(9);
     expect(PROMPT_API_SPIKE_TELEMETRY_SCHEMA_VERSION).toBe(3);
     expect(PROMPT_API_SPIKE_COMPLETION_TIMEOUT_MS).toBe(1_800_000);
     expect(PROMPT_API_PROGRESS_STALL_TIMEOUT_MS).toBe(120_000);

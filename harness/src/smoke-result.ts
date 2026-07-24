@@ -20,6 +20,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   callbackPacingVariance: "render-worker callback-pacing variance",
   coreRunCompletion: "core measurement run completion",
   dawnPipeline: "Dawn pipeline compile/cache evidence",
+  greyboxWorld: "greybox world content",
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
@@ -93,6 +94,7 @@ export interface SmokeEvidenceInput {
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
     readonly gpuMemory: EvidenceState;
+    readonly greyboxWorld: EvidenceState;
     readonly http: Readonly<{ readonly value: LocalServerMetrics }>;
     readonly jsHeap: EvidenceState;
     readonly opfsReadSpike: EvidenceState;
@@ -200,6 +202,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${evidenceReason(run.dawnPipeline)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.dawnPipeline),
         run.dawnPipeline,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: greybox world content ${run.greyboxWorld.state} (${evidenceReason(run.greyboxWorld)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.greyboxWorld),
+        run.greyboxWorld,
       ),
     ),
     ...input.runs.map((run) =>

@@ -11,7 +11,8 @@ import {
 import {
   APP_OWNED_LLM_CONTEXT_FIRST_FIXTURE_SET,
   APP_OWNED_LLM_SPIKE_FIXTURE_SET,
-  createWalkingSkeletonScene,
+  createGreyboxScene,
+  GREYBOX_DISTRICT_SPECS,
   identifyGame,
   PROMPT_API_BRANDED_FIXTURE,
   PROMPT_API_SPIKE_FIXTURE,
@@ -42,6 +43,11 @@ const promptApiSpikeService = createPromptApiSpikeService(
 const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
 const wasmThreadSpikeService = createWasmThreadSpikeService();
 const memory64SpikeService = createMemory64SpikeService();
+const previewDistrict = GREYBOX_DISTRICT_SPECS[0];
+if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
+const worldGenerationStartedAt = performance.now();
+const previewScene = createGreyboxScene(previewDistrict);
+const mainThreadWorldGenerationMs = performance.now() - worldGenerationStartedAt;
 installTelemetryExport(
   renderService,
   opfsReadSpikeService,
@@ -154,6 +160,11 @@ const updateStatus = (): void => {
   status.dataset.memory64State = memory64.state;
   const buildIdentity = `${identity.name} ${identity.version} / engine ${identity.engine.version}`;
   if (render.state === "ready") {
+    const world = render.greyboxWorld;
+    const worldStatus =
+      world === null
+        ? ""
+        : ` · ${world.cellCount} cells · ${world.renderedTerrainPatchCount.toLocaleString()} terrain patches · ${world.renderedFeaturePrimitiveCount.toLocaleString()} box features`;
     const storageStatus =
       opfs.state === "completed" && opfs.sequential !== null
         ? ` · OPFS sequential ${(opfs.sequential.readCallThroughputBytesPerSecond / 1024 ** 3).toFixed(2)} GiB/s`
@@ -170,7 +181,7 @@ const updateStatus = (): void => {
           : wasmThreads.state === "running"
             ? " · WASM threads running"
             : "";
-    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${storageStatus}${wasmStatus}`;
+    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${storageStatus}${wasmStatus}`;
   } else if (render.state === "failed") {
     status.textContent = `${buildIdentity} · Render worker failed: ${render.failureMessage ?? "unknown error"}`;
   } else {
@@ -216,4 +227,4 @@ if (new URL(location.href).searchParams.get("opfsSpike") === "auto") {
 if (memory64SpikeMode === "auto") {
   memory64SpikeService.start();
 }
-renderService.start(canvas, createWalkingSkeletonScene());
+renderService.start(canvas, previewScene, { mainThreadWorldGenerationMs });

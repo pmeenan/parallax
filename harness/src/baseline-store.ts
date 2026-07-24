@@ -3,8 +3,13 @@ import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/prom
 import { basename, dirname, join } from "node:path";
 import type { BudgetCheck, QualityTier } from "./budgets.js";
 import {
+  type GreyboxWorldEvidence,
+  requireGreyboxWorldTelemetry,
+} from "./greybox-world-evidence.js";
+import {
   SMOKE_BUDGET_METRIC_NAMES,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
+  SMOKE_METRICS,
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
@@ -19,6 +24,10 @@ interface BaselineSourceIdentity {
 
 interface BaselineReportRun {
   readonly budgetChecks: readonly BudgetCheck[];
+  readonly greyboxWorld: Readonly<{
+    readonly state: "measured";
+    readonly value: GreyboxWorldEvidence;
+  }>;
   readonly profile: "fresh" | "warm";
   readonly repeat: number;
 }
@@ -57,7 +66,10 @@ export interface BaselineEligibleReport {
   };
   readonly generatedAt: string;
   readonly harnessRuntime: HarnessRuntimeIdentity;
-  readonly mandatoryMetricSet: { readonly version: number };
+  readonly mandatoryMetricSet: {
+    readonly metrics: readonly string[];
+    readonly version: number;
+  };
   readonly passed: boolean;
   readonly runs: readonly BaselineReportRun[];
   readonly scenario: string;
@@ -314,6 +326,18 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   if (value.mandatoryMetricSet.version !== SMOKE_MANDATORY_METRIC_SET_VERSION) {
     invalidReport(`mandatoryMetricSet.version must be ${SMOKE_MANDATORY_METRIC_SET_VERSION}`);
   }
+  const expectedMandatoryMetrics = SMOKE_METRICS.filter(
+    (metric) => metric.mandatoryForHarnessV1,
+  ).map((metric) => metric.name);
+  if (
+    !Array.isArray(value.mandatoryMetricSet.metrics) ||
+    !value.mandatoryMetricSet.metrics.every((metric) => typeof metric === "string") ||
+    JSON.stringify(value.mandatoryMetricSet.metrics) !== JSON.stringify(expectedMandatoryMetrics)
+  ) {
+    invalidReport(
+      `mandatoryMetricSet.metrics must contain exactly ${expectedMandatoryMetrics.join(", ")}`,
+    );
+  }
   if (typeof value.passed !== "boolean") invalidReport("passed must be boolean");
   requireRecord(value.harnessRuntime, "harnessRuntime");
   requireSha256(value.harnessRuntime.nodeExecutableSha256, "harnessRuntime.nodeExecutableSha256");
@@ -362,6 +386,16 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     profileRepeats?.add(run.repeat);
     if (!Array.isArray(run.budgetChecks) || run.budgetChecks.length === 0) {
       invalidReport(`runs[${runIndex}].budgetChecks must contain measured observations`);
+    }
+    requireRecord(run.greyboxWorld, `runs[${runIndex}].greyboxWorld`);
+    if (run.greyboxWorld.state !== "measured") {
+      invalidReport(`runs[${runIndex}].greyboxWorld.state must be measured`);
+    }
+    try {
+      requireGreyboxWorldTelemetry(run.greyboxWorld.value);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      invalidReport(`runs[${runIndex}].greyboxWorld.value is invalid: ${reason}`);
     }
     const observedMetrics = new Set<string>();
     evaluatedChecks += run.budgetChecks.length;

@@ -80,10 +80,21 @@ after comparison with the same-artifact Chrome 150 anchor. RE-008 and RE-036 ret
 intermittent trace-completion and Wasm-instantiation failures rather than treating the
 passing replacement as erasure.
 
-## M1 — Greybox District 1 streaming  `pending`
+## M1 — Greybox District 1 streaming  `in progress`
 
-- [ ] Procedural greybox content for D1 (cells, LOD tiers, collision) at target world
+- [x] Procedural greybox content for D1 (cells, LOD tiers, collision) at target world
       scale.
+  - Completed (2026-07-24): D-090 fixes the v1 scale, grid, generator, LOD, collision,
+    landmark, packaging, preview, telemetry, and acceptance contracts. The deterministic
+    generator, generic engine contract, worker-rendered preview, content-addressed cell
+    packages, semantic compound-feature LODs, correctly wound non-duplicated mixed-LOD
+    edge skirts, asset QA record, mandatory fail-closed visible-pixel and animated-lighting
+    smoke evidence, main-thread generation/scene-dispatch and worker timing, and
+    automated validation are implemented. Schema-v27/metric-set-v12 physical-console
+    artifact `smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-55-57-222Z.json`
+    completed all six core runs and passed environment, mandatory-evidence, and budget
+    facets with all 24 checks passing. The unchanged artifact's preceding RE-008 trace
+    failure remains retained rather than being erased by the passing replacement.
   - [x] M1 compressed-asset prerequisite: re-ground D-006, adopt and self-host the exact
         KTX2/Draco/meshopt pins, preinstall their globals in the module render worker,
         gate one real fixture per path, and establish the shared validator plus mandatory

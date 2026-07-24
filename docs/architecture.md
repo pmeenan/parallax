@@ -251,6 +251,21 @@ The world is partitioned into **districts** (D1 surface, D2 underground; archite
 assumes N). Districts subdivide into **cells** (streaming granularity within a district).
 Two streaming regimes, both budget-governed:
 
+**D1 greybox v1 (D-090):** the playable surface is a Y-up, metre-scaled 4,096 m square
+centered at the origin and divided row-major into a 16 × 16 grid of 256 m cells. Fixed
+seed `0x5eedD101` and generator/schema v1 produce stable canonical ordering and one
+content-addressed JSON build artifact per cell. A versioned game-owned data descriptor
+contains D1's terrain layers, zones, feature rules, and graph markers; a district-agnostic
+seeded generator interprets it. Each cell carries a collection of representation-tagged
+render payloads, LOD-independent collision data (a 17 × 17 heightfield at 16 m spacing
+plus static AABBs), and generic topology/transition metadata. No engine interface names
+D1 or assumes triangle meshes, exactly 256 cells, or a single observer. Feature LOD
+selection operates on tagged authored groups, so compound features remain intact and
+far-tier landmark selection cannot accidentally select an unrelated primitive from
+another tag in the same cell. Mixed-stride terrain edges receive single-sided downward
+skirts whose triangle winding matches the terrain front-face convention; equal-stride
+interior neighbors do not duplicate those skirts.
+
 - **Intra-district:** distance/visibility-driven cell load/evict with LOD tiers.
 - **Inter-district (hard transition):** full resident-set swap through choke points —
   the catacomb entrances (game-design.md), of which there are several with different
@@ -266,7 +281,11 @@ Two streaming regimes, both budget-governed:
 
 Asset packaging: per-cell bundles, content-addressed, with shared kits/materials
 deduplicated across cells. Formats: glTF/GLB, KTX2 (BasisU) textures, meshopt
-compression. (Decision D-006.)
+compression. (Decision D-006.) D-090's procedural descriptors are game world data; the
+build-generated canonical cell JSON files are validated greybox library/package output.
+Their structural QA gate replaces only Blender-binary-specific checks until M5, not the
+asset gate itself. The later streaming task installs and reads these bundles through
+OPFS; generating and packaging them does not by itself claim an OPFS cell-load result.
 
 **Common vs. game-specific split (D-010):** every packaged resource is classified as
 *common* (engine code, shared asset packs/kits, models — shareable across published
@@ -295,6 +314,23 @@ warm; the harness tracks pipeline-count and compile-stall metrics per build.
 full day/night cycle and weather system (game-design.md) rule out fully-baked lighting.
 The renderer is designed around dynamic time-of-day from the M1 greybox onward, and
 harness runs sweep lighting/weather states, not just geography.
+
+For the D-090 M1 preview, the render worker materializes terrain directly from the
+LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box
+features by material. Single-sided downward skirts are emitted at outer/cull boundaries
+and on both sides of mixed-stride seams; equal-stride interior neighbors emit none. The
+generic selector chooses the nearest of one or more observers,
+uses prior-tier state across the 64 m hysteresis bands around the 320 m and 960 m
+thresholds, and culls cells beyond 4,096 m. Collision remains a separate world payload
+and is not inferred from whichever visual LOD is active. Per-frame phase and intensity
+samples make lighting animation observable to the harness; a post-measurement canvas PNG
+hash and bounded visible-pixel ratio, derived from the telemetry clear color, make
+rendered output itself mandatory. Separate terrain-patch, box-feature, triangle,
+main-thread world-generation, synchronous scene-`postMessage`, and
+worker-materialization fields keep the costs interpretable. The build packages
+every descriptor in the N-district registry under a distinct normalized artifact scope,
+although this first M1 gate intentionally validates D1's exact target-scale contract.
+The standard target-scale traversal used by validation is 12 m/s.
 
 **Geometry representation is an open exploration (P-002), not a settled choice.** Three
 candidates — classic triangle LOD chains, meshlet-based virtualized geometry

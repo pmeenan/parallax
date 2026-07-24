@@ -11,11 +11,17 @@ afterEach(async () => {
   await Promise.all(cleanup.splice(0).map((path) => rm(path, { force: true, recursive: true })));
 });
 
-async function writeFixture(): Promise<string> {
+async function writeFixture(districtSchemaVersion = 1): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "parallax-manifest-"));
   cleanup.push(root);
   const index = "<!doctype html><title>Parallax</title>";
   const workerBody = "export const worker = true;";
+  const districtBody = `${JSON.stringify({
+    districtId: "test-district",
+    schemaVersion: districtSchemaVersion,
+  })}\n`;
+  const districtDigest = createHash("sha256").update(districtBody).digest("hex");
+  const districtPath = `immutable/test-district-${districtDigest}.json`;
   const workerDigest = createHash("sha256").update(workerBody).digest("hex");
   const workerPath = `immutable/render-worker-${workerDigest}.js`;
   const storageWorkerPath = `immutable/storage-worker-${workerDigest}.js`;
@@ -29,10 +35,16 @@ async function writeFixture(): Promise<string> {
   await writeFile(join(root, aiWorkerPath), workerBody);
   await writeFile(join(root, wasmThreadWorkerPath), workerBody);
   await writeFile(join(root, memory64SpikeWorkerPath), workerBody);
+  await writeFile(join(root, districtPath), districtBody);
   await writeFile(
     join(root, "build-manifest.json"),
     JSON.stringify({
       artifacts: [
+        {
+          bytes: Buffer.byteLength(districtBody),
+          path: districtPath,
+          sha256: districtDigest,
+        },
         {
           bytes: Buffer.byteLength(workerBody),
           path: workerPath,
@@ -64,7 +76,16 @@ async function writeFixture(): Promise<string> {
           sha256: createHash("sha256").update(index).digest("hex"),
         },
       ],
-      schemaVersion: 6,
+      gameContentEntrypoints: [
+        {
+          districtId: "test-district",
+          path: districtPath,
+          schemaVersion: 1,
+          scope: "game-specific",
+          targetType: "district",
+        },
+      ],
+      schemaVersion: 7,
       workerEntrypoints: [
         { path: aiWorkerPath, role: "ai", targetType: "worker" },
         { path: memory64SpikeWorkerPath, role: "memory64-spike", targetType: "worker" },
@@ -81,8 +102,70 @@ describe("build manifest validation", () => {
   it("accepts a served tree whose files are all listed in the manifest", async () => {
     const root = await writeFixture();
     const validated = await readAndValidateBuildManifest(root);
-    expect(validated.manifest.artifacts).toHaveLength(6);
+    expect(validated.manifest.artifacts).toHaveLength(7);
     expect(validated.artifactDigest).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("accepts multiple uniquely identified district entrypoints and rejects empty or duplicate sets", async () => {
+    const root = await writeFixture();
+    const manifestPath = join(root, "build-manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      artifacts: Array<{ bytes: number; path: string; sha256: string }>;
+      gameContentEntrypoints: Array<{
+        districtId: string;
+        path: string;
+        schemaVersion: number;
+        scope: string;
+        targetType: string;
+      }>;
+    };
+    const secondBody = `${JSON.stringify({ districtId: "second-district", schemaVersion: 1 })}\n`;
+    const secondDigest = createHash("sha256").update(secondBody).digest("hex");
+    const secondPath = `immutable/second-district-${secondDigest}.json`;
+    await writeFile(join(root, secondPath), secondBody);
+    manifest.artifacts.push({
+      bytes: Buffer.byteLength(secondBody),
+      path: secondPath,
+      sha256: secondDigest,
+    });
+    manifest.gameContentEntrypoints.push({
+      districtId: "second-district",
+      path: secondPath,
+      schemaVersion: 1,
+      scope: "game-specific",
+      targetType: "district",
+    });
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await expect(readAndValidateBuildManifest(root)).resolves.toMatchObject({
+      manifest: {
+        gameContentEntrypoints: [
+          { districtId: "test-district" },
+          { districtId: "second-district" },
+        ],
+      },
+    });
+
+    const secondEntrypoint = manifest.gameContentEntrypoints[1];
+    if (secondEntrypoint === undefined) throw new Error("Fixture omitted its second district");
+    manifest.gameContentEntrypoints[1] = {
+      ...secondEntrypoint,
+      districtId: "test-district",
+    };
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
+      "unique game-content district IDs and paths",
+    );
+
+    const emptyRoot = await writeFixture();
+    const emptyManifestPath = join(emptyRoot, "build-manifest.json");
+    const emptyManifest = JSON.parse(await readFile(emptyManifestPath, "utf8")) as {
+      gameContentEntrypoints: unknown[];
+    };
+    emptyManifest.gameContentEntrypoints = [];
+    await writeFile(emptyManifestPath, JSON.stringify(emptyManifest));
+    await expect(readAndValidateBuildManifest(emptyRoot)).rejects.toThrow(
+      "at least one game-content district entrypoint",
+    );
   });
 
   it("rejects a served tree containing files the manifest does not list", async () => {
@@ -101,7 +184,7 @@ describe("build manifest validation", () => {
     );
   });
 
-  it("rejects missing or duplicate worker roles in manifest v6", async () => {
+  it("rejects missing or duplicate worker roles in manifest v7", async () => {
     const root = await writeFixture();
     const manifestPath = join(root, "build-manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
@@ -159,6 +242,77 @@ describe("build manifest validation", () => {
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
       "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
+    );
+  });
+
+  it("rejects malformed game-content entrypoint fields", async () => {
+    for (const invalidEntrypoint of [
+      {
+        districtId: "   ",
+        path: "immutable/unused.json",
+        schemaVersion: 1,
+        scope: "game-specific",
+        targetType: "district",
+      },
+      {
+        districtId: "test-district",
+        path: "",
+        schemaVersion: 1,
+        scope: "game-specific",
+        targetType: "district",
+      },
+      {
+        districtId: "test-district",
+        path: "immutable/unused.json",
+        schemaVersion: 2,
+        scope: "game-specific",
+        targetType: "district",
+      },
+      {
+        districtId: "test-district",
+        path: "immutable/unused.json",
+        schemaVersion: 1,
+        scope: "engine-shared",
+        targetType: "district",
+      },
+      {
+        districtId: "test-district",
+        path: "immutable/unused.json",
+        schemaVersion: 1,
+        scope: "game-specific",
+        targetType: "cell",
+      },
+    ]) {
+      const root = await writeFixture();
+      const manifestPath = join(root, "build-manifest.json");
+      const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+        gameContentEntrypoints: unknown[];
+      };
+      manifest.gameContentEntrypoints = [invalidEntrypoint];
+      await writeFile(manifestPath, JSON.stringify(manifest));
+      await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
+        "Invalid build-manifest game content entrypoint",
+      );
+    }
+  });
+
+  it("binds the declared district ID and schema to the referenced index", async () => {
+    const idRoot = await writeFixture();
+    const manifestPath = join(idRoot, "build-manifest.json");
+    const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
+      gameContentEntrypoints: Array<Record<string, unknown>>;
+    };
+    const entrypoint = manifest.gameContentEntrypoints[0];
+    if (entrypoint === undefined) throw new Error("Fixture omitted district entrypoint");
+    manifest.gameContentEntrypoints[0] = { ...entrypoint, districtId: "other-district" };
+    await writeFile(manifestPath, JSON.stringify(manifest));
+    await expect(readAndValidateBuildManifest(idRoot)).rejects.toThrow(
+      "does not match its district index",
+    );
+
+    const schemaRoot = await writeFixture(2);
+    await expect(readAndValidateBuildManifest(schemaRoot)).rejects.toThrow(
+      "does not match its district index",
     );
   });
 });

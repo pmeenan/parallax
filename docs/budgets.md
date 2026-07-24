@@ -123,6 +123,22 @@ lifecycle or streaming architecture quietly assumes "a few GB."
 
 ## Streaming and transitions
 
+D-090 defines standard D1 traversal as 12 m/s and the greybox v1 LOD contract as
+320/960/4,096 m maximum distances with 64 m hysteresis. Recalibrating those inputs is a
+decision/schema change, not a way to make the outcome thresholds below pass. A schema
+migration also advances the smoke result and mandatory-metric-set contracts; the prior
+promoted baseline is intentionally incomparable and a reviewed replacement requires
+the explicit `--rebaseline` acknowledgement from D-087.
+
+The D-090 smoke correctness gate requires the canvas-visible-pixel ratio to be
+`0.35 ≤ ratio < 0.999`, measured against the clear RGB derived from renderer telemetry.
+This is a blank/wrong-clear-output detector, not a visual-quality or performance claim.
+The synthetic all-clear fixture proves the zero-geometry failure path; the 0.35 floor
+remains provisional until the first registered physical run records the real viewport
+ratio and review confirms adequate headroom. The exclusive 0.999 ceiling requires more
+than 0.1% of the canvas to remain detectably clear rather than relying on equality with
+1.0 to catch a mismatched clear color.
+
 | Metric | Target | Notes |
 | --- | --- | --- |
 | Cell load (OPFS → renderable) p95 | ≤ 250 ms | At standard traversal speed |
@@ -331,9 +347,11 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v11, which keeps OPFS per-run correctness and raw
-  throughput mandatory while separating its sandbox-sensitive repeatability finding as
-  informational; D-058/D-066).
+  the current mandatory metric-set (v12, which adds measured D-090 greybox-world content,
+  observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
+  keeps OPFS per-run correctness and raw throughput mandatory, and
+  separates OPFS's sandbox-sensitive repeatability finding as informational;
+  D-058/D-066/D-090). The corresponding `smoke@1` report schema is v27.
   V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,

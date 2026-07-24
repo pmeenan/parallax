@@ -340,5 +340,10 @@ function generation(
 }
 
 function frames(count: number): RenderFrameSample[] {
-  return Array.from({ length: count }, () => ({ durationMs: 16, presentIntervalMs: 16 }));
+  return Array.from({ length: count }, () => ({
+    durationMs: 16,
+    lightingIntensity: 1,
+    lightingPhase: 0.25,
+    presentIntervalMs: 16,
+  }));
 }

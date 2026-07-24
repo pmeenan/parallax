@@ -50,6 +50,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
@@ -114,6 +115,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
@@ -158,6 +160,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
@@ -197,6 +200,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta({
             pathClasses: { document: 1, immutable: 2, other: 0 },
@@ -257,6 +261,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           http: httpDelta(),
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
@@ -297,6 +302,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
@@ -340,6 +346,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
@@ -381,6 +388,7 @@ describe("smoke result adapters", () => {
       runs: [
         {
           dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },

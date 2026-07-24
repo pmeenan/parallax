@@ -15,8 +15,17 @@ export interface ManifestArtifact {
 
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
-  readonly schemaVersion: 6;
+  readonly gameContentEntrypoints: readonly ManifestGameContentEntrypoint[];
+  readonly schemaVersion: 7;
   readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
+}
+
+export interface ManifestGameContentEntrypoint {
+  readonly districtId: string;
+  readonly path: string;
+  readonly schemaVersion: 1;
+  readonly scope: "game-specific";
+  readonly targetType: "district";
 }
 
 export interface ManifestWorkerEntrypoint {
@@ -41,11 +50,17 @@ export async function readAndValidateBuildManifest(
   const resolvedRoot = resolve(buildRoot);
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
-  if (manifest.schemaVersion !== 6) {
+  if (manifest.schemaVersion !== 7) {
     throw new Error(`Unsupported build manifest schema ${String(manifest.schemaVersion)}`);
   }
-  if (!Array.isArray(manifest.artifacts) || !Array.isArray(manifest.workerEntrypoints)) {
-    throw new Error("Build manifest v6 requires artifact and worker-entrypoint arrays");
+  if (
+    !Array.isArray(manifest.artifacts) ||
+    !Array.isArray(manifest.gameContentEntrypoints) ||
+    !Array.isArray(manifest.workerEntrypoints)
+  ) {
+    throw new Error(
+      "Build manifest v7 requires artifact, game-content-entrypoint, and worker-entrypoint arrays",
+    );
   }
   const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
   const workerPaths = new Set(
@@ -61,7 +76,7 @@ export async function readAndValidateBuildManifest(
     workerPaths.size !== 5
   ) {
     throw new Error(
-      "Build manifest v6 requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
+      "Build manifest v7 requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
     );
   }
   for (const artifact of manifest.artifacts) {
@@ -87,6 +102,41 @@ export async function readAndValidateBuildManifest(
       throw new Error(`Invalid build-manifest worker entrypoint: ${JSON.stringify(entrypoint)}`);
     }
   }
+  if (manifest.gameContentEntrypoints.length === 0) {
+    throw new Error("Build manifest v7 requires at least one game-content district entrypoint");
+  }
+  const districtIds = new Set<string>();
+  const districtPaths = new Set<string>();
+  for (const entrypoint of manifest.gameContentEntrypoints) {
+    if (
+      typeof entrypoint.districtId !== "string" ||
+      entrypoint.districtId.trim() === "" ||
+      typeof entrypoint.path !== "string" ||
+      entrypoint.path.trim() === "" ||
+      entrypoint.schemaVersion !== 1 ||
+      entrypoint.scope !== "game-specific" ||
+      entrypoint.targetType !== "district" ||
+      !manifest.artifacts.some((artifact) => artifact.path === entrypoint.path)
+    ) {
+      throw new Error(
+        `Invalid build-manifest game content entrypoint: ${JSON.stringify(entrypoint)}`,
+      );
+    }
+    if (districtIds.has(entrypoint.districtId) || districtPaths.has(entrypoint.path)) {
+      throw new Error("Build manifest v7 requires unique game-content district IDs and paths");
+    }
+    districtIds.add(entrypoint.districtId);
+    districtPaths.add(entrypoint.path);
+    const districtIndex = await readDistrictIndex(resolvedRoot, entrypoint.path);
+    if (
+      districtIndex.districtId !== entrypoint.districtId ||
+      districtIndex.schemaVersion !== entrypoint.schemaVersion
+    ) {
+      throw new Error(
+        `Build-manifest game content entrypoint does not match its district index: ${entrypoint.path}`,
+      );
+    }
+  }
   const listed = new Set(manifest.artifacts.map((artifact) => artifact.path));
   const unexpected = (await listFilesRecursively(resolvedRoot)).filter(
     (path) => !listed.has(path) && !UNLISTED_ALLOWLIST.has(path),
@@ -100,6 +150,28 @@ export async function readAndValidateBuildManifest(
     artifactDigest: sha256Hex(manifestBytes),
     manifest,
   });
+}
+
+async function readDistrictIndex(
+  buildRoot: string,
+  path: string,
+): Promise<Readonly<{ districtId: string; schemaVersion: number }>> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await readFile(resolve(buildRoot, path), "utf8")) as unknown;
+  } catch (error) {
+    throw new Error(`Build-manifest district index is not valid JSON: ${path}`, { cause: error });
+  }
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    Array.isArray(parsed) ||
+    typeof (parsed as Record<string, unknown>).districtId !== "string" ||
+    typeof (parsed as Record<string, unknown>).schemaVersion !== "number"
+  ) {
+    throw new Error(`Build-manifest district index has invalid identity fields: ${path}`);
+  }
+  return parsed as Readonly<{ districtId: string; schemaVersion: number }>;
 }
 
 export async function listFilesRecursively(

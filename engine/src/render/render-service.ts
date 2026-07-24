@@ -2,19 +2,25 @@ import { createSabRingBufferSpike } from "../workers/sab-ring-buffer-spike";
 import type { SabRingBufferSpikeTelemetrySnapshot } from "../workers/sab-ring-buffer-spike-protocol";
 import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
 import type {
+  GreyboxRenderTelemetry,
+  GreyboxSceneConfig,
   RenderFrameSample,
   RenderWorkerRequest,
   RenderWorkerResponse,
-  WalkingSkeletonScene,
 } from "./render-protocol";
 
-export type { RenderFrameSample, WalkingSkeletonScene } from "./render-protocol";
+export type {
+  GreyboxRenderTelemetry,
+  GreyboxSceneConfig,
+  RenderFrameSample,
+} from "./render-protocol";
 
 export interface RenderTelemetrySnapshot {
   readonly decoderBootstrap: DecoderBootstrapTelemetry | null;
   readonly decoderFixtures: DecoderFixtureTelemetry | null;
   readonly failureMessage: string | null;
   readonly frameCount: number;
+  readonly greyboxWorld: GreyboxRenderTelemetry | null;
   readonly recentFrames: readonly RenderFrameSample[];
   readonly sabRingBufferSpike: SabRingBufferSpikeTelemetrySnapshot;
   readonly state: "idle" | "starting" | "ready" | "failed" | "disposed";
@@ -27,8 +33,16 @@ export type RenderServiceListener = (snapshot: RenderTelemetrySnapshot) => void;
 export interface RenderService {
   dispose(): void;
   snapshot(): RenderTelemetrySnapshot;
-  start(canvas: HTMLCanvasElement, scene: WalkingSkeletonScene): void;
+  start(
+    canvas: HTMLCanvasElement,
+    scene: GreyboxSceneConfig,
+    startup: RenderStartupTelemetry,
+  ): void;
   subscribe(listener: RenderServiceListener): () => void;
+}
+
+export interface RenderStartupTelemetry {
+  readonly mainThreadWorldGenerationMs: number;
 }
 
 // D-028: the assembler replaces this token after hashing the sibling worker artifact.
@@ -69,6 +83,30 @@ function errorMessage(error: unknown): string {
   return error instanceof Error && error.message !== "" ? error.message : String(error);
 }
 
+function freezeGreyboxTelemetry(value: GreyboxRenderTelemetry): GreyboxRenderTelemetry {
+  return Object.freeze({
+    ...value,
+    clearColor: Object.freeze([...value.clearColor]) as readonly [number, number, number, number],
+    selectedLodCellCounts: Object.freeze([...value.selectedLodCellCounts]) as readonly [
+      number,
+      number,
+      number,
+    ],
+    worldBoundsMeters: Object.freeze({
+      maximum: Object.freeze([...value.worldBoundsMeters.maximum]) as readonly [
+        number,
+        number,
+        number,
+      ],
+      minimum: Object.freeze([...value.worldBoundsMeters.minimum]) as readonly [
+        number,
+        number,
+        number,
+      ],
+    }),
+  });
+}
+
 export function createRenderService(): RenderService {
   const sabRingBufferSpike = createSabRingBufferSpike((sabSnapshot) => {
     publish({ ...telemetry, sabRingBufferSpike: sabSnapshot });
@@ -78,6 +116,7 @@ export function createRenderService(): RenderService {
     decoderFixtures: null,
     failureMessage: null,
     frameCount: 0,
+    greyboxWorld: null,
     recentFrames: Object.freeze([]),
     sabRingBufferSpike: sabRingBufferSpike.snapshot(),
     state: "idle",
@@ -142,9 +181,19 @@ export function createRenderService(): RenderService {
       return telemetry;
     },
 
-    start(canvas: HTMLCanvasElement, scene: WalkingSkeletonScene): void {
+    start(
+      canvas: HTMLCanvasElement,
+      scene: GreyboxSceneConfig,
+      startup: RenderStartupTelemetry,
+    ): void {
       if (telemetry.state !== "idle") {
         throw new Error("Render service can only be started once");
+      }
+      if (
+        !Number.isFinite(startup.mainThreadWorldGenerationMs) ||
+        startup.mainThreadWorldGenerationMs < 0
+      ) {
+        throw new Error("Main-thread world-generation timing must be finite and non-negative");
       }
 
       publish({ ...telemetry, state: "starting" });
@@ -160,6 +209,7 @@ export function createRenderService(): RenderService {
           name: "parallax-render",
           type: "module",
         });
+        let mainThreadScenePostMessageMs: number | null = null;
         worker = renderWorker;
         renderWorker.onmessage = (event: MessageEvent<RenderWorkerResponse>): void => {
           const message = event.data;
@@ -169,11 +219,20 @@ export function createRenderService(): RenderService {
           // this boundary before they enter retained telemetry.
           switch (message.kind) {
             case "ready":
+              if (mainThreadScenePostMessageMs === null) {
+                fail("Render worker became ready before scene postMessage completed");
+                return;
+              }
               publish({
                 ...telemetry,
                 decoderBootstrap: Object.freeze(message.decoderBootstrap),
                 decoderFixtures: Object.freeze(message.decoderFixtures),
                 frameCount: 1,
+                greyboxWorld: freezeGreyboxTelemetry({
+                  ...message.greyboxWorld,
+                  mainThreadScenePostMessageMs,
+                  mainThreadWorldGenerationMs: startup.mainThreadWorldGenerationMs,
+                }),
                 recentFrames: Object.freeze([Object.freeze(message.firstFrame)]),
                 state: "ready",
                 workerInitToFirstFrameMs: message.workerInitToFirstFrameMs,
@@ -216,6 +275,7 @@ export function createRenderService(): RenderService {
           );
         };
 
+        const scenePostMessageStartedAt = performance.now();
         renderWorker.postMessage(
           {
             canvas: offscreenCanvas,
@@ -227,6 +287,7 @@ export function createRenderService(): RenderService {
           } satisfies RenderWorkerRequest,
           [offscreenCanvas],
         );
+        mainThreadScenePostMessageMs = performance.now() - scenePostMessageStartedAt;
         resizeObserver = new ResizeObserver((entries) => {
           const devicePixelSize = entries[0]?.devicePixelContentBoxSize[0];
           if (devicePixelSize === undefined) {

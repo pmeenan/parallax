@@ -233,6 +233,8 @@ function runtimeSnapshot(
 function frames(count: number, durationMs: number): RenderFrameSample[] {
   return Array.from({ length: count }, () => ({
     durationMs,
+    lightingIntensity: 1,
+    lightingPhase: 0.25,
     presentIntervalMs: durationMs,
   }));
 }

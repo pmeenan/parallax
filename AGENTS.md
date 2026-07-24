@@ -128,7 +128,7 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 ## Current status
 
-Milestone **M0 (harness + skeleton) is complete**; M1 is next — see
+Milestone **M0 (harness + skeleton) is complete**; M1 is in progress — see
 [docs/plan.md](docs/plan.md). The build/serve pipeline, walking-skeleton app,
 WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer go spike (D-057),
 Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
@@ -150,6 +150,8 @@ schema-v26 result store and explicit promotion workflow closed the final harness
 gap; the full dependency checkpoint adopted Node 24.18.0 and CfT 151.0.7922.34. The
 same-artifact Chrome 150 anchor and Chrome 151 candidate passed all facets and 24 checks,
 and Chrome 151 is promoted; intermittent RE-008 trace completion and RE-036 Wasm
-instantiation failures remain fail-closed platform findings.
+instantiation failures remain fail-closed platform findings. D-090's procedural D1
+greybox is qualified by the passing schema-v27/metric-set-v12 physical-console gate;
+its immediately preceding same-artifact RE-008 failure remains retained.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

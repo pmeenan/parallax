@@ -1,14 +1,15 @@
 import { installDecoderGlobals, runDecoderFixtures } from "../render/decoder-bootstrap";
 import {
-  createLiteWalkingSkeleton,
-  renderLiteWalkingSkeleton,
-  resizeLiteWalkingSkeleton,
-} from "../render/lite-walking-skeleton";
+  createLiteGreyboxWorld,
+  type GreyboxLightingSample,
+  renderLiteGreyboxWorld,
+  resizeLiteGreyboxWorld,
+} from "../render/lite-greybox-world";
 import type {
+  GreyboxSceneConfig,
   RenderFrameSample,
   RenderWorkerRequest,
   RenderWorkerResponse,
-  WalkingSkeletonScene,
 } from "../render/render-protocol";
 import { TELEMETRY_FRAME_BATCH_FRAMES } from "../telemetry/telemetry-export";
 import {
@@ -106,17 +107,17 @@ function startRenderWorker(): void {
     canvas: OffscreenCanvas,
     width: number,
     height: number,
-    config: WalkingSkeletonScene,
+    config: GreyboxSceneConfig,
     sabRingBufferSpike: SabRingBufferSpikeConfig,
   ): Promise<void> => {
     const initStartedAt = performance.now();
     try {
       const decoderBootstrap = installDecoderGlobals();
       const decoderFixtures = await runDecoderFixtures();
-      const renderer = await createLiteWalkingSkeleton(canvas, width, height, config);
+      const renderer = await createLiteGreyboxWorld(canvas, width, height, config);
 
       resizeScene = (nextWidth, nextHeight): void => {
-        resizeLiteWalkingSkeleton(renderer, nextWidth, nextHeight);
+        resizeLiteGreyboxWorld(renderer, nextWidth, nextHeight);
       };
       if (pendingSize !== null) {
         resizeScene(pendingSize.width, pendingSize.height);
@@ -128,8 +129,9 @@ function startRenderWorker(): void {
       let samples: RenderFrameSample[] = [];
       const renderWorkerFrame = (timestamp: number): void => {
         const frameStartedAt = performance.now();
+        let lighting: GreyboxLightingSample;
         try {
-          renderLiteWalkingSkeleton(renderer, timestamp);
+          lighting = renderLiteGreyboxWorld(renderer, timestamp);
         } catch (error: unknown) {
           postError(error);
           return;
@@ -137,6 +139,8 @@ function startRenderWorker(): void {
 
         const sample: RenderFrameSample = Object.freeze({
           durationMs: performance.now() - frameStartedAt,
+          lightingIntensity: lighting.intensity,
+          lightingPhase: lighting.phase,
           presentIntervalMs:
             previousFrameTimestamp === null ? null : timestamp - previousFrameTimestamp,
         });
@@ -160,6 +164,7 @@ function startRenderWorker(): void {
             decoderBootstrap,
             decoderFixtures,
             firstFrame: sample,
+            greyboxWorld: renderer.telemetry,
             kind: "ready",
             workerInitToFirstFrameMs: performance.now() - initStartedAt,
           });
