@@ -16,6 +16,8 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/game.js"),
         artifact("immutable/render-worker.js"),
         artifact("immutable/storage-worker.js"),
+        artifact("immutable/decode-worker.js"),
+        artifact("immutable/streaming-worker.js"),
         artifact("immutable/ai-worker.js"),
         artifact("immutable/wasm-thread-worker.js"),
         artifact("immutable/memory64-spike-worker.js"),
@@ -30,11 +32,16 @@ describe("V8 script artifact selection", () => {
           targetType: "district",
         }),
       ]),
-      schemaVersion: 7,
+      schemaVersion: 8,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/ai-worker.js",
           role: "ai",
+          targetType: "worker",
+        }),
+        Object.freeze({
+          path: "immutable/decode-worker.js",
+          role: "decode",
           targetType: "worker",
         }),
         Object.freeze({
@@ -53,6 +60,11 @@ describe("V8 script artifact selection", () => {
           targetType: "worker",
         }),
         Object.freeze({
+          path: "immutable/streaming-worker.js",
+          role: "streaming",
+          targetType: "worker",
+        }),
+        Object.freeze({
           path: "immutable/wasm-thread-worker.js",
           role: "wasm-thread",
           targetType: "worker",
@@ -65,6 +77,8 @@ describe("V8 script artifact selection", () => {
       "immutable/engine.js",
       "immutable/game.js",
       "immutable/render-worker.js",
+      "immutable/decode-worker.js",
+      "immutable/streaming-worker.js",
       "immutable/wasm-thread-worker.js",
     ]);
   });

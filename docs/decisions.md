@@ -27,6 +27,103 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-091: Bound the M1 cell-streaming pipeline and keep presentation ownership explicit  (2026-07-24, accepted)
+
+**Decision:** The production-shaped M1 path is a long-lived streaming worker that owns
+its OPFS handles, a boot-sized nested decode pool, and nearest-observer residency
+scheduling. It provisions the build's content-addressed D1 cell packages into a
+district-keyed subdirectory of `parallax-streaming-v1`, then serves every load as OPFS synchronous read → decode-worker
+validation/JSON decode → a direct `MessageChannel` handoff to the render worker →
+Babylon Lite GPU-buffer creation. Provisioning is a temporary pre-M2 bridge to the
+installer; it hashes both reused and fetched OPFS bytes and rewrites mismatches, but is
+not permission for launch-2+ to depend on network fetches. The build manifest
+advances to v8 and names the decode and streaming worker artifacts independently.
+
+Pool size is fixed at boot to
+`min(4, max(1, navigator.hardwareConcurrency - 2))`. The scheduler retains the nearest
+nine cells across all observers, evicts farthest non-target residents before loading
+their replacements, and fails closed if the target set exceeds its encoded-package
+residency budget. Its initial encoded-residency cap is 16 MiB; this is not presented as
+live CPU memory, which remains covered by the all-realm JS-heap sampler. Encoded package
+bytes and created GPU-buffer bytes, their high-water marks, queue high water,
+provision/read byte counts, proactive eviction counts, and encoded-budget rejection
+counts are all exported. Player-motion input uses D-090's
+12 m/s traversal speed. The bounded smoke stress path reverses along a 2.121 m diagonal
+across a four-cell corner while preserving that linear speed. Its endpoint target sets
+differ by three cells and it completes at least five one-way traversals in every
+one-second window, supplying at least fifteen replacement opportunities rather than
+merely proving initial population.
+Initial hydration establishes residency and memory high-water evidence but is excluded
+from movement-latency samples; otherwise decode-pool startup queueing would be mislabeled
+as a player-triggered cell-load outcome. The harness waits for initial residency before
+running the separately attributed OPFS spike, starts the 12 m/s traversal only after that
+spike completes, and derives latency plus eviction evidence solely from replacements
+completed between the smoke measurement start/end snapshots.
+The public telemetry envelope advances to v10 and `smoke@1` to result schema v28 /
+mandatory metric-set v13. Every core run must contain at least ten complete cell samples,
+exactly nine residents, a positive GPU allocation, at least one proactive eviction, no
+encoded-budget rejection, a bounded worker/queue shape, and a nearest-rank representative
+cell-load p95 no greater than 250 ms. Because either measurement snapshot can bisect the
+worker's evict-before-load phase, the harness permits the eviction and completion deltas
+to differ by at most the nine-cell residency limit rather than requiring exact equality.
+
+The render worker creates real LOD0 Lite meshes for streamed cells but keeps them hidden
+while D-090's whole-district preview remains the visible presentation owner. This avoids
+double-rendering the same world or silently changing the already-qualified D-090 visual
+contract. The scripted-flythrough task will transfer visible presentation ownership to
+the residency set and measure continuity. KTX2/Draco/meshopt remain preinstalled and
+qualified at the render boundary under D-089; the v1 procedural JSON decoder establishes
+pooling, scheduling, and failure semantics without pretending that JSON timing measures
+those binary codecs.
+
+**Context:** D-066 qualified worker-owned synchronous OPFS access but explicitly left
+representative OPFS-to-renderable latency, production pool sizing, and eviction to M1.
+D-090 supplied deterministic content-addressed packages and a 12 m/s traversal contract.
+The new path was checked locally on 2026-07-24 using the exact Node 24.18.0 build and
+pinned Chrome runtime: it reached nine residents, crossed a cell boundary, evicted
+proactively, and reported no worker or render failure. Registered physical-console
+schema-v28 attempts then established that Chrome 151 exposes the window, render worker,
+streaming worker, and four nested decode workers as seven measurable app realms. Every
+completed core run retained 48–51 measurement-window replacements at 8.2–11.8 ms p95,
+exactly nine residents, positive attributable streamed GPU bytes, proactive eviction,
+and zero encoded-budget rejection. Artifact
+`smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-04-07-045Z.json` passed all three
+facets and 30 checks before a report-only realm-count wording correction. The final
+source state retained four failed same-artifact attempts under RE-008 and RE-036, so
+the registered gate remains the qualification authority and this task remains open.
+
+**Consequences:** Streaming failures are terminal and observable. Large cell bytes cross
+the decode boundary as transferables, and decoded cells cross only the dedicated
+streaming/render port; the window receives telemetry summaries, not content. The fixed
+render-request timeout prevents a failed render worker from suspending residency
+transitions indefinitely, and GPU upload is transactional so partial uploads and
+post-upload accounting failures do not orphan render resources. Successful uploads remain
+provisional until the streaming worker commits them; the render worker rolls back an
+uncommitted upload after five seconds, covering a lost or late completion response.
+Disposal is acknowledged
+only after active scheduling drains and every render-side resident is evicted. The fixed
+limits are an initial measured contract, not eternal budgets. The plan item remains open
+until the registered physical-console run supplies all six fresh/warm runs and passes
+the new evidence and budget checks.
+
+The pre-M2 provisioning bridge re-hashes all reused packages on launch and removes files
+whose content hashes are absent from the current district's own directory and index.
+District-keyed storage prevents one district's cleanup from deleting another district's
+installed packages. This is deliberately
+correct but O(all installed content); M2's installer must replace it with a trusted,
+versioned verification ledger before multi-gigabyte launch performance is qualified.
+Chrome 151 did expose all four nested decode workers as ordinary browser-context CDP
+targets in every completed physical-console run; the mandatory heap sampler measured
+all seven app realms. That risk is resolved for the pinned runtime, while the unrelated
+RE-008 trace-completion and RE-036 Wasm-instantiation failures still prevent final-source
+qualification.
+
+**Reopen if:** representative binary assets require a different pool topology, the
+flythrough shows nine cells cannot hide traversal latency or visual transitions, measured
+memory attribution requires a stricter accounting boundary, or registered results show
+the worker reservation or 250 ms limit is inappropriate. Change the versioned contracts
+and decision together; do not weaken a check to accept a failing run.
+
 ## D-090: Fix the D1 procedural-greybox scale, cells, LOD, and collision contract  (2026-07-21, accepted)
 
 **Decision:** District 1's M1 playable surface is a **4,096 m × 4,096 m square** centered

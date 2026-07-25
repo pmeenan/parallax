@@ -347,11 +347,23 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v12, which adds measured D-090 greybox-world content,
+  the current mandatory metric-set (v13, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
-  keeps OPFS per-run correctness and raw throughput mandatory, and
+  adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
+  residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
+  attribution, proactive eviction, zero encoded-budget rejections, and a representative cell-load p95 no
+  greater than 250 ms, keeps OPFS per-run correctness and raw throughput mandatory, and
   separates OPFS's sandbox-sensitive repeatability finding as informational;
-  D-058/D-066/D-090). The corresponding `smoke@1` report schema is v27.
+  D-058/D-066/D-090/D-091). The corresponding `smoke@1` report schema is v28.
+  Initial streaming residency completes before the standalone OPFS spike, traversal
+  begins only after that spike, and the streaming p95/proactive-eviction verdict uses
+  only the telemetry delta inside the ordinary presentation measurement window. That
+  window requires at least ten contiguous sequenced replacements; the deterministic
+  12 m/s diagonal corner-crossing stress path completes at least five target transitions
+  per second, with three replacements per transition, at both 60 Hz and 120 Hz.
+  Measurement snapshots may bisect the worker's evict-before-load phase, so eviction
+  and completion deltas may differ by at most the nine-cell residency bound; exact
+  equality is not required.
   V8 lifecycle checks are diagnostics, not budget checks.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,

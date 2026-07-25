@@ -102,6 +102,16 @@ export default defineConfig([
     output: { ...sharedOutput, entryFileNames: "storage-worker.js", inlineDynamicImports: true },
   },
   {
+    input: "src/workers/decode-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "decode-worker.js", inlineDynamicImports: true },
+  },
+  {
+    input: "src/workers/streaming-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "streaming-worker.js", inlineDynamicImports: true },
+  },
+  {
     input: "src/workers/ai-worker.ts",
     plugins: createPlugins(),
     output: { ...sharedOutput, entryFileNames: "ai-worker.js", inlineDynamicImports: true },

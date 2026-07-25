@@ -25,6 +25,8 @@ async function writeFixture(districtSchemaVersion = 1): Promise<string> {
   const workerDigest = createHash("sha256").update(workerBody).digest("hex");
   const workerPath = `immutable/render-worker-${workerDigest}.js`;
   const storageWorkerPath = `immutable/storage-worker-${workerDigest}.js`;
+  const decodeWorkerPath = `immutable/decode-worker-${workerDigest}.js`;
+  const streamingWorkerPath = `immutable/streaming-worker-${workerDigest}.js`;
   const aiWorkerPath = `immutable/ai-worker-${workerDigest}.js`;
   const wasmThreadWorkerPath = `immutable/wasm-thread-worker-${workerDigest}.js`;
   const memory64SpikeWorkerPath = `immutable/memory64-spike-worker-${workerDigest}.js`;
@@ -32,6 +34,8 @@ async function writeFixture(districtSchemaVersion = 1): Promise<string> {
   await writeFile(join(root, "index.html"), index);
   await writeFile(join(root, workerPath), workerBody);
   await writeFile(join(root, storageWorkerPath), workerBody);
+  await writeFile(join(root, decodeWorkerPath), workerBody);
+  await writeFile(join(root, streamingWorkerPath), workerBody);
   await writeFile(join(root, aiWorkerPath), workerBody);
   await writeFile(join(root, wasmThreadWorkerPath), workerBody);
   await writeFile(join(root, memory64SpikeWorkerPath), workerBody);
@@ -53,6 +57,16 @@ async function writeFixture(districtSchemaVersion = 1): Promise<string> {
         {
           bytes: Buffer.byteLength(workerBody),
           path: storageWorkerPath,
+          sha256: workerDigest,
+        },
+        {
+          bytes: Buffer.byteLength(workerBody),
+          path: decodeWorkerPath,
+          sha256: workerDigest,
+        },
+        {
+          bytes: Buffer.byteLength(workerBody),
+          path: streamingWorkerPath,
           sha256: workerDigest,
         },
         {
@@ -85,12 +99,14 @@ async function writeFixture(districtSchemaVersion = 1): Promise<string> {
           targetType: "district",
         },
       ],
-      schemaVersion: 7,
+      schemaVersion: 8,
       workerEntrypoints: [
         { path: aiWorkerPath, role: "ai", targetType: "worker" },
+        { path: decodeWorkerPath, role: "decode", targetType: "worker" },
         { path: memory64SpikeWorkerPath, role: "memory64-spike", targetType: "worker" },
         { path: workerPath, role: "render", targetType: "worker" },
         { path: storageWorkerPath, role: "storage", targetType: "worker" },
+        { path: streamingWorkerPath, role: "streaming", targetType: "worker" },
         { path: wasmThreadWorkerPath, role: "wasm-thread", targetType: "worker" },
       ],
     }),
@@ -102,7 +118,7 @@ describe("build manifest validation", () => {
   it("accepts a served tree whose files are all listed in the manifest", async () => {
     const root = await writeFixture();
     const validated = await readAndValidateBuildManifest(root);
-    expect(validated.manifest.artifacts).toHaveLength(7);
+    expect(validated.manifest.artifacts).toHaveLength(9);
     expect(validated.artifactDigest).toMatch(/^[a-f0-9]{64}$/);
   });
 
@@ -184,7 +200,7 @@ describe("build manifest validation", () => {
     );
   });
 
-  it("rejects missing or duplicate worker roles in manifest v7", async () => {
+  it("rejects missing or duplicate worker roles in manifest v8", async () => {
     const root = await writeFixture();
     const manifestPath = join(root, "build-manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
@@ -194,7 +210,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, decode, memory64-spike, render, storage, streaming, and WASM-thread worker",
     );
 
     const duplicateRoot = await writeFixture();
@@ -208,7 +224,7 @@ describe("build manifest validation", () => {
     await writeFile(duplicateManifestPath, JSON.stringify(duplicateManifest));
 
     await expect(readAndValidateBuildManifest(duplicateRoot)).rejects.toThrow(
-      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, decode, memory64-spike, render, storage, streaming, and WASM-thread worker",
     );
   });
 
@@ -241,7 +257,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct AI, memory64-spike, render, storage, and WASM-thread worker",
+      "requires exactly one distinct AI, decode, memory64-spike, render, storage, streaming, and WASM-thread worker",
     );
   });
 

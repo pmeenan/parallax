@@ -43,6 +43,7 @@ export interface RenderService {
 
 export interface RenderStartupTelemetry {
   readonly mainThreadWorldGenerationMs: number;
+  readonly streamingPort: MessagePort;
 }
 
 // D-028: the assembler replaces this token after hashing the sibling worker artifact.
@@ -283,9 +284,10 @@ export function createRenderService(): RenderService {
             kind: "start",
             sabRingBufferSpike: sabRingBufferSpike.config,
             scene,
+            streamingPort: startup.streamingPort,
             width: initialSize.width,
           } satisfies RenderWorkerRequest,
-          [offscreenCanvas],
+          [offscreenCanvas, startup.streamingPort],
         );
         mainThreadScenePostMessageMs = performance.now() - scenePostMessageStartedAt;
         resizeObserver = new ResizeObserver((entries) => {

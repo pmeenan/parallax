@@ -8,12 +8,14 @@ import {
 } from "./greybox-world-evidence.js";
 import {
   SMOKE_BUDGET_METRIC_NAMES,
+  SMOKE_BUDGET_METRICS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
 } from "./runs/smoke.js";
+import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
 
 export const BASELINE_STORE_SCHEMA_VERSION = 1;
 
@@ -30,6 +32,10 @@ interface BaselineReportRun {
   }>;
   readonly profile: "fresh" | "warm";
   readonly repeat: number;
+  readonly streaming: Readonly<{
+    readonly state: "measured";
+    readonly value: StreamingEvidence;
+  }>;
 }
 
 export interface BaselineEligibleReport {
@@ -397,6 +403,17 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
       const reason = error instanceof Error ? error.message : String(error);
       invalidReport(`runs[${runIndex}].greyboxWorld.value is invalid: ${reason}`);
     }
+    requireRecord(run.streaming, `runs[${runIndex}].streaming`);
+    if (run.streaming.state !== "measured") {
+      invalidReport(`runs[${runIndex}].streaming.state must be measured`);
+    }
+    let streaming: StreamingEvidence;
+    try {
+      streaming = requireStreamingEvidence(run.streaming.value);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      invalidReport(`runs[${runIndex}].streaming.value is invalid: ${reason}`);
+    }
     const observedMetrics = new Set<string>();
     evaluatedChecks += run.budgetChecks.length;
     for (const [checkIndex, check] of run.budgetChecks.entries()) {
@@ -418,6 +435,14 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     if (JSON.stringify([...observedMetrics].sort()) !== JSON.stringify(expectedMetrics)) {
       invalidReport(
         `runs[${runIndex}].budgetChecks must contain exactly ${expectedMetrics.join(", ")}`,
+      );
+    }
+    const p95Check = run.budgetChecks.find(
+      (check) => check.metric === SMOKE_BUDGET_METRICS.streamingCellLoadP95Ms,
+    );
+    if (p95Check?.actual !== streaming.cellLoadP95Ms) {
+      invalidReport(
+        `runs[${runIndex}] streaming budget checks must agree with measured streaming evidence`,
       );
     }
   }

@@ -39,6 +39,7 @@ export interface RenderStartMessage {
   readonly kind: "start";
   readonly sabRingBufferSpike: SabRingBufferSpikeConfig;
   readonly scene: GreyboxSceneConfig;
+  readonly streamingPort: MessagePort;
   readonly width: number;
 }
 

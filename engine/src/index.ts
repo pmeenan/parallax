@@ -86,6 +86,24 @@ export type {
 } from "./storage/opfs-read-spike-service";
 export { createOpfsReadSpikeService } from "./storage/opfs-read-spike-service";
 export type {
+  StreamingCellLoadTelemetry,
+  WorldStreamingTelemetrySnapshot,
+} from "./streaming/streaming-protocol";
+export {
+  STREAMING_CELL_LOAD_BUDGET_MS,
+  STREAMING_DECODE_WORKER_MAXIMUM,
+  STREAMING_DECODE_WORKER_RESERVED_THREADS,
+  STREAMING_RESIDENT_CELL_LIMIT,
+  STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
+  STREAMING_TELEMETRY_SCHEMA_VERSION,
+} from "./streaming/streaming-protocol";
+export type {
+  WorldStreamingListener,
+  WorldStreamingService,
+  WorldStreamingStartOptions,
+} from "./streaming/world-streaming-service";
+export { createWorldStreamingService } from "./streaming/world-streaming-service";
+export type {
   ParallaxRuntimeIdentity,
   ParallaxTelemetryExport,
   ParallaxTelemetrySnapshot,

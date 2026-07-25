@@ -51,6 +51,45 @@ const validGreyboxWorld = Object.freeze({
   }),
 });
 
+const validStreamingSamples = Object.freeze(
+  Array.from({ length: 10 }, (_, index) =>
+    Object.freeze({
+      cellId: `cell-${index}`,
+      decodeMs: 1,
+      encodedBytes: 10_000,
+      gpuBytes: 20_000,
+      opfsReadMs: 2,
+      sequence: index + 1,
+      totalMs: 11 + index,
+      uploadMs: 3,
+    }),
+  ),
+);
+const validStreaming = Object.freeze({
+  cellLoadP95Ms: 20,
+  cellLoadSampleCount: 10,
+  cellLoadSamples: validStreamingSamples,
+  decodeQueueDepthHighWater: 9,
+  decodeWorkerCount: 4,
+  cpuBudgetRejectionCount: 0,
+  encodedBytesRead: 190_000,
+  failureMessage: null,
+  hardwareConcurrency: 16,
+  measurementCellLoadSamples: validStreamingSamples,
+  measurementProactiveEvictionCount: 10,
+  measurementStartCellLoadSampleCount: 0,
+  measurementStartProactiveEvictionCount: 0,
+  opfsProvisionedBytes: 3_000_000,
+  proactiveEvictionCount: 10,
+  residentCellCount: 9,
+  residentEncodedBytes: 90_000,
+  residentEncodedBytesHighWater: 90_000,
+  residentGpuBytes: 180_000,
+  residentGpuBytesHighWater: 180_000,
+  schemaVersion: 1 as const,
+  state: "streaming" as const,
+});
+
 const mandatoryMetricNames = Object.freeze(
   SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map((metric) => metric.name),
 );
@@ -75,6 +114,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       passed: true,
     },
     { actual: 0, limit: 0, metric: "shaderCompilationsOverlappingMeasurement", passed: true },
+    { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
   ];
   const runs = [
     ...[10, 11, 12].map((actual, index) => ({
@@ -82,12 +122,14 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "fresh" as const,
       repeat: index + 1,
+      streaming: { state: "measured" as const, value: validStreaming },
     })),
     ...[8, 9, 10].map((actual, index) => ({
       budgetChecks: budgetChecks(actual),
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "warm" as const,
       repeat: index + 1,
+      streaming: { state: "measured" as const, value: validStreaming },
     })),
   ];
   return {
@@ -115,11 +157,11 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     },
     generatedAt: "2026-07-20T00:00:00.000Z",
     harnessRuntime: { nodeExecutableSha256: "e".repeat(64), nodeVersion: "v24.18.0" },
-    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 12 },
+    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 13 },
     passed: true,
     runs,
     scenario: "smoke@1",
-    schemaVersion: 27,
+    schemaVersion: 28,
     source: { commit: "c".repeat(40), dirtyTreeDigest: null },
     ...overrides,
   };
@@ -268,13 +310,13 @@ describe("baseline result store", () => {
     ).toThrow(/budgetChecks must contain measured observations/);
   });
 
-  it("requires the exact v12 mandatory metric list and measured D-090 evidence in every run", () => {
+  it("requires the exact v13 mandatory metric list and measured D-090 evidence in every run", () => {
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),
         mandatoryMetricSet: {
           metrics: mandatoryMetricNames.filter((metric) => metric !== "greybox world content"),
-          version: 12,
+          version: 13,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly.*greybox world content/);
@@ -283,7 +325,7 @@ describe("baseline result store", () => {
         ...report(),
         mandatoryMetricSet: {
           metrics: [...mandatoryMetricNames, "greybox world content"],
-          version: 12,
+          version: 13,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly/);
@@ -311,6 +353,65 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/runs\[5\]\.greyboxWorld\.value is invalid/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0 ? { ...run, streaming: { state: "invalid" } } : run,
+        ),
+      }),
+    ).toThrow(/runs\[0\]\.streaming\.state must be measured/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 1
+            ? {
+                ...run,
+                streaming: {
+                  state: "measured",
+                  value: { ...validStreaming, residentCellCount: 8 },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/runs\[1\]\.streaming\.value is invalid/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 1
+            ? {
+                ...run,
+                streaming: {
+                  state: "measured",
+                  value: {
+                    ...validStreaming,
+                    measurementStartCellLoadSampleCount: 9,
+                    measurementStartProactiveEvictionCount: 9,
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/at least 10 completed replacements/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 2
+            ? {
+                ...run,
+                budgetChecks: run.budgetChecks.map((check) =>
+                  check.metric === "streamingCellLoadP95Ms" ? { ...check, actual: 19 } : check,
+                ),
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/streaming budget checks must agree/);
   });
 
   it("validates the same report bytes recorded by the audit digest", async () => {
@@ -347,7 +448,7 @@ describe("baseline result store", () => {
           },
         },
       }),
-    ).toThrow(/evaluatedChecks must equal 24/);
+    ).toThrow(/evaluatedChecks must equal 30/);
 
     const paths = await fixture();
     const failedCheckReport = report({

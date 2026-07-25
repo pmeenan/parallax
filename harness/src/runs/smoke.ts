@@ -14,13 +14,14 @@ export interface QualityTierProfile {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 12;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 13;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_BUDGET_METRICS = Object.freeze({
   allRealmJsHeapHighWaterBytes: "allRealmJsHeapHighWaterBytes",
   mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
   pipelineCreationActivityOverlappingMeasurement: "pipelineCreationActivityOverlappingMeasurement",
   shaderCompilationsOverlappingMeasurement: "shaderCompilationsOverlappingMeasurement",
+  streamingCellLoadP95Ms: "streamingCellLoadP95Ms",
 } as const);
 export const SMOKE_BUDGET_METRIC_NAMES = Object.freeze(Object.values(SMOKE_BUDGET_METRICS));
 export const SMOKE_V8_CODE_CACHE_DIAGNOSTIC = "v8-code-cache@6";
@@ -53,9 +54,9 @@ export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 9;
-// v27 records the public greybox-world materialization evidence required by M1.
-export const SMOKE_REPORT_SCHEMA_VERSION = 27;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 10;
+// v28 records the mandatory M1 OPFS-to-GPU streaming pipeline evidence.
+export const SMOKE_REPORT_SCHEMA_VERSION = 28;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -67,6 +68,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("verified gate environment identity", true, "implemented"),
   metric("core measurement run completion", true, "implemented"),
   metric("greybox world content", true, "implemented"),
+  metric("world streaming pipeline", true, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
   metric("OPFS sync-access-handle read throughput", true, "implemented"),

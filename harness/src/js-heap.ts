@@ -115,9 +115,6 @@ function normalizeExpectedWorkerUrls(
   if (urls.some((url) => typeof url !== "string" || url.length === 0)) {
     throw new Error("JS heap sampler expected worker URLs must be non-empty strings");
   }
-  if (new Set(urls).size !== urls.length) {
-    throw new Error("JS heap sampler expected worker URLs must be unique");
-  }
   return Object.freeze([...urls]);
 }
 
@@ -143,7 +140,7 @@ async function requireExpectedWorkerTopology(
   browserSession: CDPSession,
   pageTarget: TargetInfo,
   expectedWorkerUrls: readonly string[],
-  expectedWorkerTargetIds?: ReadonlyMap<string, string>,
+  expectedWorkerTargetIds?: ReadonlySet<string>,
 ): Promise<readonly TargetInfo[]> {
   const targets = (await withTimeout(
     browserSession.send("Target.getTargets"),
@@ -161,29 +158,34 @@ async function requireExpectedWorkerTopology(
       target.type === pageTarget.type &&
       target.url === pageTarget.url,
   );
-  const expectedWorkerTargets = expectedWorkerUrls.map((expectedWorkerUrl) =>
-    contextTargets.filter(
-      (target) =>
-        target.type === "worker" &&
-        target.url === expectedWorkerUrl &&
-        (expectedWorkerTargetIds === undefined ||
-          target.targetId === expectedWorkerTargetIds.get(expectedWorkerUrl)),
-    ),
+  const expectedCounts = new Map<string, number>();
+  for (const url of expectedWorkerUrls) {
+    expectedCounts.set(url, (expectedCounts.get(url) ?? 0) + 1);
+  }
+  const expectedWorkerTargets = contextTargets.filter(
+    (target) =>
+      target.type === "worker" &&
+      expectedCounts.has(target.url) &&
+      (expectedWorkerTargetIds === undefined || expectedWorkerTargetIds.has(target.targetId)),
   );
   if (
     expectedPageTargets.length !== 1 ||
-    expectedWorkerTargets.some((targets) => targets.length !== 1) ||
+    [...expectedCounts].some(
+      ([url, count]) =>
+        expectedWorkerTargets.filter((target) => target.url === url).length !== count,
+    ) ||
     contextTargets.length !== expectedWorkerUrls.length + 1
   ) {
     throw new Error(
       `Expected the app context to contain only page ${pageTarget.url} and dedicated worker(s) ${expectedWorkerUrls.join(", ")}; received ${contextTargets.length} target(s): ${contextTargets.map((target) => `${target.type}:${target.url}`).join(", ") || "none"}`,
     );
   }
-  const workerTargets = expectedWorkerTargets.map((targets) => targets[0]);
-  if (workerTargets.some((target) => target === undefined)) {
-    throw new Error("Expected dedicated-worker target disappeared");
-  }
-  return workerTargets as readonly TargetInfo[];
+  const urlOrder = new Map([...expectedCounts.keys()].map((url, index) => [url, index]));
+  return expectedWorkerTargets.sort(
+    (left, right) =>
+      (urlOrder.get(left.url) ?? 0) - (urlOrder.get(right.url) ?? 0) ||
+      left.targetId.localeCompare(right.targetId),
+  );
 }
 
 interface WorkerAttachment {
@@ -489,12 +491,7 @@ function createSampler(
             browserSession,
             pageTarget,
             workerAttachments.map((attachment) => attachment.target.url),
-            new Map(
-              workerAttachments.map((attachment) => [
-                attachment.target.url,
-                attachment.target.targetId,
-              ]),
-            ),
+            new Set(workerAttachments.map((attachment) => attachment.target.targetId)),
           );
         } catch (error) {
           topologyFailure = error;

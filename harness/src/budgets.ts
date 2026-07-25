@@ -1,3 +1,4 @@
+import { STREAMING_CELL_LOAD_BUDGET_MS } from "@parallax/engine";
 import { SMOKE_BUDGET_METRICS } from "./runs/smoke.js";
 
 export type QualityTier = "showcase" | "standard";
@@ -20,6 +21,12 @@ const JS_HEAP_LIMIT_BYTES: Readonly<Record<QualityTier, number>> = Object.freeze
   showcase: 4 * 1024 ** 3,
   standard: 2 * 1024 ** 3,
 });
+
+export function evaluateStreamingBudgets(cellLoadP95Ms: number): readonly BudgetCheck[] {
+  return Object.freeze([
+    check("streamingCellLoadP95Ms", cellLoadP95Ms, STREAMING_CELL_LOAD_BUDGET_MS),
+  ]);
+}
 
 export function evaluateJsHeapBudget(
   highWaterUsedSizeBytes: number,

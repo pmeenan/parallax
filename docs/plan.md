@@ -103,6 +103,20 @@ passing replacement as erasure.
         `040677b31910…` on 2026-07-20.
 - [ ] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
       movement, inside memory budget with proactive eviction.
+  - Implemented pending qualification (2026-07-24): D-091 adds the long-lived
+    OPFS-owning streaming worker, hardware-sized decode pool, direct render-worker upload
+    channel, nearest-nine scheduler, proactive farthest eviction, terminal failure
+    behavior, memory/queue/load telemetry, and mandatory p95/evidence checks. Exact
+    Node 24.18.0 build, repeatability, unit tests, and a local pinned-Chrome diagnostic
+    pass. Physical-console schema-v28/metric-set-v13 runs proved that Chrome exposes all
+    seven app realms (window, render worker, streaming worker, and four nested decode
+    workers) and that completed runs deliver 48–51 in-window replacements at 8.2–11.8 ms
+    p95 with no encoded-budget rejection. A pre-report-wording source state passed all
+    three facets and 30 checks in
+    `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-04-07-045Z.json`; the final
+    source state then failed closed across retained same-artifact attempts on the
+    existing RE-008 trace-completion and RE-036 Wasm-instantiation intermittents. The
+    checkbox remains open until the final source state completes the registered gate.
 - [ ] Geometry-representation spike (P-002): triangle LOD vs. meshlet-virtualized vs.
       Gaussian splats on representative content, harness-measured at both quality tiers
       and **under dynamic relighting** (game-design.md binding implication — a

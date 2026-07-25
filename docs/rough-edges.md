@@ -182,6 +182,15 @@ COS APIs exist):
   module compiled in 2.365 ms, one worker remained at `initialize-received`, and the
   service failed closed at 10,000 ms. The exact artifact later passed 6/6 in
   `smoke-1-040677b31910-dev-01-showcase-2026-07-21T02-28-50-631Z.json`.
+  D-091's final-source schema-v28 attempts reproduced the stall three more times:
+  warm repeat 3 in
+  `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-10-12-735Z.json`, then warm
+  repeat 1 in both the `00-10-59-880Z` and `00-12-01-644Z` reports. Each compiled the
+  same 12,680-byte module in 1.655–3.450 ms, left one worker at `ready` and its peer at
+  `initialize-received`, completed zero tasks, and failed closed at 10,000 ms. The
+  immediately preceding report-only source state had completed all six workloads,
+  reinforcing the existing intermittent classification without qualifying the final
+  source state.
 - **Current smoke/relaunch repro:** run `pnpm m0:gate` repeatedly, or launch the built app without tracing in four
   distinct temporary profiles followed by four sequential relaunches of one retained profile;
   wait for `__PARALLAX_TELEMETRY__.snapshot().wasmThreadSpike` to become terminal and retain its
@@ -1235,6 +1244,15 @@ COS APIs exist):
   then completed all six core traces in 282.5–291.6 ms and passed all three facets and
   24 checks in
   `smoke-1-71ce33331758-dev-01-showcase-2026-07-24T21-55-57-222Z.json`.
+  D-091's final-source schema-v28/metric-set-v13 attempts reproduced the same signature
+  on warm repeat 2, fresh repeat 3, and fresh repeat 1 in
+  `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-08-06-593Z.json`,
+  `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-10-12-735Z.json`, and
+  `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-12-01-644Z.json`. The end
+  commands returned in 2.0–2.3 ms, but zero events/chunks and no completion arrived
+  during 5,002.9–5,014.1 ms. A report-only source state immediately before those
+  attempts completed all six traces and passed all 30 checks in the `00-04-07-045Z`
+  report; the final source state remains unqualified rather than using that near-match.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second

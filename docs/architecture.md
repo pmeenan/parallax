@@ -51,10 +51,11 @@ AI workers         P-007 wllama/llama.cpp execution + OPFS model cache; wllama c
                    its own inference worker/pthreads and, for the default D-074 path,
                    a separate WebGPU device. ONNX diagnostics retain a dedicated
                    Parallax AI worker.
-streaming worker   Owns OPFS handles; schedules loads/evictions against the
-                   memory budget; feeds decode pool.
-decode pool (N)    Texture transcode (KTX2/BasisU), mesh decompress (meshopt),
-                   Rust/WASM hot paths. Sized to hardwareConcurrency.
+streaming worker   Owns OPFS handles; schedules nearest-observer loads and proactive
+                   evictions against the memory budget; feeds the fixed decode pool.
+decode pool (N)    M1 v1 validates/decodes cell packages; later texture transcode
+                   (KTX2/BasisU), mesh decompress (meshopt), Rust/WASM hot paths.
+                   Sized once at boot to min(4, max(1, hardwareConcurrency - 2)).
 sim worker         Fixed-timestep gameplay simulation. Deliberately isolated so a
                    future multiplayer peer can drive it from network input
                    (see features.md → Multiplayer).
@@ -154,7 +155,22 @@ deterministic 64 KiB random reads. It separates time inside `read()`
 from validation-inclusive worker wall time, retains every sequential pass and 256-read
 random batch, and correlates the sub-second window with coarse host physical-disk
 activity on Windows. The worker terminates before the gameplay measurement window;
-M1's long-lived streaming worker will own production handles and queue telemetry. The
+M1's long-lived streaming worker now owns production handles and queue telemetry. It
+retains the nearest nine D1 cells across all observers, evicts farthest non-target
+residents before replacement loads, and sends decoded cells over a dedicated
+`MessageChannel` to the render worker. The v1 procedural-cell decoder is a fixed
+hardware-sized nested worker pool; every measured movement-triggered path reports attributable
+OPFS read, decode, upload, total latency, encoded/GPU bytes, queue high water, and
+residency/eviction counters. Districts own separate hashed OPFS subdirectories, so
+content-address garbage collection is scoped to one district and remains compatible with
+the N>2 streaming design constraint. Load samples carry monotonic sequence numbers so the harness
+can derive a measurement-window suffix correctly even after the retained 256-sample ring
+wraps. A pre-M2 provisioning bridge verifies HTTP packages before
+placing content-addressed files in OPFS; the installer will assume that responsibility
+before launch-2+ becomes a product gate. Streamed LOD0 meshes are created on the GPU but
+remain hidden until the scripted flythrough transfers visible ownership from D-090's
+qualified whole-world preview (D-091).
+The
 microbenchmark's sandbox-sensitive repeatability remains an informational finding;
 M1's representative OPFS-to-renderable cell-load p95 is the outcome gate. (D-058/D-066.)
 

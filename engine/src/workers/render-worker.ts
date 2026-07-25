@@ -1,9 +1,11 @@
 import { installDecoderGlobals, runDecoderFixtures } from "../render/decoder-bootstrap";
 import {
   createLiteGreyboxWorld,
+  evictStreamingGreyboxCell,
   type GreyboxLightingSample,
   renderLiteGreyboxWorld,
   resizeLiteGreyboxWorld,
+  uploadStreamingGreyboxCell,
 } from "../render/lite-greybox-world";
 import type {
   GreyboxSceneConfig,
@@ -11,6 +13,10 @@ import type {
   RenderWorkerRequest,
   RenderWorkerResponse,
 } from "../render/render-protocol";
+import type {
+  RenderStreamingRequest,
+  RenderStreamingResponse,
+} from "../streaming/streaming-protocol";
 import { TELEMETRY_FRAME_BATCH_FRAMES } from "../telemetry/telemetry-export";
 import {
   SAB_SPIKE_TIMEOUT_MS,
@@ -109,12 +115,82 @@ function startRenderWorker(): void {
     height: number,
     config: GreyboxSceneConfig,
     sabRingBufferSpike: SabRingBufferSpikeConfig,
+    streamingPort: MessagePort,
   ): Promise<void> => {
     const initStartedAt = performance.now();
     try {
       const decoderBootstrap = installDecoderGlobals();
       const decoderFixtures = await runDecoderFixtures();
       const renderer = await createLiteGreyboxWorld(canvas, width, height, config);
+      const pendingStreamingUploads = new Map<
+        number,
+        Readonly<{ cellId: string; timeout: ReturnType<typeof setTimeout> }>
+      >();
+      streamingPort.onmessage = (event: MessageEvent<RenderStreamingRequest>): void => {
+        const request = event.data;
+        try {
+          if (request.kind === "stream-cell") {
+            const startedAt = performance.now();
+            const uploaded = uploadStreamingGreyboxCell(renderer, request.cell);
+            const timeout = setTimeout(() => {
+              const pending = pendingStreamingUploads.get(request.requestId);
+              if (pending?.cellId !== request.cellId) return;
+              pendingStreamingUploads.delete(request.requestId);
+              try {
+                evictStreamingGreyboxCell(renderer, request.cellId);
+              } catch (error: unknown) {
+                postError(error);
+              }
+            }, 5_000);
+            pendingStreamingUploads.set(
+              request.requestId,
+              Object.freeze({ cellId: request.cellId, timeout }),
+            );
+            streamingPort.postMessage({
+              cellId: request.cellId,
+              gpuBytes: uploaded.gpuBytes,
+              kind: "stream-cell-complete",
+              requestId: request.requestId,
+              uploadMs: performance.now() - startedAt,
+            } satisfies RenderStreamingResponse);
+          } else if (request.kind === "commit-cell") {
+            const pending = pendingStreamingUploads.get(request.uploadRequestId);
+            if (pending?.cellId !== request.cellId) {
+              throw new Error(
+                `Streaming commit ${request.requestId} arrived after upload ${request.uploadRequestId} was rolled back`,
+              );
+            }
+            clearTimeout(pending.timeout);
+            pendingStreamingUploads.delete(request.uploadRequestId);
+            streamingPort.postMessage({
+              cellId: request.cellId,
+              kind: "commit-cell-complete",
+              requestId: request.requestId,
+            } satisfies RenderStreamingResponse);
+          } else {
+            for (const [pendingId, pending] of pendingStreamingUploads) {
+              if (pending.cellId !== request.cellId) continue;
+              clearTimeout(pending.timeout);
+              pendingStreamingUploads.delete(pendingId);
+            }
+            streamingPort.postMessage({
+              cellId: request.cellId,
+              freedGpuBytes: evictStreamingGreyboxCell(renderer, request.cellId),
+              kind: "evict-cell-complete",
+              requestId: request.requestId,
+            } satisfies RenderStreamingResponse);
+          }
+        } catch (error: unknown) {
+          streamingPort.postMessage({
+            kind: "streaming-render-failure",
+            message: errorMessage(error),
+            requestId: request.requestId,
+          } satisfies RenderStreamingResponse);
+        }
+      };
+      streamingPort.onmessageerror = (): void =>
+        postError("Streaming render request was unreadable");
+      streamingPort.start();
 
       resizeScene = (nextWidth, nextHeight): void => {
         resizeLiteGreyboxWorld(renderer, nextWidth, nextHeight);
@@ -219,6 +295,7 @@ function startRenderWorker(): void {
       message.height,
       message.scene,
       message.sabRingBufferSpike,
+      message.streamingPort,
     );
   };
 }

@@ -7,7 +7,10 @@ import {
   createMeshFromData,
   createSceneContext,
   createStandardMaterial,
+  disposeMeshGpu,
+  type Mesh,
   registerScene,
+  removeFromScene,
   renderFrame,
   setEngineSize,
 } from "@babylonjs/lite";
@@ -40,7 +43,7 @@ const WEATHER_INTENSITY = Object.freeze({
   storm: 0.38,
 } as const);
 
-function createGeometryBatch(primitives: readonly GreyboxPrimitive[]): GeometryBatch {
+export function createGeometryBatch(primitives: readonly GreyboxPrimitive[]): GeometryBatch {
   const box = createBoxData(1);
   const vertexCount = box.vertexCount * primitives.length;
   const indexCount = box.indexCount * primitives.length;
@@ -421,7 +424,10 @@ export async function createLiteGreyboxWorld(
     config,
     engine,
     light,
+    materials,
     previousTimestamp: null as number | null,
+    scene,
+    streamingCells: new Map<string, Readonly<{ gpuBytes: number; meshes: readonly Mesh[] }>>(),
     telemetry,
   };
 }
@@ -431,6 +437,107 @@ export type LiteGreyboxWorld = Awaited<ReturnType<typeof createLiteGreyboxWorld>
 export interface GreyboxLightingSample {
   readonly intensity: number;
   readonly phase: number;
+}
+
+function geometryGpuBytes(geometry: GeometryBatch): number {
+  return (
+    geometry.positions.byteLength +
+    geometry.normals.byteLength +
+    geometry.indices.byteLength +
+    geometry.uvs.byteLength
+  );
+}
+
+export function uploadStreamingGreyboxCell(
+  renderer: LiteGreyboxWorld,
+  cell: GreyboxCell,
+): Readonly<{ gpuBytes: number }> {
+  if (renderer.streamingCells.has(cell.id)) {
+    throw new Error(`Streaming cell ${cell.id} is already resident`);
+  }
+  const lod = cell.lods[0];
+  const primitivesByMaterial = new Map<string, GreyboxPrimitive[]>();
+  const heightfieldsByMaterial = new Map<string, HeightfieldBatchEntry[]>();
+  for (const representation of lod.representations) {
+    if (representation.kind === "triangle-boxes") {
+      for (const primitive of representation.primitives) {
+        const primitives = primitivesByMaterial.get(primitive.materialId) ?? [];
+        primitives.push(primitive);
+        primitivesByMaterial.set(primitive.materialId, primitives);
+      }
+    } else if (representation.kind === "heightfield-grid") {
+      const heightfields = heightfieldsByMaterial.get(representation.materialId) ?? [];
+      heightfields.push(Object.freeze({ cell, representation }));
+      heightfieldsByMaterial.set(representation.materialId, heightfields);
+    } else {
+      throw new Error(`Streaming greybox cannot upload ${representation.kind}`);
+    }
+  }
+  const meshes: Mesh[] = [];
+  const addedMeshes = new Set<Mesh>();
+  let gpuBytes = 0;
+  const addGeometry = (materialId: string, geometry: GeometryBatch, suffix: string): void => {
+    const definition = requireMaterial(renderer.materials, materialId);
+    const mesh = createMeshFromData(
+      renderer.engine,
+      `streaming-${cell.id}-${materialId}-${suffix}`,
+      geometry.positions,
+      geometry.normals,
+      geometry.indices,
+      geometry.uvs,
+    );
+    meshes.push(mesh);
+    const material = createStandardMaterial();
+    material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
+    mesh.material = material;
+    // This task qualifies residency and upload while D-090's full-world preview remains
+    // the presentation owner. The flythrough task will make streamed meshes visible.
+    mesh.visible = false;
+    addToScene(renderer.scene, mesh);
+    addedMeshes.add(mesh);
+    gpuBytes += geometryGpuBytes(geometry);
+  };
+  try {
+    const referencedMaterialIds = new Set([
+      ...primitivesByMaterial.keys(),
+      ...heightfieldsByMaterial.keys(),
+    ]);
+    for (const materialId of referencedMaterialIds) {
+      requireMaterial(renderer.materials, materialId);
+      const primitives = primitivesByMaterial.get(materialId);
+      if (primitives !== undefined && primitives.length > 0) {
+        addGeometry(materialId, createGeometryBatch(primitives), "boxes");
+      }
+      const heightfields = heightfieldsByMaterial.get(materialId);
+      if (heightfields !== undefined && heightfields.length > 0) {
+        addGeometry(materialId, createHeightfieldGeometryBatch(heightfields), "heightfield");
+      }
+    }
+    renderer.streamingCells.set(
+      cell.id,
+      Object.freeze({ gpuBytes, meshes: Object.freeze(meshes) }),
+    );
+    return Object.freeze({ gpuBytes });
+  } catch (error: unknown) {
+    for (const mesh of meshes.reverse()) {
+      if (addedMeshes.has(mesh)) {
+        removeFromScene(renderer.scene, mesh);
+      } else {
+        disposeMeshGpu(mesh);
+      }
+    }
+    throw error;
+  }
+}
+
+export function evictStreamingGreyboxCell(renderer: LiteGreyboxWorld, cellId: string): number {
+  const resident = renderer.streamingCells.get(cellId);
+  if (resident === undefined) throw new Error(`Streaming cell ${cellId} is not resident`);
+  for (const mesh of resident.meshes) {
+    removeFromScene(renderer.scene, mesh);
+  }
+  renderer.streamingCells.delete(cellId);
+  return resident.gpuBytes;
 }
 
 export function renderLiteGreyboxWorld(

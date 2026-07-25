@@ -152,6 +152,9 @@ same-artifact Chrome 150 anchor and Chrome 151 candidate passed all facets and 2
 and Chrome 151 is promoted; intermittent RE-008 trace completion and RE-036 Wasm
 instantiation failures remain fail-closed platform findings. D-090's procedural D1
 greybox is qualified by the passing schema-v27/metric-set-v12 physical-console gate;
-its immediately preceding same-artifact RE-008 failure remains retained.
+its immediately preceding same-artifact RE-008 failure remains retained. D-091's
+streaming implementation is pending qualification: completed physical-console runs
+proved the seven-realm heap topology and streaming budgets, but the final-source
+schema-v28 gate attempts failed closed on RE-008/RE-036.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

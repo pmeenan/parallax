@@ -27,6 +27,7 @@ import {
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
+  evaluateStreamingBudgets,
   evaluateV8CodeCacheDiagnostics,
   evaluateV8CodeCacheReproductionDiagnostics,
   type QualityTier,
@@ -137,6 +138,7 @@ import {
   formatSmokeFacetSummary,
 } from "./smoke-result.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
+import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
 import { readTelemetry } from "./telemetry.js";
 import {
   decodedSourceCodeUnits,
@@ -218,6 +220,7 @@ interface RunMeasurement {
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly sabRingBuffer: SabRingBufferMetric;
+  readonly streaming: MeasuredMetric<StreamingEvidence>;
   readonly wasmThreads: WasmThreadSpikeMetric;
   readonly traceDrain: SmokeTraceDrainMetric;
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
@@ -333,6 +336,12 @@ interface HarnessRuntimeIdentity {
   readonly nodeVersion: string;
 }
 
+interface HeapWorkerUrls {
+  readonly decode: string;
+  readonly render: string;
+  readonly streaming: string;
+}
+
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const buildRoot = join(repositoryRoot, "dist");
 const chromePinPath = join(repositoryRoot, "harness/chrome/stable.json");
@@ -350,8 +359,12 @@ async function main(): Promise<void> {
   const artifactDigest = validatedBuild.artifactDigest;
   const build = renderBuildEvidence(validatedBuild.manifest);
   const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest);
-  const renderWorkerArtifact = await tryProbe("Build-manifest render-worker entrypoint", async () =>
-    renderWorkerArtifactPath(validatedBuild.manifest),
+  const heapWorkerArtifacts = await tryProbe("Build-manifest heap worker entrypoints", async () =>
+    Object.freeze({
+      decode: workerArtifactPath(validatedBuild.manifest, "decode"),
+      render: workerArtifactPath(validatedBuild.manifest, "render"),
+      streaming: workerArtifactPath(validatedBuild.manifest, "streaming"),
+    }),
   );
   const source = await readSourceIdentity(repositoryRoot);
   const harnessRuntime = Object.freeze({
@@ -361,10 +374,16 @@ async function main(): Promise<void> {
   const server = createLocalServer({ root: buildRoot });
   const address = await listenLocalServer(server);
   const baseUrl = `http://127.0.0.1:${address.port}`;
-  const renderWorkerUrl: ProbeResult<string> =
-    renderWorkerArtifact.state === "measured"
-      ? measured(new URL(renderWorkerArtifact.value, `${baseUrl}/`).href)
-      : renderWorkerArtifact;
+  const heapWorkerUrls: ProbeResult<HeapWorkerUrls> =
+    heapWorkerArtifacts.state === "measured"
+      ? measured(
+          Object.freeze({
+            decode: new URL(heapWorkerArtifacts.value.decode, `${baseUrl}/`).href,
+            render: new URL(heapWorkerArtifacts.value.render, `${baseUrl}/`).href,
+            streaming: new URL(heapWorkerArtifacts.value.streaming, `${baseUrl}/`).href,
+          }),
+        )
+      : heapWorkerArtifacts;
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-harness-"));
 
   try {
@@ -400,7 +419,7 @@ async function main(): Promise<void> {
               profile,
               environment.adapter?.backend ?? null,
               tier,
-              renderWorkerUrl,
+              heapWorkerUrls,
               launchPosition,
             ),
           );
@@ -665,14 +684,21 @@ function renderBuildEvidence(manifest: BuildManifest): RenderBuildEvidence {
 }
 
 function renderWorkerArtifactPath(manifest: BuildManifest): string {
+  return workerArtifactPath(manifest, "render");
+}
+
+function workerArtifactPath(
+  manifest: BuildManifest,
+  role: "decode" | "render" | "streaming",
+): string {
   const matches = manifest.workerEntrypoints.filter(
-    (entrypoint) => entrypoint.role === "render" && entrypoint.targetType === "worker",
+    (entrypoint) => entrypoint.role === role && entrypoint.targetType === "worker",
   );
   if (matches.length !== 1) {
-    throw new Error(`Expected one declared render-worker entrypoint; received ${matches.length}`);
+    throw new Error(`Expected one declared ${role}-worker entrypoint; received ${matches.length}`);
   }
   const entrypoint = matches[0];
-  if (entrypoint === undefined) throw new Error("Render-worker entrypoint disappeared");
+  if (entrypoint === undefined) throw new Error(`${role}-worker entrypoint disappeared`);
   return entrypoint.path;
 }
 
@@ -867,7 +893,7 @@ async function measureRun(
   profile: "fresh" | "warm",
   dawnBackend: string | null,
   tier: QualityTier,
-  renderWorkerUrl: ProbeResult<string>,
+  heapWorkerUrls: ProbeResult<HeapWorkerUrls>,
   launchPosition: LaunchSequencePosition,
 ): Promise<RunMeasurement> {
   // Server-metric window: snapshot immediately before browser launch and again only
@@ -882,7 +908,7 @@ async function measureRun(
     profile,
     dawnBackend,
     tier,
-    renderWorkerUrl,
+    heapWorkerUrls,
     launchPosition,
   );
   const after = await fetchServerMetrics(baseUrl);
@@ -900,7 +926,7 @@ async function measureRunWithBrowser(
   profile: "fresh" | "warm",
   dawnBackend: string | null,
   tier: QualityTier,
-  renderWorkerUrl: ProbeResult<string>,
+  heapWorkerUrls: ProbeResult<HeapWorkerUrls>,
   launchPosition: LaunchSequencePosition,
 ): Promise<Omit<RunMeasurement, "http">> {
   const context = await launchPersistentChrome(executablePath, profilePath);
@@ -980,6 +1006,18 @@ async function measureRunWithBrowser(
     const wasmThreads = requireWasmThreadSpikeCompleteAtMeasurementBoundary(
       (await readTelemetry(page)).wasmThreadSpike,
     );
+    await page.waitForFunction(
+      (globalName) => {
+        const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+        const state = telemetry.snapshot().streaming.state;
+        return state === "streaming" || state === "failed";
+      },
+      SMOKE_TELEMETRY_GLOBAL_NAME,
+      { timeout: 15_000 },
+    );
+    if ((await readTelemetry(page)).streaming.state !== "streaming") {
+      throw new Error("World streaming failed before the OPFS isolation boundary");
+    }
     const opfsStartedAt = performance.now();
     const opfsMeasurement = await withWindowsStorageActivity(async () => {
       await page.evaluate((globalName) => {
@@ -1001,6 +1039,10 @@ async function measureRunWithBrowser(
       );
     });
     const opfsReadSpike = opfsMeasurement.value;
+    await page.evaluate((globalName) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      telemetry.startStreamingTraversal();
+    }, SMOKE_TELEMETRY_GLOBAL_NAME);
     const remainingWarmupMs = SMOKE_WARMUP_MS - (performance.now() - opfsStartedAt);
     if (remainingWarmupMs > 0) await page.waitForTimeout(remainingWarmupMs);
     await resetSurfaceObserver(page);
@@ -1152,11 +1194,11 @@ async function measureRunWithBrowser(
     );
     const browserErrorsBeforeJsHeap = errors.length;
     let jsHeap: JsHeapMetric =
-      renderWorkerUrl.state === "measured"
-        ? await measureJsHeapMetric(context, page, renderWorkerUrl.value)
+      heapWorkerUrls.state === "measured"
+        ? await measureJsHeapMetric(context, page, heapWorkerUrls.value)
         : Object.freeze({
             evidence: null,
-            reason: renderWorkerUrl.reason,
+            reason: heapWorkerUrls.reason,
             state: "invalid",
           });
     const jsHeapBrowserErrors = errors.slice(browserErrorsBeforeJsHeap);
@@ -1174,6 +1216,7 @@ async function measureRunWithBrowser(
             dawnPipeline.value.shaderCache.missesOverlappingMeasurement,
           )
         : [];
+    const streaming = requireStreamingEvidence(snapshot.streaming, start.streaming);
     return Object.freeze({
       budgetChecks: Object.freeze([
         ...(jsHeap.state === "measured"
@@ -1181,6 +1224,7 @@ async function measureRunWithBrowser(
           : []),
         ...evaluateMainThreadBudgets(mainThreadLongTasks),
         ...pipelineBudgetChecks,
+        ...evaluateStreamingBudgets(streaming.cellLoadP95Ms),
       ]),
       browserDisplayAfter,
       browserDisplayBefore,
@@ -1204,6 +1248,7 @@ async function measureRunWithBrowser(
       renderSurfaceBefore,
       renderSurfaceChanges: endSurfaceState.changes,
       sabRingBuffer,
+      streaming: measured(streaming),
       wasmThreads,
       traceDrain,
       workerInitToFirstFrameMs: measured(requiredNumber(snapshot.render.workerInitToFirstFrameMs)),
@@ -1228,7 +1273,7 @@ async function measureRunWithBrowser(
 async function measureJsHeapSteadyStateWindow(
   context: BrowserContext,
   page: Page,
-  renderWorkerUrl: string,
+  heapWorkerUrls: HeapWorkerUrls,
 ): Promise<JsHeapEvidence> {
   const browser = context.browser();
   if (browser === null) throw new Error("Playwright did not expose the launched browser");
@@ -1246,11 +1291,19 @@ async function measureJsHeapSteadyStateWindow(
       5_000,
       "JS heap page CDP session creation",
     );
+    const topology = await readTelemetry(page);
     sampler = await prepareJsHeapSampler(
       browserSession,
       pageSession,
       page.url(),
-      renderWorkerUrl,
+      [
+        heapWorkerUrls.render,
+        heapWorkerUrls.streaming,
+        ...Array.from(
+          { length: topology.streaming.decodeWorkerCount },
+          () => heapWorkerUrls.decode,
+        ),
+      ],
       SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
     );
     const start = await readTelemetry(page);
@@ -1285,10 +1338,10 @@ async function measureJsHeapSteadyStateWindow(
 async function measureJsHeapMetric(
   context: BrowserContext,
   page: Page,
-  renderWorkerUrl: string,
+  heapWorkerUrls: HeapWorkerUrls,
 ): Promise<JsHeapMetric> {
   try {
-    return measured(await measureJsHeapSteadyStateWindow(context, page, renderWorkerUrl));
+    return measured(await measureJsHeapSteadyStateWindow(context, page, heapWorkerUrls));
   } catch (error) {
     return Object.freeze({
       evidence: error instanceof JsHeapValidationError ? error.evidence : null,
@@ -2110,7 +2163,9 @@ async function writeReport(report: SmokeReport): Promise<void> {
       return `- ${run.profile} repeat ${run.repeat}: invalid — ${invalidReason ?? "unknown failure"}`;
     }
     const validity = invalidReason === null ? "measured" : `invalid — ${invalidReason}; retained`;
-    return `- ${run.profile} repeat ${run.repeat}: ${validity} near-concurrent aggregate used-heap high-water estimate ${formatBytes(evidence.highWaterUsedSizeBytes)} across window + render worker; ${evidence.samples.length} samples over ${formatMilliseconds(evidence.periodicSamplingDurationMs)} at ${evidence.sampleIntervalMs} ms fixed-deadline interval in a dedicated post-trace steady-state window; missed deadlines ${evidence.missedSampleDeadlines}; maximum start delay ${formatMilliseconds(evidence.maximumSamplingStartDelayMs)}; maximum realm response-completion skew ${formatMilliseconds(evidence.maximumRealmResponseCompletionSkewMs)}; slowest collection ${formatMilliseconds(evidence.maximumCollectionDurationMs)}`;
+    const realmCount = evidence.samples[0]?.realms.length ?? 0;
+    const dedicatedWorkerCount = Math.max(0, realmCount - 1);
+    return `- ${run.profile} repeat ${run.repeat}: ${validity} near-concurrent aggregate used-heap high-water estimate ${formatBytes(evidence.highWaterUsedSizeBytes)} across ${realmCount} app realms (window + ${dedicatedWorkerCount} dedicated workers); ${evidence.samples.length} samples over ${formatMilliseconds(evidence.periodicSamplingDurationMs)} at ${evidence.sampleIntervalMs} ms fixed-deadline interval in a dedicated post-trace steady-state window; missed deadlines ${evidence.missedSampleDeadlines}; maximum start delay ${formatMilliseconds(evidence.maximumSamplingStartDelayMs)}; maximum realm response-completion skew ${formatMilliseconds(evidence.maximumRealmResponseCompletionSkewMs)}; slowest collection ${formatMilliseconds(evidence.maximumCollectionDurationMs)}`;
   });
   const sabRingBufferEvidence = report.runs.map((run) => {
     if (run.sabRingBuffer.state !== "measured") {
@@ -2171,6 +2226,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     const output = evidence.renderedOutput;
     return `- ${run.profile} repeat ${run.repeat}: ${evidence.districtId}; ${evidence.cellCount} cells; LOD cells [${evidence.selectedLodCellCounts.join(", ")}]; ${evidence.renderedTerrainPatchCount.toLocaleString("en-US")} terrain patches / ${evidence.renderedFeaturePrimitiveCount.toLocaleString("en-US")} box features / ${evidence.renderedTriangleCount.toLocaleString("en-US")} triangles; ${evidence.colliderCount.toLocaleString("en-US")} colliders / ${evidence.heightSampleCount.toLocaleString("en-US")} height samples; ${evidence.materialCount} materials; ${formatMilliseconds(evidence.mainThreadWorldGenerationMs)} main-thread generation / ${formatMilliseconds(evidence.mainThreadScenePostMessageMs)} main-thread scene postMessage / ${formatMilliseconds(evidence.materializationMs)} worker materialization; canvas ${output.width}×${output.height}, clear RGB [${output.clearColorRgb.join(", ")}], ${output.visiblePixelCount.toLocaleString("en-US")} visible pixels (${(output.visiblePixelRatio * 100).toFixed(2)}%), PNG SHA-256 \`${output.pngSha256}\`; ${lighting.sampleCount} lighting samples, phase ${lighting.phaseMinimum.toFixed(6)}–${lighting.phaseMaximum.toFixed(6)} (range ${lighting.phaseRange.toFixed(6)}), intensity ${lighting.intensityMinimum.toFixed(6)}–${lighting.intensityMaximum.toFixed(6)} (range ${lighting.intensityRange.toFixed(6)})`;
   });
+  const streamingEvidence = report.runs.map((run) => {
+    const evidence = run.streaming.value;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.cellLoadSampleCount} OPFS→decode→GPU samples (${evidence.measurementCellLoadSamples.length} in-window), p95 ${formatMilliseconds(evidence.cellLoadP95Ms)}; ${evidence.decodeWorkerCount} decode workers on hardwareConcurrency ${evidence.hardwareConcurrency}; queue high-water ${evidence.decodeQueueDepthHighWater}; ${evidence.residentCellCount} resident cells representing ${formatBytes(evidence.residentEncodedBytes)} encoded / ${formatBytes(evidence.residentGpuBytes)} attributable GPU bytes; ${evidence.measurementProactiveEvictionCount} in-window proactive evictions; ${evidence.cpuBudgetRejectionCount} encoded-budget rejections; ${formatBytes(evidence.opfsProvisionedBytes)} provisioned this launch`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2206,6 +2265,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## D1 greybox rendered-world evidence",
     "",
     ...greyboxWorldEvidence,
+    "",
+    "## D1 streaming evidence",
+    "",
+    ...streamingEvidence,
     "",
     "## Dawn pipeline/cache evidence",
     "",

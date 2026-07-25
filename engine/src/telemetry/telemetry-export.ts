@@ -7,15 +7,17 @@ import type {
 import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
 import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
 import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
+import type { WorldStreamingTelemetrySnapshot } from "../streaming/streaming-protocol";
+import type { WorldStreamingService } from "../streaming/world-streaming-service";
 import type { Memory64SpikeTelemetrySnapshot } from "../wasm/memory64-spike-protocol";
 import type { Memory64SpikeService } from "../wasm/memory64-spike-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v9 envelope adds deterministic D1 greybox world materialization evidence.
+// The v10 envelope adds the production-shaped M1 streaming pipeline.
 // Subsystems retain their own section schemas so platform experiments do not silently
 // rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 9;
+export const TELEMETRY_SCHEMA_VERSION = 10;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -37,6 +39,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
+  readonly streaming: WorldStreamingTelemetrySnapshot;
   readonly wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot;
 }
 
@@ -47,6 +50,7 @@ export interface ParallaxTelemetryExport {
   startOpfsReadSpike(): void;
   startMemory64Spike(): void;
   subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void;
+  startStreamingTraversal(): void;
 }
 
 export function installTelemetryExport(
@@ -56,6 +60,8 @@ export function installTelemetryExport(
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
   memory64SpikeService: Memory64SpikeService,
+  streamingService: WorldStreamingService,
+  startStreamingTraversal: () => void,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
 ): ParallaxTelemetryExport {
@@ -72,6 +78,7 @@ export function installTelemetryExport(
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
         memory64SpikeService.snapshot(),
+        streamingService.snapshot(),
         frozenIdentity,
       ),
     startOpfsReadSpike(): void {
@@ -79,6 +86,9 @@ export function installTelemetryExport(
     },
     startMemory64Spike(): void {
       memory64SpikeService.start();
+    },
+    startStreamingTraversal(): void {
+      startStreamingTraversal();
     },
     subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void {
       const publish = (): void => {
@@ -91,6 +101,7 @@ export function installTelemetryExport(
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
               memory64SpikeService.snapshot(),
+              streamingService.snapshot(),
               frozenIdentity,
             ),
           );
@@ -110,6 +121,7 @@ export function installTelemetryExport(
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
       const unsubscribeMemory64 = memory64SpikeService.subscribe(publishAfterWiring);
+      const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
@@ -119,6 +131,7 @@ export function installTelemetryExport(
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
         unsubscribeMemory64();
+        unsubscribeStreaming();
       };
     },
   });
@@ -138,6 +151,7 @@ function snapshot(
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   memory64Spike: Memory64SpikeTelemetrySnapshot,
+  streaming: WorldStreamingTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
@@ -148,6 +162,7 @@ function snapshot(
     promptApiSpike,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
+    streaming,
     wasmThreadSpike,
   });
 }

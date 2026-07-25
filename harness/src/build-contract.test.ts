@@ -15,7 +15,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(7);
+    expect(manifest.schemaVersion).toBe(8);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -31,12 +31,14 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(5);
+    expect(manifest.workerEntrypoints).toHaveLength(7);
     expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
       "ai",
+      "decode",
       "memory64-spike",
       "render",
       "storage",
+      "streaming",
       "wasm-thread",
     ]);
     for (const workerEntrypoint of manifest.workerEntrypoints) {
@@ -189,9 +191,18 @@ describe("assembled build contract", () => {
     expect(engineSource).not.toContain("__MEMORY64_SPIKE_WORKER_ARTIFACT__");
     expect(engineSource).not.toContain("__MEMORY32_SPIKE_ARTIFACT__");
     expect(engineSource).not.toContain("__MEMORY64_SPIKE_ARTIFACT__");
-    for (const worker of manifest.workerEntrypoints) {
+    expect(engineSource).not.toContain("__STREAMING_WORKER_ARTIFACT__");
+    for (const worker of manifest.workerEntrypoints.filter(({ role }) => role !== "decode")) {
       expect(engineSource).toContain(`./${worker.path.replace("immutable/", "")}`);
     }
+    const streamingEntrypoint = manifest.workerEntrypoints.find(({ role }) => role === "streaming");
+    const decodeEntrypoint = manifest.workerEntrypoints.find(({ role }) => role === "decode");
+    const streamingSource = await readFile(
+      join(buildRoot, streamingEntrypoint?.path ?? "missing-streaming-worker"),
+      "utf8",
+    );
+    expect(streamingSource).not.toContain("__DECODE_WORKER_ARTIFACT__");
+    expect(streamingSource).toContain(`./${decodeEntrypoint?.path.replace("immutable/", "")}`);
     expect(engineSource).toContain("__PARALLAX_TELEMETRY__");
 
     const immutableReferences = index.match(/\/immutable\/[^"'\s<]+/g) ?? [];

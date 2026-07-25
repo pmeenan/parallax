@@ -139,7 +139,15 @@ const memory64SpikeOutputName = contentAddressedNameFromBytes(
 await writeFile(join(outputRoot, "immutable", memory64SpikeOutputName), memory64SpikeBytes);
 
 const workerDescriptors = [];
-for (const role of ["ai", "memory64-spike", "render", "storage", "wasm-thread"]) {
+for (const role of [
+  "ai",
+  "decode",
+  "memory64-spike",
+  "render",
+  "storage",
+  "streaming",
+  "wasm-thread",
+]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
   if (role === "ai" && bytes.includes("__WLLAMA_WASM_ARTIFACT__")) {
     bytes = Buffer.from(
@@ -153,6 +161,19 @@ for (const role of ["ai", "memory64-spike", "render", "storage", "wasm-thread"])
     }
     bytes = Buffer.from(source);
   }
+  if (role === "streaming") {
+    const decodeWorker = workerDescriptors.find((worker) => worker.role === "decode");
+    if (decodeWorker === undefined) {
+      throw new Error("Decode worker must be assembled before the streaming worker");
+    }
+    bytes = Buffer.from(
+      replaceExactlyOnce(
+        bytes.toString("utf8"),
+        "__DECODE_WORKER_ARTIFACT__",
+        decodeWorker.outputName,
+      ),
+    );
+  }
   const outputName = contentAddressedNameFromBytes(`${role}-worker`, bytes);
   await writeFile(join(outputRoot, "immutable", outputName), bytes);
   workerDescriptors.push({ outputName, role });
@@ -161,7 +182,7 @@ for (const role of ["ai", "memory64-spike", "render", "storage", "wasm-thread"])
 const engineInput = join(repositoryRoot, "engine/dist/engine.js");
 let engineSource = await readFile(engineInput, "utf8");
 engineSource = replaceExactlyOnce(engineSource, "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName);
-for (const worker of workerDescriptors) {
+for (const worker of workerDescriptors.filter((candidate) => candidate.role !== "decode")) {
   engineSource = replaceExactlyOnce(
     engineSource,
     `__${worker.role.toUpperCase().replaceAll("-", "_")}_WORKER_ARTIFACT__`,
@@ -222,7 +243,7 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 7,
+      schemaVersion: 8,
       gameContentEntrypoints,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,

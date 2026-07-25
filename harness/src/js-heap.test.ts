@@ -96,6 +96,39 @@ describe("all-realm JS heap sampler", () => {
     expect(browser.detached).toBe(true);
   });
 
+  it("samples multiple workers that share one artifact URL", async () => {
+    const browser = new FakeBrowserSession(
+      [workerUrl, aiWorkerUrl, aiWorkerUrl],
+      [
+        [heapUsage(50, 60), heapUsage(45, 70)],
+        [heapUsage(30, 40), heapUsage(35, 50)],
+        [heapUsage(25, 35), heapUsage(40, 55)],
+      ],
+      { pageUrl: "http://127.0.0.1:8000/" },
+    );
+    const page = new FakePageSession([heapUsage(20, 30), heapUsage(15, 25)], {
+      pageUrl: "http://127.0.0.1:8000/",
+    });
+    const sampler = await prepareJsHeapSampler(
+      asCdp(browser),
+      asCdp(page),
+      "http://127.0.0.1:8000/",
+      [workerUrl, aiWorkerUrl, aiWorkerUrl],
+      60_000,
+    );
+
+    sampler.start();
+    const evidence = await sampler.finish();
+
+    expect(evidence.highWaterUsedSizeBytes).toBe(135);
+    expect(evidence.samples[1]?.realms.map(({ url }) => url)).toEqual([
+      "http://127.0.0.1:8000/",
+      workerUrl,
+      aiWorkerUrl,
+      aiWorkerUrl,
+    ]);
+  });
+
   it("ignores targets belonging to a different browser context", async () => {
     const browser = new FakeBrowserSession(workerUrl, [], {
       extraWorkerTargets: [
