@@ -27,6 +27,386 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, accepted)
+
+**Decision:** Interpret the project's per-change performance requirement at the
+reviewable-candidate boundary, not after every edit or review exchange.
+
+- Run `pnpm check` before handing off an implementation candidate and again after a
+  review fix changes code, generated artifacts, or test/build contracts.
+- Run one physical-console `pnpm harness:smoke` after the final reviewable state of a
+  runtime-affecting candidate. A candidate is runtime-affecting when it changes a built
+  app/engine/game/worker/Wasm artifact, browser-facing behavior, the harness or
+  measurement path, a runtime dependency or toolchain/browser pin, a reference-machine
+  descriptor, a budget, or a mandatory evidence contract. Rerun after any later fix
+  that changes one of those inputs.
+- Do not require physical smoke for documentation-only, test-only, or machine-local
+  tool-location changes that leave all of those inputs unchanged. Documentation that
+  changes a budget, mandatory evidence contract, pin, or qualification claim is not
+  exempt merely because the file is Markdown.
+- Keep `pnpm harness:smoke:v8-cache` on D-095's targeted triggers. Run installed
+  branded-Chrome parity when reviewing/adopting a Chrome pin and at the standing
+  dependency checkpoint when browser currency is assessed, not on an unrelated weekly
+  schedule.
+- If a qualifying smoke run hits an intermittent RE-008/RE-036-class failure, retain
+  the failed report and make one immediate same-artifact retry to classify it. The
+  retry is a separate result and never relabels or erases the failure. Additional
+  repetitions belong to an explicit diagnosis, not routine qualification.
+
+Only an automated pinned-Chrome run on a registered reference machine at its physical
+console can carry a budget verdict. Remote or otherwise non-gating runs remain useful
+diagnostics but never substitute for the required final qualification.
+
+**Context:** The schema-v31/metric-set-v15 routine gate already contains only current
+contracts after D-095/D-096. Its accepted D-096 run executed six launches and 30 checks;
+the final launch began 94.2 seconds into the sequence and the measured core sequence
+finished at approximately 110.3 seconds. That cost is appropriate once per final
+runtime candidate, but repeating it after edits that cannot change the artifact or
+measurement contract adds physical-console coordination without adding evidence.
+
+RE-008 has also shown that a complete trace may arrive late or fail intermittently, and
+the former RE-036 occurred in browser-side Rust/Wasm startup. Preserving a physical
+qualification boundary for browser-facing candidates continues to exercise those
+paths. Retaining a failed report plus one same-artifact retry distinguishes an
+intermittent from a deterministic regression without averaging away or silently
+discarding the failure.
+
+**Consequences:** “Every change” means every final reviewable runtime-affecting change,
+not every intermediate working-tree state. Agents should batch the physical run after
+implementation and review fixes have converged, while still rerunning it whenever a
+subsequent fix changes qualifying inputs. This decision changes workflow only; it does
+not change smoke scenario shape, repeats, budgets, schemas, fail-closed result
+semantics, or baseline-promotion rules.
+
+**Reopen if:** the routine gate becomes too slow for one run per runtime candidate; a
+reliable unattended physical-console runner permits a useful additional cadence; field
+or CI evidence shows that exempt changes can alter measured artifacts; or intermittent
+failures require a different statistically justified qualification protocol.
+
+---
+
+## D-096: Select app-owned NPC inference and retire superseded Prompt/OPFS experiments (2026-07-24, accepted)
+
+**Decision:** Resolve P-007 in favor of D-074's exactly pinned app-owned Gemma 4 E2B
+QAT-GGUF backend on wllama 3.5.1. All-layer WebGPU offload is the default placement;
+the measured `n_gpu_layers: 0` CPU/WASM path remains an explicit graphics-headroom mode,
+never an automatic fallback. D-017's Prompt API backend and Chrome-managed model
+lifecycle are superseded. Every NPC still requires authored fallback dialog, and no
+quest-critical interaction may depend on model availability.
+
+Close the superseded implementation surfaces under D-095:
+
+- Remove the Prompt API engine service and public types, both CfT and branded harness
+  scenarios, their profile/model-component utilities and tests, app controls, game
+  fixtures, launch-switch surgery, and `@types/dom-chromium-ai`.
+- Remove D-066's standalone 64 MiB OPFS microbenchmark, storage worker, telemetry,
+  host-disk sampler, tests, and smoke checks. D-091's long-lived streaming worker now
+  supplies the representative mandatory OPFS→decode→GPU integrity, timing, residency,
+  eviction, and budget evidence.
+- Remove the completed-milestone `m0:gate` alias; `pnpm harness:smoke` is the single
+  routine gate name.
+
+The combined telemetry envelope advances from v11 to v12, build manifest v9 to v10,
+`smoke@1` report schema v30 to v31, and mandatory metric-set v14 to v15. Build-manifest
+v10 requires five worker entrypoints rather than six. Metric-set v15 removes only the
+standalone OPFS throughput and repeatability checks; the representative streaming
+pipeline remains mandatory and retains per-cell OPFS read timings.
+
+**Context:** D-074 passed the unchanged fixed fixture with 119.64 ms warm TTFT p95,
+60.27 tokens/s mean decode throughput, exact five-shard OPFS lifecycle evidence,
+structured-output/context checks, and concurrent render-worker callback telemetry.
+D-065 proved that branded Chrome could deliver and reuse its built-in model, but
+RE-021's observed first-token samples missed the dialog target, the API remained
+window-only (RE-016), and its browser-managed lifecycle remained less controllable
+(RE-017/RE-020). No current plan item, production runtime, platform floor, or recurring
+qualification gate consumes the Prompt implementation.
+
+D-091 subsequently replaced D-066's synthetic storage-boundary evidence with at least
+ten contiguous representative cell loads per core run, including attributable OPFS
+read, decode, upload, total latency, content integrity, queue/residency shape, proactive
+eviction, and a blocking 250 ms p95. Keeping a second mandatory synthetic read workload
+made every smoke launch slower while protecting no independent current contract.
+
+**Consequences:** NPC inference has one production direction, one model/install
+lifecycle, and no dormant backend abstraction branch. Prompt API and standalone OPFS
+measurements remain in the decision/finding logs and machine-local result history; git
+history retains their reproducible implementations. A future Chrome or backend
+comparison starts as a new bounded experiment against then-current APIs and tooling.
+The app build no longer ships the storage worker, and routine smoke starts traversal
+after streaming residency without first running a synthetic 64 MiB read workload.
+
+`pnpm check` passed with 43 files / 286 unit cases, including same-host byte
+repeatability for all five emitted engine workers and all three generated Wasm modules.
+Physical-console schema-v31/metric-set-v15 report
+`smoke-1-0b65dbea0692-dev-01-showcase-2026-07-25T02-31-34-110Z.json` then completed all
+six core launches and passed environment, mandatory-evidence, and budget facets with
+all 30 checks passing. It recorded zero V8 diagnostic launches, as expected for the
+routine gate.
+
+**Reopen if:** a current milestone identifies a measured quality, contention,
+installation-size, or lifecycle failure in the selected backend; Chrome's built-in
+model demonstrates a materially better current tradeoff against the same game fixture;
+or the representative streaming evidence can no longer localize an OPFS regression and
+a smaller targeted storage probe is approved.
+
+---
+
+## D-095: Remove closed experiment baggage and make non-gating diagnostics targeted (2026-07-24, accepted)
+
+**Decision:** Once an experiment has a recorded conclusion and no selected runtime,
+active plan item, platform floor, or recurring qualification contract consumes it,
+remove its code, dependencies, build outputs, fixtures, and decision-only tests. Keep
+the durable evidence in decisions, findings, result artifacts, and git history. Apply
+the same standard to routine checks: every-change gates protect current contracts and
+budgets; useful non-gating investigations use explicit opt-in commands with documented
+triggers.
+
+Apply that policy now in two places:
+
+- Remove the superseded D-073 Transformers.js/ONNX implementation, its two ONNX model
+  manifests, local declaration shim, dedicated Parallax AI worker, Rollup/build-manifest
+  entry, dependency/override/install policy, and ONNX-only tests. The selected app-owned
+  LLM contract now describes only D-074's wllama/GGUF WebGPU and CPU/WASM modes.
+- Stop running the isolated three-lineage V8 code-cache diagnostic in every
+  `pnpm harness:smoke`. `pnpm harness:smoke:v8-cache` runs the same core smoke gate and
+  opts into the existing nine V8 launches. Use it for browser, Node, Vite/Rollup,
+  server/cache changes, dependency checkpoints, M2 install/update/lifecycle work, and
+  explicit V8 investigations.
+
+The public build manifest advances from v8 to v9 because it now requires six worker
+entrypoints rather than seven. App-owned LLM telemetry advances from v2 to v3 and its
+report from v1 to v2 because ONNX runtime/device variants disappear. `smoke@1` advances
+from report schema v29 to v30 to record whether V8 diagnostics were requested and to
+bind the new build contract. Mandatory metric-set v14 is unchanged: V8 evidence was
+already informational, while all core environment, evidence, and budget checks remain.
+
+**Context:** The 53-file, 385-case unit suite completed in 1.47 seconds and protects
+current code contracts, so broad unit-test pruning would save little while increasing
+regression risk. The routine physical smoke gate, by contrast, launched six required
+core browser sessions followed by nine informational V8 sessions. Recent passing runs
+spent roughly 12–13 seconds on the V8 phase, including occasional five-second trace
+drains, even when the change could not affect script caching.
+
+D-073's ONNX routes were already measured no-go paths and D-074 selected wllama/GGUF.
+Nevertheless the repository still installed Transformers.js and ONNX Runtime, shipped a
+seventh worker artifact, maintained an independent model/runtime protocol, and tested
+that dormant branch. That is recovery convenience, not a current product or research
+contract; git history is the appropriate recovery mechanism.
+
+**Consequences:** Normal verification remains fail-closed for all current mandatory
+evidence while avoiding nine irrelevant browser launches. V8 evidence is still easy to
+collect at every trigger that can change it, and its historical results/findings remain
+intact. The ONNX dependency chain, including its optional Node binding and transitive
+`adm-zip` advisory, leaves the lockfile and served/build surfaces. The app-owned LLM and
+build contracts become narrower and easier to reason about. Any future ONNX comparison
+starts as a new bounded experiment against then-current tooling rather than reviving a
+dormant production-shaped branch.
+
+Physical-console report
+`smoke-1-188e456726f4-dev-01-showcase-2026-07-25T02-00-45-198Z.json`
+qualified the routine path: exactly six core launches passed all three facets and all
+30 checks, and the report recorded zero V8 launches with diagnostics explicitly not
+requested. Targeted report
+`smoke-1-188e456726f4-dev-01-showcase-2026-07-25T02-07-11-589Z.json`
+then passed the same core gate and completed all nine requested V8 launches. The
+diagnostic selector now covers the five scripts in its stable capture topology
+(app/engine/game/render/streaming); it excludes decode traversal and the Rust/WASM
+worker because the isolated page does not trigger the former or wait for the latter.
+Fresh/produce attribution measured across all three lineages. Warm cache-consumption
+and render/streaming production remained informationally invalid for the existing
+RE-009/RE-010 Chrome observability gaps. The targeted run also retained and accepted a
+complete lossless core trace at 5,307.5 ms under D-094.
+
+The schema-v30 report remains unpromoted: the checked-in store's older metric-set-v11
+anchor is intentionally incomparable with metric-set v14, so baseline replacement
+still requires the separate explicit human promotion/rebaseline workflow.
+
+**Sources checked (2026-07-24):** current manifests and lockfile; the build artifact and
+worker-entrypoint pipeline; the app-owned LLM service/protocol/tests; the smoke launcher
+and its recent physical-console reports; local `pnpm test:unit` timing.
+
+**Reopen if:** a current milestone selects ONNX/Transformers again, V8 lifecycle
+evidence becomes blocking, or measured diagnostic cost becomes low enough and broad
+enough to justify restoring it to the every-change gate.
+
+## D-094: Accept complete lossless trace drains within ten seconds  (2026-07-24, accepted; supersedes D-035/D-092's five-second validity threshold only)
+
+**Decision:** A required `smoke@1` trace is valid when `Tracing.end` and
+`Tracing.tracingComplete` finish within 10,000 ms, the trace is readable, and Chrome
+reports no data loss. The collector remains attached for a further 10,000 ms diagnostic
+window after that deadline; completion there is retained but invalid, and no completion
+within the full 20 seconds remains terminal. End-command and completion latency stay
+explicit evidence. No workload, trace category, payload, correctness check, or budget
+other than the collection deadline changes.
+
+**Context:** D-092 proved that the former five-second outer deadline coincided with
+Perfetto's internal 5,000 ms data-source stop timeout. Two physical-console traces
+completed successfully just after that boundary: 5,308.0 and 5,303.7 ms total, each
+with approximately 70,000 events, 11.6–11.8 MB of serialized data, and
+`dataLoss=false`. Trace collection occurs after the measured workload; accepting those
+complete traces does not add time to the measured frame, streaming, heap, or Wasm
+windows. The project needs complete trace evidence, not conformance to Perfetto's
+internal stop timeout.
+
+**Consequences:** Those two historical reports remain invalid under the contract that
+produced them, but equivalent future samples between five and ten seconds are measured
+evidence. RE-008 remains a trace-drain latency and diagnosability finding rather than a
+gate failure at Perfetto's own forced-stop boundary. A drain beyond ten seconds, missing
+completion, unreadable trace, or reported data loss still fails closed. Result schema
+v29 and mandatory metric-set v14 are unchanged because the serialized evidence and
+metric inventory are unchanged; this decision changes only the documented budget.
+Physical-console report
+`smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-15-05-125Z.json`
+then passed all six core launches, all three facets, and all 30 checks. Its isolated V8
+fresh-repeat-2 trace exercised the new range directly: 285 events / 45,205 serialized
+bytes, `dataLoss=false`, and completion in 5,020.1 ms was valid measured evidence.
+
+**Sources checked (2026-07-24):** D-092's Chromium/Perfetto source inspection and
+physical-console reports
+`smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-43-30-949Z.json` and
+`smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-05-37-290Z.json`, plus the
+passing D-094 report above.
+
+**Reopen if:** valid trace drains approach or exceed ten seconds, latency becomes
+workload-correlated enough to hide a collection defect, or Chrome exposes a terminal
+per-data-source stop/error contract that supports a better bound.
+
+## D-093: Relocate wasm-bindgen thread scratch state outside Rust's pre-existing allocator chunk  (2026-07-24, accepted)
+
+**Decision:** Keep the pinned nightly-2026-07-16, wasm-bindgen 0.2.126, Binaryen
+131.0.0, two-worker topology, 33-page shared-memory contract, and 64 KiB follower
+stack. During the deterministic Wasm build, disassemble wasm-bindgen's generated
+module and relocate only its thread counter, temporary-stack lock, and scratch-stack
+references from the linker's `__heap_base` to the extra page wasm-bindgen already
+appends after the linker's `__heap_end`. Reassemble before the existing `-Oz` pass.
+The build requires the exact generated-reference counts, preserves the four
+dlmalloc linker-heap references, validates the relocated atomic operations after
+optimization, and fails on any toolchain-layout drift. No runtime retry, timeout
+increase, memory growth, or Chrome change is introduced.
+
+**Context:** D-092's first physical-console probes changed RE-036's attribution.
+Three failures constructed both `WebAssembly.Instance` objects and stopped with one
+worker at `ready`, its peer at `runtime-startup-started`, and the identical shared
+runtime tuple `initialization=2, instances=2, allocatorLock=43`. A successful launch
+on the same unrelocated artifact recorded the required quiescent tuple `2/2/0`.
+
+Disassembly then proved an overlap in the exact pinned toolchain. wasm-bindgen's
+thread transform reserved its scratch page beginning at address 1,050,048, the
+exported `__heap_base`, and used 1,050,052 as its lock. The rebuilt Rust standard
+library's dlmalloc 0.2.13 had already compiled
+`[__heap_base, __heap_end)`—1,050,048 through 2,097,152—as a pre-existing allocator
+chunk. The leader's original startup could therefore write dlmalloc metadata value
+43 over wasm-bindgen's lock before the follower acquired it; the follower's
+unbounded `memory.atomic.wait32` expected the held value `1`, so `43` was
+nonterminal. This explains the race-shaped history: the follower sometimes acquired
+the lock before the leader initialized dlmalloc.
+
+The relocated page begins at 2,097,152, outside dlmalloc's exclusive upper bound,
+with the lock at 2,097,156 and scratch-stack top at 2,162,688. The already-added
+33rd page covers that complete range.
+
+**Consequences:** The relocated optimized module is 12,391 bytes with SHA-256
+`3be99544a2c15e529d1bd27cd97cf453617d60189a8c61d611862ad504e03fc5`.
+Physical-console schema-v29/metric-set-v14 artifact
+`smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T00-58-50-184Z.json`
+passed all six core launches, all three result facets, and all 30 checks. Each
+cohort recorded `2/2/0` after initialization and completed the full workload in
+31.9–39.3 ms. A same-artifact confirmation report
+`smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-05-37-290Z.json`
+failed independently on a retained late RE-008 trace, while all six additional
+Wasm cohorts again recorded `2/2/0` and completed in 33.3–40.2 ms. This resolves
+Parallax's RE-036 failure for the pinned artifact;
+the underlying wasm-bindgen/Rust layout incompatibility remains an upstream
+candidate (UP-004). RE-036 no longer supports a Chrome-side fix request.
+
+**Sources checked (2026-07-24):** exact generated and optimized WAT; pinned
+`wasm-bindgen-cli-support-0.2.126/src/transforms/threads/mod.rs`; pinned
+`dlmalloc-0.2.13/src/wasm.rs`; failed physical-console artifacts
+`smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-43-30-949Z.json`,
+`smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-46-00-971Z.json`, and
+`smoke-1-2902f53d2fd4-dev-01-showcase-2026-07-25T00-51-29-864Z.json`;
+passing artifact above.
+
+**Reopen if:** wasm-bindgen or Rust changes either memory-layout contract, an
+upstream fix removes the overlap, the exact-reference guard fails, or a relocated
+artifact reproduces nonterminal startup.
+
+## D-092: Separate trace validity from late observation and split threaded-Wasm startup phases  (2026-07-24, accepted; five-second validity threshold superseded by D-094)
+
+**Decision:** Keep D-035's five-second trace end/completion validity deadline and
+D-088's 10,000 ms threaded-Wasm service boundary, concurrent topology, mandatory
+participation checks, and no within-run retry. After a trace exceeds five seconds,
+`smoke@1` now remains attached for a separate ten-second diagnostic observation window.
+Completion during that window is retained and explicitly invalid; no completion during
+the full 15 seconds is also retained. The late window never turns a failed trace into
+measured evidence.
+
+The pinned wasm-bindgen output now receives deterministic build-time instrumentation
+around `new WebAssembly.Instance` and `__wbindgen_start`. Worker evidence distinguishes
+`module-instantiation-started`, `module-instantiated`, `runtime-startup-started`,
+`runtime-started`, and `ready`. On terminal failure, the engine also snapshots the
+current fixture's shared initialization state, initialized-instance counter, and
+allocator lock before terminating the workers. Successful initialization must also
+record the quiescent `initialization=2, instances=2, allocatorLock=0` control. Those
+offsets are explicitly fixture-specific; the build disassembles every optimized module
+and fails if the pinned runtime operations drift. The public telemetry envelope advances to v11 and
+`smoke@1` to result schema v29 / mandatory metric-set v14.
+
+**Context:** Inspection of Chromium checkout `4dc95450a818a` on the development VM found
+that DevTools acknowledges `Tracing.end` before Perfetto stops its data sources, reads
+the trace, obtains final statistics, and emits `Tracing.tracingComplete`. Perfetto's
+default data-source stop timeout is 5,000 ms—the same value as the previous outer
+harness timeout. A producer that needs Perfetto's forced-stop path can therefore become
+terminal only as the harness detaches, with trace reading and final-stat work still
+pending. The existing 20-second RE-008 arm did not exercise this path because all six
+of its samples completed in under 153 ms; it does not establish what a retained
+five-second failure would have done next. `ReturnAsStream` already reproduced the zero-
+chunk signature, so changing CDP delivery alone is not an evidenced fix.
+
+The first schema-v29 physical-console sample then completed after the invalidity
+boundary but inside the new observation window: `Tracing.end` returned in 2.5 ms,
+Perfetto/CDP completion arrived 5,305.5 ms later, and the collector retained 70,985
+events in 400 chunks / 11,649,521 serialized bytes with `dataLoss=false`. This proves
+that the previous five-second outer timer could race the internal forced-stop path; it
+does not justify weakening the validity deadline.
+
+The previous D-088 phase marker surrounded the entire wasm-bindgen `initSync` call.
+Source inspection of its exact generated binding showed that this call constructs the
+instance and then synchronously invokes `__wbindgen_start`. Disassembly of the 12,680-
+byte fixture found unbounded atomic waits in that startup routine around shared
+initialization and allocator state. The old `[ready, initialize-received]` evidence
+therefore did not prove a stall inside `WebAssembly.Instance`; it could also represent
+Rust/wasm-bindgen startup. Serial initialization and independent per-worker compilation
+remain rejected workarounds because both previously reproduced RE-036.
+
+**Consequences:** A late RE-008 sample can now confirm or reject the suspected boundary
+race without weakening the gate. If it completes shortly after five seconds, the
+underlying missing data-source acknowledgement remains a Chromium/Perfetto issue while
+the harness preserves the recovered evidence and fails correctly. If it remains
+nonterminal for 15 seconds, the platform gap is stronger. JSON/protobuf and
+event/stream controls remain conditional follow-ups: all share the same Perfetto stop
+handshake and are useful only if the new phase evidence reaches trace reading or
+delivery.
+
+RE-036 failures can now be assigned first to V8 instance construction or to
+Rust/wasm-bindgen startup. The first probes assigned the retained failures to startup
+and exposed the layout overlap resolved by D-093. Product worker-pool recovery remains
+future representative M1 work: if adopted, it must restart the whole cohort with fresh
+shared memory rather than retry one worker against potentially poisoned state. The
+synthetic qualification gate remains fail-closed and retry-free.
+
+**Sources checked (2026-07-24):** local Parallax generated binding and optimized Wasm;
+VM Chromium `content/browser/devtools/protocol/tracing_handler.cc`,
+`third_party/perfetto/include/perfetto/ext/tracing/core/basic_types.h`,
+`third_party/perfetto/src/tracing/service/tracing_service_impl.cc`, and
+`v8/src/execution/futex-emulation.cc`; physical-console schema-v29 reports
+`smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-43-30-949Z.json` and
+`smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-05-37-290Z.json`.
+
+**Reopen if:** retained traces show the five-second boundary is unrelated to Perfetto's
+forced-stop path, the pinned Rust/wasm-bindgen output changes its startup protocol, or
+representative worker-pool measurements establish a safe recovery mechanism.
+
 ## D-091: Bound the M1 cell-streaming pipeline and keep presentation ownership explicit  (2026-07-24, accepted)
 
 **Decision:** The production-shaped M1 path is a long-lived streaming worker that owns
@@ -301,7 +681,7 @@ adapter after the same fixtures pass), a decoder upgrade changes wrapper shape, 
 KTX2 supercompression/transcode path is selected, or representative cell-load p95 shows
 decoder initialization must move out of render startup.
 
-## D-088: Keep Rust/Wasm worker startup fail-closed after intermittent instantiation stalls  (2026-07-20, accepted; extends D-085)
+## D-088: Keep Rust/Wasm worker startup fail-closed after intermittent instantiation stalls  (2026-07-20, accepted; extends D-085; phase attribution refined by D-092)
 
 **Decision:** Retain D-085's concurrent two-worker initialization, 10,000 ms service
 boundary, mandatory participation/correctness checks, and no within-run retry. Add
@@ -3664,7 +4044,7 @@ refresh-quantized), and memory-envelope sections; harness/machines/README.md.
 needed); or a mid-range Windows rig joins the fleet and a transfer-focused Showcase
 variant becomes worth gating.
 
-## D-017: Prompt API operational model — window broker, activation-correct download, authored fallback  (2026-07-11, accepted; supersedes D-007)
+## D-017: Prompt API operational model — window broker, activation-correct download, authored fallback  (2026-07-11, superseded by D-096; supersedes D-007)
 **Decision:** As D-007 (Prompt API for NPC dialog; schema-gated state effects), with
 the operational model corrected against current platform behavior:
 - The Prompt API is **not available in Web Workers**, so inference runs as a
@@ -3979,38 +4359,6 @@ a small portfolio site) judged negligible.
   characteristics) buys real protection beyond origin `persist()`, or is complexity
   without benefit. Decide during M2 with measurements; interim protection is origin
   persistence + explicit save export (architecture.md).
-- **P-007: App-owned in-browser NPC model vs. Prompt API** — challenger to D-017, which
-  stays authoritative until there is spike evidence. Hypothesis: a small open-weight
-  model running on WebGPU under the app's control beats browser-managed Gemini Nano for
-  this game's NPC dialog on some combination of: **placement** (WebLLM-class engines run
-  in a Web Worker; the Prompt API is window-only per D-017 — this would retire the
-  main-thread broker exception), **lifecycle** (the model becomes a normal hash-verified
-  OPFS install artifact under our install/update/uninstall contract instead of a
-  Chrome-managed, silently-evictable blob — retiring most of D-017's eviction machinery),
-  **contention attributability** (inference runs on the same physical GPU under app
-  control — but note current WebLLM-class engines create their own logical WebGPU device
-  internally, and same GPU ≠ same device/queue, so **device topology — own device vs.
-  shared render device — is an explicit phase-A spike variable**, and true shared-device
-  scheduling may require integration or fork work, to be scoped by the spike), and — with
-  fine-tuning — **persona/format quality**. Two phases, cheapest risk first:
-  **(A)** M0 spike: off-the-shelf small open-weight model (~1–4B, Q4) via in-browser
-  WebGPU inference in a worker against the walking skeleton, measured on a fixed
-  NPC-dialog prompt fixture set head-to-head with the Prompt API spike: first-token
-  latency p95 against the budgets.md dialog budget, tokens/s, frame impact during
-  generation, VRAM, OPFS model-load time, structured-output/schema compliance,
-  context-window behavior at persona+retrieved-context sizes, baseline dialog quality,
-  and model/install size — throughput alone does not pass the spike. **(B)** only if A
-  is viable: LoRA-tune for voice, dialog format, and schema compliance, and compare
-  constrained-dialog quality. Scope note:
-  fine-tuning reliably shifts style/format, not factual knowledge — retrieval/context
-  beats fine-tuning for facts (arxiv.org/pdf/2312.05934, checked 2026-07-13) — so world
-  lore and live game state stay out of the weights under either backend, arriving via
-  context assembled by the engine/ai knowledge service (D-033); general language
-  competence, not lore volume, sets the model-size floor. The training pipeline lives
-  outside the browser (an assets/-adjacent workstream, not engine/). D-010 note: a
-  world-tuned model is **game-specific**, not common/COS-shareable (unlike Nano, which
-  is browser-wide). Sources checked 2026-07-13: github.com/mlc-ai/web-llm +
-  webllm.mlc.ai/docs (worker support, structured output, ~8B-param practical ceiling
-  quantized), arxiv.org/abs/2412.15803 (up to ~80%-of-native throughput). Resolve after
-  phase A (and phase B if reached): supersede D-017 or close this and keep it.
+*(P-007, app-owned NPC inference vs. Prompt API, was resolved in favor of the measured
+app-owned backend by D-096 after D-074's phase-A qualification.)*
 *(P-005, toolchain, was accepted as D-014 and refined by D-020.)*

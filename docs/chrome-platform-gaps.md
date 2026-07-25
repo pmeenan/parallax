@@ -137,22 +137,17 @@ and [RE-021](rough-edges.md#re-021-branded-prompt-api-first-token-samples-exceed
 ### Make browser trace completion reliable and diagnosable
 
 `Tracing.end` can be acknowledged in roughly 2 ms while no chunks and no
-`Tracing.tracingComplete` arrive within 5–20 seconds. The failure reproduces across category sets
-and transport modes, can occur in bursts, and can recover on the next launch. Expose bounded
-completion or a terminal error plus per-process stop/flush acknowledgement so the responsible
-participant is identifiable. Evidence: [RE-008](rough-edges.md#re-008-browser-trace-completion-becomes-intermittently-unbounded-across-category-sets).
-
-### Make module-worker initialization terminal and diagnosable
-
-A tiny shared-memory Wasm module can finish fetch/compile and then wait the full 10-second
-application bound during instantiation. Phase evidence captured both module scripts and
-initialization messages, with one worker ready while its peer never returned from
-`WebAssembly.Instance`; independently compiling the bytes in each worker still reproduced the
-stall after compilation. The failure occurred without CDP tracing on warmed-profile relaunches,
-while other launches completed in roughly 29–45 ms. Expose a terminal instantiation failure and
-per-instance deserialization/compile/instantiate/startup phases so applications can distinguish
-a scheduler stall, module-transfer problem, and V8 instantiation failure. Evidence:
-[RE-036](rough-edges.md#re-036-rustwasm-module-worker-initialization-intermittently-stalls-until-timeout).
+`Tracing.tracingComplete` arrive before the former five-second collection boundary. D-092
+retained one such trace through a diagnostic window: completion arrived at 5.306
+seconds with 70,985 events and no data loss, immediately after Perfetto's internal
+five-second data-source forced-stop threshold. The failure reproduces across category
+sets and transport modes, can occur in bursts, and can recover on the next launch.
+Expose per-process/data-source stop acknowledgements, forced-stop state, and bounded
+read/final-stat completion so the responsible participant and time spent after forced
+stop are identifiable. Evidence:
+[RE-008](rough-edges.md#re-008-browser-trace-completion-becomes-intermittently-unbounded-across-category-sets).
+Parallax now accepts complete lossless drains through ten seconds (D-094); the Chrome
+ask is attribution and a terminal contract, not a shorter timeout.
 
 ### Let CDP synchronize and query subprocess histograms directly
 

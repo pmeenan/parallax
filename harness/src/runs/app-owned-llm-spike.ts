@@ -1,14 +1,4 @@
 import {
-  APP_OWNED_LLM_MODEL_ARTIFACTS,
-  APP_OWNED_LLM_MODEL_DTYPE,
-  APP_OWNED_LLM_MODEL_ID,
-  APP_OWNED_LLM_MODEL_INSTALL_BYTES,
-  APP_OWNED_LLM_MODEL_REVISION,
-  APP_OWNED_LLM_WASM_MODEL_ARTIFACTS,
-  APP_OWNED_LLM_WASM_MODEL_DTYPE,
-  APP_OWNED_LLM_WASM_MODEL_ID,
-  APP_OWNED_LLM_WASM_MODEL_INSTALL_BYTES,
-  APP_OWNED_LLM_WASM_MODEL_REVISION,
   APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS,
   APP_OWNED_LLM_WLLAMA_MODEL_DTYPE,
   APP_OWNED_LLM_WLLAMA_MODEL_ID,
@@ -22,13 +12,20 @@ import { type Distribution, distribution } from "../aggregate.js";
 import type { BudgetCheck } from "../budgets.js";
 
 export const APP_OWNED_LLM_SPIKE_SCENARIO = "app-owned-llm-spike@1";
-export const APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION = 1;
+export const APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION = 2;
 export const APP_OWNED_LLM_TTFT_SAMPLES = 20;
 export const APP_OWNED_LLM_TOTAL_GENERATIONS = 30;
 export const APP_OWNED_LLM_TTFT_P95_LIMIT_MS = 1_500;
 export const APP_OWNED_LLM_COMPLETION_TIMEOUT_MS = 45 * 60 * 1_000;
 export const APP_OWNED_LLM_LOAD_STALL_TIMEOUT_MS = 2 * 60 * 1_000;
 export const APP_OWNED_LLM_CALLBACK_MIN_SAMPLES = 30;
+const EXPECTED_MODEL = Object.freeze({
+  artifacts: APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS.length,
+  dtype: APP_OWNED_LLM_WLLAMA_MODEL_DTYPE,
+  id: APP_OWNED_LLM_WLLAMA_MODEL_ID,
+  installBytes: APP_OWNED_LLM_WLLAMA_MODEL_INSTALL_BYTES,
+  revision: APP_OWNED_LLM_WLLAMA_MODEL_REVISION,
+});
 
 export type Metric<T> =
   | Readonly<{ readonly state: "measured"; readonly value: T }>
@@ -279,7 +276,7 @@ function evaluateModelIdentity(
 ): Metric<Readonly<{ readonly bytes: number; readonly artifacts: number }>> {
   if (cold === null || warm === null)
     return invalid("Both cold and warm model telemetry are required");
-  const expected = expectedModel(warm);
+  const expected = EXPECTED_MODEL;
   const exact = [cold, warm].every(
     (telemetry) =>
       telemetry.modelId === expected.id &&
@@ -302,7 +299,7 @@ function evaluateColdInstall(
 ): Metric<AppOwnedLlmSpikeTelemetrySnapshot["cache"]> {
   if (telemetry === null) return invalid("Cold install telemetry was not captured");
   const cache = telemetry.cache;
-  const expected = expectedModel(telemetry);
+  const expected = EXPECTED_MODEL;
   return telemetry.loadSource === "remote-install" &&
     cache.expectedArtifacts === expected.artifacts &&
     cache.missArtifacts === cache.expectedArtifacts &&
@@ -320,7 +317,7 @@ function evaluateWarmOpfs(
 ): Metric<AppOwnedLlmSpikeTelemetrySnapshot["cache"]> {
   if (telemetry === null) return invalid("Warm OPFS telemetry was not captured");
   const cache = telemetry.cache;
-  const expected = expectedModel(telemetry);
+  const expected = EXPECTED_MODEL;
   return telemetry.loadSource === "opfs" &&
     cache.expectedArtifacts === expected.artifacts &&
     cache.hitArtifacts === cache.expectedArtifacts &&
@@ -330,39 +327,6 @@ function evaluateWarmOpfs(
     cache.writeBytes === 0
     ? measured(cache)
     : invalid("Browser-restarted profile did not prove exact-byte OPFS reads without writes");
-}
-
-function expectedModel(telemetry: AppOwnedLlmSpikeTelemetrySnapshot): Readonly<{
-  artifacts: number;
-  dtype: string;
-  id: string;
-  installBytes: number;
-  revision: string;
-}> {
-  if (telemetry.runtime === "wllama-llama.cpp") {
-    return Object.freeze({
-      artifacts: APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS.length,
-      dtype: APP_OWNED_LLM_WLLAMA_MODEL_DTYPE,
-      id: APP_OWNED_LLM_WLLAMA_MODEL_ID,
-      installBytes: APP_OWNED_LLM_WLLAMA_MODEL_INSTALL_BYTES,
-      revision: APP_OWNED_LLM_WLLAMA_MODEL_REVISION,
-    });
-  }
-  return telemetry.deviceTopology.inferenceDevice === "dedicated-worker-wasm-cpu"
-    ? Object.freeze({
-        artifacts: APP_OWNED_LLM_WASM_MODEL_ARTIFACTS.length,
-        dtype: APP_OWNED_LLM_WASM_MODEL_DTYPE,
-        id: APP_OWNED_LLM_WASM_MODEL_ID,
-        installBytes: APP_OWNED_LLM_WASM_MODEL_INSTALL_BYTES,
-        revision: APP_OWNED_LLM_WASM_MODEL_REVISION,
-      })
-    : Object.freeze({
-        artifacts: APP_OWNED_LLM_MODEL_ARTIFACTS.length,
-        dtype: APP_OWNED_LLM_MODEL_DTYPE,
-        id: APP_OWNED_LLM_MODEL_ID,
-        installBytes: APP_OWNED_LLM_MODEL_INSTALL_BYTES,
-        revision: APP_OWNED_LLM_MODEL_REVISION,
-      });
 }
 
 function evaluateGenerationWindow(

@@ -15,6 +15,12 @@ export interface ChromeTraceEvent {
   readonly ts: number;
 }
 
+export interface DeadlineObservation<T> {
+  readonly elapsedMs: number;
+  readonly exceededDeadline: boolean;
+  readonly value: T;
+}
+
 export function uniqueGpuProcessId(events: readonly ChromeTraceEvent[]): number {
   const processIds = new Set(
     events
@@ -42,6 +48,47 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: st
       (value) => {
         clearTimeout(timeout);
         resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
+export function observeThroughLateCompletionWindow<T>(
+  promise: Promise<T>,
+  deadlineMs: number,
+  lateObservationMs: number,
+  label: string,
+): Promise<DeadlineObservation<T>> {
+  if (!(deadlineMs > 0) || !(lateObservationMs > 0)) {
+    throw new Error("Completion deadline and late-observation window must both be positive");
+  }
+  const startedAtMs = performance.now();
+  const observationTimeoutMs = deadlineMs + lateObservationMs;
+  return new Promise<DeadlineObservation<T>>((resolve, reject) => {
+    const timeout = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${label} did not complete during the ${observationTimeoutMs} ms observation bound (${deadlineMs} ms validity deadline plus ${lateObservationMs} ms late window)`,
+          ),
+        ),
+      observationTimeoutMs,
+    );
+    promise.then(
+      (value) => {
+        clearTimeout(timeout);
+        const elapsedMs = performance.now() - startedAtMs;
+        resolve(
+          Object.freeze({
+            elapsedMs,
+            exceededDeadline: elapsedMs > deadlineMs,
+            value,
+          }),
+        );
       },
       (error: unknown) => {
         clearTimeout(timeout);

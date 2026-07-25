@@ -5,6 +5,24 @@ exact upstream pin, the local regression evidence, and the smallest upstreamable
 They are proposals until a PR URL replaces the status; do not imply that upstream has
 accepted them.
 
+## UP-004: Keep wasm-bindgen thread scratch state outside Rust's allocator region
+
+- **Upstream pins:** wasm-bindgen / wasm-bindgen-cli-support 0.2.126 and Rust
+  nightly-2026-07-16's dlmalloc 0.2.13.
+- **Local integration:** the deterministic build relocates only the generated thread
+  counter, temporary-stack lock, and scratch-stack references from `__heap_base` into
+  wasm-bindgen's appended page beginning at the linker's `__heap_end`. Exact-reference
+  and post-optimization atomic-operation checks fail on layout drift.
+- **Upstream proposal:** make the threads transform reserve scratch state outside the
+  allocator-visible `[__heap_base, __heap_end)` range, or introduce a shared linker/
+  runtime contract that advances the allocator's effective base with the transform.
+  Add a two-instance regression whose leader performs a Rust allocation during startup.
+- **Regression fixture:** Parallax's 12,391-byte threaded module, two module workers,
+  one 33-page shared memory, 64 KiB follower stack. The unrelocated artifact
+  intermittently ends at `initialization=2, instances=2, allocatorLock=43`; the
+  relocated artifact must report `2/2/0` and complete both workers' tasks.
+- **Status:** candidate minimal reproduction/patch; not filed.
+
 ## UP-001: Publish an ESM browser factory from `draco3dgltf`
 
 - **Upstream pin:** Google Draco

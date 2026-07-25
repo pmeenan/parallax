@@ -31,6 +31,14 @@ export function resolveWasmThreadSpikeMetric(
     snapshot.workerMask !== expectedMask ||
     snapshot.checksum === null ||
     snapshot.checksum !== snapshot.referenceChecksum ||
+    snapshot.runtimeStateAfterInitialization === null ||
+    snapshot.runtimeStateAfterInitialization.sharedInitializationState !== 2 ||
+    snapshot.runtimeStateAfterInitialization.initializedInstanceCount !==
+      SMOKE_WASM_THREAD_WORKER_COUNT ||
+    snapshot.runtimeStateAfterInitialization.allocatorLock !== 0 ||
+    snapshot.runtimeStateAtFailure !== null ||
+    snapshot.workerPhases.length !== SMOKE_WASM_THREAD_WORKER_COUNT ||
+    snapshot.workerPhases.some((phase) => phase !== "ready") ||
     !positiveFinite(snapshot.elapsedMs) ||
     !positiveFinite(snapshot.moduleLoadAndCompileElapsedMs) ||
     !positiveFinite(snapshot.workerInitializationElapsedMs) ||
@@ -79,9 +87,20 @@ function formatTerminalPhaseEvidence(snapshot: WasmThreadSpikeTelemetrySnapshot)
     `completedTasks=${snapshot.completedTasks}`,
     `processedTasksByWorker=[${snapshot.processedTasksByWorker.join(",")}]`,
     `workerMask=0x${snapshot.workerMask.toString(16)}`,
+    `workerPhases=[${snapshot.workerPhases.join(",")}]`,
+    `runtimeStateAfterInitialization=${formatRuntimeState(snapshot.runtimeStateAfterInitialization)}`,
+    `runtimeStateAtFailure=${formatRuntimeState(snapshot.runtimeStateAtFailure)}`,
   ].join(", ");
 }
 
 function formatNullable(value: number | null): string {
   return value === null ? "null" : value.toFixed(3);
+}
+
+function formatRuntimeState(
+  value: WasmThreadSpikeTelemetrySnapshot["runtimeStateAfterInitialization"],
+): string {
+  return value === null
+    ? "null"
+    : `{sharedInitializationState=${value.sharedInitializationState},initializedInstanceCount=${value.initializedInstanceCount},allocatorLock=${value.allocatorLock}}`;
 }

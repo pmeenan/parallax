@@ -11,114 +11,11 @@ export interface ChromePin {
   readonly version: string;
 }
 
-export interface PersistentChromeLaunchOptions {
-  readonly args?: readonly string[];
-  readonly ignoreDefaultArgs?: readonly string[];
-}
-
-export interface PromptApiChromeLaunchEvidence {
-  readonly commandLine: string;
-  readonly disabledFeatures: readonly string[];
-  readonly modelDeliverySwitchesVerified: true;
-  readonly webGpuDeveloperFeaturesEnabled: true;
-}
-
 export function validateChromeSandboxCommandLine(commandLine: string): true {
   if (hasCommandLineSwitch(commandLine, "--no-sandbox")) {
     throw new Error("Chrome launch disabled process sandboxing with --no-sandbox");
   }
   return true;
-}
-
-const PLAYWRIGHT_DISABLED_FEATURES = Object.freeze([
-  "AvoidUnnecessaryBeforeUnloadCheckSync",
-  "BoundaryEventDispatchTracksNodeRemoval",
-  "DestroyProfileOnBrowserClose",
-  "DialMediaRouteProvider",
-  "GlobalMediaControls",
-  "HttpsUpgrades",
-  "LensOverlay",
-  "MediaRouter",
-  "PaintHolding",
-  "ThirdPartyStoragePartitioning",
-  "Translate",
-  "AutoDeElevate",
-  "RenderDocument",
-  "OptimizationHints",
-  "msForceBrowserSignIn",
-  "msEdgeUpdateLaunchServicesPreferredVersion",
-]);
-
-export const PROMPT_API_PRESERVED_DISABLED_FEATURES = Object.freeze(
-  PLAYWRIGHT_DISABLED_FEATURES.filter((feature) => feature !== "OptimizationHints"),
-);
-
-// Playwright's normal automation defaults suppress the Chrome services needed for
-// Prompt API model delivery. Ignore its combined feature argument, then restore every
-// disabled feature except OptimizationHints so render/navigation/profile behavior
-// stays aligned with ordinary smoke launches. Runtime command-line validation below
-// makes exact-string drift in Playwright's private default fail closed.
-export const PROMPT_API_IGNORED_PLAYWRIGHT_DEFAULT_ARGS = Object.freeze([
-  "--disable-background-networking",
-  "--disable-component-update",
-  "--disable-component-extensions-with-background-pages",
-  `--disable-features=${PLAYWRIGHT_DISABLED_FEATURES.join(",")}`,
-]);
-
-export const PROMPT_API_CHROME_LAUNCH_ARGS = Object.freeze([
-  `--disable-features=${PROMPT_API_PRESERVED_DISABLED_FEATURES.join(",")}`,
-  "--enable-webgpu-developer-features",
-]);
-
-export function validatePromptApiChromeCommandLine(
-  commandLine: string,
-): PromptApiChromeLaunchEvidence {
-  validateChromeSandboxCommandLine(commandLine);
-  for (const forbiddenSwitch of [
-    "--disable-background-networking",
-    "--disable-component-update",
-    "--disable-component-extensions-with-background-pages",
-  ]) {
-    if (hasCommandLineSwitch(commandLine, forbiddenSwitch)) {
-      throw new Error(
-        `Prompt API model delivery is disabled by effective Chrome switch ${forbiddenSwitch}`,
-      );
-    }
-  }
-  const disabledFeatures = readDisabledFeatures(commandLine);
-  if (disabledFeatures.includes("OptimizationHints")) {
-    throw new Error(
-      "Prompt API model delivery is disabled because effective Chrome features include OptimizationHints",
-    );
-  }
-  const missingPreservedFeatures = PROMPT_API_PRESERVED_DISABLED_FEATURES.filter(
-    (feature) => !disabledFeatures.includes(feature),
-  );
-  if (missingPreservedFeatures.length > 0) {
-    throw new Error(
-      `Prompt API launch no longer preserves Playwright's rendering/navigation/profile feature suppressions: ${missingPreservedFeatures.join(", ")}`,
-    );
-  }
-  if (!hasCommandLineSwitch(commandLine, "--enable-webgpu-developer-features")) {
-    throw new Error(
-      "Prompt API environment identity requires effective Chrome switch --enable-webgpu-developer-features",
-    );
-  }
-  return Object.freeze({
-    commandLine,
-    disabledFeatures: Object.freeze(disabledFeatures),
-    modelDeliverySwitchesVerified: true,
-    webGpuDeveloperFeaturesEnabled: true,
-  });
-}
-
-function readDisabledFeatures(commandLine: string): string[] {
-  const features: string[] = [];
-  for (const match of commandLine.matchAll(/(?:^|\s)--disable-features=(?:"([^"]*)"|(\S+))/g)) {
-    const value = match[1] ?? match[2];
-    if (value !== undefined && value !== "") features.push(...value.split(","));
-  }
-  return [...new Set(features)];
 }
 
 function hasCommandLineSwitch(commandLine: string, expected: string): boolean {
@@ -181,36 +78,28 @@ export function chromePlatformKey(): string {
 export function launchPersistentChrome(
   executablePath: string,
   profilePath: string,
-  options: readonly string[] | PersistentChromeLaunchOptions = [],
+  args: readonly string[] = [],
 ): Promise<BrowserContext> {
   return chromium.launchPersistentContext(
     profilePath,
-    createPersistentChromeLaunchOptions(executablePath, options),
+    createPersistentChromeLaunchOptions(executablePath, args),
   );
 }
 
 export function createPersistentChromeLaunchOptions(
   executablePath: string,
-  options: readonly string[] | PersistentChromeLaunchOptions = [],
+  args: readonly string[] = [],
 ) {
-  const normalized: PersistentChromeLaunchOptions = Array.isArray(options)
-    ? { args: options as readonly string[] }
-    : (options as PersistentChromeLaunchOptions);
   if (
-    normalized.args?.some(
-      (argument) => argument === "--no-sandbox" || argument.startsWith("--no-sandbox="),
-    )
+    args.some((argument) => argument === "--no-sandbox" || argument.startsWith("--no-sandbox="))
   ) {
     throw new Error("Parallax Chrome launches may not disable process sandboxing");
   }
   return {
-    args: ["--start-fullscreen", ...(normalized.args ?? [])],
+    args: ["--start-fullscreen", ...args],
     chromiumSandbox: true,
     executablePath,
     headless: false,
-    ...(normalized.ignoreDefaultArgs === undefined
-      ? {}
-      : { ignoreDefaultArgs: [...normalized.ignoreDefaultArgs] }),
     viewport: null,
   };
 }

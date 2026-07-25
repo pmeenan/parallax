@@ -9,7 +9,7 @@ import {
 } from "./js-heap.js";
 
 const workerUrl = "http://127.0.0.1:8000/immutable/render-worker-hash.js";
-const aiWorkerUrl = "http://127.0.0.1:8000/immutable/ai-worker-hash.js";
+const secondaryWorkerUrl = "http://127.0.0.1:8000/immutable/secondary-worker-hash.js";
 
 describe("all-realm JS heap sampler", () => {
   afterEach(() => vi.useRealTimers());
@@ -60,9 +60,9 @@ describe("all-realm JS heap sampler", () => {
     expect(browser.detached).toBe(true);
   });
 
-  it("samples the expected render and AI workers alongside the window", async () => {
+  it("samples multiple expected workers alongside the window", async () => {
     const browser = new FakeBrowserSession(
-      [workerUrl, aiWorkerUrl],
+      [workerUrl, secondaryWorkerUrl],
       [
         [heapUsage(50, 60), heapUsage(45, 70)],
         [heapUsage(30, 40), heapUsage(35, 50)],
@@ -76,7 +76,7 @@ describe("all-realm JS heap sampler", () => {
       asCdp(browser),
       asCdp(page),
       "http://127.0.0.1:8000/",
-      [workerUrl, aiWorkerUrl],
+      [workerUrl, secondaryWorkerUrl],
       60_000,
     );
 
@@ -87,7 +87,7 @@ describe("all-realm JS heap sampler", () => {
     expect(evidence.samples[1]?.realms).toMatchObject([
       { kind: "window", url: "http://127.0.0.1:8000/", usage: { usedSizeBytes: 15 } },
       { kind: "dedicated-worker", url: workerUrl, usage: { usedSizeBytes: 45 } },
-      { kind: "dedicated-worker", url: aiWorkerUrl, usage: { usedSizeBytes: 35 } },
+      { kind: "dedicated-worker", url: secondaryWorkerUrl, usage: { usedSizeBytes: 35 } },
     ]);
     expect(browser.attachments).toEqual([
       { flatten: false, targetId: "worker-0" },
@@ -98,7 +98,7 @@ describe("all-realm JS heap sampler", () => {
 
   it("samples multiple workers that share one artifact URL", async () => {
     const browser = new FakeBrowserSession(
-      [workerUrl, aiWorkerUrl, aiWorkerUrl],
+      [workerUrl, secondaryWorkerUrl, secondaryWorkerUrl],
       [
         [heapUsage(50, 60), heapUsage(45, 70)],
         [heapUsage(30, 40), heapUsage(35, 50)],
@@ -113,7 +113,7 @@ describe("all-realm JS heap sampler", () => {
       asCdp(browser),
       asCdp(page),
       "http://127.0.0.1:8000/",
-      [workerUrl, aiWorkerUrl, aiWorkerUrl],
+      [workerUrl, secondaryWorkerUrl, secondaryWorkerUrl],
       60_000,
     );
 
@@ -124,8 +124,8 @@ describe("all-realm JS heap sampler", () => {
     expect(evidence.samples[1]?.realms.map(({ url }) => url)).toEqual([
       "http://127.0.0.1:8000/",
       workerUrl,
-      aiWorkerUrl,
-      aiWorkerUrl,
+      secondaryWorkerUrl,
+      secondaryWorkerUrl,
     ]);
   });
 

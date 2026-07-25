@@ -74,8 +74,8 @@ at night and underground. Lightning and fire are signature lighting moments.
 A mix of player characters and NPCs — and a core aspiration: **with LLM-driven dialog,
 it should not be blindingly obvious which is which.** NPCs have persona cards, memory,
 schedules, and conversational range closer to "person in a village" than "quest
-dispenser." This is a demo headline if it lands (and a Prompt API quality finding
-either way). Full indistinguishability gets a real test only when multiplayer (M7)
+dispenser." This is a demo headline if it lands (and an on-device small-model quality
+finding either way). Full indistinguishability gets a real test only when multiplayer (M7)
 brings actual humans in; until then the bar is "NPCs don't feel like vending machines."
 
 ## Design implications (binding on architecture/plan)

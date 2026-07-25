@@ -15,7 +15,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(8);
+    expect(manifest.schemaVersion).toBe(10);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -31,13 +31,11 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(7);
+    expect(manifest.workerEntrypoints).toHaveLength(5);
     expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
-      "ai",
       "decode",
       "memory64-spike",
       "render",
-      "storage",
       "streaming",
       "wasm-thread",
     ]);
@@ -185,7 +183,7 @@ describe("assembled build contract", () => {
     const engineSource = await readFile(join(buildRoot, engineArtifact?.path ?? ""), "utf8");
     expect(engineSource).not.toContain("@parallax/game");
     expect(engineSource).not.toContain("__RENDER_WORKER_ARTIFACT__");
-    expect(engineSource).not.toContain("__STORAGE_WORKER_ARTIFACT__");
+    expect(engineSource).not.toContain("__WLLAMA_WASM_ARTIFACT__");
     expect(engineSource).not.toContain("__WASM_THREAD_WORKER_ARTIFACT__");
     expect(engineSource).not.toContain("__WASM_THREAD_SPIKE_ARTIFACT__");
     expect(engineSource).not.toContain("__MEMORY64_SPIKE_WORKER_ARTIFACT__");

@@ -1,7 +1,7 @@
 # engine/ — Parallax engine layer
 
 Everything platform-facing lives here: this is the only directory allowed to touch
-browser APIs (`navigator.*`, WebGPU, OPFS, workers, `WebAssembly.*`, Prompt API,
+browser APIs (`navigator.*`, WebGPU, OPFS, workers, `WebAssembly.*`,
 WebAudio, and later WebRTC). Read the root `AGENTS.md` and
 [docs/architecture.md](../docs/architecture.md) before working here — the layer rules and
 worker topology defined there govern this directory.
@@ -29,9 +29,9 @@ engine/src/
   workers/     worker entrypoints + SAB channel library                    ✅ (render worker + SPSC rings)
   render/      Babylon Lite integration, pipeline warmup, custom WGSL passes ✅ (service + protocol)
   streaming/ ✅ cell scheduler, memory budget governor, eviction
-  storage/     OPFS, manifest, install/update, integrity                    ✅ (M0 read spike)
+  storage/     OPFS, manifest, install/update, integrity                    ✅
   wasm/        Rust crates (one per module) + JS bindings                    ✅ (M0 threads proof)
-  ai/          inference backends (Prompt API sessions; P-007), knowledge service / ✅ (M0 Prompt API spike)
+  ai/          app-owned inference (D-074/D-096), knowledge service /       ✅
                retrieval context assembly (D-033), schema-constrained output
   audio/       WebAudio graph + worklets
   input/       keyboard/mouse/gamepad → command stream

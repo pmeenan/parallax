@@ -38,10 +38,6 @@ numbered finding (or a decisions.md entry) once there's evidence:
   + 304 setup reliably preserve the code cache across launches and asset-only updates?
 - **OPFS throughput ceilings:** sync access handle read bandwidth from decode-pool
   workers; contention behavior with N readers; OPFS vs Cache Storage per asset class.
-- **Prompt API under load:** inference/render GPU contention; session limits vs.
-  many-NPC designs; download/availability UX during install; main-thread cost of the
-  window-owned broker (worker unavailability is recorded as RE-016);
-  eviction and offline-reavailability behavior.
 - **CPU SIMD width ceiling:** wasm tops out at 128-bit vectors (simd128 + relaxed-simd;
   the flexible-vectors proposal for wider/length-agnostic SIMD is still design-stage,
   checked 2026-07-13). The cost is machine-dependent: dev-01's x86 has AVX2-class width
@@ -50,12 +46,10 @@ numbered finding (or a decisions.md entry) once there's evidence:
   — native (AVX2/NEON), wasm simd128, WGSL compute — before fixing any CPU/GPU placement
   rule (D-032 treats "wide work moves to WGSL" as a hypothesis); feeds a potential
   spec-gap write-up.
-- **App-owned WebGPU LLM inference (P-007):** can a small quantized model run on the
-  same GPU without busting frame budgets? Device topology is itself a spike variable —
-  WebLLM-class engines create their own logical WebGPU device internally, so own-device
-  vs. shared-render-device scheduling, VRAM pressure across two devices, tokens/s vs.
-  Prompt API on the same hardware, and OPFS model-load time at launch all need
-  measurement.
+- **App-owned WebGPU LLM under representative game load:** D-074 qualified the selected
+  model against the walking skeleton; M3 must measure its independent WebGPU device,
+  VRAM pressure, frame contention, scheduling, and OPFS model-load behavior against
+  representative game assets and concurrent NPC demand.
 - **No built-in Embedding API:** Chrome ships a generation model (Prompt API/Gemini
   Nano) but no embedding counterpart (developer.chrome.com/docs/ai/built-in, checked
   2026-07-13). Impact is limited to **semantic/vector** retrieval — one candidate
@@ -138,11 +132,12 @@ COS APIs exist):
 
 ## RE-036: Rust/Wasm module-worker initialization intermittently stalls until timeout
 
-- **Date / Chrome version:** 2026-07-19 through 2026-07-21 UTC; pinned Chrome for Testing
+- **Date / Chrome version:** 2026-07-19 through 2026-07-25 UTC; pinned Chrome for Testing
   150.0.7871.115 and candidate Stable 151.0.7922.34 on the dev-01 physical console.
-- **Layer:** app launch / V8 Wasm workers / harness orchestration.
-- **Status:** open V8/Wasm instantiation attribution; isolated from the memory64 scenario, not
-  fixed or hidden by raising a timeout.
+- **Layer:** Rust/wasm-bindgen threaded-runtime transform / allocator layout.
+- **Status:** resolved for the pinned artifact by D-093; retained as an upstream
+  wasm-bindgen/Rust compatibility finding. No timeout was raised and no retry or
+  Chrome-side workaround was added.
 - **What we expected / What happened:** the first three six-launch memory64 attempts each had
   one app launch fail before memory64 began. After the runner exposed terminal telemetry, one
   retained failure was the already-qualified D-085 Rust/WASM synthetic worker exceeding its
@@ -164,8 +159,11 @@ COS APIs exist):
 - **Phase isolation:** schema-v26 report
   `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json` retained worker
   phases `[0:ready,1:initialize-received]`: both module scripts evaluated and received
-  initialization, one instance became ready, and the peer never completed
-  `WebAssembly.Instance`. Independently compiling the same bytes in each worker did not fix
+  initialization, one instance became ready, and the peer never completed the generated
+  binding's synchronous `initSync` call. At the time this was labeled
+  `WebAssembly.Instance`; D-092 source inspection established that the same call also
+  executes `__wbindgen_start`, so the old phase cannot distinguish those boundaries.
+  Independently compiling the same bytes in each worker did not fix
   the boundary: one of eight no-tracing retained-profile relaunches stalled after the peer
   reported `module-compiled`. Serial initialization failed both attempted relaunches with the
   second worker stuck after `initialize-received`, so it was rejected rather than promoted as
@@ -191,7 +189,45 @@ COS APIs exist):
   immediately preceding report-only source state had completed all six workloads,
   reinforcing the existing intermittent classification without qualifying the final
   source state.
-- **Current smoke/relaunch repro:** run `pnpm m0:gate` repeatedly, or launch the built app without tracing in four
+- **D-092 attribution probe:** the exact wasm-bindgen 0.2.126 binding constructs the
+  instance and then synchronously calls `__wbindgen_start`. Disassembly of the pinned
+  optimized fixture found unbounded `memory.atomic.wait32` paths around its shared
+  initialization state and allocator lock. Schema v29 therefore records separate
+  `module-instantiation-started`, `module-instantiated`,
+  `runtime-startup-started`, `runtime-started`, and `ready` phases. Before terminating a
+  failed cohort it also snapshots the exact fixture's shared initialization state,
+  initialized-instance count, and allocator lock. The deterministic build validates
+  those runtime operations and fails if their offsets drift. This instrumentation
+  preserves D-088's unchanged 10-second boundary, concurrent startup, and no-retry
+  behavior.
+- **Measured attribution:** unrelocated schema-v29 artifacts
+  `smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-43-30-949Z.json`,
+  `smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-46-00-971Z.json`, and
+  `smoke-1-2902f53d2fd4-dev-01-showcase-2026-07-25T00-51-29-864Z.json`
+  each constructed both instances and stopped with phases
+  `[ready,runtime-startup-started]`. All three failure snapshots were
+  `sharedInitializationState=2`, `initializedInstanceCount=2`,
+  `allocatorLock=43`; the last artifact's preceding successful launch recorded the
+  healthy post-initialization control `2/2/0`. The repeated non-lock value is therefore
+  corrupted shared runtime state, not a slow compile, module transfer, or instance
+  construction.
+- **Root cause and local fix:** exact generated-Wasm disassembly showed Rust
+  nightly-2026-07-16's dlmalloc 0.2.13 treating
+  `[__heap_base, __heap_end)` (1,050,048–2,097,152) as an allocator chunk while
+  wasm-bindgen 0.2.126 placed its thread counter at 1,050,048 and lock at 1,050,052.
+  Leader startup could write dlmalloc metadata value `43` into the lock before the
+  follower's compare-exchange; the follower then waited indefinitely for a lock value
+  of `1` to change. D-093 deterministically relocates only wasm-bindgen's scratch state
+  into its already-appended page at 2,097,152, explicitly preserves dlmalloc's four
+  linker-heap references, and fails the build if either layout drifts. Relocated
+  artifact `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T00-58-50-184Z.json`
+  passed all six core launches and 30 checks; every cohort recorded `2/2/0` and
+  completed in 31.9–39.3 ms with unchanged 33-page memory and 10-second boundary.
+  Same-artifact confirmation
+  `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-05-37-290Z.json`
+  failed independently on RE-008 while all six additional Wasm cohorts again
+  recorded `2/2/0` and completed in 33.3–40.2 ms.
+- **Current smoke/relaunch repro:** run `pnpm harness:smoke` repeatedly, or launch the built app without tracing in four
   distinct temporary profiles followed by four sequential relaunches of one retained profile;
   wait for `__PARALLAX_TELEMETRY__.snapshot().wasmThreadSpike` to become terminal and retain its
   phase timings. Representative Chrome 151 failed artifacts
@@ -199,12 +235,14 @@ COS APIs exist):
   `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json` retain the
   coarse and exact-phase gate failures; schema v26 includes terminal subsystem and worker
   phase evidence.
-- **Impact on Parallax:** no accepted D-085 result is invalidated, but running independent
-  synthetic spikes in every app launch can make a dedicated experiment flaky and contaminate
-  its CPU state.
-- **Proposed improvement:** V8 should make threaded Wasm instantiation terminal or expose a
-  per-instance phase/error when it cannot complete. Parallax keeps dedicated scenarios explicit
-  about which synthetic services are active and will reduce this to a Chromium reproduction.
+- **Impact on Parallax:** D-085 remains valid and the pinned runtime is now deterministic
+  under its registered gate. Toolchain upgrades remain blocked on the exact layout guard
+  until upstream owns the reservation contract.
+- **Proposed improvement:** wasm-bindgen should reserve thread-transform scratch state
+  outside Rust's allocator-visible range, or Rust and wasm-bindgen should share a linker
+  contract that advances the allocator's effective base. UP-004 records the minimal
+  two-instance regression and upstream patch direction. The retained evidence does not
+  support a Chrome/V8 change for this failure.
 
 ## RE-035: Rust browser threads still require a nightly rebuilt standard library
 
@@ -301,6 +339,12 @@ COS APIs exist):
   `document`, or resolve relative URLs against `globalThis.location.href` when running
   in a worker. Document controller-realm requirements separately from inference-worker
   behavior.
+
+> **Historical ONNX apparatus:** RE-025 through RE-032 retain the evidence behind
+> D-073's no-go decision. D-095 removed the Transformers/ONNX implementation,
+> dependency chain, model manifests, worker, and tests. Reproduction paths in these
+> entries describe the pre-D-095 tree; use the cited result artifacts and git history
+> if the experiment is deliberately reopened.
 
 ## RE-032: Browser model loaders materialize multi-gigabyte ONNX shards as single buffers
 
@@ -489,18 +533,18 @@ COS APIs exist):
 - **Date / versions:** 2026-07-17; `@huggingface/transformers` 4.2.0,
   `@huggingface/tokenizers` 0.1.3, and TypeScript 7.0.2 on Windows 11.
 - **Layer:** third-party web inference tooling / TypeScript declarations.
-- **Status:** open upstream compatibility gap; narrowly worked around in Parallax.
+- **Status:** archived upstream compatibility gap; the narrow Parallax workaround and
+  its dependency were removed by D-095.
 - **What we expected / What happened:** importing the supported browser
   `pipeline`, `env`, and `TextStreamer` surface into a strict worker should typecheck.
   Instead, TypeScript follows Transformers.js's public declaration graph into broken
   tokenizer aliases and unrelated model declarations, producing errors before any
   Parallax call-site is checked. The runtime bundle succeeds, so this is a declaration
   compatibility failure rather than a browser-runtime failure.
-- **Repro:** remove the `@huggingface/transformers` path mapping from
-  `engine/tsconfig.json`, import the three symbols used by `engine/src/workers/ai-worker.ts`,
-  and run `pnpm typecheck`. With the mapping present, the same strict worker and full
-  repository typecheck use the local declaration in
-  `engine/src/types/huggingface-transformers.d.ts` and can proceed.
+- **Repro:** in the pre-D-095 tree, remove the `@huggingface/transformers` path mapping
+  from `engine/tsconfig.json`, import the three worker symbols, and run
+  `pnpm typecheck`. Git history retains that worker and its narrow local declaration;
+  the current tree intentionally contains neither.
 - **Impact on Parallax:** P-007 cannot consume the package's published declarations
   directly under the pinned compiler. Parallax uses a narrow, strict declaration of
   only the exercised API instead of enabling `skipLibCheck`, which would hide errors
@@ -636,13 +680,19 @@ COS APIs exist):
 
 ## RE-021: Branded Prompt API first-token samples exceed the dialog target
 
+**Archive note (D-096):** RE-016 through RE-021 preserve the measured built-in-AI
+findings, artifact names, and original repro procedures. D-096 selected the app-owned
+backend and removed the Prompt API runners, service, and launch utilities; those
+commands and source paths are intentionally historical and can be recovered from git
+history if a current plan item reopens the comparison.
+
 - **Date / Chrome version:** 2026-07-16; branded Chrome Stable 150.0.7871.128 on
   Windows 11/dev-01/RTX 4080 Super, physical console. Passing sandboxed schema-v2
   lifecycle result
   `prompt-api-branded-1-8b5f1c1df68b-dev-01-2026-07-17T02-23-55-286Z.json`.
 - **Layer:** Prompt API / NPC-dialog latency.
-- **Status:** open; carry into P-007's fixed-fixture head-to-head rather than treating
-  the production-install qualification as a latency pass.
+- **Status:** open platform finding; D-074's completed head-to-head and D-096 selected
+  the faster app-owned backend.
 - **What we expected / What happened:** the backend-neutral dialog target is first-token
   latency p95 <= 1.5 s. The branded qualification was scoped to install lifecycle, but
   retained four exact-fixture latency samples under the production sandbox: 3543.6 ms
@@ -686,7 +736,9 @@ COS APIs exist):
   `pnpm harness:prompt-api-branded`. Inspect each profile's availability transitions:
   the post-install browser restart records `downloading`, followed by successful
   inference and settled `available`.
-- **Impact on Parallax:** installed-model restart UX cannot equate an initial
+- **Impact on Parallax:** this invalidated treating the built-in model as a durable
+  application install bit. D-096 selected an app-owned OPFS model, so current product
+  UX no longer consumes this transition. Historical built-in-model restart UX could not equate an initial
   `downloading` response with a new multi-gigabyte install or a failed persistence
   check. The branded schema-v2 contract records the transition, exercises `create()`
   from a real gesture, and gates the settled post-fixture `available` state plus offline
@@ -733,8 +785,7 @@ COS APIs exist):
   branded-Chrome qualification subsequently demonstrated reliable trigger, actionable
   progress, resume, restart, and offline reuse; D-065's schema-v2 result formally clears
   that production-lifecycle capability.
-  Prompt API still remains optional until P-007 compares latency, frame impact, quality,
-  and app-owned lifecycle control (including RE-021).
+  D-074 completed that comparison and D-096 selected the app-owned backend.
 - **Proposed improvement:** when an eligible `create()` cannot start or advance model
   delivery, reject it promptly with a machine-readable delivery/eligibility reason.
   Expose a stable download state that distinguishes queued, resolving eligibility,
@@ -800,8 +851,9 @@ COS APIs exist):
   Chrome profile contained a 4,269,934,835-byte `OptGuideOnDeviceModel` component; this
   profile inspection was a local diagnostic, not the registered spike gate.
 - **Layer:** Prompt API / Chrome model lifecycle.
-- **Status:** open; `prompt-api-spike@1` records normalized download evidence, measures
-  component bytes after Chrome exits, and labels forced eviction `unsupported` (D-059).
+- **Status:** open platform finding; the removed `prompt-api-spike@1` recorded normalized
+  download evidence, component bytes after Chrome exited, and unsupported forced
+  eviction (D-059/D-096).
 - **What we expected / What happened:** an install UI and lifecycle harness need exact
   downloaded/total bytes and a reproducible eviction transition. The web API exposes
   only aggregate `ProgressEvent.loaded` values from 0 to 1 (`total` is 1), explicitly
@@ -839,7 +891,8 @@ COS APIs exist):
   Windows 11/dev-01/RTX 4080 Super. Local result is a compatibility diagnostic; the registered
   physical-console M0 evidence run is pending.
 - **Layer:** Prompt API / workers.
-- **Status:** open; inference remains behind the D-017 window-owned broker.
+- **Status:** open platform finding; D-096 removed the superseded D-017 broker from
+  Parallax's current runtime.
 - **What we expected / What happened:** current Chrome documentation says the Prompt API
   is available to top-level windows/same-origin frames but not Web Workers. A clean
   pinned-CfT profile exposed `LanguageModel` in the window, returned `unavailable` from
@@ -849,10 +902,9 @@ COS APIs exist):
   create a blob-backed dedicated worker that posts `typeof LanguageModel !==
   "undefined"`. `prompt-api-spike@1` records the two contexts independently and treats
   worker-probe failure as diagnostic rather than blocking the window measurement.
-- **Impact on Parallax:** NPC inference orchestration and stream callbacks remain on the
-  window main thread, so generation-window long tasks are mandatory budgets while
-  marker-aligned render-worker callback pacing remains a non-gating D-051 diagnostic.
-  The game cannot place the built-in model behind the normal worker topology.
+- **Impact on Parallax:** the game could not place the built-in model behind the normal
+  worker topology. D-096 selected app-owned inference whose heavy execution runs in
+  wllama-created workers, so the current product no longer carries this exception.
 - **Proposed improvement:** expose the API in dedicated workers with a defined
   responsible-document/permissions-policy relationship; preserving the session and
   streaming shape would let the broker migrate without changing game consumers.
@@ -1138,7 +1190,7 @@ COS APIs exist):
 
 ## RE-008: Browser trace completion becomes intermittently unbounded across category sets
 
-- **Date / Chrome version:** 2026-07-13 through 2026-07-20; Chrome for Testing Stable
+- **Date / Chrome version:** 2026-07-13 through 2026-07-25; Chrome for Testing Stable
   150.0.7871.115 and candidate Stable 151.0.7922.34;
   Windows 11 build 26200.8655; NVIDIA RTX 4080 Super, driver 32.0.16.1074; D3D12;
   dev-01 remote diagnostic (non-gating).
@@ -1253,16 +1305,61 @@ COS APIs exist):
   during 5,002.9–5,014.1 ms. A report-only source state immediately before those
   attempts completed all six traces and passed all 30 checks in the `00-04-07-045Z`
   report; the final source state remains unqualified rather than using that near-match.
+- **D-092 source attribution and probe:** VM Chromium checkout `4dc95450a818a` shows
+  `Tracing.end` acknowledging before the asynchronous Perfetto stop callback, trace read,
+  final statistics request, and `Tracing.tracingComplete`. Perfetto's default
+  data-source-stop timeout is 5,000 ms, exactly matching the previous harness deadline.
+  The outer timer could therefore detach as Perfetto's forced-stop path became eligible,
+  before its later read/stat/completion work reached CDP. Schema v29 initially kept the
+  five-second validity rule but remained attached for a further ten-second diagnostic
+  window, retaining late completion as explicitly invalid or recording that completion
+  stayed absent for the full 15 seconds. The earlier 20-second arm happened to complete all six
+  samples quickly and did not observe this failure path. `ReturnAsStream` already
+  reproduced the signature, so event-based delivery is not treated as causal; protobuf
+  and controller-owned file capture remain conditional controls if a retained failure
+  reaches the read/serialization phase.
+- **D-092 measured result:** physical-console schema-v29 artifact
+  `smoke-1-8d18fd6125cd-dev-01-showcase-2026-07-25T00-43-30-949Z.json`
+  captured the previously lost terminal path. Fresh repeat 1 acknowledged
+  `Tracing.end` in 2.5 ms, crossed the unchanged five-second validity boundary, then
+  delivered `Tracing.tracingComplete` 5,305.5 ms after the command (5,308.0 ms total
+  observation). The retained trace contained 70,985 events in 400 chunks /
+  11,649,521 serialized bytes with `dataLoss=false`. The run remained invalid. This
+  confirms that the old outer timeout raced Perfetto's internal five-second
+  data-source forced-stop boundary; it was not evidence of an indefinitely missing
+  completion. A later relocated final artifact completed all six traces normally in
+  299.1–301.6 ms. Its same-artifact confirmation
+  `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-05-37-290Z.json`
+  reproduced the late path on fresh repeat 1: 70,711 events / 406 chunks /
+  11,801,838 bytes, `dataLoss=false`, and completion 5,301.8 ms after the end
+  command (5,303.7 ms total). Both late samples cluster immediately after the
+  internal forced-stop threshold and retain the intermittent classification.
+- **D-094 gate policy:** future complete, readable traces with `dataLoss=false` are
+  valid through 10,000 ms. The collector retains a further 10,000 ms diagnostic window
+  and still fails closed for later/missing completion, unreadable data, or trace loss.
+  This makes RE-008 a measured trace-drain latency finding at the observed 5.3-second
+  path instead of treating Perfetto's internal timeout as Parallax's correctness
+  deadline. Physical-console report
+  `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-15-05-125Z.json`
+  passed all three facets and 30 checks while exercising the new range: isolated V8
+  fresh repeat 2 retained 285 events / 45,205 bytes with `dataLoss=false` and accepted
+  completion at 5,020.1 ms. D-095's targeted schema-v30 confirmation
+  `smoke-1-188e456726f4-dev-01-showcase-2026-07-25T02-07-11-589Z.json`
+  passed the same facets/checks and accepted another complete core trace at 5,307.5 ms
+  with 69,983 events / 398 chunks / 11,627,977 serialized bytes and `dataLoss=false`.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
-  `blink.user_timing`; keep the measured page alive through `Tracing.end` with the five-second
+  `blink.user_timing`; keep the measured page alive through `Tracing.end` with the ten-second
   completion bound. Maintained `smoke@1` instead traces the first three categories without `v8`
-  for its core run, then runs the isolated `v8-code-cache@6` lineages. The v12 result records
+  for its core run; `pnpm harness:smoke:v8-cache` opts into the isolated
+  `v8-code-cache@6` lineages. The v30 result records whether that diagnostic was
+  requested, plus
   categories, event/chunk/serialized-byte volume, end-command and completion latency, and data
-  loss plus recording lifetime, launch ordinal, and elapsed sequence time for both sets. To
+  loss plus recording lifetime, launch ordinal, elapsed sequence time, and whether completion
+  arrived only during D-092's invalid diagnostic window for both sets. To
   reproduce the lifetime control, launch a fresh pinned browser on `about:blank`, start a
   browser-level `ReportEvents` trace with either the core or `v8` categories, idle for 300 or
-  14,100 ms, then end with the same five-second completion bound; repeat each arm at least six
+  14,100 ms, then end with the same ten-second completion bound; repeat each arm at least six
   times. To reproduce the active category control, keep the maintained app run unchanged but
   replace the core category list with only `blink.user_timing`; the recorded 2026-07-14 arm
   completed 5/6. The non-gating diagnostic

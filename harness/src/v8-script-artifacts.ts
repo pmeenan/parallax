@@ -3,17 +3,19 @@ import type { BuildManifest, ManifestArtifact } from "./build-manifest.js";
 export function selectV8ScriptManifestArtifacts(
   manifest: BuildManifest,
 ): readonly ManifestArtifact[] {
-  // D-058/P-001/P-007: storage, memory64, and AI workers are explicit-spike entrypoints and are
-  // intentionally absent from ordinary smoke's isolated V8 lifecycle diagnostic.
-  // Requiring a compilation event for artifacts that this scenario never loads makes
-  // the diagnostic invalid by construction.
+  // D-058/D-085/P-001/D-095: the isolated lifecycle page neither triggers streaming
+  // traversal (and therefore decode workers) nor waits for the Rust/WASM spike.
+  // Memory64, decode, and wasm-thread entrypoints are consequently outside its stable
+  // capture topology. Requiring compilation events for artifacts that the scenario
+  // never loads, or may load only after capture, makes the diagnostic invalid by
+  // construction.
   const inactiveDiagnosticWorkers = new Set(
     manifest.workerEntrypoints
       .filter(
         (entrypoint) =>
-          entrypoint.role === "ai" ||
+          entrypoint.role === "decode" ||
           entrypoint.role === "memory64-spike" ||
-          entrypoint.role === "storage",
+          entrypoint.role === "wasm-thread",
       )
       .map((entrypoint) => entrypoint.path),
   );

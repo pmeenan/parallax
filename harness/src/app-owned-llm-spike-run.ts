@@ -193,9 +193,7 @@ async function runAppOwnedLlmSpike(
 ): Promise<void> {
   const build = await readAndValidateBuildManifest(buildRoot);
   const source = await readSourceIdentity(repositoryRoot);
-  const externalModel = isWllamaDevice(inferenceDevice)
-    ? await validateWllamaModelRoot(resolveWllamaModelRoot())
-    : undefined;
+  const externalModel = await validateWllamaModelRoot(resolveWllamaModelRoot());
   const server = createLocalServer({
     ...(externalModel === undefined ? {} : { externalModel }),
     root: buildRoot,
@@ -727,20 +725,11 @@ function resolveFixtureOrder(): "context-first" | "manual" {
 }
 
 function resolveInferenceDevice(): AppOwnedLlmInferenceDevice {
-  const value = process.env.PARALLAX_APP_OWNED_LLM_DEVICE ?? "webgpu";
-  if (
-    value !== "webgpu" &&
-    value !== "wasm" &&
-    value !== "wllama-webgpu" &&
-    value !== "wllama-wasm"
-  ) {
+  const value = process.env.PARALLAX_APP_OWNED_LLM_DEVICE ?? "wllama-webgpu";
+  if (value !== "wllama-webgpu" && value !== "wllama-wasm") {
     throw new Error(`Unsupported PARALLAX_APP_OWNED_LLM_DEVICE ${JSON.stringify(value)}`);
   }
   return value;
-}
-
-function isWllamaDevice(device: AppOwnedLlmInferenceDevice): boolean {
-  return device === "wllama-webgpu" || device === "wllama-wasm";
 }
 
 function resolveWllamaModelRoot(): string {

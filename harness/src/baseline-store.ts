@@ -81,6 +81,7 @@ export interface BaselineEligibleReport {
   readonly scenario: string;
   readonly schemaVersion: number;
   readonly source: BaselineSourceIdentity;
+  readonly v8CodeCacheDiagnosticsRequested: boolean;
 }
 
 export interface BaselineMetricSummary {
@@ -358,6 +359,9 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     value.schemaVersion !== SMOKE_REPORT_SCHEMA_VERSION
   ) {
     invalidReport(`schemaVersion must be ${SMOKE_REPORT_SCHEMA_VERSION}`);
+  }
+  if (typeof value.v8CodeCacheDiagnosticsRequested !== "boolean") {
+    invalidReport("v8CodeCacheDiagnosticsRequested must be boolean");
   }
   requireRecord(value.source, "source");
   requireGitCommit(value.source.commit, "source.commit");

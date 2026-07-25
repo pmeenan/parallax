@@ -2,12 +2,8 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist/types",
-    "paths": {
-      "@huggingface/transformers": ["./src/types/huggingface-transformers.d.ts"]
-    },
     "rootDir": "src",
-    "tsBuildInfoFile": "dist/types.tsbuildinfo",
-    "types": ["dom-chromium-ai"]
+    "tsBuildInfoFile": "dist/types.tsbuildinfo"
   },
   "include": ["src/**/*.ts"]
 }

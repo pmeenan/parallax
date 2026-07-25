@@ -34,6 +34,75 @@ root `AGENTS.md` rules (especially: agents never commit — rule 8).
   before declaring work review-ready; reviewers re-run them when the change affects
   measured behavior.
 
+## Machine-local pinned-tool registry
+
+`.parallax-toolchain.local.json` records where this checkout's manually installed or
+downloaded pinned tools and libraries actually live. It is deliberately ignored because
+it contains host-specific absolute paths. At the start of work that needs an external
+tool, read this file before searching caches or downloading another copy.
+
+The registry is a location cache, not a version manifest. Checked-in sources such as
+`.nvmrc`, `package.json`, `rust-toolchain.toml`, Cargo manifests, and
+`harness/chrome/stable.json` remain authoritative. Before first use in a chat, confirm
+that the recorded path exists and that the executable reports the checked-in version;
+do not accept a stale registry entry or change a project pin to match it.
+
+Any agent that downloads, installs, upgrades, relocates, or removes a pinned tool or
+library outside the normal reproducible package install must update the registry in the
+same turn. Preserve its JSON shape and record the tool ID, exact version, absolute path,
+role/status, authoritative pin source, and verification date. Create the file if it is
+absent on a new machine. Never put credentials, tokens, environment dumps, or other
+secrets in it.
+
+## Close experiments cleanly
+
+When an experiment has produced a recorded decision and is no longer a selected
+implementation, active plan item, platform floor, or recurring qualification gate,
+remove its implementation code, dependency chain, build artifacts, fixtures, and
+decision-only tests in the same change. Do not keep executable apparatus merely because
+it might be convenient to rerun someday; git history can recover it.
+
+Preserve the durable evidence: decision and rough-edge entries, result artifacts,
+measurements, and enough version/identity detail to understand the conclusion. If a
+future plan item reopens the question, recover or rebuild the smallest current
+experiment against then-current dependencies rather than carrying dormant code
+indefinitely.
+
+Apply the same test to routine diagnostics. Keep a check in every-change gates only when
+it protects a current contract or budget. Valuable but non-gating investigations belong
+behind a clearly named opt-in command with documented triggers. Delete checks that only
+answered a settled decision.
+
+## Validation and physical-gate cadence
+
+“Per change” means per final reviewable runtime-affecting candidate, not after every
+edit or review exchange (D-097).
+
+- Run `pnpm check` before implementation handoff. Run it again after any review fix
+  changes code, generated artifacts, or build/test contracts.
+- Run one physical-console `pnpm harness:smoke` after code and review fixes have
+  converged when the candidate changes a built app/engine/game/worker/Wasm artifact,
+  browser-facing behavior, harness or measurement logic, runtime dependency or
+  toolchain/browser pin, reference-machine descriptor, budget, or mandatory evidence
+  contract. A later fix to any of those inputs requires a new physical result.
+- Skip physical smoke for documentation-only, test-only, and machine-local
+  tool-location changes when they leave every qualifying input above unchanged.
+  Markdown changes to budgets, evidence contracts, pins, or qualification claims are
+  still qualifying changes.
+- Keep opt-in diagnostics on their documented triggers. In particular, run the V8
+  lifecycle diagnostic only under D-095, and run branded-Chrome parity when assessing
+  a Chrome pin or the browser portion of the standing dependency checkpoint rather
+  than on an unrelated weekly schedule.
+
+Every failed report remains evidence. For an intermittent RE-008/RE-036-class failure,
+retain it and run one immediate same-artifact retry for classification. The retry is a
+separate result, cannot turn the failed report green, and does not justify repeated
+passes outside a bounded diagnosis.
+
+Only a pinned-Chrome run on a registered reference machine at its physical console
+carries a budget verdict. Remote and non-reference runs are advisory and cannot replace
+the final qualifying run.
+
 ## Milestone work: tech-lead mode (D-026)
 
 A prompt like "start work on M0" makes you the **tech lead** for that milestone. That

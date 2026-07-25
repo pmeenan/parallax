@@ -10,12 +10,10 @@ const shippedDirectory = join(repositoryRoot, "engine/dist");
 // Keep this exact allowlist aligned with engine/rollup.config.mjs: unexpected chunks
 // would weaken the self-contained, independently addressable engine artifact contract.
 const expectedOutputs = Object.freeze([
-  "ai-worker.js",
   "decode-worker.js",
   "engine.js",
   "memory64-spike-worker.js",
   "render-worker.js",
-  "storage-worker.js",
   "streaming-worker.js",
   "wasm-thread-worker.js",
 ]);

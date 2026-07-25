@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
+  AppOwnedLlmRunRequest,
   AppOwnedLlmSpikeTelemetrySnapshot,
-  AppOwnedLlmWorkerStartRequest,
 } from "../src/ai/app-owned-llm-spike-protocol";
 
 interface FakeCompletionOptions {
@@ -54,9 +54,8 @@ const REQUEST = Object.freeze({
     id: "runner-test",
     version: 1,
   }),
-  kind: "start",
   modelUrl: "https://models.example/model.gguf",
-}) satisfies AppOwnedLlmWorkerStartRequest;
+}) satisfies AppOwnedLlmRunRequest;
 
 describe("wllama spike runner lifecycle", () => {
   beforeEach(() => {

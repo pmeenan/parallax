@@ -48,37 +48,43 @@ measured automatically.
       separate actor/reason promotion transition.
 - [x] Worker substrate spikes: dedicated-worker WebGPU + OffscreenCanvas **go** (D-056),
       paired fixed-capacity SPSC SAB rings **go** (D-057), and worker OPFS sync reads a
-      **qualified go** for M1's storage boundary (D-058/D-066). OPFS microbenchmark
-      repeatability remains informational (RE-023); M1 owns the representative
-      OPFS-to-renderable cell-load p95 gate.
+      **qualified go** for M1's storage boundary (D-058/D-066). D-096 removed the
+      standalone microbenchmark after D-091's representative OPFS-to-renderable
+      cell-load p95 became mandatory; historical repeatability remains RE-023.
 - [x] Browser AI spike: Prompt API is a measured **no-go as a required backend** in
       pinned CfT (D-059/RE-019), while its sandboxed branded-Chrome install,
       restart/resume, post-restart, and offline lifecycle qualified separately (D-065).
+      D-096 resolved P-007 in favor of the app-owned backend and removed both closed
+      Prompt API harnesses while preserving their decision/finding/result evidence.
 - [x] App-owned AI spike: pinned Gemma 4 E2B QAT GGUF on wllama WebGPU qualified with
       structured-output and OPFS lifecycle evidence; CPU/WASM remains measured headroom,
       not an automatic fallback (D-073/D-074; RE-030/RE-031/RE-032). Restart-persistent
       KV snapshots were a measured no-go for this runtime; live idle pre-seeding remains
-      the preferred follow-up (D-075/D-084).
+      the preferred follow-up (D-075/D-084). D-095 removed the superseded ONNX/
+      Transformers implementation, dependencies, build worker, and decision-only tests;
+      its evidence remains in the decision/finding logs and result history.
 - [x] Rendering-core selection: the measured head-to-head selected exactly pinned Babylon
       Lite 1.11.0 (D-077/D-078); D-080 removed classic Babylon and renderer swappability.
       Bounded Lite integration gaps and M1/M3 follow-ups remain in D-078 and
       [rendering-engine-research.md](rendering-engine-research.md) §7.
 - [x] Rust/WASM capability spikes: reproducible threaded SIMD/atomic modules qualified
-      under the mandatory smoke contract (D-085/RE-035), with fail-closed worker-startup
-      phase evidence retained for intermittent Chrome stalls (D-088/RE-036). The optional
+  under the mandatory smoke contract (D-085/RE-035), with fail-closed worker-startup
+      phase evidence that localized the former intermittent startup stall to the
+      wasm-bindgen/Rust allocator overlap fixed by D-093 (D-088/D-092/RE-036). The optional
       memory64 path demonstrated exact beyond-4-GiB access and passed its paired cost gate
       (D-086); P-001 remains open for representative M1 adoption evidence.
 - [x] M0 exit dependency checkpoint completed under D-079. Node 24.18.0 and CfT
       151.0.7922.34 were adopted; bounded deferrals and recheck triggers remain in
       [dependencies.md](dependencies.md).
 
-**Exit evidence:** `pnpm m0:gate` produced
+**Exit evidence:** the historical `pnpm m0:gate` alias produced
 `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-58-13-338Z.json` on registered
 dev-01's physical console under pinned Chrome 151 and Node 24.18.0. All three facets,
 all six core runs, and all 24 blocking checks passed. The result was explicitly promoted
-after comparison with the same-artifact Chrome 150 anchor. RE-008 and RE-036 retain the
-intermittent trace-completion and Wasm-instantiation failures rather than treating the
-passing replacement as erasure.
+after comparison with the same-artifact Chrome 150 anchor. RE-008 retains the
+intermittent trace-completion failures rather than treating the passing replacement as
+erasure; RE-036 retains the historical failures under D-093's corrected toolchain
+attribution.
 
 ## M1 — Greybox District 1 streaming  `in progress`
 
@@ -101,9 +107,9 @@ passing replacement as erasure.
         future QA rejection for meshopt's canonical single-buffer constraint (D-078/D-089).
         Qualified by schema-v8 physical artifact
         `040677b31910…` on 2026-07-20.
-- [ ] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
+- [x] Streaming worker + decode pool: OPFS → decode → GPU upload, driven by player
       movement, inside memory budget with proactive eviction.
-  - Implemented pending qualification (2026-07-24): D-091 adds the long-lived
+  - Completed (2026-07-24): D-091 adds the long-lived
     OPFS-owning streaming worker, hardware-sized decode pool, direct render-worker upload
     channel, nearest-nine scheduler, proactive farthest eviction, terminal failure
     behavior, memory/queue/load telemetry, and mandatory p95/evidence checks. Exact
@@ -114,9 +120,20 @@ passing replacement as erasure.
     p95 with no encoded-budget rejection. A pre-report-wording source state passed all
     three facets and 30 checks in
     `smoke-1-392bec740604-dev-01-showcase-2026-07-25T00-04-07-045Z.json`; the final
-    source state then failed closed across retained same-artifact attempts on the
-    existing RE-008 trace-completion and RE-036 Wasm-instantiation intermittents. The
-    checkbox remains open until the final source state completes the registered gate.
+    source state then failed closed across retained same-artifact attempts on RE-008
+    and the then-misattributed RE-036 startup intermittent. D-092 retained a real
+    RE-008 completion just after the former five-second validity boundary and
+    localized RE-036 inside `__wbindgen_start`; D-093 fixed the proven
+    wasm-bindgen/Rust allocator overlap without changing the memory or timeout
+    contracts, and D-094 subsequently made complete lossless trace drains valid
+    through ten seconds. Final schema-v29/metric-set-v14 artifact
+    `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T00-58-50-184Z.json`
+    completed all six core launches and passed environment, mandatory-evidence, and
+    budget facets with all 30 checks passing. Its same-artifact confirmation retained
+    a late RE-008 failure while all six additional Wasm cohorts completed, so the
+    passing qualification and independent platform failure are both preserved. D-094
+    confirmation `smoke-1-16ec0e762b84-dev-01-showcase-2026-07-25T01-15-05-125Z.json`
+    also passed all 30 checks and accepted a complete lossless 5,020.1 ms V8 trace.
 - [ ] Geometry-representation spike (P-002): triangle LOD vs. meshlet-virtualized vs.
       Gaussian splats on representative content, harness-measured at both quality tiers
       and **under dynamic relighting** (game-design.md binding implication — a
@@ -187,15 +204,16 @@ credible.
 
 - [ ] Sim worker: fixed timestep, input-commands, snapshot interpolation, save/load.
 - [ ] Character controller, camera, basic interaction loop in greybox D1.
-- [ ] Prompt API NPC dialog: persona cards, rolling memory, structured output for
-      state-affecting intents; frame-impact measurement during inference.
+- [ ] App-owned NPC dialog (D-074/D-096): persona cards, rolling memory, strict
+      structured output for state-affecting intents, authored unavailable-model
+      fallback, and frame-impact measurement during WebGPU/CPU-WASM inference.
 - [ ] NPC knowledge service (D-033): generic retrieval/assembly contract in `engine/ai`
       with `game/`-supplied providers; structured game-state tier implemented;
       prompt/persona schema carries the retrieved-context slot; lore authored
       chunked + tagged in `game/`. Semantic tiers (lore embeddings, episodic memory)
       stay build-later.
 - [ ] Exit: playable greybox loop with conversing NPCs (incl. authored-fallback path
-      with the model unavailable, D-017); save/reload round-trip; sim determinism check
+      with the model unavailable, D-096); save/reload round-trip; sim determinism check
       (same input log → same state hash) in the harness — **cross-machine**: replays
       must hash-match across dev-01 and mac-01 on the same pinned Chrome version
       (D-016), not just on one host.

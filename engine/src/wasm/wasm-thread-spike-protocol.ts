@@ -5,6 +5,15 @@ export const WASM_THREAD_SPIKE_TASK_COUNT = 262_144;
 export const WASM_THREAD_SPIKE_THREAD_STACK_BYTES = 65_536;
 export const WASM_THREAD_SPIKE_TIMEOUT_MS = 10_000;
 export const WASM_THREAD_SPIKE_WORKER_COUNT = 2;
+// These are exact relocated offsets in the pinned nightly-2026-07-16 /
+// wasm-bindgen 0.2.126 fixture, not a general wasm-bindgen ABI. build-wasm.mjs
+// disassembles every generated and optimized output and fails if the runtime layout
+// or the dlmalloc/thread-scratch separation drifts.
+export const WASM_THREAD_SPIKE_RUNTIME_STATE_OFFSETS = Object.freeze({
+  allocatorLock: 2_097_156,
+  initializedInstanceCount: 2_097_152,
+  sharedInitializationState: 1_050_040,
+});
 
 export interface WasmThreadSpikeInitializeRequest {
   readonly kind: "initialize";
@@ -43,7 +52,22 @@ export interface WasmThreadSpikeReadyResponse {
 export type WasmThreadSpikeWorkerPhase =
   | "script-evaluated"
   | "initialize-received"
-  | "module-instantiated";
+  | "module-instantiation-started"
+  | "module-instantiated"
+  | "runtime-startup-started"
+  | "runtime-started";
+
+export type WasmThreadSpikeWorkerLifecyclePhase =
+  | "not-created"
+  | "created"
+  | WasmThreadSpikeWorkerPhase
+  | "ready";
+
+export interface WasmThreadSpikeRuntimeState {
+  readonly allocatorLock: number;
+  readonly initializedInstanceCount: number;
+  readonly sharedInitializationState: number;
+}
 
 export interface WasmThreadSpikePhaseResponse {
   readonly kind: "phase";
@@ -94,9 +118,12 @@ export interface WasmThreadSpikeTelemetrySnapshot {
   readonly parallelExecutionElapsedMs: number | null;
   readonly processedTasksByWorker: readonly number[];
   readonly referenceChecksum: number | null;
+  readonly runtimeStateAfterInitialization: WasmThreadSpikeRuntimeState | null;
+  readonly runtimeStateAtFailure: WasmThreadSpikeRuntimeState | null;
   readonly state: "idle" | "running" | "completed" | "failed";
   readonly taskCount: number;
   readonly workerCount: number;
+  readonly workerPhases: readonly WasmThreadSpikeWorkerLifecyclePhase[];
   readonly workerMask: number;
   readonly workerInitializationElapsedMs: number | null;
 }

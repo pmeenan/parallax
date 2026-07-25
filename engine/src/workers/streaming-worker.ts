@@ -1,4 +1,4 @@
-import type { OpfsSyncAccessHandle } from "../storage/opfs-read-spike-worker-core";
+import type { OpfsSyncAccessHandle } from "../storage/opfs-sync-access-handle";
 import {
   type DecodeWorkerRequest,
   type DecodeWorkerResponse,

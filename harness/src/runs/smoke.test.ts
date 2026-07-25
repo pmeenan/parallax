@@ -7,15 +7,14 @@ import { describe, expect, it } from "vitest";
 import { SMOKE_EVIDENCE_METRIC_NAMES } from "../smoke-result.js";
 import {
   parseQualityTier,
+  parseSmokeRunOptions,
   QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
-  SMOKE_OPFS_COMPLETION_TIMEOUT_MS,
-  SMOKE_OPFS_FILE_BYTES,
-  SMOKE_OPFS_RANDOM_BATCH_READS,
-  SMOKE_OPFS_RANDOM_READS,
+  SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+  SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SAB_TOTAL_BYTES,
   SMOKE_TELEMETRY_GLOBAL_NAME,
@@ -33,7 +32,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(28);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(31);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -44,6 +43,17 @@ describe("smoke@1 contract", () => {
   it("versions the isolated V8 diagnostic and its repeat contract", () => {
     expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC).toBe("v8-code-cache@6");
     expect(SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS).toBe(3);
+  });
+
+  it("keeps the V8 code-cache diagnostic opt-in", () => {
+    expect(parseSmokeRunOptions([])).toEqual({ includeV8CodeCache: false });
+    expect(parseSmokeRunOptions(["--include-v8-code-cache"])).toEqual({
+      includeV8CodeCache: true,
+    });
+    expect(() =>
+      parseSmokeRunOptions(["--include-v8-code-cache", "--include-v8-code-cache"]),
+    ).toThrow("may only be specified once");
+    expect(() => parseSmokeRunOptions(["--unknown"])).toThrow("Unsupported smoke option");
   });
 
   it("accounts for every mandatory metric in its single registry", () => {
@@ -96,24 +106,14 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
-    expect(
-      SMOKE_METRICS.find((metric) => metric.name === "OPFS sync-access-handle read throughput"),
-    ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
-    expect(
-      SMOKE_METRICS.find(
-        (metric) => metric.name === "OPFS sync-access-handle throughput repeatability",
-      ),
-    ).toMatchObject({ mandatoryForHarnessV1: false, probe: "implemented" });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(13);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(15);
+    expect(SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS).toBe(10_000);
+    expect(SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS).toBe(10_000);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
     expect(SMOKE_WASM_THREAD_MEMORY_PAGES).toBe(33);
     expect(SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS).toBe(12_000);
     expect(SMOKE_WASM_THREAD_TASK_COUNT).toBe(262_144);
     expect(SMOKE_WASM_THREAD_WORKER_COUNT).toBe(2);
-    expect(SMOKE_OPFS_FILE_BYTES).toBe(64 * 1024 * 1024);
-    expect(SMOKE_OPFS_COMPLETION_TIMEOUT_MS).toBe(17_000);
-    expect(SMOKE_OPFS_RANDOM_READS).toBe(4_096);
-    expect(SMOKE_OPFS_RANDOM_BATCH_READS).toBe(256);
     expect(SMOKE_METRICS.find((metric) => metric.name === "V8 code-cache evidence")?.probe).toBe(
       "implemented",
     );

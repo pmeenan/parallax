@@ -157,12 +157,13 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     },
     generatedAt: "2026-07-20T00:00:00.000Z",
     harnessRuntime: { nodeExecutableSha256: "e".repeat(64), nodeVersion: "v24.18.0" },
-    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 13 },
+    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 15 },
     passed: true,
     runs,
     scenario: "smoke@1",
-    schemaVersion: 28,
+    schemaVersion: 31,
     source: { commit: "c".repeat(40), dirtyTreeDigest: null },
+    v8CodeCacheDiagnosticsRequested: false,
     ...overrides,
   };
 }
@@ -310,13 +311,13 @@ describe("baseline result store", () => {
     ).toThrow(/budgetChecks must contain measured observations/);
   });
 
-  it("requires the exact v13 mandatory metric list and measured D-090 evidence in every run", () => {
+  it("requires the exact v15 mandatory metric list and measured D-090 evidence in every run", () => {
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),
         mandatoryMetricSet: {
           metrics: mandatoryMetricNames.filter((metric) => metric !== "greybox world content"),
-          version: 13,
+          version: 15,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly.*greybox world content/);
@@ -325,7 +326,7 @@ describe("baseline result store", () => {
         ...report(),
         mandatoryMetricSet: {
           metrics: [...mandatoryMetricNames, "greybox world content"],
-          version: 13,
+          version: 15,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly/);

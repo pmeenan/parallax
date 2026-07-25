@@ -12,8 +12,8 @@ import {
   APP_OWNED_LLM_WLLAMA_MODEL_REVISION,
   type AppOwnedLlmFixtureCase,
   type AppOwnedLlmGenerationTelemetry,
+  type AppOwnedLlmRunRequest,
   type AppOwnedLlmSpikeTelemetrySnapshot,
-  type AppOwnedLlmWorkerStartRequest,
   createInitialAppOwnedLlmTelemetry,
 } from "./app-owned-llm-spike-protocol";
 
@@ -21,7 +21,7 @@ const WLLAMA_WASM_ARTIFACT_TOKEN = "./__WLLAMA_WASM_ARTIFACT__";
 const WLLAMA_WASM_ARTIFACT = new URL(WLLAMA_WASM_ARTIFACT_TOKEN, import.meta.url).href;
 
 export async function runWllamaSpike(
-  request: AppOwnedLlmWorkerStartRequest,
+  request: AppOwnedLlmRunRequest,
   publishSnapshot: (snapshot: AppOwnedLlmSpikeTelemetrySnapshot) => void,
   signal: AbortSignal = new AbortController().signal,
 ): Promise<void> {

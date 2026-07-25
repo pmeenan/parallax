@@ -1,11 +1,13 @@
 import {
   WASM_THREAD_SPIKE_MEMORY_PAGES,
+  WASM_THREAD_SPIKE_RUNTIME_STATE_OFFSETS,
   WASM_THREAD_SPIKE_TASK_COUNT,
   WASM_THREAD_SPIKE_THREAD_STACK_BYTES,
   WASM_THREAD_SPIKE_TIMEOUT_MS,
   WASM_THREAD_SPIKE_WORKER_COUNT,
+  type WasmThreadSpikeRuntimeState,
   type WasmThreadSpikeTelemetrySnapshot,
-  type WasmThreadSpikeWorkerPhase,
+  type WasmThreadSpikeWorkerLifecyclePhase,
   type WasmThreadSpikeWorkerRequest,
   type WasmThreadSpikeWorkerResponse,
 } from "./wasm-thread-spike-protocol";
@@ -36,8 +38,11 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
   let completedWorkers = 0;
   let workerInitializationStartedAt: number | null = null;
   let executionStartedAt: number | null = null;
-  const workerPhases: Array<"not-created" | "created" | WasmThreadSpikeWorkerPhase | "ready"> =
-    Array.from({ length: WASM_THREAD_SPIKE_WORKER_COUNT }, () => "not-created");
+  let sharedMemory: WebAssembly.Memory | null = null;
+  const workerPhases: WasmThreadSpikeWorkerLifecyclePhase[] = Array.from(
+    { length: WASM_THREAD_SPIKE_WORKER_COUNT },
+    () => "not-created",
+  );
   let telemetry = freezeTelemetry({
     checksum: null,
     completedTasks: 0,
@@ -49,9 +54,12 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
     parallelExecutionElapsedMs: null,
     processedTasksByWorker: Array.from({ length: WASM_THREAD_SPIKE_WORKER_COUNT }, () => 0),
     referenceChecksum: null,
+    runtimeStateAfterInitialization: null,
+    runtimeStateAtFailure: null,
     state: "idle",
     taskCount: WASM_THREAD_SPIKE_TASK_COUNT,
     workerCount: WASM_THREAD_SPIKE_WORKER_COUNT,
+    workerPhases,
     workerMask: 0,
     workerInitializationElapsedMs: null,
   });
@@ -76,8 +84,15 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
 
   const fail = (message: string): void => {
     if (disposed || telemetry.state === "completed" || telemetry.state === "failed") return;
+    const runtimeStateAtFailure = captureRuntimeState(sharedMemory);
     cleanup();
-    publish({ ...telemetry, failureMessage: message, state: "failed" });
+    publish({
+      ...telemetry,
+      failureMessage: message,
+      runtimeStateAtFailure,
+      state: "failed",
+      workerPhases,
+    });
   };
 
   const post = (worker: Worker, message: WasmThreadSpikeWorkerRequest): void => {
@@ -93,6 +108,7 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
       case "phase": {
         const phaseWorkerIndex = message.workerIndex ?? workerIndex;
         workerPhases[phaseWorkerIndex] = message.phase;
+        publish({ ...telemetry, workerPhases });
         break;
       }
       case "ready":
@@ -104,7 +120,9 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
           }
           publish({
             ...telemetry,
+            runtimeStateAfterInitialization: captureRuntimeState(sharedMemory),
             workerInitializationElapsedMs: performance.now() - workerInitializationStartedAt,
+            workerPhases,
           });
           const coordinator = workers[0];
           if (coordinator === undefined) throw new Error("WASM thread coordinator is missing");
@@ -163,6 +181,7 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
           referenceChecksum: message.referenceChecksum,
           state: failure ? "failed" : "completed",
           workerMask: message.workerMask,
+          workerPhases,
         });
         break;
       }
@@ -208,6 +227,7 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
         if (!(memory.buffer instanceof SharedArrayBuffer)) {
           throw new Error("WASM shared memory did not produce a SharedArrayBuffer");
         }
+        sharedMemory = memory;
         publish({
           ...telemetry,
           moduleBytes: bytes.byteLength,
@@ -276,5 +296,37 @@ function freezeTelemetry(
   return Object.freeze({
     ...telemetry,
     processedTasksByWorker: Object.freeze([...telemetry.processedTasksByWorker]),
+    runtimeStateAfterInitialization:
+      telemetry.runtimeStateAfterInitialization === null
+        ? null
+        : Object.freeze({ ...telemetry.runtimeStateAfterInitialization }),
+    runtimeStateAtFailure:
+      telemetry.runtimeStateAtFailure === null
+        ? null
+        : Object.freeze({ ...telemetry.runtimeStateAtFailure }),
+    workerPhases: Object.freeze([...telemetry.workerPhases]),
+  });
+}
+
+function captureRuntimeState(
+  memory: WebAssembly.Memory | null,
+): WasmThreadSpikeRuntimeState | null {
+  if (memory === null || !(memory.buffer instanceof SharedArrayBuffer)) return null;
+  const words = new Int32Array(memory.buffer);
+  return Object.freeze({
+    allocatorLock: Atomics.load(
+      words,
+      WASM_THREAD_SPIKE_RUNTIME_STATE_OFFSETS.allocatorLock / Int32Array.BYTES_PER_ELEMENT,
+    ),
+    initializedInstanceCount: Atomics.load(
+      words,
+      WASM_THREAD_SPIKE_RUNTIME_STATE_OFFSETS.initializedInstanceCount /
+        Int32Array.BYTES_PER_ELEMENT,
+    ),
+    sharedInitializationState: Atomics.load(
+      words,
+      WASM_THREAD_SPIKE_RUNTIME_STATE_OFFSETS.sharedInitializationState /
+        Int32Array.BYTES_PER_ELEMENT,
+    ),
   });
 }

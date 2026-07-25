@@ -139,21 +139,8 @@ const memory64SpikeOutputName = contentAddressedNameFromBytes(
 await writeFile(join(outputRoot, "immutable", memory64SpikeOutputName), memory64SpikeBytes);
 
 const workerDescriptors = [];
-for (const role of [
-  "ai",
-  "decode",
-  "memory64-spike",
-  "render",
-  "storage",
-  "streaming",
-  "wasm-thread",
-]) {
+for (const role of ["decode", "memory64-spike", "render", "streaming", "wasm-thread"]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
-  if (role === "ai" && bytes.includes("__WLLAMA_WASM_ARTIFACT__")) {
-    bytes = Buffer.from(
-      replaceExactlyOnce(bytes.toString("utf8"), "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName),
-    );
-  }
   if (role === "render") {
     let source = bytes.toString("utf8");
     for (const artifact of decoderWasmArtifacts) {
@@ -243,7 +230,7 @@ await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 8,
+      schemaVersion: 10,
       gameContentEntrypoints,
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,

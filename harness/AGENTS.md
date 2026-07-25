@@ -22,16 +22,14 @@ budgets.md → pass/fail with a report.
 - **Memory:** JS heap per thread, WASM linear memory per module, GPU memory as
   attributable, SAB pool sizes, high-water marks per run phase.
 - **Caches:** V8 wasm/JS code cache hit evidence, HTTP 304 discipline, Dawn pipeline
-  cache behavior (launch-1 vs launch-2 compile counts), OPFS read throughput and
-  per-batch/host-storage attribution. M0 OPFS repeatability is an explicit
-  informational finding under D-066; per-run integrity/raw evidence remains mandatory,
-  and M1 gates representative cell-load p95.
+  cache behavior (launch-1 vs launch-2 compile counts), and representative streaming
+  OPFS read/decode/upload attribution. M1 gates representative cell-load p95.
 - **Lifecycle:** install wall time and phase breakdown, launch-1/launch-2/offline-launch
   to gameplay, update-flow cache preservation.
 - **Streaming:** cell load latency distribution, queue depths/stalls, eviction events
   (emergency count must be zero), transition-contract measurements (D1↔D2).
 - **Sim:** determinism hash (same command log ⇒ same state hash), step-time distribution.
-- **AI:** Prompt API and app-owned-model first-token/total latency, throughput, model
+- **AI:** app-owned-model first-token/total latency, throughput, model
   install/cache evidence, structured/context behavior, and frame impact during generation.
 
 Sources: CDP (tracing, Performance domains), in-app telemetry exported by
@@ -40,13 +38,13 @@ short (each gap in observability is itself a rough-edges finding — log it).
 
 ## Standard runs (versioned contracts in `src/runs/`; deterministic by construction)
 
-- `smoke` — boot to first interactive frame, budget snapshot (every change).
-- `prompt-api-spike` — activation-bound first download, inference/session pressure,
-  generation impact, and offline reavailability (M0 evidence run).
-- `prompt-api-branded` — two-profile production-install qualification in installed
-  branded Chrome: uninterrupted delivery, restart/resume, post-install restart, and
-  an offline repeat of the same NPC fixture (M0 backend-selection evidence; not a
-  pinned-CfT budget gate).
+- `smoke` — boot to first interactive frame and budget snapshot. Run once after the
+  final reviewable state of every runtime-affecting candidate, and rerun only when a
+  later fix changes a qualifying input (D-097; see `docs/workflow.md`).
+- `smoke --include-v8-code-cache` / `pnpm harness:smoke:v8-cache` — the same core
+  gate plus the three-lineage, nine-launch V8 lifecycle diagnostic. Run at browser,
+  Node, bundler, serving/cache, or lifecycle changes; dependency checkpoints; M2
+  install/update work; and explicit V8 investigations, not every change (D-095).
 - `app-owned-llm-spike` — exact-manifest cold install into OPFS, browser-restart warm
   load, fixed Gemma dialog/schema/context fixtures, and render-worker impact (M0 P-007
   phase-A evidence run).
@@ -73,8 +71,9 @@ reference machines gate budgets.
 1. **Deterministic runs.** Scripted input/camera paths, fixed seeds, pinned Chrome
    version per report — operationally, archived Chrome for Testing binaries at the
    current stable milestone (D-019), so any past result can be re-run; the exact
-   version is recorded in every result and a periodic parity smoke runs on installed
-   branded stable. All launches retain Chrome's process sandbox; an effective
+   version is recorded in every result. Installed branded-stable parity runs when a
+   Chrome pin is reviewed/adopted and when browser currency is assessed at the standing
+   dependency checkpoint (D-097). All launches retain Chrome's process sandbox; an effective
    `--no-sandbox` switch invalidates reference evidence (D-062). Variance across
    repeats is itself a tracked metric — a noisy metric is a broken metric.
 2. **Results are diffable artifacts** (JSON + human-readable report), keyed by
@@ -90,7 +89,7 @@ reference machines gate budgets.
    milestone-mandatory metric that isn't `measured` is a failure (silence is not a
    pass), and each milestone's mandatory-metric set is versioned here alongside the
    run scripts. Baseline promotion on Chrome-stable updates follows the budgets.md
-   policy (explicit promotion, never automatic). `harness:smoke`/`m0:gate` only write
+   policy (explicit promotion, never automatic). `harness:smoke` only writes
    `untracked`, `current`, `candidate`, or `ineligible` comparison evidence; promotion
    is the separate actor/reason-bearing `harness:baseline:promote` command. It rejects
    stale observed-anchor digests under the store lock; an intentional incomparable
@@ -123,3 +122,11 @@ reference machines gate budgets.
    display timing make the environment identity `invalid`; they are allowed for
    development and explicitly non-gating diagnostics only. Never promote a remote-session
    result by copying declared display, power, GPU, or machine labels into the report.
+   Under D-097, qualify the converged runtime-affecting candidate once rather than every
+   intermediate edit. Documentation-only, test-only, and machine-local tool-location
+   changes do not require this gate unless they change a budget, evidence contract, pin,
+   qualification claim, or another qualifying input listed in `docs/workflow.md`.
+10. **Intermittent failures remain failures.** Retain an RE-008/RE-036-class failed
+    report and make one immediate same-artifact retry for classification. The retry is
+    a separate result and cannot relabel the failed report; further repetitions require
+    an explicit bounded diagnosis (D-097).

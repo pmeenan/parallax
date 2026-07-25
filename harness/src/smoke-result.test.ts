@@ -46,7 +46,6 @@ describe("smoke result adapters", () => {
           state: "invalid",
         },
       ],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -54,7 +53,6 @@ describe("smoke result adapters", () => {
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
           profile: "fresh",
           repeat: 1,
           sabRingBuffer: { state: "measured" },
@@ -112,7 +110,6 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -120,7 +117,6 @@ describe("smoke result adapters", () => {
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
           profile: "fresh",
           repeat: 1,
           sabRingBuffer: { state: "measured" },
@@ -158,7 +154,6 @@ describe("smoke result adapters", () => {
         failure: "core warm repeat 2 failed: Browser errors: boom",
       },
       incompleteMetrics: [],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -166,7 +161,6 @@ describe("smoke result adapters", () => {
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
           profile: "fresh",
           repeat: 1,
           sabRingBuffer: { state: "measured" },
@@ -199,7 +193,6 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "warm", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -212,7 +205,6 @@ describe("smoke result adapters", () => {
             statusesByPathClass: { document: { "200": 1 }, immutable: { "200": 2 }, other: {} },
           }),
           jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
           profile: "warm",
           repeat: 1,
           sabRingBuffer: { state: "measured" },
@@ -261,7 +253,6 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -269,7 +260,6 @@ describe("smoke result adapters", () => {
           gpuMemory: { reason: "no page-attributed resident total", state: "unsupported" },
           http: httpDelta(),
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
-          opfsReadSpike: { state: "measured" },
           profile: "fresh",
           repeat: 1,
           sabRingBuffer: { state: "measured" },
@@ -303,7 +293,6 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
-      opfsThroughputVariance: [],
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -311,7 +300,6 @@ describe("smoke result adapters", () => {
           gpuMemory: { state: "measured" },
           http: httpDelta(),
           jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
           profile: "fresh",
           repeat: 1,
           sabRingBuffer: { reason: "record corruption", state: "invalid" },
@@ -333,95 +321,6 @@ describe("smoke result adapters", () => {
       "SAB ring-buffer transport invalid",
     );
     expect(facets.budgetEvaluation.status).toBe("not-evaluated");
-  });
-
-  it("fails closed when mandatory per-run OPFS throughput evidence is invalid", () => {
-    const evidenceChecks = collectSmokeEvidenceChecks({
-      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
-      coreRunCompletion: completedCoreRuns,
-      incompleteMetrics: [],
-      opfsThroughputVariance: [
-        {
-          mode: "sequential",
-          profile: "fresh",
-          reason: "throughput relative range exceeded 10%",
-          state: "invalid",
-          timingScope: "read-call",
-        },
-      ],
-      runs: [
-        {
-          dawnPipeline: { state: "measured" },
-          greyboxWorld: { state: "measured" },
-          gpuMemory: { state: "measured" },
-          http: httpDelta(),
-          jsHeap: { state: "measured" },
-          opfsReadSpike: { reason: "short read", state: "invalid" },
-          profile: "fresh",
-          repeat: 1,
-          sabRingBuffer: { state: "measured" },
-          streaming: { state: "measured" },
-          wasmThreads: { state: "measured" },
-        },
-      ],
-      v8CodeCacheDiagnostics: [],
-      vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
-    });
-    const facets = evaluateResultFacets({
-      budgetChecks: [{ description: "observed checks passed", passed: true }],
-      environment: measuredEnvironment,
-      evidenceChecks,
-    });
-
-    expect(facets.evidenceCompleteness.status).toBe("failed");
-    expect(facets.evidenceCompleteness.reasons.join(" ")).toContain("OPFS");
-    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
-  });
-
-  it("retains OPFS repeatability failures as informational findings", () => {
-    const evidenceChecks = collectSmokeEvidenceChecks({
-      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
-      coreRunCompletion: completedCoreRuns,
-      incompleteMetrics: [],
-      opfsThroughputVariance: [
-        {
-          mode: "random",
-          profile: "warm",
-          reason: "throughput relative range exceeded 10%",
-          state: "invalid",
-          timingScope: "read-call",
-        },
-      ],
-      runs: [
-        {
-          dawnPipeline: { state: "measured" },
-          greyboxWorld: { state: "measured" },
-          gpuMemory: { state: "measured" },
-          http: httpDelta(),
-          jsHeap: { state: "measured" },
-          opfsReadSpike: { state: "measured" },
-          profile: "warm",
-          repeat: 1,
-          sabRingBuffer: { state: "measured" },
-          streaming: { state: "measured" },
-          wasmThreads: { state: "measured" },
-        },
-      ],
-      v8CodeCacheDiagnostics: [],
-      vizPresentationFeedbackCallbackVariance: [{ profile: "warm", state: "measured" }],
-    });
-    const facets = evaluateResultFacets({
-      budgetChecks: [{ description: "observed checks passed", passed: true }],
-      environment: measuredEnvironment,
-      evidenceChecks,
-    });
-    const repeatability = evidenceChecks.find((check) =>
-      check.description.includes("OPFS read-call throughput variance"),
-    );
-
-    expect(repeatability).toMatchObject({ mandatory: false, measured: false });
-    expect(facets.evidenceCompleteness.status).toBe("passed");
-    expect(facets.budgetEvaluation.status).toBe("passed");
   });
 
   it("separates blocking core budgets from informational V8 diagnostics", () => {

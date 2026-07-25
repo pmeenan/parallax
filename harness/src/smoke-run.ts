@@ -82,14 +82,9 @@ import {
   prepareJsHeapSampler,
 } from "./js-heap.js";
 import {
-  evaluateOpfsThroughputVariance,
-  type OpfsReadSpikeMetric,
-  type OpfsThroughputVariance,
-  requireOpfsReadSpikeCompleteAtMeasurementBoundary,
-} from "./opfs-read-spike.js";
-import {
   type ChromeTraceEvent,
   extractVizPresentationFeedbackCallbackIntervalsMs,
+  observeThroughLateCompletionWindow,
   PRESENTATION_TRACE_CATEGORY,
   PRESENTATION_TRACE_END_MARKER,
   PRESENTATION_TRACE_START_MARKER,
@@ -98,6 +93,7 @@ import {
 import { evaluateResultFacets, type ResultFacets, resultFacetsPassed } from "./result-facets.js";
 import {
   parseQualityTier,
+  parseSmokeRunOptions,
   QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
@@ -105,8 +101,8 @@ import {
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_MEASUREMENT_FRAMES,
   SMOKE_METRICS,
-  SMOKE_OPFS_COMPLETION_TIMEOUT_MS,
   SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+  SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS,
   SMOKE_PRESENTATION_TRACE_TAIL_MS,
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
@@ -156,10 +152,6 @@ import {
   requireWasmThreadSpikeCompleteAtMeasurementBoundary,
   type WasmThreadSpikeMetric,
 } from "./wasm-thread-spike.js";
-import {
-  type WindowsStorageActivityMetric,
-  withWindowsStorageActivity,
-} from "./windows-storage-activity.js";
 
 interface MeasuredMetric<T> {
   readonly state: "measured";
@@ -203,12 +195,10 @@ interface RunMeasurement {
   readonly gpuMemory: GpuMemoryMetric;
   readonly greyboxWorld: MeasuredMetric<GreyboxWorldEvidence>;
   readonly http: MeasuredMetric<LocalServerMetrics>;
-  readonly hostStorageActivity: WindowsStorageActivityMetric;
   readonly jsHeap: JsHeapMetric;
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
-  readonly opfsReadSpike: OpfsReadSpikeMetric;
   readonly workerAnimationCallbackIntervalMs: MeasuredMetric<Distribution>;
   readonly profile: "fresh" | "warm";
   readonly profileLineage: {
@@ -249,6 +239,8 @@ interface V8CodeCacheDiagnosticRun {
 interface SmokeTraceDrainEvidence {
   readonly categories: readonly string[];
   readonly completionAfterEndCommandMs: number | null;
+  readonly completionDeadlineExceeded: boolean | null;
+  readonly completionObservationTimeoutMs: number;
   readonly completionTimeoutMs: number;
   readonly dataChunkCount: number;
   readonly dataLossOccurred: boolean | null;
@@ -327,8 +319,8 @@ interface SmokeReport {
   readonly schemaVersion: typeof SMOKE_REPORT_SCHEMA_VERSION;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
-  readonly opfsThroughputVariance: readonly OpfsThroughputVariance[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
+  readonly v8CodeCacheDiagnosticsRequested: boolean;
 }
 
 interface HarnessRuntimeIdentity {
@@ -351,6 +343,7 @@ const outputRoot = join(repositoryRoot, "harness/results");
 await main();
 
 async function main(): Promise<void> {
+  const options = parseSmokeRunOptions(process.argv.slice(2));
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
   const chromePin = await loadChromePin(chromePinPath);
@@ -358,7 +351,9 @@ async function main(): Promise<void> {
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
   const build = renderBuildEvidence(validatedBuild.manifest);
-  const v8ScriptArtifacts = await readV8ScriptArtifacts(validatedBuild.manifest);
+  const v8ScriptArtifacts = options.includeV8CodeCache
+    ? await readV8ScriptArtifacts(validatedBuild.manifest)
+    : Object.freeze([]);
   const heapWorkerArtifacts = await tryProbe("Build-manifest heap worker entrypoints", async () =>
     Object.freeze({
       decode: workerArtifactPath(validatedBuild.manifest, "decode"),
@@ -429,7 +424,9 @@ async function main(): Promise<void> {
             message: errorMessage(error),
             profile,
             repeat,
-            v8CodeCacheDiagnosticsSkipped: `core ${profile} repeat ${repeat} failed, so the V8 code-cache diagnostic phase was not launched`,
+            v8CodeCacheDiagnosticsSkipped: options.includeV8CodeCache
+              ? `core ${profile} repeat ${repeat} failed, so the V8 code-cache diagnostic phase was not launched`
+              : "V8 code-cache diagnostics were not requested",
           });
           break;
         }
@@ -437,7 +434,9 @@ async function main(): Promise<void> {
     }
     const v8CodeCacheDiagnostics: V8CodeCacheDiagnosticRun[] = [];
     const v8DiagnosticRepeats =
-      coreRunFailure === null ? SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS : 0;
+      coreRunFailure === null && options.includeV8CodeCache
+        ? SMOKE_V8_CODE_CACHE_DIAGNOSTIC_REPEATS
+        : 0;
     for (let repeat = 1; repeat <= v8DiagnosticRepeats; repeat += 1) {
       const lineage = join(profileRoot, `v8-lineage-${repeat}`);
       const completedHistory: V8CodeCacheDiagnosticRun["profile"][] = [];
@@ -516,25 +515,6 @@ async function main(): Promise<void> {
       );
       return summarizeP95Variance(profile, variance);
     });
-    const opfsThroughputVariance = (["fresh", "warm"] as const).flatMap((profile) =>
-      (["sequential", "random"] as const).map((mode) =>
-        evaluateOpfsThroughputVariance(
-          profile,
-          mode,
-          runs
-            .filter((run) => run.profile === profile && run.opfsReadSpike.state === "measured")
-            .map((run) => {
-              if (run.opfsReadSpike.state !== "measured") {
-                throw new Error("OPFS read metric state changed during aggregation");
-              }
-              const phase = run.opfsReadSpike.value[mode];
-              if (phase === null) throw new Error(`Measured OPFS ${mode} phase disappeared`);
-              return phase.readCallThroughputBytesPerSecond;
-            }),
-          SMOKE_REPEATS,
-        ),
-      ),
-    );
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
@@ -549,7 +529,6 @@ async function main(): Promise<void> {
             : `core ${coreRunFailure.profile} repeat ${coreRunFailure.repeat} failed: ${coreRunFailure.message}`,
       },
       incompleteMetrics,
-      opfsThroughputVariance,
       runs,
       v8CodeCacheDiagnostics,
       vizPresentationFeedbackCallbackVariance,
@@ -591,12 +570,12 @@ async function main(): Promise<void> {
         version: SMOKE_MANDATORY_METRIC_SET_VERSION,
       }),
       passed,
-      opfsThroughputVariance,
       runs,
       scenario: SMOKE_SCENARIO,
       schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
       source,
       v8CodeCacheDiagnostics,
+      v8CodeCacheDiagnosticsRequested: options.includeV8CodeCache,
       vizPresentationFeedbackCallbackVariance,
     } satisfies Omit<SmokeReport, "baseline">;
     const baseline = evaluateBaseline(
@@ -1016,34 +995,14 @@ async function measureRunWithBrowser(
       { timeout: 15_000 },
     );
     if ((await readTelemetry(page)).streaming.state !== "streaming") {
-      throw new Error("World streaming failed before the OPFS isolation boundary");
+      throw new Error("World streaming failed before the measurement boundary");
     }
-    const opfsStartedAt = performance.now();
-    const opfsMeasurement = await withWindowsStorageActivity(async () => {
-      await page.evaluate((globalName) => {
-        const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
-        telemetry.startOpfsReadSpike();
-      }, SMOKE_TELEMETRY_GLOBAL_NAME);
-      await page.waitForFunction(
-        (globalName) => {
-          const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
-          const state = telemetry.snapshot().opfsReadSpike.state;
-          return state === "completed" || state === "failed";
-        },
-        SMOKE_TELEMETRY_GLOBAL_NAME,
-        { timeout: SMOKE_OPFS_COMPLETION_TIMEOUT_MS },
-      );
-      return requireOpfsReadSpikeCompleteAtMeasurementBoundary(
-        (await readTelemetry(page)).opfsReadSpike,
-        profile,
-      );
-    });
-    const opfsReadSpike = opfsMeasurement.value;
+    const warmupStartedAt = performance.now();
     await page.evaluate((globalName) => {
       const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
       telemetry.startStreamingTraversal();
     }, SMOKE_TELEMETRY_GLOBAL_NAME);
-    const remainingWarmupMs = SMOKE_WARMUP_MS - (performance.now() - opfsStartedAt);
+    const remainingWarmupMs = SMOKE_WARMUP_MS - (performance.now() - warmupStartedAt);
     if (remainingWarmupMs > 0) await page.waitForTimeout(remainingWarmupMs);
     await resetSurfaceObserver(page);
     const renderSurfaceBefore = await readSurfaceLatest(page);
@@ -1232,12 +1191,10 @@ async function measureRunWithBrowser(
       dawnPipeline,
       gpuMemory,
       greyboxWorld: measured(requireGreyboxWorld(greyboxTelemetry, frames, renderedOutput)),
-      hostStorageActivity: opfsMeasurement.activity,
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
-      opfsReadSpike,
       profile,
       profileLineage: Object.freeze({
         history: profile === "fresh" ? (["fresh"] as const) : (["fresh", "warm"] as const),
@@ -1561,6 +1518,7 @@ async function beginSmokeTrace(
   const categories = Object.freeze([...options.categories]);
   let active = true;
   let completedAtMs: number | null = null;
+  let completionDeadlineExceeded: boolean | null = null;
   let dataChunkCount = 0;
   let dataLossOccurred: boolean | null = null;
   let endCommandCompletedAtMs: number | null = null;
@@ -1608,15 +1566,23 @@ async function beginSmokeTrace(
     endRequestedAtMs = performance.now();
     try {
       try {
-        return await withTimeout(
+        const observation = await observeThroughLateCompletionWindow(
           (async () => {
             await session.send("Tracing.end");
             endCommandCompletedAtMs = performance.now();
             return completed;
           })(),
           SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
+          SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS,
           "Smoke trace end/completion",
         );
+        completionDeadlineExceeded = observation.exceededDeadline;
+        if (observation.exceededDeadline) {
+          throw new Error(
+            `Smoke trace end/completion exceeded the ${SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS} ms validity deadline but completed after ${formatMilliseconds(observation.elapsedMs)}`,
+          );
+        }
+        return observation.value;
       } catch (error) {
         const diagnostics = snapshotDiagnostics();
         throw new Error(
@@ -1634,6 +1600,10 @@ async function beginSmokeTrace(
         completedAtMs === null || endCommandCompletedAtMs === null
           ? null
           : completedAtMs - endCommandCompletedAtMs,
+      completionDeadlineExceeded,
+      completionObservationTimeoutMs:
+        SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS +
+        SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS,
       completionTimeoutMs: SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS,
       dataChunkCount,
       dataLossOccurred,
@@ -2054,6 +2024,9 @@ async function writeReport(report: SmokeReport): Promise<void> {
       ? `- produce repeat ${run.repeat}: attributed ${evidence.artifacts.length} immutable JavaScript artifacts; cache consumption is timestamp-profile/not-applicable`
       : `- warm repeat ${run.repeat}: consumed ${evidence.consumedArtifactCount}/${evidence.cacheableArtifactCount} cacheable immutable JavaScript artifacts; rejected ${evidence.rejectedArtifactCount}`;
   });
+  if (!report.v8CodeCacheDiagnosticsRequested) {
+    v8Evidence.push("- Not requested; run `pnpm harness:smoke:v8-cache` for this diagnostic.");
+  }
   const v8ProductionEvidence = report.v8CodeCacheDiagnostics.map((run) => {
     const evidence = run.production.evidence;
     if (run.production.state !== "measured" || evidence === null) {
@@ -2095,6 +2068,11 @@ async function writeReport(report: SmokeReport): Promise<void> {
       )
       .join(", ")}`;
   });
+  if (!report.v8CodeCacheDiagnosticsRequested) {
+    v8ProductionEvidence.push(
+      "- Not requested; run `pnpm harness:smoke:v8-cache` for this diagnostic.",
+    );
+  }
   const v8CompileDurationEvidence = report.v8CodeCacheDiagnostics.map((run) => {
     const evidence = run.v8CodeCache.evidence;
     if (evidence === null) {
@@ -2112,21 +2090,28 @@ async function writeReport(report: SmokeReport): Promise<void> {
     });
     return `- ${run.profile} repeat ${run.repeat}: ${totalDurationUs} µs total; ${artifacts.join(", ")}`;
   });
+  if (!report.v8CodeCacheDiagnosticsRequested) {
+    v8CompileDurationEvidence.push(
+      "- Not requested; run `pnpm harness:smoke:v8-cache` for this diagnostic.",
+    );
+  }
   const v8WorkerStartupEvidence = report.v8CodeCacheDiagnostics.map((run) => {
     const metric = run.workerStartupToFirstFrameMs;
     return metric.state === "measured"
       ? `- ${run.profile} repeat ${run.repeat}: ${formatMilliseconds(metric.value)}`
       : `- ${run.profile} repeat ${run.repeat}: invalid — ${metric.reason}`;
   });
+  if (!report.v8CodeCacheDiagnosticsRequested) {
+    v8WorkerStartupEvidence.push(
+      "- Not requested; run `pnpm harness:smoke:v8-cache` for this diagnostic.",
+    );
+  }
   const traceDrainEvidence = report.runs.map((run) => {
     const evidence = run.traceDrain.evidence;
     if (evidence === null) {
       return `- core ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
     }
-    const completion =
-      run.traceDrain.state === "measured"
-        ? `${formatMilliseconds(evidence.endWaitMs)} to completion`
-        : `${formatMilliseconds(evidence.endWaitMs)} before invalidation`;
+    const completion = formatTraceCompletionObservation(evidence);
     return `- core ${run.profile} repeat ${run.repeat}; launch ${run.launchOrdinal} at +${formatMilliseconds(run.launchStartedAfterSequenceMs)}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
   });
   traceDrainEvidence.push(
@@ -2139,10 +2124,7 @@ async function writeReport(report: SmokeReport): Promise<void> {
       if (evidence === null) {
         return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; ${launch}: invalid — ${run.traceDrain.state === "invalid" ? run.traceDrain.reason : "trace diagnostics unavailable"}`;
       }
-      const completion =
-        run.traceDrain.state === "measured"
-          ? `${formatMilliseconds(evidence.endWaitMs)} to completion`
-          : `${formatMilliseconds(evidence.endWaitMs)} before invalidation`;
+      const completion = formatTraceCompletionObservation(evidence);
       return `- V8 diagnostic ${run.profile} repeat ${run.repeat}; ${launch}: ${run.traceDrain.state}; categories ${evidence.categories.join(", ")}; recording before end ${formatMilliseconds(evidence.recordingDurationBeforeEndMs)}; ${evidence.eventCount} events / ${evidence.dataChunkCount} chunks / ${evidence.serializedEventBytes} serialized bytes; Tracing.end command ${formatMilliseconds(evidence.endCommandMs)}; completion after command ${formatMilliseconds(evidence.completionAfterEndCommandMs)}; data loss ${evidence.dataLossOccurred ?? "unknown"}; ${completion}`;
     }),
   );
@@ -2180,45 +2162,6 @@ async function writeReport(report: SmokeReport): Promise<void> {
     }
     const evidence = run.wasmThreads.value;
     return `- ${run.profile} repeat ${run.repeat}: ${evidence.completedTasks.toLocaleString("en-US")}/${evidence.taskCount.toLocaleString("en-US")} SIMD tasks across ${evidence.workerCount} Rust/WASM instances in ${formatMilliseconds(evidence.elapsedMs)} total (${formatMilliseconds(evidence.moduleLoadAndCompileElapsedMs)} load+compile, ${formatMilliseconds(evidence.workerInitializationElapsedMs)} worker init, ${formatMilliseconds(evidence.parallelExecutionElapsedMs)} parallel execution); per-worker claims [${evidence.processedTasksByWorker.map((count) => count.toLocaleString("en-US")).join(", ")}]; worker mask 0x${evidence.workerMask.toString(16)}; checksum 0x${(evidence.checksum ?? 0).toString(16)} matched reference; ${formatBytes(evidence.memoryBytes)} fixed shared linear memory; ${formatBytes(evidence.moduleBytes ?? 0)} optimized module`;
-  });
-  const opfsReadEvidence = report.runs.map((run) => {
-    if (run.opfsReadSpike.state !== "measured") {
-      return `- ${run.profile} repeat ${run.repeat}: invalid — ${run.opfsReadSpike.reason}`;
-    }
-    const evidence = run.opfsReadSpike.value;
-    if (evidence.sequential === null || evidence.random === null) {
-      return `- ${run.profile} repeat ${run.repeat}: invalid — completed evidence omitted a read phase`;
-    }
-    const provision = evidence.fileReused
-      ? "reused the existing fixture"
-      : `provisioned ${formatBytes(evidence.provisioningBytesWritten ?? 0)} in ${formatMilliseconds(evidence.provisioningElapsedMs)}`;
-    return `- ${run.profile} repeat ${run.repeat}: ${provision}; sequential ${formatThroughput(evidence.sequential.readCallThroughputBytesPerSecond)} read-call / ${formatThroughput(evidence.sequential.wallThroughputBytesPerSecond)} wall over ${formatBytes(evidence.sequential.bytesRead)}; random 64 KiB ${formatThroughput(evidence.random.readCallThroughputBytesPerSecond)} read-call / ${formatThroughput(evidence.random.wallThroughputBytesPerSecond)} wall over ${evidence.random.operations.toLocaleString("en-US")} reads; validation errors ${evidence.sequential.validationErrors + evidence.random.validationErrors}`;
-  });
-  const opfsVarianceEvidence = report.opfsThroughputVariance.map((variance) =>
-    variance.state === "measured"
-      ? `- ${variance.profile} ${variance.mode} ${variance.timingScope}: ${(variance.relativeRange * 100).toFixed(2)}% relative range`
-      : `- ${variance.profile} ${variance.mode} ${variance.timingScope}: invalid — ${variance.reason}`,
-  );
-  const opfsBatchEvidence = report.runs.map((run) => {
-    if (run.opfsReadSpike.state !== "measured") {
-      return `- ${run.profile} repeat ${run.repeat}: unavailable because OPFS evidence is invalid`;
-    }
-    const sequential = run.opfsReadSpike.value.sequential;
-    const random = run.opfsReadSpike.value.random;
-    if (sequential === null || random === null) {
-      return `- ${run.profile} repeat ${run.repeat}: unavailable because a phase is missing`;
-    }
-    return `- ${run.profile} repeat ${run.repeat}: sequential pass read-call ms [${sequential.batches.map((batch) => batch.readCallElapsedMs.toFixed(3)).join(", ")}]; random 256-read batch ms [${random.batches.map((batch) => batch.readCallElapsedMs.toFixed(3)).join(", ")}]`;
-  });
-  const hostStorageActivityEvidence = report.runs.map((run) => {
-    if (run.hostStorageActivity.state !== "measured") {
-      return `- ${run.profile} repeat ${run.repeat}: ${run.hostStorageActivity.state} — ${run.hostStorageActivity.reason}`;
-    }
-    const samples = run.hostStorageActivity.samples.map(
-      (sample) =>
-        `${formatThroughput(sample.diskReadBytesPerSecond)} physical reads, ${formatThroughput(sample.diskWriteBytesPerSecond)} physical writes, ${(sample.averageReadLatencySeconds * 1_000).toFixed(3)} ms avg read latency, queue ${sample.currentQueueLength.toFixed(2)}`,
-    );
-    return `- ${run.profile} repeat ${run.repeat}: ${samples.join(" | ")}`;
   });
   const greyboxWorldEvidence = report.runs.map((run) => {
     const evidence = run.greyboxWorld.value;
@@ -2306,22 +2249,6 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "",
     ...wasmThreadEvidence,
     "",
-    "## OPFS sync-access-handle read throughput",
-    "",
-    ...opfsReadEvidence,
-    "",
-    "### Per-batch timing attribution",
-    "",
-    ...opfsBatchEvidence,
-    "",
-    "### Host physical-disk activity overlapping the OPFS window",
-    "",
-    ...hostStorageActivityEvidence,
-    "",
-    "### Read-call throughput variance",
-    "",
-    ...opfsVarianceEvidence,
-    "",
     "## HTTP serving evidence",
     "",
     ...httpServingEvidence,
@@ -2333,6 +2260,17 @@ async function writeReport(report: SmokeReport): Promise<void> {
   ];
   await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
   console.log(lines.join("\n"));
+}
+
+function formatTraceCompletionObservation(evidence: SmokeTraceDrainEvidence): string {
+  if (evidence.completionAfterEndCommandMs !== null) {
+    return `${formatMilliseconds(evidence.endWaitMs)} to ${
+      evidence.completionDeadlineExceeded === true
+        ? `late completion after the ${evidence.completionTimeoutMs} ms validity deadline`
+        : "completion within the validity deadline"
+    }`;
+  }
+  return `${formatMilliseconds(evidence.endWaitMs)} observed without completion against the ${evidence.completionObservationTimeoutMs} ms observation bound`;
 }
 
 function formatBaselineEvaluation(evaluation: BaselineEvaluation): readonly string[] {
@@ -2382,10 +2320,6 @@ function formatMilliseconds(value: number | null): string {
 
 function formatBytes(value: number): string {
   return `${value.toLocaleString("en-US")} bytes`;
-}
-
-function formatThroughput(bytesPerSecond: number): string {
-  return `${(bytesPerSecond / 1024 ** 3).toFixed(2)} GiB/s`;
 }
 
 function requiredEnvironment(name: string): string {

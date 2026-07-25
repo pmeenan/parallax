@@ -8,3 +8,6 @@ harness/results/
 harness/chrome/cft/
 *.patch
 .claude/
+
+# Machine-local absolute paths for pinned tools (see docs/workflow.md).
+.parallax-toolchain.local.json

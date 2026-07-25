@@ -1,8 +1,4 @@
-import type {
-  AppOwnedLlmFixtureSet,
-  EngineIdentity,
-  PromptApiSpikeFixture,
-} from "@parallax/engine";
+import type { AppOwnedLlmFixtureSet, EngineIdentity } from "@parallax/engine";
 
 export { DISTRICT_1_GREYBOX_SPEC, GREYBOX_DISTRICT_SPECS } from "./world/district-1.data";
 export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-generator";
@@ -10,9 +6,7 @@ export type { GreyboxDistrictSpec } from "./world/greybox-spec";
 
 export const GAME_VERSION = "0.0.0";
 
-// Shared by the Prompt API and P-007 phase-A backends so their M0 comparison uses
-// identical game-owned NPC content rather than backend-specific prompts.
-const PROMPT_API_NPC_DIALOG_PROMPT =
+const GATE_WATCH_NPC_DIALOG_PROMPT =
   "Reply with one short sentence as a village-gate watch officer reporting that the road is secure.";
 
 const GATE_WATCH_PERSONA =
@@ -26,21 +20,8 @@ function retrievedWatchLog(entries: number): string {
   ).join("\n");
 }
 
-export const PROMPT_API_SPIKE_FIXTURE = Object.freeze({
-  offlinePrompt: "Reply with exactly: offline-ready",
-  prompt: PROMPT_API_NPC_DIALOG_PROMPT,
-}) satisfies PromptApiSpikeFixture;
-
-// The branded qualification is a separate scenario contract: unlike the pinned-CfT
-// spike, it must repeat the exact online NPC workload after restart and offline.
-export const PROMPT_API_BRANDED_FIXTURE = Object.freeze({
-  offlinePrompt: PROMPT_API_NPC_DIALOG_PROMPT,
-  prompt: PROMPT_API_NPC_DIALOG_PROMPT,
-}) satisfies PromptApiSpikeFixture;
-
 // P-007 phase A deliberately keeps performance deterministic (greedy decoding) and
-// separates raw quality evidence from exact schema/grounding checks. The first case is
-// byte-for-byte the Prompt API branded fixture for direct backend continuity.
+// separates raw quality evidence from exact schema/grounding checks.
 export const APP_OWNED_LLM_SPIKE_FIXTURE_SET = Object.freeze({
   cases: Object.freeze([
     Object.freeze({
@@ -48,7 +29,7 @@ export const APP_OWNED_LLM_SPIKE_FIXTURE_SET = Object.freeze({
       kind: "latency",
       maxNewTokens: 32,
       messages: Object.freeze([
-        Object.freeze({ content: PROMPT_API_NPC_DIALOG_PROMPT, role: "user" }),
+        Object.freeze({ content: GATE_WATCH_NPC_DIALOG_PROMPT, role: "user" }),
       ]),
       repetitions: 20,
     }),

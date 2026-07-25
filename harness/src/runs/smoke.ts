@@ -13,8 +13,12 @@ export interface QualityTierProfile {
   readonly targetDisplayMode: string;
 }
 
+export interface SmokeRunOptions {
+  readonly includeV8CodeCache: boolean;
+}
+
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 13;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 15;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_BUDGET_METRICS = Object.freeze({
   allRealmJsHeapHighWaterBytes: "allRealmJsHeapHighWaterBytes",
@@ -43,20 +47,15 @@ export const SMOKE_WASM_THREAD_WORKER_COUNT = 2;
 // Keep diagnostic headroom beyond the page-owned 10 s failure timer so the harness
 // observes the service's actionable failureMessage instead of racing waitForFunction.
 export const SMOKE_WASM_THREAD_COMPLETION_TIMEOUT_MS = 12_000;
-export const SMOKE_OPFS_FILE_BYTES = 64 * 1024 * 1024;
-export const SMOKE_OPFS_COMPLETION_TIMEOUT_MS = 17_000;
-export const SMOKE_OPFS_RANDOM_BATCH_READS = 256;
-export const SMOKE_OPFS_RANDOM_READ_BYTES = 64 * 1024;
-export const SMOKE_OPFS_RANDOM_READS = 4_096;
-export const SMOKE_OPFS_SEQUENTIAL_PASSES = 12;
-export const SMOKE_OPFS_SEQUENTIAL_READ_BYTES = 1024 * 1024;
 export const SMOKE_PRESENTATION_TRACE_TAIL_MS = 100;
 export const SMOKE_TRACE_QUIESCE_MS = 100;
-export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 5_000;
+export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
+export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 10;
-// v28 records the mandatory M1 OPFS-to-GPU streaming pipeline evidence.
-export const SMOKE_REPORT_SCHEMA_VERSION = 28;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 12;
+// v31 removes the closed Prompt API and standalone OPFS experiment sections and
+// binds build-manifest v10's five-worker contract.
+export const SMOKE_REPORT_SCHEMA_VERSION = 31;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -71,8 +70,6 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("world streaming pipeline", true, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
-  metric("OPFS sync-access-handle read throughput", true, "implemented"),
-  metric("OPFS sync-access-handle throughput repeatability", false, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
   metric("attributable GPU memory", false, "implemented"),
@@ -103,6 +100,21 @@ export function parseQualityTier(value: string | undefined): QualityTier {
   const candidate = value ?? "showcase";
   if (Object.hasOwn(QUALITY_TIER_PROFILES, candidate)) return candidate as QualityTier;
   throw new Error(`PARALLAX_TIER must be showcase or standard; received ${candidate}`);
+}
+
+export function parseSmokeRunOptions(args: readonly string[]): SmokeRunOptions {
+  let includeV8CodeCache = false;
+  for (const argument of args) {
+    if (argument === "--include-v8-code-cache") {
+      if (includeV8CodeCache) {
+        throw new Error("--include-v8-code-cache may only be specified once");
+      }
+      includeV8CodeCache = true;
+      continue;
+    }
+    throw new Error(`Unsupported smoke option ${JSON.stringify(argument)}`);
+  }
+  return Object.freeze({ includeV8CodeCache });
 }
 
 export function renderSurfaceMismatch(

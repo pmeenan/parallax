@@ -16,7 +16,7 @@ export interface ManifestArtifact {
 export interface BuildManifest {
   readonly artifacts: readonly ManifestArtifact[];
   readonly gameContentEntrypoints: readonly ManifestGameContentEntrypoint[];
-  readonly schemaVersion: 8;
+  readonly schemaVersion: 10;
   readonly workerEntrypoints: readonly ManifestWorkerEntrypoint[];
 }
 
@@ -30,14 +30,7 @@ export interface ManifestGameContentEntrypoint {
 
 export interface ManifestWorkerEntrypoint {
   readonly path: string;
-  readonly role:
-    | "ai"
-    | "decode"
-    | "memory64-spike"
-    | "render"
-    | "storage"
-    | "streaming"
-    | "wasm-thread";
+  readonly role: "decode" | "memory64-spike" | "render" | "streaming" | "wasm-thread";
   readonly targetType: "worker";
 }
 
@@ -57,7 +50,7 @@ export async function readAndValidateBuildManifest(
   const resolvedRoot = resolve(buildRoot);
   const manifestBytes = await readFile(resolve(resolvedRoot, "build-manifest.json"));
   const manifest = JSON.parse(manifestBytes.toString("utf8")) as BuildManifest;
-  if (manifest.schemaVersion !== 8) {
+  if (manifest.schemaVersion !== 10) {
     throw new Error(`Unsupported build manifest schema ${String(manifest.schemaVersion)}`);
   }
   if (
@@ -66,7 +59,7 @@ export async function readAndValidateBuildManifest(
     !Array.isArray(manifest.workerEntrypoints)
   ) {
     throw new Error(
-      "Build manifest v8 requires artifact, game-content-entrypoint, and worker-entrypoint arrays",
+      "Build manifest v10 requires artifact, game-content-entrypoint, and worker-entrypoint arrays",
     );
   }
   const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
@@ -74,18 +67,16 @@ export async function readAndValidateBuildManifest(
     manifest.workerEntrypoints.map((entrypoint) => resolve(resolvedRoot, entrypoint.path)),
   );
   if (
-    manifest.workerEntrypoints.length !== 7 ||
-    workerRoles.filter((role) => role === "ai").length !== 1 ||
+    manifest.workerEntrypoints.length !== 5 ||
     workerRoles.filter((role) => role === "decode").length !== 1 ||
     workerRoles.filter((role) => role === "memory64-spike").length !== 1 ||
     workerRoles.filter((role) => role === "render").length !== 1 ||
-    workerRoles.filter((role) => role === "storage").length !== 1 ||
     workerRoles.filter((role) => role === "streaming").length !== 1 ||
     workerRoles.filter((role) => role === "wasm-thread").length !== 1 ||
-    workerPaths.size !== 7
+    workerPaths.size !== 5
   ) {
     throw new Error(
-      "Build manifest v8 requires exactly one distinct AI, decode, memory64-spike, render, storage, streaming, and WASM-thread worker",
+      "Build manifest v10 requires exactly one distinct decode, memory64-spike, render, streaming, and WASM-thread worker",
     );
   }
   for (const artifact of manifest.artifacts) {
@@ -100,11 +91,9 @@ export async function readAndValidateBuildManifest(
   }
   for (const entrypoint of manifest.workerEntrypoints) {
     if (
-      (entrypoint.role !== "ai" &&
-        entrypoint.role !== "decode" &&
+      (entrypoint.role !== "decode" &&
         entrypoint.role !== "memory64-spike" &&
         entrypoint.role !== "render" &&
-        entrypoint.role !== "storage" &&
         entrypoint.role !== "streaming" &&
         entrypoint.role !== "wasm-thread") ||
       entrypoint.targetType !== "worker" ||
@@ -114,7 +103,7 @@ export async function readAndValidateBuildManifest(
     }
   }
   if (manifest.gameContentEntrypoints.length === 0) {
-    throw new Error("Build manifest v8 requires at least one game-content district entrypoint");
+    throw new Error("Build manifest v10 requires at least one game-content district entrypoint");
   }
   const districtIds = new Set<string>();
   const districtPaths = new Set<string>();
@@ -134,7 +123,7 @@ export async function readAndValidateBuildManifest(
       );
     }
     if (districtIds.has(entrypoint.districtId) || districtPaths.has(entrypoint.path)) {
-      throw new Error("Build manifest v8 requires unique game-content district IDs and paths");
+      throw new Error("Build manifest v10 requires unique game-content district IDs and paths");
     }
     districtIds.add(entrypoint.districtId);
     districtPaths.add(entrypoint.path);

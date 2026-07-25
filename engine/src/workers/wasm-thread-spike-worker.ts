@@ -8,6 +8,7 @@ import {
   worker_mask as workerMask,
 } from "../../wasm/thread-spike/pkg/thread_spike.js";
 import type {
+  WasmThreadSpikeWorkerPhase,
   WasmThreadSpikeWorkerRequest,
   WasmThreadSpikeWorkerResponse,
 } from "../wasm/wasm-thread-spike-protocol";
@@ -49,9 +50,9 @@ workerScope.onmessage = (event): void => {
         initSync({
           memory: message.memory,
           module: message.module,
+          on_phase: postInitializationPhase,
           thread_stack_size: message.threadStackBytes,
         });
-        workerScope.postMessage({ kind: "phase", phase: "module-instantiated", workerIndex });
         initialized = true;
         workerScope.postMessage({ kind: "ready", workerIndex });
         break;
@@ -84,6 +85,22 @@ workerScope.onmessage = (event): void => {
     postFailure(error);
   }
 };
+
+function postInitializationPhase(phase: string): void {
+  if (!isInitializationPhase(phase)) {
+    throw new Error(`WASM thread-spike binding reported unknown initialization phase ${phase}`);
+  }
+  workerScope.postMessage({ kind: "phase", phase, workerIndex });
+}
+
+function isInitializationPhase(phase: string): phase is WasmThreadSpikeWorkerPhase {
+  return (
+    phase === "module-instantiation-started" ||
+    phase === "module-instantiated" ||
+    phase === "runtime-startup-started" ||
+    phase === "runtime-started"
+  );
+}
 
 function requireInitialized(): void {
   if (!initialized) throw new Error("WASM thread-spike worker received work before initialization");

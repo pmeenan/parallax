@@ -16,7 +16,7 @@ system that touches another system reads it first (root doc map, D-023).
 ├───────────────────────────────────────────────────────────────┤
 │ platform   Chrome ≥ latest stable: WebGPU, optional memory64, │
 │            OPFS, Cache Storage, SAB + workers, OffscreenCanvas,│
-│            Prompt API (Gemini Nano), WebRTC (future), WebAudio │
+│            app-owned WebGPU/WASM AI, WebRTC (future), WebAudio │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,10 +47,9 @@ inherit. Planned topology (revise here as it evolves; requires COOP/COEP for SAB
 ```
 main thread        UI shell, input capture, orchestration only. Never blocks.
 render worker      Babylon Lite scene + WebGPU device on OffscreenCanvas.
-AI workers         P-007 wllama/llama.cpp execution + OPFS model cache; wllama creates
+AI workers         D-096 wllama/llama.cpp execution + OPFS model cache; wllama creates
                    its own inference worker/pthreads and, for the default D-074 path,
-                   a separate WebGPU device. ONNX diagnostics retain a dedicated
-                   Parallax AI worker.
+                   a separate WebGPU device.
 streaming worker   Owns OPFS handles; schedules nearest-observer loads and proactive
                    evictions against the memory budget; feeds the fixed decode pool.
 decode pool (N)    M1 v1 validates/decodes cell packages; later texture transcode
@@ -61,21 +60,14 @@ sim worker         Fixed-timestep gameplay simulation. Deliberately isolated so 
                    (see features.md → Multiplayer).
 ```
 
-**Prompt API inference is the exception to the worker rule (D-017):** the Prompt API is not
-currently available in Web Workers (checked 2026-07-11,
-developer.chrome.com/docs/ai/prompt-api), so NPC inference runs as a **window-owned
-broker** on the main thread — behind an `engine/ai` service interface identical to what
-a worker would expose, so it migrates the day worker support lands. The broker is
-strictly decoupled from the frame loop (queued requests, streamed responses, no sync
-waits), and its main-thread impact is a first-class harness metric. Worker
-unavailability itself is a standing rough-edges item.
-
-P-007's D-074 backend keeps heavy inference off the main thread, but wllama's small
+D-096 selects D-074's app-owned backend. It keeps heavy inference off the main thread,
+but wllama's small
 controller is window-owned because the library resolves resources through
 `document.baseURI`; it then creates the llama.cpp inference worker, OPFS worker, and
 pthread pool. The measured placements are all-layer WebGPU offload on an independently
 created logical device and CPU/WASM with `n_gpu_layers: 0`. D-073's Transformers.js/
-ONNX reproductions retain Parallax's dedicated AI worker. “Same physical GPU” is not
+ONNX no-go remains in the decision log, findings, and retained results; D-095 removed
+its runtime, worker, dependency chain, and tests. “Same physical GPU” is not
 shared-device scheduling: a true shared-device branch requires render-worker
 colocation and an explicit render-to-inference-engine device handoff, and remains a
 measured future variable rather than an assumed capability.
@@ -145,17 +137,7 @@ verified rendering-core boundary, not a blanket claim that DOM-bound engine feat
 worker-safe; new input, GUI, accessibility, and loader paths must cross explicit protocols
 or be re-verified when they land.
 
-The M0 OPFS spike exercises the planned storage boundary with a dedicated storage
-worker rather than borrowing the render worker. After privileged display diagnostics
-and the SAB spike finish, the harness starts it against the live renderer; it provisions
-(fresh profile only) and synchronously reads a deterministic 64 MiB
-OPFS fixture through `createSyncAccessHandle()`. It reports twelve 1 MiB sequential
-passes after one untimed, fully validated sequential preflight, followed by 4,096
-deterministic 64 KiB random reads. It separates time inside `read()`
-from validation-inclusive worker wall time, retains every sequential pass and 256-read
-random batch, and correlates the sub-second window with coarse host physical-disk
-activity on Windows. The worker terminates before the gameplay measurement window;
-M1's long-lived streaming worker now owns production handles and queue telemetry. It
+The long-lived streaming worker owns production OPFS handles and queue telemetry. It
 retains the nearest nine D1 cells across all observers, evicts farthest non-target
 residents before replacement loads, and sends decoded cells over a dedicated
 `MessageChannel` to the render worker. The v1 procedural-cell decoder is a fixed
@@ -170,9 +152,9 @@ placing content-addressed files in OPFS; the installer will assume that responsi
 before launch-2+ becomes a product gate. Streamed LOD0 meshes are created on the GPU but
 remain hidden until the scripted flythrough transfers visible ownership from D-090's
 qualified whole-world preview (D-091).
-The
-microbenchmark's sandbox-sensitive repeatability remains an informational finding;
-M1's representative OPFS-to-renderable cell-load p95 is the outcome gate. (D-058/D-066.)
+D-096 removed D-066's superseded standalone OPFS microbenchmark and storage worker
+after D-091's representative OPFS-to-renderable cell-load evidence became the outcome
+gate. The historical sandbox-sensitive repeatability result remains RE-023.
 
 ## Storage map
 
@@ -182,7 +164,7 @@ M1's representative OPFS-to-renderable cell-load p95 is the outcome gate. (D-058
 | App shell (HTML/JS/WASM binaries) | HTTP cache (immutable URLs, 304-friendly) **plus service-worker precache** | HTTP cache preserves the V8 code cache; the service worker guarantees offline navigation (HTTP cache alone doesn't — see below) |
 | PSO/shader warmup trace data | OPFS, versioned with the asset build | Drives progressive pipeline warmup at boot |
 | Save games / settings | OPFS (`saves/`), versioned schema | Worker sync-handle access; **protection comes from origin persistence + explicit export, not from OPFS itself** — all origin storage shares one quota/eviction policy. Storage Buckets as a saves/assets separation is open (P-006) |
-| Gemini Nano model | Chrome-managed (Prompt API download) | Triggered during install (user activation required); needs ~22 GB free on the profile volume to download; size varies; **evictable by Chrome under storage pressure** — see NPC AI fallback below |
+| App-owned NPC model | OPFS, hash-addressed GGUF shards | A normal verified install artifact under the same resume/update/uninstall contract as game content (D-074/D-096) |
 
 **Quota reality (checked 2026-07-11, web.dev/articles/storage-for-the-web + MDN):** a
 Chromium origin may use up to ~60% of **total** disk size (not free space), and
@@ -213,14 +195,13 @@ from Cache Storage than OPFS, move it and record the numbers in the decision log
 ## Install / launch / run lifecycle
 
 1. **Install (first visit, user-initiated):** the install-button click handler
-   **immediately** calls `LanguageModel.create()` (transient activation expires in
-   seconds — it will not survive a long install; the model download then proceeds in
-   parallel with everything else) and requests persist-storage (denial is a handled
+   requests persist-storage (denial is a handled
    flow with degraded-durability warning) → best-effort space preflight (estimate +
    small probe; see quota reality above — the real protection is
    `QuotaExceededError`-aware incremental writing throughout) → manifest fetch →
-   parallel asset pull into OPFS with resume support → PSO warmup pass (see below) →
-   integrity verification. UX: a real installer progress screen, not a spinner.
+   parallel asset and model-shard pull into OPFS with resume support → PSO warmup pass
+   (see below) → integrity verification. UX: a real installer progress screen, not a
+   spinner.
 
    **Trust and crash-safety contract:** the manifest is served over TLS from the origin
    and pins SHA-256 content hashes for every bundle (the same content addressing COS
@@ -257,9 +238,8 @@ from Cache Storage than OPFS, move it and record the numbers in the decision log
    whose response carries `Clear-Site-Data: "storage", "cache"` (an nginx location
    block — stays within D-011's static-serving preference). What each actually clears
    (OPFS? V8 code cache? Dawn/shader caches? HTTP cache?) is measured, not assumed —
-   gaps go to rough-edges.md. The Gemini Nano model is Chrome-managed and browser-wide
-   (D-017): uninstall does not remove it, and the confirmation UX must not imply it
-   does.
+   gaps go to rough-edges.md. The app-owned model is part of Parallax's OPFS install and
+   is removed by this lifecycle.
 
 ## World structure and streaming
 
@@ -366,17 +346,12 @@ save/load, replay-driven harness tests, and the future multiplayer model.
 
 ## NPC AI
 
-Chrome's built-in Prompt API (on-device Gemini Nano) via the window-owned broker in
-`engine/ai` (see worker topology — Prompt API is not available in workers today).
-Persona cards + rolling summarized memory per NPC; structured-output (JSON schema) for
-anything that touches game state, freeform text only for flavor dialog. Inference
-contends with rendering for on-device resources — the harness measures frame impact
-during generation (likely a rough-edge finding in itself).
-
-An **app-owned in-browser model** (WebGPU inference in a worker, optionally LoRA-tuned
-for persona/voice/format) is an open challenger — P-007; phase A is an M0 spike. D-017
-remains authoritative until that produces evidence; `engine/ai` is a backend-hiding
-service interface precisely so the backend can swap.
+D-096 selects D-074's app-owned Gemma 4 E2B QAT-GGUF model on wllama. WebGPU is the
+default placement; CPU/WASM remains an explicit graphics-headroom mode. Persona cards +
+rolling summarized memory per NPC use strict JSON-schema output for anything that
+touches game state and freeform text only for flavor dialog. Inference contends with
+rendering for on-device resources, so the harness measures frame impact during
+generation.
 
 The completed D-075 optimization spike measured live exact-prefix reuse and
 restart-persistent per-character KV snapshots separately from D-074's uncached
@@ -386,7 +361,7 @@ the idle pre-seeding direction.
 
 **Knowledge & retrieval (D-033):** NPC prompts are assembled by a **knowledge service**
 in `engine/ai` — persona card + context retrieved through an explicit interface, never
-all-lore-in-prompt (on-device prefill cost, Nano session limits, and small-model
+all-lore-in-prompt (on-device prefill cost and small-model
 context-following all punish long prompts). Tier 1 is structured game-state queries
 against the sim's typed state and world graph — deterministic, no embeddings, lands
 with M3. Tier 2 (authored-lore retrieval; mechanism open — tag/graph lookup vs.
@@ -396,18 +371,13 @@ needs an app-owned embedder — Chrome ships no built-in Embedding API, checked
 generic contract (provider registration, context assembly/budgeting, telemetry) and
 contains no game knowledge; `game/` supplies the providers, query schemas, and content.
 The prompt schema reserves a retrieved-context slot from day one, and the service is
-backend-independent of D-017/P-007.
+independent of the selected model placement.
 
-**Model lifecycle (D-017):** download starts directly in the install-click handler
-(`create()` inside the transient-activation window; the download runs in parallel with
-the asset pull — activation expires in seconds and won't survive the install. ~22 GB
-free profile-volume space needed; model size varies — never hardcode it). Chrome may
-**evict the model under storage pressure**, possibly while the player is offline and
-can't re-download. Policy: **graceful degradation** — every NPC carries authored
-fallback dialog lines; the game remains fully playable with reduced conversational
-depth; restoring the model **requires a fresh user gesture** (the launch screen offers
-a "restore AI dialog" action when online — it cannot be automatic); each eviction
-observed is logged as a rough-edges data point.
+**Model lifecycle (D-074/D-096):** the five exact GGUF shards are ordinary
+hash-verified OPFS install artifacts with the same resume, update, repair, and uninstall
+contract as other game content. The engine never assumes availability: every NPC
+carries authored fallback dialog, the game remains fully playable with reduced
+conversational depth, and quest-critical state changes never depend on inference.
 
 ## Forward-design constraints (build later, respect now)
 

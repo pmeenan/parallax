@@ -1,8 +1,6 @@
 import {
   createAppOwnedLlmSpikeService,
   createMemory64SpikeService,
-  createOpfsReadSpikeService,
-  createPromptApiSpikeService,
   createRenderService,
   createWasmThreadSpikeService,
   createWorldStreamingService,
@@ -15,8 +13,6 @@ import {
   createGreyboxScene,
   GREYBOX_DISTRICT_SPECS,
   identifyGame,
-  PROMPT_API_BRANDED_FIXTURE,
-  PROMPT_API_SPIKE_FIXTURE,
 } from "@parallax/game";
 
 const identity = identifyGame(initializeEngine());
@@ -28,19 +24,6 @@ if (!(status instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement)) 
 }
 
 const renderService = createRenderService();
-const opfsReadSpikeService = createOpfsReadSpikeService();
-const promptApiModeValue = new URL(location.href).searchParams.get("promptApiSpike");
-if (
-  promptApiModeValue !== null &&
-  promptApiModeValue !== "manual" &&
-  promptApiModeValue !== "branded"
-) {
-  throw new Error(`Unsupported Prompt API scenario mode ${JSON.stringify(promptApiModeValue)}`);
-}
-const promptApiMode = promptApiModeValue;
-const promptApiSpikeService = createPromptApiSpikeService(
-  promptApiMode === "branded" ? PROMPT_API_BRANDED_FIXTURE : PROMPT_API_SPIKE_FIXTURE,
-);
 const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
 const wasmThreadSpikeService = createWasmThreadSpikeService();
 const memory64SpikeService = createMemory64SpikeService();
@@ -75,8 +58,6 @@ const startStreamingTraversal = (): void => {
 };
 installTelemetryExport(
   renderService,
-  opfsReadSpikeService,
-  promptApiSpikeService,
   appOwnedLlmSpikeService,
   wasmThreadSpikeService,
   memory64SpikeService,
@@ -88,15 +69,11 @@ installTelemetryExport(
   },
 );
 const appOwnedLlmMode = new URL(location.href).searchParams.get("appOwnedLlmSpike");
-const appOwnedLlmDevice = new URL(location.href).searchParams.get("appOwnedLlmDevice") ?? "webgpu";
+const appOwnedLlmDevice =
+  new URL(location.href).searchParams.get("appOwnedLlmDevice") ?? "wllama-webgpu";
 const appOwnedLlmModelUrl =
   new URL(location.href).searchParams.get("appOwnedLlmModelUrl") ?? undefined;
-if (
-  appOwnedLlmDevice !== "webgpu" &&
-  appOwnedLlmDevice !== "wasm" &&
-  appOwnedLlmDevice !== "wllama-webgpu" &&
-  appOwnedLlmDevice !== "wllama-wasm"
-) {
+if (appOwnedLlmDevice !== "wllama-webgpu" && appOwnedLlmDevice !== "wllama-wasm") {
   throw new Error(`Unsupported app-owned LLM device ${JSON.stringify(appOwnedLlmDevice)}`);
 }
 if (
@@ -134,53 +111,12 @@ if (appOwnedLlmMode === "manual" || appOwnedLlmMode === "context-first") {
     appOwnedLlmStatus.textContent = `${llm.state} · ${(llm.progress * 100).toFixed(1)}% · ${llm.generations.length} samples${load}${active}`;
   });
 }
-const promptApiSpikePanel = document.querySelector("#prompt-api-spike");
-const promptApiStart = document.querySelector("#prompt-api-start");
-const promptApiOffline = document.querySelector("#prompt-api-offline");
-const promptApiStatus = document.querySelector("#prompt-api-status");
-if (promptApiMode === "manual" || promptApiMode === "branded") {
-  if (
-    !(promptApiSpikePanel instanceof HTMLElement) ||
-    !(promptApiStart instanceof HTMLButtonElement) ||
-    !(promptApiOffline instanceof HTMLButtonElement) ||
-    !(promptApiStatus instanceof HTMLElement)
-  ) {
-    throw new Error("Prompt API spike controls are missing");
-  }
-  promptApiSpikePanel.hidden = false;
-  promptApiStart.addEventListener("click", () => promptApiSpikeService.runFromUserActivation());
-  promptApiOffline.addEventListener("click", () =>
-    promptApiSpikeService.runOfflineProbeFromUserActivation(),
-  );
-  promptApiSpikeService.subscribe((prompt) => {
-    promptApiStart.disabled = prompt.state !== "awaiting-user-activation";
-    promptApiOffline.disabled = prompt.state !== "completed" || prompt.offline.state !== "not-run";
-    const availability = prompt.initialAvailability ?? "pending";
-    const inference =
-      prompt.inference === null
-        ? ""
-        : ` · first chunk ${prompt.inference.firstChunkLatencyMs.toFixed(1)} ms · context ${prompt.inference.contextUsageAfter}/${prompt.inference.contextWindow}`;
-    const contexts = prompt.executionContexts;
-    const worker =
-      contexts.dedicatedWorker.state === "measured"
-        ? String(contexts.dedicatedWorker.exposed)
-        : contexts.dedicatedWorker.state;
-    const download =
-      prompt.download.maxProgress === null
-        ? ""
-        : ` · download ${(prompt.download.maxProgress * 100).toFixed(1)}% · ${prompt.download.eventsObserved} progress events`;
-    promptApiStatus.textContent = `${prompt.state} · availability ${availability} · window ${String(contexts.windowExposed)} · worker ${worker}${download}${inference}`;
-  });
-  void promptApiSpikeService.probe();
-}
 const updateStatus = (): void => {
   const render = renderService.snapshot();
-  const opfs = opfsReadSpikeService.snapshot();
   const wasmThreads = wasmThreadSpikeService.snapshot();
   const memory64 = memory64SpikeService.snapshot();
   status.dataset.state = render.state;
   status.dataset.frameCount = render.frameCount.toString();
-  status.dataset.opfsState = opfs.state;
   status.dataset.wasmThreadState = wasmThreads.state;
   status.dataset.wasmThreadCompletedTasks = wasmThreads.completedTasks.toString();
   status.dataset.wasmThreadWorkerMask = wasmThreads.workerMask.toString();
@@ -192,14 +128,6 @@ const updateStatus = (): void => {
       world === null
         ? ""
         : ` · ${world.cellCount} cells · ${world.renderedTerrainPatchCount.toLocaleString()} terrain patches · ${world.renderedFeaturePrimitiveCount.toLocaleString()} box features`;
-    const storageStatus =
-      opfs.state === "completed" && opfs.sequential !== null
-        ? ` · OPFS sequential ${(opfs.sequential.readCallThroughputBytesPerSecond / 1024 ** 3).toFixed(2)} GiB/s`
-        : opfs.state === "failed"
-          ? ` · OPFS spike failed: ${opfs.failureMessage ?? "unknown error"}`
-          : opfs.state === "running"
-            ? " · OPFS spike running"
-            : "";
     const wasmStatus =
       wasmThreads.state === "completed"
         ? ` · WASM threads ${wasmThreads.completedTasks.toLocaleString()}/${wasmThreads.taskCount.toLocaleString()} tasks in ${wasmThreads.elapsedMs?.toFixed(1) ?? "?"} ms`
@@ -208,7 +136,7 @@ const updateStatus = (): void => {
           : wasmThreads.state === "running"
             ? " · WASM threads running"
             : "";
-    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${storageStatus}${wasmStatus}`;
+    status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${wasmStatus}`;
   } else if (render.state === "failed") {
     status.textContent = `${buildIdentity} · Render worker failed: ${render.failureMessage ?? "unknown error"}`;
   } else {
@@ -219,9 +147,6 @@ renderService.subscribe(() => {
   updateStatus();
 });
 wasmThreadSpikeService.subscribe(() => {
-  updateStatus();
-});
-opfsReadSpikeService.subscribe(() => {
   updateStatus();
 });
 memory64SpikeService.subscribe(() => {
@@ -242,15 +167,6 @@ renderService.subscribe((telemetry) => {
     wasmThreadSpikeService.start();
   }
 });
-if (new URL(location.href).searchParams.get("opfsSpike") === "auto") {
-  let opfsSpikeStarted = false;
-  renderService.subscribe((telemetry) => {
-    if (telemetry.state === "ready" && !opfsSpikeStarted) {
-      opfsSpikeStarted = true;
-      opfsReadSpikeService.start();
-    }
-  });
-}
 if (memory64SpikeMode === "auto") {
   memory64SpikeService.start();
 }

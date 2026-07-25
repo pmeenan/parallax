@@ -83,12 +83,12 @@ addressing beyond 4 GiB, gated on P-001.
 
 | Metric | Target | Notes |
 | --- | --- | --- |
-| Install size (D1+D2 experiment content) | ≤ 12 GB | Excludes the Chrome-managed Gemini Nano download (size varies by version — never hardcode it; download requires ~22 GB free on the profile volume) |
+| Install size (D1+D2 experiment content) | ≤ 12 GB | Includes the selected app-owned NPC model's five exact GGUF shards (D-074/D-096) |
 | Install size (architecture floor) | ≥ 100 GB supported; no designed-in ceiling | The *content* of this experiment is ≤ 12 GB, but the install, manifest, integrity, update, and streaming systems must demonstrably work at 50–100 GB **as a minimum** — the goal is proving the web platform supports at-least-AAA install sizes, with no architectural limit short of disk/OPFS quota. Verified with a synthetic-asset scale test (see below), not left theoretical. Quota reality: an origin gets up to ~60% of **total** disk size, and `estimate()` can over-report writable space — preflight is best-effort; the real guarantee is `QuotaExceededError`-aware incremental writing with resume (architecture.md). (D-009, install provisions upheld by D-018) |
 | Install wall time | Bandwidth-bound + ≤ 90 s local work | Local work = integrity, unpack, PSO warmup |
 | Launch 2+ → interactive gameplay | ≤ 10 s | Fully local; the number the demo lives or dies on |
 | Launch 1 (post-install) → gameplay | ≤ 30 s | |
-| Warm JavaScript code-cache lifecycle | recorded (non-gating) | Best-effort diagnostic: expect 0 rejected and 0 warm re-produced artifacts; every anomaly remains a finding, but mechanism state does not substitute for launch performance (D-051) |
+| Warm JavaScript code-cache lifecycle | targeted, recorded (non-gating) | Best-effort `harness:smoke:v8-cache` diagnostic: expect 0 rejected and 0 warm re-produced artifacts; every anomaly remains a finding, but mechanism state does not substitute for launch performance (D-051/D-095) |
 | Asset-only-update warm launch | ≤ 10 s; pre/post delta recorded | Performance outcome replaces the former “never invalidates V8 code caches” mechanism requirement; M2 measurements calibrate any relative-regression threshold through a new decision |
 | Offline launch | ≤ 1.10× warm-launch time (and within the ≤ 10 s budget) | Network killed post-install; served entirely by SW precache + OPFS |
 
@@ -151,25 +151,11 @@ than 0.1% of the canvas to remain detectably clear rather than relying on equali
 
 | Metric | Target | Notes |
 | --- | --- | --- |
-| Dialog first-token latency p95 | ≤ 1.5 s | Backend-neutral: applies to any on-device backend (Prompt API per D-017, or an app-owned model if P-007 wins) |
-| Frame-time impact while generating | Within gameplay budgets above | Contention is a research target — measure, log, then budget. Backend-neutral, but the metric surface differs: the Prompt API broker runs on the main thread (D-017), so main-thread long-task metrics apply to it; a worker-hosted backend (P-007) shifts measurement to worker and GPU contention |
-| Prompt model-download forward-progress gap (M0 spike) | < 120 s | Calibrated by D-061/D-064/D-065 from raw phase-local telemetry across eight same-version delivering branded profiles: the true maxima were 16.7-24.0 s, so 120 s (5.00x the largest gap) remains a conservative no-forward-progress failure boundary rather than an expected cadence. Schema v2 records the observer-free browser-restart interval separately and does not call it a stall. The 30-minute completion ceiling remains while normalized progress advances. |
+| Dialog first-token latency p95 | ≤ 1.5 s | Applies to the selected app-owned backend and any future candidate evaluated under D-096's reopen conditions |
+| Frame-time impact while generating | Within gameplay budgets above | Worker/GPU contention is a research target — measure, log, then budget |
 | App-owned model-load forward-progress gap (M0 spike) | < 120 s | D-073 applies the same evidence-preserving boundary while `loading-model`; a cold stall skips the redundant warm retry. The overall 45-minute ceiling remains for advancing loads and later phases. |
 
-For the M0 Prompt API spike under D-059, first-token latency and main-thread long tasks are gating.
-Download evidence is mandatory and must contain valid, monotonic normalized endpoints
-plus an intermediate update. The runner retains progress timestamps and aborts at 120
-seconds without forward progress while preserving the partial telemetry in its failure
-report; the 30-minute ceiling applies only while the download remains live.
-Render-worker callback pacing is retained as a marker-aligned, **non-gating diagnostic**
-under D-051; it is not compositor presentation, and dev-01's idle callback p95 is already
-16.72–16.76 ms. The short scenario cannot reach the 1,000 marker-aligned samples needed
-to distinguish nearest-rank p99.9 from maximum, so its callback diagnostic reports p50,
-p95, and maximum and declares p99.9 inapplicable. M1 still owns the documented
-presentation-gate revisit. Fewer than 30 marker-aligned intervals is an invalid
-diagnostic rather than a measured distribution.
-
-For P-007 phase A under D-074, the app-owned backend must retain at least twenty
+For D-074 qualification, the app-owned backend must retain at least twenty
 post-warmup samples of the exact shared gate-watch fixture; first-token p95 remains
 gating at 1.5 seconds. Exact output-token counts and decode duration make tokens/s
 mandatory evidence but do not yet impose a throughput threshold. Fresh qualifying
@@ -178,16 +164,15 @@ WebGPU evidence must hash-verify and write all five pinned `UD-Q4_K_XL` GGUF spl
 OPFS with zero remote misses. Strict JSON-schema constrained decoding is part of the
 backend for structured fixtures. D-074's CPU/WASM mode reuses that exact GGUF with
 `n_gpu_layers: 0`; it is a measured headroom placement, not an automatic fallback.
-D-073's independently pinned ONNX q4 diagnostic remains the missing-CPU-kernel
-reproduction and does not redefine the qualifying identity.
+D-073's removed ONNX q4 path remains historical missing-CPU-kernel evidence and does
+not redefine the qualifying identity.
 Structured-output validity, semantic grounding failures, prompt-token counts at every
 context tier, raw quality outputs, model-to-session load time, and token-gap scheduling
 diagnostics are mandatory evidence. Page-attributable VRAM remains `unsupported` under
 D-050 unless Chrome exposes it; a declared model requirement is not measured VRAM.
-Render-worker callback pacing during generation is retained as the same non-gating
-D-051 contention diagnostic used by the Prompt spike until M1 provides the presentation
-gate. Missing worker Long Tasks observability is explicit rather than replaced by main-
-thread observations.
+Render-worker callback pacing during generation is a non-gating D-051 contention
+diagnostic until M1 provides the presentation gate. Missing worker Long Tasks
+observability is explicit rather than replaced by main-thread observations.
 
 The removed D-075/D-082 experiment required three cold generations, six live
 exact-prefix samples, three snapshot saves, a deterministic two-character hot set,
@@ -236,9 +221,11 @@ Definitions the harness implements; budgets above are meaningless without them.
   completion must equal the task total, the worker mask must be `0x3`, and the
   order-independent SIMD checksum must match a separately executed reference pass.
   Module bytes, fixed memory bytes, total elapsed time, and load/compile, worker-init,
-  and parallel-execution phases are mandatory evidence. This synthetic correctness
-  proof sets no throughput budget or production pool size; M1 measures representative
-  decode work.
+  and parallel-execution phases are mandatory evidence. The pinned runtime must also
+  report shared initialization state `2`, initialized-instance count `2`, and a clear
+  allocator lock (`0`) after both workers are ready; a failure snapshots those same
+  words before cohort termination (D-092/D-093). This synthetic correctness proof sets
+  no throughput budget or production pool size; M1 measures representative decode work.
 - **Memory64 evidence (P-001):** the dedicated `memory64-spike@1` scenario runs outside
   `smoke@1` in three fresh/warm profile pairs. A dedicated worker loads content-addressed
   memory32 and memory64 modules, retains one cold, two warm-up, and thirty measured samples
@@ -270,27 +257,6 @@ Definitions the harness implements; budgets above are meaningless without them.
   observations, not budgets or a general claim about production pointer-width cost;
   memory64's module size and load phases also include its additional high-address proof
   export.
-- **OPFS sync-access-handle evidence:** each `smoke@1` core launch runs a dedicated
-  storage-worker probe during warm-up against a deterministic 64 MiB fixture. Fresh
-  profiles must provision exactly 64 MiB; their paired warm profiles must reuse it.
-  The probe performs one untimed, fully validated sequential preflight, then twelve
-  measured sequential passes with 1 MiB reads and 4,096 deterministic random 64 KiB
-  reads. Schema-v22 evidence retains every sequential pass and each 256-read random
-  batch, plus a coarse overlapping Windows physical-disk sample for attribution. Every
-  operation must return its full byte count and every read is validated
-  outside its timed `read()` call. Results retain both summed time inside
-  `read()` (API-path throughput) and validation-inclusive worker wall time, plus
-  provisioning time and reuse state. The mandatory metric requires complete,
-  corruption-free per-run evidence. The unchanged 10% relative-range calculation for
-  each fresh/warm and sequential/random cohort remains an explicit `invalid` finding
-  when missed, but is informational in M0 metric-set v10 after the sandboxed
-  qualification demonstrated topology-sensitive scheduling tails without a user-
-  outcome throughput budget (D-066/RE-023). Wall throughput and the host sample are
-  diagnostic. The harness starts this phase only
-  after privileged display diagnostics and SAB transport complete, leaving the live
-  renderer as its intentional concurrent workload. This M0 micro-workload describes
-  warm OS-cache behavior; it does not establish cold-disk throughput, multi-reader
-  contention, or representative M1 cell-load latency.
 - **JavaScript used-heap high-water estimate (D-047):** after the primary frame/trace
   measurement completes, run a dedicated steady-state window over the same 120-frame workload.
   Issue near-concurrent `Runtime.getHeapUsage.usedSize` requests for every required
@@ -316,22 +282,31 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).
-- **JavaScript code-cache lifecycle (D-040–D-042, D-051):** each repeat uses one persistent profile for
+- **Qualification cadence (D-097):** run one physical-console `smoke@1` after the final
+  reviewable state of each runtime-affecting candidate, and rerun after a later change
+  to the built runtime, browser-facing behavior, measurement path, runtime pins,
+  reference-machine descriptor, budgets, or mandatory evidence contract. Documentation-
+  only, test-only, and machine-local tool-location changes that leave those inputs
+  unchanged do not require a physical run. An intermittent failure remains a failed
+  report; retain it and use at most one immediate same-artifact retry for routine
+  classification. Additional repetitions are an explicit diagnostic exercise.
+- **JavaScript code-cache lifecycle (D-040–D-042, D-051, D-095):** the targeted
+  `pnpm harness:smoke:v8-cache` command gives each repeat one persistent profile for
   fresh/timestamp, produce, and warm/consume launches. Fresh must expose no production, every
   cacheable required immutable script should expose a positive URL-attributed `producedCacheSize`
   on launch 2, and warm should expose consumption without re-production. Production, absence of
   re-production, and consumption remain separate evidence; none can substitute for another.
-  Missing, untrustworthy, or negative cache evidence is informational in `smoke@1`. The expected
+  Missing, untrustworthy, or negative cache evidence is informational. Routine
+  `pnpm harness:smoke` does not launch this nine-run diagnostic; use it for browser,
+  Node, bundler, serving/cache, dependency-checkpoint, M2 lifecycle, and explicit V8
+  investigations. The expected
   zero rejection/re-production checks remain in each result as diagnostics. M2 gates the
   user-visible outcome instead: warm and asset-only-update launches must remain within 10 s, and
   the paired pre/post-update delta is recorded. M2 measurements calibrate any future relative-
   regression threshold through the normal decision process.
 - **Variance gate:** if p95 varies more than 10% across the repeats, the result is
   `invalid` (fix the noise before trusting the number) — a noisy metric is a broken
-  metric, not a passing one. D-066's M0 OPFS microbenchmark is the explicit scoped
-  exception to *mandatory* status: its unchanged relative-range result remains invalid
-  and visible but informational, while per-run correctness/raw throughput stay
-  mandatory and M1's representative cell-load p95 uses this ordinary blocking rule.
+  metric, not a passing one.
 - **Metric states:** every metric in a result is `measured`, `unsupported` (platform
   provides no way to observe it — itself a rough-edges candidate), `invalid` (observed
   but untrustworthy, with reason), or `not-applicable`. Budget gating fails on a busted
@@ -347,16 +322,20 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v13, which retains measured D-090 greybox-world content,
+  the current mandatory metric-set (v15, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
   attribution, proactive eviction, zero encoded-budget rejections, and a representative cell-load p95 no
-  greater than 250 ms, keeps OPFS per-run correctness and raw throughput mandatory, and
-  separates OPFS's sandbox-sensitive repeatability finding as informational;
-  D-058/D-066/D-090/D-091). The corresponding `smoke@1` report schema is v28.
-  Initial streaming residency completes before the standalone OPFS spike, traversal
-  begins only after that spike, and the streaming p95/proactive-eviction verdict uses
+  greater than 250 ms (D-090/D-091). D-096 removed the superseded standalone OPFS
+  throughput/repeatability checks; per-cell OPFS read timing remains mandatory inside
+  the representative streaming evidence. D-092 additionally requires the mandatory Rust/WASM
+  evidence to distinguish module construction from Rust/wasm-bindgen startup and retain
+  the exact pinned fixture's shared initialization state on failure. The corresponding
+  `smoke@1` report schema is v31. Build-manifest v10 requires the five current workers,
+  and the report records whether the targeted V8 diagnostic was requested (D-095/D-096).
+  Initial streaming residency completes before traversal, and the
+  streaming p95/proactive-eviction verdict uses
   only the telemetry delta inside the ordinary presentation measurement window. That
   window requires at least ten contiguous sequenced replacements; the deterministic
   12 m/s diagonal corner-crossing stress path completes at least five target transitions
@@ -365,15 +344,17 @@ Definitions the harness implements; budgets above are meaningless without them.
   and completion deltas may differ by at most the nine-cell residency bound; exact
   equality is not required.
   V8 lifecycle checks are diagnostics, not budget checks.
+- **Trace completion validity versus observation (D-092/D-094):** a complete, readable,
+  lossless trace is valid when `Tracing.end` and `Tracing.tracingComplete` finish within
+  10 seconds. The collector remains attached for a further 10 seconds solely to
+  distinguish late completion from no completion and to retain any resulting trace
+  chunks/data-loss state; that diagnostic window is not budget headroom and cannot
+  convert an invalid trace into measured evidence.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the
   artifact digest of the exact build measured (see harness/AGENTS.md — includes
-  dirty-tree identity, since agent work is measured pre-commit). Prompt API result
-  schema v6 additionally records the effective Chrome command line, disabled-feature
-  set, and verified WebGPU developer-identity switch because model delivery and complete
-  adapter identity require explicit differences from ordinary Playwright
-  smoke launches (D-059). Reference Chrome launches retain the process sandbox; an
+  dirty-tree identity, since agent work is measured pre-commit). Reference Chrome launches retain the process sandbox; an
   effective `--no-sandbox` switch invalidates production qualification and performance
   evidence. `smoke@1` schema v22 records the effective command line and verified
   sandbox state under D-062/D-066.

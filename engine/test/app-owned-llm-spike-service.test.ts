@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type {
   AppOwnedLlmFixtureSet,
+  AppOwnedLlmRunRequest,
   AppOwnedLlmSpikeTelemetrySnapshot,
-  AppOwnedLlmWorkerStartRequest,
 } from "../src/ai/app-owned-llm-spike-protocol";
 import { createInitialAppOwnedLlmTelemetry } from "../src/ai/app-owned-llm-spike-protocol";
 
@@ -25,7 +25,7 @@ describe("app-owned LLM spike service", () => {
     };
     runWllamaSpike.mockImplementation(
       async (
-        _request: AppOwnedLlmWorkerStartRequest,
+        _request: AppOwnedLlmRunRequest,
         publish: (snapshot: AppOwnedLlmSpikeTelemetrySnapshot) => void,
         signal: AbortSignal,
       ) => {
@@ -51,7 +51,7 @@ describe("app-owned LLM spike service", () => {
   it("does not replace a completed terminal snapshot with a late failure", async () => {
     runWllamaSpike.mockImplementation(
       async (
-        _request: AppOwnedLlmWorkerStartRequest,
+        _request: AppOwnedLlmRunRequest,
         publish: (snapshot: AppOwnedLlmSpikeTelemetrySnapshot) => void,
       ) => {
         publish({ ...createInitialAppOwnedLlmTelemetry(), state: "completed" });

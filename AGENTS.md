@@ -11,7 +11,7 @@ that apply within that directory.**
 ## The two goals (in priority order)
 
 1. **Platform research / capabilities demo.** Push the newest Chrome releases (WebGPU,
-   wasm threads, OPFS, SharedArrayBuffer workers, the built-in AI Prompt API) to their limits
+   wasm threads, OPFS, SharedArrayBuffer workers, and on-device browser AI) to their limits
    and document every rough edge with evidence. The findings log and the measurement
    harness are first-class deliverables, not side effects.
 2. **The game itself.** A playable, high-fidelity open-world slice that demonstrates what
@@ -38,13 +38,14 @@ updating the affected docs. Until that happens, the constraints below govern.
   are baseline machine requirements, and per-subsystem placement is performance-driven
   (D-032): JS/TS is orchestration and glue, with no presumption against wasm or WGSL.
   No Unity, no build-time engine abstraction layers.
-- **Install/launch/run lifecycle.** The game installs (multi-GB pull into OPFS, Prompt API
-  model download, shader/PSO warmup), then launches from local storage. Do not optimize
+- **Install/launch/run lifecycle.** The game installs (multi-GB pull into OPFS including
+  the app-owned AI model, shader/PSO warmup), then launches from local storage. Do not optimize
   for first-visit instant load; do optimize launch-2+ aggressively.
 - **Budgets are enforced, not eternal.** [docs/budgets.md](docs/budgets.md) defines the
-  performance budgets; the harness enforces them per change, and a change that busts a
-  budget is not done. But budgets themselves are recalibrated as measurements come in —
-  through a decision-log entry, never by weakening a check to make a change pass.
+  performance budgets; the harness enforces them once per final reviewable
+  runtime-affecting change (D-097), and a change that busts a budget is not done. But
+  budgets themselves are recalibrated as measurements come in — through a decision-log
+  entry, never by weakening a check to make a change pass.
 - **Design for what's coming.** Some features (P2P multiplayer over WebRTC data channels,
   district streaming at N>2) are design-now/build-later. Their constraints in
   [docs/features.md](docs/features.md) apply to today's architecture decisions.
@@ -117,14 +118,24 @@ the engine decision and assume Unity). Never cite them as a source of truth.
    `docs/` behind the doc map, not here. The same discipline applies to the
    per-directory `AGENTS.md` files.
 10. **Ground technology claims in current sources, not training knowledge.** This
-   project lives on APIs, browser features, and tooling that change monthly — an
-   agent's built-in knowledge about them should be presumed stale. Before making or
-   citing a claim about what an API/library/browser supports (in a decision, an
-   architecture choice, or a rough-edges write-up), verify against current
-   documentation via web search — or better, against a local experiment (root rule 3;
-   a measurement beats a search result). Decision-log entries that rest on
-   technology-state claims cite what was checked and when. When search and local
-   behavior disagree, trust the local behavior and log the discrepancy.
+    project lives on APIs, browser features, and tooling that change monthly — an
+    agent's built-in knowledge about them should be presumed stale. Before making or
+    citing a claim about what an API/library/browser supports (in a decision, an
+    architecture choice, or a rough-edges write-up), verify against current
+    documentation via web search — or better, against a local experiment (root rule 3;
+    a measurement beats a search result). Decision-log entries that rest on
+    technology-state claims cite what was checked and when. When search and local
+    behavior disagree, trust the local behavior and log the discrepancy.
+11. **Reuse the machine-local tool registry.** Before searching for or downloading a
+    pinned tool, read `.parallax-toolchain.local.json` when present, verify the recorded
+    path/version, and update it after installing or moving a pinned tool. It is ignored
+    machine state, never the source of truth for pins; see
+    [docs/workflow.md](docs/workflow.md#machine-local-pinned-tool-registry).
+12. **Remove closed-experiment baggage.** Once a decision is recorded and no active
+    plan item or recurring gate consumes an experiment, delete its code, dependencies,
+    build outputs, tests, and routine checks. Keep the evidence in decisions, findings,
+    results, and git history; see
+    [docs/workflow.md](docs/workflow.md#close-experiments-cleanly).
 
 ## Current status
 
@@ -133,10 +144,13 @@ Milestone **M0 (harness + skeleton) is complete**; M1 is in progress — see
 WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer go spike (D-057),
 Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
 production-install qualification (D-065), Harness v1's sandboxed `smoke@1` replacement
-gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. OPFS
-repeatability remains an informational platform finding rather than a promoted
-baseline. The D-074 app-owned Gemma 4 QAT-GGUF/wllama WebGPU spike is qualified, with
-D-073's ONNX no-go and D-074's CPU/WASM headroom measurements retained. The D-077
+gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. D-096 resolved
+P-007 in favor of D-074's app-owned Gemma 4 QAT-GGUF/wllama backend, removed both
+closed Prompt API harnesses, and removed the standalone OPFS microbenchmark after
+D-091's representative streaming evidence superseded it. Historical Prompt/OPFS
+findings and results remain. The app-owned WebGPU path is qualified, with
+D-073's ONNX no-go retained as documentary/result evidence after D-095 removed its
+implementation and dependency chain; D-074's CPU/WASM headroom mode remains. The D-077
 head-to-head selected Babylon Lite 1.11.0 as the rendering core (D-078), D-080 removed
 the comparison-only classic path and renderer abstraction, and D-089 upgraded the sole
 renderer to exactly pinned 1.12.0 while qualifying its worker-safe self-hosted decoders;
@@ -149,12 +163,26 @@ access while leaving P-001 open for representative M1 adoption evidence. D-087's
 schema-v26 result store and explicit promotion workflow closed the final harness-contract
 gap; the full dependency checkpoint adopted Node 24.18.0 and CfT 151.0.7922.34. The
 same-artifact Chrome 150 anchor and Chrome 151 candidate passed all facets and 24 checks,
-and Chrome 151 is promoted; intermittent RE-008 trace completion and RE-036 Wasm
-instantiation failures remain fail-closed platform findings. D-090's procedural D1
+and Chrome 151 is promoted. D-092 proved that RE-008 can complete just after the
+former five-second validity boundary; D-094 accepts complete lossless drains through
+ten seconds, confirmed by a passing 30-check physical gate that accepted a complete
+5,020.1 ms trace. D-092 also localized the former RE-036
+Wasm-instantiation failure to Rust/wasm-bindgen startup; D-093 fixed its allocator/
+thread-scratch overlap, and the schema-v29/metric-set-v14 physical-console gate passed
+all six launches and 30 checks. RE-008 remains a fail-closed Chrome/Perfetto finding,
+while RE-036 is resolved for the pinned artifact and retained as an upstream toolchain
+finding. D-090's procedural D1
 greybox is qualified by the passing schema-v27/metric-set-v12 physical-console gate;
 its immediately preceding same-artifact RE-008 failure remains retained. D-091's
-streaming implementation is pending qualification: completed physical-console runs
-proved the seven-realm heap topology and streaming budgets, but the final-source
-schema-v28 gate attempts failed closed on RE-008/RE-036.
+streaming implementation is qualified by the same passing schema-v29 artifact after
+the retained schema-v28 and pre-fix v29 RE-008/RE-036 failures; a same-artifact
+confirmation retained another late RE-008 completion while all six additional fixed
+Wasm cohorts passed. D-095 removes closed ONNX experiment baggage and makes V8 code-cache collection an explicit
+targeted diagnostic rather than nine launches in every routine smoke gate. The routine
+six-launch schema-v30 gate and the separate 15-launch V8 diagnostic both passed all
+three facets and 30 checks; the targeted run also accepted another complete lossless
+5,307.5 ms RE-008 trace. D-096 advances the build manifest to v10, telemetry to v12,
+smoke report to v31, and mandatory metric set to v15; its physical-console gate passed
+all six launches, all three facets, and 30 checks.
 Keep this paragraph current when plan.md
 milestone status changes (root rule 6).

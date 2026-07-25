@@ -2,7 +2,7 @@
 
 An experiment in building an AI-generated, AAA-scope, open-world game that runs entirely
 on the web platform — targeting the newest Chrome releases (WebGPU, wasm threads, OPFS,
-SharedArrayBuffer workers, the built-in AI Prompt API) and treating the browser like a
+SharedArrayBuffer workers, and app-owned on-device AI) and treating the browser like a
 native install/launch/run target instead of an instant-load web page.
 
 It is equal parts game and research vehicle: alongside the game itself, the project
@@ -66,6 +66,14 @@ the environment identity invalid because they can change Chrome's display timing
 runner verifies the machine against its versioned descriptor in `harness/machines/`;
 GPU backend, driver, display, OS, and power state are measured rather than accepted as
 environment-variable declarations.
+
+Run the physical gate once after a runtime-affecting candidate and its review fixes
+have converged, then rerun only if a later fix changes the built runtime, browser-facing
+behavior, measurement path, runtime pins, reference environment, budgets, or mandatory
+evidence contract (D-097). Documentation-only, test-only, and machine-local
+tool-location changes that leave those inputs untouched do not require it. A failed
+report is always retained; one immediate same-artifact retry may classify an
+intermittent failure but does not replace or relabel the failed result.
 
 The command builds and serves the exact artifact, runs three fresh/warm profile pairs
 with the required 10-second warm-up, writes ignored JSON and Markdown output under

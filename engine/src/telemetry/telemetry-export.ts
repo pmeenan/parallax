@@ -1,12 +1,6 @@
 import type { AppOwnedLlmSpikeTelemetrySnapshot } from "../ai/app-owned-llm-spike-protocol";
 import type { AppOwnedLlmSpikeService } from "../ai/app-owned-llm-spike-service";
-import type {
-  PromptApiSpikeService,
-  PromptApiSpikeTelemetrySnapshot,
-} from "../ai/prompt-api-spike-service";
 import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
-import type { OpfsReadSpikeTelemetrySnapshot } from "../storage/opfs-read-spike-protocol";
-import type { OpfsReadSpikeService } from "../storage/opfs-read-spike-service";
 import type { WorldStreamingTelemetrySnapshot } from "../streaming/streaming-protocol";
 import type { WorldStreamingService } from "../streaming/world-streaming-service";
 import type { Memory64SpikeTelemetrySnapshot } from "../wasm/memory64-spike-protocol";
@@ -14,10 +8,11 @@ import type { Memory64SpikeService } from "../wasm/memory64-spike-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v10 envelope adds the production-shaped M1 streaming pipeline.
+// The v12 envelope removes the closed Prompt API and standalone OPFS experiment
+// sections; representative OPFS evidence remains in the streaming section.
 // Subsystems retain their own section schemas so platform experiments do not silently
 // rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 10;
+export const TELEMETRY_SCHEMA_VERSION = 12;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -35,8 +30,6 @@ export interface ParallaxTelemetrySnapshot {
   readonly appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
   readonly memory64Spike: Memory64SpikeTelemetrySnapshot;
-  readonly opfsReadSpike: OpfsReadSpikeTelemetrySnapshot;
-  readonly promptApiSpike: PromptApiSpikeTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
   readonly streaming: WorldStreamingTelemetrySnapshot;
@@ -45,9 +38,6 @@ export interface ParallaxTelemetrySnapshot {
 
 export interface ParallaxTelemetryExport {
   snapshot(): ParallaxTelemetrySnapshot;
-  // Remotely driven M0 spike controls stay explicit and typed. The activation-bound
-  // Prompt API probe is app-owned and deliberately absent here.
-  startOpfsReadSpike(): void;
   startMemory64Spike(): void;
   subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void;
   startStreamingTraversal(): void;
@@ -55,8 +45,6 @@ export interface ParallaxTelemetryExport {
 
 export function installTelemetryExport(
   renderService: RenderService,
-  opfsReadSpikeService: OpfsReadSpikeService,
-  promptApiSpikeService: PromptApiSpikeService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
   memory64SpikeService: Memory64SpikeService,
@@ -73,17 +61,12 @@ export function installTelemetryExport(
     snapshot: () =>
       snapshot(
         renderService.snapshot(),
-        opfsReadSpikeService.snapshot(),
-        promptApiSpikeService.snapshot(),
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
         memory64SpikeService.snapshot(),
         streamingService.snapshot(),
         frozenIdentity,
       ),
-    startOpfsReadSpike(): void {
-      opfsReadSpikeService.start();
-    },
     startMemory64Spike(): void {
       memory64SpikeService.start();
     },
@@ -96,8 +79,6 @@ export function installTelemetryExport(
           listener(
             snapshot(
               renderService.snapshot(),
-              opfsReadSpikeService.snapshot(),
-              promptApiSpikeService.snapshot(),
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
               memory64SpikeService.snapshot(),
@@ -116,8 +97,6 @@ export function installTelemetryExport(
         if (!wiring) publish();
       };
       const unsubscribeRender = renderService.subscribe(publishAfterWiring);
-      const unsubscribeOpfs = opfsReadSpikeService.subscribe(publishAfterWiring);
-      const unsubscribePromptApi = promptApiSpikeService.subscribe(publishAfterWiring);
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
       const unsubscribeMemory64 = memory64SpikeService.subscribe(publishAfterWiring);
@@ -126,8 +105,6 @@ export function installTelemetryExport(
       publish();
       return () => {
         unsubscribeRender();
-        unsubscribeOpfs();
-        unsubscribePromptApi();
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
         unsubscribeMemory64();
@@ -146,8 +123,6 @@ export function installTelemetryExport(
 
 function snapshot(
   render: RenderTelemetrySnapshot,
-  opfsReadSpike: OpfsReadSpikeTelemetrySnapshot,
-  promptApiSpike: PromptApiSpikeTelemetrySnapshot,
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   memory64Spike: Memory64SpikeTelemetrySnapshot,
@@ -158,8 +133,6 @@ function snapshot(
     appOwnedLlmSpike,
     identity,
     memory64Spike,
-    opfsReadSpike,
-    promptApiSpike,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
     streaming,

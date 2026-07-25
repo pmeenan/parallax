@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type ChromeTraceEvent,
   extractVizPresentationFeedbackCallbackIntervalsMs,
+  observeThroughLateCompletionWindow,
   PRESENTATION_TRACE_END_MARKER,
   PRESENTATION_TRACE_EVENT,
   PRESENTATION_TRACE_START_MARKER,
@@ -13,6 +14,28 @@ describe("Viz presentation-feedback callback trace extraction", () => {
     await expect(
       withTimeout(new Promise<never>(() => undefined), 1, "trace completion"),
     ).rejects.toThrow("trace completion timed out");
+  });
+
+  it("retains completion observed after the validity deadline", async () => {
+    const observation = await observeThroughLateCompletionWindow(
+      new Promise<string>((resolve) => setTimeout(() => resolve("late"), 10)),
+      1,
+      5_000,
+      "trace completion",
+    );
+    expect(observation).toMatchObject({ exceededDeadline: true, value: "late" });
+    expect(observation.elapsedMs).toBeGreaterThan(1);
+  });
+
+  it("reports both validity and observation bounds when completion remains unbounded", async () => {
+    await expect(
+      observeThroughLateCompletionWindow(
+        new Promise<never>(() => undefined),
+        1,
+        2,
+        "trace completion",
+      ),
+    ).rejects.toThrow("3 ms observation bound (1 ms validity deadline plus 2 ms late window)");
   });
 
   it("extracts sorted callback intervals spanning the marked window", () => {

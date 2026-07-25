@@ -24,8 +24,8 @@
       h1 { margin: 0 0 0.25rem; font-size: 1rem; letter-spacing: 0.15em; text-transform: uppercase; }
       p { margin: 0; color: #9bcaff; font: 0.75rem ui-monospace, monospace; }
       p[data-state="failed"] { color: #ff8e8e; }
-      .prompt-api-spike { top: auto; bottom: 1rem; max-width: min(42rem, calc(100% - 2rem)); }
-      .prompt-api-spike button { margin-top: 0.5rem; }
+      .app-owned-llm { top: auto; bottom: 1rem; max-width: min(42rem, calc(100% - 2rem)); }
+      .app-owned-llm button { margin-top: 0.5rem; }
     </style>
     <script type="importmap">
       {
@@ -43,13 +43,7 @@
         <h1>Parallax</h1>
         <p id="status">Booting local build…</p>
       </section>
-      <section id="prompt-api-spike" class="status-panel prompt-api-spike" hidden>
-        <h1>Prompt API spike</h1>
-        <p id="prompt-api-status">probing</p>
-        <button id="prompt-api-start" type="button" disabled>Download / run probe</button>
-        <button id="prompt-api-offline" type="button" disabled>Run offline probe</button>
-      </section>
-      <section id="app-owned-llm-spike" class="status-panel prompt-api-spike" hidden>
+      <section id="app-owned-llm-spike" class="status-panel app-owned-llm" hidden>
         <h1>App-owned Gemma 4 spike</h1>
         <p id="app-owned-llm-status">idle</p>
         <button id="app-owned-llm-start" type="button">Install / run probe</button>
