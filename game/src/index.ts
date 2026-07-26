@@ -1,6 +1,25 @@
 import type { AppOwnedLlmFixtureSet, EngineIdentity } from "@parallax/engine";
 
+export type { M1BenchmarkUiCopy } from "./benchmark/m1-benchmark-mode";
+export {
+  formatM1BenchmarkPreset,
+  formatM1BenchmarkReport,
+  formatM1BenchmarkStatus,
+  M1_BENCHMARK_DEFINITION,
+  M1_BENCHMARK_UI_COPY,
+} from "./benchmark/m1-benchmark-mode";
+export type {
+  StreamingDashboardMetric,
+  StreamingDashboardMetricState,
+  StreamingDashboardModel,
+  StreamingDashboardSection,
+} from "./ui/streaming-dashboard";
+export {
+  createStreamingDashboardModel,
+  STREAMING_DASHBOARD_TITLE,
+} from "./ui/streaming-dashboard";
 export { DISTRICT_1_GREYBOX_SPEC, GREYBOX_DISTRICT_SPECS } from "./world/district-1.data";
+export { DISTRICT_1_FLYTHROUGH } from "./world/district-1.flythrough";
 export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-generator";
 export type { GreyboxDistrictSpec } from "./world/greybox-spec";
 

@@ -1,4 +1,9 @@
 import type {
+  FlythroughScenario,
+  FlythroughScenarioSample,
+} from "../flythrough/flythrough-contract";
+import type { StreamingRecoveryCheckpoint } from "../streaming/streaming-protocol";
+import type {
   SabRingBufferSpikeConfig,
   SabRingBufferSpikeWorkerResponse,
 } from "../workers/sab-ring-buffer-spike-protocol";
@@ -35,12 +40,15 @@ export type GreyboxWorkerRenderTelemetry = Omit<
 
 export interface RenderStartMessage {
   readonly canvas: OffscreenCanvas;
+  readonly flythroughGeneration: number;
+  readonly flythroughTransportSequence: number;
   readonly height: number;
   readonly kind: "start";
   readonly sabRingBufferSpike: SabRingBufferSpikeConfig;
   readonly scene: GreyboxSceneConfig;
   readonly streamingPort: MessagePort;
   readonly width: number;
+  readonly workerGeneration: number;
 }
 
 export interface RenderResizeMessage {
@@ -49,7 +57,60 @@ export interface RenderResizeMessage {
   readonly width: number;
 }
 
-export type RenderWorkerRequest = RenderResizeMessage | RenderStartMessage;
+export interface RenderFlythroughResetMessage {
+  readonly kind: "reset-flythrough";
+  readonly nextFlythroughGeneration: number;
+  readonly requestId: number;
+}
+
+export interface RenderFlythroughPreflightSampleMessage {
+  readonly camera: Readonly<{
+    readonly beta: number;
+    readonly heightMeters: number;
+    readonly radiusMeters: number;
+  }>;
+  readonly flythroughGeneration: number;
+  readonly kind: "flythrough-preflight-sample";
+  readonly requestId: number;
+  readonly sample: FlythroughScenarioSample;
+  readonly scenarioId: string;
+}
+
+export interface RenderFlythroughStartMessage {
+  readonly flythroughGeneration: number;
+  readonly kind: "start-flythrough";
+  readonly scenario: FlythroughScenario;
+}
+
+export interface RenderFlythroughCheckpointRequest {
+  readonly checkpointId: string;
+  readonly flythroughGeneration: number;
+  readonly kind: "capture-flythrough-checkpoint";
+  readonly requestId: number;
+}
+
+export type RenderRecoveryProbeKind = "device-loss" | "worker-crash";
+
+export interface RenderRecoveryProbeRequest {
+  readonly kind: "exercise-recovery";
+  readonly probe: RenderRecoveryProbeKind;
+}
+
+export interface RenderRecoveryBoundaryProbeRequest {
+  readonly kind: "exercise-recovery-at-boundary";
+  readonly probe: RenderRecoveryProbeKind;
+  readonly requestId: number;
+}
+
+export type RenderWorkerRequest =
+  | RenderFlythroughCheckpointRequest
+  | RenderFlythroughPreflightSampleMessage
+  | RenderFlythroughResetMessage
+  | RenderFlythroughStartMessage
+  | RenderRecoveryBoundaryProbeRequest
+  | RenderRecoveryProbeRequest
+  | RenderResizeMessage
+  | RenderStartMessage;
 
 export interface RenderFrameSample {
   readonly durationMs: number;
@@ -74,12 +135,116 @@ export interface RenderFrameMessage {
 }
 
 export interface RenderErrorMessage {
+  readonly cause: "render-error";
   readonly kind: "error";
   readonly message: string;
 }
 
+export interface RenderDeviceLostMessage {
+  readonly kind: "device-lost";
+  readonly message: string;
+  readonly reason: GPUDeviceLostReason;
+}
+
+export interface RenderHeartbeatMessage {
+  readonly kind: "heartbeat";
+  readonly workerGeneration: number;
+}
+
+export interface RenderDistributionTelemetry {
+  readonly maximum: number;
+  readonly p50: number;
+  readonly p95: number;
+  readonly p999: number;
+  readonly sampleCount: number;
+}
+
+export interface RenderFlythroughTelemetry {
+  readonly callbackIntervalMs: RenderDistributionTelemetry;
+  readonly cameraPositionMaximum: readonly [number, number, number];
+  readonly cameraPositionMinimum: readonly [number, number, number];
+  readonly cameraTargetMaximum: readonly [number, number, number];
+  readonly cameraTargetMinimum: readonly [number, number, number];
+  readonly completedDistanceMeters: number;
+  readonly completedElapsedMs: number;
+  readonly environmentFrameCounts: Readonly<Record<string, number>>;
+  readonly environmentPhaseOrder: readonly string[];
+  readonly finalObserver: readonly [number, number, number];
+  readonly frameCount: number;
+  readonly minimumVisibleStreamingMeshCount: number;
+  readonly observerUpdateCount: number;
+  readonly previewVisibleFrameCount: number;
+  readonly renderDurationMs: RenderDistributionTelemetry;
+  readonly scenario: FlythroughScenario;
+  readonly scenarioId: string;
+  readonly state: "completed";
+  readonly streamedPresentationFrameCount: number;
+}
+
+export interface FlythroughCheckpointRenderEvidence {
+  readonly cameraPosition: readonly [number, number, number];
+  readonly cameraTarget: readonly [number, number, number];
+  readonly checkpointId: string;
+  readonly clearColorDistanceThreshold: number;
+  readonly clearColorRgb: readonly [number, number, number];
+  readonly environmentPhaseId: string;
+  readonly environment: FlythroughScenarioSample["environment"];
+  readonly elapsedMs: number;
+  readonly height: number;
+  readonly previewVisibleMeshCount: number;
+  readonly rgbaSha256: string;
+  readonly sampledPixelCount: number;
+  readonly streamedVisibleMeshCount: number;
+  readonly visiblePixelCount: number;
+  readonly visiblePixelRatio: number;
+  readonly width: number;
+}
+
+export interface RenderFlythroughCheckpointResponse {
+  readonly evidence: FlythroughCheckpointRenderEvidence;
+  readonly flythroughGeneration: number;
+  readonly kind: "flythrough-checkpoint";
+  readonly requestId: number;
+}
+
+export interface RenderFlythroughPreflightRenderedMessage {
+  readonly elapsedMs: number;
+  readonly environmentPhaseId: string;
+  readonly flythroughGeneration: number;
+  readonly height: number;
+  readonly kind: "flythrough-preflight-rendered";
+  readonly requestId: number;
+  readonly scenarioId: string;
+  readonly width: number;
+}
+
+export interface RenderFlythroughCompleteMessage {
+  readonly flythroughGeneration: number;
+  readonly kind: "flythrough-complete";
+  readonly telemetry: RenderFlythroughTelemetry;
+}
+
+export interface RenderFlythroughResetCompleteMessage {
+  readonly flythroughGeneration: number;
+  readonly kind: "flythrough-reset-complete";
+  readonly requestId: number;
+}
+
+export interface RenderRecoveryBoundaryMessage {
+  readonly checkpoint: StreamingRecoveryCheckpoint;
+  readonly kind: "recovery-boundary";
+  readonly requestId: number;
+}
+
 export type RenderWorkerResponse =
+  | RenderDeviceLostMessage
   | RenderErrorMessage
+  | RenderFlythroughCheckpointResponse
+  | RenderFlythroughCompleteMessage
+  | RenderFlythroughPreflightRenderedMessage
+  | RenderFlythroughResetCompleteMessage
   | RenderFrameMessage
+  | RenderHeartbeatMessage
   | RenderReadyMessage
+  | RenderRecoveryBoundaryMessage
   | SabRingBufferSpikeWorkerResponse;

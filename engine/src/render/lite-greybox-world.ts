@@ -1,5 +1,6 @@
 import {
   addToScene,
+  captureScreenshot,
   createArcRotateCamera,
   createBoxData,
   createEngine,
@@ -15,6 +16,11 @@ import {
   setEngineSize,
 } from "@babylonjs/lite";
 import type {
+  FlythroughScenarioSample,
+  FlythroughWeatherState,
+} from "../flythrough/flythrough-contract";
+import { flythroughCameraPose } from "../flythrough/flythrough-contract";
+import type {
   GreyboxCell,
   GreyboxHeightfieldGridPayload,
   GreyboxMaterial,
@@ -22,7 +28,10 @@ import type {
   GreyboxSceneConfig,
 } from "../world/world-contract";
 import { selectGreyboxCellLod, validateGreyboxDistrict } from "../world/world-contract";
-import type { GreyboxWorkerRenderTelemetry } from "./render-protocol";
+import type {
+  FlythroughCheckpointRenderEvidence,
+  GreyboxWorkerRenderTelemetry,
+} from "./render-protocol";
 
 export interface GeometryBatch {
   readonly indices: Uint32Array;
@@ -41,6 +50,12 @@ const WEATHER_INTENSITY = Object.freeze({
   clear: 1,
   overcast: 0.62,
   storm: 0.38,
+} as const);
+
+const WEATHER_CLEAR_COLOR = Object.freeze({
+  clear: Object.freeze([0.32, 0.64, 0.92] as const),
+  overcast: Object.freeze([0.2, 0.28, 0.38] as const),
+  storm: Object.freeze([0.055, 0.075, 0.11] as const),
 } as const);
 
 export function createGeometryBatch(primitives: readonly GreyboxPrimitive[]): GeometryBatch {
@@ -374,6 +389,7 @@ export async function createLiteGreyboxWorld(
   }
 
   let renderedTriangleCount = 0;
+  const previewMeshes: Mesh[] = [];
   for (const materialDefinition of config.world.materials) {
     const primitives = primitivesByMaterial.get(materialDefinition.id) ?? [];
     const definition = requireMaterial(materials, materialDefinition.id);
@@ -390,6 +406,7 @@ export async function createLiteGreyboxWorld(
       material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
       mesh.material = material;
       addToScene(scene, mesh);
+      previewMeshes.push(mesh);
       renderedTriangleCount += geometry.triangleCount;
     };
     if (primitives.length > 0) addGeometry(createGeometryBatch(primitives), "boxes");
@@ -421,13 +438,17 @@ export async function createLiteGreyboxWorld(
 
   return {
     animationStartedAt: null as number | null,
+    camera,
     config,
     engine,
     light,
     materials,
     previousTimestamp: null as number | null,
+    presentationOwner: "preview" as "preview" | "streamed-residency",
+    previewMeshes: Object.freeze(previewMeshes),
     scene,
     streamingCells: new Map<string, Readonly<{ gpuBytes: number; meshes: readonly Mesh[] }>>(),
+    flythroughSample: null as FlythroughScenarioSample | null,
     telemetry,
   };
 }
@@ -490,9 +511,7 @@ export function uploadStreamingGreyboxCell(
     const material = createStandardMaterial();
     material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
     mesh.material = material;
-    // This task qualifies residency and upload while D-090's full-world preview remains
-    // the presentation owner. The flythrough task will make streamed meshes visible.
-    mesh.visible = false;
+    mesh.visible = renderer.presentationOwner === "streamed-residency";
     addToScene(renderer.scene, mesh);
     addedMeshes.add(mesh);
     gpuBytes += geometryGpuBytes(geometry);
@@ -530,6 +549,102 @@ export function uploadStreamingGreyboxCell(
   }
 }
 
+export function applyFlythroughSample(
+  renderer: LiteGreyboxWorld,
+  sample: FlythroughScenarioSample,
+  camera: Readonly<{ beta: number; heightMeters: number; radiusMeters: number }>,
+): void {
+  if (renderer.presentationOwner === "preview") {
+    renderer.presentationOwner = "streamed-residency";
+    for (const mesh of renderer.previewMeshes) mesh.visible = false;
+    for (const resident of renderer.streamingCells.values()) {
+      for (const mesh of resident.meshes) mesh.visible = true;
+    }
+  }
+  renderer.flythroughSample = sample;
+  const pose = flythroughCameraPose(sample, camera);
+  renderer.camera.target.x = pose.target[0];
+  renderer.camera.target.y = pose.target[1];
+  renderer.camera.target.z = pose.target[2];
+  renderer.camera.alpha = sample.headingRadians + Math.PI;
+  renderer.camera.beta = camera.beta;
+  renderer.camera.radius = camera.radiusMeters;
+}
+
+export function captureFlythroughCheckpoint(
+  renderer: LiteGreyboxWorld,
+  checkpointId: string,
+): Promise<FlythroughCheckpointRenderEvidence> {
+  const sample = renderer.flythroughSample;
+  if (renderer.presentationOwner !== "streamed-residency" || sample === null) {
+    throw new Error("Flythrough checkpoint requires streamed-residency presentation");
+  }
+  // Babylon Lite registers this request synchronously and services it from the next
+  // renderFrame. Keep registration before the returned evidence promise does any async
+  // processing; the render-worker queue relies on that exact order.
+  return finishFlythroughCheckpointCapture(
+    renderer,
+    checkpointId,
+    sample,
+    captureScreenshot(renderer.engine),
+  );
+}
+
+async function finishFlythroughCheckpointCapture(
+  renderer: LiteGreyboxWorld,
+  checkpointId: string,
+  sample: FlythroughScenarioSample,
+  capture: ReturnType<typeof captureScreenshot>,
+): Promise<FlythroughCheckpointRenderEvidence> {
+  const captured = await capture;
+  const clearColorRgb = currentClearColorRgb(renderer);
+  const clearColorDistanceThreshold = Math.max(
+    2,
+    Math.min(24, Math.hypot(...clearColorRgb) * 0.15),
+  );
+  let visiblePixelCount = 0;
+  const pixelCount = captured.width * captured.height;
+  for (let offset = 0; offset < captured.data.length; offset += 4) {
+    const distance = Math.hypot(
+      (captured.data[offset] ?? 0) - clearColorRgb[0],
+      (captured.data[offset + 1] ?? 0) - clearColorRgb[1],
+      (captured.data[offset + 2] ?? 0) - clearColorRgb[2],
+    );
+    if (distance > clearColorDistanceThreshold) visiblePixelCount += 1;
+  }
+  const digestInput = new Uint8Array(captured.data.byteLength);
+  digestInput.set(captured.data);
+  const digest = await crypto.subtle.digest("SHA-256", digestInput);
+  return Object.freeze({
+    cameraPosition: flythroughCameraPose(sample, {
+      beta: renderer.camera.beta,
+      heightMeters: renderer.camera.target.y - sample.observer[1],
+      radiusMeters: renderer.camera.radius,
+    }).position,
+    cameraTarget: Object.freeze([
+      renderer.camera.target.x,
+      renderer.camera.target.y,
+      renderer.camera.target.z,
+    ]) as readonly [number, number, number],
+    checkpointId,
+    clearColorDistanceThreshold,
+    clearColorRgb,
+    elapsedMs: sample.elapsedMs,
+    environment: Object.freeze({ ...sample.environment }),
+    environmentPhaseId: sample.environment.id,
+    height: captured.height,
+    previewVisibleMeshCount: renderer.previewMeshes.filter((mesh) => mesh.visible).length,
+    rgbaSha256: [...new Uint8Array(digest)]
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join(""),
+    sampledPixelCount: pixelCount,
+    streamedVisibleMeshCount: visibleStreamingMeshCount(renderer),
+    visiblePixelCount,
+    visiblePixelRatio: visiblePixelCount / pixelCount,
+    width: captured.width,
+  });
+}
+
 export function evictStreamingGreyboxCell(renderer: LiteGreyboxWorld, cellId: string): number {
   const resident = renderer.streamingCells.get(cellId);
   if (resident === undefined) throw new Error(`Streaming cell ${cellId} is not resident`);
@@ -547,14 +662,20 @@ export function renderLiteGreyboxWorld(
   renderer.animationStartedAt ??= timestamp;
   const animationSeconds = (timestamp - renderer.animationStartedAt) / 1_000;
   const phase =
+    renderer.flythroughSample?.environment.timeOfDayPhase ??
     (renderer.config.lighting.initialPhase +
       animationSeconds / renderer.config.lighting.cycleSeconds) %
-    1;
+      1;
+  const weather =
+    renderer.flythroughSample?.environment.weather ?? renderer.config.lighting.weather;
   const sunAngle = phase * Math.PI * 2;
   const elevation = Math.sin(sunAngle);
   renderer.light.direction.set(Math.cos(sunAngle), Math.max(0.12, elevation), Math.sin(sunAngle));
-  renderer.light.intensity =
-    WEATHER_INTENSITY[renderer.config.lighting.weather] * (0.28 + Math.max(0, elevation) * 0.72);
+  renderer.light.intensity = WEATHER_INTENSITY[weather] * (0.12 + Math.max(0, elevation) * 0.88);
+  const clearColor = environmentClearColor(weather, phase);
+  renderer.scene.clearColor.r = clearColor[0];
+  renderer.scene.clearColor.g = clearColor[1];
+  renderer.scene.clearColor.b = clearColor[2];
 
   renderFrame(
     renderer.engine,
@@ -562,6 +683,32 @@ export function renderLiteGreyboxWorld(
   );
   renderer.previousTimestamp = timestamp;
   return Object.freeze({ intensity: renderer.light.intensity, phase });
+}
+
+export function visibleStreamingMeshCount(renderer: LiteGreyboxWorld): number {
+  let count = 0;
+  for (const resident of renderer.streamingCells.values()) {
+    count += resident.meshes.filter((mesh) => mesh.visible).length;
+  }
+  return count;
+}
+
+function currentClearColorRgb(renderer: LiteGreyboxWorld): readonly [number, number, number] {
+  return Object.freeze([
+    Math.round(renderer.scene.clearColor.r * 255),
+    Math.round(renderer.scene.clearColor.g * 255),
+    Math.round(renderer.scene.clearColor.b * 255),
+  ]);
+}
+
+function environmentClearColor(
+  weather: FlythroughWeatherState,
+  phase: number,
+): readonly [number, number, number] {
+  const elevation = Math.sin(phase * Math.PI * 2);
+  const daylight = 0.18 + Math.max(0, elevation) * 0.82;
+  const base = WEATHER_CLEAR_COLOR[weather];
+  return Object.freeze([base[0] * daylight, base[1] * daylight, base[2] * daylight]);
 }
 
 export function resizeLiteGreyboxWorld(

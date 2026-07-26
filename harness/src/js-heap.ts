@@ -270,13 +270,24 @@ export function summarizeJsHeapSamples(
   const maximumSamplingStartDelayMs = Math.max(
     ...periodicSamples.map((sample) => sample.samplingStartDelayMs),
   );
+  const minimumSamplingStartDelayMs = Math.min(
+    ...periodicSamples.map((sample) => sample.samplingStartDelayMs),
+  );
   // The forced measurement-end sample substitutes for the most recent deadline.
   // Earlier due deadlines must still have produced periodic samples.
-  const expectedPeriodicSamples = Math.max(
-    1,
-    Math.floor(periodicSamplingDurationMs / sampleIntervalMs),
+  const latestDeadlineSubstitutedByBoundary =
+    Math.floor(periodicSamplingDurationMs / sampleIntervalMs) * sampleIntervalMs;
+  const observedPeriodicDeadlines = new Set(
+    periodicSamples.map((sample) => sample.scheduledAfterMeasurementStartMs),
   );
-  const missedSampleDeadlines = Math.max(0, expectedPeriodicSamples - periodicSamples.length);
+  let missedSampleDeadlines = 0;
+  for (
+    let deadlineMs = 0;
+    deadlineMs < latestDeadlineSubstitutedByBoundary;
+    deadlineMs += sampleIntervalMs
+  ) {
+    if (!observedPeriodicDeadlines.has(deadlineMs)) missedSampleDeadlines += 1;
+  }
   const evidence = Object.freeze({
     highWaterUsedSizeBytes: Math.max(...samples.map((sample) => sample.aggregateUsedSizeBytes)),
     maximumCollectionDurationMs,
@@ -287,6 +298,12 @@ export function summarizeJsHeapSamples(
     sampleIntervalMs,
     samples: Object.freeze([...samples]),
   });
+  if (minimumSamplingStartDelayMs < 0) {
+    throw new JsHeapValidationError(
+      `JS heap sampling started ${minimumSamplingStartDelayMs.toFixed(3)} ms before its scheduled monotonic deadline`,
+      evidence,
+    );
+  }
   if (maximumRealmResponseCompletionSkewMs >= sampleIntervalMs) {
     throw new JsHeapValidationError(
       `JS heap realm response-completion skew ${maximumRealmResponseCompletionSkewMs.toFixed(1)} ms reached the ${sampleIntervalMs} ms sample interval`,
@@ -306,6 +323,17 @@ export function summarizeJsHeapSamples(
     );
   }
   return evidence;
+}
+
+export function nextJsHeapSamplingDeadlineMs(
+  previousDeadlineMs: number,
+  elapsedMs: number,
+  sampleIntervalMs: number,
+): number {
+  return Math.max(
+    previousDeadlineMs + sampleIntervalMs,
+    (Math.floor(elapsedMs / sampleIntervalMs) + 1) * sampleIntervalMs,
+  );
 }
 
 function createSampler(
@@ -455,16 +483,30 @@ function createSampler(
         pendingCapture = null;
         if (state === "running" && captureFailure === null) {
           const elapsedMs = performance.now() - measurementStartedAtMs;
-          const nextDeadlineMs = (Math.floor(elapsedMs / sampleIntervalMs) + 1) * sampleIntervalMs;
-          timer = setTimeout(
-            () => {
-              timer = null;
-              runPeriodicCapture(nextDeadlineMs);
-            },
-            Math.max(0, measurementStartedAtMs + nextDeadlineMs - performance.now()),
+          const nextDeadlineMs = nextJsHeapSamplingDeadlineMs(
+            scheduledAfterMeasurementStartMs,
+            elapsedMs,
+            sampleIntervalMs,
           );
+          schedulePeriodicCapture(nextDeadlineMs);
         }
       });
+  };
+
+  const schedulePeriodicCapture = (scheduledAfterMeasurementStartMs: number): void => {
+    const scheduledAtMs = measurementStartedAtMs + scheduledAfterMeasurementStartMs;
+    timer = setTimeout(
+      () => {
+        timer = null;
+        const remainingMs = scheduledAtMs - performance.now();
+        if (remainingMs > 0) {
+          schedulePeriodicCapture(scheduledAfterMeasurementStartMs);
+          return;
+        }
+        runPeriodicCapture(scheduledAfterMeasurementStartMs);
+      },
+      Math.max(0, scheduledAtMs - performance.now()),
+    );
   };
 
   return Object.freeze({
@@ -481,6 +523,9 @@ function createSampler(
       if (timer !== null) clearTimeout(timer);
       timer = null;
       try {
+        if (samples.length === 0 && pendingCapture === null) {
+          await capture("periodic", 0);
+        }
         await pendingCapture;
         if (captureFailure !== null) throw captureFailure;
         const periodicSamplingDurationMs = performance.now() - measurementStartedAtMs;
@@ -520,7 +565,7 @@ function createSampler(
       if (state !== "prepared") throw new Error(`Cannot start JS heap sampler in ${state} state`);
       state = "running";
       measurementStartedAtMs = performance.now();
-      runPeriodicCapture(0);
+      schedulePeriodicCapture(0);
     },
   });
 }

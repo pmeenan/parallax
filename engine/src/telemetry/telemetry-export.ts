@@ -1,18 +1,29 @@
 import type { AppOwnedLlmSpikeTelemetrySnapshot } from "../ai/app-owned-llm-spike-protocol";
 import type { AppOwnedLlmSpikeService } from "../ai/app-owned-llm-spike-service";
-import type { RenderService, RenderTelemetrySnapshot } from "../render/render-service";
-import type { WorldStreamingTelemetrySnapshot } from "../streaming/streaming-protocol";
+import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
+import type { BenchmarkService } from "../benchmark/benchmark-service";
+import type {
+  FlythroughService,
+  FlythroughTelemetrySnapshot,
+} from "../flythrough/flythrough-service";
+import type {
+  RenderRecoveryProbeKind,
+  RenderService,
+  RenderTelemetrySnapshot,
+} from "../render/render-service";
+import type {
+  StreamingRecoveryCheckpoint,
+  WorldStreamingTelemetrySnapshot,
+} from "../streaming/streaming-protocol";
 import type { WorldStreamingService } from "../streaming/world-streaming-service";
-import type { Memory64SpikeTelemetrySnapshot } from "../wasm/memory64-spike-protocol";
-import type { Memory64SpikeService } from "../wasm/memory64-spike-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v12 envelope removes the closed Prompt API and standalone OPFS experiment
-// sections; representative OPFS evidence remains in the streaming section.
+// The v25 snapshot envelope accepts benchmark-result@1 schema v3's explicit distinction
+// between recorded environment diagnostics and fixed-worker comparison identity.
 // Subsystems retain their own section schemas so platform experiments do not silently
 // rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 12;
+export const TELEMETRY_SCHEMA_VERSION = 25;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -28,8 +39,9 @@ export interface ParallaxRuntimeIdentity {
 
 export interface ParallaxTelemetrySnapshot {
   readonly appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot;
+  readonly benchmark: BenchmarkTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
-  readonly memory64Spike: Memory64SpikeTelemetrySnapshot;
+  readonly flythrough: FlythroughTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
   readonly streaming: WorldStreamingTelemetrySnapshot;
@@ -37,8 +49,19 @@ export interface ParallaxTelemetrySnapshot {
 }
 
 export interface ParallaxTelemetryExport {
+  benchmarkResult(): BenchmarkReport | null;
+  benchmarkResultJson(): string | null;
+  benchmarkResultText(): string | null;
+  configureBenchmark(presetId: string): void;
+  exerciseRenderRecovery(probe: RenderRecoveryProbeKind): void;
+  exerciseRenderRecoveryAtBoundary(
+    probe: RenderRecoveryProbeKind,
+  ): Promise<StreamingRecoveryCheckpoint>;
+  prepareFlythrough(): void;
+  resetBenchmark(): Promise<void>;
   snapshot(): ParallaxTelemetrySnapshot;
-  startMemory64Spike(): void;
+  startFlythrough(): void;
+  startBenchmark(): void;
   subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void;
   startStreamingTraversal(): void;
 }
@@ -47,8 +70,10 @@ export function installTelemetryExport(
   renderService: RenderService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
-  memory64SpikeService: Memory64SpikeService,
   streamingService: WorldStreamingService,
+  flythroughService: FlythroughService,
+  benchmarkService: BenchmarkService,
+  formatBenchmarkReport: (report: BenchmarkReport) => string,
   startStreamingTraversal: () => void,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
@@ -57,20 +82,61 @@ export function installTelemetryExport(
     throw new Error(`${TELEMETRY_GLOBAL_NAME} is already installed in this realm`);
   }
   const frozenIdentity = Object.freeze({ ...identity });
+  const assertBenchmarkDoesNotOwnScenario = (action: string): void => {
+    const state = benchmarkService.snapshot().state;
+    if (state !== "idle" && state !== "completed" && state !== "failed" && state !== "disposed") {
+      throw new Error(`${action} is unavailable while the in-game benchmark owns the scenario`);
+    }
+  };
   const telemetryExport: ParallaxTelemetryExport = Object.freeze({
+    benchmarkResult(): BenchmarkReport | null {
+      return benchmarkService.snapshot().report;
+    },
+    benchmarkResultJson(): string | null {
+      const report = benchmarkService.snapshot().report;
+      return report === null ? null : `${JSON.stringify(report, null, 2)}\n`;
+    },
+    benchmarkResultText(): string | null {
+      const report = benchmarkService.snapshot().report;
+      return report === null ? null : formatBenchmarkReport(report);
+    },
+    configureBenchmark(presetId: string): void {
+      benchmarkService.configure(presetId);
+    },
+    exerciseRenderRecovery(probe: RenderRecoveryProbeKind): void {
+      renderService.exerciseRecovery(probe);
+    },
+    exerciseRenderRecoveryAtBoundary(
+      probe: RenderRecoveryProbeKind,
+    ): Promise<StreamingRecoveryCheckpoint> {
+      return renderService.exerciseRecoveryAtBoundary(probe);
+    },
     snapshot: () =>
       snapshot(
         renderService.snapshot(),
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
-        memory64SpikeService.snapshot(),
         streamingService.snapshot(),
+        flythroughService.snapshot(),
+        benchmarkService.snapshot(),
         frozenIdentity,
       ),
-    startMemory64Spike(): void {
-      memory64SpikeService.start();
+    prepareFlythrough(): void {
+      assertBenchmarkDoesNotOwnScenario("Standalone flythrough preflight");
+      flythroughService.prepare();
+    },
+    resetBenchmark(): Promise<void> {
+      return benchmarkService.reset();
+    },
+    startBenchmark(): void {
+      benchmarkService.start();
+    },
+    startFlythrough(): void {
+      assertBenchmarkDoesNotOwnScenario("Standalone flythrough start");
+      flythroughService.start();
     },
     startStreamingTraversal(): void {
+      assertBenchmarkDoesNotOwnScenario("Synthetic streaming traversal");
       startStreamingTraversal();
     },
     subscribe(listener: (snapshot: ParallaxTelemetrySnapshot) => void): () => void {
@@ -81,8 +147,9 @@ export function installTelemetryExport(
               renderService.snapshot(),
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
-              memory64SpikeService.snapshot(),
               streamingService.snapshot(),
+              flythroughService.snapshot(),
+              benchmarkService.snapshot(),
               frozenIdentity,
             ),
           );
@@ -99,16 +166,18 @@ export function installTelemetryExport(
       const unsubscribeRender = renderService.subscribe(publishAfterWiring);
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
-      const unsubscribeMemory64 = memory64SpikeService.subscribe(publishAfterWiring);
       const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
+      const unsubscribeFlythrough = flythroughService.subscribe(publishAfterWiring);
+      const unsubscribeBenchmark = benchmarkService.subscribe(publishAfterWiring);
       wiring = false;
       publish();
       return () => {
         unsubscribeRender();
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
-        unsubscribeMemory64();
         unsubscribeStreaming();
+        unsubscribeFlythrough();
+        unsubscribeBenchmark();
       };
     },
   });
@@ -125,14 +194,16 @@ function snapshot(
   render: RenderTelemetrySnapshot,
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
-  memory64Spike: Memory64SpikeTelemetrySnapshot,
   streaming: WorldStreamingTelemetrySnapshot,
+  flythrough: FlythroughTelemetrySnapshot,
+  benchmark: BenchmarkTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
     appOwnedLlmSpike,
+    benchmark,
+    flythrough,
     identity,
-    memory64Spike,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
     streaming,

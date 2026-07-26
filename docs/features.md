@@ -7,16 +7,18 @@ today's code must respect.
 
 **Status legend:** `active` (on the committed mainline plan — see its Milestone column;
 not necessarily in progress yet, plan.md tracks that) · `designed` (constraints locked,
-build later) · `explored` (idea logged, no constraints yet)
+build later) · `implemented` (the planned implementation and result contract are
+complete; any explicit physical-qualification limits still apply) · `explored` (idea
+logged, no constraints yet)
 
 ## Matrix
 
 | Feature area | Web-novel angle | Status | Milestone |
 | --- | --- | --- | --- |
-| Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; hard district swaps | active | M1, M4 |
+| Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; D-112 makes the authoritative cohort, residency, storage, latency-stage, queue, and eviction telemetry visible in-game; D-115 defers no-visible-pop visual diff to M5 representative art; hard district swaps | active | M1, M4, M5 visual gate |
 | Install/update lifecycle | Multi-GB browser-native installer; asset-only updates gated on warm-launch performance staying within budget, with cache-lifecycle evidence recorded best-effort (D-051); full offline; clean confirmed uninstall with measured full-removal (D-024) | active | M2 |
 | High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M5 |
-| Geometry representation & LOD | Open exploration (P-002): classic triangle LOD chains vs. meshlet-based virtualized geometry (nanite-like, GPU-driven culling in WGSL compute) vs. 3D Gaussian splats — likely a hybrid (e.g., splat environments/backdrops + triangle interactives). Splat rendering is compute-native and unusually web-friendly; virtualized geometry stress-tests WebGPU compute limits (finding-rich either way) | active | M1 spike, M5 commit |
+| Geometry representation & LOD | D-098 retains classic triangle LOD for the current D1 path because neither bounded challenger supplied fully eligible displacement evidence; this was not a valid triangle-performance win. Representation-agnostic streaming/asset boundaries preserve a future full virtual-geometry, relightable-splat, higher-density-art, or capture-UGC reopening without shipping the closed spike's apparatus. | active | M1 decision, M5 content |
 | Conversational NPCs | App-owned on-device Gemma 4 E2B QAT-GGUF on wllama, WebGPU by default with an explicit CPU/WASM headroom mode (D-074/D-096); no server, works offline, hash-verified in OPFS. Context is assembled by the engine/ai knowledge service (D-033), structured game-state tier first. Aspiration (game-design.md): NPCs shouldn't be blindingly distinguishable from real players | active | M3 |
 | Simulation & save | Deterministic fixed-timestep sim worker; input-command log doubles as replay + harness regression format | active | M3 |
 | Character & animation | Babylon animation system + AI-generated rigged characters from the assets pipeline | active | M3, M5 |
@@ -27,7 +29,7 @@ build later) · `explored` (idea logged, no constraints yet)
 | P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |
 | Input | Keyboard/mouse (Pointer Lock w/ `unadjustedMovement`, Keyboard Lock for Esc/system keys in fullscreen), Gamepad API incl. haptics, Fullscreen, Screen Wake Lock | active | M3 |
 | Accessibility | Remap, subtitles for NPC dialog (free — dialog is text-native), UI scaling | explored | M6 |
-| Benchmark mode | Public, deterministic front end to the harness scenarios and telemetry; comparable browser-engine/hardware reports without a single opaque score (D-025) | active | M1+ |
+| Benchmark mode | Public deterministic front end to canonical scenarios and telemetry without an opaque score. D-105 implements M1's browser-neutral advisory `benchmark-result@1`; privileged harness gates remain separate, and continuous-page versus fresh-profile lineage is explicit. D-115 qualifies the implementation/result contract from complete fail-honest physical exports while preserving their unchanged variance failures; another 30-plus-minute run is not an M1 gate. | implemented; physically exercised | M1+ |
 | Live content hooks | Manifest-driven content drops using the update path (no code deploy) | explored | post-M6 |
 
 Anything added to the game that doesn't fit a row: add a row, including its web-novel
@@ -56,7 +58,7 @@ area is active) · `stretch` (only if a cheap opportunity appears) · `parked`
 | Multi-camera views | Window Management + additional render targets: in-game cameras (deployable drones, security feeds, scenic vistas) rendered to separate OS windows/monitors | Simultaneous independent viewpoints are a luxury even in native titles; a drone feed living on your second monitor while you play on the first is a showcase moment. Platform research bonus: how does one WebGPU device best drive multiple windows (second canvas context vs. frame transport vs. captureStream)? — finding-rich either way. | explore (M6) |
 | Install ergonomics | Background Fetch (install continues with the tab closed), PWA install + Badging/Notifications for world events | An installer that outlives the tab, and an app icon whose badge reflects the game world. Extends the M2 lifecycle work. | explore (M2) |
 | Web-native modding | File System Access API: user mounts a local mod directory as an overlay asset source (through QA-gate-shaped validation) | Modding on the web with no filesystem hacks — a sandboxed, permissioned mod folder. | explore (post-M6) |
-| Scan-your-world UGC | Phone-scanned Gaussian splats (room/object captures) imported as in-game content — file picker / mod-folder overlay in, splat-validation gate, placed in the world | Bring your actual desk, dog statue, or living room into the game. Native AAA has no UGC path this cheap; splat capture apps on phones + a compute-native splat renderer make it a file-import problem. Depends on the splat branch of P-002 landing. | explore (post-M6, gated on P-002) |
+| Scan-your-world UGC | Phone-scanned Gaussian splats (room/object captures) imported as in-game content — file picker / mod-folder overlay in, splat-validation gate, placed in the world | Bring your actual desk, dog statue, or living room into the game. Native AAA has no UGC path this cheap. D-098 did not ship a splat renderer: capture-origin content is a distinct future workload that must reopen the representation choice with its own dynamic-relighting, validation, storage, and performance evidence. | explore (post-M6, new decision required) |
 | Proximity voice chat | `getUserMedia` + WebRTC audio, spatialized through the WebAudio graph | Ties into M7 multiplayer; browser-native voice with positional audio, no third-party overlay. | parked (M7) |
 | Webcam body-lean / peek | `getUserMedia` + on-device pose estimation (WebGPU/WASM) mapped to camera lean or duck | Physical lean-to-peek without VR hardware. Judged likely not worth the cycles for the core game — strictly opt-in, strictly on-device, only as a demo vignette. | stretch |
 | Biometric-reactive world | Web Bluetooth (heart-rate monitor) modulating audio/pacing/encounters | Genuinely novel and memorable in demos; niche hardware keeps it a vignette, not a system. | stretch |

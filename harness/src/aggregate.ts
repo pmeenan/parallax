@@ -9,6 +9,21 @@ export type VarianceMetric =
   | Readonly<{ relativeRange: number; state: "measured" }>
   | Readonly<{ reason: string; relativeRange: number | null; state: "invalid" }>;
 
+export type BoundedRepeatabilityMetric =
+  | Readonly<{
+      absoluteRange: number;
+      allowedAbsoluteRange: number;
+      relativeRange: number | null;
+      state: "measured";
+    }>
+  | Readonly<{
+      absoluteRange: number | null;
+      allowedAbsoluteRange: number | null;
+      reason: string;
+      relativeRange: number | null;
+      state: "invalid";
+    }>;
+
 export function distribution(values: readonly number[]): Distribution {
   if (values.length === 0) throw new Error("Cannot aggregate an empty sample set");
   const sorted = [...values].sort((left, right) => left - right);
@@ -77,4 +92,65 @@ export function evaluateRelativeVariance(
         state: "invalid",
       })
     : Object.freeze({ relativeRange: range, state: "measured" });
+}
+
+// A pure relative range is unstable around zero: a sub-millisecond spread can become
+// an arbitrarily large percentage of an already-negligible duration. This evaluator
+// preserves the relative limit outside that region while requiring the absolute spread
+// to remain within a separately versioned floor.
+export function evaluateBoundedRepeatability(
+  values: readonly number[],
+  expectedSamples: number,
+  metricLabel: string,
+  relativeRangeLimit: number,
+  absoluteRangeFloor: number,
+): BoundedRepeatabilityMetric {
+  if (!Number.isInteger(expectedSamples) || expectedSamples <= 0) {
+    throw new Error(
+      `Expected repeat count must be a positive integer; received ${expectedSamples}`,
+    );
+  }
+  if (!Number.isFinite(relativeRangeLimit) || relativeRangeLimit < 0) {
+    throw new Error(`Relative range limit must be finite and nonnegative`);
+  }
+  if (!Number.isFinite(absoluteRangeFloor) || absoluteRangeFloor < 0) {
+    throw new Error(`Absolute range floor must be finite and nonnegative`);
+  }
+  if (values.length !== expectedSamples) {
+    return Object.freeze({
+      absoluteRange: null,
+      allowedAbsoluteRange: null,
+      reason: `${metricLabel} repeatability requires all ${expectedSamples} expected repeats; received ${values.length}`,
+      relativeRange: null,
+      state: "invalid",
+    });
+  }
+  if (values.some((value) => !Number.isFinite(value) || value < 0)) {
+    return Object.freeze({
+      absoluteRange: null,
+      allowedAbsoluteRange: null,
+      reason: `${metricLabel} repeatability requires finite nonnegative values`,
+      relativeRange: null,
+      state: "invalid",
+    });
+  }
+  const minimum = Math.min(...values);
+  const maximum = Math.max(...values);
+  const absoluteRange = maximum - minimum;
+  const relative = relativeRange(values);
+  const allowedAbsoluteRange = Math.max(absoluteRangeFloor, minimum * relativeRangeLimit);
+  return absoluteRange > allowedAbsoluteRange
+    ? Object.freeze({
+        absoluteRange,
+        allowedAbsoluteRange,
+        reason: `${metricLabel} absolute range ${absoluteRange} exceeds the allowed ${allowedAbsoluteRange} (maximum of ${relativeRangeLimit} relative to the ${minimum} minimum and the ${absoluteRangeFloor} absolute floor)`,
+        relativeRange: relative,
+        state: "invalid",
+      })
+    : Object.freeze({
+        absoluteRange,
+        allowedAbsoluteRange,
+        relativeRange: relative,
+        state: "measured",
+      });
 }

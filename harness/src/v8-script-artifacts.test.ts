@@ -18,7 +18,6 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/decode-worker.js"),
         artifact("immutable/streaming-worker.js"),
         artifact("immutable/wasm-thread-worker.js"),
-        artifact("immutable/memory64-spike-worker.js"),
         artifact("immutable/module.wasm"),
       ]),
       gameContentEntrypoints: Object.freeze([
@@ -30,16 +29,11 @@ describe("V8 script artifact selection", () => {
           targetType: "district",
         }),
       ]),
-      schemaVersion: 10,
+      schemaVersion: 11,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/decode-worker.js",
           role: "decode",
-          targetType: "worker",
-        }),
-        Object.freeze({
-          path: "immutable/memory64-spike-worker.js",
-          role: "memory64-spike",
           targetType: "worker",
         }),
         Object.freeze({

@@ -18,8 +18,10 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 15;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 23;
 export const SMOKE_REPEATS = 3;
+export const SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS = 1;
+export const SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT = 0.1;
 export const SMOKE_BUDGET_METRICS = Object.freeze({
   allRealmJsHeapHighWaterBytes: "allRealmJsHeapHighWaterBytes",
   mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
@@ -52,10 +54,9 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 12;
-// v31 removes the closed Prompt API and standalone OPFS experiment sections and
-// binds build-manifest v10's five-worker contract.
-export const SMOKE_REPORT_SCHEMA_VERSION = 31;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 25;
+// v47 records fail-closed post-run identity and JSON-primary report finalization evidence.
+export const SMOKE_REPORT_SCHEMA_VERSION = 47;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -66,8 +67,10 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   ),
   metric("verified gate environment identity", true, "implemented"),
   metric("core measurement run completion", true, "implemented"),
+  metric("report finalization", true, "implemented"),
   metric("greybox world content", true, "implemented"),
   metric("world streaming pipeline", true, "implemented"),
+  metric("streaming cell-load p95 variance", true, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),

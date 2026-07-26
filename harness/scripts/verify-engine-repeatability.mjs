@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { buildMemory64Wasm, buildRustWasm } from "./build-wasm.mjs";
+import { buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const shippedDirectory = join(repositoryRoot, "engine/dist");
@@ -12,7 +12,6 @@ const shippedDirectory = join(repositoryRoot, "engine/dist");
 const expectedOutputs = Object.freeze([
   "decode-worker.js",
   "engine.js",
-  "memory64-spike-worker.js",
   "render-worker.js",
   "streaming-worker.js",
   "wasm-thread-worker.js",
@@ -94,21 +93,6 @@ async function verifyWasmRepeatability() {
       );
     }
     console.log(`WASM repeatability: thread_spike_bg.wasm sha256=${shippedWasm.sha256}`);
-    const memory64OutputDirectory = join(temporaryRoot, "memory64-pkg");
-    await buildMemory64Wasm({ outputDirectory: memory64OutputDirectory });
-    for (const name of ["memory32.wasm", "memory64.wasm"]) {
-      const shippedMemory = await digestFile(
-        join(repositoryRoot, "engine/wasm/memory64-spike/pkg"),
-        name,
-      );
-      const rebuiltMemory = await digestFile(memory64OutputDirectory, name);
-      if (shippedMemory.sha256 !== rebuiltMemory.sha256) {
-        throw new Error(
-          `WASM repeatability check failed for ${name}: ${shippedMemory.sha256} != ${rebuiltMemory.sha256}`,
-        );
-      }
-      console.log(`WASM repeatability: ${name} sha256=${shippedMemory.sha256}`);
-    }
   } finally {
     await rm(temporaryRoot, { force: true, recursive: true });
   }

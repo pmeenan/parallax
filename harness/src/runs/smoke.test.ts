@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import {
   type ParallaxTelemetrySnapshot,
   TELEMETRY_GLOBAL_NAME,
@@ -17,6 +19,8 @@ import {
   SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SAB_TOTAL_BYTES,
+  SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
+  SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
   SMOKE_V8_CODE_CACHE_DIAGNOSTIC,
@@ -32,7 +36,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(31);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(47);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -85,12 +89,22 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "core measurement run completion"),
     ).toMatchObject({ mandatoryForHarnessV1: true, probe: "implemented" });
+    expect(SMOKE_METRICS.find((metric) => metric.name === "report finalization")).toMatchObject({
+      mandatoryForHarnessV1: true,
+      probe: "implemented",
+    });
     expect(SMOKE_METRICS.find((metric) => metric.name === "greybox world content")).toMatchObject({
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "world streaming pipeline"),
+    ).toMatchObject({
+      mandatoryForHarnessV1: true,
+      probe: "implemented",
+    });
+    expect(
+      SMOKE_METRICS.find((metric) => metric.name === "streaming cell-load p95 variance"),
     ).toMatchObject({
       mandatoryForHarnessV1: true,
       probe: "implemented",
@@ -106,7 +120,9 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(15);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(23);
+    expect(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS).toBe(1);
+    expect(SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toBe(0.1);
     expect(SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS).toBe(10_000);
     expect(SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS).toBe(10_000);
     expect(SMOKE_SAB_TOTAL_BYTES).toBe(8_224);
@@ -137,6 +153,16 @@ describe("smoke@1 contract", () => {
     for (const name of SMOKE_EVIDENCE_METRIC_NAMES) {
       expect(registered).toContain(name);
     }
+  });
+
+  it("keeps budgets.md aligned with the executable mandatory metric-set version", async () => {
+    const budgets = await readFile(
+      resolve(import.meta.dirname, "../../../docs/budgets.md"),
+      "utf8",
+    );
+    expect(budgets).toContain(
+      `the current \`smoke@1\` mandatory metric-set (v${SMOKE_MANDATORY_METRIC_SET_VERSION},`,
+    );
   });
 
   it("owns exhaustive tier profiles", () => {

@@ -26,6 +26,81 @@
       p[data-state="failed"] { color: #ff8e8e; }
       .app-owned-llm { top: auto; bottom: 1rem; max-width: min(42rem, calc(100% - 2rem)); }
       .app-owned-llm button { margin-top: 0.5rem; }
+      .benchmark-panel {
+        top: auto;
+        right: 1rem;
+        bottom: 1rem;
+        left: auto;
+        width: min(32rem, calc(100% - 2rem));
+        max-height: calc(50% - 1.5rem);
+        overflow: auto;
+      }
+      .benchmark-panel h2 { margin: 0 0 0.4rem; font-size: 1rem; }
+      .benchmark-panel .benchmark-summary { margin-bottom: 0.75rem; line-height: 1.45; }
+      .benchmark-panel label { display: block; margin-bottom: 0.25rem; font-size: 0.75rem; }
+      .benchmark-panel select,
+      .benchmark-panel button {
+        min-height: 2rem;
+        border: 1px solid rgb(110 180 255 / 55%);
+        border-radius: 0.3rem;
+        background: #0b1730;
+        color: inherit;
+      }
+      .benchmark-panel select { width: 100%; padding: 0.25rem 0.5rem; }
+      .benchmark-panel button { padding: 0.25rem 0.65rem; }
+      .benchmark-panel button:disabled { opacity: 0.5; }
+      .benchmark-panel progress { width: 100%; margin: 0.6rem 0 0.25rem; }
+      .benchmark-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+      .benchmark-result { margin-top: 0.75rem; }
+      .benchmark-result pre {
+        max-height: 14rem;
+        overflow: auto;
+        white-space: pre-wrap;
+        color: #c8e0ff;
+        font: 0.7rem/1.4 ui-monospace, monospace;
+      }
+      .streaming-dashboard {
+        right: 1rem;
+        left: auto;
+        width: min(32rem, calc(100% - 2rem));
+        max-height: calc(50% - 1.5rem);
+        overflow: auto;
+      }
+      .streaming-dashboard h2 { margin: 0 0 0.25rem; font-size: 1rem; }
+      .streaming-dashboard h3 {
+        margin: 0 0 0.3rem;
+        color: #c8e0ff;
+        font-size: 0.75rem;
+      }
+      .streaming-dashboard-summary { margin-bottom: 0.75rem; }
+      .streaming-dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem 1rem;
+      }
+      .streaming-dashboard dl {
+        display: grid;
+        grid-template-columns: minmax(7.5rem, 0.85fr) minmax(0, 1.15fr);
+        gap: 0.2rem 0.55rem;
+        margin: 0;
+        font: 0.68rem/1.35 ui-monospace, monospace;
+      }
+      .streaming-dashboard dt { color: #8db6e8; }
+      .streaming-dashboard dd { min-width: 0; margin: 0; overflow-wrap: anywhere; color: #dcecff; }
+      .streaming-dashboard dd[data-state="healthy"] { color: #9ff0bf; }
+      .streaming-dashboard dd[data-state="warning"] { color: #ffd28a; }
+      .streaming-dashboard dd[data-state="error"] { color: #ff8e8e; }
+      .streaming-dashboard dd[data-state="unavailable"] { color: #95a2b4; }
+      .streaming-dashboard-details {
+        margin-top: 0.75rem;
+        color: #9bcaff;
+        font: 0.7rem/1.4 ui-monospace, monospace;
+      }
+      .streaming-dashboard-details h3 { margin-top: 0.65rem; }
+      .streaming-dashboard-details ul { margin: 0; padding-left: 1.25rem; color: #c8e0ff; }
+      @media (max-width: 42rem) {
+        .streaming-dashboard-grid { grid-template-columns: 1fr; }
+      }
     </style>
     <script type="importmap">
       {
@@ -48,6 +123,8 @@
         <p id="app-owned-llm-status">idle</p>
         <button id="app-owned-llm-start" type="button">Install / run probe</button>
       </section>
+      <section id="streaming-dashboard" class="status-panel streaming-dashboard"></section>
+      <section id="benchmark-mode" class="status-panel benchmark-panel"></section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

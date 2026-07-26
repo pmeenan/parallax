@@ -30,11 +30,81 @@ export type {
   MeshoptDocumentLayout,
 } from "./assets/meshopt-layout";
 export { canonicalMeshoptLayoutErrors } from "./assets/meshopt-layout";
+export type {
+  BenchmarkAttempt,
+  BenchmarkAttemptMetrics,
+  BenchmarkBrowserIdentity,
+  BenchmarkCapability,
+  BenchmarkCheck,
+  BenchmarkDefinition,
+  BenchmarkEnvironmentIdentity,
+  BenchmarkFacet,
+  BenchmarkGpuAdapterIdentity,
+  BenchmarkMetric,
+  BenchmarkQualityPreset,
+  BenchmarkReport,
+  BenchmarkScreenIdentity,
+  BenchmarkTelemetrySnapshot,
+  BenchmarkVarianceMetric,
+} from "./benchmark/benchmark-contract";
+export {
+  BENCHMARK_REPEAT_RELATIVE_RANGE_LIMIT,
+  BENCHMARK_RESULT_CONTRACT,
+  BENCHMARK_RESULT_SCHEMA_VERSION,
+  BENCHMARK_TELEMETRY_SCHEMA_VERSION,
+  invalidMetric,
+  measuredMetric,
+  notApplicableMetric,
+  unsupportedMetric,
+} from "./benchmark/benchmark-contract";
+export type {
+  BenchmarkLongTaskMonitor,
+  BenchmarkPlatform,
+} from "./benchmark/benchmark-environment";
+export {
+  BENCHMARK_BUILD_MANIFEST_SCHEMA_VERSION,
+  captureBrowserBenchmarkEnvironment,
+  createBrowserBenchmarkPlatform,
+  createBrowserLongTaskMonitor,
+} from "./benchmark/benchmark-environment";
+export type { BenchmarkListener, BenchmarkService } from "./benchmark/benchmark-service";
+export { createBenchmarkService } from "./benchmark/benchmark-service";
+export type {
+  FlythroughCameraPose,
+  FlythroughEnvironmentPhase,
+  FlythroughRouteSpanMinimum,
+  FlythroughScenario,
+  FlythroughScenarioSample,
+  FlythroughScenarioValidation,
+  FlythroughWeatherState,
+} from "./flythrough/flythrough-contract";
+export {
+  flythroughCameraPose,
+  minimumObservedFlythroughRouteSpan,
+  sampleFlythroughScenario,
+  validateFlythroughScenario,
+} from "./flythrough/flythrough-contract";
+export type {
+  FlythroughListener,
+  FlythroughService,
+  FlythroughTelemetrySnapshot,
+} from "./flythrough/flythrough-service";
+export {
+  createFlythroughService,
+  FLYTHROUGH_STABILIZATION_MS,
+  FLYTHROUGH_TELEMETRY_SCHEMA_VERSION,
+} from "./flythrough/flythrough-service";
 export type { EngineIdentity } from "./identity";
 export { ENGINE_VERSION, initializeEngine } from "./identity";
 export type {
+  FlythroughCheckpointRenderEvidence,
   GreyboxRenderTelemetry,
+  RenderFlythroughTelemetry,
   RenderFrameSample,
+  RenderPixelSize,
+  RenderRecoveryCause,
+  RenderRecoveryProbeKind,
+  RenderRecoveryTelemetry,
   RenderService,
   RenderServiceListener,
   RenderTelemetrySnapshot,
@@ -42,6 +112,7 @@ export type {
 export { createRenderService } from "./render/render-service";
 export type {
   StreamingCellLoadTelemetry,
+  StreamingRecoveryCheckpoint,
   WorldStreamingTelemetrySnapshot,
 } from "./streaming/streaming-protocol";
 export {
@@ -51,6 +122,7 @@ export {
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
+  STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS,
 } from "./streaming/streaming-protocol";
 export type {
   WorldStreamingListener,
@@ -69,33 +141,6 @@ export {
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
-export type {
-  Memory64SpikeHighAddressTelemetry,
-  Memory64SpikeSample,
-  Memory64SpikeSamplePhase,
-  Memory64SpikeTelemetrySnapshot,
-  Memory64SpikeVariant,
-  Memory64SpikeVariantTelemetry,
-} from "./wasm/memory64-spike-protocol";
-export {
-  MEMORY64_SPIKE_COLD_SAMPLE_COUNT,
-  MEMORY64_SPIKE_COMPILE_BATCH_ITERATIONS,
-  MEMORY64_SPIKE_HIGH_ADDRESS,
-  MEMORY64_SPIKE_HIGH_PAGES,
-  MEMORY64_SPIKE_HIGH_SENTINEL,
-  MEMORY64_SPIKE_INSTANTIATE_BATCH_ITERATIONS,
-  MEMORY64_SPIKE_KERNEL_ROUNDS,
-  MEMORY64_SPIKE_MEASURED_SAMPLE_COUNT,
-  MEMORY64_SPIKE_PREPARE_ROUNDS,
-  MEMORY64_SPIKE_PREPARED_PAGES,
-  MEMORY64_SPIKE_TELEMETRY_SCHEMA_VERSION,
-  MEMORY64_SPIKE_WARMUP_SAMPLE_COUNT,
-} from "./wasm/memory64-spike-protocol";
-export type {
-  Memory64SpikeListener,
-  Memory64SpikeService,
-} from "./wasm/memory64-spike-service";
-export { createMemory64SpikeService } from "./wasm/memory64-spike-service";
 export type { WasmThreadSpikeTelemetrySnapshot } from "./wasm/wasm-thread-spike-protocol";
 export {
   WASM_THREAD_SPIKE_MEMORY_PAGES,

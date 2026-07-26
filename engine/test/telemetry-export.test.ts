@@ -3,17 +3,61 @@ import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-ser
 import { createRenderService } from "../src/render/render-service";
 import { createWorldStreamingService } from "../src/streaming/world-streaming-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
-import { createMemory64SpikeService } from "../src/wasm/memory64-spike-service";
 import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-service";
 
 describe("combined telemetry export", () => {
   it("delivers one current initial snapshot and returns teardown when the listener throws", () => {
+    let benchmarkState: "idle" | "resetting" | "running" = "idle";
     const telemetry = installTelemetryExport(
       createRenderService(),
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
-      createMemory64SpikeService(),
       createWorldStreamingService(),
+      {
+        abort: () => Promise.resolve(),
+        dispose: () => undefined,
+        prepare: () => undefined,
+        reset: () => Promise.resolve(),
+        snapshot: () =>
+          ({
+            checkpointEvidence: [],
+            failureMessage: null,
+            preflightElapsedMs: null,
+            render: null,
+            scenarioId: "test@1",
+            schemaVersion: 3,
+            state: "idle",
+            streamingAtMeasurementEnd: null,
+            streamingAtMeasurementStart: null,
+            validation: {
+              distanceMeters: 12,
+              durationMs: 1_000,
+              environmentPhaseIds: ["test"],
+              scenarioId: "test@1",
+            },
+          }) as const,
+        start: () => undefined,
+        subscribe: () => () => undefined,
+      },
+      {
+        configure: () => undefined,
+        dispose: () => undefined,
+        reset: () => Promise.resolve(),
+        snapshot: () =>
+          ({
+            activeRepeat: null,
+            completedRepeats: 0,
+            failureMessage: null,
+            presetId: "test@1",
+            progress: 0,
+            report: null,
+            schemaVersion: 2,
+            state: benchmarkState,
+          }) as const,
+        start: () => undefined,
+        subscribe: () => () => undefined,
+      },
+      () => "",
       () => undefined,
       {
         engineVersion: "test",
@@ -26,8 +70,8 @@ describe("combined telemetry export", () => {
 
     expect(telemetry.snapshot()).toMatchObject({
       appOwnedLlmSpike: { state: "idle" },
+      benchmark: { state: "idle" },
       identity: { engineVersion: "test", gameVersion: "test" },
-      memory64Spike: { state: "idle" },
       streaming: { state: "idle" },
       wasmThreadSpike: { state: "idle" },
     });
@@ -43,6 +87,12 @@ describe("combined telemetry export", () => {
       "Combined telemetry listener failed",
       expect.any(Error),
     );
+    benchmarkState = "resetting";
+    expect(() => telemetry.prepareFlythrough()).toThrow(/benchmark owns the scenario/);
+    expect(() => telemetry.startFlythrough()).toThrow(/benchmark owns the scenario/);
+    expect(() => telemetry.startStreamingTraversal()).toThrow(/benchmark owns the scenario/);
+    benchmarkState = "running";
+    expect(() => telemetry.startStreamingTraversal()).toThrow(/benchmark owns the scenario/);
     unsubscribe();
     consoleError.mockRestore();
   });

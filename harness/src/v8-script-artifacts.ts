@@ -3,20 +3,15 @@ import type { BuildManifest, ManifestArtifact } from "./build-manifest.js";
 export function selectV8ScriptManifestArtifacts(
   manifest: BuildManifest,
 ): readonly ManifestArtifact[] {
-  // D-058/D-085/P-001/D-095: the isolated lifecycle page neither triggers streaming
+  // D-058/D-085/D-095: the isolated lifecycle page neither triggers streaming
   // traversal (and therefore decode workers) nor waits for the Rust/WASM spike.
-  // Memory64, decode, and wasm-thread entrypoints are consequently outside its stable
+  // Decode and wasm-thread entrypoints are consequently outside its stable
   // capture topology. Requiring compilation events for artifacts that the scenario
   // never loads, or may load only after capture, makes the diagnostic invalid by
   // construction.
   const inactiveDiagnosticWorkers = new Set(
     manifest.workerEntrypoints
-      .filter(
-        (entrypoint) =>
-          entrypoint.role === "decode" ||
-          entrypoint.role === "memory64-spike" ||
-          entrypoint.role === "wasm-thread",
-      )
+      .filter((entrypoint) => entrypoint.role === "decode" || entrypoint.role === "wasm-thread")
       .map((entrypoint) => entrypoint.path),
   );
   return Object.freeze(

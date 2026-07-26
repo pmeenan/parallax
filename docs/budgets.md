@@ -50,14 +50,17 @@ Any claim that Showcase content is "120 Hz-capable" requires a dedicated
 present-interval p95 ≤ 8.34 ms — CPU/GPU diagnostics on a 60 Hz vsynced run cannot
 establish it.
 
-**Known M1 collision (recorded 2026-07-15):** the walking skeleton's render-worker
+**M1 presentation adjudication (D-115; collision recorded 2026-07-15):** the walking skeleton's render-worker
 callback-interval p95 on dev-01 measures 16.72–16.76 ms across passing Harness-v1 runs —
 *above* the ≤ 16.67 ms Showcase p95 gate. That signal is a non-gating heuristic under
-D-051 (it is callback spacing, not compositor presentation), but M1's mandated revisit of
-presentation gating will collide with a real number already over the documented
-threshold: either the measurement path must prove true present intervals differ from
-callback spacing, or the tolerance needs recalibrating through a decision — wiring the
-current threshold to the current signal as-is would fail.
+D-051 because it is callback spacing, not compositor presentation. D-114's physical CfT
+151 inventory confirmed that `Display::FrameDisplayed` carries neither presentation
+success nor page attribution. D-115 therefore completes M1's mandated revisit by
+retaining present-interval p50/p95/p99.9/max as unqualified: `smoke@1` reports the
+callback-backed metric informational `invalid`, while D-114's authoritative-provider
+inventory reports `unsupported`. Neither substitutes this callback signal or
+recalibrates a threshold. M1 makes no player-visible frame-budget claim; the standing
+numeric budgets remain unchanged for a future trustworthy provider.
 
 ## Memory (high-water marks during the standard flythrough, per tier)
 
@@ -66,15 +69,15 @@ it is the platform-ceiling tier; its envelopes are provisional ceilings, not usa
 requirements. Standard is calibrated to the standard-target profile's 16 GB unified
 memory. The per-tier **envelopes** (CPU-side total, GPU total) are the enforced
 constraints; the category split within an envelope may be rebalanced as measurements
-come in, with a decision-log note. Note: these aggregate budgets say nothing about
-memory64 — the wasm64 exercise is a dedicated harness run with a single module
-addressing beyond 4 GiB, gated on P-001.
+come in, with a decision-log note. Aggregate budgets do not determine Wasm address
+width: memory is tracked per module, and D-117 requires an unavoidable measured
+single-module need before memory64 can reopen.
 
 | Metric | Standard | Showcase | Notes |
 | --- | --- | --- | --- |
 | CPU-side envelope (JS + WASM + SAB + staging) | ≤ 5 GB | ≤ 16 GB | Standard's gate profile has 16 GB *unified* memory: the CPU/GPU split is accounting there — combined CPU+GPU envelope (≤ 9 GB) plus macOS/Chrome overhead must fit in 16 GB, which is the real gate. Showcase's ≤ 16 GB is a purposeful provisional ceiling on a 128 GB host — an upper limit, not a usage target |
 | — JS heap (all threads) | ≤ 2 GiB | ≤ 4 GiB | Exact byte limits are 2 × 1024³ and 4 × 1024³ (D-047) |
-| — WASM linear memory (sum of modules) | ≤ 2 GB | ≤ 8 GB | Per-module tracked; memory64 modules justified individually (P-001). An aggregate sum proves nothing about memory64 — see the dedicated single-module >4 GiB harness run under P-001 |
+| — WASM linear memory (sum of modules) | ≤ 2 GB | ≤ 8 GB | Per-module tracked; memory32 is selected for every current module. An aggregate sum beyond 4 GiB does not justify memory64; D-117 requires a concrete single-module need |
 | GPU memory envelope (as attributable) | ≤ 4 GB | ≤ 14 GB | Resident set + transient uploads; Showcase leaves ~2 GB of dev-01's 16 GB card for OS/compositor/browser |
 | SAB pools | Fixed at boot | Fixed at boot | No runtime growth; sizes recorded per build |
 | Inter-district transition overlap peak | ≤ 1.25× steady-state GPU budget | ≤ 1.25× steady-state GPU budget | Both resident sets partially live during swap; overlap must still fit each tier's GPU envelope |
@@ -142,7 +145,7 @@ than 0.1% of the canvas to remain detectably clear rather than relying on equali
 | Metric | Target | Notes |
 | --- | --- | --- |
 | Cell load (OPFS → renderable) p95 | ≤ 250 ms | At standard traversal speed |
-| Visible pop-in at traversal speed | None at LOD contract distances | Visual diff in harness (later) |
+| Visible pop-in at traversal speed | None at LOD contract distances | Deterministic visual diff deferred to M5's representative-art streaming swap (D-115); M1 checkpoints prove streamed ownership/non-blank output, not absence of pop |
 | D1↔D2 hard transition: max hitch | ≤ 100 ms | Single worst frame during swap |
 | D1↔D2 hard transition: total swap | ≤ 4 s | Choke-point traversal time hides it |
 | Eviction mode | Proactive only | Emergency eviction events = 0 per run |
@@ -188,6 +191,87 @@ the unchanged 30-generation quality fixture on both placements. Timing, size, an
 quality do not override the exact-prefix correctness failure; no baseline is promoted.
 The experiment-specific harness and runtime patch were removed after measurement.
 
+## M1 exit coverage (D-115)
+
+M1's physical performance qualification is D-115's versioned evidence chain: the
+registered dev-01 **Showcase** D-102 ten-minute anchor, D-104's dedicated recovery
+qualification, post-D-108 physical current-path lifecycle evidence, and one D-097
+`smoke@1` on the final converged qualifying-input tree. D-102 is schema v4 / mandatory metric
+set v4; it is not relabeled as a pass under the then-current D-115-era flythrough schema v12 / metric set
+v6. D-103/D-104's later settlement/checkpoint invariants must pass in the final current
+smoke, while the post-D-108 page reports retain their advisory variance failures and
+carry no budget verdict. D-116 preserves the failed first schema-v44 / metric-set-v21
+attempt and advances the final smoke to schema v45 / metric set v22. It reuses the
+existing core-run streaming p95 values for a mandatory bounded-repeatability check
+separately across the three fresh and three warm cohorts: absolute spread must be no
+greater than `max(10% × minimum p95, 1 ms)`. This is a current-path short-scenario
+verdict, not a claim that the post-D-108 ten-minute route passed repeatability. The
+unregistered Standard profile satisfies no exit criterion
+and remains explicitly unqualified; this M1 scope says nothing about Metal, 120 Hz, or
+transfer to the default-experience hardware.
+
+The final physical report
+`smoke-1-cf1a0420d451-dev-01-showcase-2026-07-26T03-19-56-378Z.json`
+(SHA-256
+`b10c83ff0019cd3b332eec322703e2556de4565ba3e01c942154909cfb5508c9`)
+passed schema v45 / mandatory metric set v22 on registered dev-01 Showcase: all six
+core runs, all three facets, and 30/30 evaluated budget checks passed with no core-run
+failure. Fresh p95 spread was 0.615 ms (1.885/2.130/2.500 ms) and warm spread was
+0.530 ms (2.300/2.340/1.810 ms), each within the computed 1 ms allowance. This
+completes the measured-runtime-artifact link in D-115's versioned evidence chain. It does not
+change the retained failed schema-v44 or public results, qualify Standard, turn any
+unsupported metric into a pass, or require another M1 gate.
+
+The later post-M1 review-closure report
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
+(SHA-256
+`ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
+retained the same short-smoke rule and passed all three facets and 30/30 checks. Fresh
+p95s 1.990/2.455/2.010 ms produced a 0.465 ms spread (23.367% relative); warm p95s
+1.775/1.710/2.420 ms produced a 0.710 ms spread (41.520% relative). Both therefore
+passed on the 1 ms absolute arm rather than the 10% relative arm, consuming 46.5% and
+71.0% of that allowance. These figures expose the final candidate's headroom; they do
+not change D-116's threshold, relabel M1's v45 evidence, or claim that the ten-minute
+route passed repeatability.
+
+For M1 only, “zero budget violations” means every **evaluated mandatory M1 check**
+passed. It does not mean unsupported metrics passed or that every standing envelope was
+measured. The accepted coverage gaps are:
+
+- compositor presentation p50/p95/p99.9/max: unqualified under RE-006/D-114.
+  `smoke@1` retains informational `invalid`; D-114's provider inventory retains
+  `unsupported`. There is no callback/Viz substitution or player-visible frame-budget
+  claim;
+- worker long tasks: `unsupported`; only Window Long Tasks on the main thread are
+  measured over the complete flythrough;
+- combined CPU resident memory: `unsupported`. The flythrough gates synchronized
+  all-realm V8 `usedSize` high-water. Routine smoke separately records a
+  2,162,688-byte synthetic threaded-Wasm shared memory and an 8,224-byte SAB transport
+  pool as fixed bootstrap invariants, not representative flythrough residency.
+  Reported backing storage, Wasm, SAB, and logical staging bounds have unknown overlap
+  and are never summed into the CPU envelope;
+- page-attributed resident/transient WebGPU memory: `unsupported` under RE-014; logical
+  created/upload buffer bytes are not physical GPU residency.
+
+Unsupported remains a coverage failure for the corresponding standing metric and can
+never be shown as a passing check. D-115 accepts those documented platform gaps for this
+platform-research milestone rather than fabricating evidence. D-102 had listed
+visible-pop visual diff as a later-M1 omission even though it was not an independent M1
+plan task; D-115 explicitly supersedes that scope implication and defers the check to
+M5's representative-art streaming swap. D1↔D2 transition budgets remain M4 scope.
+Neither is part of M1's mandatory set. Consequently, an M1 completion
+claim must say “Showcase passed every evaluated mandatory M1 metric; Standard and the
+enumerated platform-unobservable metrics remain unqualified,” never “all budgets
+passed.” It must also identify the versioned evidence chain rather than claiming one
+then-current D-115-era schema-v12 flythrough report passed.
+
+The public page-only `benchmark-result@1` remains advisory and is not an additional
+M1 performance gate. Its complete failed reports retain their unchanged 10% variance
+verdicts; exporting a correct failed result qualifies the Benchmark mode implementation,
+not the observed values. D-115 supersedes D-110's requirement for another passing
+30-plus-minute public result, so no additional public benchmark is required or
+authorized for M1.
+
 ## Measurement methodology
 
 Definitions the harness implements; budgets above are meaningless without them.
@@ -197,10 +281,76 @@ Definitions the harness implements; budgets above are meaningless without them.
   breakdowns, not budget gates. Chrome 150 does not expose presentation success on the
   available Viz callback event (RE-006), so Harness-v1/M0 reports the authoritative metric as
   an informational failure and retains worker-callback/Viz-callback pacing only as heuristics
-  (D-051). M1 must revisit the gate before making player-visible frame-budget claims.
+  (D-051). D-115 completes M1's revisit by accepting presentation as an explicit
+  unqualified coverage gap—informational `invalid` in smoke, provider `unsupported` in
+  D-114—without making a player-visible frame-budget claim or substituting either
+  heuristic.
 - **Warm-up exclusion:** the first 10 seconds of any run (or until first steady-state
   marker emitted by the app) are excluded from frame statistics; launch metrics have
   their own budgets and are never mixed into gameplay frame stats.
+- **`flythrough-d1@1` window (D-100):** each of three independent fresh-profile
+  repeats performs six streamed rendered-output preflight checkpoints outside
+  measurement, waits the fixed ten-second stabilization period, then measures the
+  complete 600,000 ms / 7,200 m route. The render worker owns measured route pacing and
+  aggregation; the collector brackets privileged trace/histogram and all-realm heap
+  probes around that in-app window. Its full-window trace has a flythrough-only
+  30,000 ms post-`Tracing.end` validity deadline plus a 10,000 ms invalid diagnostic
+  window (D-101); routine `smoke@1` remains at D-094's 10,000 + 10,000 ms. Trace
+  readability and `dataLoss=false` remain mandatory. A report's budget facet covers
+  only its enumerated checks. Its compositor-presentation, combined-memory, and worker-
+  long-task omissions remain explicit unsupported coverage under D-115 rather than
+  passing checks. Visible-pop visual diff is deferred to M5. The report alone still
+  cannot be described as covering every standing budget.
+- **Closed M1 diagnostic (D-114):** the consumed D-111/D-113 one-shot experiment and
+  its command have been removed. Its invalid partial did not establish attributable
+  physical presentation, page GPU residency, full-window worker long tasks, or an
+  additive CPU/Wasm/SAB total, and it supplied no variance fix or budget verdict.
+  D-115 subsequently accepts those measurements as explicit unsupported M1 coverage
+  gaps, not passing checks. No threshold, validity deadline, or 10% repeatability rule
+  changed.
+- **`render-recovery@1` qualification (D-104):** three independent fresh-profile
+  attempts use the app's real `GPUDevice.destroy()` and silent render-worker `close()`
+  diagnostic paths. Before injection, each attempt completes flythrough preflight and
+  then requires at least 96 m of direct render-to-streaming observer movement to a
+  different settled nine-cell set, with generation-1 observer, cell-load, and proactive-
+  eviction counters all advancing across that movement. One application-owned handshake quiesces direct
+  observer movement, obtains the exact generation-tagged streaming-worker checkpoint,
+  and only then injects the fault. Production recovery may roll back to the latest
+  settled checkpoint when a fault interrupts an unacknowledged update. Each of all
+  three first recoveries must reach ready within 30,000 ms with render/streaming
+  generation 2, a fresh completed SAB workload, restored decoder/world evidence, the
+  exact checkpoint observer, resident IDs, and observer sequences, and a visibly
+  non-blank canvas. Ready means both replacement render first-frame readiness and
+  replacement streaming hydration have completed. A fresh generation may hydrate the
+  exact nine-cell checkpoint without recording redundant loads or proactive evictions;
+  those counters may therefore be zero after recovery while resource, rejection, SAB,
+  checkpoint, and identity invariants remain mandatory. The exhaustion attempt injects a second fault and requires
+  terminal render `exhausted` plus streaming `failed` with restart count still one.
+  The 30-second limit bounds recovery qualification; it is not a frame-time or launch
+  budget and makes no claim that the full interval is acceptable player experience.
+  The scenario emits schema-v4 / metric-set-v3 JSON and Markdown with partial evidence
+  on failure, including elapsed fault-boundary time and the latest full telemetry/
+  flythrough checkpoint list, plus per-attempt fresh-profile
+  product, executable digest, adapter, requested tier, target and measured display,
+  effective command line, sandbox, and host lineage. The persisted validator recomputes
+  those invariants from retained fields and requires recovery to invalidate the active
+  flythrough. Only pinned Chrome on a registered physical console qualifies; other
+  environments are invalid/advisory under the standing environment rules. Registered
+  physical-console report
+  `render-recovery-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-26-52-162Z.json`
+  qualifies this contract on artifact
+  `7f6f65d9c6fdb6e187ebaccbf547456ae3d767842a9613524034cc527ba1a0a1`:
+  environment, evidence, and all three bounded-recovery checks passed. First recovery
+  completed in 2,332.244 ms for device loss, 5,617.312 ms for silent worker crash, and
+  2,332.155 ms before the exhaustion attempt's required terminal second fault. Each
+  restored generation 2 with the exact nine-cell checkpoint and 87.502799% visible
+  canvas; the second exhaustion fault retained restart count one and ended with render
+  `exhausted` and streaming `failed`. Final same-artifact D-097 report
+  `smoke-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-36-37-999Z.json`
+  then passed schema v37 / metric set v20 across six core runs, all three facets, and
+  30/30 evaluated checks with no core-run failure. Warm repeat 3 retained a complete,
+  readable, lossless trace after 5,315.897 ms, valid under D-094's unchanged ten-second
+  routine-smoke deadline.
 - **SAB transport evidence (D-057):** each `smoke@1` core launch runs 100,000
   deterministic main→render-worker→main records through paired fixed SPSC rings during
   warm-up. The mandatory metric is measured only when every echo returns in order with
@@ -226,41 +376,21 @@ Definitions the harness implements; budgets above are meaningless without them.
   allocator lock (`0`) after both workers are ready; a failure snapshots those same
   words before cohort termination (D-092/D-093). This synthetic correctness proof sets
   no throughput budget or production pool size; M1 measures representative decode work.
-- **Memory64 evidence (P-001):** the dedicated `memory64-spike@1` scenario runs outside
-  `smoke@1` in three fresh/warm profile pairs. A dedicated worker loads content-addressed
-  memory32 and memory64 modules, retains one cold, two warm-up, and thirty measured samples
-  per variant, and requires identical checksums. Each measured sample times 2,048 synchronous
-  module constructions and 32,768 same-memory instances in a short-lived nested worker,
-  terminates that worker, then prepares the same 64 MiB working set with eight deterministic
-  fill passes and runs sixteen pointer-heavy scans in the outer worker. This keeps load-test
-  allocation/GC out of the hot-path phase. Only after that cohort, the memory64 instance grows to
-  65,537 pages and round-trips a fixed sentinel at `0x1_0000_0000`. The worker also reads
-  that exact offset independently through a JavaScript `DataView`; both observed values are
-  mandatory evidence. Logical linear-memory size and sparse grow/touch time are reported
-  separately: the 4+ GiB `byteLength` is a reserved address range, not an assertion that
-  Chrome committed or made resident that many bytes. This feasibility spike has no
-  performance budget or adoption threshold. Each run first computes memory64/memory32 for
-  every adjacent measured sample, then p95; those paired p95 ratios and each absolute arm's
-  per-run p95 retain separate fresh/warm 10% repeat-variance states. Reports aggregate the
-  median and worst repeat p95 rather than pooling samples across launches. The paired ratio
-  is the blocking P-001 cost comparison; noisy absolute timing remains explicitly invalid
-  diagnostic evidence and cannot support an absolute-cost claim. P-001 remains open until M1
-  supplies a representative unavoidable single-module need.
-
-  D-086's accepted physical artifact retained 180 measured samples per variant. Memory32
-  versus memory64 median/worst per-run kernel p95 was 116.190/116.815 ms versus
-  115.350/117.660 ms; median per-run paired-p95 compile/instantiate/prepare/kernel ratios
-  were 1.125x/1.294x/1.002x/1.030x, and module size was 211 versus 294 bytes. Every blocking
-  paired cohort passed the 10% gate. The separate absolute diagnostic was invalid only for
-  fresh memory32 prepare at 10.98%, so the artifact supports no absolute prepare-cost claim.
-  These are feasibility
-  observations, not budgets or a general claim about production pointer-width cost;
-  memory64's module size and load phases also include its additional high-address proof
-  export.
-- **JavaScript used-heap high-water estimate (D-047):** after the primary frame/trace
-  measurement completes, run a dedicated steady-state window over the same 120-frame workload.
+- **Wasm address-width evidence (D-086/D-117):** D-086's historical dedicated scenario
+  proved exact beyond-4-GiB access and recorded paired synthetic costs; it never defined
+  a budget or adopted memory64. D-117 resolved the M1 decision point with no production
+  module needing a wider single address space and removed the closed scenario. A future
+  reopening must add representative module-specific evidence and a current cost contract;
+  the historical top-line measurements remain in D-086 rather than in a routine gate.
+- **JavaScript used-heap high-water estimate (D-047/D-100/D-101):** `smoke@1` runs a dedicated
+  steady-state window over the same 120-frame workload after its primary frame/trace
+  measurement at fixed 100 ms deadlines. `flythrough-d1@1` instead starts the sampler immediately before its
+  measured route and finishes it immediately after, because the memory budget is
+  explicitly a high-water mark during the standard flythrough; its seven-realm,
+  ten-minute window uses fixed 200 ms deadlines after the retained D-101 physical
+  evidence showed one 169.5 ms whole-topology collection.
   Issue near-concurrent `Runtime.getHeapUsage.usedSize` requests for every required
-  window/worker isolate on fixed 100 ms start deadlines; sum realms within each sample,
+  window/worker isolate on the scenario's fixed start deadlines; sum realms within each sample,
   then gate the largest observed aggregate. `usedSize` is current V8 heap occupancy, including
   objects that are unreachable but have not yet been collected, so it is GC-phase-sensitive and
   must not be described as retained live data. The requests are not atomic, so the result can
@@ -268,9 +398,14 @@ Definitions the harness implements; budgets above are meaningless without them.
   total/embedder/backing-store values, collection duration, start delay, and missed deadlines
   remain evidence even when a cadence gate invalidates the metric; experimental diagnostic fields
   are `null` when absent. Response-completion skew is transport arrival skew observed by the Node
-  collector; it does not bound when V8 read each realm. Response-completion skew, start delay, or
-  collection duration reaching 100 ms, or any deadline due before the sampling boundary without
-  a periodic sample or the substituting boundary sample, makes the mandatory metric invalid.
+  collector; it does not bound when V8 read each realm. The first periodic capture is
+  scheduled no earlier than its monotonic deadline rather than being issued inline; any
+  nevertheless-negative exact start delay is retained and invalidates the evidence.
+  Response-completion skew, start delay, or collection duration reaching the configured
+  interval, or any deadline due before the sampling boundary without a periodic sample
+  or the substituting boundary sample, makes the mandatory metric invalid.
+  Deadline completeness is matched against exact scheduled timestamps, not inferred
+  from total sample count.
   Chrome exposes no continuous cross-isolate live-retention peak (RE-012).
 - **GPU memory (D-050):** the tier envelope means page-attributed resident GPU allocation plus
   transient peaks, not GPU-process private memory or the sum of logical WebGPU resource sizes.
@@ -304,15 +439,21 @@ Definitions the harness implements; budgets above are meaningless without them.
   user-visible outcome instead: warm and asset-only-update launches must remain within 10 s, and
   the paired pre/post-update delta is recorded. M2 measurements calibrate any future relative-
   regression threshold through the normal decision process.
-- **Variance gate:** if p95 varies more than 10% across the repeats, the result is
-  `invalid` (fix the noise before trusting the number) — a noisy metric is a broken
-  metric, not a passing one.
+- **Variance gate:** unless a versioned scenario defines a bounded near-zero rule, if
+  p95 varies more than 10% across the repeats, the result is `invalid` (fix the noise
+  before trusting the number) — a noisy metric is a broken metric, not a passing one.
+  D-116's short `smoke@1` streaming check is the bounded exception: its absolute p95
+  spread must be at most `max(10% × minimum p95, 1 ms)`. The flythrough and public
+  benchmark retain their pure 10% relative-range rules.
 - **Metric states:** every metric in a result is `measured`, `unsupported` (platform
   provides no way to observe it — itself a rough-edges candidate), `invalid` (observed
   but untrustworthy, with reason), or `not-applicable`. Budget gating fails on a busted
   `measured` value **and** on any metric that is mandatory for the current milestone
   but not `measured` — silence is not a pass. The mandatory set per milestone is
   defined in `harness/` alongside the runs.
+  D-115's M1-only exit contract names the platform-unobservable metrics excluded from
+  that milestone's mandatory set; their state and standing budgets remain
+  `unsupported`, and no report or prose may count them as passed.
 - **Result facets (D-045):** reports separate registered-environment validity, mandatory
   evidence completeness, and budget evaluation. A budget facet is `passed` only when
   mandatory evidence is complete, at least one check ran, and every executed check
@@ -322,17 +463,33 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current mandatory metric-set (v15, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v23, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
   attribution, proactive eviction, zero encoded-budget rejections, and a representative cell-load p95 no
-  greater than 250 ms (D-090/D-091). D-096 removed the superseded standalone OPFS
+  greater than 250 ms (D-090/D-091), plus D-116's mandatory prospective cell-load p95
+  bounded-repeatability verdict independently over its three fresh and three warm
+  repeats. Each absolute spread must be at most
+  `max(10% × minimum cohort p95, 1 ms)`. Missing, non-finite, negative, incomplete, or
+  over-limit cohorts are `invalid`; the report retains relative range, absolute spread,
+  and the computed allowance, while baseline promotion recomputes them from run
+  evidence. The check reuses the six existing core runs and adds no launches or
+  measurement duration. D-096 removed the superseded standalone OPFS
   throughput/repeatability checks; per-cell OPFS read timing remains mandatory inside
   the representative streaming evidence. D-092 additionally requires the mandatory Rust/WASM
   evidence to distinguish module construction from Rust/wasm-bindgen startup and retain
-  the exact pinned fixture's shared initialization state on failure. The corresponding
-  `smoke@1` report schema is v31. Build-manifest v10 requires the five current workers,
+  the exact pinned fixture's shared initialization state on failure. The report-finalization
+  metric requires late build/source identity revalidation and JSON-primary persistence
+  to complete; drift or a human-readable-report failure invalidates mandatory evidence
+  while retaining the JSON artifact. The corresponding `smoke@1` report schema is v47
+  and public telemetry is v25. Streaming telemetry v7
+  retains sequenced flythrough-observer and settled-observer counts and adds D-102's
+  deterministic batch identity plus internally validated OPFS/decode/upload/commit/wait
+  attribution plus D-104's generation-tagged settled recovery checkpoint without
+  changing the short smoke traversal. D-108 additionally requires a positive exact
+  package/open-access-handle match and a finite startup-open duration before streaming
+  evidence is eligible. Build-manifest v11 requires the four current workers,
   and the report records whether the targeted V8 diagnostic was requested (D-095/D-096).
   Initial streaming residency completes before traversal, and the
   streaming p95/proactive-eviction verdict uses
@@ -340,13 +497,38 @@ Definitions the harness implements; budgets above are meaningless without them.
   window requires at least ten contiguous sequenced replacements; the deterministic
   12 m/s diagonal corner-crossing stress path completes at least five target transitions
   per second, with three replacements per transition, at both 60 Hz and 120 Hz.
+  Batch evidence must also follow the producer's post-hydration origin and ordered,
+  complete-transition rules; retained start-boundary facts are checked against any raw
+  prefix still available, including a subset check when the ring truncates that batch.
   Measurement snapshots may bisect the worker's evict-before-load phase, so eviction
-  and completion deltas may differ by at most the nine-cell residency bound; exact
-  equality is not required.
+  and completion deltas may differ. D-103 requires their exact accounting against the
+  resident-count change: end residents minus start residents equals completion delta
+  minus proactive-eviction delta. Settled snapshots require all nine residents;
+  unsettled snapshots may retain fewer. Successful reports retain the start resident
+  count for stored-evidence revalidation; invalid smoke attempts preserve the raw
+  start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-- **Trace completion validity versus observation (D-092/D-094):** a complete, readable,
+  `flythrough-d1@1` report schema v14/mandatory metric set v7 consumes flythrough
+  telemetry v3 and separately requires exact
+  route and ordered environment completion, streamed presentation ownership with the
+  preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,
+  representative streaming evidence, main-thread long-task and all-realm JS-heap
+  evidence, Dawn compile/cache evidence, and measured repeat variance for every relied-on
+  p95, plus the same fail-closed post-run identity and JSON-primary report-finalization
+  evidence as smoke. Worker-origin evidence is compared against the harness's independent full
+  scenario constant. Every started repeat remains in the report as a structured
+  measured/invalid attempt, including available trace-drain, heap-validation, browser
+  error, and measured-environment evidence. Only measured attempts enter budgets and
+  variance. Streaming total and attribution p95s remain evidence; the absolute 250 ms
+  total budget and 10% cross-repeat total-p95 variance limit are unchanged by D-102.
+  Its budget coverage field lists both evaluated and omitted standing budgets. D-115
+  accepts the platform-unobservable omissions for M1 without changing this report's
+  incomplete-standing-coverage flag or relabeling any omission.
+- **Trace completion validity versus observation (D-092/D-094/D-101):** a complete, readable,
   lossless trace is valid when `Tracing.end` and `Tracing.tracingComplete` finish within
-  10 seconds. The collector remains attached for a further 10 seconds solely to
+  10 seconds for routine `smoke@1`; D-101's approximately 420 MB ten-minute flythrough
+  trace has a scenario-specific 30-second validity bound. The collector remains attached
+  for a further 10 seconds solely to
   distinguish late completion from no completion and to retain any resulting trace
   chunks/data-loss state; that diagnostic window is not budget headroom and cannot
   convert an invalid trace into measured evidence.
@@ -365,7 +547,25 @@ Definitions the harness implements; budgets above are meaningless without them.
   substitute estimates for unavailable measurements. The benchmark is executed and
   measured in-game; optional launcher/collector automation is outside the measurement
   window and does not supply scenario pacing, metric aggregation, or result timings.
-  In particular, Prompt callback-pacing diagnostics are not directly comparable with
+  D-105/D-109's in-game `benchmark-result@1` schema v3 records three `continuous-page`
+  repeats, while the harness `flythrough-d1@1` gate uses independent fresh profiles;
+  those lineages are intentionally incomparable even for the same artifact, scenario,
+  preset, and seed. The in-game page records UA/UA-CH, WebGPU adapter information,
+  screen geometry, capability states, and manifest digest at every boundary. Its
+  machine-readable `fixed-worker-render-pixels@1` comparison policy retains
+  `screen.viewportCssPixels` as a raw diagnostic but excludes that field from equality;
+  every other captured environment field remains exact across repeats. It retains the
+  initial capture even for a capability failure and validates the complete canonical flythrough and exact
+  worker-rendered preset dimensions before accepting a repeat, but cannot attest registered
+  host/OS build, complete driver, OS power, physical-console session, successful
+  presentation, CDP/Dawn activity, attributable GPU memory, all-realm heap, or worker
+  long tasks. Those are explicit `unsupported`/`not-applicable` fields, so the current
+  in-game budget facet is always `not-evaluated`; a passing subset is never a D-097
+  pass. Promoting any field or aligning lineages requires a versioned contract change.
+  D-115 completes the public Benchmark mode task on this fail-honest lifecycle and
+  result-contract behavior rather than requiring advisory values to pass as a duplicate
+  M1 gate. The retained schema-v3 variance failures and `not-evaluated` budget facets
+  remain unchanged. In particular, Prompt callback-pacing diagnostics are not directly comparable with
   `smoke@1` pacing unless their recorded launch-switch environments also match.
 - **Baseline promotion (D-087):** `smoke@1` keeps one promoted machine-local result-store
   record per scenario/registered-machine/tier. Promotion is a separate explicit human

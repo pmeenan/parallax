@@ -75,7 +75,8 @@ engine/src/
   generated constants header — never string-spliced shader source; every pipeline
   creation goes through the warmup-aware pipeline registry in `render/`.
 - **Rust/WASM:** one crate per module under `wasm/`; `#![forbid(unsafe_code)]` unless the
-  module's README justifies it; explicit about memory32 vs memory64 (see decision P-001);
+  module's README justifies it; memory32 is the selected default and any memory64
+  adoption must meet D-117's module-specific reopen evidence;
   bindings expose typed-array views, never copies, on hot paths; `simd128` and threads
   (atomics) are baseline target features (D-032) — enabled unconditionally, no scalar or
   single-threaded fallback paths; relaxed-simd is baseline too **except** in crates

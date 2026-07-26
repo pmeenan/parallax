@@ -24,8 +24,10 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
+  reportFinalization: "report finalization",
   sabRingBuffer: "SAB ring-buffer transport",
   streaming: "world streaming pipeline",
+  streamingVariance: "streaming cell-load p95 variance",
   wasmThreads: "Rust/WASM threads",
   v8CodeCache: "V8 code-cache evidence",
   vizPresentationFeedback: "compositor presentation interval",
@@ -85,6 +87,7 @@ export interface SmokeEvidenceInput {
     readonly mandatoryForHarnessV1: boolean;
     readonly metric: string;
   })[];
+  readonly reportFinalization: EvidenceState;
   readonly runs: readonly {
     readonly dawnPipeline: EvidenceState;
     readonly gpuMemory: EvidenceState;
@@ -97,6 +100,9 @@ export interface SmokeEvidenceInput {
     readonly streaming: EvidenceState;
     readonly wasmThreads: EvidenceState;
   }[];
+  readonly streamingCellLoadP95Variance: readonly (EvidenceState & {
+    readonly profile: string;
+  })[];
   readonly v8CodeCacheDiagnostics: readonly {
     readonly production: EvidenceState;
     readonly profile: string;
@@ -151,6 +157,11 @@ export function collectSmokeEvidenceChecks(
 ): readonly FacetEvidenceCheck[] {
   return Object.freeze([
     coreRunCompletionCheck(input.coreRunCompletion),
+    evidenceCheck(
+      `report finalization: ${input.reportFinalization.state} (${evidenceReason(input.reportFinalization)})`,
+      registryMandatory(EVIDENCE_METRIC_NAMES.reportFinalization),
+      input.reportFinalization,
+    ),
     ...input.v8CodeCacheDiagnostics.flatMap((run) => [
       evidenceCheck(
         `V8 diagnostic ${run.profile} repeat ${run.repeat}: code-cache production ${run.production.state} (${evidenceReason(run.production)})`,
@@ -174,6 +185,13 @@ export function collectSmokeEvidenceChecks(
       evidenceCheck(
         `${metric.profile} callback pacing variance: ${evidenceReason(metric)}`,
         registryMandatory(EVIDENCE_METRIC_NAMES.callbackPacingVariance),
+        metric,
+      ),
+    ),
+    ...input.streamingCellLoadP95Variance.map((metric) =>
+      evidenceCheck(
+        `${metric.profile} streaming cell-load p95 variance: ${evidenceReason(metric)}`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.streamingVariance),
         metric,
       ),
     ),

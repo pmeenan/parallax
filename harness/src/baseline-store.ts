@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import { evaluateBoundedRepeatability } from "./aggregate.js";
 import type { BudgetCheck, QualityTier } from "./budgets.js";
 import {
   type GreyboxWorldEvidence,
@@ -14,6 +15,8 @@ import {
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
+  SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
+  SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
 } from "./runs/smoke.js";
 import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
 
@@ -70,6 +73,7 @@ export interface BaselineEligibleReport {
       readonly status: string;
     };
   };
+  readonly finalizationFailure: string | null;
   readonly generatedAt: string;
   readonly harnessRuntime: HarnessRuntimeIdentity;
   readonly mandatoryMetricSet: {
@@ -77,10 +81,20 @@ export interface BaselineEligibleReport {
     readonly version: number;
   };
   readonly passed: boolean;
+  readonly postRunIdentity: Readonly<{ readonly reason?: string; readonly state: string }>;
+  readonly reportPersistence: Readonly<{ readonly reason?: string; readonly state: string }>;
   readonly runs: readonly BaselineReportRun[];
   readonly scenario: string;
   readonly schemaVersion: number;
   readonly source: BaselineSourceIdentity;
+  readonly streamingCellLoadP95Variance: readonly {
+    readonly absoluteP95RangeMs: number | null;
+    readonly allowedAbsoluteP95RangeMs: number | null;
+    readonly profile: "fresh" | "warm";
+    readonly reason?: string;
+    readonly relativeP95Range: number | null;
+    readonly state: "invalid" | "measured";
+  }[];
   readonly v8CodeCacheDiagnosticsRequested: boolean;
 }
 
@@ -174,13 +188,15 @@ export function evaluateBaseline(
   report: Omit<BaselineEligibleReport, "baseline">,
   store: BaselineStore,
 ): BaselineEvaluation {
-  const baseline = store.entries[baselineKey(report)];
-  if (baseline === undefined) {
+  const storedBaseline: unknown = store.entries[baselineKey(report)];
+  if (storedBaseline === undefined) {
     return Object.freeze({
       reason: "No promoted baseline exists for this scenario, machine, and quality tier",
       state: "untracked" as const,
     });
   }
+  const candidateMetrics = summarizeBaselineMetrics(report);
+  const baseline = requireBaselineRecord(storedBaseline);
   if (baseline.mandatoryMetricSetVersion !== report.mandatoryMetricSet.version) {
     return Object.freeze({
       baseline,
@@ -188,6 +204,7 @@ export function evaluateBaseline(
       state: "ineligible" as const,
     });
   }
+  requireMatchingMetricKeys(baseline.metrics, candidateMetrics);
   if (baseline.artifactDigest !== report.artifactDigest) {
     return Object.freeze({
       baseline,
@@ -207,7 +224,7 @@ export function evaluateBaseline(
       state: "ineligible" as const,
     });
   }
-  const metrics = compareMetricSummaries(baseline.metrics, summarizeBaselineMetrics(report));
+  const metrics = compareMetricSummaries(baseline.metrics, candidateMetrics);
   const sameBrowser =
     baseline.browser.version === report.chromePin.version &&
     baseline.browser.revision === report.chromePin.revision &&
@@ -217,6 +234,22 @@ export function evaluateBaseline(
     metrics,
     state: sameBrowser ? ("current" as const) : ("candidate" as const),
   });
+}
+
+export function evaluateBaselineSafely(
+  report: Omit<BaselineEligibleReport, "baseline">,
+  store: BaselineStore,
+): BaselineEvaluation {
+  try {
+    return evaluateBaseline(report, store);
+  } catch (error) {
+    return Object.freeze({
+      reason: `Baseline comparison unavailable: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+      state: "untracked" as const,
+    });
+  }
 }
 
 export async function promoteBaseline(options: {
@@ -346,6 +379,11 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     );
   }
   if (typeof value.passed !== "boolean") invalidReport("passed must be boolean");
+  requireFinalizationEvidence(value.postRunIdentity, "postRunIdentity");
+  requireFinalizationEvidence(value.reportPersistence, "reportPersistence");
+  if (value.finalizationFailure !== null && typeof value.finalizationFailure !== "string") {
+    invalidReport("finalizationFailure must be null or a string");
+  }
   requireRecord(value.harnessRuntime, "harnessRuntime");
   requireSha256(value.harnessRuntime.nodeExecutableSha256, "harnessRuntime.nodeExecutableSha256");
   const nodeVersion = requireText(value.harnessRuntime.nodeVersion, "harnessRuntime.nodeVersion");
@@ -363,6 +401,10 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   if (typeof value.v8CodeCacheDiagnosticsRequested !== "boolean") {
     invalidReport("v8CodeCacheDiagnosticsRequested must be boolean");
   }
+  const declaredStreamingVariance = requireP95VarianceSummaries(
+    value.streamingCellLoadP95Variance,
+    "streamingCellLoadP95Variance",
+  );
   requireRecord(value.source, "source");
   requireGitCommit(value.source.commit, "source.commit");
   if (value.source.dirtyTreeDigest !== null) {
@@ -374,6 +416,10 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   const repeats = new Map<"fresh" | "warm", Set<number>>([
     ["fresh", new Set<number>()],
     ["warm", new Set<number>()],
+  ]);
+  const streamingP95ByProfile = new Map<"fresh" | "warm", number[]>([
+    ["fresh", []],
+    ["warm", []],
   ]);
   let evaluatedChecks = 0;
   for (const [runIndex, run] of value.runs.entries()) {
@@ -411,6 +457,12 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     if (run.streaming.state !== "measured") {
       invalidReport(`runs[${runIndex}].streaming.state must be measured`);
     }
+    requireRecord(run.streaming.value, `runs[${runIndex}].streaming.value`);
+    if (!Number.isInteger(run.streaming.value.measurementStartResidentCellCount)) {
+      invalidReport(
+        `runs[${runIndex}].streaming.value.measurementStartResidentCellCount must be an integer`,
+      );
+    }
     let streaming: StreamingEvidence;
     try {
       streaming = requireStreamingEvidence(run.streaming.value);
@@ -418,6 +470,7 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
       const reason = error instanceof Error ? error.message : String(error);
       invalidReport(`runs[${runIndex}].streaming.value is invalid: ${reason}`);
     }
+    streamingP95ByProfile.get(run.profile)?.push(streaming.cellLoadP95Ms);
     const observedMetrics = new Set<string>();
     evaluatedChecks += run.budgetChecks.length;
     for (const [checkIndex, check] of run.budgetChecks.entries()) {
@@ -453,6 +506,25 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   for (const profile of ["fresh", "warm"] as const) {
     if (repeats.get(profile)?.size !== SMOKE_REPEATS) {
       invalidReport(`${profile} runs must contain repeats 1 through ${SMOKE_REPEATS}`);
+    }
+    const expected = evaluateBoundedRepeatability(
+      streamingP95ByProfile.get(profile) ?? [],
+      SMOKE_REPEATS,
+      "streaming cell-load p95",
+      SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
+      SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
+    );
+    const declared = declaredStreamingVariance.find((summary) => summary.profile === profile);
+    if (
+      declared?.state !== expected.state ||
+      declared.absoluteP95RangeMs !== expected.absoluteRange ||
+      declared.allowedAbsoluteP95RangeMs !== expected.allowedAbsoluteRange ||
+      declared.relativeP95Range !== expected.relativeRange ||
+      (expected.state === "invalid" && declared.reason !== expected.reason)
+    ) {
+      invalidReport(
+        `streamingCellLoadP95Variance ${profile} summary must equal the variance recomputed from run evidence`,
+      );
     }
   }
   requireStringArray(environmentFacet.reasons, "facets.environment.reasons");
@@ -517,6 +589,117 @@ function compareMetricSummaries(
   );
 }
 
+function requireBaselineRecord(value: unknown): BaselineRecord {
+  if (!isRecord(value)) invalidBaseline("record must be an object");
+  requireBaselineSha256(value.artifactDigest, "artifactDigest");
+  if (
+    typeof value.mandatoryMetricSetVersion !== "number" ||
+    !Number.isInteger(value.mandatoryMetricSetVersion) ||
+    value.mandatoryMetricSetVersion < 1
+  ) {
+    invalidBaseline("mandatoryMetricSetVersion must be a positive integer");
+  }
+  if (!isRecord(value.browser)) invalidBaseline("browser must be an object");
+  requireBaselineText(value.browser.revision, "browser.revision");
+  requireBaselineText(value.browser.version, "browser.version");
+  requireBaselineSha256(value.browser.executableSha256, "browser.executableSha256");
+  if (!isRecord(value.comparisonEnvironment)) {
+    invalidBaseline("comparisonEnvironment must be an object");
+  }
+  const environment = value.comparisonEnvironment;
+  if (!isRecord(environment.adapter)) invalidBaseline("comparisonEnvironment.adapter is invalid");
+  if (!isRecord(environment.hostAfterRuns)) {
+    invalidBaseline("comparisonEnvironment.hostAfterRuns is invalid");
+  }
+  if (!isRecord(environment.machine)) invalidBaseline("comparisonEnvironment.machine is invalid");
+  requireBaselineText(environment.machineId, "comparisonEnvironment.machineId");
+  if (environment.requestedTier !== "showcase" && environment.requestedTier !== "standard") {
+    invalidBaseline("comparisonEnvironment.requestedTier must be showcase or standard");
+  }
+  requireBaselineText(environment.targetDisplayMode, "comparisonEnvironment.targetDisplayMode");
+  if (!isRecord(environment.harnessRuntime)) {
+    invalidBaseline("comparisonEnvironment.harnessRuntime must be an object");
+  }
+  requireBaselineSha256(
+    environment.harnessRuntime.nodeExecutableSha256,
+    "comparisonEnvironment.harnessRuntime.nodeExecutableSha256",
+  );
+  const nodeVersion = requireBaselineText(
+    environment.harnessRuntime.nodeVersion,
+    "comparisonEnvironment.harnessRuntime.nodeVersion",
+  );
+  if (!/^v\d+\.\d+\.\d+$/.test(nodeVersion)) {
+    invalidBaseline("comparisonEnvironment.harnessRuntime.nodeVersion must be exact");
+  }
+  if (!Array.isArray(value.metrics)) invalidBaseline("metrics must be an array");
+  const metricKeys = new Set<string>();
+  for (const [index, metric] of value.metrics.entries()) {
+    if (!isRecord(metric)) invalidBaseline(`metrics[${index}] must be an object`);
+    const key = requireBaselineText(metric.key, `metrics[${index}].key`);
+    if (typeof metric.value !== "number" || !Number.isFinite(metric.value) || metric.value < 0) {
+      invalidBaseline(`metrics[${index}].value must be a finite nonnegative number`);
+    }
+    if (metricKeys.has(key)) invalidBaseline(`metrics contains duplicate key ${key}`);
+    metricKeys.add(key);
+  }
+  if (metricKeys.size === 0) invalidBaseline("metrics must not be empty");
+  requireBaselineText(value.promotedBy, "promotedBy");
+  requireBaselineText(value.promotionReason, "promotionReason");
+  requireBaselineSha256(value.reportDigest, "reportDigest");
+  requireBaselineText(value.reportFile, "reportFile");
+  requireBaselineTimestamp(value.promotedAt, "promotedAt");
+  requireBaselineTimestamp(value.reportGeneratedAt, "reportGeneratedAt");
+  if (
+    typeof value.reportSchemaVersion !== "number" ||
+    !Number.isInteger(value.reportSchemaVersion) ||
+    value.reportSchemaVersion < 1
+  ) {
+    invalidBaseline("reportSchemaVersion must be a positive integer");
+  }
+  if (!isRecord(value.source)) invalidBaseline("source must be an object");
+  if (typeof value.source.commit !== "string" || !/^[a-f0-9]{40,64}$/.test(value.source.commit)) {
+    invalidBaseline("source.commit must be a Git object ID");
+  }
+  if (value.source.dirtyTreeDigest !== null) {
+    requireBaselineSha256(value.source.dirtyTreeDigest, "source.dirtyTreeDigest");
+  }
+  return value as unknown as BaselineRecord;
+}
+
+function requireMatchingMetricKeys(
+  baselineMetrics: readonly BaselineMetricSummary[],
+  candidateMetrics: readonly BaselineMetricSummary[],
+): void {
+  const baselineKeys = baselineMetrics.map((metric) => metric.key).sort();
+  const candidateKeys = candidateMetrics.map((metric) => metric.key).sort();
+  if (JSON.stringify(baselineKeys) !== JSON.stringify(candidateKeys)) {
+    invalidBaseline(`metrics must contain exactly ${candidateKeys.join(", ")}`);
+  }
+}
+
+function requireBaselineText(value: unknown, path: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    invalidBaseline(`${path} must be a nonempty string`);
+  }
+  return value;
+}
+
+function requireBaselineSha256(value: unknown, path: string): void {
+  if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) {
+    invalidBaseline(`${path} must be a lowercase SHA-256 digest`);
+  }
+}
+
+function requireBaselineTimestamp(value: unknown, path: string): void {
+  if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) {
+    invalidBaseline(`${path} must be an ISO timestamp`);
+  }
+}
+
+function invalidBaseline(reason: string): never {
+  throw new Error(`Promoted baseline record is invalid: ${reason}`);
+}
+
 function assertPromotionEligible(report: BaselineEligibleReport): void {
   const facetStatuses = [
     report.facets.environment.status,
@@ -530,11 +713,26 @@ function assertPromotionEligible(report: BaselineEligibleReport): void {
   }
   if (
     report.runs.some((run) => run.budgetChecks.some((check) => !check.passed)) ||
+    report.postRunIdentity.state !== "measured" ||
+    report.reportPersistence.state !== "measured" ||
+    report.finalizationFailure !== null ||
+    report.streamingCellLoadP95Variance.some((summary) => summary.state !== "measured") ||
     report.facets.environment.reasons.length > 0 ||
     report.facets.evidenceCompleteness.reasons.length > 0 ||
     report.facets.budgetEvaluation.reasons.length > 0
   ) {
     throw new Error("A promotable report must have no failed checks or passing-facet reasons");
+  }
+}
+
+function requireFinalizationEvidence(value: unknown, path: string): void {
+  requireRecord(value, path);
+  if (value.state !== "measured" && value.state !== "invalid") {
+    invalidReport(`${path}.state must be measured or invalid`);
+  }
+  if (value.state === "invalid") requireText(value.reason, `${path}.reason`);
+  if (value.state === "measured" && value.reason !== undefined) {
+    invalidReport(`${path}.reason must be absent when state is measured`);
   }
 }
 
@@ -749,6 +947,59 @@ function requireFiniteNonnegative(value: unknown, path: string): asserts value i
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     invalidReport(`${path} must be a finite nonnegative number`);
   }
+}
+
+function requireP95VarianceSummaries(
+  value: unknown,
+  path: string,
+): BaselineEligibleReport["streamingCellLoadP95Variance"] {
+  if (!Array.isArray(value) || value.length !== 2) {
+    invalidReport(`${path} must contain exactly fresh and warm summaries`);
+  }
+  for (const [index, expectedProfile] of (["fresh", "warm"] as const).entries()) {
+    const summary = value[index];
+    requireRecord(summary, `${path}[${index}]`);
+    if (summary.profile !== expectedProfile) {
+      invalidReport(`${path}[${index}].profile must be ${expectedProfile}`);
+    }
+    if (summary.state !== "measured" && summary.state !== "invalid") {
+      invalidReport(`${path}[${index}].state must be measured or invalid`);
+    }
+    if (summary.relativeP95Range !== null) {
+      requireFiniteNonnegative(summary.relativeP95Range, `${path}[${index}].relativeP95Range`);
+    }
+    if (summary.absoluteP95RangeMs !== null) {
+      requireFiniteNonnegative(summary.absoluteP95RangeMs, `${path}[${index}].absoluteP95RangeMs`);
+    }
+    if (summary.allowedAbsoluteP95RangeMs !== null) {
+      requireFiniteNonnegative(
+        summary.allowedAbsoluteP95RangeMs,
+        `${path}[${index}].allowedAbsoluteP95RangeMs`,
+      );
+    }
+    if ((summary.absoluteP95RangeMs === null) !== (summary.allowedAbsoluteP95RangeMs === null)) {
+      invalidReport(
+        `${path}[${index}] absoluteP95RangeMs and allowedAbsoluteP95RangeMs must both be measured or both be null`,
+      );
+    }
+    if (summary.state === "measured") {
+      if (summary.reason !== undefined) {
+        invalidReport(`${path}[${index}].reason must be absent when state is measured`);
+      }
+      if (summary.absoluteP95RangeMs === null || summary.allowedAbsoluteP95RangeMs === null) {
+        invalidReport(`${path}[${index}] measured repeatability must include both absolute ranges`);
+      }
+      if (summary.absoluteP95RangeMs > summary.allowedAbsoluteP95RangeMs) {
+        invalidReport(
+          `${path}[${index}] measured absolute p95 range must not exceed its allowance`,
+        );
+      }
+    }
+    if (summary.state === "invalid") {
+      requireText(summary.reason, `${path}[${index}].reason`);
+    }
+  }
+  return value as unknown as BaselineEligibleReport["streamingCellLoadP95Variance"];
 }
 
 function requireSha256(value: unknown, path: string): void {

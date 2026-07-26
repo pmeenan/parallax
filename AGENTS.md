@@ -80,7 +80,7 @@ Everything else is on demand. Each doc, and the questions it answers:
 | [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
 | [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
 | [docs/chrome-platform-gaps.md](docs/chrome-platform-gaps.md) | Chrome-facing synthesis of missing capabilities, prioritized asks, evidence, and why each change would help |
-| [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076/D-078/D-080): sourced cases against Unity, three.js, Godot, Bevy; the measured Babylon Lite selection, sole-renderer commitment, and bounded interop gaps; splat-relighting state for P-002. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
+| [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076/D-078/D-080/D-098): sourced cases against Unity, three.js, Godot, Bevy; the measured Babylon Lite selection, sole-renderer commitment, bounded interop gaps, and P-002 geometry/splat outcome. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
 | [docs/dependencies.md](docs/dependencies.md) | Exact-pin currency policy, risk-tier upgrade gates, 28-day/milestone cadence, and review ledger. Read at dependency checkpoints or before changing any external version pin |
 
 `docs/history/` contains the original ideation chat transcripts. They are **historical
@@ -139,50 +139,24 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 ## Current status
 
-Milestone **M0 (harness + skeleton) is complete**; M1 is in progress — see
-[docs/plan.md](docs/plan.md). The build/serve pipeline, walking-skeleton app,
-WebGPU-in-worker/OffscreenCanvas go spike (D-056), SAB ring-buffer go spike (D-057),
-Prompt API measured no-go spike (D-059/RE-019) and sandboxed branded Prompt
-production-install qualification (D-065), Harness v1's sandboxed `smoke@1` replacement
-gate, and the qualified OPFS worker spike (D-066/RE-023) are complete. D-096 resolved
-P-007 in favor of D-074's app-owned Gemma 4 QAT-GGUF/wllama backend, removed both
-closed Prompt API harnesses, and removed the standalone OPFS microbenchmark after
-D-091's representative streaming evidence superseded it. Historical Prompt/OPFS
-findings and results remain. The app-owned WebGPU path is qualified, with
-D-073's ONNX no-go retained as documentary/result evidence after D-095 removed its
-implementation and dependency chain; D-074's CPU/WASM headroom mode remains. The D-077
-head-to-head selected Babylon Lite 1.11.0 as the rendering core (D-078), D-080 removed
-the comparison-only classic path and renderer abstraction, and D-089 upgraded the sole
-renderer to exactly pinned 1.12.0 while qualifying its worker-safe self-hosted decoders;
-the D-075/D-084 NPC context-prefill spike is now a measured restart-persistence no-go
-for the pinned Gemma 4 E2B runtime (live idle pre-seeding remains the preferred
-direction), and the D-085 Rust/WASM threads spike is qualified by the passing
-schema-v25/metric-set-v11 physical-console gate. D-086 qualifies the optional memory64
-path with a passing six-run physical-console cost comparison and exact beyond-4-GiB
-access while leaving P-001 open for representative M1 adoption evidence. D-087's
-schema-v26 result store and explicit promotion workflow closed the final harness-contract
-gap; the full dependency checkpoint adopted Node 24.18.0 and CfT 151.0.7922.34. The
-same-artifact Chrome 150 anchor and Chrome 151 candidate passed all facets and 24 checks,
-and Chrome 151 is promoted. D-092 proved that RE-008 can complete just after the
-former five-second validity boundary; D-094 accepts complete lossless drains through
-ten seconds, confirmed by a passing 30-check physical gate that accepted a complete
-5,020.1 ms trace. D-092 also localized the former RE-036
-Wasm-instantiation failure to Rust/wasm-bindgen startup; D-093 fixed its allocator/
-thread-scratch overlap, and the schema-v29/metric-set-v14 physical-console gate passed
-all six launches and 30 checks. RE-008 remains a fail-closed Chrome/Perfetto finding,
-while RE-036 is resolved for the pinned artifact and retained as an upstream toolchain
-finding. D-090's procedural D1
-greybox is qualified by the passing schema-v27/metric-set-v12 physical-console gate;
-its immediately preceding same-artifact RE-008 failure remains retained. D-091's
-streaming implementation is qualified by the same passing schema-v29 artifact after
-the retained schema-v28 and pre-fix v29 RE-008/RE-036 failures; a same-artifact
-confirmation retained another late RE-008 completion while all six additional fixed
-Wasm cohorts passed. D-095 removes closed ONNX experiment baggage and makes V8 code-cache collection an explicit
-targeted diagnostic rather than nine launches in every routine smoke gate. The routine
-six-launch schema-v30 gate and the separate 15-launch V8 diagnostic both passed all
-three facets and 30 checks; the targeted run also accepted another complete lossless
-5,307.5 ms RE-008 trace. D-096 advances the build manifest to v10, telemetry to v12,
-smoke report to v31, and mandatory metric set to v15; its physical-console gate passed
-all six launches, all three facets, and 30 checks.
-Keep this paragraph current when plan.md
-milestone status changes (root rule 6).
+Milestones **M0 (harness + skeleton) and M1 (Greybox District 1 streaming) are
+complete**; M2 is pending — see [docs/plan.md](docs/plan.md). M1 closes only for
+registered dev-01 Showcase and evaluated mandatory metrics. It makes no claim for
+Standard or unsupported physical presentation, worker long tasks, combined CPU
+resident memory, or page-attributed GPU residency.
+
+Post-M1 candidate work includes D-117's memory64 experiment removal (build manifest
+v11 and public telemetry v25), D-118's smoke schema v47 / mandatory metric set v23
+and flythrough schema v14 / mandatory metric set v7 contracts, and D-120's preflight
+baseline-store validation. Its final D-097 physical `smoke@1` passed all six
+launches, all three facets, and 30/30 checks in
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
+(SHA-256 `ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`).
+The same-artifact first attempt's retained startup fetch failure is RE-044.
+No additional public benchmark, flythrough, render-recovery, privileged diagnostic,
+or physical smoke is required for this candidate; it does not reopen M1.
+
+See [docs/plan.md](docs/plan.md), D-115–D-120 in
+[docs/decisions.md](docs/decisions.md), [docs/budgets.md](docs/budgets.md), and
+[docs/rough-edges.md](docs/rough-edges.md) for authoritative detail.
+Keep this paragraph current when plan.md milestone status changes (root rule 6).

@@ -72,6 +72,14 @@ and idiomatic for the web rather than a downported approximation. The feature ma
 - **Game goal:** District 1 playable end-to-end with final art; District 2 reachable
   through a hard streaming transition that stays inside the transition budget.
 
+Milestone evidence can expose a platform capability as genuinely unobservable. A
+decision may accept that documented gap for a research milestone only when the
+remaining evaluated mandatory metrics pass and the claim stays narrow: `unsupported`
+never means passed, and no proxy is relabeled as the missing outcome. D-115 applies
+that rule to M1's Showcase greybox exit. Standard/default-experience transfer and the
+unqualified presentation, worker-long-task, combined-memory, and GPU-residency claims
+remain open rather than being inferred from dev-01 or callback/logical-size signals.
+
 ## Non-goals
 
 - Cross-browser support. Chrome latest+ only, by design (D-002). Advisory benchmark

@@ -42,6 +42,7 @@ import {
   type WebGpuAdapterIdentity,
   type WindowsHostIdentity,
 } from "./environment.js";
+import { launchAfterPhysicalConsoleDisplayWake } from "./physical-console-preflight.js";
 import {
   APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION,
   APP_OWNED_LLM_SPIKE_SCENARIO,
@@ -297,9 +298,11 @@ async function runPhase(
   let capture = emptyCapture();
   let environment = emptyEnvironment(input.machineId, input.tier, input.profileRoot);
   let loadStalled = false;
-  const context = await launchPersistentChrome(input.executablePath, input.profileRoot, [
-    "--enable-webgpu-developer-features",
-  ]);
+  const context = await launchAfterPhysicalConsoleDisplayWake(() =>
+    launchPersistentChrome(input.executablePath, input.profileRoot, [
+      "--enable-webgpu-developer-features",
+    ]),
+  );
   try {
     const page = context.pages()[0] ?? (await context.newPage());
     page.on("pageerror", (error) => errors.push(`${input.phase}: ${error.message}`));

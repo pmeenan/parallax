@@ -1,15 +1,21 @@
-import type { OpfsSyncAccessHandle } from "../storage/opfs-sync-access-handle";
+import {
+  createOpfsSyncAccessHandleCache,
+  type OpfsSyncAccessHandle,
+} from "../storage/opfs-sync-access-handle";
+import { createFlythroughObserverProtocol } from "../streaming/flythrough-observer-protocol";
 import {
   type DecodeWorkerRequest,
   type DecodeWorkerResponse,
   type RenderStreamingRequest,
   type RenderStreamingResponse,
+  type RenderToStreamingMessage,
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
   type StreamingCellIndexEntry,
   type StreamingCellLoadTelemetry,
   type StreamingDistrictIndex,
+  type StreamingRecoveryCheckpoint,
   type StreamingWorkerRequest,
   type StreamingWorkerResponse,
   type WorldStreamingTelemetrySnapshot,
@@ -60,6 +66,14 @@ interface DecodeTask {
   readonly taskId: number;
 }
 
+interface LoadBatchIdentity {
+  readonly cellCount: number;
+  readonly cellOrdinal: number;
+  readonly flythroughObserverSequence: number;
+  readonly observerUpdateCount: number;
+  readonly ordinal: number;
+}
+
 interface DecodeSlot {
   busy: boolean;
   readonly worker: Worker;
@@ -84,6 +98,12 @@ function errorMessage(error: unknown): string {
   return error instanceof Error && error.message !== "" ? error.message : String(error);
 }
 
+function appendCloseFailures(message: string, failures: readonly unknown[]): string {
+  return failures.length === 0
+    ? message
+    : `${message}; OPFS access-handle cleanup failed: ${failures.map(errorMessage).join("; ")}`;
+}
+
 async function sha256Hex(bytes: BufferSource): Promise<string> {
   return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]
     .map((value) => value.toString(16).padStart(2, "0"))
@@ -99,20 +119,31 @@ function initialTelemetry(): WorldStreamingTelemetrySnapshot {
     cellLoadSamples: Object.freeze([]),
     cellLoadSampleCount: 0,
     cpuBudgetRejectionCount: 0,
+    currentObservers: Object.freeze([]),
     decodeQueueDepthHighWater: 0,
     decodeWorkerCount: 0,
     encodedBytesRead: 0,
     failureMessage: null,
     hardwareConcurrency: navigator.hardwareConcurrency,
+    flythroughObserverUpdateCount: 0,
+    observerUpdateCount: 0,
+    opfsAccessHandleCount: 0,
+    opfsAccessHandleOpenDurationMs: 0,
+    opfsPackageCount: 0,
     opfsProvisionedBytes: 0,
     proactiveEvictionCount: 0,
     residentCellCount: 0,
+    residentCellIds: Object.freeze([]),
     residentEncodedBytes: 0,
     residentEncodedBytesHighWater: 0,
     residentGpuBytes: 0,
     residentGpuBytesHighWater: 0,
+    renderRecoveryCount: 0,
     schemaVersion: STREAMING_TELEMETRY_SCHEMA_VERSION,
+    settledRecoveryCheckpoint: null,
+    settledObserverUpdateCount: 0,
     state: "idle",
+    workerGeneration: 0,
   });
 }
 
@@ -131,7 +162,23 @@ function startStreamingWorker(): void {
   let reservedEncodedBytes = 0;
   let nextTaskId = 1;
   let nextRenderRequestId = 1;
+  let nextLoadBatchOrdinal = 1;
   let recordCellLoadSamples = false;
+  let recoveryTarget: StreamingRecoveryCheckpoint | null = null;
+  let flythroughObserverProtocol = createFlythroughObserverProtocol(0);
+  const opfsAccessHandles = createOpfsSyncAccessHandleCache();
+  const faultBoundaryRequests: {
+    readonly flythroughObserverUpdateCount: number;
+    readonly requestId: number;
+  }[] = [];
+  const flythroughResetBoundaryRequests: {
+    readonly completedFlythroughGeneration: number;
+    readonly completedRunSequence: number | null;
+    readonly flythroughObserverUpdateCount: number | null;
+    readonly kind: "reset-flythrough-boundary";
+    readonly nextFlythroughGeneration: number;
+    readonly requestId: number;
+  }[] = [];
   const residents = new Map<string, ResidentCell>();
   const decodeSlots: DecodeSlot[] = [];
   const decodeQueue: DecodeTask[] = [];
@@ -146,13 +193,19 @@ function startStreamingWorker(): void {
   >();
 
   const publish = (patch: Partial<WorldStreamingTelemetrySnapshot> = {}): void => {
+    const checkpoint = patch.settledRecoveryCheckpoint ?? telemetry.settledRecoveryCheckpoint;
     telemetry = Object.freeze({
       ...telemetry,
       ...patch,
       cellLoadSamples: Object.freeze(
         (patch.cellLoadSamples ?? telemetry.cellLoadSamples).slice(-LOAD_SAMPLE_LIMIT),
       ),
+      currentObservers: Object.freeze(
+        observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
+      ),
+      opfsAccessHandleCount: opfsAccessHandles.size,
       residentCellCount: residents.size,
+      residentCellIds: Object.freeze([...residents.keys()].sort()),
       residentEncodedBytes: [...residents.values()].reduce(
         (sum, resident) => sum + resident.encodedBytes,
         0,
@@ -161,14 +214,29 @@ function startStreamingWorker(): void {
         (sum, resident) => sum + resident.gpuBytes,
         0,
       ),
+      settledRecoveryCheckpoint:
+        checkpoint === null
+          ? null
+          : Object.freeze({
+              ...checkpoint,
+              observers: Object.freeze(
+                checkpoint.observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
+              ),
+              residentCellIds: Object.freeze([...checkpoint.residentCellIds]),
+            }),
     });
     scope.postMessage({ kind: "telemetry", snapshot: telemetry });
   };
 
   const fail = (error: unknown): void => {
     if (disposed || telemetry.state === "failed") return;
-    const message = errorMessage(error);
-    telemetry = Object.freeze({ ...telemetry, failureMessage: message, state: "failed" });
+    const message = appendCloseFailures(errorMessage(error), opfsAccessHandles.closeAll());
+    telemetry = Object.freeze({
+      ...telemetry,
+      failureMessage: message,
+      opfsAccessHandleCount: 0,
+      state: "failed",
+    });
     scope.postMessage({ kind: "failure", message, snapshot: telemetry });
     for (const slot of decodeSlots) slot.worker.terminate();
     decodeSlots.length = 0;
@@ -287,39 +355,33 @@ function startStreamingWorker(): void {
     return rootDirectory.getFileHandle(`${entry.sha256}.cell`, { create: false });
   };
 
-  const readCell = async (
+  const readCell = (
     entry: StreamingCellIndexEntry,
-  ): Promise<
-    Readonly<{
-      bytes: ArrayBuffer;
-      readMs: number;
-    }>
-  > => {
-    const handle = await openCellFile(entry);
-    const access = await (handle as OpfsFileHandle).createSyncAccessHandle();
-    try {
-      const size = access.getSize();
-      if (size !== entry.bytes) {
-        throw new Error(`OPFS cell ${entry.cellId} has ${size} bytes; expected ${entry.bytes}`);
-      }
-      const bytes = new Uint8Array(size);
-      const startedAt = performance.now();
-      const readBytes = access.read(bytes, { at: 0 });
-      const readMs = performance.now() - startedAt;
-      if (readBytes !== size) {
-        throw new Error(`OPFS cell ${entry.cellId} read ${readBytes} of ${size} bytes`);
-      }
-      return Object.freeze({ bytes: bytes.buffer, readMs });
-    } finally {
-      access.close();
+  ): Readonly<{
+    bytes: ArrayBuffer;
+    readMs: number;
+  }> => {
+    const access = opfsAccessHandles.require(entry.sha256);
+    const bytes = new Uint8Array(entry.bytes);
+    const startedAt = performance.now();
+    const readBytes = access.read(bytes, { at: 0 });
+    const readMs = performance.now() - startedAt;
+    if (readBytes !== entry.bytes) {
+      throw new Error(`OPFS cell ${entry.cellId} read ${readBytes} of ${entry.bytes} bytes`);
     }
+    return Object.freeze({ bytes: bytes.buffer, readMs });
   };
 
-  const loadCell = async (entry: StreamingCellIndexEntry): Promise<void> => {
+  const loadCell = async (
+    entry: StreamingCellIndexEntry,
+    batch: LoadBatchIdentity,
+  ): Promise<void> => {
     if (residents.has(entry.cellId)) return;
     const totalStartedAt = performance.now();
-    const { bytes, readMs } = await readCell(entry);
+    const { bytes, readMs } = readCell(entry);
+    const opfsCompletedAt = performance.now();
     const decoded = await decode(entry, bytes);
+    const decodeCompletedAt = performance.now();
     const projectedEncodedBytes =
       [...residents.values()].reduce((sum, resident) => sum + resident.encodedBytes, 0) +
       reservedEncodedBytes +
@@ -332,6 +394,8 @@ function startStreamingWorker(): void {
     }
     reservedEncodedBytes += decoded.encodedBytes;
     let response: Extract<RenderStreamingResponse, { kind: "stream-cell-complete" }>;
+    let uploadCompletedAt: number;
+    let commitCompletedAt: number;
     try {
       const uploadRequestId = nextRenderRequestId;
       nextRenderRequestId += 1;
@@ -342,6 +406,7 @@ function startStreamingWorker(): void {
         kind: "stream-cell",
         requestId: uploadRequestId,
       });
+      uploadCompletedAt = performance.now();
       if (uploadResponse.kind !== "stream-cell-complete") {
         throw new Error(`Unexpected render response while loading ${entry.cellId}`);
       }
@@ -353,6 +418,7 @@ function startStreamingWorker(): void {
         requestId: commitRequestId,
         uploadRequestId,
       });
+      commitCompletedAt = performance.now();
       if (commitResponse.kind !== "commit-cell-complete") {
         throw new Error(`Unexpected render commit response while loading ${entry.cellId}`);
       }
@@ -372,14 +438,33 @@ function startStreamingWorker(): void {
       (sum, resident) => sum + resident.gpuBytes,
       0,
     );
+    const totalCompletedAt = performance.now();
+    const opfsAccessRoundTripMs = opfsCompletedAt - totalStartedAt;
+    const decodeRoundTripMs = decodeCompletedAt - opfsCompletedAt;
+    const renderUploadRoundTripMs = uploadCompletedAt - decodeCompletedAt;
+    const renderCommitRoundTripMs = commitCompletedAt - uploadCompletedAt;
+    const streamingWorkerRemainderMs = totalCompletedAt - commitCompletedAt;
     const sample: StreamingCellLoadTelemetry = Object.freeze({
+      batchCellCount: batch.cellCount,
+      batchCellOrdinal: batch.cellOrdinal,
+      batchFlythroughObserverSequence: batch.flythroughObserverSequence,
+      batchObserverUpdateCount: batch.observerUpdateCount,
+      batchOrdinal: batch.ordinal,
       cellId: entry.cellId,
       decodeMs: decoded.decodeMs,
+      decodeRoundTripMs,
+      decodeWaitMs: Math.max(0, decodeRoundTripMs - decoded.decodeMs),
       encodedBytes: decoded.encodedBytes,
       gpuBytes: response.gpuBytes,
+      opfsAccessRoundTripMs,
       opfsReadMs: readMs,
+      opfsWaitMs: Math.max(0, opfsAccessRoundTripMs - readMs),
+      renderCommitRoundTripMs,
+      renderUploadRoundTripMs,
+      renderUploadWaitMs: Math.max(0, renderUploadRoundTripMs - response.uploadMs),
       sequence: telemetry.cellLoadSampleCount + 1,
-      totalMs: performance.now() - totalStartedAt,
+      streamingWorkerRemainderMs,
+      totalMs: totalCompletedAt - totalStartedAt,
       uploadMs: response.uploadMs,
     });
     publish({
@@ -422,6 +507,8 @@ function startStreamingWorker(): void {
     try {
       do {
         scheduleRequested = false;
+        const batchObserverUpdateCount = telemetry.observerUpdateCount;
+        const batchFlythroughObserverSequence = telemetry.flythroughObserverUpdateCount;
         const schedule = scheduleStreamingCells(
           index,
           observers,
@@ -429,9 +516,68 @@ function startStreamingWorker(): void {
           STREAMING_RESIDENT_CELL_LIMIT,
         );
         for (const entry of schedule.evict) await evictCell(entry);
-        await Promise.all(schedule.load.map((entry) => loadCell(entry)));
+        if (schedule.load.length > 0) {
+          const batch = Object.freeze({
+            cellCount: schedule.load.length,
+            flythroughObserverSequence: batchFlythroughObserverSequence,
+            observerUpdateCount: batchObserverUpdateCount,
+            ordinal: nextLoadBatchOrdinal,
+          });
+          nextLoadBatchOrdinal += 1;
+          await Promise.all(
+            schedule.load.map((entry, index) =>
+              loadCell(entry, {
+                ...batch,
+                cellOrdinal: index + 1,
+              }),
+            ),
+          );
+        }
       } while (scheduleRequested && !disposed);
-      publish({ state: "streaming" });
+      const settledRecoveryCheckpoint: StreamingRecoveryCheckpoint = Object.freeze({
+        flythroughObserverUpdateCount: telemetry.flythroughObserverUpdateCount,
+        observerUpdateCount: telemetry.observerUpdateCount,
+        observers: Object.freeze(
+          observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
+        ),
+        residentCellIds: Object.freeze([...residents.keys()].sort()),
+        workerGeneration: telemetry.workerGeneration,
+      });
+      if (recoveryTarget !== null) {
+        if (
+          settledRecoveryCheckpoint.observerUpdateCount !== recoveryTarget.observerUpdateCount ||
+          settledRecoveryCheckpoint.flythroughObserverUpdateCount !==
+            recoveryTarget.flythroughObserverUpdateCount ||
+          JSON.stringify(settledRecoveryCheckpoint.observers) !==
+            JSON.stringify(recoveryTarget.observers) ||
+          JSON.stringify(settledRecoveryCheckpoint.residentCellIds) !==
+            JSON.stringify(recoveryTarget.residentCellIds)
+        ) {
+          throw new Error("Recovered streaming residency did not match its settled checkpoint");
+        }
+        recoveryTarget = null;
+      }
+      publish({
+        settledObserverUpdateCount: telemetry.observerUpdateCount,
+        settledRecoveryCheckpoint,
+        state: "streaming",
+      });
+      for (const request of faultBoundaryRequests.splice(0)) {
+        if (
+          request.flythroughObserverUpdateCount !==
+          settledRecoveryCheckpoint.flythroughObserverUpdateCount
+        ) {
+          throw new Error("Fault-boundary observer sequence did not settle exactly");
+        }
+        renderPort?.postMessage({
+          checkpoint: settledRecoveryCheckpoint,
+          kind: "fault-boundary-settled",
+          requestId: request.requestId,
+        });
+      }
+      for (const request of flythroughResetBoundaryRequests.splice(0)) {
+        renderPort?.postMessage(flythroughObserverProtocol.settleReset(request));
+      }
     } finally {
       scheduling = false;
     }
@@ -479,10 +625,112 @@ function startStreamingWorker(): void {
     }
   };
 
+  const openAccessHandles = async (entries: readonly StreamingCellIndexEntry[]): Promise<void> => {
+    const uniqueEntries = [
+      ...new Map(entries.map((entry) => [entry.sha256, entry] as const)).values(),
+    ];
+    const startedAt = performance.now();
+    publish({ opfsPackageCount: uniqueEntries.length });
+    try {
+      for (let offset = 0; offset < uniqueEntries.length; offset += 8) {
+        const batch = uniqueEntries.slice(offset, offset + 8);
+        const results = await Promise.allSettled(
+          batch.map(async (entry) => {
+            const handle = await openCellFile(entry);
+            await opfsAccessHandles.open(entry.sha256, entry.bytes, () =>
+              (handle as OpfsFileHandle).createSyncAccessHandle(),
+            );
+          }),
+        );
+        const rejected = results.find(
+          (result): result is PromiseRejectedResult => result.status === "rejected",
+        );
+        if (rejected !== undefined) throw new Error(errorMessage(rejected.reason));
+      }
+    } catch (error: unknown) {
+      throw new Error(
+        appendCloseFailures(errorMessage(error), opfsAccessHandles.closeAll()),
+        error instanceof Error ? { cause: error } : undefined,
+      );
+    }
+    publish({
+      opfsAccessHandleOpenDurationMs: performance.now() - startedAt,
+    });
+  };
+
   const initialize = async (request: Extract<StreamingWorkerRequest, { kind: "start" }>) => {
+    if (!validObservers(request.initialObservers)) {
+      throw new Error("Initial streaming observers are invalid");
+    }
+    recoveryTarget = request.recoveryCheckpoint;
+    publish({
+      flythroughObserverUpdateCount: request.recoveryCheckpoint?.flythroughObserverUpdateCount ?? 0,
+      observerUpdateCount: request.recoveryCheckpoint?.observerUpdateCount ?? 0,
+      renderRecoveryCount: request.renderRecoveryCount,
+      settledObserverUpdateCount: request.recoveryCheckpoint?.observerUpdateCount ?? 0,
+      workerGeneration: request.workerGeneration,
+    });
+    flythroughObserverProtocol = createFlythroughObserverProtocol(
+      telemetry.flythroughObserverUpdateCount,
+    );
     renderPort = request.renderPort;
-    renderPort.onmessage = (event: MessageEvent<RenderStreamingResponse>): void => {
+    renderPort.onmessage = (event: MessageEvent<RenderToStreamingMessage>): void => {
       const response = event.data;
+      if (response.kind === "flythrough-observers") {
+        if (flythroughResetBoundaryRequests.length > 0 || !validObservers(response.observers)) {
+          fail("Render worker flythrough observer sequence is invalid");
+          return;
+        }
+        let nextFlythroughObserverUpdateCount: number;
+        try {
+          nextFlythroughObserverUpdateCount = flythroughObserverProtocol.acceptObserver(response);
+        } catch (error: unknown) {
+          fail(error);
+          return;
+        }
+        observers = Object.freeze(
+          response.observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
+        );
+        publish({
+          flythroughObserverUpdateCount: nextFlythroughObserverUpdateCount,
+          observerUpdateCount: telemetry.observerUpdateCount + 1,
+        });
+        scheduleRequested = true;
+        void runSchedule().catch(fail);
+        return;
+      }
+      if (response.kind === "reset-flythrough-boundary") {
+        if (
+          !Number.isInteger(response.requestId) ||
+          response.requestId <= 0 ||
+          flythroughResetBoundaryRequests.length > 0
+        ) {
+          fail("Render worker flythrough reset boundary is invalid");
+          return;
+        }
+        flythroughResetBoundaryRequests.push(response);
+        scheduleRequested = true;
+        void runSchedule().catch(fail);
+        return;
+      }
+      if (response.kind === "quiesce-fault-boundary") {
+        if (
+          !Number.isInteger(response.requestId) ||
+          response.requestId <= 0 ||
+          !Number.isInteger(response.flythroughObserverUpdateCount) ||
+          response.flythroughObserverUpdateCount !== telemetry.flythroughObserverUpdateCount
+        ) {
+          fail("Render worker fault-boundary request is invalid");
+          return;
+        }
+        faultBoundaryRequests.push({
+          flythroughObserverUpdateCount: response.flythroughObserverUpdateCount,
+          requestId: response.requestId,
+        });
+        scheduleRequested = true;
+        void runSchedule().catch(fail);
+        return;
+      }
       const pending = renderRequests.get(response.requestId);
       if (pending === undefined) {
         fail(`Render worker returned unknown streaming request ${response.requestId}`);
@@ -545,6 +793,7 @@ function startStreamingWorker(): void {
       publish({ opfsProvisionedBytes: provisionedBytes });
     }
     await removeStalePackages(index.cells);
+    await openAccessHandles(index.cells);
     createDecodePool();
     ready = true;
     await runSchedule();
@@ -580,7 +829,15 @@ function startStreamingWorker(): void {
         }
         for (const slot of decodeSlots) slot.worker.terminate();
         decodeSlots.length = 0;
-        telemetry = Object.freeze({ ...telemetry, state: "disposed" });
+        const closeFailures = opfsAccessHandles.closeAll();
+        if (closeFailures.length > 0) {
+          throw new Error(appendCloseFailures("Streaming disposal failed", closeFailures));
+        }
+        telemetry = Object.freeze({
+          ...telemetry,
+          opfsAccessHandleCount: 0,
+          state: "disposed",
+        });
         scope.postMessage({ kind: "disposed", snapshot: telemetry });
         renderPort?.close();
         renderPort = null;
@@ -591,9 +848,14 @@ function startStreamingWorker(): void {
       return;
     }
     if (request.kind === "observers") {
+      if (!validObservers(request.observers)) {
+        fail("Streaming observer update is invalid");
+        return;
+      }
       observers = Object.freeze(
         request.observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
       );
+      publish({ observerUpdateCount: telemetry.observerUpdateCount + 1 });
       scheduleRequested = true;
       void runSchedule().catch(fail);
       return;
@@ -608,3 +870,13 @@ function startStreamingWorker(): void {
 }
 
 startStreamingWorker();
+
+function validObservers(observers: readonly WorldVec3[]): boolean {
+  return (
+    observers.length > 0 &&
+    observers.every(
+      (observer) =>
+        observer.length === 3 && observer.every((component) => Number.isFinite(component)),
+    )
+  );
+}

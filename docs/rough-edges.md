@@ -85,24 +85,322 @@ COS APIs exist):
 
 ## Findings
 
+## RE-044: A localhost worker fetch rejected opaquely before streaming provisioning
+
+- **Date / Chrome version:** 2026-07-26; pinned Chrome for Testing 151.0.7922.34,
+  Windows 11/dev-01 physical console, Chromium/Dawn D3D12, NVIDIA GeForce RTX 4080
+  SUPER.
+- **Layer:** network / dedicated streaming worker / harness observability; exact cause
+  unresolved.
+- **Status:** open observability finding; not a Chrome defect claim.
+- **What we expected / What happened:** the final post-review `smoke@1` candidate
+  should provision the fixed D1 packages from the harness's live localhost server
+  before its first fresh measurement. The first attempt instead completed zero of six
+  runs after the streaming cohort surfaced only `Failed to fetch`. Environment
+  validation, post-run source identity, and report persistence still measured
+  successfully. The one immediate unchanged-artifact classification retry then
+  completed all six launches and passed all three facets and 30/30 checks.
+- **Evidence / repro:** failed report
+  `smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-35-18-277Z.json`
+  (SHA-256
+  `91d839dddf16644dafb3576b5f4a06e6551ee06219bb88527423d915caaa5827`)
+  and passing retry
+  `smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
+  (SHA-256
+  `ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
+  share artifact
+  `8e932618990f1c6d1fb8aaab2db2bbba016c7b2c21e41eda32d375798d51d87d`
+  and source dirty-tree digest
+  `5c9052b43203032b2049a547ff55fe532dbd087f03ed645f5149dc2846955c8f`.
+  Run pinned `pnpm harness:smoke` on registered dev-01 Showcase; the failure has
+  occurred once and is not yet a deterministic reproduction.
+- **Impact on Parallax:** the failed result remains immutable and cannot carry a
+  budget verdict. Its one same-artifact retry supplies the final qualification without
+  erasing the failure. Further blind retries are not authorized.
+- **Proposed improvement:** on recurrence, retain the exact provisioning fetch phase
+  and resolved URL plus the localhost server's request/status counters inside the
+  core-run failure. Use that evidence to distinguish a missing request, client abort,
+  server response, or worker-side network rejection before reducing this to a
+  standalone Chrome reproduction or filing a browser defect.
+
+## RE-043: Public benchmark p95 variance remains unattributable across worker and GPU boundaries
+
+- **Date / Chrome version:** 2026-07-25; pinned Chrome for Testing 151.0.7922.34,
+  Windows 11/dev-01 physical console, Chromium/Dawn D3D12, NVIDIA GeForce RTX 4080
+  SUPER.
+- **Layer:** application measurement / cross-realm scheduler / WebGPU queue; exact cause
+  unresolved.
+- **Status:** open research and observability gap; not a Chrome defect claim.
+- **What we expected / What happened:** after D-108 removed per-load asynchronous OPFS
+  lookup/open/close, three continuous-page repeats of the exact 4K ten-minute route
+  should still keep each relied-on p95 within the unchanged 10% relative-range limit.
+  The first complete post-D-109 run measured streaming p95 at
+  2.265/2.915/2.950 ms (30.243%); its one permitted same-artifact retry measured
+  2.735/3.325/3.075 ms (21.572%) and render-duration p95 at
+  0.330/0.375/0.310 ms (20.968%). Every individual streaming p95 passed 250 ms,
+  callback p95 was stable in both runs, and both recorded zero Window Long Tasks, but
+  the repeatability failures correctly invalidated scenario evidence.
+- **Evidence / repro:** retained reports
+  `harness/results/benchmark-result-1-ff05ec211444-dev-01-showcase-2026-07-25T21-28-45-673Z.json`
+  and
+  `harness/results/benchmark-result-1-ff05ec211444-dev-01-showcase-2026-07-25T22-04-07-075Z.json`
+  (`benchmark-result@1` schema v3, artifact
+  `ff05ec211444b89d8c706305205cc60908a140be6af2f2e3ed4ba20a31cded7e`).
+  Both completed three exact 600,000 ms `flythrough-d1@1` repeats. Replay selects 92
+  contiguous samples per repeat at sequences 64–155, 219–310, and 374–465 and
+  reproduces the stored nearest-rank p95s. Every measurement boundary records 256/256
+  packages/open handles.
+- **Current localization:** OPFS-wait p95 was only 0.080–0.140 ms. Decode-round-trip,
+  render-upload-round-trip, and render-commit-round-trip p95s each moved between
+  repeats, with no stable replacement for the old OPFS residual as a dominant cause.
+  Page-owned timestamps measure the application boundaries but cannot separate worker
+  dispatch, browser/OS service, and GPU queue activity inside or between them. The
+  reports establish neither a code/aggregation defect nor a generic Chrome defect.
+- **D-113 privileged result:** retained invalid-partial report
+  `m1-exit-diagnostic-1-12e68fa57ea7-dev-01-showcase-2026-07-26T01-24-11-033Z.json`
+  proved its 75 ms worker control as a 75.083 ms mark inside one 75.338 ms task, but
+  correlated only the biased first 41/92 canonical cells (sequences 64–104, batches
+  9–30). All 306 expected stage marks for the later 51 cells were absent. The prefix
+  cannot compare repeats or localize their variance; full-window worker long tasks,
+  GPU queue completion, and successful presentation remain unsupported. D-114 closes
+  the apparatus without a variance fix or a new Chrome-defect claim.
+- **Impact on Parallax:** D-115 completes the M1 Benchmark mode implementation task
+  from its complete fail-honest lifecycle/results while leaving both 10% failures
+  unchanged. The page artifact is advisory and intentionally incomparable with the
+  authoritative fresh-profile flythrough, so it is no longer a duplicate M1
+  performance qualification. D-110's full retries and D-111/D-113's one-shot
+  diagnostic are consumed; no further diagnostic or complete public benchmark is
+  authorized or required for M1. The variance remains an open research/observability
+  gap for a future directly triggered investigation, not a passing metric or a Chrome
+  defect claim. Recovery, smoke, bulk review, and unrelated gates do not rerun it.
+- **Research boundary:** D-114 removed the closed privileged correlation path. Any
+  future attempt to separate worker dispatch, OPFS/decode work, WebGPU
+  submission/completion, and render-loop activity needs a new bounded experiment and
+  explicit decision against then-current Chrome evidence; do not restore D-111's
+  apparatus wholesale. Only evidence that isolates a browser/platform boundary should
+  mature this into a Chrome-facing claim.
+
+## RE-042: Continuous-page 4K streaming exposes unstable asynchronous OPFS access residuals
+
+- **Date / Chrome version:** 2026-07-25; pinned Chrome for Testing 151.0.7922.34,
+  Windows 11/dev-01 physical console, Dawn D3D12, NVIDIA GeForce RTX 4080 SUPER,
+  driver 32.0.16.1074.
+- **Layer:** application-observed OPFS access / browser scheduling under the full 4K
+  workload; browser-internal cause unresolved.
+- **Status:** application boundary removed by D-108 and physically exercised with
+  256/256 open handles; the old residual did not recur. Not a Chrome defect claim.
+- **What we expected / What happened:** three continuous-page repeats of the same
+  ten-minute route should keep streaming cell-load p95 within 10%. Individual totals
+  passed at 9.115/28.005/48.025 ms, but their 426.879% relative range failed.
+  OPFS-access p95 rose from 7.405 to 25.780 to 46.155 ms while actual synchronous read
+  p95 stayed at 0.040/0.045/0.045 ms. High values clustered within particular load
+  batches and the same cells were fast in other repeats; this was not a monotonic read
+  slowdown.
+- **Evidence / repro:** retained
+  `harness/results/benchmark-result-1-9a218e2fe23a-dev-01-showcase-2026-07-25T19-54-39-399Z.json`
+  (`benchmark-result@1` schema v2, exact 3840×2160, 92 contiguous measurement samples
+  per repeat). The pre-measurement 63-load windows also shifted from
+  10.360/10.110 ms OPFS-access p95 to 28.170 ms before repeat 3. Run the complete
+  in-game Showcase benchmark in one physical-console page lineage and inspect
+  `opfsAccessRoundTripMs`, `opfsReadMs`, and `opfsWaitMs`.
+- **Bounded control:** an otherwise-idle headed pinned-CfT probe over 256 4 KiB OPFS
+  files measured lookup/open/read/close total p95 at 0.605/0.540/0.540 ms for three
+  155-operation repeats, so the retained result does not establish a generic
+  access-handle lock leak. Holding all 256 handles succeeded; open p95 was 0.080 ms and
+  cached-read p95 was 0.270/0.310/0.240 ms.
+- **Impact / mitigation:** D-108 opens and validates the fixed district handle set once
+  per streaming-worker generation and makes measured reads synchronous through those
+  handles. Telemetry exposes exact package/handle count and startup-open duration.
+  D-110's two later full runs retained 256/256 handles and OPFS-wait p95 no greater
+  than 0.140 ms, so this former dominant residual did not recur. Their separate
+  distributed repeatability failure is RE-043. The 10% rule remains unchanged, and the
+  failed advisory reports remain evidence. D-115 supersedes the former extra
+  recovery-rerun requirement based on later physical exercise of the shared 256-handle
+  generation initializer; it does not claim the combined post-D-108 fault path was
+  remeasured.
+- **Remaining platform ask:** expose OPFS directory lookup, access-handle lock/service,
+  and completion-dispatch phases on a low-overhead performance timeline so a full-app
+  residual can be attributed without changing the application boundary.
+
+## RE-041: Failed smoke streaming validation discarded the snapshots needed to identify a reachable transient state
+
+- **Date / Chrome version:** 2026-07-25; pinned Chrome for Testing 151.0.7922.34
+  (`@782af9cb30a53f54487e5d2e44738645a8ec457c`), Windows 11/dev-01 physical console,
+  Dawn D3D12, NVIDIA GeForce RTX 4080 SUPER, driver 32.0.16.1074.
+- **Layer:** Parallax harness evidence retention and streaming snapshot validation; no
+  Chrome defect is established.
+- **Status:** harness defect corrected by D-103; exact-artifact schema-v35 physical
+  confirmation passed. No Chrome defect is established.
+- **What we expected / What happened:** final exact-artifact routine smoke should have
+  retained enough evidence to explain any invalid core attempt. Instead,
+  `smoke-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-15-06-917Z.json`
+  on artifact
+  `20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`
+  passed environment identity and its first three core runs, then stopped at warm
+  repeat 2 / launch 4 with only the aggregate error
+  `World-streaming telemetry does not satisfy the M1 streaming contract`. Schema v34
+  retained neither the start nor end streaming snapshot for that attempt, so the exact
+  failed predicate cannot be reconstructed.
+- **Evidence / repro:** the streaming producer evicts scheduled residents before
+  awaiting replacement loads and publishes telemetry after both operations. The short
+  `smoke@1` measurement takes independent snapshots without a settlement wait.
+  Therefore an unsettled snapshot with fewer than nine residents is reachable, but the
+  former validator unconditionally required nine. A deterministic model reproduces the
+  producer-valid shape with non-flythrough observer sequence 0, a complete prior
+  boundary, an unsettled start, a short non-full-ring window, and an active partial end
+  batch with eight residents. A settled variant returns to nine residents.
+- **Impact on Parallax:** the original launch-4 cause remains unknown and retained.
+  The later schema-v35 pass qualifies the exact artifact's final D-097 smoke without
+  reinterpreting that failure. The flythrough qualification is unaffected.
+- **Resolution:** D-103 advances `smoke@1` report schema to v35 while keeping mandatory
+  metric set v18. Invalid streaming attempts retain a localized validation reason and
+  complete raw start/end snapshots; successful values retain the measured start
+  resident count for stored-report revalidation. Unsettled residency may be below nine
+  only when exact resident/load/eviction conservation holds; settled snapshots still
+  require nine. Batch identity and completion rules are unchanged. Exact-artifact
+  report
+  `smoke-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-34-23-655Z.json`
+  then passed all six runs, all environment/evidence/budget facets, and 30/30 checks
+  with no failure under schema v35 / metric set v18.
+- **Reopen if:** schema-v35 physical evidence rejects a conserved producer-valid state,
+  a settled producer snapshot contains fewer than nine residents, or the retained
+  payload identifies a separate recurring defect.
+
+## RE-040: Ten-minute streaming cell-load p95 tail is not attributable with direct-work timings
+
+- **Date / Chrome version:** 2026-07-25; pinned Chrome for Testing 151.0.7922.34
+  (`@782af9cb30a53f54487e5d2e44738645a8ec457c`), Windows 11/dev-01 physical console,
+  Dawn D3D12, NVIDIA GeForce RTX 4080 SUPER, driver 32.0.16.1074.
+- **Layer:** storage / scheduler; resolved to the application-observed OPFS-access wait
+  boundary, without finer browser/OS-internal causal attribution.
+- **Status:** resolved at D-102's bounded application-stage granularity; not a Chrome
+  defect claim.
+- **What we expected / What happened:** D-101's corrected `flythrough-d1@1` physical
+  run completed all three ten-minute repeats on one artifact and every individual
+  streaming observation remained under the 250 ms absolute budget. Cell-load p95 was
+  23.975, 30.820, and 22.230 ms, however, so the 38.641% relative range correctly
+  failed the unchanged 10% repeatability rule. Each repeat contained 92 samples.
+  Medians, means, and p90s varied by only about 7.5–8.8%; the divergence appears only
+  in the upper tail.
+- **Evidence / repro:** retained report
+  `harness/results/flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T08-17-32-898Z.json`
+  (`flythrough-d1@1`, report schema v3/metric set v3, artifact
+  `68c66fccf453fcbe5451f1c68ad5a755d97afe644ecae16b80c1921dcaa0803d`).
+  Direct-work p95s were 0.100–0.105 ms for OPFS reads, 0.140–0.195 ms for decode, and
+  1.500–1.915 ms for render upload, leaving 21.550–29.945 ms of p95
+  schedule-to-commit time outside those fields. The flythrough report is schema v3 and
+  embeds streaming telemetry v2; neither contains batch IDs. Deterministic replay of
+  its recorded cell sequence through the unchanged scheduler, rather than recorded
+  report evidence, partitions repeat 2, when viewed as the two nine-sequence windows,
+  as 3/1/3/1/(a two-cell batch crossing the window boundary) for sequences 82–90 and
+  1/3/1/3 for sequences 91–99. The inferred tail clusters are the three-cell batches at
+  86–88 and 97–99, with 33.385 and 31.120 ms peaks. Run
+  `pnpm harness:flythrough-d1` on the registered physical console and inspect each
+  repeat's retained streaming samples and p95 variance.
+- **Resolution evidence:** retained report
+  `harness/results/flythrough-d1-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-07-24-028Z.json`
+  (schema v4/metric set v4, artifact
+  `20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`)
+  passed all three facets and 15 checks across three measured repeats. Streaming
+  cell-load p95 was 22.810/23.895/22.000 ms and its 8.614% relative range passed.
+  OPFS-access wait dominated component p95 at 17.635–18.025 ms; decode wait was
+  1.835–2.180 ms, render-upload wait 1.595–1.770 ms, render-commit round trip
+  1.975–2.205 ms, and streaming-worker remainder 0.010–0.015 ms. All three
+  traces were complete and lossless, and each repeat retained 3,002 heap samples with
+  zero missed deadlines.
+- **Impact on Parallax:** the final D-102 report qualifies the scripted flythrough
+  without a scheduling change or relaxed gate. It identifies the bounded stage that
+  owns most of the observed p95, but does not distinguish handle acquisition,
+  filesystem service work, or other browser/OS activity inside the OPFS-access round
+  trip. D-115 later accepts the runner's platform-unobservable omissions as enumerated
+  M1 coverage gaps without counting them as passes; visible-pop and district-transition
+  checks remain their documented M5/M4 scope.
+- **Current instrumentation:** D-102's streaming telemetry v3 adds deterministic batch
+  identity and same-streaming-worker OPFS/decode/upload/commit round trips plus derived
+  waits and worker remainder. The harness validates the decomposition within 0.1 ms
+  and retains component p95s. It exchanges only local durations across workers, never
+  realm-local timestamps.
+- **Remaining platform ask:** expose low-overhead OPFS operation phases correlated with
+  Performance Timeline so a measured access round trip can be separated into browser
+  scheduling, handle acquisition, and filesystem-service work without application
+  guesswork.
+
+## RE-039: Non-reproducible P-002 CPU and WebGPU timestamp p95 instability record
+
+- **Date / Chrome version:** 2026-07-25; pinned Chrome for Testing 151.0.7922.34
+  (`@782af9cb30a53f54487e5d2e44738645a8ec457c`), Windows 11/dev-01 physical console,
+  Dawn D3D12, NVIDIA GeForce RTX 4080 SUPER, driver 32.0.16.1074.
+- **Layer:** scheduler / WebGPU-Dawn timestamp queries / harness observation; causal
+  attribution is unresolved.
+- **Status:** non-reproducible machine-local measurement record; causal attribution is
+  unresolved and this is not yet a reportable platform defect.
+- **What we expected / What happened:** `geometry-representation@5` kept candidate,
+  profile, fixed worker workload, render surface, source D1 geometry, and light state
+  constant within each arm. After a fixed 1,200-frame warmup, GPU p95 had three to six
+  sequential 600-frame windows to stabilize at a 10% relative-range limit; each light
+  state then had three 1,800-frame measured repeats. All 18 captures completed without a
+  worker failure or console error, RAF p95 passed the repeat gate, and timestamp queries
+  were supported, but CPU and GPU p95 eligibility was not stable enough for a complete
+  candidate comparison.
+
+  CPU repeat relative range exceeded 10% for triangle/Showcase storm (10.526%) and
+  triangle/Standard clear, overcast, and storm (10.638%, 14.000%, 25.455%);
+  meshlet/Showcase overcast (16.438%) and meshlet/Standard storm (17.187%); and
+  splat/Showcase clear and storm (18.868%, 15.385%) plus splat/Standard clear and
+  overcast (24.074%, 24.561%). GPU repeat relative range exceeded 10% for
+  meshlet/Showcase storm (24.468%), meshlet/Standard clear (35.294%),
+  splat/Showcase clear (29.508%), and splat/Standard overcast (50.000%).
+  Triangle/Standard storm, meshlet/Showcase clear, and splat/Standard overcast also
+  failed the unchanged GPU stabilization gate after 3,600 frames.
+- **Evidence / reproducibility:** the best-effort machine-local raw samples, repeat
+  p95s, stabilization windows, environment identity, and eligibility reasons remain in
+  `harness/results/geometry-comparison-p002/dev-01-2026-07-25T04-15-34-944Z/report.json`
+  (`geometry-representation@5`, report schema 5, metric set 5; artifact
+  `82e2c3f434d39b49ad9e2eb528e18c9bc8787cb1c9b3031d3daf95951724e2ce`,
+  source commit `6f2fb1e9814904c733a64b4a629051c46c3fe145`, dirty-tree digest
+  `31dfd73f73fd32f0b3239393a28323bba6caa067b3c0e1c449bfd504b72bb8d5`).
+  D-081 keeps this directory ignored, and the comparison source was created and deleted
+  before any human commit. Searches of tracked files, git history, and the available
+  temporary tree found no exact source patch or snapshot. The commit and dirty-tree
+  digests identify but do not reconstruct the source. Exact rerun from tracked state is
+  impossible; the raw report is therefore an evidence aid, not a durable reproduction.
+  D-099 adds a complete source-identity reconstruction guard for future same-gate
+  experiments, but it was not met here and cannot repair P-002 retroactively. The
+  earlier rejected `geometry-representation@1` directory is not performance evidence.
+- **Impact on Parallax:** P-002's aggregate evidence failed closed and cannot rank any
+  candidate on performance. D-098 retains the already-qualified triangle incumbent
+  because no challenger supplied valid displacement evidence. No standing budget is
+  changed or claimed failed.
+- **Proposed improvement:** build a fresh, source-snapshotted raw-WebGPU timestamp-query
+  and CPU-submit probe with scheduling/thermal/clock telemetry, then run it on dev-01
+  and the registered Standard/Metal target. Only that new experiment can attribute the
+  unstable component and decide whether Chrome, Dawn, the timestamp-query surface, or
+  the harness needs a concrete change.
+
+This finding is deliberately limited to pinned Chrome 151/Dawn D3D12 on dev-01. The
+Standard-profile render size measured on dev-01 is advisory and says nothing about the
+registered Standard M1 Pro/Metal target. The data does not establish a browser defect,
+driver defect, thermal cause, timestamp-quantization cause, or general WebGPU limit.
+
 ## RE-038: TypeScript's WebAssembly declarations omit the standardized memory64 descriptor
 
 - **Date / Chrome version:** 2026-07-19; TypeScript 7.0.2 typecheck and pinned Chrome for
   Testing 150.0.7871.115 runtime on Windows 11/dev-01.
 - **Layer:** TypeScript DOM/WebWorker declarations for the WebAssembly JavaScript API.
-- **Status:** open ecosystem typing gap; locally worked around at one constructor boundary.
+- **Status:** open ecosystem typing gap; historical local workaround removed with the
+  closed experiment under D-117.
 - **What we expected / What happened:** current WebAssembly JS API memory64 construction uses
   `{ address: "i64", initial: 1n, maximum: ...n }`, and Chrome 150 accepts it without a flag.
   TypeScript's `WebAssembly.MemoryDescriptor` still requires Number-valued `initial` and
   `maximum`; strict typecheck rejected both BigInts (`TS2322: Type 'bigint' is not assignable
   to type 'number'`).
-- **Repro:** remove the documented `unknown as WebAssembly.MemoryDescriptor` boundary in
-  `engine/src/workers/memory64-spike-worker.ts` and run `pnpm typecheck`. Runtime behavior is
-  qualified by D-086. The WebAssembly JS API memory/address conversions were checked
-  2026-07-19 at webassembly.github.io/spec/js-api/#memories.
-- **Impact on Parallax:** production remains memory32, so the gap is confined to the optional
-  P-001 experiment. Any future JS-created memory64 needs the same audited cast until the
-  library declaration catches up.
+- **Repro:** recover D-086's removed worker from git history, remove its documented
+  `unknown as WebAssembly.MemoryDescriptor` boundary, and run `pnpm typecheck`. Runtime
+  behavior was qualified by D-086. The WebAssembly JS API memory/address conversions
+  were checked 2026-07-19 at webassembly.github.io/spec/js-api/#memories.
+- **Impact on Parallax:** D-117 selected memory32 for every current module, so the gap
+  has no live runtime impact. A future JS-created memory64 path would need the same
+  audited cast until the library declaration catches up.
 - **Proposed improvement:** add the address-width discriminator and BigInt-valued memory64
   descriptor/grow overloads to TypeScript's WebAssembly declarations.
 
@@ -111,8 +409,9 @@ COS APIs exist):
 - **Date / Chrome version:** 2026-07-19; pinned Chrome for Testing 150.0.7871.115 on the
   dev-01 physical console.
 - **Layer:** harness / V8 Wasm compilation, instantiation, tiering, and garbage collection.
-- **Status:** our-bug measurement design, fixed in `memory64-spike@1`; retained as a harness
-  lesson rather than attributed to a Chrome defect.
+- **Status:** our-bug measurement design, fixed in historical `memory64-spike@1`; the
+  apparatus was removed by D-117 and the lesson remains rather than being attributed
+  to a Chrome defect.
 - **What we expected / What happened:** batching thousands of module constructions and
   instances inside the same long-lived worker made the later prepare/kernel cohort vary with
   allocation and tiering state. One rejected artifact reported a repeatable 85 ms memory32
@@ -143,12 +442,14 @@ COS APIs exist):
   retained failure was the already-qualified D-085 Rust/WASM synthetic worker exceeding its
   10,000 ms service timeout. The memory64 worker itself had not started. Both memory64 query
   modes now leave that unrelated synthetic spike idle while rendering stays live; later
-  memory64 attempts reached 6/6 launch eligibility.
+  memory64 attempts reached 6/6 launch eligibility. D-117 later removed both query modes
+  with the closed experiment.
 - **Original memory64-isolation repro:** artifact
   `memory64-spike-1-484004247a41-dev-01-showcase-2026-07-20T01-58-04.766Z.json`, warm repeat 3.
   The accepted D-086 artifact uses `?memory64Spike=dedicated` and verifies the unrelated
-  telemetry section remains idle; `?memory64Spike=auto` applies the same isolation for manual
-  reproductions.
+  telemetry section remained idle; the former `?memory64Spike=auto` mode applied the
+  same isolation for manual reproductions. Recover that measured source from git
+  history if this historical isolation needs inspection.
 - **Chrome 151 transition evidence:** the first exact-artifact/same-Node Chrome 150 anchor
   passed 6/6. Of the next five Chrome 151 gates, three stopped at the 10,000 ms Wasm service
   boundary and two completed all six Wasm workloads but failed independently on RE-008. A
@@ -964,6 +1265,11 @@ history if a current plan item reopens the comparison.
   substitutes: Chrome's GPU process is shared with compositor/browser work and Chromium documents
   platform-dependent graphics-memory accounting. Logical resource-size estimates, if later
   exposed, still would not establish residency or transient allocator peaks.
+- **D-113 physical observation:** the one-shot CfT 151 diagnostic accepted memory dump
+  request `0x20` in 113.1782 ms but retained zero allocator-bearing GPU-process dumps.
+  Page-attributed GPU residency therefore remained `unsupported`; the successful CDP
+  request alone is not usable allocator evidence and does not establish a new Chrome
+  defect beyond this existing gap.
 - **Proposed improvement:** expose per-`GPUDevice` current/peak logical allocation and resident
   allocator usage with buffer/texture/transient categories, or add an origin/page attribution key
   to Chrome's GPU memory-infra provider. Document whether shared images and aliased/suballocated
@@ -1006,11 +1312,13 @@ history if a current plan item reopens the comparison.
 ## RE-012: CDP exposes isolate used-heap snapshots but no continuous live-retention high-water
 
 - **Date / Chrome version:** protocol source and remote runtime diagnostic checked 2026-07-14;
-  Chrome for Testing Stable 150.0.7871.115 on dev-01.
+  long-window physical evidence checked 2026-07-25; Chrome for Testing Stable
+  150.0.7871.115 and 151.0.7922.34 on dev-01.
 - **Layer:** V8 / CDP memory observability.
 - **Status:** open; `smoke@1` operationalizes the JS-heap budget as a fixed-deadline 100 ms
   near-concurrent estimate in a dedicated post-trace window (D-047) and records probe duration
-  and per-realm CDP response-completion skew.
+  and per-realm CDP response-completion skew. D-101 uses a fixed 200 ms interval for
+  `flythrough-d1@1`'s seven-realm ten-minute window.
 - **What we expected / What happened:** a game memory gate needs the peak simultaneously retained
   JavaScript heap across the window and every worker. `Runtime.getHeapUsage` returns current totals
   for one isolate. `HeapProfiler.startSampling` samples allocations, optionally including objects
@@ -1030,13 +1338,30 @@ history if a current plan item reopens the comparison.
   the slowest collection per launch was 1.1–16.2 ms. Every launch returned measured cadence evidence. This
   validates the collector integration, not exact peak coverage or a reference-machine budget
   result. Response-completion timing is CDP arrival timing and cannot bound when V8 read each
-  isolate.
+  isolate. D-113's seven-realm physical invalid partial observed a synchronized
+  used-plus-reported-backing high-water of 89,593,455 bytes and independent used/backing
+  maxima of 43,119,472/71,505,215 bytes. Separately identified Wasm/SAB ownership was
+  2,170,912 bytes, but CDP did not establish whether those bytes were absent, present,
+  or duplicated in reported backing storage. D-114 therefore retains no additive CPU
+  resident total. The attempt also exposed a harness start-scheduling defect: one
+  periodic sample began before its nominal deadline. The maintained sampler now
+  schedules before capture and preserves any exact negative delay as invalid evidence;
+  this fixes collection semantics without changing the platform limitation.
+  D-100's second retained physical attempt
+  (`flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T07-25-16-847Z.json`)
+  recorded one whole-topology collection at 478,100 ms whose seven responses completed
+  after 139.1–169.5 ms; the next-slowest collection was 14.5 ms and fixed-deadline
+  start delay remained at most 15.9 ms. The sampler skipped the 478,200 ms deadline
+  rather than overlapping requests. D-101 makes that long run's cadence 200 ms and
+  corrects exact scheduled-deadline accounting; it does not claim continuous peak
+  coverage.
 - **Impact on Parallax:** the sampled estimate is diffable and budgetable, but it can under- or
   over-estimate a truly simultaneous total. GC scheduling can move the observed value without a
   change in live retention. Short-lived allocation churn needs separate allocation/GC diagnostics
   before the harness can claim exact peak residency. The harness invalidates missed fixed
-  deadlines and ≥100 ms collection duration, response-completion skew, or
-  start delay rather than presenting poor temporal coverage as measured evidence.
+  deadlines and collection duration, response-completion skew, or start delay at least
+  as large as the scenario's configured interval rather than presenting poor temporal
+  coverage as measured evidence.
 - **Proposed improvement:** expose a resettable per-isolate retained-JS-heap high-water counter and
   a page/origin aggregation surface that includes dedicated/shared/service workers, with timestamped
   breakdowns for JS heap, embedder heap, backing stores, wasm memories, and SABs.
@@ -1347,6 +1672,35 @@ history if a current plan item reopens the comparison.
   `smoke-1-188e456726f4-dev-01-showcase-2026-07-25T02-07-11-589Z.json`
   passed the same facets/checks and accepted another complete core trace at 5,307.5 ms
   with 69,983 events / 398 chunks / 11,627,977 serialized bytes and `dataLoss=false`.
+  Final D-104 exact-artifact smoke report
+  `smoke-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-36-37-999Z.json`
+  likewise passed all three facets and 30/30 checks while accepting warm-repeat-3
+  completion at 5,315.897 ms with 71,365 events / 404 chunks / 11,729,783 serialized
+  bytes and `dataLoss=false`. This is another instance of the existing D-094/RE-008
+  path, not a separate finding.
+- **D-101 long-window payload scaling:** the first two physical-console
+  `flythrough-d1@1` attempts on artifact `68c66fccf453` retained complete lossless
+  traces that exceeded D-094's smoke-sized ten-second validity bound. Report
+  `flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T07-13-41-667Z.json`
+  delivered 2,511,021 events in 14,058 chunks / 419,019,736 serialized bytes and
+  completed in 19,484.2 ms after a 0.3 ms `Tracing.end` command. Report
+  `flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T07-25-16-847Z.json`
+  delivered 2,527,527 events in 14,209 chunks / 428,288,884 bytes and completed in
+  19,208.2 ms after a 0.2 ms end command. Both reported `dataLoss=false`; their
+  approximately 21.5–22.3 MB/s serialized delivery and steadily populated chunks
+  distinguish this payload-bound long-window path from the historical zero-chunk
+  intermittent stall. D-101 gives only this ten-minute flythrough a 30-second validity
+  deadline plus the existing ten-second invalid diagnostic window. The routine smoke
+  contract remains 10 + 10 seconds.
+- **D-113 larger-payload observation:** the one-shot privileged canonical trace had
+  delivered 4,190,120 events in 30,433 chunks / 878,610,107 serialized bytes when its
+  40,000.7 ms observation bound expired. The retained invalid partial ultimately held
+  4,221,682 events in 30,589 chunks / 883,071,678 bytes after 165,167.074 ms, still
+  without `Tracing.tracingComplete`; `dataLoss` remained unknown. This is a steadily
+  populated, approximately 883 MB payload observation, not the historical zero-chunk
+  intermittent signature and not evidence of a separate zero-chunk bug. D-114 closes
+  the one-shot apparatus; the result changes neither routine smoke nor flythrough
+  deadlines.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the ten-second
@@ -1416,7 +1770,8 @@ history if a current plan item reopens the comparison.
   D3D12.
 - **Layer:** WebGPU/Viz compositor observability.
 - **Status:** open; Harness-v1 records the missing authoritative metric as a non-blocking
-  informational failure per D-051; M1 must revisit it before player-visible frame-budget claims.
+  informational failure per D-051. D-115's M1 revisit retains it as an explicit
+  unsupported coverage gap and makes no player-visible frame-budget claim.
 - **What we expected / What happened:** `Display::FrameDisplayed` is emitted at Viz's
   sanitized presentation-feedback timestamp, but carries no success/failure field.
   Chromium converts invalid feedback to `PresentationFeedback::Failure()`, timestamped at
@@ -1429,6 +1784,11 @@ history if a current plan item reopens the comparison.
   `kFailure`), then capture `disabled-by-default-display.framedisplayed`. The maintained
   `smoke@1` collector records the resulting timestamp cadence as the explicitly non-gating
   `vizPresentationFeedbackCallbackIntervalMs` diagnostic.
+- **D-113 physical shape:** CfT 151 emitted 13,892
+  `Display::FrameDisplayed` phase-`I` events in one GPU-process group. The three bounded
+  argument samples were empty objects and the observed shape carried neither a
+  page/frame-sink identity nor presentation success. D-114 therefore records
+  presentation as explicitly `unsupported`; callback timestamps cannot be promoted.
 - **Impact on Parallax:** Chrome's available trace cannot satisfy budgets.md's definition
   of player-visible present-to-present time. Harness v1 keeps the metric visibly `invalid` but
   non-blocking; worker rAF and feedback-callback cadence remain diagnostics only and are not a
@@ -1503,14 +1863,24 @@ history if a current plan item reopens the comparison.
   `ResizeObserver.devicePixelContentBoxSize` consistently reported the full-window canvas
   as 3841×2161 although Windows reported a 3840×2160 display. Chrome exposed fractional
   `devicePixelRatio` 1.3625000715 with a 2819×1586 CSS-pixel screen, whose products require
-  rounding at the physical-pixel boundary.
+  rounding at the physical-pixel boundary. A later pinned-CfT 151 in-game benchmark
+  retained another boundary manifestation: after an exact 3840×2160 ten-minute repeat,
+  `innerHeight` was 1,585 rather than its initial 1,586 while screen geometry, DPR,
+  physical-pixel estimate, and worker pixel size stayed unchanged. The retained report is
+  `benchmark-result-1-7851397a6f82-dev-01-showcase-2026-07-25T20-35-51-111Z.json`.
+  Bounded blank-page (31 seconds) and production-app (through preflight plus 109 measured
+  seconds) controls stayed at 1,586, so the observation does not support a short
+  fullscreen-settling explanation or a finer generic Chrome defect claim.
 - **Repro:** on dev-01's physical console, launch pinned CfT with `--start-fullscreen` and
   no Playwright viewport emulation; observe a fullscreen canvas using
   `ResizeObserver({box: "device-pixel-content-box"})`. `smoke@1` records the value for every
   measurement browser and fails outside the descriptor's ±2-pixel tolerance.
 - **Impact on Parallax:** an exact-equality 4K render-surface gate rejects the real native
   4K environment, while accepting the observed one-pixel conversion preserves materially
-  identical workload and keeps the discrepancy explicit in every result.
+  identical workload and keeps the discrepancy explicit in every result. D-109 likewise
+  retains raw CSS viewport geometry but excludes it from the in-game benchmark's
+  fixed-worker comparison identity; exact worker checkpoint dimensions and all remaining
+  captured environment fields stay strict.
 - **Proposed improvement:** expose a deterministic way for fullscreen content to request
   the display's exact native pixel extent, or document the rounding contract applications
   should use when CSS dimensions and fractional device scale do not multiply to the mode.

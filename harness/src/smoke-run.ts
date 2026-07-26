@@ -1,18 +1,20 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { type ParallaxTelemetryExport, TELEMETRY_FRAME_BATCH_FRAMES } from "@parallax/engine";
 import type { BrowserContext, CDPSession, Page } from "playwright-core";
 import {
+  type BoundedRepeatabilityMetric,
   type Distribution,
   distribution,
+  evaluateBoundedRepeatability,
   evaluateP95Variance,
   type VarianceMetric,
 } from "./aggregate.js";
 import {
   type BaselineEvaluation,
   baselineStorePath,
-  evaluateBaseline,
+  evaluateBaselineSafely,
   loadBaselineStore,
 } from "./baseline-store.js";
 import {
@@ -81,6 +83,7 @@ import {
   JsHeapValidationError,
   prepareJsHeapSampler,
 } from "./js-heap.js";
+import { launchAfterPhysicalConsoleDisplayWake } from "./physical-console-preflight.js";
 import {
   type ChromeTraceEvent,
   extractVizPresentationFeedbackCallbackIntervalsMs,
@@ -90,6 +93,13 @@ import {
   PRESENTATION_TRACE_START_MARKER,
   withTimeout,
 } from "./presentation-trace.js";
+import {
+  evaluatePostRunIdentity,
+  type FinalizationEvidence,
+  invalidFinalizationEvidence,
+  measuredFinalizationEvidence,
+  persistJsonPrimaryReport,
+} from "./report-finalization.js";
 import { evaluateResultFacets, type ResultFacets, resultFacetsPassed } from "./result-facets.js";
 import {
   parseQualityTier,
@@ -107,6 +117,8 @@ import {
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
+  SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
+  SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
   SMOKE_TELEMETRY_GLOBAL_NAME,
   SMOKE_TELEMETRY_SCHEMA_VERSION,
   SMOKE_TRACE_QUIESCE_MS,
@@ -134,7 +146,11 @@ import {
   formatSmokeFacetSummary,
 } from "./smoke-result.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
-import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
+import {
+  type StreamingEvidence,
+  type StreamingEvidenceFailure,
+  tryRequireStreamingEvidence,
+} from "./streaming-evidence.js";
 import { readTelemetry } from "./telemetry.js";
 import {
   decodedSourceCodeUnits,
@@ -166,19 +182,50 @@ type MetricResult<T> =
   | ProbeResult<T>
   | Readonly<{ readonly reason: string; readonly state: "unsupported" }>;
 
-interface P95VarianceSummary {
-  readonly profile: "fresh" | "warm";
-  readonly reason?: string;
-  readonly relativeP95Range: number | null;
-  readonly state: "invalid" | "measured";
-}
+type P95VarianceSummary =
+  | Readonly<{
+      readonly profile: "fresh" | "warm";
+      readonly reason: string;
+      readonly relativeP95Range: number | null;
+      readonly state: "invalid";
+    }>
+  | Readonly<{
+      readonly profile: "fresh" | "warm";
+      readonly relativeP95Range: number;
+      readonly state: "measured";
+    }>;
+
+type P95RepeatabilitySummary =
+  | Readonly<{
+      readonly absoluteP95RangeMs: number | null;
+      readonly allowedAbsoluteP95RangeMs: number | null;
+      readonly profile: "fresh" | "warm";
+      readonly reason: string;
+      readonly relativeP95Range: number | null;
+      readonly state: "invalid";
+    }>
+  | Readonly<{
+      readonly absoluteP95RangeMs: number;
+      readonly allowedAbsoluteP95RangeMs: number;
+      readonly profile: "fresh" | "warm";
+      readonly relativeP95Range: number | null;
+      readonly state: "measured";
+    }>;
 
 interface CoreRunFailure {
   readonly launchOrdinal: number;
   readonly message: string;
   readonly profile: "fresh" | "warm";
   readonly repeat: number;
+  readonly streamingEvidence: StreamingEvidenceFailure | null;
   readonly v8CodeCacheDiagnosticsSkipped: string;
+}
+
+class SmokeStreamingEvidenceError extends Error {
+  constructor(readonly failure: StreamingEvidenceFailure) {
+    super(failure.reason);
+    this.name = "SmokeStreamingEvidenceError";
+  }
 }
 
 interface LaunchSequencePosition {
@@ -294,6 +341,7 @@ interface SmokeReport {
   readonly coreRunFailure: CoreRunFailure | null;
   readonly environment: EnvironmentIdentity;
   readonly facets: ResultFacets;
+  readonly finalizationFailure: string | null;
   readonly generatedAt: string;
   readonly harnessRuntime: HarnessRuntimeIdentity;
   readonly incompleteMetrics: readonly {
@@ -308,6 +356,8 @@ interface SmokeReport {
     readonly version: typeof SMOKE_MANDATORY_METRIC_SET_VERSION;
   };
   readonly passed: boolean;
+  readonly postRunIdentity: FinalizationEvidence;
+  readonly reportPersistence: FinalizationEvidence;
   readonly vizPresentationFeedbackCallbackVariance: readonly {
     readonly profile: "fresh" | "warm";
     readonly reason?: string;
@@ -319,6 +369,7 @@ interface SmokeReport {
   readonly schemaVersion: typeof SMOKE_REPORT_SCHEMA_VERSION;
   readonly source: SourceIdentity;
   readonly callbackPacingVariance: readonly P95VarianceSummary[];
+  readonly streamingCellLoadP95Variance: readonly P95RepeatabilitySummary[];
   readonly v8CodeCacheDiagnostics: readonly V8CodeCacheDiagnosticRun[];
   readonly v8CodeCacheDiagnosticsRequested: boolean;
 }
@@ -366,6 +417,7 @@ async function main(): Promise<void> {
     nodeExecutableSha256: (await sha256File(process.execPath)).sha256,
     nodeVersion: process.version,
   });
+  const baselineStore = await loadBaselineStore(baselineStorePath(repositoryRoot));
   const server = createLocalServer({ root: buildRoot });
   const address = await listenLocalServer(server);
   const baseUrl = `http://127.0.0.1:${address.port}`;
@@ -424,6 +476,7 @@ async function main(): Promise<void> {
             message: errorMessage(error),
             profile,
             repeat,
+            streamingEvidence: error instanceof SmokeStreamingEvidenceError ? error.failure : null,
             v8CodeCacheDiagnosticsSkipped: options.includeV8CodeCache
               ? `core ${profile} repeat ${repeat} failed, so the V8 code-cache diagnostic phase was not launched`
               : "V8 code-cache diagnostics were not requested",
@@ -482,6 +535,20 @@ async function main(): Promise<void> {
         ),
       ),
     );
+    const streamingCellLoadP95Variance = (["fresh", "warm"] as const).map((profile) =>
+      summarizeP95Repeatability(
+        profile,
+        evaluateBoundedRepeatability(
+          runs
+            .filter((run) => run.profile === profile)
+            .map((run) => run.streaming.value.cellLoadP95Ms),
+          SMOKE_REPEATS,
+          "streaming cell-load p95",
+          SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
+          SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
+        ),
+      ),
+    );
     const vizPresentationFeedbackCallbackVariance = (["fresh", "warm"] as const).map((profile) => {
       const profileRuns = runs.filter((run) => run.profile === profile);
       const invalidRuns = profileRuns.filter(
@@ -518,73 +585,103 @@ async function main(): Promise<void> {
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
-    const evidenceChecks = collectSmokeEvidenceChecks({
-      callbackPacingVariance,
-      coreRunCompletion: {
-        completedRuns: runs.length,
-        expectedRuns: SMOKE_REPEATS * 2,
-        failure:
-          coreRunFailure === null
-            ? null
-            : `core ${coreRunFailure.profile} repeat ${coreRunFailure.repeat} failed: ${coreRunFailure.message}`,
-      },
-      incompleteMetrics,
-      runs,
-      v8CodeCacheDiagnostics,
-      vizPresentationFeedbackCallbackVariance,
+    const postRunIdentity = await evaluatePostRunIdentity(artifactDigest, source, {
+      readArtifactDigest: async () =>
+        (await readAndValidateBuildManifest(buildRoot)).artifactDigest,
+      readSourceIdentity: () => readSourceIdentity(repositoryRoot),
     });
-    const facets = evaluateResultFacets({
-      budgetChecks: collectSmokeBudgetFacetChecks({ runs }),
-      environment: collectSmokeEnvironmentFacetInput(environment.gateIdentity),
-      evidenceChecks,
-    });
-    const informationalFailures = collectSmokeInformationalFailures({
-      evidenceChecks,
-      v8CodeCacheDiagnostics,
-    });
-    const passed = resultFacetsPassed(facets);
-    if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
-      throw new Error("Built artifact identity changed during the smoke run");
-    }
-    if (JSON.stringify(await readSourceIdentity(repositoryRoot)) !== JSON.stringify(source)) {
-      throw new Error("Source identity changed during the smoke run");
-    }
-    const reportWithoutBaseline = {
-      artifactDigest,
-      build,
-      callbackPacingVariance,
-      chromePin,
-      coreRunFailure,
-      environment,
-      facets,
-      generatedAt: new Date().toISOString(),
-      harnessRuntime,
-      incompleteMetrics,
-      informationalFailures,
-      mandatoryMetricSet: Object.freeze({
-        metrics: Object.freeze(
-          SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map(
-            (metric) => metric.name,
+    const generatedAt = new Date().toISOString();
+    const assembleReport = (reportPersistence: FinalizationEvidence): SmokeReport => {
+      const finalizationFailure = finalizationFailureReason(postRunIdentity, reportPersistence);
+      const reportFinalization =
+        finalizationFailure === null
+          ? measuredFinalizationEvidence()
+          : invalidFinalizationEvidence(finalizationFailure);
+      const evidenceChecks = collectSmokeEvidenceChecks({
+        callbackPacingVariance,
+        coreRunCompletion: {
+          completedRuns: runs.length,
+          expectedRuns: SMOKE_REPEATS * 2,
+          failure:
+            coreRunFailure === null
+              ? null
+              : `core ${coreRunFailure.profile} repeat ${coreRunFailure.repeat} failed: ${coreRunFailure.message}`,
+        },
+        incompleteMetrics,
+        reportFinalization,
+        runs,
+        streamingCellLoadP95Variance,
+        v8CodeCacheDiagnostics,
+        vizPresentationFeedbackCallbackVariance,
+      });
+      const facets = evaluateResultFacets({
+        budgetChecks: collectSmokeBudgetFacetChecks({ runs }),
+        environment: collectSmokeEnvironmentFacetInput(environment.gateIdentity),
+        evidenceChecks,
+      });
+      const informationalFailures = collectSmokeInformationalFailures({
+        evidenceChecks,
+        v8CodeCacheDiagnostics,
+      });
+      const reportWithoutBaseline = {
+        artifactDigest,
+        build,
+        callbackPacingVariance,
+        chromePin,
+        coreRunFailure,
+        environment,
+        facets,
+        finalizationFailure,
+        generatedAt,
+        harnessRuntime,
+        incompleteMetrics,
+        informationalFailures,
+        mandatoryMetricSet: Object.freeze({
+          metrics: Object.freeze(
+            SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map(
+              (metric) => metric.name,
+            ),
           ),
-        ),
-        version: SMOKE_MANDATORY_METRIC_SET_VERSION,
-      }),
-      passed,
-      runs,
+          version: SMOKE_MANDATORY_METRIC_SET_VERSION,
+        }),
+        passed: resultFacetsPassed(facets),
+        postRunIdentity,
+        reportPersistence,
+        runs,
+        scenario: SMOKE_SCENARIO,
+        schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
+        source,
+        streamingCellLoadP95Variance,
+        v8CodeCacheDiagnostics,
+        v8CodeCacheDiagnosticsRequested: options.includeV8CodeCache,
+        vizPresentationFeedbackCallbackVariance,
+      } satisfies Omit<SmokeReport, "baseline">;
+      const baseline = evaluateBaselineSafely(reportWithoutBaseline, baselineStore);
+      return Object.freeze({ ...reportWithoutBaseline, baseline });
+    };
+    await mkdir(outputRoot, { recursive: true });
+    const paths = reportPaths({
+      artifactDigest,
+      generatedAt,
+      machineId: environment.machineId,
       scenario: SMOKE_SCENARIO,
-      schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
-      source,
-      v8CodeCacheDiagnostics,
-      v8CodeCacheDiagnosticsRequested: options.includeV8CodeCache,
-      vizPresentationFeedbackCallbackVariance,
-    } satisfies Omit<SmokeReport, "baseline">;
-    const baseline = evaluateBaseline(
-      reportWithoutBaseline,
-      await loadBaselineStore(baselineStorePath(repositoryRoot)),
-    );
-    const report: SmokeReport = Object.freeze({ ...reportWithoutBaseline, baseline });
-    await writeReport(report);
-    process.exitCode = passed ? 0 : 1;
+      tier: environment.requestedTier,
+    });
+    const persistence = await persistJsonPrimaryReport({
+      failedReport: (reason) => assembleReport(invalidFinalizationEvidence(reason)),
+      formatMarkdown: formatReport,
+      jsonPath: paths.json,
+      markdownPath: paths.markdown,
+      pendingReport: assembleReport(
+        invalidFinalizationEvidence("Human-readable report persistence has not completed"),
+      ),
+      successfulReport: assembleReport(measuredFinalizationEvidence()),
+    });
+    if (persistence.markdown !== null) console.log(persistence.markdown);
+    if (persistence.secondaryFailure !== null) console.error(persistence.secondaryFailure);
+    console.log(`Smoke result: ${paths.json}`);
+    if (persistence.markdown !== null) console.log(`Smoke summary: ${paths.markdown}`);
+    process.exitCode = persistence.finalReport.passed ? 0 : 1;
   } finally {
     await rm(profileRoot, { force: true, recursive: true });
     await stopLocalServer(server);
@@ -764,6 +861,28 @@ function summarizeP95Variance(
       });
 }
 
+function summarizeP95Repeatability(
+  profile: "fresh" | "warm",
+  repeatability: BoundedRepeatabilityMetric,
+): P95RepeatabilitySummary {
+  return repeatability.state === "invalid"
+    ? Object.freeze({
+        absoluteP95RangeMs: repeatability.absoluteRange,
+        allowedAbsoluteP95RangeMs: repeatability.allowedAbsoluteRange,
+        profile,
+        reason: repeatability.reason,
+        relativeP95Range: repeatability.relativeRange,
+        state: repeatability.state,
+      })
+    : Object.freeze({
+        absoluteP95RangeMs: repeatability.absoluteRange,
+        allowedAbsoluteP95RangeMs: repeatability.allowedAbsoluteRange,
+        profile,
+        relativeP95Range: repeatability.relativeRange,
+        state: repeatability.state,
+      });
+}
+
 async function inspectEnvironment(
   executablePath: string,
   profilePath: string,
@@ -781,9 +900,9 @@ async function inspectEnvironment(
     machineDescriptorFailure = `Machine descriptor unavailable: ${errorMessage(error)}`;
   }
   const hostResultPromise = tryReadWindowsHostIdentity();
-  const context = await launchPersistentChrome(executablePath, profilePath, [
-    "--enable-webgpu-developer-features",
-  ]);
+  const context = await launchAfterPhysicalConsoleDisplayWake(() =>
+    launchPersistentChrome(executablePath, profilePath, ["--enable-webgpu-developer-features"]),
+  );
   let session: CDPSession | null = null;
   try {
     const browser = context.browser();
@@ -908,7 +1027,9 @@ async function measureRunWithBrowser(
   heapWorkerUrls: ProbeResult<HeapWorkerUrls>,
   launchPosition: LaunchSequencePosition,
 ): Promise<Omit<RunMeasurement, "http">> {
-  const context = await launchPersistentChrome(executablePath, profilePath);
+  const context = await launchAfterPhysicalConsoleDisplayWake(() =>
+    launchPersistentChrome(executablePath, profilePath),
+  );
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
   let smokeTrace: SmokeTraceCapture | null = null;
@@ -1175,7 +1296,11 @@ async function measureRunWithBrowser(
             dawnPipeline.value.shaderCache.missesOverlappingMeasurement,
           )
         : [];
-    const streaming = requireStreamingEvidence(snapshot.streaming, start.streaming);
+    const streamingResult = tryRequireStreamingEvidence(snapshot.streaming, start.streaming);
+    if (streamingResult.state === "invalid") {
+      throw new SmokeStreamingEvidenceError(streamingResult.failure);
+    }
+    const streaming = streamingResult.value;
     return Object.freeze({
       budgetChecks: Object.freeze([
         ...(jsHeap.state === "measured"
@@ -1374,7 +1499,9 @@ async function measureV8CodeCacheDiagnosticRunOnce(
   launchPosition: LaunchSequencePosition,
   completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
 ): Promise<V8CodeCacheDiagnosticRun> {
-  const context = await launchPersistentChrome(executablePath, profilePath);
+  const context = await launchAfterPhysicalConsoleDisplayWake(() =>
+    launchPersistentChrome(executablePath, profilePath),
+  );
   let trace: SmokeTraceCapture | null = null;
   let traceStartFailure: string | null = null;
   try {
@@ -1966,17 +2093,28 @@ function subtractStatusCounts(
   return statuses;
 }
 
-async function writeReport(report: SmokeReport): Promise<void> {
-  await mkdir(outputRoot, { recursive: true });
-  const timestamp = report.generatedAt.replaceAll(/[:.]/g, "-");
+function reportPaths(input: {
+  readonly artifactDigest: string;
+  readonly generatedAt: string;
+  readonly machineId: string;
+  readonly scenario: string;
+  readonly tier: QualityTier;
+}): Readonly<{ readonly json: string; readonly markdown: string }> {
+  const timestamp = input.generatedAt.replaceAll(/[:.]/g, "-");
   const stem = [
-    report.scenario.replace("@", "-"),
-    report.artifactDigest.slice(0, 12),
-    safeMachineIdForFilename(report.environment.machineId),
-    report.environment.requestedTier,
+    input.scenario.replace("@", "-"),
+    input.artifactDigest.slice(0, 12),
+    safeMachineIdForFilename(input.machineId),
+    input.tier,
     timestamp,
   ].join("-");
-  await writeFile(join(outputRoot, `${stem}.json`), `${JSON.stringify(report, null, 2)}\n`);
+  return Object.freeze({
+    json: join(outputRoot, `${stem}.json`),
+    markdown: join(outputRoot, `${stem}.md`),
+  });
+}
+
+function formatReport(report: SmokeReport): string {
   const failures = [
     ...report.facets.environment.reasons,
     ...report.facets.evidenceCompleteness.reasons,
@@ -2136,6 +2274,11 @@ async function writeReport(report: SmokeReport): Promise<void> {
       ? ["None."]
       : [
           `- core ${report.coreRunFailure.profile} repeat ${report.coreRunFailure.repeat} (launch ${report.coreRunFailure.launchOrdinal}) failed: ${report.coreRunFailure.message}`,
+          ...(report.coreRunFailure.streamingEvidence === null
+            ? []
+            : [
+                `- Raw streaming snapshots retained: start samples/observer/settled/residents ${report.coreRunFailure.streamingEvidence.measurementStart.cellLoadSampleCount}/${report.coreRunFailure.streamingEvidence.measurementStart.observerUpdateCount}/${report.coreRunFailure.streamingEvidence.measurementStart.settledObserverUpdateCount}/${report.coreRunFailure.streamingEvidence.measurementStart.residentCellCount}; end ${report.coreRunFailure.streamingEvidence.measurementEnd.cellLoadSampleCount}/${report.coreRunFailure.streamingEvidence.measurementEnd.observerUpdateCount}/${report.coreRunFailure.streamingEvidence.measurementEnd.settledObserverUpdateCount}/${report.coreRunFailure.streamingEvidence.measurementEnd.residentCellCount}.`,
+              ]),
           `- ${report.coreRunFailure.v8CodeCacheDiagnosticsSkipped}`,
         ];
   const jsHeapEvidence = report.runs.map((run) => {
@@ -2171,8 +2314,13 @@ async function writeReport(report: SmokeReport): Promise<void> {
   });
   const streamingEvidence = report.runs.map((run) => {
     const evidence = run.streaming.value;
-    return `- ${run.profile} repeat ${run.repeat}: ${evidence.cellLoadSampleCount} OPFS→decode→GPU samples (${evidence.measurementCellLoadSamples.length} in-window), p95 ${formatMilliseconds(evidence.cellLoadP95Ms)}; ${evidence.decodeWorkerCount} decode workers on hardwareConcurrency ${evidence.hardwareConcurrency}; queue high-water ${evidence.decodeQueueDepthHighWater}; ${evidence.residentCellCount} resident cells representing ${formatBytes(evidence.residentEncodedBytes)} encoded / ${formatBytes(evidence.residentGpuBytes)} attributable GPU bytes; ${evidence.measurementProactiveEvictionCount} in-window proactive evictions; ${evidence.cpuBudgetRejectionCount} encoded-budget rejections; ${formatBytes(evidence.opfsProvisionedBytes)} provisioned this launch`;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.cellLoadSampleCount} OPFS→decode→GPU samples (${evidence.measurementCellLoadSamples.length} in-window), p95 ${formatMilliseconds(evidence.cellLoadP95Ms)}; ${evidence.opfsAccessHandleCount}/${evidence.opfsPackageCount} startup-open OPFS handles in ${formatMilliseconds(evidence.opfsAccessHandleOpenDurationMs)}; ${evidence.decodeWorkerCount} decode workers on hardwareConcurrency ${evidence.hardwareConcurrency}; queue high-water ${evidence.decodeQueueDepthHighWater}; ${evidence.residentCellCount} resident cells representing ${formatBytes(evidence.residentEncodedBytes)} encoded / ${formatBytes(evidence.residentGpuBytes)} attributable GPU bytes; ${evidence.measurementProactiveEvictionCount} in-window proactive evictions; ${evidence.cpuBudgetRejectionCount} encoded-budget rejections; ${formatBytes(evidence.opfsProvisionedBytes)} provisioned this launch`;
   });
+  const streamingVarianceEvidence = report.streamingCellLoadP95Variance.map((variance) =>
+    variance.state === "measured"
+      ? `- ${variance.profile}: measured absolute p95 range ${formatMilliseconds(variance.absoluteP95RangeMs)} (allowed ${formatMilliseconds(variance.allowedAbsoluteP95RangeMs)} = max(${(100 * SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toFixed(0)}% of the minimum, ${formatMilliseconds(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS)} floor)); relative range ${variance.relativeP95Range === null ? "unbounded at zero" : `${(100 * variance.relativeP95Range).toFixed(3)}%`}`
+      : `- ${variance.profile}: invalid — ${variance.reason}`,
+  );
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2212,6 +2360,10 @@ async function writeReport(report: SmokeReport): Promise<void> {
     "## D1 streaming evidence",
     "",
     ...streamingEvidence,
+    "",
+    "## D1 streaming repeatability",
+    "",
+    ...streamingVarianceEvidence,
     "",
     "## Dawn pipeline/cache evidence",
     "",
@@ -2258,8 +2410,17 @@ async function writeReport(report: SmokeReport): Promise<void> {
     ...traceDrainEvidence,
     "",
   ];
-  await writeFile(join(outputRoot, `${stem}.md`), lines.join("\n"));
-  console.log(lines.join("\n"));
+  return lines.join("\n");
+}
+
+function finalizationFailureReason(
+  postRunIdentity: FinalizationEvidence,
+  reportPersistence: FinalizationEvidence,
+): string | null {
+  const failures = [postRunIdentity, reportPersistence].flatMap((evidence) =>
+    evidence.state === "invalid" ? [evidence.reason] : [],
+  );
+  return failures.length === 0 ? null : `Report finalization failed: ${failures.join(" | ")}`;
 }
 
 function formatTraceCompletionObservation(evidence: SmokeTraceDrainEvidence): string {

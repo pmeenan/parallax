@@ -5,6 +5,7 @@ import {
   type DawnHistogram,
   extractD3D12DawnPipelineEvidence,
   resolveD3D12DawnPipelineEvidence,
+  resolveD3D12DawnPipelineWindowEvidence,
 } from "./dawn-pipeline-trace.js";
 import type { ChromeTraceEvent } from "./presentation-trace.js";
 
@@ -170,6 +171,49 @@ describe("Dawn pipeline trace extraction", () => {
 });
 
 describe("Dawn pipeline evidence resolution", () => {
+  it("accepts an idle measured window and subtracts preflight histogram activity", () => {
+    const result = resolveD3D12DawnPipelineWindowEvidence(
+      measured([
+        event("process_name", 1, 0, 0, "M", undefined, { name: "GPU Process" }),
+        marker("parallax-presentation-window-start", 2_000),
+        marker("parallax-presentation-window-end", 3_000),
+      ]),
+      "d3d12",
+      measured([
+        histogram("CompileShader.CacheHit", 4, 8),
+        histogram("CreateGraphicsPipelineState.CacheHit", 2, 4),
+      ]),
+      measured([
+        histogram("CompileShader.CacheHit", 4, 8),
+        histogram("CreateGraphicsPipelineState.CacheHit", 2, 4),
+      ]),
+    );
+
+    expect(result).toMatchObject({
+      state: "measured",
+      value: {
+        pipelineActivity: { count: 0, maxDurationMs: 0, overlappingMeasurement: 0 },
+        shaderCache: { hitCount: 0, missCount: 0, requestCount: 0 },
+      },
+    });
+  });
+
+  it("invalidates a decreasing measurement-window histogram", () => {
+    const result = resolveD3D12DawnPipelineWindowEvidence(
+      measured([
+        event("process_name", 1, 0, 0, "M", undefined, { name: "GPU Process" }),
+        marker("parallax-presentation-window-start", 2_000),
+        marker("parallax-presentation-window-end", 3_000),
+      ]),
+      "d3d12",
+      measured([histogram("CompileShader.CacheHit", 4, 8)]),
+      measured([histogram("CompileShader.CacheHit", 3, 6)]),
+    );
+
+    expect(result).toMatchObject({ state: "invalid" });
+    expect(result.state === "invalid" ? result.reason : "").toContain("decreased");
+  });
+
   it("invalidates evidence when histograms change across trace completion", () => {
     const result = resolveD3D12DawnPipelineEvidence(
       measured([marker("parallax-presentation-window-start", 2_000)]),

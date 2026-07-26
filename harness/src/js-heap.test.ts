@@ -4,6 +4,7 @@ import {
   invalidateJsHeapMetric,
   type JsHeapSample,
   JsHeapValidationError,
+  nextJsHeapSamplingDeadlineMs,
   prepareJsHeapSampler,
   summarizeJsHeapSamples,
 } from "./js-heap.js";
@@ -169,6 +170,25 @@ describe("all-realm JS heap sampler", () => {
       scheduledAfterMeasurementStartMs: 350,
     });
     expect(evidence.missedSampleDeadlines).toBe(0);
+  });
+
+  it("does not issue the initial capture until its scheduled monotonic deadline", async () => {
+    vi.useFakeTimers();
+    const values = [heapUsage(10, 20), heapUsage(10, 20)];
+    const browser = new FakeBrowserSession(workerUrl, values);
+    const page = new FakePageSession(values);
+    const sampler = await prepareJsHeapSampler(asCdp(browser), asCdp(page), "page", workerUrl, 100);
+
+    sampler.start();
+    expect(browser.workerCommandCount).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(browser.workerCommandCount).toBe(1);
+    const evidence = await sampler.finish();
+    expect(evidence.samples[0]).toMatchObject({
+      scheduledAfterMeasurementStartMs: 0,
+      samplingStartDelayMs: 0,
+    });
   });
 
   it("rejects an absent or ambiguous expected render worker", async () => {
@@ -426,6 +446,23 @@ describe("all-realm JS heap sampler", () => {
     ).toThrow("maximum start delay 100.0 ms");
   });
 
+  it("fails with the exact retained sample when a start delay is negative", () => {
+    try {
+      summarizeJsHeapSamples(
+        [sample({ samplingStartDelayMs: -0.125 }), sample({ phase: "measurement-end" })],
+        100,
+        50,
+      );
+      throw new Error("Expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(JsHeapValidationError);
+      expect((error as JsHeapValidationError).message).toContain("-0.125 ms");
+      expect((error as JsHeapValidationError).evidence.samples[0]?.samplingStartDelayMs).toBe(
+        -0.125,
+      );
+    }
+  });
+
   it("invalidates missed periodic deadlines before the boundary sample", () => {
     try {
       summarizeJsHeapSamples([sample(), sample({ phase: "measurement-end" })], 100, 250);
@@ -436,6 +473,33 @@ describe("all-realm JS heap sampler", () => {
       expect((error as JsHeapValidationError).evidence.missedSampleDeadlines).toBe(1);
       expect((error as JsHeapValidationError).evidence.samples).toHaveLength(2);
     }
+  });
+
+  it("detects a skipped intermediate deadline even when a later periodic sample hides the count", () => {
+    try {
+      summarizeJsHeapSamples(
+        [
+          sample(),
+          sample({
+            capturedAfterMeasurementStartMs: 200,
+            scheduledAfterMeasurementStartMs: 200,
+          }),
+          sample({ capturedAfterMeasurementStartMs: 250, phase: "measurement-end" }),
+        ],
+        100,
+        250,
+      );
+      throw new Error("Expected validation to fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(JsHeapValidationError);
+      expect((error as JsHeapValidationError).message).toContain("missed deadlines 1");
+      expect((error as JsHeapValidationError).evidence.missedSampleDeadlines).toBe(1);
+    }
+  });
+
+  it("advances beyond the prior deadline when a timer fires slightly early", () => {
+    expect(nextJsHeapSamplingDeadlineMs(100, 99.9, 100)).toBe(200);
+    expect(nextJsHeapSamplingDeadlineMs(100, 250, 100)).toBe(300);
   });
 
   it("invalidates a collection that occupies at least one sample interval", () => {

@@ -62,11 +62,49 @@ remove its implementation code, dependency chain, build artifacts, fixtures, and
 decision-only tests in the same change. Do not keep executable apparatus merely because
 it might be convenient to rerun someday; git history can recover it.
 
-Preserve the durable evidence: decision and rough-edge entries, result artifacts,
-measurements, and enough version/identity detail to understand the conclusion. If a
-future plan item reopens the question, recover or rebuild the smallest current
-experiment against then-current dependencies rather than carrying dormant code
-indefinitely.
+Preserve the evidence record: tracked decision and rough-edge entries must contain the
+load-bearing measurements and enough version/identity detail to understand the
+conclusion. Keep raw result artifacts on their producing machine on D-081's best-effort
+basis; they are not the durable record. If a future plan item reopens the question,
+recover or rebuild the smallest current experiment against then-current dependencies
+rather than carrying dormant code indefinitely.
+
+**Same-gate source-identity reconstruction (D-099):** if an experiment is created and
+removed inside one uncommitted human-gate unit, no commit will contain its runnable
+source. Before deleting it, export an exact reconstruction bundle into the experiment's
+ignored result directory:
+
+1. Record the measured source-identity tuple: base `commit` and `dirtyTreeDigest`.
+2. Capture the complete input used by `harness/src/source-identity.ts`, not a
+   hand-selected experiment subset: every tracked modification/deletion relative to
+   the recorded commit in an exact binary patch or source snapshot, plus every
+   non-ignored untracked path returned by
+   `git ls-files --others --exclude-standard`. Preserve paths, file modes, and bytes.
+3. Add a manifest with every captured file payload's path, size, and SHA-256 plus
+   explicit deletion entries; the result artifact digest; environment/tool pins; exact
+   run command; and scenario/schema/metric-set identity.
+4. In a clean scratch checkout or worktree at the recorded base commit, apply the
+   bundle, restore its untracked files, and recompute source identity with the same
+   harness algorithm used by the measured scenario. Both reconstructed `commit` and
+   `dirtyTreeDigest` must exactly equal the measured report before cleanup is allowed.
+   A bundle that merely reproduces selected file hashes is insufficient.
+5. Quote all load-bearing top-line results in tracked decisions/findings/research docs,
+   as D-081 requires.
+
+The bundle is an ignored machine-local rerun aid, not durable evidence and not a reason
+to keep the experiment wired into the product. Git history is sufficient without a
+bundle only when the measured source identity is clean (`dirtyTreeDigest: null`) and
+that commit contains the apparatus. Any non-null measured digest still requires the
+complete reconstruction, even if an earlier commit contains some experiment files.
+P-002 predated this guard inside the same in-flight change; its exact source was deleted
+without a snapshot and cannot be reconstructed retroactively.
+
+The ordinary source-identity algorithm deliberately excludes ignored results, caches,
+installed tools, and other ignored machine state. Do not add those to the bundle merely
+because they share the working directory; capture them only when the scenario defines a
+separate identity contract that includes them. Because the reconstruction bundle lives
+under ignored `harness/results/`, creating it does not change the ordinary
+`dirtyTreeDigest`.
 
 Apply the same test to routine diagnostics. Keep a check in every-change gates only when
 it protects a current contract or budget. Valuable but non-gating investigations belong
@@ -89,10 +127,70 @@ edit or review exchange (D-097).
   tool-location changes when they leave every qualifying input above unchanged.
   Markdown changes to budgets, evidence contracts, pins, or qualification claims are
   still qualifying changes.
+- After a completed qualifying run, D-119 permits the narrow evidence-only closure
+  needed to mechanically record that exact report's path, digest, schema, mandatory
+  metric set, and verdict and update status pointers. It requires no new physical run
+  only when it changes no built runtime/browser behavior, harness or measurement logic,
+  budget/threshold, mandatory evidence contract, runtime/tool/browser pin,
+  reference-machine descriptor, or claim beyond the report. The measured identity
+  remains the report's own source tuple and runtime artifact; this exception prevents
+  an infinite run → document → rerun loop and does not weaken any D-097 gate.
 - Keep opt-in diagnostics on their documented triggers. In particular, run the V8
   lifecycle diagnostic only under D-095, and run branded-Chrome parity when assessing
   a Chrome pin or the browser portion of the standing dependency checkpoint rather
   than on an unrelated weekly schedule.
+
+D-115 completes M1's public Benchmark mode task on its implementation and fail-honest
+result contract. The two complete page-only reports remain failed under their unchanged
+10% repeat-variance checks and their budget facets remain `not-evaluated`; neither is a
+performance pass. Because the public continuous-page artifact is intentionally advisory
+and incomparable with the authoritative fresh-profile flythrough, D-115 supersedes
+D-110's requirement that it eventually pass as a second M1 qualification.
+D-115's authoritative M1 evidence is explicitly versioned: D-102's passing
+schema-v4/metric-set-v4 flythrough is the long-window anchor, not a claimed then-current
+schema-v12 pass; D-104's qualifier, post-D-108 physical lifecycle evidence, and the
+final current smoke bridge the later mandatory/runtime changes without altering any
+retained verdict. D-116 preserves the first schema-v44/metric-set-v21 smoke as failed:
+its six runs and 30 individual budget checks completed, but the newly introduced
+pure-relative short-smoke streaming verdict was uncalibrated around ~2 ms. The final
+schema-v45/metric-set-v22 smoke reuses the same six core-run p95 samples and requires
+absolute spread no greater than `max(10% × minimum cohort p95, 1 ms)` separately for
+fresh and warm. It adds no launch or measurement time, does not relabel the failed v44
+artifact, and does not turn the failed post-D-108 ten-minute variance into a pass.
+
+Do not run another 30-plus-minute public benchmark or privileged M1 diagnostic for this
+milestone. The D-110 full reruns and D-111/D-113 diagnostic are consumed, and D-114
+removed the closed apparatus. D-116's converged D-097 `smoke@1` completed the final M1
+exit action; that milestone completion does not waive D-097 for a subsequent
+runtime-affecting candidate. Do not rerun the already qualified flythrough or
+render-recovery scenario. A future public benchmark invocation
+requires an ordinary direct product/research trigger under D-115's reopen conditions,
+remains subject to the unchanged schema-v3 metrics, and is not a deferred M1 gate.
+Keep sending the ordinary F15 wake immediately before each Windows Chrome launch;
+D-114 removed only the broken diagnostic-specific execution-state lease.
+
+D-117's post-M1 cleanup removes the unconsumed memory64 experiment and records the
+resulting build/telemetry envelope versions without changing a metric set, budget, or
+measurement semantic. Because it changed the built app/engine artifacts and manifest/
+telemetry contracts, one ordinary D-097 physical `smoke@1` ran after all D-117,
+D-118, D-120, and bulk-review fixes converged. External review then produced one final
+runtime/harness fix candidate. Its schema-v47 / metric-set-v23 report
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
+(SHA-256
+`ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
+passed all six launches, all three facets, and 30/30 checks. No benchmark, flythrough,
+recovery, privileged diagnostic, or additional smoke is pending. This is post-M1
+candidate qualification and does not reopen M1. A future concrete module
+meeting D-117's reopen rule starts a new bounded experiment under the then-current
+cadence.
+
+RE-044 retains the preceding same-artifact attempt
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-35-18-277Z.json`
+(SHA-256
+`91d839dddf16644dafb3576b5f4a06e6551ee06219bb88527423d915caaa5827`),
+which failed before the first measured run when streaming provisioning reported
+`Failed to fetch`. The one immediate unchanged-artifact classification retry above
+passed; it does not relabel or erase the failed attempt.
 
 Every failed report remains evidence. For an intermittent RE-008/RE-036-class failure,
 retain it and run one immediate same-artifact retry for classification. The retry is a
@@ -102,6 +200,14 @@ passes outside a bounded diagnosis.
 Only a pinned-Chrome run on a registered reference machine at its physical console
 carries a budget verdict. Remote and non-reference runs are advisory and cannot replace
 the final qualifying run.
+
+Immediately before every Chrome context launch in a Windows physical-console gate,
+including identity/reference launches and every measured attempt or repeat, wake the
+local display with the harness preflight (`WScript.Shell.SendKeys("{F15}")`) and verify
+the monitor is visibly awake. The inert F15 key is sent before Chrome starts so it
+cannot affect the scenario. A sleeping display can change presentation timing or make
+visual readback evidence unrepresentative even when the session remains locally
+interactive; one wake before a multi-minute sequence is insufficient.
 
 ## Milestone work: tech-lead mode (D-026)
 

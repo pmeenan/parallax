@@ -6,7 +6,12 @@
     "tsBuildInfoFile": "node_modules/.cache/parallax-tests.tsbuildinfo",
     "types": ["node", "vitest/globals"]
   },
-  "include": ["**/*.test.ts", "vitest.config.ts"],
+  "include": [
+    "**/*.test.ts",
+    "app/src/benchmark-ui-action.ts",
+    "app/src/streaming-dashboard.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["**/dist/**", "**/node_modules/**"],
   "references": [{ "path": "./engine" }, { "path": "./game" }, { "path": "./harness" }]
 }

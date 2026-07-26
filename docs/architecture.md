@@ -14,9 +14,9 @@ system that touches another system reads it first (root doc map, D-023).
 │            streaming, storage, worker fabric, WASM modules,   │
 │            audio, input, save, AI-inference services          │  ← all platform APIs
 ├───────────────────────────────────────────────────────────────┤
-│ platform   Chrome ≥ latest stable: WebGPU, optional memory64, │
-│            OPFS, Cache Storage, SAB + workers, OffscreenCanvas,│
-│            app-owned WebGPU/WASM AI, WebRTC (future), WebAudio │
+│ platform   Chrome ≥ latest stable: WebGPU, OPFS, Cache Storage,│
+│            SAB + workers, OffscreenCanvas, app-owned WebGPU/   │
+│            WASM AI, WebRTC (future), WebAudio                  │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -108,25 +108,11 @@ per-worker script-evaluated, initialization-received, instantiated, and ready ph
 markers in timeout diagnostics after Chrome 151 exposed intermittent unbounded
 instantiation; the timeout and correctness gate remain fail-closed.
 
-The P-001 memory64 proof is a separate on-demand worker and versioned harness scenario,
-not an ordinary launch phase. Paired Binaryen-built modules use the same 64 MiB working set,
-eight-fill prepare, and sixteen-scan functions, changing their linear-memory addresses from
-i32 to i64. Compile/instantiate batches run in short-lived nested copies of the same
-content-addressed worker so their allocation garbage is destroyed before the outer worker's
-prepare/kernel phase. Only the memory64 module also owns a proof export that reserves 65,537 pages and
-touches a single sentinel at byte address `0x1_0000_0000`; after the Wasm load returns it,
-the worker independently reads that exact exported-memory offset through a JavaScript
-`DataView`. This isolates pointer width for the prepare/kernel phases, avoids committing a
-multi-gigabyte fixture, and keeps the large logical reservation out of `smoke@1`;
-module-size and compile/instantiate ratios include the proof export and are reported only
-as end-to-end apparatus observations. Per-ordinal memory64/memory32 ratios are aggregated
-before the repeat-variance gate; absolute-arm p95s retain separate diagnostic variance states.
-The dedicated app mode suppresses unrelated synthetic spikes during this scenario, while
-rendering remains live and D-034 surface/display checks remain mandatory. The WAT pair is
-measurement apparatus; production
-engine modules remain Rust-authored and memory32 by default. D-086's six-run registered
-physical-console gate qualified this path in pinned Chrome 150, including the exact
-`0x1_0000_0000` access; it did not adopt wasm64 for a production module.
+D-086 historically qualified Chrome/Binaryen memory64 feasibility and exact
+beyond-4-GiB access without adopting it. D-117 resolved the M1 decision point in favor
+of memory32 for every current production module and removed that experiment from the
+runtime and build. The exact measurements remain in D-086; current architecture carries
+only the module-specific reopen boundary below.
 
 The M0 worker spike is a go (D-056), and D-078's same-boundary head-to-head selected
 Babylon Lite: the controlled walking-skeleton run keeps scene
@@ -138,7 +124,12 @@ worker-safe; new input, GUI, accessibility, and loader paths must cross explicit
 or be re-verified when they land.
 
 The long-lived streaming worker owns production OPFS handles and queue telemetry. It
-retains the nearest nine D1 cells across all observers, evicts farthest non-target
+opens and size-validates the fixed district index's distinct content-addressed access
+handles once after provisioning, retains them for its worker generation, and closes the
+complete set on failure or disposal (D-108). Movement reads therefore contain no
+asynchronous directory lookup or handle/lock acquisition. Telemetry exposes exact
+package/open-handle counts and aggregate startup-open duration. The worker retains the
+nearest nine D1 cells across all observers, evicts farthest non-target
 residents before replacement loads, and sends decoded cells over a dedicated
 `MessageChannel` to the render worker. The v1 procedural-cell decoder is a fixed
 hardware-sized nested worker pool; every measured movement-triggered path reports attributable
@@ -152,6 +143,104 @@ placing content-addressed files in OPFS; the installer will assume that responsi
 before launch-2+ becomes a product gate. Streamed LOD0 meshes are created on the GPU but
 remain hidden until the scripted flythrough transfers visible ownership from D-090's
 qualified whole-world preview (D-091).
+D-112 presents that existing public snapshot through an always-visible, accessible
+in-game dashboard without changing the worker or telemetry schemas. A pure `game/ui`
+view model owns labels, formatting, nearest-rank retained-sample p95s, and explicit
+unavailable states; the app shell mounts semantic DOM and subscribes to the public
+streaming service. There is no polling or separate dashboard cache. State/generation,
+residency and observer settlement, OPFS package/open-handle identity, load-stage p95s,
+scoped encoded and streamed-buffer byte accounting, queue pressure,
+encoded-residency budget rejections, and proactive evictions are visible. Retained live
+p95s are descriptive, never budget verdicts.
+Worker stalls and emergency evictions stay visibly unavailable because the public
+contract does not expose those counters; the UI does not manufacture proxies.
+D-104 makes render failure recovery an atomic cohort operation. Device loss, worker
+errors, unreadable messages, and a missed three-second render heartbeat tear down the
+render worker and the coupled streaming worker/decode pool, then start one replacement
+generation with a fresh canvas transfer, direct port, and SAB rings. The streaming
+worker publishes a generation-tagged settled checkpoint containing immutable observers,
+sorted resident-cell identities, and total/direct observer sequences. Mutable observer
+telemetry may advance while scheduling is in flight, but recovery deliberately rolls
+back to the latest worker-acknowledged checkpoint and the replacement must rebuild it
+exactly. A diagnostic quiesce handshake first stops render-worker observer movement,
+waits for that exact streaming checkpoint, and then injects the fault. The window does
+not publish recovered state until both the replacement render first frame and streaming
+checkpoint hydration complete, regardless of ordering; hydration failure fails render
+terminally. Streaming failure, including during the diagnostic quiesce handshake,
+fails render terminally and rejects pending boundary requests; the qualifier separately
+bounds that handshake so a broken worker-to-worker path cannot hang the runner. Any
+second failure is terminal and fails the streaming cohort too. Active flythrough
+measurement is invalidated by recovery rather than silently resumed, and asynchronous
+final-settlement completion cannot overwrite that invalidation. Registered
+physical-console schema-v4/metric-set-v3 report
+`render-recovery-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-26-52-162Z.json`
+qualifies this whole-cohort policy across real device loss, silent worker failure, and
+bounded retry exhaustion. Same-artifact schema-v37/metric-set-v20 report
+`smoke-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-36-37-999Z.json`
+then passed the final D-097 routine gate across all six runs, all three facets, and
+30/30 checks, closing the render-worker robustness plan item.
+D-102's streaming telemetry v3 adds deterministic load-batch/cell identity and bounded
+stage attribution without changing that scheduler. Ordered timestamps stay entirely on
+the streaming-worker clock: OPFS access, decode round trip, render-upload round trip,
+render-commit round trip, and post-commit streaming bookkeeping. Nested decode-worker,
+sync-read, and render-worker work are duration observations only; derived waits subtract
+those durations from their containing round trips and never compare timestamps across
+realms. The harness requires every decomposition to agree within 0.1 ms and reports
+per-stage p95s alongside the existing OPFS-to-GPU total. It also validates producer
+semantics: distinct batches cannot reuse an observer identity, flythrough-observer
+progress cannot exceed total-observer progress, and cells/ordinals are unique within a
+batch. Recorded identity begins at batch ordinal 2 and positive observer identity
+because hydration's ordinal-1 batch is excluded; batch ordinal is bounded by both
+observer and sample-sequence progress. Batches are complete unless the supplied snapshots prove a split at an
+unsettled start or an active batch newer than the unsettled end's last settled observer;
+the end settlement watermark cannot regress, and the first measured batch must be newer
+than the start settlement watermark even when the start has zero samples. The last start-boundary batch identity is
+retained even when settled to order the first measured batch. Its ordinal successor
+requires the boundary batch to be complete and an observer identity strictly newer than
+both the retained batch and the start settlement watermark, with valid
+flythrough-versus-total observer progress. The retained pre-window prefix is validated
+as an ordered, internally consistent batch stream. Stored boundary metadata is
+cross-checked against it; completed ID/ordinal pairs match exactly when the full
+boundary remains, while a demonstrably truncated raw suffix must be a subset of the
+stored facts. The boundary completion count cannot exceed the total start sample count.
+A null boundary is valid only for a zero start
+cell-load count, so aging that prefix out of the end ring cannot erase ordinal ordering.
+The flythrough's settled start and exact settled completion allow no partial batch
+exception.
+D-114 closes and removes D-111's one-shot diagnostic handshake, worker marks/control,
+trace correlation, and privileged public methods after the replacement attempt was
+adjudicated. No privileged diagnostic path remains in the runtime. Ordinary streaming
+telemetry remains v7 and the public telemetry envelope is now v25; the retained
+diagnostic evidence and its unsupported observability fields live only in the decision,
+findings, and result artifact.
+D-103 distinguishes that flythrough contract from routine smoke's independent short
+snapshots. The streaming worker publishes its evict-before-load progress, so an
+unsettled smoke boundary may temporarily contain fewer than nine residents. Evidence
+requires nine when settled and otherwise requires exact resident conservation across
+the window: resident delta equals completed-load delta minus proactive-eviction delta.
+Invalid smoke attempts retain the raw start/end streaming snapshots and a localized
+validation reason rather than collapsing the failure to one string.
+D-100's `flythrough-d1@1` makes that transfer explicit. Game code owns the route and
+environment schedule, while an engine service performs preflight checkpoint
+orchestration and sends one validated scenario to the render worker. A checkpoint
+request synchronously registers Babylon Lite's screenshot readback after the preflight
+sample is applied. The next animation frame services that registered request while it
+renders the sample. The frame callback claims exactly the requests covered by that frame
+and returns before a deferred macrotask awaits and publishes the already-submitted
+readback; no subsequent animation frame is requested until that evidence settles. This
+removes the screenshot-queue/render-frame circular dependency without allowing a later
+frame to replace the stable framebuffer, so message ordering cannot capture the
+preceding or a subsequent camera/environment frame. The render worker
+then owns elapsed-time sampling, camera/environment application, and full-window
+aggregation on its animation loop. It sends throttled, sequenced observer positions
+directly to the streaming worker over the existing dedicated channel; neither the window
+nor the external harness injects measured per-frame positions. Streamed residents are
+visible and the whole-world preview is hidden for every measured flythrough frame.
+Completion waits across that channel: the render aggregate is not final telemetry until
+the streaming worker has received the render worker's exact last flythrough sequence
+and settled the corresponding total observer count. The worker-origin aggregate also
+echoes the complete validated scenario so an independent harness contract can detect
+same-distance path or environment-state drift.
 D-096 removed D-066's superseded standalone OPFS microbenchmark and storage worker
 after D-091's representative OPFS-to-renderable cell-load evidence became the outcome
 gate. The historical sandbox-sensitive repeatability result remains RE-023.
@@ -300,9 +389,13 @@ Parallax render-service, worker-protocol, and typed-snapshot boundaries; those i
 processes and layers rather than engines. Custom passes (culling, terrain, VFX) use Lite's
 public surface where possible. M1's asset path must preinstall pinned KTX2/Draco/meshopt
 decoder globals in the module worker and pass compressed fixtures before content lands;
-Lite's fallback bootstrap uses `document` and is not worker-safe. Its v1.11.0 generic
-compute and raw-device/queue gap is bounded to one exactly pinned native-interop adapter
-with compile/runtime guards and a harness probe before P-002 needs it. Material policy:
+Lite's fallback bootstrap uses `document` and is not worker-safe. Its pinned 1.12.0 generic
+compute and raw-device/queue gap was exercised by D-098 through one temporary,
+exactly-pinned native-interop adapter with compile/runtime guards and a harness proof.
+All six arms proved device access, queue identity, and a buffer round trip. The selected
+production path has no native-interop consumer, so the adapter was removed with the
+closed experiment; a future consumer must reintroduce and requalify that bounded
+surface deliberately. Material policy:
 aggressively minimize pipeline permutations (uber-shader mindset) to keep Dawn's cache
 warm; the harness tracks pipeline-count and compile-stall metrics per build.
 
@@ -310,6 +403,10 @@ warm; the harness tracks pipeline-count and compile-stall metrics per build.
 full day/night cycle and weather system (game-design.md) rule out fully-baked lighting.
 The renderer is designed around dynamic time-of-day from the M1 greybox onward, and
 harness runs sweep lighting/weather states, not just geography.
+The first binding is D-100's M1 environment-state sweep: fixed clear, overcast, and
+storm-labelled lighting/environment configurations across dawn/daylight/dusk/night.
+It deliberately does not implement or claim M6 weather VFX such as precipitation, wind,
+wet surfaces, or particles.
 
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box
@@ -328,13 +425,138 @@ every descriptor in the N-district registry under a distinct normalized artifact
 although this first M1 gate intentionally validates D1's exact target-scale contract.
 The standard target-scale traversal used by validation is 12 m/s.
 
-**Geometry representation is an open exploration (P-002), not a settled choice.** Three
-candidates — classic triangle LOD chains, meshlet-based virtualized geometry
-(nanite-like, GPU-driven), and 3D Gaussian splats — will be compared on real budgets in
-M1, with a likely hybrid outcome (splats for dense static environments, triangles for
-anything animated, interactive, or collidable). Streaming, asset packaging, and the QA
-gate must therefore stay representation-agnostic: cells may carry payloads of more than
-one geometry type, and "mesh" assumptions don't belong in interfaces above the renderer.
+**Geometry representation for the current D1 path is triangle LOD (D-098).** The
+bounded P-002 meshlet/GPU-driven and material-carrying Gaussian-splat challengers did
+not supply fully eligible displacement evidence; triangle itself also lacked a fully
+valid performance comparison, so D-098 is incumbent retention rather than a measured
+speed win. No hybrid ships from the spike. Streaming, asset packaging, collision, and
+the QA gate remain representation-agnostic so representative higher-density art,
+capture-origin UGC, or a full virtual-geometry/relightable-splat proposal can reopen the
+choice without changing interfaces above the renderer.
+
+## In-game benchmark mode
+
+D-105 implements D-025's public benchmark as a cross-layer composition without moving
+game content into the engine. `game/benchmark` owns `m1-benchmark@1`, the canonical
+`flythrough-d1@1` reference, fixed D1 seed, Showcase/Standard presentation presets,
+user copy, and human-readable formatting. `engine/benchmark` owns lifecycle,
+measurement boundaries, environment capture, metric aggregation, repeat variance,
+facets, and the browser-neutral `benchmark-result@1` schema. The app shell only
+renders accessible controls and calls the same public telemetry methods available to
+automation.
+
+Each run fixes the render worker's pixel size, then performs three `continuous-page`
+repeats. A repeat awaits an explicit FIFO reset spanning render and streaming, reuses the
+flythrough service's six streamed GPU-backbuffer checkpoints and 10-second
+stabilization, and starts the existing worker-owned 600-second route. The worker owns
+camera/environment pacing and full-window render distributions; the engine reads the
+corresponding streaming boundary suffix and observes Window Long Tasks. It never
+accepts frame pacing or measurements from a launcher.
+
+Each checkpoint also crosses D-107's worker-rendered preflight boundary. The worker
+applies the exact sample and renders one frame, then acknowledges its scenario,
+environment, elapsed time, generation, and actual pixel size. The engine validates
+that acknowledgement before registering the screenshot, so the next frame's readback
+cannot be the first frame after a benchmark resize or sample transition. Reset and
+recovery cancel both halves of this two-frame protocol.
+
+Benchmark execution exclusively owns the flythrough and observer-control surfaces.
+Start and public reset publish `resetting` synchronously before crossing any worker
+acknowledgement, so duplicate starts, configuration, and standalone controls reject
+during that boundary. An already-running synthetic traversal is stopped before
+preflight, and exact total/flythrough observer deltas prove that no other producer
+entered the measured window. Engine-side validation also
+requires the canonical route and phase order, full streamed-presentation ownership,
+valid worker distributions, complete checkpoint evidence, and exact worker-rendered
+checkpoint dimensions for the selected preset. Timeout and runtime failure abort
+outstanding waits and preflight/route work, close the Window Long Tasks observer,
+restore the prior pixel-size override, and retain an invalid attempt/report. Reset
+cancels pending and already-submitted checkpoint readbacks, stops route emission, waits
+for any active deferred readback flush to schedule the next render-worker animation
+frame, and then crosses a direct-port boundary that acknowledges only after all earlier
+route traffic and streaming scheduling settle. The acknowledgement is bounded to 15
+seconds; timeout rejects reset and enters the existing one-retry whole-cohort recovery.
+Run-local observer numbering is separate from the cumulative transport sequence, and
+generation tags make late traffic inert. A replacement cohort starts flythrough
+generation zero on its new ports and receives the acknowledged recovery checkpoint's
+cumulative transport sequence. A replacement render attempt retains its latest
+requested pixel size, so override restoration queued during initialization and late
+ready telemetry cannot disagree. Active, failed, and completed flythroughs do not expose
+aborted/idle until acknowledgement arrives. Direct benchmark reset clears its matching
+in-flight ownership before terminal `idle`/`failed` publication, making synchronous
+subscriber actions consistent with the published state. Service disposal synchronously
+restores the generation-owned render-pixel override before publishing `disposed`;
+because it destroys the service, it does not synthesize a reusable benchmark report.
+
+The public telemetry snapshot envelope is v25, benchmark section telemetry is v2, and
+flythrough telemetry is v3, including the explicit aborted state. The envelope exposes benchmark lifecycle plus
+configure/start/reset/result JSON/text methods; reset is awaitable through the public
+surface. The completed result embeds the exact
+scenario, complete flythrough snapshots, and every environment capture; all captures
+retain raw CSS viewport geometry. `benchmark-result@1` schema v3 identifies
+`fixed-worker-render-pixels@1` as its comparison policy: viewport geometry is a recorded
+diagnostic, while browser, adapter, capabilities, screen/DPR, artifact, and the remaining
+environment identity must match exactly. Each accepted repeat independently proves the
+selected worker-render pixel size at every checkpoint, so no CSS-layout value substitutes
+for workload identity. Privileged harness evidence remains a
+separate contract: CDP/Dawn traces, authoritative compositor presentation, all-realm
+heap, attributable GPU memory, worker long tasks, registered-host/driver/power, and
+physical-console state are explicitly unsupported in the page result. Consequently
+the current in-game result is advisory and never substitutes for D-097. Its
+continuous-page repeats are also intentionally incomparable with the harness's
+independent fresh-profile lineage unless a future version aligns the repeat policy.
+D-115 completes the M1 Benchmark mode task on that implementation/result-contract
+boundary. The retained complete schema-v3 reports correctly fail their 10% scenario
+checks and keep their budget facets `not-evaluated`; that fail-honest export behavior
+qualifies the mode, not its observed performance. The authoritative D-102 flythrough
+remains the M1 performance gate, and no further 30-plus-minute public run is required
+or authorized for the milestone.
+
+## M1 exit evidence boundary
+
+D-115 scopes M1's registered physical exit to Showcase on dev-01 and defines it as a
+versioned evidence chain, not a claim that D-102's schema-v4/metric-set-v4 result passed
+the then-current D-115-era flythrough schema v12 / metric set v6. D-102 supplies the privileged ten-minute
+anchor; D-104's dedicated qualifier and the final current smoke cover the subsequently
+mandatory settlement/recovery-checkpoint contract. Post-D-108 public reports retain
+failed advisory variance but physically prove six complete current-path routes and the
+fixed 256-handle workload. D-116 preserves the first schema-v44/metric-set-v21 smoke as
+failed and makes the final schema-v45/metric-set-v22 smoke carry the registered
+current-path short-scenario verdict. Fresh and warm independently require cell-load p95
+absolute spread no greater than `max(10% × minimum cohort p95, 1 ms)`. It does not
+claim that the current ten-minute route passed repeatability. Standard has no
+registered M1 Pro/Metal machine and remains unqualified; dev-01's Standard preset
+cannot establish transfer or 120 Hz behavior. The final physical action completed as
+schema-v45/metric-set-v22 report
+`smoke-1-cf1a0420d451-dev-01-showcase-2026-07-26T03-19-56-378Z.json`
+(SHA-256
+`b10c83ff0019cd3b332eec322703e2556de4565ba3e01c942154909cfb5508c9`):
+all six core runs, all three facets, and 30/30 evaluated budget checks passed. Fresh
+and warm streaming p95 spreads were 0.615 and 0.530 ms, each within the 1 ms allowance.
+This qualifying-input-tree smoke completes the versioned M1 evidence chain without
+rerunning or relabeling the already-qualified flythrough or render-recovery scenarios
+or the failed public benchmark. D-115
+supersedes D-108's extra recovery-rerun consequence without claiming a post-D-108
+combined fault measurement: the recovery control path is unchanged, while later
+physical public evidence opened the same generation-initialization path's 256 handles
+in 204.96 ms. A change to either path reopens the dedicated qualifier.
+
+The qualified flythrough gates the complete canonical route, streamed-residency
+ownership, environment sequence, synchronized all-realm V8 used-heap high-water,
+main-thread Long Tasks, representative streaming p95/repeatability, and overlapping
+Dawn/D3D12 pipeline compilation. Physical presentation remains unqualified because
+current CfT exposes neither success nor page attribution: smoke records informational
+`invalid`, while D-114's provider inventory records `unsupported`; callback cadence is
+not a substitute. Worker long tasks, combined resident CPU memory, and page-attributed GPU
+residency likewise remain explicit unsupported platform gaps. Smoke's fixed synthetic
+threaded-Wasm memory and SAB transport sizes are bootstrap invariants, not
+representative flythrough memory and not additive with V8 backing storage. Logical
+streaming byte counters are not physical residency.
+
+The M1 contract therefore permits exit with zero violations among evaluated mandatory
+metrics while retaining those gaps as unqualified, never passed. Visible-pop visual
+diff moves to M5's representative-art streaming swap. D1↔D2 remains M4, where the
+transition and prefetch-trigger contract is defined and measured.
 
 ## Simulation
 
@@ -385,12 +607,10 @@ conversational depth, and quest-critical state changes never depend on inference
   pattern, stable entity IDs, and a serializable authoritative state are required today.
   See [features.md](features.md) for the full constraint list.
 - **N districts:** no code may assume exactly one or two districts; district IDs are data.
-- **wasm64 (P-001):** Rust modules isolate memory-size assumptions so an individual
-  module *can* move to memory64, but memory32 remains the default. A switch requires an
-  unavoidable measured single-module >4 GiB need after partitioning/streaming/resident-
-  set alternatives fail. The M0 dedicated scenario qualifies browser/toolchain feasibility
-  and cost only; M1 representative module data still decides whether any real module has that
-  need. Memory64 is therefore a last resort rather than a scale target.
+- **Wasm address width (D-117):** Rust modules isolate memory-size assumptions, but
+  memory32 is selected for every current module. Memory64 reopens only for a concrete,
+  unavoidable measured single-module >4 GiB need after partitioning, streaming,
+  multiple memory32 modules, and resident-set reduction fail; it is not a scale target.
 - **NPC knowledge retrieval (D-033):** the prompt/persona-card schema carries a
   retrieved-context slot from M3 even while only tier-1 (structured state queries)
   exists; lore is authored chunked + tagged in `game/` from the first writing; embedding

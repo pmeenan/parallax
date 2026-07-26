@@ -101,9 +101,48 @@ export function resolveD3D12DawnPipelineEvidence(
   }
 }
 
+export function resolveD3D12DawnPipelineWindowEvidence(
+  traceEvents: DawnProbeResult<readonly ChromeTraceEvent[]>,
+  dawnBackend: string | null,
+  histogramsBeforeMeasurement: DawnProbeResult<readonly DawnHistogram[]> | null,
+  histogramsAfterMeasurement: DawnProbeResult<readonly DawnHistogram[]> | null,
+): DawnMetricResult<DawnPipelineEvidence> {
+  if (dawnBackend?.toLowerCase() !== "d3d12") {
+    return Object.freeze({
+      reason: `Dawn shader-cache trace semantics are not implemented for backend ${dawnBackend ?? "unknown"}`,
+      state: "unsupported",
+    });
+  }
+  if (traceEvents.state === "invalid") return traceEvents;
+  if (histogramsBeforeMeasurement === null || histogramsAfterMeasurement === null) {
+    return Object.freeze({
+      reason: "Dawn measurement-boundary histogram snapshots are missing",
+      state: "invalid",
+    });
+  }
+  if (histogramsBeforeMeasurement.state === "invalid") return histogramsBeforeMeasurement;
+  if (histogramsAfterMeasurement.state === "invalid") return histogramsAfterMeasurement;
+  try {
+    return Object.freeze({
+      state: "measured",
+      value: extractD3D12DawnPipelineEvidence(
+        traceEvents.value,
+        subtractHistograms(histogramsAfterMeasurement.value, histogramsBeforeMeasurement.value),
+        false,
+      ),
+    });
+  } catch (error) {
+    return Object.freeze({
+      reason: `Dawn pipeline measurement-window probe failed: ${errorMessage(error)}`,
+      state: "invalid",
+    });
+  }
+}
+
 export function extractD3D12DawnPipelineEvidence(
   events: readonly ChromeTraceEvent[],
   histograms: readonly DawnHistogram[],
+  requireActivity = true,
 ): DawnPipelineEvidence {
   const start = uniqueMarker(events, "parallax-presentation-window-start");
   const end = uniqueMarker(events, "parallax-presentation-window-end");
@@ -131,10 +170,10 @@ export function extractD3D12DawnPipelineEvidence(
   const shaderRequests = dawnEvents.filter((event) => event.name === D3D12_SHADER_REQUEST_EVENT);
   const shaderMisses = dawnEvents.filter((event) => D3D12_SHADER_COMPILER_EVENTS.has(event.name));
 
-  if (pipelineActivity.length === 0) {
+  if (requireActivity && pipelineActivity.length === 0) {
     throw new Error("Dawn trace did not exercise pipeline creation activity");
   }
-  if (shaderRequests.length === 0) {
+  if (requireActivity && shaderRequests.length === 0) {
     throw new Error("Dawn trace did not exercise D3D12 shader-cache requests");
   }
 
@@ -190,7 +229,7 @@ export function extractD3D12DawnPipelineEvidence(
     pipelineActivity: Object.freeze({
       asyncInitializationCount: asyncPipelineMisses.length,
       count: pipelineActivity.length,
-      maxDurationMs: Math.max(...pipelineDurationsMs),
+      maxDurationMs: pipelineDurationsMs.length === 0 ? 0 : Math.max(...pipelineDurationsMs),
       overlappingMeasurement: pipelineActivity.filter((event) => overlaps(event, start.ts, end.ts))
         .length,
       syncComputeCount,
@@ -205,6 +244,29 @@ export function extractD3D12DawnPipelineEvidence(
       requestCount: shaderRequests.length,
     }),
   });
+}
+
+function subtractHistograms(
+  after: readonly DawnHistogram[],
+  before: readonly DawnHistogram[],
+): readonly DawnHistogram[] {
+  const beforeByName = new Map(before.map((histogram) => [histogram.name, histogram]));
+  const afterNames = new Set(after.map((histogram) => histogram.name));
+  const missing = before.find((histogram) => !afterNames.has(histogram.name));
+  if (missing !== undefined) {
+    throw new Error(`Dawn histogram ${missing.name} disappeared across the measurement window`);
+  }
+  return Object.freeze(
+    after.map((histogram) => {
+      const baseline = beforeByName.get(histogram.name);
+      const count = histogram.count - (baseline?.count ?? 0);
+      const sum = histogram.sum - (baseline?.sum ?? 0);
+      if (count < 0 || sum < 0) {
+        throw new Error(`Dawn histogram ${histogram.name} decreased across the measurement window`);
+      }
+      return Object.freeze({ count, name: histogram.name, sum });
+    }),
+  );
 }
 
 function cacheBreakdown(

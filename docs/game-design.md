@@ -82,15 +82,24 @@ brings actual humans in; until then the bar is "NPCs don't feel like vending mac
 
 1. **Dynamic lighting is mandatory.** Day/night + weather rules out a fully-baked
    lighting approach; the renderer must be designed around dynamic time-of-day from M1
-   greybox onward. This also sharpens P-002: the Gaussian-splat branch must be evaluated
-   under *dynamic relighting*, its weakest axis — splats may end up confined to
-   lighting-stable contexts (e.g., catacomb set dressing) if relighting doesn't pan out.
+   greybox onward. D-098 exercised this requirement for P-002's bounded
+   Gaussian-billboard arm, but post-run adjudication invalidated its visual contract in
+   clear, overcast, and storm: the provisional full-frame RMSE threshold accepted
+   grossly divergent clear/overcast images. No splat visual-parity evidence survives,
+   and the arm was not adopted. Any future research-grade or capture-origin splat
+   proposal must qualify under *dynamic relighting* with a validated perceptual gate; a
+   static-lighting or provisional-threshold result cannot reopen the representation
+   decision.
 2. **Multiple D1↔D2 transitions.** The catacombs' multiple entrances mean the
    transition system handles N choke points with different surface contexts, not one
    bespoke elevator. The transition contract (budgets.md) applies per entrance.
 3. **Weather × streaming interaction.** Weather and time-of-day multiply the PSO/variant
    surface and change what "representative content" means for the M1 spike and harness
    flythroughs — standard runs must sweep lighting/weather states, not just geography.
+   D-100's first standard route binds clear/overcast/storm-labelled renderer
+   environment states across dawn/daylight/dusk/night while streamed residents own
+   presentation. This is M1 binding coverage, not the M6 precipitation, wind,
+   wet-surface, or particle implementation.
 4. **Crafting/inventory/loot** imply an item/economy data model in the sim from M3
    (serializable, sim-worker-owned, save-schema versioned — same constraints as all sim
    state).

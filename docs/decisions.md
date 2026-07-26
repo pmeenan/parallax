@@ -27,6 +27,1852 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-120: Validate the machine-local smoke baseline before launching Chrome (2026-07-26, accepted)
+
+**Decision:** `smoke@1` loads and parses its ignored machine-local baseline store during
+preflight, before starting the local server or any Chrome context. Comparison against
+that preflight snapshot is non-gating and fail-soft: malformed entry data yields an
+explicit `untracked` comparison reason rather than throwing after measurement. Baseline
+promotion remains separate, locked, deeply report-validated, and fail-closed.
+
+**Context:** Final review found that the store was loaded only after all six physical
+launches. An unreadable or malformed JSON store could therefore discard a completed
+one-shot qualification before D-118 wrote primary JSON. The loader already rejects
+unreadable or malformed top-level JSON; moving that work to preflight prevents wasting
+the physical run. A shallowly malformed entry could still throw during late comparison,
+so the report path now localizes that optional comparison as unavailable.
+
+**Consequences:** Baseline-store damage fails before any Chrome launch when it prevents
+loading the store at all. Entry-level comparison damage cannot erase completed
+measurement evidence or produce a baseline candidate; the report remains independently
+gated by its environment, evidence, and budget facets. No schema, metric set, budget,
+scenario, launch count, or measurement timing changes.
+
+External review also aligned the report parser with the existing discriminated
+repeatability contract: a `measured` streaming-variance summary cannot carry an
+invalidity `reason`. This rejects contradictory input without changing the schema,
+metric set, generated report shape, or measurement.
+
+**Result:** The final converged post-M1 physical smoke
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
+(SHA-256
+`ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
+passed schema v47 / mandatory metric set v23 across all six launches, all three facets,
+and 30/30 checks. Post-run identity and report persistence were measured, no
+finalization or core-run failure occurred, and the valid older metric-set-v11 anchor
+was correctly reported as `ineligible` rather than malformed. RE-044 retains the
+same-artifact first attempt's pre-measurement fetch failure and the one passing
+classification retry.
+
+**Reopen if:** baseline comparison becomes a gating input, concurrent promotion must be
+reflected inside an already-running report, or another machine-local postprocessing
+input can still discard completed primary evidence.
+
+## D-119: Allow evidence-only post-run documentation without an infinite qualification loop (2026-07-26, accepted; amends D-097)
+
+**Decision:** After a completed qualifying physical run, mechanically recording that
+exact report's path, digest, scenario/schema/mandatory-metric-set versions, and verdict,
+and updating status pointers to that evidence, does not require another physical run.
+This narrow exception applies only when the documentation changes no built runtime or
+browser behavior, harness or measurement logic, budget or threshold, mandatory
+evidence contract, runtime/tool/browser pin, reference-machine descriptor, or claim
+beyond what the completed report establishes.
+
+The measured identity remains the report's own recorded source tuple and runtime
+artifact. Later evidence-only prose does not retroactively make the report a
+measurement of the resulting documentation checkout. Qualification language must
+therefore identify the measured runtime artifact or qualifying-input tree rather than
+claiming that an arbitrary later “current tree” ran. Any other change to a D-097
+qualifying input still requires a new physical result.
+
+**Context:** D-097 correctly requires a rerun after a later change to a qualifying
+input, including a substantive qualification claim. But a passing report cannot be
+made authoritative without recording its immutable identity and verdict in tracked
+documentation, and treating that mechanical record itself as a new qualifying input
+creates an infinite run → document → rerun loop. The report already fail-closes its own
+source identity, artifact identity, contract versions, environment, evidence, and
+verdict; copying those facts adds no new measurement claim.
+
+**Consequences:** D-097's runtime and evidence gates are unchanged. Evidence-only
+closure may record only facts present in the completed report and status changes
+entailed by those facts. Changing an interpretation, scope, threshold, contract, pin,
+reference descriptor, runtime input, or measurement claim is outside this exception
+and follows the ordinary D-097 cadence.
+
+**Reopen if:** mechanically recorded report facts can alter a built or measured input,
+or a status-pointer update is used to introduce a qualification claim not established
+by the cited report.
+
+## D-118: Make harness JSON persistence primary and report finalization fail closed (2026-07-26, accepted)
+
+**Decision:** Ordinary `smoke@1` and privileged `flythrough-d1@1` now treat report
+finalization as explicit mandatory evidence. Final build-manifest and source identity
+are revalidated after measurement; drift or a revalidation error is retained inside
+the report and fails the evidence facet rather than throwing before persistence.
+
+JSON is the primary artifact. Each runner first writes a pending, fail-closed JSON
+report, then formats and writes the human-readable Markdown report to a unique pending
+path. The runner next replaces JSON with the successful finalization state and only
+then atomically publishes Markdown at its final path. A formatter, Markdown-write, or
+Markdown-publish failure rewrites the retained JSON with the localized failure and
+exits failed. A JSON-write failure remains a hard storage error because no primary
+artifact can be guaranteed. Smoke advances to report schema v47 / mandatory
+metric set v23; flythrough advances to report schema v14 / mandatory metric set v7.
+No runtime telemetry, budget, threshold, repeat policy, or measured scenario changes.
+
+The privileged flythrough consumer also validates every camera aggregate bound and
+checkpoint camera/color vector as exactly three finite numbers, and rejects any
+aggregate axis whose minimum exceeds its maximum. This closes the prior stored-evidence
+hole where `NaN`, infinities, missing/extra vector components, or inverted bounds could
+evade the route-span comparisons.
+
+**Context:** Both runners previously performed their final artifact/source check before
+constructing the report, so late drift discarded otherwise complete or partial run
+evidence. They also chained JSON and Markdown persistence; a secondary formatter/write
+failure could make a successfully serializable measurement appear to have no result.
+Flythrough's range checks subtracted typed tuple elements without validating the
+runtime JSON shape, so non-finite values could make every `< minimum` comparison false.
+Dependency-injected unit tests cover identity drift/probe errors, primary JSON failure,
+formatter failure, Markdown-write failure, and the vector/bounds mutations.
+
+**Consequences:** Existing reports remain immutable and versioned under their original
+schemas. The one converged D-097 smoke for the post-M1 candidate used v47/v23 and is
+recorded under D-120; this decision did not authorize a flythrough, benchmark, recovery,
+or diagnostic rerun. Baseline promotion requires measured post-run identity and report
+persistence evidence.
+
+**Reopen if:** another persisted harness runner can still lose primary JSON because of
+a secondary presentation artifact, or report storage needs an atomic replacement
+protocol beyond the current pending/final fail-closed sequence.
+
+## D-117: Close P-001 on M1's memory32 production evidence and remove the memory64 experiment (2026-07-25, accepted; resolves P-001 and supersedes D-086's apparatus-retention consequence)
+
+**Decision:** Keep every current production Rust/Wasm module on memory32. M1 produced
+no representative production module with an unavoidable single-module requirement
+beyond 4 GiB: streaming partitions content by cell and generation, decode work is
+bounded and worker-local, and the retained threaded Rust proof uses one fixed 33-page
+shared linear memory. Aggregate Wasm or CPU envelopes do not justify a wider address
+space because multiple memory32 modules can exceed 4 GiB in aggregate without any one
+module crossing its address limit.
+
+P-001 is therefore resolved as **no current adoption** rather than left open after its
+M1 decision point. Remove D-086's now-unconsumed experiment from the app, public
+telemetry, engine worker/service/protocol surface, build artifacts, repeatability gate,
+and harness commands/tests. Preserve D-086's exact feasibility/cost result and the
+related rough-edge records as historical evidence. Build-manifest v11 removes the
+experiment-only worker and modules from shipped artifacts. Public telemetry v25 removes
+the experiment section and start action; smoke report v46, flythrough report v13, and
+render-recovery report v11 record that envelope change without changing their metric
+sets, budgets, or measurement semantics.
+
+**Context:** A repository-wide reference inventory on 2026-07-25 found no memory64 use
+outside the D-086 apparatus and the current documentation that described it. In
+particular, no `engine/src/wasm` production service imports the experiment, no streaming
+or decode protocol passes 64-bit linear-memory addresses, and no active M2+ plan item or
+recurring gate consumes `memory64-spike@1`. M1 completed on memory32 with its current
+streaming/decode topology and stayed within every evaluated Showcase budget. D-086
+already established that pinned Chrome/Binaryen could execute the optional path, so
+keeping executable apparatus after the adoption decision would violate the
+closed-experiment rule without improving the production claim.
+
+**Consequences:** Memory32 is the selected/default address width, not a permanent ban on
+memory64. Rust modules must continue to isolate memory-size assumptions and report
+linear memory per module. A future module may reopen memory64 only with representative
+evidence that its single address space must exceed 4 GiB after partitioning, streaming,
+multiple memory32 modules, and resident-set reduction have failed, followed by a
+current production-kernel cost comparison on then-current browser and Rust tooling.
+That future work rebuilds the smallest relevant experiment from D-086/history rather
+than carrying dormant WAT, runtime, or harness code.
+
+**Reopen if:** a concrete production module demonstrates the unavoidable measured
+single-module need above, or a platform/toolchain change invalidates the generic
+memory32 design boundary for a planned production module. Do not reopen for aggregate
+process memory, install size, or speculative future scale.
+
+## D-116: Bound short-smoke streaming repeatability by 10% or 1 ms rather than an uncalibrated near-zero percentage (2026-07-25, accepted; supersedes D-115's schema-v44/metric-set-v21 pure-relative smoke consequence; M1 qualification completed)
+
+**Decision:** Preserve the immutable failed schema-v44 / mandatory-metric-set-v21
+report
+`smoke-1-cf1a0420d451-dev-01-showcase-2026-07-26T02-56-25-489Z.json`
+(SHA-256
+`d9117a9440fc22144589fd29ae8ff1e4469aec996f1ad235b35c01442843109f`)
+and replace only its newly introduced short-smoke streaming-repeatability contract
+prospectively. Schema v45 / mandatory metric set v22 evaluates fresh and warm
+independently over the same three existing p95 samples. A cohort is repeatable when
+its absolute p95 spread is no greater than
+`max(10% × minimum cohort p95, 1.000 ms)`. Reports retain the relative range as a
+diagnostic and add the absolute spread plus computed allowance. Missing, non-finite,
+negative, incomplete, or over-limit evidence is `invalid`; baseline ingestion and
+promotion recompute all three values from the validated run evidence rather than
+trusting the summary.
+
+The 1 ms floor is deliberately conservative: it is 0.4% of the unchanged 250 ms
+cell-load budget and does not admit multi-millisecond instability. Above a 10 ms
+minimum, the existing 10% rule is exactly unchanged. At or below 10 ms, a
+sub-millisecond absolute difference no longer becomes an arbitrarily large verdict
+solely because the denominator is near zero. The authoritative ten-minute flythrough
+and public benchmark retain their pure 10% relative-range contracts; this change is
+specific to the short current-path smoke bridge.
+
+**Context:** The retained v44 report passed the registered environment and completed
+all six core runs. All 30 individual budget checks were evaluated and passed. Fresh
+streaming p95s were 2.435/1.850/2.375 ms and warm p95s were
+2.445/1.965/2.355 ms, all more than 100× below the 250 ms limit. The only failures were
+the new pure-relative summaries: 31.622% fresh and 24.427% warm. Their absolute spreads
+were only 0.585 and 0.480 ms (0.234% and 0.192% of the absolute budget). The full
+per-cell evidence localizes the changing tail to sub-millisecond render upload/commit
+waits; it does not expose a slow OPFS boundary, incomplete cohort, queue failure,
+recovery, browser error, or busted absolute check.
+
+This was the first physical application of D-115's prospective short-smoke streaming
+repeatability check. Historical complete smoke reports retained the p95 samples but
+did not gate them with a pure-relative streaming verdict; several otherwise qualified
+short runs would have produced double-digit relative percentages from small absolute
+spreads. Therefore v44 did not reveal a runtime regression against a calibrated
+short-smoke baseline. It revealed that directly copying the long-window 10% ratio into
+the much faster short workload made the verdict denominator-dominated. No runtime
+change is justified by that evidence.
+
+**Consequences:** The v44 report remains failed and may never be relabeled or promoted.
+Because the mandatory evidence contract changes, M1 still requires exactly one
+converged physical `smoke@1` on the qualifying-input tree under schema v45 / metric
+set v22. That run adds no launches or duration. No flythrough, recovery, public benchmark, or
+privileged diagnostic is reopened. M1 remains in progress until the new smoke passes
+all six runs and all three facets.
+
+**Qualification evidence (2026-07-25):** The one authorized converged physical report
+`smoke-1-cf1a0420d451-dev-01-showcase-2026-07-26T03-19-56-378Z.json`
+(SHA-256
+`b10c83ff0019cd3b332eec322703e2556de4565ba3e01c942154909cfb5508c9`)
+passed schema v45 / mandatory metric set v22 on registered dev-01 Showcase. All six
+core runs completed with no core-run failure; environment, mandatory-evidence, and
+budget facets passed; and all 30 evaluated budget checks passed. Fresh streaming p95s
+were 1.885/2.130/2.500 ms, whose 0.615 ms absolute spread was within the 1 ms
+allowance. Warm p95s were 2.300/2.340/1.810 ms, whose 0.530 ms spread was likewise
+within 1 ms. The report retains compositor presentation as informational `invalid` and
+page-attributed GPU memory as `unsupported`; it does not qualify worker long tasks,
+combined CPU resident memory, Standard, or any other D-115 carry-forward. This report
+completes D-115's versioned M1 evidence chain without authorizing another physical or
+long-running gate.
+
+**Reopen if:** a v45 cohort exceeds both the 10% allowance and 1 ms floor; the absolute
+250 ms streaming budget changes; the short smoke's path, sample population, timing
+source, or percentile aggregation changes; or accumulated reference-machine evidence
+supports a tighter prospective absolute floor. Do not reopen merely because a retained
+v44 report would produce a different verdict under v45.
+
+## D-115: Close M1 on authoritative Showcase evidence while retaining unsupported platform gaps (2026-07-25, accepted; supersedes D-110's public-benchmark qualification requirement, D-102's visible-pop M1-exit implication, and D-108's extra recovery-rerun consequence; schema-v44/metric-set-v21 pure-relative smoke consequence superseded by D-116)
+
+**Decision:** Complete M1's public Benchmark mode task on implementation and
+result-contract correctness, not on a second numerical milestone verdict from its
+intentionally advisory page-only metrics. `benchmark-result@1` schema v3 remains
+unchanged. Its 10% repeatability checks remain unchanged, and the two complete
+`ff05ec211444…` reports remain failed scenario evidence. Producing and exporting those
+valid failed results is the required fail-honest behavior: it proves the in-game mode
+can own the canonical three-repeat lifecycle, validate it, preserve unsupported
+capabilities, and reject unrepeatable observations. It does not prove the failed
+streaming/render p95s repeatable and does not qualify any performance budget.
+
+The privileged `flythrough-d1@1` report remains M1's authoritative ten-minute
+performance evidence, through the explicit versioned bridge below. D-102's registered
+dev-01 Showcase report passed its environment, evidence, and budget facets, all 15
+evaluated checks, and the unchanged streaming-p95 repeatability rule. The public
+continuous-page result has a different lineage and cannot duplicate or override that
+verdict. This decision therefore supersedes D-110's requirement that the public
+artifact itself eventually become a passing final M1 qualification. No further
+30-plus-minute public benchmark or privileged diagnostic is authorized or required for
+M1. A future invocation follows the public mode's normal product/research trigger and
+still applies schema v3's unchanged metrics and 10% rule; it is not a deferred M1 gate.
+
+M1 qualification is a **versioned composite evidence ledger**, not a false assertion
+that D-102's schema-v4/metric-set-v4 artifact satisfies today's
+`flythrough-d1@1` schema-v12/metric-set-v6 validator:
+
+1. D-102 is the passing registered long-window anchor for the unchanged canonical
+   route, environment phases, streamed-presentation ownership, six rendered
+   checkpoints, render aggregation, main-thread Long Tasks, synchronized all-realm V8
+   used heap, Dawn/D3D12 overlap, absolute streaming p95, and 10% streaming-p95
+   repeatability.
+2. D-103/D-104 advanced flythrough's mandatory set for stricter streaming settlement
+   and the generation-tagged settled recovery checkpoint; they did not change its
+   route or numeric performance limits. D-104's dedicated schema-v4/metric-set-v3
+   physical result qualifies the recovery protocol, and the final current
+   schema-v44/metric-set-v21 smoke must validate every healthy boundary against the
+   same current checkpoint/streaming contract and compute the cell-load p95 relative
+   range independently across its three fresh and three warm repeats. This expressly revises any inference
+   that a new metric-set-v6 ten-minute artifact is itself required for M1.
+3. D-108 materially changed the streaming initialization/read path. The two later
+   complete physical public reports do not carry a budget verdict and retain failed
+   variance, but they do establish that the changed measured runtime completed six
+   canonical ten-minute routes with exact 4K checkpoints, 256/256 handles, every
+   individual streaming p95 below 250 ms, and zero Window Long Tasks. The final current
+   smoke—not those advisory values—must carry the registered-environment, absolute
+   streaming budget, and current-path short-scenario repeatability verdicts. This does
+   not assert that the post-D-108 ten-minute route became repeatable.
+4. D-114 corrected future heap-sampler scheduling after the D-102 artifact. D-115 does
+   not replay or relabel that immutable schema-v4 report under today's validator. The
+   final smoke must qualify the corrected sampler and current all-realm heap limit on
+   the final runtime; D-102 remains only the versioned ten-minute observation it
+   actually was.
+
+This bridge narrows the exact M1 claim: it qualifies the D1 greybox architecture and
+evaluated Showcase metrics across the versioned evidence chain; it does not claim that
+one then-current D-115-era schema-v12 report passed or that the measured runtime artifact independently
+repeated every ten-minute privileged probe. A future change to route pacing,
+environment sequencing, streamed ownership/checkpoint rendering, long-window heap or
+trace collection, numeric budgets, or the current streaming/recovery contracts reopens
+the relevant long/dedicated gate.
+
+M1's registered physical exit is scoped to **Showcase on dev-01**. D-018 remains
+unchanged: the Standard M1 Pro/Metal/120 Hz profile has no registered machine, dev-01
+Standard-preset runs are provisional, and no M1 result satisfies a Standard-tier exit
+criterion. Closing this platform-ceiling greybox milestone makes no Standard/default-
+experience, Metal, 120 Hz, or cross-machine transfer claim. Standard remains explicitly
+unqualified until `standard-01` is registered and must be qualified before a later
+milestone claims the default experience or final-art performance; M3's already-planned
+cross-machine work is the earliest natural registration point.
+
+Interpret M1's plan phrase “zero budget violations” as **zero violations among the
+evaluated mandatory M1 metrics**, together with this explicit unsupported/deferred
+coverage list. Unsupported is never a passing check and cannot support a claim about
+the corresponding budget:
+
+- **Physical presentation:** CfT 151's `Display::FrameDisplayed` events have neither
+  success nor page attribution (RE-006/D-114). The standing M1 metric remains
+  unqualified: `smoke@1` records it as informational `invalid` because callbacks exist
+  but cannot prove scan-out, while D-114's provider inventory records authoritative
+  presentation as `unsupported`. Render-worker and Viz callback cadence remain
+  heuristics and are never substituted. M1 therefore makes no player-visible
+  frame-budget claim.
+- **Worker long tasks:** Window Long Tasks gates the main thread over the full
+  flythrough, but no equivalent worker-wide surface exists. Worker long tasks remain
+  `unsupported`, not zero.
+- **Memory:** the qualified flythrough gates the synchronized all-realm V8
+  `usedSize` high-water estimate. Routine smoke separately records the fixed
+  2,162,688-byte synthetic threaded-Wasm shared memory and 8,224-byte SAB transport
+  pool as bootstrap correctness/size invariants; neither is representative
+  flythrough-Wasm residency, and neither may be added to V8 backing storage. The CPU
+  envelope (JS + Wasm + SAB + staging) therefore remains unsupported as a combined
+  resident total. Page-attributed resident/transient WebGPU memory remains unsupported
+  under RE-014. Logical streaming encoded/upload byte bounds are not physical CPU/GPU
+  residency.
+- **Visible pop-in:** the budgets table labels its visual diff “later,” and no M1 plan
+  task or exit bullet independently binds it. D-102 nevertheless listed it among the
+  runner omissions “required by the later M1 exit.” This decision explicitly supersedes
+  that scope implication rather than silently ignoring it. M1 checkpoint captures prove
+  exact streamed-residency ownership and non-blank output, not absence of pop. Defer
+  the deterministic visual-diff gate to M5's representative-art streaming swap, where
+  the content can make that claim meaningful.
+- **D1↔D2 transition:** remains M4 scope, including the not-yet-calibrated prefetch
+  trigger; it is not an M1 omission.
+
+M1 remains `in progress` until one converged D-097 `smoke@1` runs the current
+runtime/dashboard/diagnostic-cleanup tree on registered dev-01 at the physical console.
+That one report must use the pinned CfT/Node identities, wake the Windows display before
+every Chrome context launch, pass environment and mandatory-evidence facets, and pass
+every schema-v44/mandatory-metric-set-v21 check across all six core runs. Metric set
+v21 adds a mandatory prospective repeatability check over the already-collected
+streaming cell-load p95: three fresh values form one comparable cohort and three warm
+values form the other, and each cohort's relative range must be no greater than the
+unchanged 10% threshold. It adds no launch or measurement duration. Missing samples,
+an incomplete cohort, or an exceeded range is `invalid` and fails evidence completeness.
+Its informational `invalid` compositor-presentation metric and `unsupported` attributable-
+GPU-memory metric remain visible and do not become passes. The already-qualified
+flythrough and render-recovery scenarios are
+not rerun. This explicitly supersedes D-108's consequence that its fixed-handle change
+must repeat the dedicated recovery qualifier: D-104 already qualified the one-retry
+cohort, D-108 did not change its fault/control protocol, and the later complete public
+workload physically opened the same generation-initialization set at 256/256 handles in
+204.96 ms. Replacement generations call that same validated initialization path. This
+is not a claim that the combined post-D-108 fault path was remeasured; a future change
+to recovery control flow or handle initialization reopens the dedicated qualifier.
+After the exact-artifact smoke passes, the M1 exit checkbox and milestone status may be
+closed with the unsupported/Standard carry-forwards above.
+
+**Context:** The authoritative Showcase flythrough
+`flythrough-d1-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-07-24-028Z.json`
+is schema v4 / mandatory metric set v4. It passed all three facets and 15/15 checks
+over three independent fresh-profile
+ten-minute repeats; streaming p95 was 22.810/23.895/22.000 ms with 8.614% relative
+range. Its three all-realm V8 used-heap high-water estimates were
+40,450,636/41,631,772/41,472,352 bytes. D-104's dedicated physical report separately
+qualified bounded whole-cohort recovery. Two later public reports completed all three
+continuous-page ten-minute repeats and exact 4K preflight but correctly failed their
+unchanged repeatability checks: D-110 records 30.243% streaming variance in the first,
+and 21.572% streaming plus 20.968% render-duration variance in the retry. Their page
+budget facet was already `not-evaluated`; requiring those advisory values to pass as a
+second milestone gate would conflate two deliberately incomparable contracts.
+
+D-111/D-113's privileged diagnostic did not create a missing implementation fix. D-114
+proved the positive control but retained only a biased 41/92-cell trace prefix, no
+completion, no successful/page-attributed presentation event, no attributable GPU
+allocator dump, no full-window worker-long-task view, and no additive CPU total. That
+is affirmative evidence that another identical long run cannot manufacture the
+unavailable platform observability. The project goal prioritizes documenting such
+limits; keeping M1 indefinitely open would relabel a demonstrated platform gap as an
+application failure without adding evidence.
+
+**Consequences:** The Benchmark mode plan item is complete and its feature status is
+implemented/physically exercised. RE-043 remains an open research/observability gap,
+but no longer blocks M1 and does not authorize another run. Standing numeric budgets,
+public/flythrough metric states, retained artifacts, and all failed verdicts remain
+unchanged. Routine smoke advances to schema v44 / mandatory metric set v21 solely for
+the prospective current-path streaming-repeatability evidence. M1 may close after the
+one converged physical smoke with the precise claim:
+the versioned evidence chain plus the qualifying-input smoke qualifies every evaluated
+mandatory M1 metric in Showcase; Standard and the enumerated platform-unobservable
+metrics are unqualified. It may not be described as one then-current D-115-era schema-v12 flythrough
+pass. No wording may shorten the claim to “all budgets passed.”
+
+**Reopen if:** a concrete runtime or measurement change directly affects the public
+benchmark lifecycle; Chrome exposes successful page-attributed physical presentation,
+worker long-task, combined resident CPU, or page-attributed GPU residency evidence; a
+Standard reference machine is registered; or representative M5 art makes the deferred
+visible-pop check actionable. Each promotion requires a prospective versioned contract
+and new evidence; none retroactively changes the retained failed reports.
+
+## D-114: Close the consumed M1 exit diagnostic without authorizing another benchmark (2026-07-25, accepted; final M1 contract supplied by D-115)
+
+**Decision:** Accept D-113's replacement execution as a valid
+`m1-exit-diagnostic@1` schema-v1 **invalid partial**, adjudicate only the independently
+retained evidence, and close the one-shot D-111/D-113 experiment. Remove its command,
+runner, schema/persistence modules, trace categories, correlation/control logic, tests,
+public telemetry methods, worker protocol/messages/marks, and broken
+`SetThreadExecutionState` helper. Keep the ordinary inert F15 wake immediately before
+each Windows Chrome launch. The maintained JavaScript heap sampler now schedules its
+initial capture at the monotonic deadline instead of starting it inline; any
+nevertheless-negative delay fails with the exact sample retained rather than being
+clamped.
+
+The retained report is
+`m1-exit-diagnostic-1-12e68fa57ea7-dev-01-showcase-2026-07-26T01-24-11-033Z.json`
+(artifact
+`12e68fa57ea78777822c1361849e0c3dfd69c831c8b8bbc4e2031950980d3385`,
+result SHA-256
+`75f26f111a1bf979b746cc35ac30d2dd1cae1c868dd0b6cc377ad7b96f98e713`,
+source commit `6f2fb1e9814904c733a64b4a629051c46c3fe145`, dirty-tree digest
+`44aef5898ec59e8021c10d3aaac25b4a2a69b9fd76f50a100aec3b5547ddf4a9`).
+Before cleanup, D-099's complete ignored reconstruction bundle captured the 532,448-byte
+binary tracked diff and all 53 non-ignored untracked files. A clean detached worktree
+reconstruction reproduced both source-identity fields exactly.
+
+The 75 ms positive control worked: its worker mark lasted 75.083 ms inside one 75.338 ms
+`ThreadControllerImpl::RunTask`, wholly before measurement. Cell-stage timestamps were
+usable only for the biased first 41 of 92 canonical samples (sequences 64–104, batches
+9–30). All six marks for each of the later 51 cells were absent, so the partial cannot
+localize cross-repeat variance or justify a runtime/measurement fix. At the 40,000.7 ms
+diagnostic cutoff the trace had delivered 4,190,120 events in 30,433 chunks /
+878,610,107 serialized bytes. Collection ultimately retained 4,221,682 events in 30,589
+chunks / 883,071,678 bytes after 165,167.074 ms without
+`Tracing.tracingComplete`; `dataLoss` therefore remained unknown. This extends RE-008's
+payload-bound long-window observation and is not the historical zero-chunk signature.
+
+Current CfT emitted 13,892 `Display::FrameDisplayed` instant events with empty argument
+objects and no page identity or success flag. Presentation is therefore explicitly
+`unsupported`, not measured. The memory-dump request succeeded in 113.1782 ms, but the
+trace contained zero allocator-bearing GPU-process dumps. The synchronized
+used-heap-plus-reported-backing observation peaked at 89,593,455 bytes; independent used
+heap/backing maxima were 43,119,472/71,505,215 bytes. Separately identified shared
+memory was 2,170,912 bytes (2,162,688 Wasm plus 8,224 SAB), while logical staging bounds
+were 12,580 encoded and 34,960 decoded-upload bytes. CDP does not establish overlap, so
+there is no additive CPU resident total. Page-attributed GPU residency and full-window
+worker long tasks remain unsupported. The attempted awake lease was never active
+because PowerShell supplied signed values to the `UInt32` P/Invoke. The measured
+attempt's post-run browser-display/host fields were null; that is missing evidence, not
+environment drift.
+
+**Context:** D-110 required one privileged canonical repeat before another public
+benchmark. D-111's first execution lost its artifact; D-113 authorized exactly one
+unchanged replacement. That replacement retained enough independent evidence to
+adjudicate the probes, but post-capture validation correctly rejected the report after
+the trace failed to complete, 51 cell correlations were missing, the GPU allocator dump
+was unusable, the awake hold failed, and the heap sampler recorded a negative start
+delay. The experiment answered its bounded questions without producing a variance
+localization.
+
+**Consequences:** No new Chrome defect is claimed. RE-006, RE-008, RE-012, RE-014, and
+RE-043 retain the scoped observations. The public 10% gates and every standing budget
+remain unchanged. The result supplies neither a concrete runtime/measurement fix nor a
+prospective versioned contract change, so it does **not** authorize another public
+benchmark. M1 benchmark qualification remains blocked. No further diagnostic or
+benchmark invocation is authorized; the next task must decide the final M1 exit
+contract and Standard/visible-pop policy without silently reintroducing this apparatus.
+
+**Reopen if:** a future explicit decision defines a new bounded experiment against
+then-current Chrome evidence, or a concrete independently supported runtime/measurement
+change satisfies D-110's public-rerun precondition. Recover or rebuild only the smallest
+current apparatus; do not restore the closed D-111 implementation wholesale.
+
+## D-113: Authorize one exact-contract replacement for D-111's lost-artifact diagnostic (2026-07-25, accepted; replacement consumed and experiment closed by D-114)
+
+**Decision:** Explicitly authorize exactly one replacement invocation of the existing
+`pnpm harness:m1-exit-diagnostic` command after D-111's first physical execution was
+consumed without an artifact. The replacement must use the current
+`m1-exit-diagnostic@1` schema-v1 contract unchanged: one independent fresh-profile
+Showcase `flythrough-d1@1` repeat with the same canonical route and seed, six rendered
+checkpoint preflight, ten-second stabilization, complete 600,000 ms window, streaming
+cohort, fixed 3840×2160 worker workload, pinned-CfT/registered-host validation, wake
+policy, positive control, trace correlation, presentation inventory, memory evidence,
+and immutable non-qualification provenance defined by D-111. This adjudication does
+not authorize a shortened, relabelled, reconfigured, or newly versioned substitute.
+
+Invoking that physical replacement consumes this authorization regardless of whether
+the command completes, fails, or retains an artifact. There is no automatic retry. A
+surviving artifact must be reviewed before any next measured action. It may authorize
+another complete public benchmark only when its evidence supports a concrete
+runtime/measurement implementation fix or a prospective versioned measurement-contract
+change. It cannot itself qualify M1 or relax, waive, or retroactively reinterpret the
+unchanged 10% cross-repeat gates. If the replacement also produces no artifact, stop:
+the diagnostic and public benchmark remain blocked pending explicit human review and a
+new decision. The workflow's generic bounded retry for intermittent RE-008/RE-036-class
+failures does not apply to this one-use replacement.
+
+The 30-plus-minute public benchmark remains one final M1 milestone qualification. It is
+never a smoke, render-recovery, bulk-review, or unrelated-change gate, and this
+replacement authorization does not add another public benchmark attempt by itself.
+
+**Context:** D-111's first permitted physical command completed its approximately
+12.5-minute capture and trace-processing lifecycle, but a fixed post-capture persistence
+defect let validation, serialization, formatting, or writing reject before any JSON or
+Markdown artifact survived. D-111 now fail-closes those paths into an invalid partial
+and has an emergency persistence sink, but that repair cannot reconstruct the lost
+evidence. The first attempt remains consumed and unreviewable. This decision is an
+explicit adjudication of that specific fixed artifact-retention defect, not a refund,
+retry policy, or relabelling of the first execution.
+
+**Consequences:** The only presently authorized browser measurement is the one exact
+D-111 replacement invocation. Preserve any result, including an invalid partial, and
+adjudicate it as evidence. Until a surviving artifact supports the concrete change
+required above, no further public benchmark is authorized. The standing 10% gates,
+budgets, and independent D-097 smoke and render-recovery triggers are unchanged.
+
+**Reopen if:** the replacement is consumed without an artifact, in which case stop for
+human review; or its surviving evidence supports a concrete runtime/measurement fix or
+prospective versioned contract change. Reopening requires a new explicit decision and
+does not expand this one-use authorization.
+
+## D-112: Render M1 streaming telemetry as an accessible in-game dashboard without a second metric contract (2026-07-25, accepted; implementation and final M1 physical gate complete)
+
+**Decision:** The always-visible M1 world-streaming dashboard consumes the existing
+public `WorldStreamingTelemetrySnapshot` without adding a second cache, polling loop, or
+telemetry schema. Game UI code owns a pure view model and presentation copy; the app
+shell only mounts semantic DOM and wires the existing synchronous streaming
+subscription. The dashboard shows worker state/generation/recovery, resident capacity
+and identities, observer targets and settlement backlog, fixed OPFS package/open-handle
+identity, retained/cumulative load samples, nearest-rank total and stage p95s, resident
+and in-flight encoded-byte accounting, logical streamed GPU-buffer bytes, decode queue
+high-water, encoded-residency budget rejections, and proactive evictions. The
+current public contract has neither a worker-stall counter nor an emergency-eviction
+counter, so both are visibly `Unavailable` with the exact related evidence instead of
+being inferred from unrelated counters.
+
+The dashboard has no independent animation/update cadence: it changes only when the
+authoritative service publishes. Its polite live region announces cohort state,
+generation, residency, and failures; rapidly changing metric rows and expandable
+resident/observer identities are ordinary semantic text so assistive technology is not
+flooded. It remains visible during the public benchmark but does not start, configure,
+pace, aggregate, or export benchmark work. No public telemetry or benchmark-result
+schema changes because no producer field or measurement meaning changes.
+
+**Context:** The prior integration copied a small subset of streaming values into
+`#status.dataset.streaming*`. Those attributes supported automation but were not a
+visible dashboard and omitted the fixed handle-set identity, stage attribution,
+settlement, queue pressure, recovery generation, and explicit unsupported signals
+needed to understand M1 behavior. Local pinned TypeScript and focused Vitest coverage
+exercise running, unavailable, and failed dashboard states, a discriminating exact
+nearest-rank p95 selection, retained-versus-cumulative history, opening/open/closed
+storage identity, pressure, and stage formatting. The retained live p95 is descriptive
+and explicitly not an M1 budget verdict because it has no canonical measurement-window
+eligibility. No Chrome or performance claim is made by those tests.
+
+**Consequences:** The M1 “streaming metrics dashboarded” exit subrequirement is
+implemented without crossing the game/engine platform boundary or changing the public
+measurement contract. Existing `data-*` automation diagnostics remain intact.
+Because this changes the built app and adds main-thread DOM work when streaming
+telemetry publishes, the converged M1 candidate still requires D-097's one physical
+smoke gate; D-110 does not authorize another 30-plus-minute benchmark merely for this
+UI addition.
+
+**Reopen if:** the engine publishes target-cell identities, a defined worker-stall
+counter, or an emergency-eviction state; the dashboard then surfaces those authoritative
+fields through a versioned telemetry change rather than deriving proxies. Revisit the
+mount boundary if game UI gains a platform-neutral renderer independent of the app
+shell.
+
+## D-111: Add one non-qualifying privileged canonical-repeat diagnostic before the next public benchmark (2026-07-25, accepted; experiment closed by D-114)
+
+**Decision:** Implement `m1-exit-diagnostic@1` schema v1 as the only next measured
+action permitted by D-110. `pnpm harness:m1-exit-diagnostic` reuses the authoritative
+privileged `flythrough-d1@1` driver for exactly one independent fresh-profile Showcase
+repeat: the same route/seed, six rendered checkpoint preflight, fixed ten-second
+stabilization, complete 600,000 ms window, streaming cohort, pinned-CfT/registered-host
+validation, and immediate Windows F15 pre-launch wake. The diagnostic additionally
+sets and checkpoint-attests the public benchmark's exact 3840×2160 worker workload.
+A scoped Windows `SetThreadExecutionState` lease holds the display and system awake
+through the measured attempt and is released in `finally`; it sends no periodic input.
+
+The streaming worker exposes an explicit opt-in telemetry handshake. After privileged
+tracing starts but before the route marker, it enables bounded per-cell User Timing
+stage marks and executes one requested 75 ms busy worker task. The result is valid only
+if trace evidence identifies the acknowledged control as one same-thread enclosing
+task wholly before measurement. Measured cell identities then correlate the existing
+page-owned OPFS/decode/upload/commit/remainder durations with trace timestamps and
+overlapping worker tasks. Routine smoke, the three-repeat flythrough gate, and the
+public benchmark do not enable these marks or trace categories.
+
+Presentation remains fail-honest. The diagnostic inventories actual GPU-process
+candidate event names, categories, phases, process/thread IDs, nested argument-key
+shapes, and bounded raw argument samples from current CfT. It reports presentation
+`measured` only after a reviewed event contract proves both successful physical
+scan-out and page attribution. Schema v1 has no such trusted provider, so callback
+events remain structured `unsupported`, never relabeled presentation. One detailed
+memory-infra request retains the existing structured page-attributed GPU-memory
+`unsupported` result, but completion still requires Chrome to accept the dump and the
+nested GPU-process allocator diagnostic to be usable. CPU inventory computes
+`max(sample Σrealm(usedHeap + reportedBackingStorage))` from each synchronized
+multi-realm capture and retains the independent used/backing maxima separately.
+Shared WebAssembly memory and standalone SAB pools remain uniquely owner-attributed,
+but CDP does not establish whether those bytes are absent from, present in, or
+duplicated across per-realm backing-storage observations. Schema v1 therefore records
+their overlap as unknown and reports no combined CPU resident total. Logical streaming
+staging remains a non-residency bound rather than an observed allocation.
+
+Every JSON/Markdown artifact carries exact artifact/source/Chrome/Node/machine identity,
+trace completion and data-loss state, the one-repeat/fixed-pixel/canonical contract,
+partial telemetry and diagnostics on failure, and immutable non-qualification
+provenance. It has no budget facet and cannot qualify the benchmark, flythrough gate,
+or M1 exit. Its persisted validator rejects lineage, route, pixel, trace-integrity, or
+provenance drift before writing. A complete artifact additionally requires the exact
+92-sample run-local streaming suffix and same-order trace correlation, a fully
+contained/acknowledged 75 ms control, schema-v1 presentation `unsupported` with null
+proof, eligible pinned runtime/environment equality, and bounded candidate shapes.
+The runner projects raw flythrough/long-task/streaming evidence into a
+diagnostic-only result that cannot carry budget checks or pass/fail verdicts. Failed
+post-trace work retains each independently completed subrecord and trace-drain
+diagnostics rather than collapsing the artifact to an empty shell.
+The opt-in public methods do not change the serialized telemetry snapshot shape, so the
+public envelope remains at v24 and the existing smoke, flythrough, and render-recovery
+schemas and metric sets remain unchanged. The diagnostic evidence contract is versioned
+independently as `m1-exit-diagnostic@1` schema v1.
+
+**Context:** D-110 exhausted the complete public benchmark and its one same-artifact
+retry while RE-043 remained below the application's worker/GPU boundary. Repeating
+another 30-plus-minute public lifecycle cannot add that missing evidence. Current CDP
+documentation checked 2026-07-25 describes `Runtime.getHeapUsage.usedSize` as JavaScript
+heap and `backingStorageSize` as ArrayBuffer/external-string backing storage, supporting
+the explicit non-double-counting split; it does not supply presentation success or
+page-attributed WebGPU residency
+([Runtime.getHeapUsage](https://chromedevtools.github.io/devtools-protocol/v8/Runtime/#method-getHeapUsage),
+[Tracing](https://chromedevtools.github.io/devtools-protocol/tot/Tracing/)).
+The first physical diagnostic must record what CfT 151 actually emits; implementation
+alone makes no new Chrome claim, so no rough-edge entry is added yet.
+
+The first physical command was launched on 2026-07-25. Its detached Node/CfT process
+completed the approximately 12.5-minute capture and trace-processing lifecycle, then
+exited and cleaned its browser/profile processes, but produced neither JSON nor
+Markdown. The runner performed environment/source/build revalidation, strict persisted
+validation, serialization, and Markdown formatting before creating the result
+directory and had no post-capture fallback; any rejection in that sequence therefore
+discarded the whole captured attempt. No surviving artifact can establish which
+post-capture operation rejected or support a platform conclusion. This is a harness
+artifact-retention failure, not a Chrome finding.
+
+The runner now prepares validation, JSON serialization, and Markdown formatting before
+writing. If any preparation step rejects, it emits a schema-v1 invalid partial,
+admitting environment, heap, latest telemetry, trace-drain state, and each diagnostic
+subrecord independently through the persisted validator and dropping only malformed or
+non-serializable optional evidence. A persistence exception similarly gets one
+fail-closed write of an invalid JSON/Markdown pair under a freshly allocated
+machine-temporary emergency directory, rather than retrying the rejected result paths.
+Markdown is written before JSON at either sink, so a partial write cannot strand a
+complete-looking JSON report without its companion; the runner prints the actual
+surviving paths. A machine-wide storage failure can still prevent all persistence and
+is reported as such rather than described as recoverable. Environment and source/build
+revalidation failures are converted to report failures instead of escaping. This fix
+does not recreate the lost evidence and does not itself authorize another browser run.
+
+**Consequences:** The first permitted command execution has been consumed without
+reviewable evidence. Do not silently treat the retention fix as permission to rerun it;
+any replacement attempt needs explicit adjudication of the lost-artifact condition.
+If a replacement is authorized, its artifact will determine whether worker task/stage
+attribution is usable, whether current CfT has a trustworthy presentation event, and
+which memory fields can support a prospective M1 exit contract. Only a concrete
+runtime fix or prospective versioned measurement-contract change based on evidence may
+trigger another complete public benchmark. The standing 10% repeatability rule and
+every budget remain unchanged.
+
+**Reopen if:** the physical trace cannot retain the positive control or cell marks
+without loss; trace overhead materially changes the canonical workload; current CfT
+provides a reviewed successful-scan-out/page-attribution contract; or the inventory
+shows that the proposed CPU category split overlaps.
+
+## D-110: Stop repeated public benchmark reruns after the one permitted retry and diagnose one canonical repeat first (2026-07-25, accepted; public-benchmark qualification requirement superseded by D-115)
+
+**Decision:** Retain the two complete physical-console
+`benchmark-result@1` schema-v3 reports on artifact
+`ff05ec211444b89d8c706305205cc60908a140be6af2f2e3ed4ba20a31cded7e`
+as failed M1 benchmark qualification evidence. The first complete post-D-109 run and
+its one permitted immediate same-artifact retry both fail the unchanged 10%
+cross-repeat variance rule. Stop launching the 30-plus-minute public lifecycle to
+classify the same failure.
+
+Before any further complete public benchmark, run one privileged physical-console
+diagnostic over a single exact `flythrough-d1@1` Showcase repeat. It must preserve the
+canonical route, world seed, fixed 3840×2160 worker workload, checkpoint preflight, and
+streaming cohort while adding the privileged cross-realm/trace evidence needed to
+localize the remaining render/streaming variance. A future full public rerun requires
+that diagnosis to produce a concrete implementation fix or a prospective, versioned
+measurement-contract change. Neither outcome may retroactively relabel these reports,
+discard a measured metric, or weaken the 10% gate to admit them.
+
+The public benchmark is one M1 milestone qualification, not a recurring every-change
+gate. Do not repeat it during the dedicated render-recovery qualifier, D-097 smoke,
+bulk review, or unrelated gates. After it eventually qualifies, rerun it only when a
+concrete change directly affects the benchmark lifecycle, canonical runtime workload,
+measurement contract, or evidence being qualified. Recovery and smoke retain their own
+independent triggers and verdicts.
+
+**Context:** The first retained post-D-109 report,
+`harness/results/benchmark-result-1-ff05ec211444-dev-01-showcase-2026-07-25T21-28-45-673Z.json`,
+completed all three exact ten-minute repeats. Streaming cell-load p95 was
+2.265/2.915/2.950 ms: every absolute value passed 250 ms, but the 30.243% relative
+range failed. Render duration p95 was 0.255/0.250/0.275 ms and passed at the existing
+10% boundary; callback p95 was 16.765/16.770/16.770 ms. The permitted immediate retry,
+`harness/results/benchmark-result-1-ff05ec211444-dev-01-showcase-2026-07-25T22-04-07-075Z.json`,
+again completed all three repeats. Streaming p95 was 2.735/3.325/3.075 ms and failed
+at 21.572%; render duration p95 was 0.330/0.375/0.310 ms and failed at 20.968%;
+callback p95 remained stable at 16.775/16.785/16.780 ms. Both reports recorded zero
+Window Long Tasks.
+
+Independent report replay selected exactly 92 samples per repeat
+(sequences 64–155, 219–310, and 374–465) and reproduced each stored nearest-rank p95,
+so neither suffix selection nor aggregation explains the verdict. Every boundary
+retained 256 packages and 256 open access handles. OPFS-wait p95 remained small
+(0.080–0.140 ms) rather than reproducing D-108's removed lookup/open/close residual.
+The remaining movement appears across decode round trip, render-upload round trip, and
+render-commit round trip rather than one recorded dominant stage. Those page-owned
+durations do not distinguish cross-realm scheduling, browser/OS service, or GPU queue
+causality. The evidence therefore justifies RE-043's scoped observability question, not
+a Chrome defect claim.
+
+**Consequences:** The benchmark plan item remains open and physical qualification has
+failed under the standing gate. Its next measured action is the one-repeat privileged
+diagnostic, not another three-repeat public run. The two reports remain separately
+citable evidence even if a later fix qualifies the same scenario.
+
+**Reopen if:** the privileged diagnosis proves the current metric or comparison
+contract is unsound, in which case change it prospectively through a versioned decision;
+or a concrete benchmark/runtime fix needs the single milestone qualification rerun.
+Do not reopen merely because another unmodified rerun might happen to fall below 10%.
+
+## D-109: Keep CSS viewport geometry as recorded benchmark diagnostics, not fixed-worker comparison identity (2026-07-25, accepted; implementation physically exercised, benchmark qualification failed under D-110)
+
+**Decision:** `benchmark-result@1` continues to retain every raw environment capture,
+including `screen.viewportCssPixels`, but schema v3 makes the comparison policy explicit
+as `fixed-worker-render-pixels@1`. That policy excludes only
+`screen.viewportCssPixels` from cross-boundary equality. Browser/engine version,
+artifact, WebGPU adapter, capabilities, hardware concurrency, screen/available-screen
+geometry, device-pixel ratio, physical-pixel estimate, color depth, orientation, and all
+metric-state identity remain exact. A repeat is still invalid unless D-105/D-107's
+independent render-worker evidence proves the selected fixed pixel dimensions at every
+checkpoint and the complete flythrough contract passes.
+
+This is a relevance split, not a numeric tolerance or discarded observation. The page
+does not measure authoritative compositor presentation and already reports that metric
+`unsupported`. Its render workload is fixed by the render-pixel override, its streaming
+workload by the canonical route, and its Window Long Tasks counter has no CSS-geometry
+input. Raw viewport
+movement remains visible to analysts and can still motivate a separate presentation
+investigation. A future benchmark with a measured presentation metric must version a
+policy that makes the presentation viewport relevant.
+
+**Context:** The retained D-108 physical attempt
+`benchmark-result-1-7851397a6f82-dev-01-showcase-2026-07-25T20-35-51-111Z.json`
+completed repeat 1's exact ten-minute 3840×2160 route with six exact 4K checkpoint
+captures, 256/256 long-lived OPFS handles, no recovery, no Window Long Task, and no
+page/console error. Its only before/after environment difference was
+`screen.viewportCssPixels.height` 1,586 → 1,585. Screen geometry remained
+2,819×1,586 CSS pixels, available geometry 2,819×1,542, device-pixel ratio
+1.3625000715, physical estimate 3,841×2,161, and worker render size 3,840×2,160.
+Exact all-field equality therefore rejected evidence whose measured workload identity
+had not changed.
+
+A bounded physical-console control in pinned CfT 151.0.7922.34 launched native
+fullscreen with no viewport emulation and sampled a blank page for 31 seconds; a second
+production-app control sampled every 500 ms through boot, all six 4K checkpoint
+captures, stabilization, and 109 seconds of measurement. Both stayed at
+2,819×1,586 with no resize or page error. This disproves a short fullscreen/startup
+settling race, so adding a launch delay would not address the observed failure.
+D-034/RE-003 already retain the same fractional-scale environment's integer CSS/device
+pixel mismatch. The exact cause of the later one-CSS-pixel report boundary change
+remains unresolved; it does not justify either a generic Chrome defect claim or a
+silent equality tolerance.
+
+The public telemetry envelope advances to v24. Unchanged mandatory metric sets are
+accepted by `smoke@1` schema v43, `flythrough-d1@1` schema v12, and
+`render-recovery@1` schema v10. Benchmark section telemetry remains v2 because its
+lifecycle shape is unchanged.
+
+**Consequences:** Raw reports can show viewport changes without conflating them with
+fixed-worker workload drift, and their policy is machine-readable rather than implicit.
+The retained failed report remains valid application-contract evidence and is not
+relabelled. D-110's later complete physical reports exercised the schema-v3 lifecycle
+and retained their advisory failures; D-115 consumed that evidence and superseded the
+former benchmark, recovery-qualifier, and M1-smoke rerun requirements. No retained
+verdict changes.
+
+**Reopen if:** the in-game result measures authoritative compositor presentation,
+the selected render size again follows CSS layout, worker checkpoint pixel attestation
+is removed, or evidence shows CSS viewport changes affect one of the current measured
+metrics despite fixed worker dimensions.
+
+## D-108: Open the fixed streaming OPFS handle set once per worker generation (2026-07-25, accepted; fixed-handle workload physically exercised; extra recovery-rerun consequence superseded by D-115; benchmark result retained failed)
+
+**Decision:** After integrity provisioning and stale-package removal, each streaming
+worker generation opens and size-validates one synchronous OPFS access handle for every
+distinct content-addressed package in its fixed district index. Movement-driven reads
+then allocate their destination buffer and call `read()` synchronously through that
+already-owned handle; they do not repeat asynchronous directory lookup, access-handle
+creation, or close/reopen lock turnover. The worker closes the complete set on terminal
+failure and orderly disposal. Public streaming telemetry records the exact package and
+open-handle counts plus the generation's aggregate handle-open duration. A streaming
+snapshot is eligible only when the counts are positive and equal, and the in-game
+benchmark requires that identity to remain unchanged across each measured boundary.
+
+The 10% repeat-variance rule and 250 ms cell-load budget are unchanged. Existing
+`opfsAccessRoundTripMs`, `opfsReadMs`, and residual `opfsWaitMs` fields remain at their
+documented application boundary; after this change the first covers only buffer
+preparation plus the synchronous cached-handle read during movement.
+
+**Context:** The completed physical in-game result
+`benchmark-result-1-9a218e2fe23a-dev-01-showcase-2026-07-25T19-54-39-399Z.json`
+ran all three exact 3840×2160 ten-minute repeats in one page lineage with no recovery,
+page/console error, or Window Long Task. Every individual streaming p95 passed the
+250 ms budget at 9.115/28.005/48.025 ms, but their 426.879% relative range correctly
+failed scenario evidence. Each repeat selected an exact contiguous 92-sample suffix
+(sequences 64–155, 219–310, and 374–465), ruling out the prior suffix/batch-boundary
+class. OPFS-access p95 was 7.405/25.780/46.155 ms while direct synchronous read p95
+stayed 0.040/0.045/0.045 ms. The high residuals clustered by load batch and later
+subsided; neither endpoint monotonicity nor a per-cell data/read slowdown was present.
+
+Code inspection found that D-091's nominally long-lived owner performed
+`getFileHandle()` plus `createSyncAccessHandle()` and `close()` for every 3–6 KiB cell
+read. A bounded headed physical-console probe in pinned CfT 151.0.7922.34 did not
+reproduce the 4K application's tail while otherwise idle: lookup/open/read/close total
+p95 was 0.605/0.540/0.540 ms across three 155-operation repeats. It therefore does not
+support a generic Chrome lock-leak claim. The same probe successfully held 256 access
+handles; startup-open p95 was 0.080 ms and cached-read p95 was
+0.270/0.310/0.240 ms. That is sufficient capability evidence for the bounded fixed
+district set and removes the only asynchronous operation inside the measured OPFS
+access interval, but it is not performance qualification under the real 4K workload.
+
+Streaming telemetry advances to v7 and the public envelope to v23. Unchanged mandatory
+metric sets are consumed by `smoke@1` schema v42, `flythrough-d1@1` schema v11, and
+`render-recovery@1` schema v9.
+
+**Consequences:** Startup now owns a bounded set of worker-scoped exclusive file handles
+for the running district generation. This matches the install/launch/run lifecycle:
+installed content is immutable while that generation runs, and a recovery cohort opens
+a fresh independently validated set. The later D-110 continuous-page reports physically
+exercised the fixed-handle workload and retained their separate advisory repeatability
+failures. Because the report plus idle probe localize no browser-internal subphase,
+RE-042 remains an application-boundary scheduling observation, not a Chrome defect.
+D-115 supersedes the former extra recovery-rerun consequence: later physical evidence
+opened the shared generation-initialization set at 256/256 handles in 204.96 ms, without
+claiming that the combined post-D-108 fault path was remeasured.
+
+**Reopen if:** the fixed handle count materially harms launch or memory budgets, Chrome
+cannot hold the indexed district set on a reference machine, M2 introduces concurrent
+package mutation while gameplay remains active, or the next continuous-page result
+still shows an OPFS residual variance failure.
+
+## D-107: Require a rendered preflight boundary before checkpoint readback (2026-07-25, accepted; implementation/lifecycle physically exercised; later M1 disposition consumed by D-109/D-110/D-115)
+
+**Decision:** Every flythrough preflight sample now has a generation-scoped,
+request-scoped render acknowledgement. The render worker applies the exact scenario
+sample, renders one complete frame, and acknowledges that sample's scenario ID,
+environment phase, elapsed time, flythrough generation, and worker-observed pixel size.
+Only after the engine validates that acknowledgement may it register the Babylon Lite
+checkpoint readback; the following render frame services the capture. Reset, recovery,
+and teardown reject pending preflight acknowledgements just as they reject pending
+checkpoint readbacks.
+
+This adds a causal render boundary rather than a delay or visual-threshold exception.
+No public result or telemetry shape changes: `benchmark-result@1` remains schema v2,
+the public envelope remains v22, and the current harness report schemas/metric sets
+remain unchanged.
+
+**Context:** The first physical M1 benchmark attempt is retained as
+`benchmark-result-1-9d5680032be6-dev-01-showcase-2026-07-25T19-09-21-918Z.json`.
+Pinned CfT 151.0.7922.34 ran visibly at the physical console with display/system sleep
+suppressed and no page or console error. Repeat 1 completed all six exact
+3840×2160 captures, but checkpoint 0 (`clear-daylight-start`) reported
+`visiblePixelRatio=1` and hash
+`7e9c4e59380a5f2bde18d4644c67e9eef193a84d45b9e16e8148b30a4bd575fd`;
+all 8,294,400 pixels differed from its recorded clear color. Checkpoints 1–5 matched
+the qualified physical flythrough's ratios to the expected dimension rounding, and
+checkpoint 0 carried the expected camera/environment metadata. The run correctly
+failed before measurement.
+
+Code inspection localized the unproved boundary. Benchmark pixel override publication
+recorded a resize when the window posted it, not when the worker had rendered it, and
+preflight posted sample and capture requests back-to-back. The capture queue proved
+that a frame serviced the readback, but not that a complete frame at the new size and
+sample had already preceded readback registration. The retained artifact therefore
+cannot distinguish a first-frame resize/resource transition from a camera/environment
+state transition, and no finer Chrome or Babylon Lite cause is claimed.
+
+Deterministic tests now hold the preflight-render acknowledgement and prove that no
+checkpoint request registers early; render-service tests require exact sample,
+generation, and 3840×2160 worker acknowledgement. A bounded local headed experiment
+then ran the production build in pinned CfT 151.0.7922.34 at 3840×2160. All six
+preflight captures passed without browser errors. Checkpoint 0 measured
+`visiblePixelRatio=0.8665915557484568`; checkpoints 1–5 measured
+`0.8907927035108024`, `0.8647642988040124`, `0.887058738425926`,
+`0.9027319637345679`, and `0.9268149594907408`, matching the prior qualified
+presentation apart from the fixed-size pixel rounding.
+
+**Consequences:** Preflight now spends one additional unmeasured frame per checkpoint
+to establish state before readback. The existing 180-second preflight timeout and
+10-second stabilization remain unchanged. The failed physical report remains evidence
+of an application protocol gap, not a platform finding or qualification result.
+
+**Reopen if:** a later physical run produces an incoherent capture after the exact
+render acknowledgement, the extra boundary becomes materially expensive in measured
+preflight, or Babylon Lite exposes a state-tagged capture primitive that proves the
+same ordering directly.
+
+## D-106: Make benchmark ownership synchronous and reset/recovery boundaries bounded and cohort-consistent (2026-07-25, accepted; implementation/lifecycle physically exercised; later M1 disposition consumed by D-109/D-110/D-115)
+
+**Decision:** Benchmark start and public reset publish an explicit `resetting` state
+synchronously, before any acknowledgement is awaited. That state owns the flythrough
+and observer-control surfaces just like preflight or measurement: duplicate starts,
+preset configuration, and standalone flythrough/traversal controls reject until reset
+settles. Every continuation crosses its generation check immediately after an awaited
+flythrough reset and before changing render state. Render-pixel ownership is recorded
+per benchmark generation; disposal synchronously restores that exact prior override
+before publishing `disposed`, while a stale async continuation cannot restore over a
+newer owner. A direct reset clears its matching in-flight ownership before publishing
+terminal `idle` or `failed`, so a synchronous subscriber sees a state it can act on;
+the generation-guarded finalizer remains only as fallback cleanup.
+
+Render-worker flythrough reset acknowledgements have a 15,000 ms protocol-liveness
+bound. Timeout rejects the pending reset with the exact reason and enters D-104's
+existing one-retry whole-cohort recovery; acknowledgement and teardown both clear the
+timer. This is a control-protocol bound, not added performance budget headroom and not a
+weaker replacement for any existing gate. The render worker also crosses a causal
+checkpoint-frame gate: reset cancellation waits until an already-active deferred
+readback flush settles and schedules the next worker animation frame before posting the
+streaming FIFO boundary. An acknowledgement therefore proves both direct-port
+quiescence and render-loop resumption readiness.
+
+Whole-cohort recovery gives the replacement cohort a fresh flythrough generation zero
+because old worker handlers and ports have been terminated, while seeding the
+replacement render worker's cumulative transport sequence from the exact acknowledged
+streaming recovery checkpoint returned by the replacement-service launch. This keeps
+the worker-lifetime transport identity continuous without requiring a new serialized
+checkpoint field and lets run 1 → acknowledged reset → idle recovery → run 2 reconcile
+correctly. Active-run recovery still invalidates the flythrough; its subsequent reset
+advances the fresh cohort generation normally.
+Each replacement render attempt also retains its latest requested pixel size. If
+benchmark cleanup restores the prior override while that attempt is initializing, the
+queued worker resize and eventual ready telemetry identify the same size rather than
+republishing the attempt's stale start dimensions.
+
+The new serialized `resetting` state advances benchmark section telemetry to v2 and the
+combined public envelope to v22. Unchanged metric sets are accepted by `smoke@1` report
+schema v41, `flythrough-d1@1` schema v10, and `render-recovery@1` schema v8. The
+browser-neutral `benchmark-result@1` report remains schema v2 because its stored result
+shape and measurement rules do not change.
+
+**Context:** Adversarial verification demonstrated five production-path races: start
+left terminal telemetry visible while awaiting reset; reset acknowledgement could
+remain pending forever; replacement render and streaming workers disagreed after a
+prior reset; reset acknowledgement could precede deferred capture-flush/rAF
+resumption; and disposal could publish `disposed` while a never-settling environment
+capture retained the benchmark pixel override. Final verification additionally found
+that terminal direct-reset publication preceded release of its in-flight owner and that
+late recovery readiness could republish the pixel size captured before benchmark
+cleanup. Controlled tests now cover two
+reentrant terminal subscribers, deferred start/direct reset ownership, standalone
+control locking, heartbeat-alive reset timeout/recovery, structured benchmark failure
+cleanup, reset-separated idle recovery identity, a withheld deferred capture flush,
+disposal during a never-settling environment capture, synchronous success/failure reset
+subscriber restarts, and override restoration during recovery initialization. These are application
+protocol corrections; no browser finding is claimed.
+
+**Consequences:** Public consumers must treat `resetting` as benchmark-owned work.
+Recovery attempts expose their exact input checkpoint internally so the render service
+can seed the replacement transport identity. Terminal reset publication means that
+matching reset ownership has already cleared. A healthy reset can take up to the fixed
+15-second liveness bound; exceeding it consumes the single D-104 recovery attempt and
+remains a structured failure if cleanup cannot complete.
+
+**Reopen if:** recovery begins preserving in-flight flythrough work instead of
+invalidating it, reset quiescence moves to a browser primitive with an independently
+measured bound, or benchmark disposal becomes an explicitly awaited reusable-result
+operation.
+
+## D-105: Ship M1 benchmark mode with in-game ownership and fail-closed page observability (2026-07-25, accepted; amended by D-106/D-109/D-110/D-115, implementation task completed by D-115 with failed advisory results retained)
+
+**Decision:** Implement D-025's M1 benchmark as the game-owned
+`m1-benchmark@1` definition over the exact `flythrough-d1@1` scenario and D1 world
+seed. The engine owns orchestration and measurement, the game owns the definition,
+fixed presentation presets, labels, and report formatting, and the app shell only
+mounts the public controls. Showcase is fixed at 3840×2160 with a 60 Hz target and
+Standard at 2560×1440 with a 120 Hz target. A run performs exactly three repeats in
+one page lineage. Every repeat explicitly resets the completed render-worker
+flythrough, performs the existing six GPU-backbuffer checkpoint preflight and fixed
+10-second stabilization, and then runs the worker-owned ten-minute route. The page
+owns measurement boundaries, progress, aggregation, variance, verdicts, and export.
+Manual controls and URL automation call the same public `startBenchmark`,
+`configureBenchmark`, `resetBenchmark`, and result-retrieval methods; automation may
+launch or retrieve but contributes no timing.
+
+The public artifact was introduced as browser-neutral `benchmark-result@1` schema v2
+and advances to schema v3 under D-109's explicit environment comparison policy. This intentionally
+refines D-025's phrase “same telemetry/result schema”: the mode embeds the same exact
+scenario contract, complete flythrough telemetry, metric-state vocabulary, facets,
+budgets, and variance rules, but does not pretend that an unprivileged page can emit
+the harness's privileged `flythrough-d1@1` report byte-for-byte. The harness result
+retains fresh-profile host/driver/power/console, CDP trace/Dawn, all-realm heap, and
+presentation evidence. The in-game result records those fields as `unsupported` or
+`not-applicable`, never estimates them. It measures render-worker callback/render
+distributions, representative streaming cell-load p95, and Window Long Tasks over the
+route. Its repeat lineage is explicitly `continuous-page`; it is not directly
+comparable with the harness's independent fresh-profile repeats unless a future
+scenario deliberately aligns that policy. Because page APIs cannot attest the
+registered host, full driver, power scheme, physical-console session, or authoritative
+presentation success, the current in-game Chrome result is advisory and its budget
+facet is `not-evaluated`. Non-Chrome results are also advisory. Missing baseline
+capabilities produce a structured capability failure with `passed: false` and retain
+the environment capture that established the failure. Every run retains all environment
+captures. D-109 keeps CSS viewport geometry as a recorded diagnostic while every
+comparison-relevant field must equal the initial capture across all three repeats, not
+merely within each repeat.
+
+The benchmark owns the flythrough and streaming-observer control surfaces exclusively
+from environment capture through aggregation. Public standalone flythrough and
+synthetic-traversal controls reject during that interval, and a traversal already
+running in the app stops before benchmark preflight. The engine independently validates
+the completed scenario, route, ordered environment phases, full streamed-presentation
+ownership, render distributions, exact streaming observer deltas, all checkpoint
+content, and each checkpoint's worker-rendered pixel dimensions against the fixed
+preset. Timeout and runtime failure abort the worker route/preflight, finish any active
+Long Tasks observer, restore the exact prior render-size override, and emit a structured
+invalid attempt/report. Completed, failed, and aborted flythroughs share one acknowledged
+reset path: checkpoint readbacks are cancellable, the render worker stops route emission,
+and a FIFO boundary waits for streaming scheduling and all earlier direct-port observer
+traffic to settle before the flythrough becomes idle or aborted. Run-local observer
+sequence restarts remain distinct from the worker-lifetime cumulative transport sequence,
+and generation tags reject late prior-run traffic. Destroying the benchmark service is
+different from a runtime result: disposal cancels work, restores ownership, and publishes
+`disposed`, but does not promise a reusable report from a service that no longer exists.
+
+The combined public telemetry envelope advances to v21. `smoke@1`,
+`flythrough-d1@1`, and `render-recovery@1` accept that producer contract at report
+schemas v40, v9, and v7 respectively; their mandatory metric sets remain v20, v6, and
+v3 because benchmark telemetry changes no existing gate metric. Flythrough telemetry
+advances to v3 for the explicit aborted state. The benchmark service
+adds an explicit fixed render-pixel override and an awaitable FIFO render/streaming
+flythrough reset; `resetBenchmark()` returns that Promise so callers cannot race reset
+completion. Resize observation is ignored while the preset is active. The app provides an
+always-available accessible panel, progress, fixed-preset selection, human-readable
+summary that lists every check and evidence failure, JSON/text download, and
+user-initiated clipboard copy with awaited accessible success/failure feedback.
+
+**Context:** Current platform documentation checked 2026-07-25 supports the chosen
+identity and observability boundary. [User-Agent Client Hints](https://wicg.github.io/ua-client-hints/)
+defines the UA-CH identity surface, and the [WebGPU adapter information
+contract](https://gpuweb.github.io/types/interfaces/GPUAdapterInfo.html) exposes only
+the adapter fields captured here. [Long Tasks](https://www.w3.org/TR/longtasks-1/) is
+Window-scoped, so worker long tasks remain unsupported. [Window
+Management](https://www.w3.org/TR/window-management/) describes screen placement and
+permission surfaces, not physical-console or remote-session attestation; [Battery
+Status](https://www.w3.org/TR/battery-status/) does not establish OS power scheme,
+display routing, or reference-machine eligibility. A local Node 24.18.0 validation
+caught and corrected an initially invalid SIMD feature-probe module. Pinned local
+typecheck and focused tests cover reset-and-rerun service lifecycle, never-settling
+checkpoint cancellation, acknowledged streaming quiescence, cumulative transport versus
+run-local observer sequence across two generations, late old-generation traffic
+rejection, failed/aborted reset ordering, synchronous terminal-subscriber reentrancy
+after ownership restoration, exact observer/pixel-size/route-span/render-state
+attestation, cross-repeat environment drift, capability-environment retention, timeout
+cleanup, unsupported metrics, complete formatting, clipboard feedback, and the
+no-driver ownership audit. No performance or physical-console qualification claim is
+made by those tests.
+
+**Consequences:** D-025 remains the product direction, amended by the explicit
+two-contract boundary above. The harness stays authoritative for D-097 budget gates;
+the public benchmark is useful today for reproducible advisory browser/hardware
+inspection without silently weakening evidence requirements. A future privileged
+browser API or separately attested launcher can promote individual fields to
+`measured`, but only through a new result schema and comparison-eligibility decision.
+The M1 plan item remains open until adversarial review and one manual physical-console
+run prove the complete 30-plus-minute UI lifecycle and exported artifact.
+
+**Reopen if:** page APIs gain trustworthy host/driver/power/session/presentation or
+worker/all-realm measurement surfaces; the harness adopts continuous-page repeats; or
+a physical run shows that reset, fixed resolution, checkpoint warm-up, or export
+semantics diverge from the canonical flythrough.
+
+## D-104: Recover the complete render/streaming cohort once and qualify real browser faults separately (2026-07-25, accepted; physically qualified)
+
+**Decision:** A render-worker or WebGPU-device failure restarts the complete coupled
+render/streaming/decode cohort at most once. Recovery creates a new render worker, a
+new streaming worker and decode pool, a new `OffscreenCanvas`, a new direct streaming
+port, and new SAB rings. The streaming worker owns a generation-tagged settled
+checkpoint containing immutable observers, sorted resident-cell IDs, and total/direct
+observer sequences. Production recovery deliberately rolls back to the latest
+worker-acknowledged checkpoint rather than an unacknowledged in-flight observer, then
+requires the replacement worker to rebuild that exact residency and sequence identity.
+Cohort recovery is published only after both the replacement render first frame and
+streaming checkpoint hydration complete, in either order. Streaming hydration failure
+is terminal for render too. A second fault is terminal:
+the render recovery state becomes `exhausted`, the streaming cohort becomes `failed`,
+and the restart count remains one. There is no unbounded retry or partial reuse of
+potentially poisoned worker-owned state.
+
+Qualify this behavior with the dedicated `render-recovery@1` browser scenario rather
+than injecting faults into routine `smoke@1` or `flythrough-d1@1`. Three independent
+fresh-profile attempts exercise the actual render-worker diagnostic paths:
+`GPUDevice.destroy()` recovery, silent worker `close()` recovery detected by the
+heartbeat, and device loss followed by a second silent close. The driver may invoke the
+public diagnostic methods and collect evidence, but recovery state is produced by the
+application. A successful recovery must complete within 30 seconds, advance render and
+streaming generations together, complete a fresh SAB workload, restore decoder/world
+telemetry, render a non-blank canvas, and restore the exact moved checkpoint's observer,
+resident-cell, and observer-sequence identities. The movement precondition begins after flythrough preflight and
+requires at least 96 m of subsequent direct render-to-streaming observer travel plus a
+different settled cell set, preventing the test from passing only at the boot location.
+
+Streaming telemetry advances to schema v6 with `settledRecoveryCheckpoint`; mutable
+`currentObservers` remains live scheduling telemetry and is never a recovery cache.
+The diagnostic uses one application-owned quiesce/fault-boundary handshake: the render
+worker stops direct observer movement, the streaming worker settles and returns the
+exact authoritative checkpoint, and only then does the render worker inject the real
+fault. The combined envelope advances to v18; `smoke@1` advances to schema v37 / metric
+set v20 and `flythrough-d1@1` to schema v6 / metric set v6 because their validators now
+require the settled checkpoint. The dedicated result contract advances to schema v3 /
+metric set v3, records fresh-profile measured-process environment identity for every
+attempt, gates all three first recoveries, and preserves partial boundaries, elapsed
+failure duration, and browser errors when an attempt fails. Its validator recomputes
+the pinned executable/product, sandboxed command line, local host/display, requested
+tier, and fresh-profile invariants from retained fields. It also binds every healthy
+boundary to the exact current settled streaming checkpoint and canonical SAB contract,
+and requires the first recovery to retain the flythrough's invalidated state.
+
+**Context:** The first recovery implementation cached observers only when the window
+called `WorldStreamingService.setObservers()`. During the ten-minute flythrough, the
+render worker sends observer updates directly to the streaming worker, so that cache
+could remain at the preflight position and restart the district at the wrong cells.
+The new producer telemetry closes that cross-port ownership gap and makes the retained
+position and resident set independently observable. Focused local verification covers
+the direct-observer cache, retry state machine, result validator, and scenario ordering;
+the first registered physical-console report,
+`render-recovery-1-c3ded41419dc-dev-01-showcase-2026-07-25T13-21-01-582Z.json`,
+is retained as a failed qualification. Its environment facet passed, but all three
+attempts stopped before the initial evidence boundary because the Playwright callbacks
+referenced the Node-realm `recoveryTelemetry` helper after serialization into the page
+realm. Bounded recovery was therefore not evaluated. This is a harness implementation
+failure, not application recovery evidence or a browser rough edge. The retained report
+also records `contractValidationFailure` because the validator incorrectly required
+successful attempt evidence before accepting each attempt's independently captured,
+validated environment identity; that validator/runner inconsistency is fixed without
+rewriting the retained artifact. The runner now uses one detached-safe page-realm
+operation that explicitly validates the public telemetry global, with serialization and
+call-site regression coverage.
+
+The next registered physical-console report,
+`render-recovery-1-c3ded41419dc-dev-01-showcase-2026-07-25T13-37-09-496Z.json`,
+is also retained as a failed qualification. Its environment passed and its report
+contract validated, but every attempt again stopped before the initial evidence
+boundary with `Recovery boundary requires a settled streaming checkpoint`. The
+detached initial-cohort wait proved render/streaming state, worker generations, SAB
+completion, resident count, and observer-counter equality without requiring the
+concrete `settledRecoveryCheckpoint`. The streaming worker can legitimately publish
+those fields before its final settled-checkpoint publish, so the wait could resolve
+against that transient snapshot and race the immediately following boundary capture.
+This is a second harness readiness failure; it does not evaluate recovery behavior and
+does not establish a browser rough edge. The detached dispatcher now keeps every
+boundary-producing wait pending until a non-null checkpoint exactly matches the live
+streaming generation, total/direct observer counters, observers, and sorted unique
+nine-cell residency. Detached-realm regressions reject both null and stale checkpoint
+snapshots.
+
+The third registered physical-console report,
+`render-recovery-1-c3ded41419dc-dev-01-showcase-2026-07-25T13-48-46-809Z.json`,
+is retained as another failed qualification. Its environment and report contract
+passed, but all three attempts still captured a null checkpoint immediately after the
+initial wait and stopped before the first evidence boundary. The exact-checkpoint
+predicate was correct but its shared dispatcher was declared `async`; pinned
+Playwright 1.61.1's `waitForFunction` polling loop tests the predicate's immediate
+return value for truthiness without awaiting it, so the returned `Promise<boolean>`
+ended every wait even when it later resolved to `false`. This was verified locally on
+2026-07-25 against pinned Node 24.18.0, Playwright 1.61.1, and CfT 151.0.7922.34: for a
+flag flipped after 600 ms, the synchronous predicate waited 620 ms and returned
+`true`, while the async predicate returned after 3 ms and its handle resolved to
+`false`; the installed Playwright polling implementation independently shows the raw
+`predicate()` result entering the truthiness branch. This is a third harness-only
+failure; recovery was not evaluated and no platform finding is claimed. All six
+recovery waits now use a separate detached-safe synchronous boolean dispatcher, while
+the three `page.evaluate` actions retain their async dispatcher for the awaited fault
+boundary. Regression coverage rejects thenable wait results and binds every
+`waitForFunction` call to the synchronous dispatcher; an audit found no async predicate
+among the harness's other waits.
+
+The fourth registered physical-console report,
+`render-recovery-1-c3ded41419dc-dev-01-showcase-2026-07-25T14-04-02-438Z.json`,
+is retained as a failed qualification. It is the first report to reach real recovery:
+the worker-crash attempt proved generation-1 movement from observer sequence 7 to 158,
+advanced proactive evictions from 63 to 64, recovered the complete render/streaming
+cohort as generation 2 in 8,528.327 ms, restored the exact moved checkpoint, completed
+the fresh SAB workload, retained flythrough invalidation, and rendered a visible canvas.
+Its otherwise valid generation-2 streaming snapshot had zero cell loads and zero
+proactive evictions because exact checkpoint hydration required no redundant work. The
+generic streaming snapshot validator incorrectly applied generation-1 measurement-
+history requirements to that fresh hydration snapshot. Recovery validation now uses an
+explicit lifecycle policy: initial and pre-fault boundaries require positive retained
+history plus positive observer/load/eviction deltas, while recovered hydration allows
+zero reset/no-op counters but keeps exact checkpoint/current identity, resource bounds,
+zero CPU rejection, fresh SAB, residency, decoder/world, and generation invariants.
+
+The device-loss and exhaustion attempts failed during flythrough preflight with the
+generic `Flythrough rendered checkpoint evidence is incomplete or blank`. Code
+inspection localized an application race: the window posted a preflight sample and
+immediately posted capture, so the render worker could apply the sample and read back
+the preceding framebuffer before its next animation frame. The intermittent outcome
+(two failures and one successful preflight across identical independent profiles) is
+consistent with that ordering race, but the developer also reported that the physical
+monitor had gone to sleep during these runs. A sleeping display may have contributed to
+the visual failures, so this retained report cannot apportion their observed frequency.
+It does not remove the independently demonstrated frame-before-readback race or make the
+report valid, and neither condition is evidence of a Chrome defect. Every current
+Windows physical harness entrypoint (`smoke`, `flythrough-d1`, `render-recovery`,
+`memory64-spike`, and `app-owned-llm-spike`) now sends an inert F15 key through
+`WScript.Shell` immediately before every Chrome context launch, including
+identity/reference and measured launches, and fails closed if that preflight cannot
+run; workflow also requires the operator to confirm the monitor is visibly awake.
+The first queue correction kept checkpoint requests pending until the animation loop
+rendered the applied sample, then claimed that frame's requests and deferred invoking
+readback until after the callback returned. The next registered report showed that
+ordering was still wrong for Babylon Lite's frame-serviced capture queue. The visual
+threshold remained unchanged.
+Checkpoint validation now identifies the exact checkpoint and failed field. Failed
+attempt partials retain the latest complete telemetry snapshot, including the
+incrementally published checkpoint list, and Markdown reports summarize its state,
+checkpoint count/last visible ratio, and render/streaming generations. This partial
+shape advances only the dedicated report schema to v4; metric set v3 and application
+telemetry schemas are unchanged. The retained schema-v3 report remains immutable. This
+is a mixed harness-contract/application-preflight failure, not a platform finding, and
+does not qualify D-104 despite the worker-crash attempt's positive recovery evidence.
+
+The fifth registered physical-console report,
+`render-recovery-1-f0cd7621fca7-dev-01-showcase-2026-07-25T15-58-46-432Z.json`,
+is retained as failed. Its environment and persisted contract passed, and all three
+attempts captured the initial boundary, but each then timed out after 180 seconds in
+flythrough `preflighting` with zero checkpoint evidence, render/streaming generation 1,
+and no browser errors. Source inspection of pinned Babylon Lite 1.12.0 confirms that
+`captureScreenshot` synchronously registers a request and that only a subsequent
+`renderFrame` records and submits it. The prior queue instead deferred capture
+registration until after the just-rendered frame, then withheld the next frame while
+awaiting that unserviced request, creating an exact screenshot-queue/render-frame
+circular dependency. The identical boundary across three fresh attempts and this
+installed-source contract identify an application scheduling bug; recovery was not
+reached and no browser finding is claimed. The corrected queue registers capture
+synchronously when the checkpoint request arrives, lets the next animation frame
+service it, claims exactly that frame's requests, returns from the callback, and uses a
+deferred macrotask only to await and publish the already-submitted evidence. Animation
+resumes after all claimed requests settle. Requests arriving after the serviced frame
+remain queued for the next rendered frame, and one failed request does not prevent its
+same-frame peers or the render loop from progressing. Regression coverage uses a
+frame-serviced capture fake that cannot resolve before the render signal and directly
+guards pinned Lite's synchronous registration contract. Because attempts span many
+minutes, the display wake is also moved from one run-level preflight to immediately
+before every identity and measured Chrome context launch. These corrections do not
+change the schema-v4 / metric-set-v3 result shape.
+
+The sixth registered physical-console report,
+`render-recovery-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-26-52-162Z.json`,
+physically qualifies D-104. Schema v4 / metric set v3 passed its environment, evidence,
+and three-check bounded-recovery facets with no run or contract-validation failure on
+artifact `7f6f65d9c6fdb6e187ebaccbf547456ae3d767842a9613524034cc527ba1a0a1`,
+source commit `6f2fb1e9814904c733a64b4a629051c46c3fe145`, and dirty-tree digest
+`6f803448b48aaffa4f046f3f46d45e12766fcf1062fb38727379b385f7a833d4`.
+All three independent fresh-profile attempts restored the exact moved generation-1
+checkpoint as render/streaming/checkpoint generation 2 with nine resident cells,
+matching observer and total/direct sequence identities, a fresh completed 100,000-
+message SAB workload with zero sequence or payload errors, restored decoder/world
+evidence, retained flythrough invalidation, and 87.502799% visible-canvas coverage.
+Fault-boundary-to-ready recovery measured 2,332.244 ms for device loss, 5,617.312 ms
+for the silent worker crash, and 2,332.155 ms for the exhaustion attempt's first
+recovery. The exhaustion attempt's second silent worker close produced the expected
+`Render worker heartbeat exceeded 3000 ms` browser error and left render failed with
+recovery `exhausted`, streaming `failed`, generation 2, and restart count one. This
+expected terminal diagnostic is contract evidence, not a browser finding.
+
+The implementation and dedicated recovery report are qualified. Final exact-artifact
+D-097 report
+`smoke-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-36-37-999Z.json`
+then passed schema v37 / mandatory metric set v20 across all six core runs, all three
+facets, and 30/30 evaluated checks with no core-run failure. Its warm-repeat-3 core
+trace completed after 5,315.897 ms with 71,365 events in 404 chunks,
+11,729,783 serialized bytes, and `dataLoss=false`; D-094 already admits this complete
+lossless drain under the unchanged ten-second routine-smoke validity bound. This closes
+the render-worker robustness plan item without changing the recovery budget or adding
+a duplicate browser finding.
+
+**Consequences:** Recovery is intentionally a bounded rollback and visible whole-cohort restart, not
+seamless continuation of an active flythrough; the versioned regression flythrough is
+invalidated if recovery occurs inside its measurement. The dedicated scenario is the
+only routine fault-injection path. Its 30-second bound is a recovery qualification
+limit, not a player-visible frame or launch budget and does not imply that a long stall
+is acceptable UX. No browser rough edge is claimed from these retained runs.
+
+**Reopen if:** representative recovery cannot restore the exact moved settled checkpoint,
+measurements show the whole-cohort policy is too slow, a future browser/API provides a
+safe in-place device replacement, or later coupled workers require a broader atomic
+restart boundary.
+
+## D-103: Preserve failed smoke streaming evidence and admit conserved unsettled residency (2026-07-25, accepted)
+
+**Decision:** Retain failed exact-artifact report
+`smoke-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-15-06-917Z.json`
+for artifact
+`20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`
+and do not rerun it until the failure is diagnosable. The report passed environment
+identity but stopped after three of six core runs when warm repeat 2 / launch 4 emitted
+only `World-streaming telemetry does not satisfy the M1 streaming contract`. Schema
+v34 discarded that invalid attempt's streaming start/end snapshots, so the exact
+rejected field is not recoverable and this report cannot prove the cause.
+
+Advance routine `smoke@1` report schema to v35, with mandatory metric set v18
+unchanged. A streaming-validation failure now retains its localized reason and complete
+raw measurement-start and measurement-end streaming snapshots under the structured
+core-run failure. Successful v35 streaming values retain the measured start resident
+count so stored-report validation can recheck conservation rather than infer it.
+Snapshot validation reports the failed contract group and observed values instead of
+one aggregate error.
+
+Correct one independently demonstrated valid-state rejection before the next physical
+run. The short smoke window does not wait for streaming settlement at either boundary.
+The producer evicts before loading replacements and publishes after each eviction and
+completion, so an unsettled snapshot can legitimately contain fewer than nine
+residents. Require exactly nine residents only when the snapshot's settled-observer
+watermark equals its total observer count. Across start/end snapshots require exact
+conservation:
+
+`end residents - start residents = completed-load delta - proactive-eviction delta`.
+
+This replaces the former loose absolute skew check and does not weaken D-102's batch,
+observer, ordering, completeness, attribution, or settled-boundary invariants. A
+deterministic short-window model now covers a non-flythrough sequence, a complete prior
+boundary batch, an unsettled start, a non-full ring, and both an active partial end
+batch with eight residents and a fully settled nine-resident end. Invalid diagnostics
+also prove that both raw snapshots and the localized reason survive.
+
+**Context:** The preceding three runs in the failed report produced valid streaming
+evidence. Because launch 4's raw payload was not retained, it is not honest to label
+that failure as the transient-residency case after the fact. Code inspection and the
+producer model nevertheless prove that the old unconditional nine-resident predicate
+rejected a reachable state and contradicted the already documented evict-before-load
+snapshot semantics.
+
+Physical confirmation
+`smoke-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-34-23-655Z.json`
+then passed the exact artifact
+`20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`
+under schema v35 / mandatory metric set v18: all six runs, environment/evidence/budget
+facets, and 30 evaluated checks passed with no core-run failure. This qualifies the
+final tree without reinterpreting the preceding schema-v34 failure; launch 4 there
+remains retained and unknowable because its raw streaming snapshots do not exist.
+
+**Consequences:** The D-100/D-102 flythrough qualification remains closed and passing.
+The final D-097 exact-artifact routine smoke qualification now passes. A future
+streaming-validation failure will identify the precise snapshot field and preserve
+enough evidence for a start/end diff. The later M1 exit remains open for its standing
+budgets outside the flythrough and smoke metric sets.
+
+**Reopen if:** a retained schema-v35 failure disproves the conservation model, the
+producer publishes a settled snapshot below nine residents, or a different repeatable
+validator or producer defect appears.
+
+---
+
+## D-102: Retain the flythrough streaming-tail failure and add bounded attribution (2026-07-25, accepted)
+
+**Decision:** Keep the failed physical `flythrough-d1@1` report
+`flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T08-17-32-898Z.json`,
+the 250 ms absolute streaming budget, and the standing 10% repeat-variance limit
+unchanged. Do not tune cell concurrency or scheduling from an unattributed tail.
+
+Streaming telemetry v3 gives every completed load a deterministic load-batch ordinal,
+cell ordinal/count, and the observer/flythrough sequence that selected the batch. The
+streaming worker measures ordered boundaries on its own `performance.now()` clock:
+OPFS access, decode round trip, render-upload round trip, render-commit round trip, and
+post-commit streaming-worker remainder. Existing nested-worker `decodeMs`, sync-read
+`opfsReadMs`, and render-worker `uploadMs` remain local duration observations; the
+corresponding wait values are the same-clock round trip less that local work duration,
+clamped at zero. No timestamp is compared across realms.
+
+Evidence validation fails closed unless batch identity is consistent and each
+round-trip/direct-work/wait decomposition, plus the full cell-load decomposition, agrees
+within 0.1 ms. Distinct batches require distinct, increasing total-observer identities;
+flythrough-sequence progress cannot exceed total-observer progress. Cell ordinals and
+cell IDs are unique within a batch. Recorded batches begin at ordinal 2 because ordinal
+1 is launch hydration while sampling is disabled; observer identity is positive, and
+an ordinal cannot exceed its observer identity plus one or its sample sequence plus
+one. Every batch wholly inside the measurement window
+must contain exactly its declared cells. A partial leading batch is accepted only when
+the start snapshot records completed cells from that exact batch and its observer
+identity is newer than the start's settled-observer watermark; a partial trailing batch
+is accepted only when the end snapshot is unsettled and that batch's observer identity
+is newer than the last settled observer. The end settlement watermark cannot regress
+behind the start. Every first measured batch, including one after a zero-sample start,
+must be newer than the start settlement watermark. The start record retains the last batch identity even at a settled
+boundary so the first measured batch cannot skip or reuse an ordinal. An ordinal
+successor requires a complete retained boundary batch and must also carry a
+total-observer identity strictly newer than both that retained batch and the start's
+settled watermark, with producer-valid flythrough progress. The retained raw
+pre-window prefix must itself have consistent, ordered batch identity. Stored
+start-batch metadata must match it; completed ID/ordinal pairs match exactly when the
+full boundary is retained and otherwise the demonstrably truncated raw suffix must be
+a subset of the stored facts. A boundary cannot claim more completed cells than the
+total start sample count. A null start-batch record is valid
+only when the start cell-load count is zero; a nonzero start must retain its last batch
+identity even after its raw prefix ages out of the end ring. Settled flythrough start/end
+boundaries therefore admit no incomplete batch. Reports retain those explicit
+start-boundary facts, raw samples, and derived attribution p95s. This observation change
+advances public telemetry to v15, streaming telemetry to v3, routine `smoke@1` to report
+schema v34 / mandatory metric set v18, and `flythrough-d1@1` to report schema v4 /
+mandatory metric set v4. The flythrough subsystem section remains v2.
+
+**Context:** The first D-101 physical run on artifact
+`68c66fccf453fcbe5451f1c68ad5a755d97afe644ecae16b80c1921dcaa0803d`
+completed all three ten-minute repeats with valid environment identity. Each repeat
+retained 92 streaming samples, 3,002 heap samples with no missed deadline, and a
+complete lossless approximately 426–429 MB Dawn trace that drained in
+19,152.6–19,837.0 ms. All 15 observed budget checks passed. The aggregate nevertheless
+failed evidence completeness: streaming cell-load p95 was 23.975, 30.820, and
+22.230 ms, a 38.641% relative range against the unchanged 10% limit.
+
+The distribution was stable below that tail: repeat medians were
+11.870–12.765 ms, means 12.823–13.852 ms, and p90s 21.445–23.325 ms. Direct substage
+p95s were only 0.100–0.105 ms for sync OPFS reads, 0.140–0.195 ms for decode work,
+and 1.500–1.915 ms for upload work. The old fields therefore left
+21.550–29.945 ms of p95 schedule-to-commit time unattributed. The flythrough report is
+schema v3 and embeds streaming telemetry v2; neither records batch identity. A
+deterministic replay of the recorded cell sequence through the unchanged scheduler—not
+evidence contained in the report—partitions repeat 2, when viewed as the two
+nine-sequence windows, as 3/1/3/1/(a two-cell batch crossing the window boundary) for
+sequences 82–90 and 1/3/1/3 for sequences 91–99. The true tail clusters are inferred
+three-cell batches 86–88 and 97–99, with peaks of 33.385 and 31.120 ms. That is real
+pipeline wait/scheduling exposure, not timer quantization or a nearest-rank error, but
+the v2 evidence cannot localize it to OPFS handle acquisition, decode queue/message
+transit, render request transit, commit acknowledgement, or streaming bookkeeping.
+RE-040 retains the unresolved observation.
+
+That report stays failed: its budget facet is correctly `not-evaluated` because
+mandatory repeatability evidence is incomplete, even though its 15 individual
+observations are under their absolute limits. No baseline is promoted from it.
+
+The final D-102 physical report
+`flythrough-d1-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-07-24-028Z.json`
+then passed environment, evidence, and budget facets, all 15 evaluated checks, and all
+three measured repeats on artifact
+`20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`.
+Streaming cell-load p95 was 22.810, 23.895, and 22.000 ms; the 8.614% relative
+range passed the unchanged 10% gate. Every repeat retained 3,002 heap samples with no
+missed deadline and a complete lossless trace. Component p95s localize the dominant
+bounded interval to OPFS access wait at 17.635–18.025 ms; decode wait was
+1.835–2.180 ms, render-upload wait 1.595–1.770 ms, render-commit round trip
+1.975–2.205 ms, and streaming-worker remainder 0.010–0.015 ms. This is
+application-stage attribution, not evidence about which browser or operating-system
+operation inside OPFS access owns that wait.
+
+**Consequences:** The physical run identifies OPFS access wait as the dominant bounded
+stage without changing runtime scheduling behavior or weakening either gate. Both the
+short smoke traversal and long flythrough reject malformed attribution and retain the
+same batch identity needed to compare crowded and sparse replacements. The scripted
+flythrough plan item is qualified; the later M1 exit item remains open because this
+runner explicitly omits compositor presentation, aggregate CPU/WASM/SAB/GPU memory,
+worker long tasks, visible-pop visual diff, and D1-to-D2 transition budgets.
+
+**Reopen if:** the v3 decomposition is internally inconsistent on a real run, its added
+instrumentation materially changes cell-load behavior, the tail is localized and calls
+for a separately measured runtime change, or a browser-native cross-worker scheduling
+timeline can replace these application-level round trips.
+
+---
+
+## D-101: Scale long-run trace and heap collection to retained physical evidence (2026-07-25, accepted)
+
+**Decision:** Keep D-094's `smoke@1` trace contract unchanged at a 10,000 ms validity
+deadline plus a 10,000 ms late diagnostic window. For the 600,000 ms
+`flythrough-d1@1` window only, accept a complete readable trace with
+`dataLoss=false` through 30,000 ms after `Tracing.end`, then remain attached for a
+further 10,000 ms diagnostic window. Completion after 30 seconds remains invalid but
+retained; no completion through 40 seconds, unreadable evidence, or any reported data
+loss still fails closed. This is a payload-scaled off-window collection bound, not a
+gameplay-duration or performance-budget allowance.
+
+Also sample the flythrough's exact seven-isolate topology on fixed 200 ms start
+deadlines. D-047's `smoke@1` interval remains 100 ms. The long-run sampler still sums
+near-concurrent `Runtime.getHeapUsage.usedSize` responses per sample, gates the largest
+observed aggregate, retains all response/cadence diagnostics, and invalidates response
+skew, collection duration, or start delay at least as large as its configured interval.
+The measurement-end sample substitutes only for the latest due deadline; every earlier
+deadline is now matched by its exact scheduled timestamp rather than inferred from the
+aggregate sample count. A skipped intermediate deadline therefore cannot be hidden by
+a later periodic sample. The scheduler also advances by at least one interval from its
+previous deadline so an early timer cannot collect the same scheduled deadline twice.
+
+The flythrough report advances to schema v3 and mandatory metric set v3. Public
+telemetry remains v14, its flythrough section remains v2, and routine `smoke@1` remains
+report schema v33 / mandatory metric set v17 because neither public runtime evidence nor
+the smoke collector changed.
+
+**Context:** The first two physical-console attempts on identical artifact
+`68c66fccf453` both completed the complete ten-minute route but remained invalid.
+Report
+`flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T07-13-41-667Z.json`
+retained a complete lossless trace containing 2,511,021 events in 14,058 chunks /
+419,019,736 serialized bytes. `Tracing.end` returned in 0.3 ms and completion arrived
+after 19,484.2 ms. Report
+`flythrough-d1-1-68c66fccf453-dev-01-showcase-2026-07-25T07-25-16-847Z.json`
+retained 2,527,527 events in 14,209 chunks / 428,288,884 bytes with
+`dataLoss=false`; `Tracing.end` returned in 0.2 ms and completion arrived after
+19,208.2 ms. Effective serialized delivery was approximately 21.5–22.3 MB/s. These are
+large, steadily draining payloads, not RE-008's historical zero-event/nonterminal
+signature. D-094 explicitly required reopening when valid drains approached or
+exceeded ten seconds; applying its smoke-sized bound unchanged made the mandatory
+full-window trace structurally ineligible.
+
+The second report also retained one browser-wide/CDP heap-collection outlier at
+478,100 ms. All seven realm responses completed after 139.1–169.5 ms, versus a
+14.5 ms next-slowest collection in that run, and the sampler correctly skipped the
+478,200 ms deadline rather than overlapping commands. Maximum fixed-deadline start
+delay remained 15.9 ms. The collected schedule contained 6,000 periodic samples plus
+the boundary sample, but its old count-based summary incorrectly reported zero missed
+deadlines because a later sample masked the skipped intermediate timestamp. The first
+report covered all 6,001 due timestamps but also issued five duplicate scheduled
+captures after early timers, plus the boundary sample; its maximum collection duration
+was 10.3 ms. A 200 ms interval is the smallest round fixed cadence
+above the measured 169.5 ms whole-topology collection and still yields at least 3,000
+full-topology observations per ten-minute repeat. It deliberately reduces temporal
+resolution from 100 ms; RE-012's sampled-estimate limitation and exact high-water
+honesty remain.
+
+Both reports remain invalid under the contracts that produced them. Their environment
+facets also fail closed because the primary trace/heap exception occurred before the
+post-window display and host probes, leaving those structured attempt fields null; the
+available pre-window identity remains retained. No result is promoted and the M1 plan
+item remains open.
+
+**Consequences:** The next physical run can retain the required full-window Dawn trace
+without treating deterministic transfer time for roughly 420 MB as a gameplay failure,
+while a stalled or lossy trace still fails closed. The heap collector reduces its
+long-run CDP command volume from roughly 42,000 to 21,000 realm requests per repeat and
+continues to expose every sample and any missing exact deadline. The larger trace
+deadline and coarser heap interval are flythrough-specific; they cannot silently relax
+routine smoke or any other scenario.
+
+**Reopen if:** a complete flythrough trace exceeds 30 seconds, payload size or drain
+throughput changes materially, a narrower trace can prove the same full-window Dawn
+contract, a 200 ms heap sample still misses deadlines, or Chrome exposes continuous
+cross-isolate heap high-water and page-correlated trace-completion diagnostics.
+
+---
+
+## D-100: Make `flythrough-d1@1` the worker-owned M1 regression scenario (2026-07-25, accepted; refined by D-101/D-102/D-103)
+
+**Decision:** The versioned M1 regression scenario is `flythrough-d1@1`: a 600,000 ms,
+7,200 m route through D1 at D-090's fixed 12 m/s. Game code owns the route and six
+contiguous 100-second environment phases; engine code validates and executes that
+scenario through typed contracts; the harness sees only the public telemetry schema and
+public start/preflight operations. The ordered phases are clear daylight, overcast
+daylight, storm dusk, storm night, overcast dawn, and clear daylight finish.
+
+One start message transfers the complete scenario to the render worker. From that
+boundary onward the render worker owns elapsed-time sampling on its
+`requestAnimationFrame` loop, camera placement, environment application, aggregation,
+and sequenced observer updates sent directly to the streaming worker over their
+dedicated `MessagePort`. Observer updates are emitted on the first frame, at least every
+50 ms of callback time, on every environment transition, and at completion; evidence
+requires at least 8,000 contiguous updates over the ten-minute route. The window does
+not pace the route. During the measured route,
+D-091's resident streamed meshes own visible presentation and the D-090 whole-world
+preview is hidden.
+The completion boundary is cross-port: after the render aggregate arrives, the engine
+waits until streaming has observed the render worker's exact final flythrough sequence
+and has settled the corresponding total observer count. A main-thread snapshot taken
+before that direct-port message cannot complete the run.
+
+Before measurement, the engine settles one streamed midpoint checkpoint for each
+environment phase and captures the actual WebGPU backbuffer through Babylon Lite's
+public `captureScreenshot(surface)` API. Each capture must show streamed ownership,
+zero visible preview meshes, a non-blank/non-all-geometry pixel ratio, and a distinct
+hash. The visible-pixel threshold is derived from the recorded clear RGB and clamped to
+2–24 RGB-distance units; it is a fail-closed ownership/blank-output check, **not** a
+visual-quality or weather-fidelity threshold. The six captures run outside measurement,
+followed by the existing fixed ten-second stabilization exclusion.
+
+The reference collector runs three independent fresh-profile repeats. Each repeat
+retains full-window callback/render distributions, camera/phase/path completion,
+streaming high water/evictions/failures, full-window 200 ms all-realm JS used-heap
+samples, main-thread long tasks, and Dawn trace/histogram boundary evidence. All relied-on
+p95 values—streaming cell load, render duration, and render-worker callback spacing—must
+meet the standing 10% repeat-variance rule. Callback spacing remains explicitly
+non-presentation evidence under D-051/RE-006. Reports use the three D-045 facets and
+enumerate standing budgets the current metric set does not evaluate; a green current-set
+budget facet cannot be described as “zero M1 budget violations.”
+Worker-origin completion evidence repeats the complete scenario contract—ordered path
+points, speed, camera settings, and every phase's boundaries and state values—and the
+harness compares it against its own independent `flythrough-d1@1` constant. Checkpoints
+repeat their applied phase and midpoint time. Runtime validation rejects unknown
+weather/time-of-day strings even if malformed data bypasses TypeScript.
+
+Every started repeat is serialized as a measured or invalid attempt. Invalid attempts
+retain any measured-browser identity, browser errors, trace-drain counters/timings/data
+loss/deadline state, and `JsHeapValidationError` evidence available at failure. Only
+measured attempts feed budgets and variance. Each measured browser records its own
+`Browser.getVersion`, command line, sandbox result, adapter/GPU, display before/after,
+and host/power identity before/after; the separate identity browser is labelled as a
+probe and cannot stand in for these fields. Per-repeat adapter matching compares only
+the physically observed stable WebGPU identity (vendor, architecture, and fallback
+state), alongside the exact CDP GPU-device identity. Backend, driver, description,
+device, and type remain richer evidence from the isolated developer-feature reference
+probe per D-034/RE-004; the standard physical browser has been observed to redact them
+to null or empty strings, so they are not compared across those differently configured
+browsers.
+The environment facet also requires the
+actual Node version to equal both checked-in Node pins and retains the collector
+executable digest.
+
+This is M1 **lighting/environment-state coverage**, not the M6 weather/VFX system.
+“Storm” currently changes the renderer's lighting/environment state but does not claim
+rain, wind, particles, wet surfaces, or validated visual fidelity. D-025 also remains
+open: the external collector may request and retrieve this run, but the complete
+warm-up/repeat/environment/export lifecycle is not yet an in-game benchmark.
+
+The current contracts use public telemetry v15, streaming telemetry v3, routine
+`smoke@1` report schema v35/mandatory metric set v18, and `flythrough-d1@1` report
+schema v4/mandatory metric set v4 after D-102's attribution addition. The flythrough
+section schema remains v2. The scripted-flythrough plan item is qualified by D-102's
+passing three-repeat physical report
+`flythrough-d1-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-07-24-028Z.json`
+on artifact
+`20770c3a4d6dba436a287cb77d60e6842e1c86dd5aa4ac82da3dcfc4b953747e`
+and D-097's final passing routine physical
+`smoke-1-20770c3a4d6d-dev-01-showcase-2026-07-25T10-34-23-655Z.json`
+on that exact artifact. This qualification covers only the flythrough report's
+explicitly enumerated metric set, not the omitted budgets required by the later M1 exit
+item.
+
+**Context:** D-091 intentionally left streamed meshes GPU-resident but hidden until this
+task established visible ownership. A local advisory run in pinned Chrome for Testing
+151.0.7922.34 exercised all six backbuffer captures with preview visibility zero and
+13–33 streamed meshes visible per checkpoint; it exposed the initial fixed 24-unit dark
+scene threshold as invalid for storm/dusk and storm/night, motivating the recorded
+adaptive threshold above. A rebuilt same-environment advisory rerun then reached
+`prepared` with no browser errors: all six unique captures passed at visible-pixel
+ratios 0.865–0.927, with the dark checkpoints using the recorded 2-unit floor. These
+advisory observations are implementation feedback, not reference-machine qualification.
+Babylon Lite 1.12.0's installed public typings and implementation were checked locally
+on 2026-07-25 before binding the capture path.
+
+**Consequences:** The long run exercises real streaming ownership and environment
+bindings without sending per-frame commands through the main thread or harness. The
+separate short `smoke@1` launch gate keeps its existing diagonal corner-stress observer
+and does not inherit the ten-minute route. Full player-visible presentation and the
+remaining standing memory envelopes are still required by the later M1 exit task.
+
+**Reopen if:** representative physical runs show three fresh repeats are operationally
+unstable or systematically miss warm-cache behavior that matters to the product;
+streaming cannot stay settled at the direct observer cadence; a validated compositor
+presentation surface replaces D-051's heuristic; or M6 weather implementation requires
+a richer environment scenario schema.
+
+---
+
+## D-099: Preserve complete measured source identity before same-gate cleanup (2026-07-25, accepted)
+
+**Decision:** When one human-gate unit both creates and closes an experiment, and no
+commit contains the runnable apparatus, export an exact reconstruction bundle into that
+experiment's ignored result directory before deleting the source. The bundle covers the
+complete input to the measured source identity relative to its recorded base commit,
+not only files believed to belong to the experiment:
+
+- the exact base commit plus every tracked modification and deletion in the dirty tree,
+  preserving binary content, modes, and paths;
+- every non-ignored untracked path enumerated by the same harness source-identity
+  algorithm, with its bytes, size, and SHA-256;
+- a manifest for the captured source, result artifact, environment/tool pins, exact run
+  command, and scenario/schema/metric-set identity; and
+- a clean-scratch reconstruction check: check out the recorded base commit, apply the
+  bundle, recompute source identity with the measured scenario's harness algorithm, and
+  require both `commit` and `dirtyTreeDigest` to equal the report exactly before
+  cleanup.
+
+Ignored results, caches, installed tools, and other machine state are outside the source
+digest unless a scenario explicitly includes them in its own identity contract. Storing
+the bundle beneath ignored `harness/results/` therefore does not alter the ordinary
+source identity.
+
+This is a machine-local, best-effort rerun aid under D-081, not a new tracked evidence
+mirror and not permission to retain closed executable baggage. Tracked decisions,
+findings, and research docs must still quote every load-bearing top-line observation;
+an ignored source bundle or raw report is not durable evidence.
+
+**Context:** P-002's comparison app, worker, shaders, native adapter, and harness were
+created and deleted inside one uncommitted human-gate cycle. D-081 kept its raw result
+directory ignored. After the adversarial review, searches of tracked files, all git
+history, and the available temporary tree found no exact source snapshot; the retained
+base-commit and dirty-tree digests identify the measured state but cannot reconstruct
+it. The exact `geometry-representation@5` runner is therefore unrecoverable and cannot
+be rerun. This guard was not met for P-002 and cannot repair that loss retroactively.
+
+**Consequences:** The closed-experiment rule still removes code immediately after a
+decision. For future same-gate experiments, cleanup is incomplete until the ignored
+reconstruction bundle has been created and verified, and the tracked docs contain the
+top-line evidence. Git history alone is sufficient only when the measured source
+identity is clean (`dirtyTreeDigest: null`) and its commit contains the apparatus. A
+non-null measured digest still requires the complete reconstruction bundle even if an
+earlier commit contains some or all experiment files. `docs/workflow.md` carries the
+operating procedure.
+
+**Reopen if:** ignored result directories become durable external artifacts keyed by
+source and result digests; the human gate changes so every measured experiment receives
+a source-bearing commit; or a reproducible experiment-package format replaces the
+patch/snapshot convention.
+
+---
+
+## D-098: Retain triangle LOD after the bounded P-002 comparison produced no eligible challenger (2026-07-25, accepted)
+
+**Decision:** Retain D-090's classic triangle-LOD path as the current D1 geometry
+representation. Do not adopt the bounded meshlet/GPU-driven or Gaussian-splat arms, and
+do not ship a hybrid representation from this spike. This is an incumbent-retention
+decision: neither challenger supplied fully eligible displacement evidence. It is **not**
+a finding that triangle LOD won on performance; the triangle arm itself did not achieve
+a fully valid CPU+GPU comparison.
+
+Keep streaming, cell packaging, collision, and renderer-facing boundaries
+representation-agnostic. A future content class may reopen a different representation,
+but it must do so with a new decision and representative evidence rather than retaining
+the comparison implementation as dormant product code.
+
+**Measured context:** `geometry-representation@5` (report schema 5, metric set 5) ran
+all six candidate/profile arms and all 18 dynamic-light captures at the dev-01 physical
+console under pinned Chrome for Testing 151.0.7922.34, Dawn D3D12, and the NVIDIA
+GeForce RTX 4080 SUPER. The retained machine-local generated report is
+`harness/results/geometry-comparison-p002/dev-01-2026-07-25T04-15-34-944Z/report.json`
+(artifact
+`82e2c3f434d39b49ad9e2eb528e18c9bc8787cb1c9b3031d3daf95951724e2ce`,
+source commit `6f2fb1e9814904c733a64b4a629051c46c3fe145`, dirty-tree digest
+`31dfd73f73fd32f0b3239393a28323bba6caa067b3c0e1c449bfd504b72bb8d5`).
+Showcase environment identity was measured. Standard was deliberately advisory because
+dev-01 is not a registered Standard reference machine. No exact source snapshot
+survived the same-gate cleanup, so the ignored report is not a durable reproduction;
+D-099 records that workflow failure. The tracked observations in this entry carry the
+decision.
+
+The policy used a fixed 1,200-frame warmup, three to six sequential 600-frame GPU
+stabilization windows at the unchanged 10% relative-range limit, three 1,800-frame
+measurement repeats per light state, timestamp queries, worker-owned capture, and
+fail-closed metric eligibility. The complete report remained invalid:
+
+| Candidate | CPU | GPU | RAF | Dynamic-light visual | Overall |
+| --- | --- | --- | --- | --- | --- |
+| triangle LOD | invalid | invalid | valid | valid | ineligible |
+| bounded meshlet/GPU-driven | invalid | invalid | valid | valid | ineligible |
+| bounded Gaussian splats | invalid | invalid | valid | invalid | ineligible |
+
+CPU p95 repeat variance exceeded 10% for triangle in Showcase storm and all three
+Standard light states; meshlets in Showcase overcast and Standard storm; and splats in
+Showcase clear/storm and Standard clear/overcast. GPU evidence was invalid for triangle
+because Standard storm did not stabilize; for meshlets because Showcase clear did not
+stabilize and Showcase storm/Standard clear repeat variance exceeded 10%; and for
+splats because Standard overcast did not stabilize and Showcase clear/Standard overcast
+repeat variance exceeded 10%. RE-039 records this scoped timing instability without
+assigning an unproven cause or generalizing it to the Standard hardware target.
+
+Triangle and meshlet captures were pixel-identical in clear, overcast, and storm at both
+render profiles. The generated report's provisional full-frame normalized-RGB-RMSE gate
+marked splat clear and overcast valid below 0.25 and storm invalid. Post-run adversarial
+adjudication showed that threshold was inadequate:
+
+| Profile / splat state | Normalized RGB RMSE | Pixels with RGB distance > 24 | Mean absolute channel difference |
+| --- | ---: | ---: | ---: |
+| Showcase clear | 0.19513 | 75.217% | 32.636 |
+| Showcase overcast | 0.15530 | 68.403% | 24.411 |
+| Showcase storm | 0.28560 | 73.493% | 49.206 |
+| Standard clear | 0.19698 | 75.882% | 33.452 |
+| Standard overcast | 0.16182 | 68.241% | 25.331 |
+| Standard storm | 0.29164 | 74.420% | 50.719 |
+
+The gross all-state divergence invalidates the entire splat visual contract. The exact
+under-threshold clear/overcast RMSE observations remain diagnostics, but no splat
+visual-parity evidence survives. This tracked post-run adjudication intentionally
+overrides the ignored generated JSON's clear/overcast eligibility fields; the generated
+artifact itself is not rewritten.
+
+The other planned axes were recorded even though they cannot rescue the invalid
+performance comparison. Preparation fields below are one observed run per arm, not
+repeat-qualified rankings; `upload/setup` includes GPU resource creation and pipeline
+warmup.
+
+| Profile / bounded arm | Encoded storage bytes | Logical GPU buffer bytes | Preprocess (ms) | OPFS write/read (ms) | Decode / upload+setup (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Showcase triangle | 1,164,976 | 34,342,720 | 25.110 | 2.710 / 5.865 | 0.345 / 0.910 |
+| Showcase meshlet | 1,179,204 | 34,356,944 | 27.925 | 2.545 / 7.390 | 0.335 / 0.900 |
+| Showcase splat | 3,026,892 | 36,204,640 | 55.245 | 3.835 / 9.815 | 0.500 / 1.610 |
+| Standard triangle | 1,164,976 | 15,910,720 | 25.130 | 2.545 / 8.245 | 0.325 / 0.865 |
+| Standard meshlet | 1,179,204 | 15,924,944 | 29.065 | 2.620 / 7.525 | 0.425 / 1.055 |
+| Standard splat | 1,008,972 | 15,754,720 | 45.240 | 2.495 / 12.410 | 0.365 / 0.855 |
+
+The compared representations were deliberately bounded. The meshlet arm partitioned
+D1's 25,224 source triangles into at-most-64-triangle meshlets, compute-culled them, and
+issued 395 per-meshlet indexed indirect draws for the captured view (190 visible,
+205 culled); it was not a Nanite implementation with virtual geometry memory and a
+visibility-buffer pipeline. The splat arm was an oriented material-carrying
+Gaussian-billboard renderer derived from those triangles (25,224 splats at Standard,
+75,672 at Showcase), with normals/base color and three fixed light states; it was not
+research-grade mesh2splat output, a final asset proof, or a deferred splat G-buffer.
+Triangle and splat each issued one render draw in the bounded arm. Resident VRAM stayed
+explicitly unsupported under RE-014; logical buffer accounting is not a substitute.
+
+The arms did establish a bounded Babylon Lite 1.12.0 interop result. All six proved raw
+device availability, queue identity, a GPU-buffer round trip, sealed pipeline
+registration, and zero runtime pipeline-creation attempts. Exact local package source
+was checked on 2026-07-25. Because the selected production path has no native-interop
+consumer, the guarded adapter, comparison worker/app/harness, shaders, registry, build
+manifest v11 experiment, scripts, and tests are removed under the closed-experiment
+rule. The ordinary build contract remains v10 with five workers. The rejected
+`geometry-representation@1` result and generated `@5` result, including captures,
+remain machine-local evidence aids. D-099 records why neither is an exact rerun source.
+
+**Consequences:** P-002's geometry choice is resolved for the current M1 D1 content.
+Triangle LOD stays because it is the already-qualified incumbent and no challenger
+earned a valid displacement decision, not because the invalid aggregate establishes a
+speed ranking. No P-002 metric changes a standing frame, storage, or memory budget.
+Resident VRAM remains unobservable under RE-014, and worker RAF/callback intervals
+remain scheduling heuristics rather than compositor presentation evidence under
+RE-006. The final post-review source passed D-097's physical gate in
+`smoke-1-c54679d7b006-dev-01-showcase-2026-07-25T05-39-39-928Z.json`: environment,
+evidence-completeness, and budget facets passed with 30/30 checks and no failures under
+pinned Node 24.18.0 and CfT 151.0.7922.34 with the production sandbox verified. Artifact
+`c54679d7b0062e197675f6c321141882f540b0ab8dbb045daa809b8c3c7d19e4`
+closes the P-002 plan item.
+
+**Reopen if:** representative higher-density authored content changes the workload;
+capture-origin scan-your-world UGC becomes active; a full virtual-geometry or
+research-grade relightable-splat implementation is proposed; Chrome/Dawn timing
+stability permits complete evidence; or a candidate supplies valid CPU, GPU, RAF,
+visual, storage, preparation, and environment evidence at both registered targets.
+
+---
+
 ## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, accepted)
 
 **Decision:** Interpret the project's per-change performance requirement at the
@@ -782,7 +2628,7 @@ promotion/audit history, the comparison eligibility contract grows beyond the re
 host/GPU/display identity, or calibrated relative regression thresholds become useful
 enough to add as explicit budgets through a separate decision.
 
-## D-086: Qualify memory64 feasibility without adopting wasm64  (2026-07-19, accepted; informs P-001)
+## D-086: Qualify memory64 feasibility without adopting wasm64  (2026-07-19, superseded by D-117 after resolving P-001; historical feasibility/result evidence retained)
 
 **Decision:** Keep memory32 as the production default and keep P-001 open until M1
 representative data demonstrates an unavoidable single-module requirement beyond 4 GiB.
@@ -1091,7 +2937,7 @@ regressing TTFT or fixture quality with no acceptable configuration.
 
 ---
 
-## D-081: Raw harness result artifacts stay out of version control  (2026-07-19, accepted)
+## D-081: Raw harness result artifacts stay out of version control  (2026-07-19, accepted; refined by D-099)
 **Decision:** `harness/results/` stays untracked, and no tracked evidence mirror is
 added. The doc that cites a result — decision entry, finding, budgets baseline,
 research doc — must itself record the load-bearing numbers and context, because the
@@ -4020,8 +5866,8 @@ and tier provisions are replaced:
   cannot prove transfer, and the transfer story belongs to the Standard tier. Showcase
   envelopes: GPU ≤ 14 GB, CPU-side ≤ 16 GB — provisional ceilings, rebalanceable within
   the envelope by decision-log note. (These ceilings do not by themselves exercise
-  wasm64 — memory64 adoption remains P-001, proven only by a dedicated harness run in
-  which a single module addresses beyond 4 GiB.)
+  wasm64 — D-117 later resolved P-001 with no current adoption; aggregate envelopes
+  still cannot justify a wider single-module address space.)
 - **Standard** — 1440p @ 120 Hz, defined by the **standard-target profile**: M1 Pro
   MacBook Pro (2021), 16 GB unified memory, ProMotion. This is a *profile, not a pinned
   machine*: it registers as `standard-01` only when the physical unit is recorded with
@@ -4318,37 +6164,6 @@ a small portfolio site) judged negligible.
 
 *(Move to accepted with a date when resolved; spikes in plan.md M0 feed these.)*
 
-- **P-001: wasm64 (memory64) adoption per module** — which Rust modules, if any, justify
-  the pointer-width overhead for >4 GiB address space. D-086 qualifies the Chrome/V8 and
-  pinned-Binaryen path with an exact beyond-4-GiB access and paired synthetic costs, but
-  deliberately does not adopt wasm64. Decide after M1 representative memory data. Aggregate
-  memory budgets prove nothing about memory64: multiple memory32 modules can sum past 4 GiB,
-  while adoption must be justified by one module's unavoidable address-space requirement.
-  Memory64 remains a last resort; adopt it only when partitioning, streaming, multiple
-  memory32 modules, and reducing the resident set cannot meet the same requirement within
-  budget. Record representative need and production-kernel cost when resolving P-001.
-- **P-002: Geometry representation & rendering-scale strategy** — comparative
-  exploration of (a) classic triangle LOD chains, (b) meshlet-based virtualized geometry
-  (nanite-like: GPU-driven culling, visibility buffer, WGSL compute), and (c) 3D Gaussian
-  splats, including hybrids (e.g., splat environments + triangle interactives — splats
-  remain weak on collision and animation, so triangles stay for anything interactive;
-  dynamic relighting, formerly listed alongside those as a static weakness, is now a
-  fast-moving research front — see rendering-engine-research.md §8 for the sourced
-  2026-07-19 state: research prototypes demonstrate real-time relit splats at desktop-GPU
-  rates, no engine or WebGPU renderer ships it, and the game-design.md requirement that
-  the splat branch be evaluated *under dynamic relighting* stands unchanged). Includes
-  the original question of GPU-driven culling/instancing and whether Babylon's frame
-  graph accommodates it or needs bypass. Evaluation axes: frame budget at both quality
-  tiers, streaming/storage cost per visual quality (splats are storage-heavy, and
-  relightable variants more so — interacts with D-009 scale), asset-pipeline fit
-  (AI generation produces meshes; the former "splats come from capture/reconstruction"
-  objection is retired — EA SEED's open-source mesh2splat converts glTF meshes to
-  PBR-material-carrying, explicitly relightable splats in <0.5 ms, checked 2026-07-19,
-  github.com/electronicarts/mesh2splat — making splat relighting a renderer problem
-  rather than a reconstruction problem for our synthetic assets), and WebGPU compute
-  limits. M1 runs the comparative spike on representative content; M5 commits per
-  content class. The splat branch also gates the scan-your-world UGC feature
-  (features.md).
 - **P-003: Multiplayer topology** — pure P2P mesh vs. host-authoritative peer for the
   M7 exploration. Decide when M3 determinism results are in.
 - **P-004: Binary asset storage** — git LFS vs. external content store + manifest for
@@ -4361,4 +6176,7 @@ a small portfolio site) judged negligible.
   persistence + explicit save export (architecture.md).
 *(P-007, app-owned NPC inference vs. Prompt API, was resolved in favor of the measured
 app-owned backend by D-096 after D-074's phase-A qualification.)*
+*(P-002, geometry representation, was resolved by D-098: retain the incumbent triangle
+LOD path because neither bounded challenger supplied fully eligible displacement
+evidence; this was not a valid triangle-performance win.)*
 *(P-005, toolchain, was accepted as D-014 and refined by D-020.)*

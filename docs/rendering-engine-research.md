@@ -4,7 +4,8 @@ The single home for everything the project knows about rendering-engine and
 rendering-representation research: the engine decision itself, the sourced case
 against each alternative, Babylon's known weaknesses and where we expect to bypass
 or replace it, watch items that could reopen the decision, and the state of the
-field for the P-002 geometry-representation exploration (§8). It folds in and supersedes the former `why-not-unity.md`
+field plus measured D-098 result for P-002 geometry representation (§8). It folds in
+and supersedes the former `why-not-unity.md`
 (D-046's evidence pack; relocated by D-076).
 
 **This is a living doc.** When updated information or a correction lands, the stale
@@ -43,11 +44,13 @@ locally or bypass, and log the gap.
 - **Unity:** ships **all three** of Memory64/wasm64, managed C# threads (requires
   multithreaded GC in wasm), and a non-experimental WebGPU backend. Any one alone
   does not reopen; together they would.
-- **Babylon Lite** (see §7): a pinned upgrade breaks beyond the bounded interop seam;
-  M1 asset fixtures, P-002 native interop, or M3 animation expose an unbounded gap;
-  or a measured evaluation shows another web-native core materially better on our
-  axes. A challenger is evaluated in a bounded spike and, if selected, through an
-  explicit migration—not through continuously maintained backend parity.
+- **Babylon Lite** (see §7): a pinned upgrade breaks a selected production path; M1
+  asset fixtures, M3 animation, or a future native-interop consumer expose an unbounded
+  gap; or a measured evaluation shows another web-native core materially better on our
+  axes. D-098 completed P-002's bounded native-interop proof and removed its adapter
+  because no production consumer remained. A challenger is evaluated in a bounded spike
+  and, if selected, through an explicit migration—not through continuously maintained
+  backend parity.
 - **Bevy:** becomes interesting if/when wasm multithreading lands there.
 - **three.js:** WebGPURenderer loses its official "experimental" label **and** a
   supported raw-WGSL/raw-pipeline path outside TSL exists **and** the
@@ -97,10 +100,12 @@ use.*
   drew no official Unity response.
 - **Us:** Chrome ships Memory64
   ([shipped in Chrome 133](https://chromestatus.com/feature/5070065734516736),
-  checked 2026-07-15); wasm64 is ours to target.
+  checked 2026-07-15), and D-086 historically qualified exact beyond-4-GiB access.
+  D-117 selected memory32 for every current production module and removed the closed
+  experiment; wasm64 remains available only if a concrete module meets its reopen rule.
 - **Say it precisely:** *structurally available to us, structurally closed to
-  Unity.* **Not** "we have 16 GB" — P-001 still gates that, and it is proven only
-  by a harness run in which a **single module** addresses beyond 4 GiB.
+  Unity.* **Not** "we use wasm64" or "we have 16 GB" — D-117 requires a concrete
+  single-module need before adoption; D-086 proved only the historical capability.
 - **Why this is the strongest item:** a multi-GB open world under a 4 GB address
   ceiling is a non-starter, and it is not a backlog item Unity can pick up cheaply.
 
@@ -371,9 +376,11 @@ anywhere (root rule 3). Forum-sourced numbers are anecdotes until reproduced.*
    multi-camera occlusion queries silently no-op on WebGPU). The Frame Graph
    (v1 in 9.0, March 2026) organizes *passes*, not submission — culling remains
    a CPU task node, and its per-feature coverage still has gaps (per the April
-   2025 roadmap; re-verify per feature). **Consequence:** the P-002 meshlet/
-   visibility-buffer exploration means bypassing Babylon's scene traversal and
-   using it as a device/resource manager. Partial interop is real — wrap a
+   2025 roadmap; re-verify per feature). **Consequence:** D-098's bounded P-002
+   meshlet arm bypassed Lite's scene traversal for compute culling and generic
+   indexed-indirect submission through a temporary native adapter. It did not
+   implement a visibility buffer or full virtual-geometry memory. Partial interop is
+   real — wrap a
    `StorageBuffer`'s `GPUBuffer` as a `VertexBuffer`, compute shaders run on the
    same device/queue — but injecting raw render passes means reaching into
    `engine._device` internals (fork risk D-004 already accepted), and there is
@@ -428,8 +435,10 @@ anywhere (root rule 3). Forum-sourced numbers are anecdotes until reproduced.*
    GPU timing requires launching Chrome with
    `--enable-dawn-features=allow_unsafe_apis` (a Chrome restriction on the
    Inspector's approach, not on the feature). We request `timestamp-query` via
-   `requiredFeatures` and instrument ourselves — capability confirmed at the API
-   level, end-to-end measurement still owed (rule 3).
+   `requiredFeatures` and instrument ourselves. D-098 exercised end-to-end timestamp
+   queries in all six arms, but CPU/GPU repeat and stabilization evidence was invalid
+   under RE-039; its exact runner is also unrecoverable. Timestamp-query availability is
+   proven for that pinned environment, while stable field measurement remains open.
 
 ## 7. Selected core: Babylon Lite (D-078)
 
@@ -485,25 +494,28 @@ facets, six core runs, and 24 checks at 581,328 combined engine+render-worker by
 | Draco | partial in worker | `KHR_draco_mesh_compression` is present, but its bootstrap similarly needs a preinstalled `globalThis.DracoDecoderModule` to avoid `document`. Same M1 fixture and bounded bootstrap-patch plan. |
 | meshopt | partial | `EXT_meshopt_compression` needs a preinstalled `globalThis.MeshoptDecoder` in the worker and works only for canonical single-buffer GLB; v1.12.0 rejects other-buffer views. M1 gates the bundled decoder and establishes the shared layout validator; future asset QA must call it. Upstream or patch only if representative content needs a broader path. |
 | Thin instances | present | Add/remove/set/flush APIs, dynamic draw count, GPU culling |
-| Compute / raw device+queue | partial | Lite uses compute internally but exposes no generic public compute or device/queue API. Before P-002, isolate the pinned internal device access in one guarded native adapter and add a runtime harness probe while seeking an upstream accessor. |
-| Indirect draw | present for thin instances; generic path partial | GPU-culling uses `drawIndexedIndirect`; arbitrary submission shares the bounded native adapter above. |
+| Compute / raw device+queue | partial | Lite uses compute internally but exposes no generic public compute or device/queue API. D-098's temporary guarded adapter proved raw-device availability, queue identity, and a GPU-buffer round trip in all six P-002 arms against exact 1.12.0 source. The adapter was removed because no selected production path consumes it; any future consumer must recreate an exactly pinned, guarded boundary and harness proof rather than depending on an undocumented permanent export. |
+| Device-loss observation/recovery | partial | Exact Lite 1.12.0 contains `lib/engine/device-lost-recovery.js` and `device-lost-recovery-testing.js`, but its package export map exposes only the root and neither `lib/index.js` nor `index.d.ts` root-exports those modules. D-104 therefore isolates one runtime-guarded `_device` seam in `lite-device-loss.ts` to observe `GPUDevice.lost` and invoke real `GPUDevice.destroy()` for qualification; production recovery restarts Parallax's coupled render/streaming/decode cohort from its latest worker-acknowledged settled checkpoint rather than deep-importing Lite internals or adopting its partial in-place resource reconstruction. The diagnostic quiesces direct observer movement and obtains that exact checkpoint before fault injection. Local package/source inspection on 2026-07-25: `@babylonjs/lite` 1.12.0, package source version `cc7a45f9ac8732b65f7fd37d5d66ef26f7a86df5`, `package.json`, `lib/index.js`, `index.d.ts`, and both recovery modules. Revisit if Lite root-exports a supported recovery contract that covers Parallax's streamed resource ownership. |
+| Indirect draw | present for thin instances; generic path partial | GPU-culling uses `drawIndexedIndirect`; D-098 proved bounded arbitrary indirect submission through temporary native interop, then removed it with the closed experiment. |
 | Skeletal/animation system | partial | GPU bone textures, 4/8-bone skinning, animation groups, interpolation, blending/cross-fade/additive/masks/weights, and VAT are present. Animation events are absent; game events stay in the fixed-timestep sim, and M3 adds a tested engine timestamp-marker utility only if visual callbacks are needed. Morphs are capped at four active targets; asset QA enforces that bound, with skeletal/VAT authoring or a justified shader extension for an over-cap character. |
 | Worker ownership | present and measured | Public OffscreenCanvas path; local gate proves dedicated-worker WebGPU ownership and unchanged telemetry/SAB behavior |
 
 **Costs and operating rule:** Lite says its young API is not backward-compatible. The
 package is therefore exact-pinned; upgrades are deliberate reviewed changes, Lite calls
-remain confined to `engine/`, and compatibility code is limited to the bounded
-native-interop adapter. D-080 deliberately removes renderer swappability so streaming,
-asset, and render data can use Lite's data-oriented model without a classic-shaped common
-denominator. Missing LOD, octree culling, GUI, and related classic systems do
+remain confined to `engine/`, and no native-interop adapter currently ships. A future
+native consumer must introduce a decision-specific, exactly pinned guarded seam and
+proof. D-080 deliberately removes renderer swappability so streaming, asset, and render
+data can use Lite's data-oriented model without a classic-shaped common denominator.
+Missing LOD, octree culling, GUI, and related classic systems do
 not change the plan because Parallax already owns those browser-specific systems. D-078
 selects Lite because the local results are materially better and every roadmap gap has a
 bounded plan—not because the vendor says Lite is faster.
 
-## 8. Gaussian splats and dynamic relighting (P-002 evidence)
+## 8. Gaussian splats and dynamic relighting (P-002 evidence and outcome)
 
-*Researched 2026-07-19. Feeds the P-002 splat branch and the game-design.md
-binding requirement that splats be evaluated under dynamic relighting. This
+*Research baseline checked 2026-07-19; local outcome measured 2026-07-25. Supplies the
+sourced baseline for D-098 and the game-design.md binding requirement that any splat
+proposal be evaluated under dynamic relighting. This
 section tracks a fast-moving research field — expect it to be rewritten, not
 appended to.*
 
@@ -577,6 +589,60 @@ extra per-splat payload (normals, BRDF params, transfer coefficients — no clea
 published bytes-per-splat comparison exists *(absence inference)*), which
 interacts with D-009 storage scale; and the game-design.md rule stands — a
 splat win measured only under static lighting doesn't count.
+
+**Measured closure (2026-07-25, D-098).** The physical-console
+`geometry-representation@5` comparison exercised D-090's D1 source under clear,
+overcast, and storm relighting at both render profiles. Its best-effort machine-local
+schema-5 / metric-set-5 report and 18 captures are in
+`harness/results/geometry-comparison-p002/dev-01-2026-07-25T04-15-34-944Z/`.
+Showcase environment identity was measured on dev-01; Standard was a quality-profile
+observation on that machine, not a Standard reference-machine budget gate. No exact
+source snapshot survived the same-gate cleanup, so this directory is not a reproducible
+source of truth (D-099/RE-039); the tracked observations below are the durable record.
+
+| Profile / bounded arm | Encoded storage bytes | Logical GPU buffer bytes | Preprocess (ms) | OPFS write/read (ms) | Decode / GPU upload+setup (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Showcase triangle LOD | 1,164,976 | 34,342,720 | 25.110 | 2.710 / 5.865 | 0.345 / 0.910 |
+| Showcase meshlet/GPU-driven | 1,179,204 | 34,356,944 | 27.925 | 2.545 / 7.390 | 0.335 / 0.900 |
+| Showcase Gaussian splats | 3,026,892 | 36,204,640 | 55.245 | 3.835 / 9.815 | 0.500 / 1.610 |
+| Standard triangle LOD | 1,164,976 | 15,910,720 | 25.130 | 2.545 / 8.245 | 0.325 / 0.865 |
+| Standard meshlet/GPU-driven | 1,179,204 | 15,924,944 | 29.065 | 2.620 / 7.525 | 0.425 / 1.055 |
+| Standard Gaussian splats | 1,008,972 | 15,754,720 | 45.240 | 2.495 / 12.410 | 0.365 / 0.855 |
+
+These byte/timing fields describe the bounded arm and remain useful even though they do
+not establish a frame-performance winner. Resident VRAM was explicitly unsupported
+under RE-014. The triangle and meshlet arms both represented 25,224 source triangles;
+the latter made 395 at-most-64-triangle meshlets, with 190 visible and 205 culled in the
+captured view, and issued per-meshlet indexed indirect draws. It did **not** implement
+Nanite's virtual-geometry memory or visibility-buffer architecture. The splat arm used
+75,672 oriented billboards at Showcase and 25,224 at Standard, derived from triangle
+normals/base color. It was a material-carrying relighting probe, not research-grade
+mesh2splat output, final-art evidence, or a deferred splat G-buffer.
+
+Triangle and meshlet images were pixel-identical in all six profile/light comparisons.
+The generated JSON's provisional 0.25 full-frame normalized-RGB-RMSE threshold accepted
+splat clear/overcast and rejected storm. Post-run adjudication invalidates that contract:
+
+| Profile / splat state | Normalized RGB RMSE | Pixels with RGB distance > 24 | Mean absolute channel difference |
+| --- | ---: | ---: | ---: |
+| Showcase clear | 0.19513 | 75.217% | 32.636 |
+| Showcase overcast | 0.15530 | 68.403% | 24.411 |
+| Showcase storm | 0.28560 | 73.493% | 49.206 |
+| Standard clear | 0.19698 | 75.882% | 33.452 |
+| Standard overcast | 0.16182 | 68.241% | 25.331 |
+| Standard storm | 0.29164 | 74.420% | 50.719 |
+
+The 68.24–75.88% all-state divergent-pixel share is gross visual divergence, including
+the two states whose RMSE fell below 0.25. No splat visual-parity evidence survives; the
+tracked adjudication overrides the ignored generated JSON without rewriting it. All
+candidates' CPU evidence and all candidates' aggregate GPU evidence were invalid under
+the unchanged repeat and stabilization policy (RE-039), although RAF and
+triangle/meshlet visual evidence were valid. The run therefore supports no performance
+ordering. D-098 retains triangle LOD as the current D1 incumbent only because neither
+challenger supplied fully eligible displacement evidence. The comparison implementation
+was removed; future full virtual-geometry, relightable-splat, higher-density-art, or
+capture-UGC work must reopen the question with a new decision and representative
+evidence.
 
 ## 9. Sources
 

@@ -6,14 +6,12 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const crateRoot = join(repositoryRoot, "engine/wasm/thread-spike");
-const memory64SpikeRoot = join(repositoryRoot, "engine/wasm/memory64-spike");
 const threadSpikeProtocolPath = join(
   repositoryRoot,
   "engine/src/wasm/wasm-thread-spike-protocol.ts",
 );
 const defaultOutputDirectory = join(crateRoot, "pkg");
 const defaultTargetDirectory = join(crateRoot, "target");
-const defaultMemory64OutputDirectory = join(memory64SpikeRoot, "pkg");
 const rustArtifactName = "parallax_wasm_thread_spike.wasm";
 const wasmBindgenVersion = "0.2.126";
 const binaryenVersion = "131.0.0";
@@ -410,86 +408,6 @@ async function verifyThreadRuntimeStateOffsets(wasmPath, outputDirectory, env) {
   }
 }
 
-export async function buildMemory64Wasm({ outputDirectory = defaultMemory64OutputDirectory } = {}) {
-  await verifyBinaryenVersion();
-  await mkdir(outputDirectory, { recursive: true });
-  const wasmAs = join(repositoryRoot, "node_modules/binaryen/bin/wasm-as");
-  const wasmOpt = join(repositoryRoot, "node_modules/binaryen/bin/wasm-opt");
-  const env = {
-    ...process.env,
-    LANG: "C",
-    LC_ALL: "C",
-    SOURCE_DATE_EPOCH: "0",
-    TZ: "UTC",
-  };
-  for (const variant of ["memory32", "memory64"]) {
-    const assembled = join(outputDirectory, `${variant}.assembled.wasm`);
-    const output = join(outputDirectory, `${variant}.wasm`);
-    run(
-      process.execPath,
-      [wasmAs, join(memory64SpikeRoot, `${variant}.wat`), "-o", assembled, "--enable-memory64"],
-      env,
-    );
-    run(process.execPath, [wasmOpt, assembled, "-o", output, "-Oz", "--enable-memory64"], env);
-    await rm(assembled, { force: true });
-    const featureOutput = join(outputDirectory, `${variant}.features.wasm`);
-    const featureResult = run(
-      process.execPath,
-      [
-        wasmOpt,
-        output,
-        "--print-features",
-        ...(variant === "memory64" ? ["--enable-memory64"] : []),
-        "-o",
-        featureOutput,
-      ],
-      env,
-      "pipe",
-    );
-    await rm(featureOutput, { force: true });
-    const hasMemory64 = featureResult.stdout.includes("--enable-memory64");
-    if (hasMemory64 !== (variant === "memory64")) {
-      throw new Error(`${variant}.wasm reported an unexpected memory64 feature state`);
-    }
-    if (variant === "memory64") {
-      const memory32OnlyOutput = join(outputDirectory, "memory64.memory32-only-check.wasm");
-      try {
-        requireFailure(
-          process.execPath,
-          [wasmOpt, output, "-o", memory32OnlyOutput],
-          env,
-          /require memory64/,
-          "memory64.wasm validation without the memory64 feature",
-        );
-      } finally {
-        await rm(memory32OnlyOutput, { force: true });
-      }
-    }
-    const bytes = await readFile(output);
-    if (!WebAssembly.validate(bytes)) {
-      throw new Error(`${variant}.wasm is not valid in the pinned Node runtime`);
-    }
-    const module = new WebAssembly.Module(bytes);
-    const imports = WebAssembly.Module.imports(module).map(
-      (entry) => `${entry.kind}:${entry.module}:${entry.name}`,
-    );
-    if (JSON.stringify(imports) !== JSON.stringify(["memory:env:memory"])) {
-      throw new Error(`${variant}.wasm imports drifted: ${JSON.stringify(imports)}`);
-    }
-    const exports = WebAssembly.Module.exports(module)
-      .map((entry) => `${entry.kind}:${entry.name}`)
-      .sort();
-    const expectedExports =
-      variant === "memory64"
-        ? ["function:grow_and_touch_high", "function:prepare", "function:run", "memory:memory"]
-        : ["function:prepare", "function:run", "memory:memory"];
-    if (JSON.stringify(exports) !== JSON.stringify(expectedExports)) {
-      throw new Error(`${variant}.wasm exports drifted: ${JSON.stringify(exports)}`);
-    }
-  }
-  return Object.freeze({ outputDirectory });
-}
-
 async function verifyBinaryenVersion() {
   const binaryenPackage = JSON.parse(
     await readFile(join(repositoryRoot, "node_modules/binaryen/package.json"), "utf8"),
@@ -525,21 +443,6 @@ function run(command, arguments_, env, stdio = "inherit") {
     throw new Error(`${command} failed with exit code ${result.status ?? "unknown"}`);
   }
   return result;
-}
-
-function requireFailure(command, arguments_, env, expectedDiagnostic, label) {
-  const result = spawnSync(command, arguments_, {
-    cwd: repositoryRoot,
-    encoding: "utf8",
-    env,
-    stdio: "pipe",
-  });
-  if (result.error !== undefined) throw result.error;
-  if (result.status === 0) throw new Error(`${label} unexpectedly succeeded`);
-  const diagnostic = `${result.stdout ?? ""}\n${result.stderr ?? ""}`;
-  if (!expectedDiagnostic.test(diagnostic)) {
-    throw new Error(`${label} failed for an unexpected reason: ${diagnostic.trim()}`);
-  }
 }
 
 function escapeRegExp(value) {
@@ -587,5 +490,4 @@ function countOccurrences(source, search) {
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await buildRustWasm();
-  await buildMemory64Wasm();
 }

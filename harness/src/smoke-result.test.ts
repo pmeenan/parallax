@@ -46,6 +46,7 @@ describe("smoke result adapters", () => {
           state: "invalid",
         },
       ],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -60,6 +61,7 @@ describe("smoke result adapters", () => {
           wasmThreads: { state: "measured" },
         },
       ],
+      streamingCellLoadP95Variance: [{ profile: "fresh", state: "measured" }],
       v8CodeCacheDiagnostics: [
         {
           production: { reason: "worker production is unobservable", state: "invalid" },
@@ -110,6 +112,7 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -124,12 +127,21 @@ describe("smoke result adapters", () => {
           wasmThreads: { state: "measured" },
         },
       ],
+      streamingCellLoadP95Variance: [{ profile: "fresh", state: "measured" }],
       v8CodeCacheDiagnostics: [],
       vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
     });
 
     expect(
       evidenceChecks.find((check) => check.description.includes("callback pacing variance")),
+    ).toMatchObject({ mandatory: true, measured: true });
+    expect(
+      evidenceChecks.find((check) => check.description.includes("report finalization")),
+    ).toMatchObject({ mandatory: true, measured: true });
+    expect(
+      evidenceChecks.find((check) =>
+        check.description.includes("streaming cell-load p95 variance"),
+      ),
     ).toMatchObject({ mandatory: true, measured: true });
     expect(
       evidenceChecks.find((check) => check.description.includes("core measurement runs completed")),
@@ -140,6 +152,36 @@ describe("smoke result adapters", () => {
     )) {
       expect(check.mandatory).toBe(false);
     }
+  });
+
+  it("fails closed when current-path streaming p95 repeatability exceeds the gate", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
+      runs: [],
+      streamingCellLoadP95Variance: [
+        {
+          profile: "fresh",
+          reason: "p95 relative range 0.302430 exceeds 0.100000",
+          state: "invalid",
+        },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: [{ description: "observed checks passed", passed: true }],
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    expect(facets.evidenceCompleteness.status).toBe("failed");
+    expect(facets.evidenceCompleteness.reasons.join(" ")).toContain(
+      "streaming cell-load p95 variance",
+    );
+    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
   });
 
   it("fails the mandatory core-run-completion check when core runs are incomplete", () => {
@@ -154,6 +196,7 @@ describe("smoke result adapters", () => {
         failure: "core warm repeat 2 failed: Browser errors: boom",
       },
       incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -167,6 +210,10 @@ describe("smoke result adapters", () => {
           streaming: { state: "measured" },
           wasmThreads: { state: "measured" },
         },
+      ],
+      streamingCellLoadP95Variance: [
+        { profile: "fresh", state: "measured" },
+        { profile: "warm", reason: "No completed warm core measurement runs", state: "invalid" },
       ],
       v8CodeCacheDiagnostics: [],
       vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
@@ -193,6 +240,7 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "warm", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -212,6 +260,7 @@ describe("smoke result adapters", () => {
           wasmThreads: { state: "measured" },
         },
       ],
+      streamingCellLoadP95Variance: [{ profile: "warm", state: "measured" }],
       v8CodeCacheDiagnostics: [],
       vizPresentationFeedbackCallbackVariance: [{ profile: "warm", state: "measured" }],
     });
@@ -253,6 +302,7 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -267,6 +317,7 @@ describe("smoke result adapters", () => {
           wasmThreads: { state: "measured" },
         },
       ],
+      streamingCellLoadP95Variance: [{ profile: "fresh", state: "measured" }],
       v8CodeCacheDiagnostics: [
         {
           production: { state: "measured" },
@@ -293,6 +344,7 @@ describe("smoke result adapters", () => {
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
       incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
       runs: [
         {
           dawnPipeline: { state: "measured" },
@@ -307,6 +359,7 @@ describe("smoke result adapters", () => {
           wasmThreads: { state: "measured" },
         },
       ],
+      streamingCellLoadP95Variance: [{ profile: "fresh", state: "measured" }],
       v8CodeCacheDiagnostics: [],
       vizPresentationFeedbackCallbackVariance: [{ profile: "fresh", state: "measured" }],
     });

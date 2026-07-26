@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { distribution, evaluateP95Variance, relativeRange } from "./aggregate";
+import {
+  distribution,
+  evaluateBoundedRepeatability,
+  evaluateP95Variance,
+  relativeRange,
+} from "./aggregate";
 
 describe("measurement aggregation", () => {
   it("uses nearest-rank percentiles without averaging away tail frames", () => {
@@ -41,6 +46,48 @@ describe("measurement aggregation", () => {
     expect(evaluateP95Variance([10, 10.5, 11], 3)).toMatchObject({ state: "measured" });
     expect(evaluateP95Variance([10, 10.5, 11.01], 3)).toMatchObject({ state: "invalid" });
     expect(() => evaluateP95Variance([10], 0)).toThrow("positive integer");
+  });
+
+  it("bounds near-zero repeatability by an explicit absolute floor", () => {
+    expect(evaluateBoundedRepeatability([2.435, 1.85, 2.375], 3, "p95", 0.1, 1)).toMatchObject({
+      absoluteRange: 0.585,
+      allowedAbsoluteRange: 1,
+      relativeRange: (2.435 - 1.85) / 1.85,
+      state: "measured",
+    });
+    const invalid = evaluateBoundedRepeatability([2, 2.5, 3.01], 3, "p95", 0.1, 1);
+    expect(invalid).toMatchObject({ allowedAbsoluteRange: 1, state: "invalid" });
+    expect(invalid.absoluteRange).toBeCloseTo(1.01);
+  });
+
+  it("preserves the relative limit above the absolute floor", () => {
+    expect(evaluateBoundedRepeatability([20, 21, 22], 3, "p95", 0.1, 1)).toMatchObject({
+      absoluteRange: 2,
+      allowedAbsoluteRange: 2,
+      relativeRange: 0.1,
+      state: "measured",
+    });
+    expect(evaluateBoundedRepeatability([20, 21, 22.01], 3, "p95", 0.1, 1)).toMatchObject({
+      state: "invalid",
+    });
+  });
+
+  it("fails bounded repeatability closed for incomplete or invalid samples", () => {
+    for (const values of [[], [1], [1, 2], [1, Number.NaN, 2], [1, -1, 2]] as const) {
+      expect(evaluateBoundedRepeatability(values, 3, "p95", 0.1, 1)).toMatchObject({
+        absoluteRange: null,
+        allowedAbsoluteRange: null,
+        relativeRange: null,
+        state: "invalid",
+      });
+    }
+    expect(() => evaluateBoundedRepeatability([1], 0, "p95", 0.1, 1)).toThrow("positive integer");
+    expect(() => evaluateBoundedRepeatability([1], 1, "p95", -0.1, 1)).toThrow(
+      "finite and nonnegative",
+    );
+    expect(() => evaluateBoundedRepeatability([1], 1, "p95", 0.1, Number.NaN)).toThrow(
+      "finite and nonnegative",
+    );
   });
 
   it("rejects empty sample sets", () => {
