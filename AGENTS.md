@@ -140,8 +140,9 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 ## Current status
 
 Milestones **M0 (harness + skeleton) and M1 (Greybox District 1 streaming) are
-complete**; M2 is pending — see [docs/plan.md](docs/plan.md). M1 closes only for
-registered dev-01 Showcase and evaluated mandatory metrics. It makes no claim for
+complete**; M2 is in progress after its 2026-07-26 entry currency checkpoint — see
+[docs/plan.md](docs/plan.md) and [docs/dependencies.md](docs/dependencies.md). M1 closes
+only for registered dev-01 Showcase and evaluated mandatory metrics. It makes no claim for
 Standard or unsupported physical presentation, worker long tasks, combined CPU
 resident memory, or page-attributed GPU residency.
 

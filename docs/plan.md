@@ -141,11 +141,17 @@ same-artifact pre-measurement `Failed to fetch` startup failure; the one passing
 classification retry does not relabel the failed attempt, and no additional post-M1
 physical gate is pending.
 
-## M2 — Install/launch/run lifecycle + caches  `pending`
+## M2 — Install/launch/run lifecycle + caches  `in progress`
 
 The heart of the platform research. Prerequisite: production serving live on
 parallax-web.com (D-011) — cache findings measured only against local serving aren't
 credible.
+
+Entry checkpoint (2026-07-26): the full D-079 currency review is complete. No pin moved
+in the milestone-status change; newer runtime, browser, decoder, build, and toolchain
+candidates remain isolated behind their component-family gates. Two high development-only
+`sharp`/PostCSS advisories have bounded remediation due 2026-07-27; see
+[dependencies.md](dependencies.md#full-checkpoint--2026-07-26-m1-exit--m2-entry).
 
 - [ ] Production deployment to parallax-web.com with versioned nginx/header config;
       harness can target local and production and labels results accordingly. (The
