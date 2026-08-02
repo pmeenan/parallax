@@ -1,4 +1,5 @@
 import {
+  FLYTHROUGH_TELEMETRY_SCHEMA_VERSION,
   type FlythroughCheckpointRenderEvidence,
   type FlythroughScenario,
   type FlythroughTelemetrySnapshot,
@@ -23,7 +24,7 @@ export function requireFlythroughEvidence(value: unknown): FlythroughEvidence {
   const render = telemetry.render;
   const minimumRouteSpan = minimumObservedFlythroughRouteSpan(FLYTHROUGH_D1_EXPECTED_SCENARIO);
   if (
-    telemetry.schemaVersion !== 3 ||
+    telemetry.schemaVersion !== FLYTHROUGH_TELEMETRY_SCHEMA_VERSION ||
     telemetry.state !== "completed" ||
     telemetry.failureMessage !== null ||
     telemetry.scenarioId !== FLYTHROUGH_D1_SCENARIO ||

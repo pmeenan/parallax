@@ -74,6 +74,46 @@ export interface CdpGpuDevice {
   readonly vendorString: string;
 }
 
+export function projectCdpGpuDevice(value: unknown): CdpGpuDevice {
+  if (!isRecord(value)) throw new Error("CDP primary GPU is not an object");
+  const {
+    deviceId,
+    deviceString,
+    driverVendor,
+    driverVersion,
+    revision,
+    subSysId,
+    vendorId,
+    vendorString,
+  } = value;
+  if (
+    !nonnegativeSafeInteger(deviceId) ||
+    typeof deviceString !== "string" ||
+    typeof driverVendor !== "string" ||
+    typeof driverVersion !== "string" ||
+    !nonnegativeSafeInteger(revision) ||
+    !nonnegativeSafeInteger(subSysId) ||
+    !nonnegativeSafeInteger(vendorId) ||
+    typeof vendorString !== "string"
+  ) {
+    throw new Error("CDP primary GPU structure is invalid");
+  }
+  return Object.freeze({
+    deviceId,
+    deviceString,
+    driverVendor,
+    driverVersion,
+    revision,
+    subSysId,
+    vendorId,
+    vendorString,
+  });
+}
+
+function nonnegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 export interface WebGpuAdapterIdentity {
   readonly architecture: string;
   readonly backend: string | null;

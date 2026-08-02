@@ -1,3 +1,4 @@
+import { sanitizeAssetUpdateDiagnostic } from "./asset-update-v8-sanitization.js";
 import type { ChromeTraceEvent } from "./presentation-trace.js";
 import { errorMessage } from "./value-utils.js";
 
@@ -134,7 +135,7 @@ export function resolveV8CodeCacheEvidence(
     if (invalidReasons.length > 0) {
       return Object.freeze({
         evidence,
-        reason: invalidReasons.join(" | "),
+        reason: sanitizeAssetUpdateDiagnostic(invalidReasons.join(" | ")),
         state: "invalid",
       });
     }
@@ -142,7 +143,9 @@ export function resolveV8CodeCacheEvidence(
   } catch (error) {
     return Object.freeze({
       evidence: null,
-      reason: `V8 code-cache trace probe failed: ${errorMessage(error)}`,
+      reason: sanitizeAssetUpdateDiagnostic(
+        `V8 code-cache trace probe failed: ${errorMessage(error)}`,
+      ),
       state: "invalid",
     });
   }
@@ -168,11 +171,17 @@ export function resolveV8CodeCacheProductionEvidence(
     );
     return invalidReasons.length === 0
       ? Object.freeze({ evidence, state: "measured" })
-      : Object.freeze({ evidence, reason: invalidReasons.join(" | "), state: "invalid" });
+      : Object.freeze({
+          evidence,
+          reason: sanitizeAssetUpdateDiagnostic(invalidReasons.join(" | ")),
+          state: "invalid",
+        });
   } catch (error) {
     return Object.freeze({
       evidence: null,
-      reason: `V8 code-cache production trace probe failed: ${errorMessage(error)}`,
+      reason: sanitizeAssetUpdateDiagnostic(
+        `V8 code-cache production trace probe failed: ${errorMessage(error)}`,
+      ),
       state: "invalid",
     });
   }

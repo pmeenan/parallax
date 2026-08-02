@@ -1,8 +1,15 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { type GreyboxCell, type GreyboxDistrict, validateGreyboxDistrict } from "@parallax/engine";
+import {
+  type GreyboxCell,
+  type GreyboxDistrict,
+  parseStreamingDistrictIndex,
+  STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
+  validateGreyboxDistrict,
+} from "@parallax/engine";
 import { describe, expect, it } from "vitest";
+import { PRODUCTION_COMPRESSED_STREAMING_FIXTURES } from "../../engine/src/streaming/production-compressed-fixtures.generated.js";
 import { readAndValidateBuildManifest } from "./build-manifest.js";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
@@ -11,11 +18,46 @@ const buildRoot = join(repositoryRoot, "dist");
 describe("assembled build contract", () => {
   it("contains independently addressed engine, game, and app artifacts with exact metadata", async () => {
     const index = await readFile(join(buildRoot, "index.html"), "utf8");
-    const { manifest } = await readAndValidateBuildManifest(buildRoot);
+    const { artifactDigest, installManifest, installSummary, manifest, releaseDigest } =
+      await readAndValidateBuildManifest(buildRoot);
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(11);
+    expect(manifest.schemaVersion).toBe(15);
+    expect(manifest.installManifestEntrypoint).toEqual({
+      path: "install-manifest.json",
+      schemaVersion: 1,
+    });
+    expect(manifest.offlineShell).toEqual({
+      generationSchemaVersion: 1,
+      saveSchemaVersion: 1,
+      serviceWorkerPath: "service-worker.js",
+    });
+    expect(manifest.artifacts.filter(({ path }) => path === "service-worker.js")).toHaveLength(1);
+    expect(releaseDigest).toBe(
+      manifest.artifacts.find((artifact) => artifact.path === "install-manifest.json")?.sha256,
+    );
+    expect(artifactDigest).toBe(
+      createHash("sha256")
+        .update(await readFile(join(buildRoot, "build-manifest.json")))
+        .digest("hex"),
+    );
+    expect(installManifest.gameId).toBe("parallax");
+    expect(installSummary.countByTarget.opfs).toBe(266);
+    expect(installSummary.countByTarget.shell).toBe(21);
+    expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
+    expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
+    expect(
+      installManifest.resources.filter(
+        (resource) => resource.id === "game-specific-pso-warmup-trace",
+      ),
+    ).toEqual([
+      expect.objectContaining({
+        id: "game-specific-pso-warmup-trace",
+        scope: "game-specific",
+        target: "opfs",
+      }),
+    ]);
 
     const paths = manifest.artifacts.map((artifact) => artifact.path);
     expect(paths).toEqual(
@@ -31,9 +73,10 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(4);
+    expect(manifest.workerEntrypoints).toHaveLength(5);
     expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
       "decode",
+      "installer",
       "render",
       "streaming",
       "wasm-thread",
@@ -93,7 +136,7 @@ describe("assembled build contract", () => {
     expect(manifest.gameContentEntrypoints).toEqual([
       expect.objectContaining({
         districtId: "district-1-surface",
-        schemaVersion: 1,
+        schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
         scope: "game-specific",
         targetType: "district",
       }),
@@ -105,22 +148,92 @@ describe("assembled build contract", () => {
     const districtIndexBytes = await readFile(
       join(buildRoot, districtEntrypoint?.path ?? "missing"),
     );
-    const districtIndex = JSON.parse(districtIndexBytes.toString("utf8")) as Omit<
-      GreyboxDistrict,
-      "cells" | "id"
-    > & {
+    const districtIndex = JSON.parse(districtIndexBytes.toString("utf8")) as {
       districtId: string;
+      schemaVersion: number;
       cells: readonly Readonly<{
         bytes: number;
         cellId: string;
         coordinate: readonly [number, number];
+        dependencies: readonly string[];
         path: string;
         sha256: string;
       }>[];
+      resources: readonly Readonly<{ decode: unknown; format: string; resourceId: string }>[];
     };
-    expect(districtIndex).toMatchObject({ districtId: "district-1-surface", schemaVersion: 1 });
+    expect(districtIndex).toMatchObject({ districtId: "district-1-surface", schemaVersion: 2 });
+    expect(Object.keys(districtIndex).sort()).toEqual([
+      "bounds",
+      "cellSizeMeters",
+      "cells",
+      "districtId",
+      "materials",
+      "resources",
+      "schemaVersion",
+    ]);
     expect(districtIndex.districtId).toBe(districtEntrypoint?.districtId);
-    expect(districtIndex.schemaVersion).toBe(districtEntrypoint?.schemaVersion);
+    expect(districtIndex.cells.every((cell) => cell.dependencies.length === 1)).toBe(true);
+    expect(districtIndex.resources.map(({ format }) => format)).toEqual([
+      "ktx2",
+      "meshopt",
+      "meshopt",
+    ]);
+    const parsedDistrictIndex = parseStreamingDistrictIndex(districtIndex, "district-1-surface");
+    expect(parsedDistrictIndex.cells.every(({ dependencies }) => dependencies?.length === 1)).toBe(
+      true,
+    );
+    expect(
+      parsedDistrictIndex.resources?.map(({ decode, dependencies, resourceId }) => ({
+        dependencies,
+        mode: "mode" in decode ? decode.mode : "texture",
+        resourceId,
+      })),
+    ).toEqual([
+      expect.objectContaining({ dependencies: [], mode: "texture" }),
+      expect.objectContaining({ mode: "ATTRIBUTES" }),
+      expect.objectContaining({ mode: "TRIANGLES" }),
+    ]);
+    const compactFixture = PRODUCTION_COMPRESSED_STREAMING_FIXTURES.find(
+      ({ id }) => id === "compact",
+    );
+    if (compactFixture === undefined || parsedDistrictIndex.resources === undefined) {
+      throw new Error("Compact production fixture or parsed dependency resources are absent");
+    }
+    const expectedCompressedBytes = [
+      Buffer.from(compactFixture.ktx2, "base64"),
+      Buffer.from(compactFixture.attributes, "base64"),
+      Buffer.from(compactFixture.indices, "base64"),
+    ];
+    const [textureResource, vertexResource, indexResource] = parsedDistrictIndex.resources;
+    if (
+      textureResource === undefined ||
+      vertexResource === undefined ||
+      indexResource === undefined
+    ) {
+      throw new Error("Production dependency graph is incomplete");
+    }
+    expect(vertexResource.dependencies).toEqual([textureResource.resourceId]);
+    expect(indexResource.dependencies).toEqual([
+      textureResource.resourceId,
+      vertexResource.resourceId,
+    ]);
+    expect(parsedDistrictIndex.cells[0]?.dependencies).toEqual([indexResource.resourceId]);
+    for (const [index, resource] of parsedDistrictIndex.resources.entries()) {
+      const actualBytes = await readFile(join(buildRoot, resource.path));
+      expect(actualBytes).toEqual(expectedCompressedBytes[index]);
+      expect(actualBytes.byteLength).toBe(resource.bytes);
+      expect(createHash("sha256").update(actualBytes).digest("hex")).toBe(resource.sha256);
+      expect(installManifest.resources).toContainEqual(
+        expect.objectContaining({
+          bytes: resource.bytes,
+          id: resource.resourceId,
+          kind: "asset-pack",
+          sha256: resource.sha256,
+          source: resource.path,
+          target: "opfs",
+        }),
+      );
+    }
     const districtIndexArtifact = manifest.artifacts.find(
       (artifact) => artifact.path === districtEntrypoint?.path,
     );
@@ -148,7 +261,9 @@ describe("assembled build contract", () => {
         schemaVersion: number;
       };
       expect(wrapper.districtId).toBe(districtIndex.districtId);
-      expect(wrapper.schemaVersion).toBe(districtIndex.schemaVersion);
+      // Cell wrappers retain the greybox world-contract schema; the district
+      // entrypoint independently advertises the district-index schema.
+      expect(wrapper.schemaVersion).toBe(1);
       expect(wrapper.cell.id).toBe(cellEntry.cellId);
       expect(wrapper.cell.coordinate).toEqual(cellEntry.coordinate);
       const coordinateKey = cellEntry.coordinate.join(",");
@@ -163,8 +278,19 @@ describe("assembled build contract", () => {
         ).flat(),
       ),
     );
-    const { districtId, ...districtMetadata } = districtIndex;
-    const reconstructedDistrict: GreyboxDistrict = { ...districtMetadata, cells, id: districtId };
+    const reconstructedDistrict: GreyboxDistrict = {
+      bounds: parsedDistrictIndex.bounds,
+      cells,
+      cellSizeMeters: parsedDistrictIndex.cellSizeMeters,
+      generator: { seed: 1, version: 1 },
+      id: parsedDistrictIndex.districtId,
+      lodHysteresisMeters: 64,
+      markers: [],
+      materials: parsedDistrictIndex.materials,
+      schemaVersion: 1,
+      standardTraversalMetersPerSecond: 12,
+      units: "meters",
+    };
     expect(validateGreyboxDistrict(reconstructedDistrict)).toMatchObject({ cellCount: 256 });
 
     const appArtifact = manifest.artifacts.find((artifact) =>

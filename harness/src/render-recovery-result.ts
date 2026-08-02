@@ -1,8 +1,10 @@
 import {
   STREAMING_DECODE_WORKER_MAXIMUM,
   STREAMING_DECODE_WORKER_RESERVED_THREADS,
+  STREAMING_TELEMETRY_SCHEMA_VERSION,
 } from "@parallax/engine";
 import { requireGreyboxRenderedOutputEvidence } from "./greybox-rendered-output.js";
+import { validateInstallerSnapshotTelemetry } from "./installer-transfer-telemetry.js";
 import type { MeasuredRenderRecoveryAttempt } from "./render-recovery-evidence.js";
 import { validateRenderRecoveryAttempt } from "./render-recovery-evidence.js";
 import {
@@ -18,6 +20,11 @@ import {
 import { QUALITY_TIER_PROFILES } from "./runs/smoke.js";
 import { requireSabRingBufferCompleteAtMeasurementBoundary } from "./sab-ring-buffer.js";
 import { requireWorldStreamingSnapshot } from "./streaming-evidence.js";
+import { validateHarnessTargetEvidence, validateHarnessTargetIdentity } from "./target.js";
+import {
+  validateInstalledModelSourceTelemetry,
+  validateOfflineShellTelemetry,
+} from "./telemetry.js";
 import { isRecord } from "./value-utils.js";
 
 const HEX_40 = /^[a-f0-9]{40}$/;
@@ -37,6 +44,7 @@ export function validateRenderRecoveryReportContract(value: unknown): void {
       "harnessRuntime",
       "mandatoryMetricSet",
       "passed",
+      "releaseDigest",
       "runFailure",
       "scenario",
       "schemaVersion",
@@ -51,6 +59,7 @@ export function validateRenderRecoveryReportContract(value: unknown): void {
     throw new Error("Render-recovery report scenario/schema identity is invalid");
   }
   requireHex(report.artifactDigest, HEX_64, "artifact identity");
+  requireHex(report.releaseDigest, HEX_64, "release identity");
   validateSource(report.source);
   const chromePin = validateChromePin(report.chromePin);
   validateGeneratedAt(report.generatedAt);
@@ -59,6 +68,13 @@ export function validateRenderRecoveryReportContract(value: unknown): void {
     throw new Error("Render-recovery run failure is invalid");
   }
   const environment = validateReferenceEnvironment(report.environment);
+  if (
+    !isRecord(environment.target) ||
+    environment.target.artifactDigest !== report.artifactDigest ||
+    environment.target.releaseDigest !== report.releaseDigest
+  ) {
+    throw new Error("Render-recovery target build/release identity is inconsistent");
+  }
   if (
     !isRecord(report.mandatoryMetricSet) ||
     report.mandatoryMetricSet.version !== RENDER_RECOVERY_MANDATORY_METRIC_SET_VERSION ||
@@ -154,6 +170,8 @@ export function validateRenderRecoveryReportContract(value: unknown): void {
     budgetFailureCount > 0 ? "failed" : evidencePassed ? "passed" : "not-evaluated";
   const environmentPassed =
     report.runFailure === null &&
+    isRecord(environment.targetPostflight) &&
+    environment.targetPostflight.state === "verified" &&
     requireRecord(environment.gateIdentity, "environment gate").state === "measured" &&
     requireRecord(report.harnessRuntime, "harness runtime").eligible === true &&
     attemptEnvironments.length === RENDER_RECOVERY_ATTEMPTS.length &&
@@ -306,8 +324,13 @@ function validateLatestTelemetry(value: unknown, label: string): void {
     telemetry,
     [
       "appOwnedLlmSpike",
+      "benchmark",
       "flythrough",
       "identity",
+      "installedModelSource",
+      "installStore",
+      "installerTransfer",
+      "offlineShell",
       "render",
       "schemaVersion",
       "streaming",
@@ -319,7 +342,14 @@ function validateLatestTelemetry(value: unknown, label: string): void {
     throw new Error(`${label} schema is invalid`);
   }
   requireRecord(telemetry.appOwnedLlmSpike, `${label} app-owned LLM`);
+  requireRecord(telemetry.benchmark, `${label} benchmark`);
   requireRecord(telemetry.identity, `${label} identity`);
+  validateInstalledModelSourceTelemetry(telemetry.installedModelSource);
+  validateInstallerSnapshotTelemetry({
+    installStore: telemetry.installStore,
+    installerTransfer: telemetry.installerTransfer,
+  });
+  validateOfflineShellTelemetry(telemetry.offlineShell);
   requireRecord(telemetry.wasmThreadSpike, `${label} wasm threads`);
   validatePartialStreaming(telemetry.streaming, `${label} streaming`);
   validatePartialRender(telemetry.render, `${label} render`);
@@ -645,9 +675,7 @@ function validateBoundary(value: unknown, label: string): void {
   if (streaming.state === "streaming") {
     requireWorldStreamingSnapshot(boundary.streaming, "settled-hydration");
   }
-  requireSabRingBufferCompleteAtMeasurementBoundary(
-    boundary.sab as Parameters<typeof requireSabRingBufferCompleteAtMeasurementBoundary>[0],
-  );
+  requireSabRingBufferCompleteAtMeasurementBoundary(boundary.sab);
 }
 
 function validateCheckpoint(value: unknown, label: string): void {
@@ -1117,6 +1145,10 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
       "failureMessage",
       "flythroughObserverUpdateCount",
       "hardwareConcurrency",
+      "installedReleaseDigest",
+      "installedResourceBytes",
+      "installedResourceCount",
+      "legacyNetworkRequestCount",
       "observerUpdateCount",
       "opfsAccessHandleCount",
       "opfsAccessHandleOpenDurationMs",
@@ -1124,6 +1156,10 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
       "opfsProvisionedBytes",
       "proactiveEvictionCount",
       "renderRecoveryCount",
+      "renderBatchCellCountHighWater",
+      "renderBatchDirectUploadMsHighWater",
+      "renderBatchRequestCount",
+      "renderBatchTransactionCount",
       "residentCellCount",
       "residentCellIds",
       "residentEncodedBytes",
@@ -1134,6 +1170,7 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
       "settledObserverUpdateCount",
       "settledRecoveryCheckpoint",
       "state",
+      "startupTiming",
       "workerGeneration",
     ],
     label,
@@ -1146,12 +1183,18 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
     "encodedBytesRead",
     "flythroughObserverUpdateCount",
     "hardwareConcurrency",
+    "installedResourceBytes",
+    "installedResourceCount",
+    "legacyNetworkRequestCount",
     "observerUpdateCount",
     "opfsAccessHandleCount",
     "opfsPackageCount",
     "opfsProvisionedBytes",
     "proactiveEvictionCount",
     "renderRecoveryCount",
+    "renderBatchCellCountHighWater",
+    "renderBatchRequestCount",
+    "renderBatchTransactionCount",
     "residentCellCount",
     "residentEncodedBytes",
     "residentEncodedBytesHighWater",
@@ -1162,7 +1205,17 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
     if (!nonNegativeInteger(streaming[key])) throw new Error(`${label} ${key} is invalid`);
   }
   if (
-    streaming.schemaVersion !== 7 ||
+    streaming.schemaVersion !== STREAMING_TELEMETRY_SCHEMA_VERSION ||
+    (streaming.installedReleaseDigest !== null &&
+      (typeof streaming.installedReleaseDigest !== "string" ||
+        !/^[a-f0-9]{64}$/.test(streaming.installedReleaseDigest))) ||
+    (streaming.installedReleaseDigest === null &&
+      (streaming.installedResourceBytes !== 0 || streaming.installedResourceCount !== 0)) ||
+    (streaming.installedReleaseDigest !== null &&
+      (streaming.installedResourceBytes === 0 ||
+        streaming.installedResourceCount === 0 ||
+        streaming.legacyNetworkRequestCount !== 0)) ||
+    !nonNegativeFinite(streaming.renderBatchDirectUploadMsHighWater) ||
     !nonNegativeFinite(streaming.opfsAccessHandleOpenDurationMs) ||
     (streaming.opfsAccessHandleCount as number) > (streaming.opfsPackageCount as number) ||
     (streaming.opfsPackageCount === 0 && streaming.opfsAccessHandleOpenDurationMs !== 0) ||
@@ -1185,20 +1238,96 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
     validateCheckpoint(streaming.settledRecoveryCheckpoint, `${label} checkpoint`);
   }
   if (!Array.isArray(streaming.cellLoadSamples)) throw new Error(`${label} samples are invalid`);
+  validateStreamingStartupTiming(streaming.startupTiming, streaming, `${label} startup timing`);
   for (const [index, entry] of streaming.cellLoadSamples.entries()) {
-    validateStreamingSample(entry, `${label} sample ${index}`);
+    validateStreamingSample(
+      entry,
+      `${label} sample ${index}`,
+      streaming.workerGeneration as number,
+    );
   }
   return streaming;
 }
 
-function validateStreamingSample(value: unknown, label: string): void {
+function validateStreamingStartupTiming(
+  value: unknown,
+  streaming: Record<string, unknown>,
+  label: string,
+): void {
+  if (value === null) {
+    if (streaming.state === "provisioning" || streaming.state === "streaming") {
+      throw new Error(`${label} is missing`);
+    }
+    return;
+  }
+  const timing = requireRecord(value, label);
+  requireExactKeys(
+    timing,
+    [
+      "accessHandlesOpenedAtMs",
+      "contract",
+      "decodePoolCreatedAtMs",
+      "finalAdmissionCompletedAtMs",
+      "initialResidencyReadyAtMs",
+      "provisioningStartedAtMs",
+      "releaseBindingCompletedAtMs",
+      "releaseResolutionCompletedAtMs",
+      "schemaVersion",
+      "sourceKind",
+      "workerStartedAtMs",
+    ],
+    label,
+  );
+  if (
+    timing.contract !== "streaming-startup-timing@1" ||
+    timing.schemaVersion !== 1 ||
+    timing.sourceKind !== "privileged-legacy-network" ||
+    !nonNegativeFinite(timing.workerStartedAtMs) ||
+    timing.releaseBindingCompletedAtMs !== null ||
+    timing.finalAdmissionCompletedAtMs !== null
+  ) {
+    throw new Error(`${label} identity is invalid`);
+  }
+  const ordered = [
+    timing.provisioningStartedAtMs,
+    timing.releaseResolutionCompletedAtMs,
+    timing.accessHandlesOpenedAtMs,
+    timing.decodePoolCreatedAtMs,
+    timing.initialResidencyReadyAtMs,
+  ];
+  let previous = timing.workerStartedAtMs as number;
+  let foundNull = false;
+  for (const timestamp of ordered) {
+    if (timestamp === null) {
+      foundNull = true;
+      continue;
+    }
+    if (foundNull || !nonNegativeFinite(timestamp) || timestamp < previous) {
+      throw new Error(`${label} ordering is invalid`);
+    }
+    previous = timestamp;
+  }
+  if (
+    streaming.state === "idle" ||
+    streaming.state === "starting" ||
+    timing.provisioningStartedAtMs === null ||
+    (timing.decodePoolCreatedAtMs !== null && !positiveInteger(streaming.decodeWorkerCount)) ||
+    (streaming.state === "streaming" && timing.initialResidencyReadyAtMs === null)
+  ) {
+    throw new Error(`${label} lifecycle is invalid`);
+  }
+}
+
+function validateStreamingSample(value: unknown, label: string, workerGeneration: number): void {
   const sample = requireRecord(value, label);
   const keys = [
+    "batchDirectUploadMs",
     "batchCellCount",
     "batchCellOrdinal",
     "batchFlythroughObserverSequence",
     "batchObserverUpdateCount",
     "batchOrdinal",
+    "batchTransactionId",
     "cellId",
     "decodeMs",
     "decodeRoundTripMs",
@@ -1208,18 +1337,25 @@ function validateStreamingSample(value: unknown, label: string): void {
     "opfsAccessRoundTripMs",
     "opfsReadMs",
     "opfsWaitMs",
-    "renderCommitRoundTripMs",
-    "renderUploadRoundTripMs",
-    "renderUploadWaitMs",
+    "renderTransactionRoundTripMs",
+    "renderTransactionWaitMs",
     "sequence",
     "streamingWorkerRemainderMs",
     "totalMs",
     "uploadMs",
   ] as const;
   requireExactKeys(sample, keys, label);
-  if (!nonEmptyString(sample.cellId)) throw new Error(`${label} cell is invalid`);
+  if (!nonEmptyString(sample.cellId) || !nonEmptyString(sample.batchTransactionId)) {
+    throw new Error(`${label} identity is invalid`);
+  }
+  if (
+    sample.batchTransactionId !==
+    `${workerGeneration}:${String(sample.batchOrdinal)}:${String(sample.batchObserverUpdateCount)}:${String(sample.batchFlythroughObserverSequence)}`
+  ) {
+    throw new Error(`${label} transaction identity is invalid`);
+  }
   for (const key of keys) {
-    if (key !== "cellId" && !nonNegativeFinite(sample[key])) {
+    if (key !== "cellId" && key !== "batchTransactionId" && !nonNegativeFinite(sample[key])) {
       throw new Error(`${label} ${key} is invalid`);
     }
   }
@@ -1459,6 +1595,9 @@ function validateReferenceEnvironment(value: unknown): Record<string, unknown> {
       "machineId",
       "requestedTier",
       "sandboxVerified",
+      "target",
+      "targetPostflight",
+      "targetPreflight",
       "targetDisplayMode",
     ],
     "reference environment",
@@ -1480,6 +1619,26 @@ function validateReferenceEnvironment(value: unknown): Record<string, unknown> {
   requireHex(environment.executableSha256, HEX_64, "Chrome executable digest");
   if (typeof environment.sandboxVerified !== "boolean") {
     throw new Error("Reference environment sandbox evidence is invalid");
+  }
+  validateHarnessTargetIdentity(environment.target, "reference environment target");
+  validateHarnessTargetEvidence(
+    environment.targetPreflight,
+    "reference environment target preflight",
+  );
+  validateHarnessTargetEvidence(
+    environment.targetPostflight,
+    "reference environment target postflight",
+  );
+  if (
+    !isRecord(environment.targetPreflight) ||
+    environment.targetPreflight.state !== "verified" ||
+    !isRecord(environment.targetPreflight.identity) ||
+    !same(environment.targetPreflight.identity, environment.target) ||
+    (isRecord(environment.targetPostflight) &&
+      environment.targetPostflight.state === "verified" &&
+      !same(environment.targetPostflight.identity, environment.target))
+  ) {
+    throw new Error("Reference environment target evidence is contradictory");
   }
   validateAdapterOrNull(environment.adapter, "reference adapter");
   validateDisplayOrNull(environment.browserDisplay, "reference display");

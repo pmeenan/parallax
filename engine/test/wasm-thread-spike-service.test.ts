@@ -48,8 +48,16 @@ describe("Rust/WASM thread spike service", () => {
     service.start();
     now = 1;
     await drainMicrotasks();
+    expect(WebAssembly.compileStreaming).toHaveBeenCalledOnce();
+    expect(WebAssembly.compileStreaming).toHaveBeenCalledWith(expect.any(Object));
+    expect(WebAssembly.instantiateStreaming).not.toHaveBeenCalled();
+    expect(WebAssembly.instantiate).not.toHaveBeenCalled();
 
     const [coordinator, peer] = requireWorkers();
+    const coordinatorInitialization = coordinator.posted[0] as { module?: unknown } | undefined;
+    const peerInitialization = peer.posted[0] as { module?: unknown } | undefined;
+    expect(coordinatorInitialization?.module).toBe(compiledModule);
+    expect(peerInitialization?.module).toBe(compiledModule);
     now = 2;
     coordinator.emit({ kind: "ready", workerIndex: 0 });
     now = 3;
@@ -116,7 +124,68 @@ describe("Rust/WASM thread spike service", () => {
     });
     expect(FakeWorker.instances).toHaveLength(0);
   });
+
+  it("consumes the artifact only through compileStreaming", async () => {
+    const response = successfulResponse();
+    installDeferredStartupStubs(Promise.resolve(response));
+    const service = createWasmThreadSpikeService();
+
+    service.start();
+    await drainMicrotasks();
+
+    expect(WebAssembly.compileStreaming).toHaveBeenCalledWith(response);
+    expect(response.clone).not.toHaveBeenCalled();
+    expect(response.arrayBuffer).not.toHaveBeenCalled();
+    expect(service.snapshot().moduleBytes).toBe(8);
+  });
+
+  it.each([
+    ["fetch", failedResponse(503), "WASM artifact fetch failed with 503"],
+    [
+      "MIME",
+      successfulResponse({ contentType: "application/octet-stream" }),
+      "WASM artifact response MIME type must be application/wasm; received application/octet-stream",
+    ],
+    [
+      "length",
+      successfulResponse({ contentLength: "08" }),
+      "WASM artifact response Content-Length is missing or non-canonical",
+    ],
+  ] as const)("retains a typed %s failure before worker startup", async (_phase, response, message) => {
+    installDeferredStartupStubs(Promise.resolve(response));
+    const service = createWasmThreadSpikeService();
+
+    service.start();
+    await drainMicrotasks();
+
+    expect(service.snapshot()).toMatchObject({ failureMessage: message, state: "failed" });
+    expect(FakeWorker.instances).toHaveLength(0);
+  });
+
+  it("retains compileStreaming failure evidence without starting workers", async () => {
+    installDeferredStartupStubs(Promise.resolve(successfulResponse()));
+    vi.mocked(WebAssembly.compileStreaming).mockRejectedValueOnce(
+      new TypeError("synthetic streaming compile failure"),
+    );
+    const service = createWasmThreadSpikeService();
+
+    service.start();
+    await drainMicrotasks();
+
+    expect(service.snapshot()).toMatchObject({
+      failureMessage: "synthetic streaming compile failure",
+      runtimeStateAtFailure: {
+        allocatorLock: 0,
+        initializedInstanceCount: 0,
+        sharedInitializationState: 0,
+      },
+      state: "failed",
+    });
+    expect(FakeWorker.instances).toHaveLength(0);
+  });
 });
+
+const compiledModule = {} as WebAssembly.Module;
 
 function installStartupStubs(now: () => number): void {
   vi.stubGlobal("performance", { now });
@@ -129,15 +198,27 @@ function installDeferredStartupStubs(fetchResult: Promise<Response>): void {
     "fetch",
     vi.fn(() => fetchResult),
   );
-  vi.spyOn(WebAssembly, "compile").mockResolvedValue({} as WebAssembly.Module);
+  vi.spyOn(WebAssembly, "compileStreaming").mockResolvedValue(compiledModule);
+  vi.spyOn(WebAssembly, "instantiateStreaming");
+  vi.spyOn(WebAssembly, "instantiate");
 }
 
-function successfulResponse(): Response {
-  return {
-    arrayBuffer: async () => new ArrayBuffer(8),
-    ok: true,
-    status: 200,
-  } as Response;
+function successfulResponse(
+  options: Readonly<{ contentLength?: string; contentType?: string }> = {},
+): Response {
+  const response = new Response(new Uint8Array(8), {
+    headers: new Headers({
+      "content-length": options.contentLength ?? "8",
+      "content-type": options.contentType ?? "application/wasm",
+    }),
+  });
+  vi.spyOn(response, "arrayBuffer");
+  vi.spyOn(response, "clone");
+  return response;
+}
+
+function failedResponse(status: number): Response {
+  return new Response(null, { status });
 }
 
 function requireWorkers(): readonly [FakeWorker, FakeWorker] {

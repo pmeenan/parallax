@@ -11,7 +11,7 @@
     "@parallax/engine": "workspace:*",
     "@types/node": "24.13.3",
     "playwright-core": "1.61.1",
-    "sharp": "0.34.5",
+    "sharp": "0.35.3",
     "vitest": "4.1.10"
   }
 }

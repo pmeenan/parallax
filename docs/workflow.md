@@ -54,6 +54,48 @@ role/status, authoritative pin source, and verification date. Create the file if
 absent on a new machine. Never put credentials, tokens, environment dumps, or other
 secrets in it.
 
+## Production deployment
+
+Production serving/deployment is versioned under `deploy/` (D-121). Run
+`pnpm deploy:production` for the default read-only preview: it rebuilds and verifies
+`dist`, prints local/remote inventories, and validates the fixed `plex` webroot.
+`pnpm deploy:production:apply` is the fixed explicit destructive command. Its package
+script launches a fixed no-argument wrapper, which invokes the bounded deployer in the
+same PowerShell process with real `Deploy` and disabled `Confirm` switch values. It
+uses no pnpm argument forwarding and exposes no remote host, path, or deletion target.
+It requires the
+documented owner/mode invariant, stable target inode, no webroot/descendant mounts, and
+an exclusive lock inside `/var/www/parallax-web.com`; it removes only non-lock children,
+preserves the exact D-130 model set inside that private lock, copies the frozen verified
+`dist`, restores the model objects, and proves the exact combined remote path/size/hash
+inventory before success. It refuses destructive replacement when the pinned model set
+is absent, wrong, unsafe, or accompanied by model-prefix extras. The fixed webroot is
+exclusively Parallax-owned exact-inventory storage: unrelated and ACME HTTP-01 challenge
+files must use another location. A retained deployment lock fails preview with its path;
+follow the manual recovery procedure in `deploy/README.md` instead of deleting it.
+`pnpm deploy:model-content` is the separate fixed-target read-only preview that
+stream-verifies the exact five local model shards; only the fixed
+`pnpm deploy:model-content:apply` command uploads missing/wrong objects privately and
+publishes them after remote size/hash verification. Its corresponding fixed
+no-argument wrapper supplies the same in-process switch values without pnpm argument
+forwarding or configurable targets and never deploys the frozen `site/` placeholder.
+Review
+[`deploy/README.md`](../deploy/README.md) before use.
+
+The deployer cannot install `/etc/nginx` configuration or reload nginx. Those are
+separate human-admin actions using the exact rollback-safe installer command in
+`deploy/README.md`. The portable unit gate executes the mocked production and model-
+content deployment safety suites; optional POSIX semantic fixtures are not required.
+For each post-M2 runtime-affecting production candidate whose standing D-097 trigger
+fires, install any changed versioned config, deploy the exact candidate, and require
+local plus public header/artifact checks and the final production-target harness gate
+to pass before acceptance. D-153's M2 closure is not reopened by documentation-only work.
+D-154 prospectively classifies short-`smoke@1` streaming p95 cross-launch repeatability
+as a non-blocking diagnostic. The final production-target gate still requires all six
+launches, valid per-launch streaming evidence, all 30 unchanged budget checks, all three
+facets, and exact pre/post production identity to pass; the diagnostic's invalid state
+must remain visible but cannot withhold the budget verdict.
+
 ## Close experiments cleanly
 
 When an experiment has produced a recorded decision and is no longer a selected
@@ -116,8 +158,11 @@ answered a settled decision.
 “Per change” means per final reviewable runtime-affecting candidate, not after every
 edit or review exchange (D-097).
 
-- Run `pnpm check` before implementation handoff. Run it again after any review fix
-  changes code, generated artifacts, or build/test contracts.
+- During implementation and review correction, run the focused tests, typecheck, and
+  lint checks that cover the changed surface. Run `pnpm check` once after implementation
+  and review corrections converge. Rerun that full gate only when a later change alters
+  a qualifying input after the gate; do not rerun it after every intermediate edit or
+  review exchange (D-145).
 - Run one physical-console `pnpm harness:smoke` after code and review fixes have
   converged when the candidate changes a built app/engine/game/worker/Wasm artifact,
   browser-facing behavior, harness or measurement logic, runtime dependency or
@@ -136,9 +181,53 @@ edit or review exchange (D-097).
   remains the report's own source tuple and runtime artifact; this exception prevents
   an infinite run → document → rerun loop and does not weaken any D-097 gate.
 - Keep opt-in diagnostics on their documented triggers. In particular, run the V8
-  lifecycle diagnostic only under D-095, and run branded-Chrome parity when assessing
-  a Chrome pin or the browser portion of the standing dependency checkpoint rather
-  than on an unrelated weekly schedule.
+  lifecycle diagnostic only under D-095. Run
+  `pnpm harness:branded-parity -- --target https://parallax-web.com` on physical-console
+  dev-01 when assessing/adopting a Chrome pin or the browser portion of the standing
+  dependency checkpoint, not on an unrelated weekly schedule (D-150). This separate
+  opt-in result reuses the exact current six-launch smoke core and mandatory facets with
+  the registered installed branded executable, but is baseline-ineligible,
+  nonpromotable, and not budget-authoritative; see `harness/AGENTS.md` for its fail-closed
+  identity contract.
+- D-124 closes D-122/D-123's consumed streaming-tail experiment. Both invalid,
+  non-qualifying reports and consumption records remain machine-local evidence, and
+  both dirty measured sources have independently verified D-099 bundles. D-123
+  retained five valid attempts plus one null fresh-repeat-2 attempt after
+  `control 8 timestamps are misordered`; no retry is authorized. The valid observations
+  localize application-visible cross-realm waiting but cannot distinguish browser/OS
+  scheduling or GPU completion, so D-116 remains unchanged and RE-043 stays open.
+- The temporary command, protocol, controls, timing/correlation ring, worker/telemetry
+  hooks, public methods, runner, validator, and tests are removed under the closed-
+  experiment rule. Rebuild, deploy, and verify the cleaned production artifact after
+  review convergence, then run one final D-097 physical-console production smoke.
+  That smoke qualifies the converged D-121 candidate; it is not a diagnostic retry.
+- D-125 retains that final cleaned-candidate smoke as failed and denies a blind retry.
+  Its batch-atomic render transaction correction requires review, deterministic rebuild,
+  production deployment/verification, and exactly one post-correction D-097 smoke.
+  Any failure is retained and adjudicated before another run.
+- D-126 retains D-125's post-correction smoke as failed after all 30 absolute checks
+  passed but fresh streaming p95 spread reached 1.250 ms. No retry is authorized.
+  The remaining two-phase batch transaction becomes one ordered render
+  request/response, with reverse rollback on mutation/enqueue failure and ordinary
+  streaming-worker timeout plus renderer teardown after response loss. Review,
+  deterministic rebuild, exact production verification, and exactly one post-D-126
+  D-097 smoke are required. Any failure is again retained and adjudicated.
+- D-127 records that one post-D-126 production smoke as passed under D-119's
+  evidence-only closure. Exact pre/post production identity, all six launches, all
+  three facets, and 30/30 checks passed; both D-116 cohorts were within the unchanged
+  1 ms allowance. The baseline remains untracked. No additional physical, public,
+  flythrough, recovery, or V8 run is required for the production item. M2 remains open
+  and Installer UX is next.
+- D-134 retains D-133's first production smoke as failed after all six mandatory
+  all-realm heap checks rejected the eager installer worker as an unknown CDP target.
+  This is deterministic harness drift, not an intermittent failure, so no
+  same-artifact classification retry is authorized. After the shared exact
+  build-manifest-v13 target resolver, deterministic gates, and adversarial review
+  converged, exact production identity was verified and the one corrected D-097 smoke
+  passed all six launches, all three facets, and 30/30 checks. The baseline remains
+  untracked and no retry ran. Final independent review accepted D-133 after
+  recomputing the retained hashes, exact identity, raw eight-realm heap samples,
+  high-waters, repeatability, and all 30 checks.
 
 D-115 completes M1's public Benchmark mode task on its implementation and fail-honest
 result contract. The two complete page-only reports remain failed under their unchanged
@@ -197,9 +286,9 @@ retain it and run one immediate same-artifact retry for classification. The retr
 separate result, cannot turn the failed report green, and does not justify repeated
 passes outside a bounded diagnosis.
 
-Only a pinned-Chrome run on a registered reference machine at its physical console
-carries a budget verdict. Remote and non-reference runs are advisory and cannot replace
-the final qualifying run.
+Only a pinned-Chrome run on registered dev-01 at its physical console carries a budget
+verdict (D-150). Remote and other-machine runs are advisory and cannot replace the final
+qualifying dev-01 run or invalidate its acceptance.
 
 Immediately before every Chrome context launch in a Windows physical-console gate,
 including identity/reference launches and every measured attempt or repeat, wake the
@@ -224,12 +313,23 @@ means:
   subagent's model and reasoning effort to match its task. The working tree is shared:
   subagents that write must run serially or own disjoint files; parallelize freely only
   for read-only work (research, code reading, verification).
+- **Use fresh bounded contexts (D-145).** Start each implementation or review project
+  in a new minimal-context subagent. Reuse that subagent only for an exact correction or
+  verification within the same project; do not carry an accumulated thread into the
+  next project.
 - **You own acceptance.** Review every subagent's output and don't accept it until it
   meets the bar. Acceptance means evidence, not reading: run the checks yourself —
   typecheck, tests, harness numbers where behavior is measured (root rule 3). A
   subagent reporting success is an assertion, not a measurement.
 - **You own the cross-cutting rules.** Decision-log entries, rough-edges findings,
   docs moving with code, budget compliance — delegating work never delegates these.
+- **Match evidence to the claim (D-145).** Retain bounded raw observations and gate the
+  product invariants the claim actually needs. Exact callback/publication counts or a
+  closed-world event topology are mandatory only when the acceptance claim depends on
+  them; equivalent intermediate publications remain diagnostic. If a project reaches a
+  third correction pass caused only by evidence machinery, stop adding proof structure
+  and redesign or simplify the qualifier before doing more implementation or physical
+  attempts.
 - **Adversarial review before handoff.** When you believe the unit is complete, run a
   fresh-context review over the full working-tree diff, briefed to find problems —
   correctness, layer violations, missing docs/instrumentation/telemetry, rule breaches

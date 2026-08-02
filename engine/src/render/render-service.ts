@@ -7,6 +7,11 @@ import { STREAMING_RESIDENT_CELL_LIMIT } from "../streaming/streaming-protocol";
 import { createSabRingBufferSpike } from "../workers/sab-ring-buffer-spike";
 import type { SabRingBufferSpikeTelemetrySnapshot } from "../workers/sab-ring-buffer-spike-protocol";
 import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
+import {
+  idlePsoWarmupTelemetrySnapshot,
+  type PsoWarmupTelemetrySnapshot,
+  type PsoWarmupTraceBundle,
+} from "./pso-warmup-contract";
 import type {
   FlythroughCheckpointRenderEvidence,
   GreyboxRenderTelemetry,
@@ -45,6 +50,11 @@ export interface RenderRecoveryTelemetry {
   readonly workerGeneration: number;
 }
 
+export interface RetainedPsoWarmupFailureTelemetry {
+  readonly snapshot: PsoWarmupTelemetrySnapshot;
+  readonly workerGeneration: number;
+}
+
 export interface RenderTelemetrySnapshot {
   readonly decoderBootstrap: DecoderBootstrapTelemetry | null;
   readonly decoderFixtures: DecoderFixtureTelemetry | null;
@@ -53,6 +63,8 @@ export interface RenderTelemetrySnapshot {
   readonly flythrough: RenderFlythroughTelemetry | null;
   readonly greyboxWorld: GreyboxRenderTelemetry | null;
   readonly recentFrames: readonly RenderFrameSample[];
+  readonly psoWarmup: PsoWarmupTelemetrySnapshot;
+  readonly retainedPsoWarmupFailure: RetainedPsoWarmupFailureTelemetry | null;
   readonly renderPixelSize: RenderPixelSize | null;
   readonly renderPixelSizeOverride: RenderPixelSize | null;
   readonly recovery: RenderRecoveryTelemetry;
@@ -90,6 +102,7 @@ export interface RenderService {
 export interface RenderStartupTelemetry {
   readonly failStreamingCohort: (message: string) => void;
   readonly mainThreadWorldGenerationMs: number;
+  readonly psoWarmupTrace: PsoWarmupTraceBundle;
   readonly restartStreamingCohort: (
     checkpoint?: StreamingRecoveryCheckpoint,
   ) => RenderStreamingRecoveryAttempt;
@@ -167,6 +180,20 @@ function freezeGreyboxTelemetry(value: GreyboxRenderTelemetry): GreyboxRenderTel
   });
 }
 
+function freezePsoWarmupTelemetry(value: PsoWarmupTelemetrySnapshot): PsoWarmupTelemetrySnapshot {
+  return Object.freeze({
+    ...value,
+    entries: Object.freeze(
+      value.entries.map((entry) =>
+        Object.freeze({
+          ...entry,
+        }),
+      ),
+    ),
+    failure: value.failure === null ? null : Object.freeze({ ...value.failure }),
+  });
+}
+
 export function createRenderService(): RenderService {
   let publishSabSnapshot = (_snapshot: SabRingBufferSpikeTelemetrySnapshot): void => undefined;
   let sabRingBufferSpike = createSabRingBufferSpike((snapshot) => publishSabSnapshot(snapshot));
@@ -178,6 +205,8 @@ export function createRenderService(): RenderService {
     flythrough: null,
     greyboxWorld: null,
     recentFrames: Object.freeze([]),
+    psoWarmup: idlePsoWarmupTelemetrySnapshot(),
+    retainedPsoWarmupFailure: null,
     renderPixelSize: null,
     renderPixelSizeOverride: null,
     recovery: Object.freeze({
@@ -305,12 +334,14 @@ export function createRenderService(): RenderService {
     cause: RenderRecoveryCause,
     message: string,
     propagateToStreaming = true,
+    psoWarmup: PsoWarmupTelemetrySnapshot | null = null,
   ): void => {
     if (telemetry.state === "failed" || telemetry.state === "disposed") return;
     teardownAttempt("Render service failed before checkpoint capture completed");
     publish({
       ...telemetry,
       failureMessage: message,
+      psoWarmup: psoWarmup ?? telemetry.psoWarmup,
       recovery: Object.freeze({
         ...telemetry.recovery,
         lastCause: cause,
@@ -413,6 +444,7 @@ export function createRenderService(): RenderService {
           mainThreadWorldGenerationMs: startup.mainThreadWorldGenerationMs,
         }),
         recentFrames: Object.freeze([Object.freeze(message.firstFrame)]),
+        psoWarmup: freezePsoWarmupTelemetry(message.psoWarmup),
         renderPixelSize: readyRenderSize,
         renderPixelSizeOverride,
         recovery: Object.freeze({
@@ -607,7 +639,11 @@ export function createRenderService(): RenderService {
           );
           break;
         case "error":
-          recoverOrFail(message.cause, message.message);
+          recoverOrFail(
+            message.cause,
+            message.message,
+            message.psoWarmup === null ? null : freezePsoWarmupTelemetry(message.psoWarmup),
+          );
           break;
         case "sab-ring-buffer-spike-result":
           sabRingBufferSpike.handleWorkerResult(message);
@@ -641,6 +677,7 @@ export function createRenderService(): RenderService {
           streamingRecoveryCheckpoint?.flythroughObserverUpdateCount ?? 0,
         height: initialSize.height,
         kind: "start",
+        psoWarmupTrace: startup.psoWarmupTrace,
         sabRingBufferSpike: sabRingBufferSpike.config,
         scene,
         streamingPort,
@@ -665,7 +702,11 @@ export function createRenderService(): RenderService {
     resizeObserver.observe(canvas, { box: "device-pixel-content-box" });
   }
 
-  function recoverOrFail(cause: RenderRecoveryCause, message: string): void {
+  function recoverOrFail(
+    cause: RenderRecoveryCause,
+    message: string,
+    psoWarmupFailure: PsoWarmupTelemetrySnapshot | null = null,
+  ): void {
     if (telemetry.state === "failed" || telemetry.state === "disposed") {
       return;
     }
@@ -674,10 +715,19 @@ export function createRenderService(): RenderService {
       startupConfig === null ||
       currentCanvas === null
     ) {
-      failTerminal(cause, message);
+      failTerminal(cause, message, true, psoWarmupFailure);
       return;
     }
     const recoveryStartedAt = performance.now();
+    const failedPsoWarmup = psoWarmupFailure ?? telemetry.psoWarmup;
+    const retainedPsoWarmupFailure =
+      telemetry.retainedPsoWarmupFailure ??
+      (failedPsoWarmup.state === "failed"
+        ? Object.freeze({
+            snapshot: failedPsoWarmup,
+            workerGeneration: telemetry.recovery.workerGeneration,
+          })
+        : null);
     teardownAttempt("Render worker restarted before checkpoint capture completed");
     publish({
       ...telemetry,
@@ -688,6 +738,8 @@ export function createRenderService(): RenderService {
       frameCount: 0,
       greyboxWorld: null,
       recentFrames: Object.freeze([]),
+      psoWarmup: idlePsoWarmupTelemetrySnapshot(),
+      retainedPsoWarmupFailure,
       renderPixelSize: null,
       renderPixelSizeOverride,
       recovery: Object.freeze({

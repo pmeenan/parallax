@@ -1,12 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import type { PsoWarmupTelemetrySnapshot } from "@parallax/engine";
 import { evaluateBoundedRepeatability } from "./aggregate.js";
 import type { BudgetCheck, QualityTier } from "./budgets.js";
 import {
   type GreyboxWorldEvidence,
   requireGreyboxWorldTelemetry,
 } from "./greybox-world-evidence.js";
+import { validateExactPsoWarmupTelemetrySnapshot } from "./pso-warmup-telemetry.js";
 import {
   SMOKE_BUDGET_METRIC_NAMES,
   SMOKE_BUDGET_METRICS,
@@ -19,6 +21,12 @@ import {
   SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
 } from "./runs/smoke.js";
 import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
+import {
+  type HarnessTargetIdentity,
+  type HarnessTargetVerificationEvidence,
+  validateHarnessTargetEvidence,
+  validateHarnessTargetIdentity,
+} from "./target.js";
 
 export const BASELINE_STORE_SCHEMA_VERSION = 1;
 
@@ -34,6 +42,9 @@ interface BaselineReportRun {
     readonly value: GreyboxWorldEvidence;
   }>;
   readonly profile: "fresh" | "warm";
+  readonly psoWarmup:
+    | Readonly<{ readonly state: "measured"; readonly value: PsoWarmupTelemetrySnapshot }>
+    | Readonly<{ readonly reason: string; readonly state: "invalid" | "unsupported" }>;
   readonly repeat: number;
   readonly streaming: Readonly<{
     readonly state: "measured";
@@ -49,16 +60,34 @@ export interface BaselineEligibleReport {
     readonly totalBuildBytes: number;
   };
   readonly chromePin: {
+    readonly channel: "stable";
+    readonly downloads: Readonly<Record<string, string>>;
+    readonly executableSha256: Readonly<Record<string, string>>;
     readonly revision: string;
     readonly version: string;
   };
+  readonly callbackPacingVariance: readonly unknown[];
+  readonly coreRunFailure: unknown;
   readonly environment: {
     readonly adapter: unknown;
+    readonly browserCommandLine: string;
+    readonly browserDisplay: unknown;
+    readonly browserProduct: string;
+    readonly browserRevision: string;
+    readonly browserUserAgent: string;
     readonly executableSha256: string;
+    readonly gateIdentity: unknown;
+    readonly gpuDevices: readonly unknown[];
+    readonly host: unknown;
     readonly hostAfterRuns: unknown;
+    readonly jsVersion: string;
     readonly machine: unknown;
     readonly machineId: string;
     readonly requestedTier: QualityTier;
+    readonly sandboxVerified: true;
+    readonly target: HarnessTargetIdentity;
+    readonly targetPostflight: HarnessTargetVerificationEvidence;
+    readonly targetPreflight: HarnessTargetVerificationEvidence;
     readonly targetDisplayMode: string;
   };
   readonly facets: {
@@ -76,6 +105,8 @@ export interface BaselineEligibleReport {
   readonly finalizationFailure: string | null;
   readonly generatedAt: string;
   readonly harnessRuntime: HarnessRuntimeIdentity;
+  readonly incompleteMetrics: readonly unknown[];
+  readonly informationalFailures: readonly string[];
   readonly mandatoryMetricSet: {
     readonly metrics: readonly string[];
     readonly version: number;
@@ -83,6 +114,7 @@ export interface BaselineEligibleReport {
   readonly passed: boolean;
   readonly postRunIdentity: Readonly<{ readonly reason?: string; readonly state: string }>;
   readonly reportPersistence: Readonly<{ readonly reason?: string; readonly state: string }>;
+  readonly releaseDigest: string;
   readonly runs: readonly BaselineReportRun[];
   readonly scenario: string;
   readonly schemaVersion: number;
@@ -96,6 +128,8 @@ export interface BaselineEligibleReport {
     readonly state: "invalid" | "measured";
   }[];
   readonly v8CodeCacheDiagnosticsRequested: boolean;
+  readonly v8CodeCacheDiagnostics: readonly unknown[];
+  readonly vizPresentationFeedbackCallbackVariance: readonly unknown[];
 }
 
 export interface BaselineMetricSummary {
@@ -155,8 +189,14 @@ export interface BaselineComparisonEnvironment {
   readonly machine: unknown;
   readonly machineId: string;
   readonly requestedTier: QualityTier;
+  readonly target?: BaselineTargetComparisonIdentity;
   readonly targetDisplayMode: string;
   readonly harnessRuntime: HarnessRuntimeIdentity;
+}
+
+export interface BaselineTargetComparisonIdentity {
+  readonly kind: "local" | "production";
+  readonly origin: "http://127.0.0.1" | "https://parallax-web.com";
 }
 
 export interface HarnessRuntimeIdentity {
@@ -188,15 +228,23 @@ export function evaluateBaseline(
   report: Omit<BaselineEligibleReport, "baseline">,
   store: BaselineStore,
 ): BaselineEvaluation {
-  const storedBaseline: unknown = store.entries[baselineKey(report)];
-  if (storedBaseline === undefined) {
+  const anchor = baselineAnchor(report, store);
+  if (anchor === null) {
     return Object.freeze({
       reason: "No promoted baseline exists for this scenario, machine, and quality tier",
       state: "untracked" as const,
     });
   }
   const candidateMetrics = summarizeBaselineMetrics(report);
-  const baseline = requireBaselineRecord(storedBaseline);
+  const baseline = requireBaselineRecord(anchor.record);
+  if (anchor.legacy) {
+    return Object.freeze({
+      baseline,
+      reason:
+        "Pre-D-121 local baseline predecessor has no serving-target identity and is intentionally incomparable; pass --rebaseline only for an intentional reviewed migration",
+      state: "ineligible" as const,
+    });
+  }
   if (baseline.mandatoryMetricSetVersion !== report.mandatoryMetricSet.version) {
     return Object.freeze({
       baseline,
@@ -301,6 +349,39 @@ export async function promoteBaseline(options: {
 export function parseBaselineEligibleReport(value: unknown): BaselineEligibleReport {
   if (!isRecord(value)) throw new Error("Baseline report must be a JSON object");
   requireSha256(value.artifactDigest, "artifactDigest");
+  requireSha256(value.releaseDigest, "releaseDigest");
+  requireExactKeys(
+    value,
+    [
+      "artifactDigest",
+      "baseline",
+      "build",
+      "callbackPacingVariance",
+      "chromePin",
+      "coreRunFailure",
+      "environment",
+      "facets",
+      "finalizationFailure",
+      "generatedAt",
+      "harnessRuntime",
+      "incompleteMetrics",
+      "informationalFailures",
+      "mandatoryMetricSet",
+      "passed",
+      "postRunIdentity",
+      "releaseDigest",
+      "reportPersistence",
+      "runs",
+      "scenario",
+      "schemaVersion",
+      "source",
+      "streamingCellLoadP95Variance",
+      "v8CodeCacheDiagnostics",
+      "v8CodeCacheDiagnosticsRequested",
+      "vizPresentationFeedbackCallbackVariance",
+    ],
+    "smoke report",
+  );
   requireRecord(value.baseline, "baseline");
   if (
     value.baseline.state !== "untracked" &&
@@ -321,14 +402,77 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   );
   requireFiniteNonnegative(value.build.totalBuildBytes, "build.totalBuildBytes");
   requireRecord(value.chromePin, "chromePin");
+  if (value.chromePin.channel !== "stable") invalidReport("chromePin.channel must be stable");
+  requireRecord(value.chromePin.downloads, "chromePin.downloads");
+  requireRecord(value.chromePin.executableSha256, "chromePin.executableSha256");
   requireText(value.chromePin.revision, "chromePin.revision");
   requireText(value.chromePin.version, "chromePin.version");
+  if (value.coreRunFailure !== null) invalidReport("coreRunFailure must be null");
+  if (!Array.isArray(value.callbackPacingVariance)) {
+    invalidReport("callbackPacingVariance must be an array");
+  }
   requireRecord(value.environment, "environment");
+  requireExactKeys(
+    value.environment,
+    [
+      "adapter",
+      "browserCommandLine",
+      "browserDisplay",
+      "browserProduct",
+      "browserRevision",
+      "browserUserAgent",
+      "executableSha256",
+      "gateIdentity",
+      "gpuDevices",
+      "host",
+      "hostAfterRuns",
+      "jsVersion",
+      "machine",
+      "machineId",
+      "requestedTier",
+      "sandboxVerified",
+      "target",
+      "targetDisplayMode",
+      "targetPostflight",
+      "targetPreflight",
+    ],
+    "environment",
+  );
   requireRecord(value.environment.adapter, "environment.adapter");
+  requireRecord(value.environment.browserDisplay, "environment.browserDisplay");
+  requireText(value.environment.browserCommandLine, "environment.browserCommandLine");
+  if (value.environment.browserProduct !== `Chrome/${value.chromePin.version}`) {
+    invalidReport("environment.browserProduct must match chromePin.version");
+  }
+  requireText(value.environment.browserRevision, "environment.browserRevision");
+  requireText(value.environment.browserUserAgent, "environment.browserUserAgent");
   requireSha256(value.environment.executableSha256, "environment.executableSha256");
+  if (
+    !Object.values(value.chromePin.executableSha256).includes(value.environment.executableSha256)
+  ) {
+    invalidReport("environment.executableSha256 must match the pinned Chrome executable");
+  }
+  requireRecord(value.environment.gateIdentity, "environment.gateIdentity");
+  if (
+    value.environment.gateIdentity.state !== "measured" ||
+    value.environment.gateIdentity.value !== true
+  ) {
+    invalidReport("environment.gateIdentity must prove a registered physical environment");
+  }
+  if (!Array.isArray(value.environment.gpuDevices) || value.environment.gpuDevices.length === 0) {
+    invalidReport("environment.gpuDevices must contain physical GPU identity");
+  }
+  requireRecord(value.environment.host, "environment.host");
   requireRecord(value.environment.hostAfterRuns, "environment.hostAfterRuns");
   requireRecord(value.environment.machine, "environment.machine");
   requireText(value.environment.machineId, "environment.machineId");
+  if (value.environment.machine.id !== value.environment.machineId) {
+    invalidReport("environment.machine must match machineId");
+  }
+  requireText(value.environment.jsVersion, "environment.jsVersion");
+  if (value.environment.sandboxVerified !== true) {
+    invalidReport("environment.sandboxVerified must be true");
+  }
   if (
     value.environment.requestedTier !== "showcase" &&
     value.environment.requestedTier !== "standard"
@@ -336,6 +480,25 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     invalidReport("environment.requestedTier must be showcase or standard");
   }
   requireText(value.environment.targetDisplayMode, "environment.targetDisplayMode");
+  validateHarnessTargetIdentity(value.environment.target, "environment.target");
+  if (value.environment.target.artifactDigest !== value.artifactDigest) {
+    invalidReport("environment.target artifact digest must match artifactDigest");
+  }
+  if (value.environment.target.releaseDigest !== value.releaseDigest) {
+    invalidReport("environment.target release digest must match releaseDigest");
+  }
+  validateHarnessTargetEvidence(value.environment.targetPreflight, "environment.targetPreflight");
+  validateHarnessTargetEvidence(value.environment.targetPostflight, "environment.targetPostflight");
+  if (
+    value.environment.targetPreflight.state !== "verified" ||
+    value.environment.targetPostflight.state !== "verified" ||
+    JSON.stringify(value.environment.targetPreflight.identity) !==
+      JSON.stringify(value.environment.target) ||
+    JSON.stringify(value.environment.targetPostflight.identity) !==
+      JSON.stringify(value.environment.target)
+  ) {
+    invalidReport("environment target preflight/postflight evidence is contradictory");
+  }
   requireRecord(value.facets, "facets");
   const budgetFacet = value.facets.budgetEvaluation;
   const environmentFacet = value.facets.environment;
@@ -401,6 +564,15 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   if (typeof value.v8CodeCacheDiagnosticsRequested !== "boolean") {
     invalidReport("v8CodeCacheDiagnosticsRequested must be boolean");
   }
+  if (
+    !Array.isArray(value.incompleteMetrics) ||
+    !Array.isArray(value.informationalFailures) ||
+    !value.informationalFailures.every((failure) => typeof failure === "string") ||
+    !Array.isArray(value.v8CodeCacheDiagnostics) ||
+    !Array.isArray(value.vizPresentationFeedbackCallbackVariance)
+  ) {
+    invalidReport("smoke report diagnostic collections must be arrays");
+  }
   const declaredStreamingVariance = requireP95VarianceSummaries(
     value.streamingCellLoadP95Variance,
     "streamingCellLoadP95Variance",
@@ -446,6 +618,16 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     requireRecord(run.greyboxWorld, `runs[${runIndex}].greyboxWorld`);
     if (run.greyboxWorld.state !== "measured") {
       invalidReport(`runs[${runIndex}].greyboxWorld.state must be measured`);
+    }
+    requireRecord(run.psoWarmup, `runs[${runIndex}].psoWarmup`);
+    if (run.psoWarmup.state !== "measured") {
+      invalidReport(`runs[${runIndex}].psoWarmup.state must be measured`);
+    }
+    try {
+      validateExactPsoWarmupTelemetrySnapshot(run.psoWarmup.value as PsoWarmupTelemetrySnapshot);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      invalidReport(`runs[${runIndex}].psoWarmup.value is invalid: ${reason}`);
     }
     try {
       requireGreyboxWorldTelemetry(run.greyboxWorld.value);
@@ -540,6 +722,25 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
   return value as unknown as BaselineEligibleReport;
 }
 
+export function parseFinalizedSmokeReport(value: unknown): BaselineEligibleReport {
+  const report = parseBaselineEligibleReport(value);
+  if (
+    report.passed !== true ||
+    report.postRunIdentity.state !== "measured" ||
+    report.reportPersistence.state !== "measured" ||
+    report.finalizationFailure !== null ||
+    report.facets.budgetEvaluation.status !== "passed" ||
+    report.facets.environment.status !== "passed" ||
+    report.facets.evidenceCompleteness.status !== "passed" ||
+    report.facets.budgetEvaluation.reasons.length !== 0 ||
+    report.facets.environment.reasons.length !== 0 ||
+    report.facets.evidenceCompleteness.reasons.length !== 0
+  ) {
+    invalidReport("smoke report must be finalized with all three passing facets");
+  }
+  return report;
+}
+
 function summarizeBaselineMetrics(
   report: Omit<BaselineEligibleReport, "baseline">,
 ): readonly BaselineMetricSummary[] {
@@ -617,6 +818,19 @@ function requireBaselineRecord(value: unknown): BaselineRecord {
     invalidBaseline("comparisonEnvironment.requestedTier must be showcase or standard");
   }
   requireBaselineText(environment.targetDisplayMode, "comparisonEnvironment.targetDisplayMode");
+  if (environment.target !== undefined) {
+    if (
+      !isRecord(environment.target) ||
+      (environment.target.kind !== "local" && environment.target.kind !== "production") ||
+      (environment.target.origin !== "http://127.0.0.1" &&
+        environment.target.origin !== "https://parallax-web.com") ||
+      (environment.target.kind === "local" && environment.target.origin !== "http://127.0.0.1") ||
+      (environment.target.kind === "production" &&
+        environment.target.origin !== "https://parallax-web.com")
+    ) {
+      invalidBaseline("comparisonEnvironment.target is invalid");
+    }
+  }
   if (!isRecord(environment.harnessRuntime)) {
     invalidBaseline("comparisonEnvironment.harnessRuntime must be an object");
   }
@@ -715,8 +929,8 @@ function assertPromotionEligible(report: BaselineEligibleReport): void {
     report.runs.some((run) => run.budgetChecks.some((check) => !check.passed)) ||
     report.postRunIdentity.state !== "measured" ||
     report.reportPersistence.state !== "measured" ||
+    report.environment.targetPostflight.state !== "verified" ||
     report.finalizationFailure !== null ||
-    report.streamingCellLoadP95Variance.some((summary) => summary.state !== "measured") ||
     report.facets.environment.reasons.length > 0 ||
     report.facets.evidenceCompleteness.reasons.length > 0 ||
     report.facets.budgetEvaluation.reasons.length > 0
@@ -741,7 +955,8 @@ function assertPromotionTransition(
   store: BaselineStore,
   allowIneligible: boolean,
 ): void {
-  const current = store.entries[baselineKey(report)];
+  const anchor = baselineAnchor(report, store);
+  const current = anchor === null ? undefined : requireBaselineRecord(anchor.record);
   const observedDigest =
     report.baseline.state === "untracked" ? null : report.baseline.baseline.reportDigest;
   if (current === undefined && observedDigest !== null) {
@@ -762,7 +977,28 @@ function assertPromotionTransition(
   }
 }
 
+function baselineAnchor(
+  report: Omit<BaselineEligibleReport, "baseline">,
+  store: BaselineStore,
+): Readonly<{ legacy: boolean; record: unknown }> | null {
+  const qualified = store.entries[baselineKey(report)];
+  if (qualified !== undefined) return Object.freeze({ legacy: false, record: qualified });
+  if (report.environment.target.kind !== "local") return null;
+  const legacy = store.entries[legacyBaselineKey(report)];
+  return legacy === undefined ? null : Object.freeze({ legacy: true, record: legacy });
+}
+
 function baselineKey(report: Omit<BaselineEligibleReport, "baseline">): string {
+  return [
+    report.scenario,
+    report.environment.machineId,
+    report.environment.requestedTier,
+    report.environment.target.kind,
+    comparisonTarget(report.environment.target).origin,
+  ].join("|");
+}
+
+function legacyBaselineKey(report: Omit<BaselineEligibleReport, "baseline">): string {
   return [report.scenario, report.environment.machineId, report.environment.requestedTier].join(
     "|",
   );
@@ -777,8 +1013,16 @@ function comparisonEnvironment(
     machine: report.environment.machine,
     machineId: report.environment.machineId,
     requestedTier: report.environment.requestedTier,
+    target: comparisonTarget(report.environment.target),
     targetDisplayMode: report.environment.targetDisplayMode,
     harnessRuntime: report.harnessRuntime,
+  });
+}
+
+function comparisonTarget(target: HarnessTargetIdentity): BaselineTargetComparisonIdentity {
+  return Object.freeze({
+    kind: target.kind,
+    origin: target.kind === "local" ? "http://127.0.0.1" : "https://parallax-web.com",
   });
 }
 
@@ -900,6 +1144,18 @@ function requiredText(value: string, label: string): string {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function requireExactKeys(
+  value: Record<string, unknown>,
+  expectedKeys: readonly string[],
+  path: string,
+): void {
+  const actual = Object.keys(value).sort();
+  const expected = [...expectedKeys].sort();
+  if (actual.length !== expected.length || actual.some((key, index) => key !== expected[index])) {
+    invalidReport(`${path} has unsupported or missing keys`);
+  }
 }
 
 function canonicalJsonStringify(value: unknown): string {

@@ -1,6 +1,7 @@
 import type { WorldVec3 } from "../world/world-contract";
 import {
   STREAMING_TELEMETRY_SCHEMA_VERSION,
+  type StreamingContentSource,
   type StreamingRecoveryCheckpoint,
   type StreamingWorkerRequest,
   type StreamingWorkerResponse,
@@ -17,7 +18,7 @@ interface DevelopmentImportMeta extends ImportMeta {
 export type WorldStreamingListener = (snapshot: WorldStreamingTelemetrySnapshot) => void;
 
 export interface WorldStreamingStartOptions {
-  readonly buildManifestUrl: string;
+  readonly contentSource: StreamingContentSource;
   readonly districtId: string;
   readonly initialObservers: readonly WorldVec3[];
 }
@@ -57,6 +58,10 @@ function initialSnapshot(): WorldStreamingTelemetrySnapshot {
     encodedBytesRead: 0,
     failureMessage: null,
     hardwareConcurrency: 0,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 0,
     flythroughObserverUpdateCount: 0,
     observerUpdateCount: 0,
     opfsAccessHandleCount: 0,
@@ -71,10 +76,15 @@ function initialSnapshot(): WorldStreamingTelemetrySnapshot {
     residentGpuBytes: 0,
     residentGpuBytesHighWater: 0,
     renderRecoveryCount: 0,
+    renderBatchCellCountHighWater: 0,
+    renderBatchDirectUploadMsHighWater: 0,
+    renderBatchRequestCount: 0,
+    renderBatchTransactionCount: 0,
     schemaVersion: STREAMING_TELEMETRY_SCHEMA_VERSION,
     settledRecoveryCheckpoint: null,
     settledObserverUpdateCount: 0,
     state: "idle",
+    startupTiming: null,
     workerGeneration: 0,
   });
 }
@@ -105,6 +115,8 @@ export function createWorldStreamingService(): WorldStreamingService {
       ),
       residentCellIds: Object.freeze([...snapshot.residentCellIds]),
       settledRecoveryCheckpoint: freezeCheckpoint(snapshot.settledRecoveryCheckpoint),
+      startupTiming:
+        snapshot.startupTiming === null ? null : Object.freeze({ ...snapshot.startupTiming }),
     });
     const pendingRecovery = recoverySettlement;
     if (
@@ -194,7 +206,7 @@ export function createWorldStreamingService(): WorldStreamingService {
     };
     streamingWorker.postMessage(
       {
-        buildManifestUrl: options.buildManifestUrl,
+        contentSource: options.contentSource,
         districtId: options.districtId,
         initialObservers: options.initialObservers,
         kind: "start",
@@ -291,6 +303,7 @@ export function createWorldStreamingService(): WorldStreamingService {
       if (telemetry.state !== "idle") throw new Error("Streaming service can only be started once");
       startOptions = Object.freeze({
         ...options,
+        contentSource: Object.freeze({ ...options.contentSource }),
         initialObservers: Object.freeze(
           options.initialObservers.map((observer) => Object.freeze([...observer]) as WorldVec3),
         ),

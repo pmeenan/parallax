@@ -8,9 +8,9 @@ describe("streaming dashboard", () => {
       snapshot({
         cellLoadSampleCount: 3,
         cellLoadSamples: [
-          sample(1, 10, 2, 3, 4, 0.5),
-          sample(2, 20, 4, 6, 8, 1),
-          sample(3, 15, 3, 5, 6, 0.75),
+          sample(1, 10, 2, 3, 4.5),
+          sample(2, 20, 4, 6, 9),
+          sample(3, 15, 3, 5, 6.75),
         ],
         cpuBudgetRejectionCount: 2,
         currentObservers: [
@@ -64,8 +64,10 @@ describe("streaming dashboard", () => {
       value: "4.000 ms",
     });
     expect(metric(model, "stage-decode")).toMatchObject({ value: "6.000 ms" });
-    expect(metric(model, "stage-upload")).toMatchObject({ value: "8.000 ms" });
-    expect(metric(model, "stage-commit")).toMatchObject({ value: "1.000 ms" });
+    expect(metric(model, "stage-transaction")).toMatchObject({
+      detail: "Nested work p95 4.500 ms · derived wait p95 4.500 ms.",
+      value: "9.000 ms",
+    });
     expect(metric(model, "observer-settlement")).toMatchObject({
       detail: "2 updates awaiting settlement.",
       state: "warning",
@@ -88,7 +90,11 @@ describe("streaming dashboard", () => {
       state: "error",
       value: "2",
     });
-    expect(metric(model, "encoded-memory").detail).toContain("in-flight reserved");
+    expect(metric(model, "encoded-memory")).toMatchObject({
+      detail:
+        "Current bytes are resident encoded packages; high-water is the peak resident bytes plus accepted in-flight encoded batch reservations.",
+      label: "Encoded residency / reservation high-water",
+    });
     expect(metric(model, "gpu-memory").detail).toContain("not physical resident GPU memory");
   });
 
@@ -141,9 +147,7 @@ describe("streaming dashboard", () => {
   });
 
   it("uses nearest-rank p95 over retained samples without treating cumulative history as retained", () => {
-    const samples = Array.from({ length: 21 }, (_, index) =>
-      sample(index + 1, index + 1, 1, 1, 1, 1),
-    );
+    const samples = Array.from({ length: 21 }, (_, index) => sample(index + 1, index + 1, 1, 1, 2));
     const model = createStreamingDashboardModel(
       snapshot({
         cellLoadSampleCount: 300,
@@ -242,6 +246,10 @@ function snapshot(
     failureMessage: null,
     flythroughObserverUpdateCount: 0,
     hardwareConcurrency: 0,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 0,
     observerUpdateCount: 0,
     opfsAccessHandleCount: 0,
     opfsAccessHandleOpenDurationMs: 0,
@@ -249,16 +257,21 @@ function snapshot(
     opfsProvisionedBytes: 0,
     proactiveEvictionCount: 0,
     renderRecoveryCount: 0,
+    renderBatchCellCountHighWater: 0,
+    renderBatchDirectUploadMsHighWater: 0,
+    renderBatchRequestCount: 0,
+    renderBatchTransactionCount: 0,
     residentCellCount: 0,
     residentCellIds: [],
     residentEncodedBytes: 0,
     residentEncodedBytesHighWater: 0,
     residentGpuBytes: 0,
     residentGpuBytesHighWater: 0,
-    schemaVersion: 7,
+    schemaVersion: 11,
     settledObserverUpdateCount: 0,
     settledRecoveryCheckpoint: null,
     state: "idle",
+    startupTiming: null,
     workerGeneration: 0,
     ...patch,
   };
@@ -269,15 +282,16 @@ function sample(
   totalMs: number,
   opfsAccessRoundTripMs: number,
   decodeRoundTripMs: number,
-  renderUploadRoundTripMs: number,
-  renderCommitRoundTripMs: number,
+  renderTransactionRoundTripMs: number,
 ): StreamingCellLoadTelemetry {
   return {
+    batchDirectUploadMs: renderTransactionRoundTripMs / 2,
     batchCellCount: 1,
     batchCellOrdinal: 1,
     batchFlythroughObserverSequence: sequence,
     batchObserverUpdateCount: sequence,
     batchOrdinal: sequence,
+    batchTransactionId: `1:${sequence}:${sequence}:${sequence}`,
     cellId: `cell-${sequence}`,
     decodeMs: decodeRoundTripMs / 2,
     decodeRoundTripMs,
@@ -287,12 +301,11 @@ function sample(
     opfsAccessRoundTripMs,
     opfsReadMs: opfsAccessRoundTripMs / 2,
     opfsWaitMs: opfsAccessRoundTripMs / 2,
-    renderCommitRoundTripMs,
-    renderUploadRoundTripMs,
-    renderUploadWaitMs: renderUploadRoundTripMs / 2,
+    renderTransactionRoundTripMs,
+    renderTransactionWaitMs: renderTransactionRoundTripMs / 2,
     sequence,
     streamingWorkerRemainderMs: 0.25 * sequence,
     totalMs,
-    uploadMs: renderUploadRoundTripMs / 2,
+    uploadMs: renderTransactionRoundTripMs / 2,
   };
 }

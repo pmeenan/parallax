@@ -1,0 +1,613 @@
+import { createStandardMaterial, type EngineContext, type Mesh } from "@babylonjs/lite";
+import { describe, expect, it } from "vitest";
+import {
+  createEmbeddedPsoWarmupTrace,
+  createPsoWarmupTrace,
+  isPsoWarmupFailureError,
+  PSO_WARMUP_BUILD_COMPATIBILITY_DIGEST,
+  PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
+  parseFailure,
+  parsePsoWarmupTrace,
+  parsePsoWarmupTraceBundle,
+  parsePsoWarmupTraceBytes,
+  sanitizePsoWarmupFailureDetail,
+  serializePsoWarmupTrace,
+} from "../src/index";
+import {
+  normalizePsoBindGroupLayoutDescriptor,
+  observeStandardOpaquePsoRegistration,
+} from "../src/render/pso-warmup-babylon-observer";
+
+describe("PSO warmup trace contract", () => {
+  it("keeps bounded failure details idempotent at whitespace truncation boundaries", () => {
+    for (let prefixLength = 0; prefixLength < 240; prefixLength += 1) {
+      const sanitized = sanitizePsoWarmupFailureDetail(
+        `${"x".repeat(prefixLength)} ${"y".repeat(300)}`,
+      );
+      expect(sanitizePsoWarmupFailureDetail(sanitized)).toBe(sanitized);
+      expect(parseFailure(sanitized).detail).toBe(sanitized);
+    }
+  });
+
+  it("round-trips the exact deterministic current registry", () => {
+    const trace = createPsoWarmupTrace();
+    expect(parsePsoWarmupTraceBytes(serializePsoWarmupTrace(trace))).toEqual(trace);
+    expect(trace.buildCompatibilityDigest).toBe(PSO_WARMUP_BUILD_COMPATIBILITY_DIGEST);
+    expect(trace.entries[0]?.stateDigest).toBe(PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST);
+    expect(new TextDecoder().decode(serializePsoWarmupTrace(trace))).toMatch(/\n$/);
+  });
+
+  it("classifies malformed bytes separately from incompatible trace state", () => {
+    for (const [input, expectedClass] of [
+      [new TextEncoder().encode("{invalid}\n"), "parse"],
+      [
+        {
+          ...createPsoWarmupTrace(),
+          renderer: "@babylonjs/lite@0.0.0",
+        },
+        "incompatibility",
+      ],
+    ] as const) {
+      try {
+        if (input instanceof Uint8Array) parsePsoWarmupTraceBytes(input);
+        else parsePsoWarmupTrace(input);
+        throw new Error("Expected PSO warmup failure");
+      } catch (error: unknown) {
+        expect(isPsoWarmupFailureError(error)).toBe(true);
+        if (!isPsoWarmupFailureError(error)) throw error;
+        expect(error.failure.class).toBe(expectedClass);
+      }
+    }
+  });
+
+  it("validates exact bundle identity and provenance at the render-worker boundary", () => {
+    const bundle = createEmbeddedPsoWarmupTrace();
+    expect(parsePsoWarmupTraceBundle(bundle)).toEqual(bundle);
+    expect(() => parsePsoWarmupTraceBundle({ ...bundle, bytes: bundle.bytes + 1 })).toThrow(
+      /identity or provenance/,
+    );
+    expect(() =>
+      parsePsoWarmupTraceBundle({
+        ...bundle,
+        releaseDigest: "a".repeat(64),
+        source: "privileged-embedded",
+      }),
+    ).toThrow(/identity or provenance/);
+  });
+
+  it("rejects unknown keys, semantic drift, and noncanonical bytes", () => {
+    const trace = createPsoWarmupTrace();
+    expect(() => parsePsoWarmupTrace({ ...trace, extra: true })).toThrow(/shape is incompatible/);
+    expect(() =>
+      parsePsoWarmupTrace({
+        ...trace,
+        entries: [{ ...trace.entries[0], stateDigest: "a".repeat(64) }],
+      }),
+    ).toThrow(/current render-state registry/);
+    expect(() => parsePsoWarmupTraceBytes(new TextEncoder().encode(JSON.stringify(trace)))).toThrow(
+      /end with a newline/,
+    );
+  });
+
+  it("rejects mutation of every effective pipeline descriptor leaf", () => {
+    const trace = createPsoWarmupTrace();
+    const state = trace.entries[0]?.state;
+    expect(state).toBeDefined();
+    const paths = leafPaths(state);
+    expect(paths.length).toBeGreaterThan(40);
+    for (const path of paths) {
+      const mutatedState = structuredClone(state);
+      mutateLeaf(mutatedState, path);
+      expect(
+        () =>
+          parsePsoWarmupTrace({
+            ...trace,
+            entries: [{ ...trace.entries[0], state: mutatedState }],
+          }),
+        path.join("."),
+      ).toThrow(/entry is incompatible/);
+    }
+  });
+
+  it("derives the digest from the effective descriptor observed at createRenderPipeline", async () => {
+    const boundary = await createBoundary();
+    expect(await boundary.register()).toBe(PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST);
+  });
+
+  it("requires one pipeline creation inside the registered compile callback", async () => {
+    const boundary = await createBoundary();
+    await boundary.compile();
+
+    await expect(boundary.observation.register([boundary.mesh], () => undefined)).rejects.toThrow(
+      /expected one Standard pipeline creation, observed 0/,
+    );
+  });
+
+  it("restores the GPUDevice after a compile-window failure", async () => {
+    const boundary = await createBoundary();
+    await expect(
+      boundary.observation.register([boundary.mesh], () => {
+        throw new Error("scene registration failed");
+      }),
+    ).rejects.toThrow("scene registration failed");
+
+    expect(boundary.device.createRenderPipeline).toBe(boundary.originalCreateRenderPipeline);
+  });
+
+  it("preserves a primary compile failure while aggregating every restore failure for retry", async () => {
+    const target = createFakeDevice();
+    const originals = { ...target };
+    const restoreFailuresRemaining = new Map<string, number>([
+      ["createRenderPipeline", 1],
+      ["createShaderModule", 1],
+    ]);
+    const device = new Proxy(target, {
+      defineProperty(current, property, descriptor) {
+        const name = String(property) as keyof FakeDevice;
+        if (descriptor.value === originals[name]) {
+          const remaining = restoreFailuresRemaining.get(name) ?? 0;
+          if (remaining > 0) {
+            restoreFailuresRemaining.set(name, remaining - 1);
+            throw new Error(`restore failed:${name}`);
+          }
+        }
+        return Reflect.defineProperty(current, property, descriptor);
+      },
+    });
+    const observation = observeStandardOpaquePsoRegistration(engineForDevice(device));
+    const mesh = createStandardMesh();
+    const primary = new Error("compile primary");
+    let failure: unknown;
+    try {
+      await observation.register([mesh], () => {
+        throw primary;
+      });
+    } catch (error: unknown) {
+      failure = error;
+    }
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    if (!(failure instanceof AggregateError)) throw failure;
+    expect(failure.cause).toBe(primary);
+    expect(failure.errors).toEqual([
+      primary,
+      expect.objectContaining({ message: "restore failed:createRenderPipeline" }),
+      expect.objectContaining({ message: "restore failed:createShaderModule" }),
+    ]);
+    expect(device.createBindGroupLayout).toBe(originals.createBindGroupLayout);
+    expect(device.createPipelineLayout).toBe(originals.createPipelineLayout);
+    await expect(observation.register([mesh], () => undefined)).rejects.toThrow(/disposed/);
+    expect(() => observation.dispose()).not.toThrow();
+    expect(device).toMatchObject(originals);
+  });
+
+  it("preserves validation failure when observer restoration also fails", async () => {
+    const target = createFakeDevice();
+    const originalCreateRenderPipeline = target.createRenderPipeline;
+    let failRestore = true;
+    const device = new Proxy(target, {
+      defineProperty(current, property, descriptor) {
+        if (
+          property === "createRenderPipeline" &&
+          descriptor.value === originalCreateRenderPipeline &&
+          failRestore
+        ) {
+          failRestore = false;
+          throw new Error("validation restore failed");
+        }
+        return Reflect.defineProperty(current, property, descriptor);
+      },
+    });
+    const observation = observeStandardOpaquePsoRegistration(engineForDevice(device));
+    let failure: unknown;
+    try {
+      await observation.register([], () => undefined);
+    } catch (error: unknown) {
+      failure = error;
+    }
+
+    expect(failure).toBeInstanceOf(AggregateError);
+    if (!(failure instanceof AggregateError)) throw failure;
+    expect(failure.cause).toMatchObject({ message: expect.stringMatching(/at least one/) });
+    expect(failure.errors[1]).toMatchObject({ message: "validation restore failed" });
+    expect(() => observation.dispose()).not.toThrow();
+  });
+
+  it("attempts every installed-method restore when installation and cleanup both fail", () => {
+    const target = createFakeDevice();
+    const originals = { ...target };
+    const restoreAttempts: string[] = [];
+    const device = new Proxy(target, {
+      defineProperty(current, property, descriptor) {
+        const name = String(property) as keyof FakeDevice;
+        if (descriptor.value === originals[name]) {
+          restoreAttempts.push(name);
+          if (name !== "createPipelineLayout") throw new Error(`restore failed:${name}`);
+        } else if (name === "createRenderPipeline") {
+          throw new Error("install primary");
+        }
+        return Reflect.defineProperty(current, property, descriptor);
+      },
+    });
+
+    let failure: unknown;
+    try {
+      observeStandardOpaquePsoRegistration(engineForDevice(device));
+    } catch (error: unknown) {
+      failure = error;
+    }
+
+    expect(restoreAttempts).toEqual([
+      "createPipelineLayout",
+      "createShaderModule",
+      "createBindGroupLayout",
+    ]);
+    expect(failure).toBeInstanceOf(AggregateError);
+    if (!(failure instanceof AggregateError)) throw failure;
+    expect(failure.cause).toMatchObject({ message: "install primary" });
+    expect(failure.errors).toHaveLength(3);
+    expect(failure.errors[0]).toBe(failure.cause);
+  });
+
+  it("rejects the former arbitrary build-group family bypass", async () => {
+    const boundary = await createBoundary();
+    Reflect.set(boundary.mesh.material, "_buildGroup", { _materialFamily: "standard" });
+    await expect(boundary.register()).rejects.toThrow(/material feature key 0/);
+    boundary.observation.dispose();
+  });
+
+  it.each([
+    "scene-bind-binding",
+    "scene-bind-visibility",
+    "scene-bind-buffer-type",
+    "scene-bind-buffer-dynamic",
+    "scene-bind-buffer-min-size",
+    "scene-bind-resource-kind",
+    "scene-bind-extra-resource-key",
+    "scene-bind-multiple-resources",
+    "mesh-bind-layout",
+    "vertex-shader",
+    "fragment-shader",
+    "vertex-layout",
+    "color-target",
+    "depth-target",
+    "sample-count",
+    "primitive",
+  ] as const)("fails closed when the live %s input mutates", async (mutation) => {
+    await expect(async () => {
+      const boundary = await createBoundary(mutation);
+      await boundary.register();
+    }).rejects.toThrow(/PSO warmup/);
+  });
+
+  it("normalizes every WebGPU bind resource kind with all effective defaults", () => {
+    const cases: readonly {
+      readonly descriptor: GPUBindGroupLayoutEntry;
+      readonly resource: unknown;
+    }[] = [
+      {
+        descriptor: { binding: 0, buffer: {}, visibility: 1 },
+        resource: {
+          hasDynamicOffset: false,
+          kind: "buffer",
+          minBindingSize: 0,
+          type: "uniform",
+        },
+      },
+      {
+        descriptor: { binding: 0, sampler: {}, visibility: 1 },
+        resource: { kind: "sampler", type: "filtering" },
+      },
+      {
+        descriptor: { binding: 0, texture: {}, visibility: 1 },
+        resource: {
+          kind: "texture",
+          multisampled: false,
+          sampleType: "float",
+          viewDimension: "2d",
+        },
+      },
+      {
+        descriptor: {
+          binding: 0,
+          storageTexture: { format: "rgba8unorm" },
+          visibility: 1,
+        },
+        resource: {
+          access: "write-only",
+          format: "rgba8unorm",
+          kind: "storageTexture",
+          viewDimension: "2d",
+        },
+      },
+      {
+        descriptor: { binding: 0, externalTexture: {}, visibility: 1 },
+        resource: { kind: "externalTexture" },
+      },
+    ];
+    for (const fixture of cases) {
+      expect(
+        normalizePsoBindGroupLayoutDescriptor({ entries: [fixture.descriptor] }).entries[0]
+          ?.resource,
+      ).toEqual(fixture.resource);
+    }
+  });
+
+  it("retains every nondefault bind-resource leaf and rejects ambiguous or extra alternatives", () => {
+    expect(
+      normalizePsoBindGroupLayoutDescriptor({
+        entries: [
+          {
+            binding: 3,
+            buffer: { hasDynamicOffset: true, minBindingSize: 64, type: "read-only-storage" },
+            visibility: 7,
+          },
+          { binding: 4, sampler: { type: "comparison" }, visibility: 2 },
+          {
+            binding: 5,
+            texture: { multisampled: true, sampleType: "sint", viewDimension: "cube-array" },
+            visibility: 2,
+          },
+          {
+            binding: 6,
+            storageTexture: {
+              access: "read-write",
+              format: "rgba16float",
+              viewDimension: "3d",
+            },
+            visibility: 2,
+          },
+        ],
+      }).entries,
+    ).toMatchObject([
+      {
+        binding: 3,
+        resource: {
+          hasDynamicOffset: true,
+          kind: "buffer",
+          minBindingSize: 64,
+          type: "read-only-storage",
+        },
+        visibility: 7,
+      },
+      { resource: { kind: "sampler", type: "comparison" } },
+      {
+        resource: {
+          kind: "texture",
+          multisampled: true,
+          sampleType: "sint",
+          viewDimension: "cube-array",
+        },
+      },
+      {
+        resource: {
+          access: "read-write",
+          format: "rgba16float",
+          kind: "storageTexture",
+          viewDimension: "3d",
+        },
+      },
+    ]);
+    expect(() =>
+      normalizePsoBindGroupLayoutDescriptor({
+        entries: [{ binding: 0, buffer: {}, sampler: {}, visibility: 1 }],
+      }),
+    ).toThrow(/exactly one resource/);
+    expect(() =>
+      normalizePsoBindGroupLayoutDescriptor({
+        entries: [
+          {
+            binding: 0,
+            buffer: { unexpected: true } as GPUBufferBindingLayout,
+            visibility: 1,
+          },
+        ],
+      }),
+    ).toThrow(/unsupported keys/);
+  });
+});
+
+type BoundaryMutation =
+  | "color-target"
+  | "depth-target"
+  | "fragment-shader"
+  | "mesh-bind-layout"
+  | "primitive"
+  | "sample-count"
+  | "scene-bind-binding"
+  | "scene-bind-buffer-dynamic"
+  | "scene-bind-buffer-min-size"
+  | "scene-bind-buffer-type"
+  | "scene-bind-extra-resource-key"
+  | "scene-bind-multiple-resources"
+  | "scene-bind-resource-kind"
+  | "scene-bind-visibility"
+  | "vertex-layout"
+  | "vertex-shader";
+
+interface FakeDevice {
+  createBindGroupLayout(descriptor: GPUBindGroupLayoutDescriptor): GPUBindGroupLayout;
+  createPipelineLayout(descriptor: GPUPipelineLayoutDescriptor): GPUPipelineLayout;
+  createRenderPipeline(descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
+  createShaderModule(descriptor: GPUShaderModuleDescriptor): GPUShaderModule;
+}
+
+function createFakeDevice(): FakeDevice {
+  let handle = 0;
+  const objectHandle = <T extends object>(): T => ({ handle: handle++ }) as T;
+  return {
+    createBindGroupLayout: () => objectHandle<GPUBindGroupLayout>(),
+    createPipelineLayout: () => objectHandle<GPUPipelineLayout>(),
+    createRenderPipeline: () => objectHandle<GPURenderPipeline>(),
+    createShaderModule: () => objectHandle<GPUShaderModule>(),
+  };
+}
+
+function engineForDevice(device: FakeDevice): EngineContext {
+  return {
+    _device: device,
+    format: "bgra8unorm",
+    msaaSamples: 4,
+  } as unknown as EngineContext;
+}
+
+function createStandardMesh(): Mesh {
+  return {
+    _gpu: {},
+    material: createStandardMaterial(),
+    name: "greybox-test",
+    receiveShadows: false,
+  } as unknown as Mesh;
+}
+
+async function createBoundary(mutation?: BoundaryMutation): Promise<{
+  compile(): Promise<void>;
+  readonly device: FakeDevice;
+  readonly mesh: Mesh;
+  readonly observation: ReturnType<typeof observeStandardOpaquePsoRegistration>;
+  readonly originalCreateRenderPipeline: FakeDevice["createRenderPipeline"];
+  register(): Promise<string>;
+}> {
+  const device = createFakeDevice();
+  const originalCreateRenderPipeline = device.createRenderPipeline;
+  const engine = engineForDevice(device);
+  const observation = observeStandardOpaquePsoRegistration(engine);
+  const sceneFirstEntry = {
+    binding: mutation === "scene-bind-binding" ? 2 : 0,
+    buffer: {
+      ...(mutation === "scene-bind-buffer-dynamic" ? { hasDynamicOffset: true } : {}),
+      ...(mutation === "scene-bind-buffer-min-size" ? { minBindingSize: 64 } : {}),
+      type: mutation === "scene-bind-buffer-type" ? ("storage" as const) : ("uniform" as const),
+    },
+    visibility: mutation === "scene-bind-visibility" ? 2 : 3,
+  } as GPUBindGroupLayoutEntry;
+  if (mutation === "scene-bind-resource-kind") {
+    Reflect.deleteProperty(sceneFirstEntry, "buffer");
+    Reflect.set(sceneFirstEntry, "sampler", {});
+  }
+  if (mutation === "scene-bind-extra-resource-key") {
+    Reflect.set(sceneFirstEntry.buffer ?? {}, "unexpected", true);
+  }
+  if (mutation === "scene-bind-multiple-resources") {
+    Reflect.set(sceneFirstEntry, "sampler", {});
+  }
+  const sceneBindGroupLayout = device.createBindGroupLayout({
+    entries: [sceneFirstEntry, { binding: 1, buffer: { type: "uniform" }, visibility: 2 }],
+    label: "scene",
+  });
+  const mesh = createStandardMesh();
+  const compile = async (): Promise<void> => {
+    const composer = (await import(
+      // @ts-expect-error The pinned package intentionally does not export this composer;
+      // the test exercises the exact private boundary that the production observer pins.
+      "../node_modules/@babylonjs/lite/lib/material/standard/standard-pipeline.js"
+    )) as unknown as {
+      composeStandardShader(
+        materialFeatures: number,
+        meshFeatures: number,
+      ): {
+        readonly _fragmentWGSL: string;
+        readonly _meshBGLDescriptor: GPUBindGroupLayoutDescriptor;
+        readonly _vertexBufferLayouts: readonly GPUVertexBufferLayout[];
+        readonly _vertexWGSL: string;
+      };
+    };
+    const composed = composer.composeStandardShader(0, 0);
+    const meshDescriptor =
+      mutation === "mesh-bind-layout"
+        ? {
+            entries: [
+              { binding: 0, buffer: { type: "storage" as const }, visibility: 3 },
+              { binding: 1, buffer: { type: "uniform" as const }, visibility: 2 },
+            ],
+          }
+        : composed._meshBGLDescriptor;
+    const meshBindGroupLayout = device.createBindGroupLayout(meshDescriptor);
+    const vertexModule = device.createShaderModule({
+      code:
+        mutation === "vertex-shader"
+          ? `${composed._vertexWGSL}\n// mutation`
+          : composed._vertexWGSL,
+    });
+    const fragmentModule = device.createShaderModule({
+      code:
+        mutation === "fragment-shader"
+          ? `${composed._fragmentWGSL}\n// mutation`
+          : composed._fragmentWGSL,
+    });
+    const vertexBuffers =
+      mutation === "vertex-layout"
+        ? [
+            {
+              ...composed._vertexBufferLayouts[0],
+              arrayStride: 16,
+            } as GPUVertexBufferLayout,
+            composed._vertexBufferLayouts[1] as GPUVertexBufferLayout,
+          ]
+        : composed._vertexBufferLayouts;
+    device.createRenderPipeline({
+      depthStencil: {
+        depthCompare: "greater-equal",
+        depthWriteEnabled: true,
+        format: mutation === "depth-target" ? "depth32float" : "depth24plus-stencil8",
+      },
+      fragment: {
+        entryPoint: "main",
+        module: fragmentModule,
+        targets: [{ format: mutation === "color-target" ? "rgba8unorm" : "bgra8unorm" }],
+      },
+      layout: device.createPipelineLayout({
+        bindGroupLayouts: [sceneBindGroupLayout, meshBindGroupLayout],
+      }),
+      multisample: { count: mutation === "sample-count" ? 1 : 4 },
+      primitive: {
+        cullMode: mutation === "primitive" ? "front" : "back",
+        frontFace: "ccw",
+        topology: "triangle-list",
+      },
+      vertex: {
+        buffers: [...vertexBuffers],
+        entryPoint: "main",
+        module: vertexModule,
+      },
+    });
+  };
+  return {
+    compile,
+    device,
+    mesh,
+    observation,
+    originalCreateRenderPipeline,
+    register: () => observation.register([mesh], compile),
+  };
+}
+
+function leafPaths(
+  input: unknown,
+  prefix: readonly (string | number)[] = [],
+): (string | number)[][] {
+  if (typeof input !== "object" || input === null) return [[...prefix]];
+  const paths: (string | number)[][] = [];
+  for (const [key, value] of Object.entries(input)) {
+    paths.push(...leafPaths(value, [...prefix, Array.isArray(input) ? Number(key) : key]));
+  }
+  return paths;
+}
+
+function mutateLeaf(input: unknown, path: readonly (string | number)[]): void {
+  let owner = input as Record<string | number, unknown>;
+  for (const segment of path.slice(0, -1)) {
+    owner = owner[segment] as Record<string | number, unknown>;
+  }
+  const leaf = path.at(-1);
+  if (leaf === undefined) throw new Error("Mutation path is empty");
+  const value = owner[leaf];
+  owner[leaf] =
+    value === null
+      ? "mutated"
+      : typeof value === "boolean"
+        ? !value
+        : typeof value === "number"
+          ? value + 1
+          : `${String(value)}-mutated`;
+}

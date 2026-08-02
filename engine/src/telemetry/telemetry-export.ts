@@ -1,16 +1,28 @@
 import type { AppOwnedLlmSpikeTelemetrySnapshot } from "../ai/app-owned-llm-spike-protocol";
 import type { AppOwnedLlmSpikeService } from "../ai/app-owned-llm-spike-service";
+import type {
+  InstalledModelSource,
+  InstalledModelSourceTelemetrySnapshot,
+} from "../ai/installed-model-source";
 import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
 import type { BenchmarkService } from "../benchmark/benchmark-service";
 import type {
   FlythroughService,
   FlythroughTelemetrySnapshot,
 } from "../flythrough/flythrough-service";
+import type { InstallerTransferTelemetrySnapshot } from "../install/installer-protocol";
+import type { InstallerService } from "../install/installer-service";
+import type { OfflineShellService } from "../offline-shell/offline-shell-service";
+import {
+  type OfflineShellTelemetrySnapshot,
+  unavailableOfflineShellTelemetrySnapshot,
+} from "../offline-shell/shell-generation-contract";
 import type {
   RenderRecoveryProbeKind,
   RenderService,
   RenderTelemetrySnapshot,
 } from "../render/render-service";
+import type { InstallStoreTelemetrySnapshot } from "../storage/opfs-release-store-contract";
 import type {
   StreamingRecoveryCheckpoint,
   WorldStreamingTelemetrySnapshot,
@@ -19,11 +31,9 @@ import type { WorldStreamingService } from "../streaming/world-streaming-service
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// The v25 snapshot envelope accepts benchmark-result@1 schema v3's explicit distinction
-// between recorded environment diagnostics and fixed-worker comparison identity.
-// Subsystems retain their own section schemas so platform experiments do not silently
-// rewrite unrelated history.
-export const TELEMETRY_SCHEMA_VERSION = 25;
+// Public telemetry v38 advances solely for D-151's truthful store-discard-partial
+// failure-evidence tuple.
+export const TELEMETRY_SCHEMA_VERSION = 38;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -42,6 +52,10 @@ export interface ParallaxTelemetrySnapshot {
   readonly benchmark: BenchmarkTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
   readonly flythrough: FlythroughTelemetrySnapshot;
+  readonly installedModelSource: InstalledModelSourceTelemetrySnapshot;
+  readonly installStore: InstallStoreTelemetrySnapshot;
+  readonly installerTransfer: InstallerTransferTelemetrySnapshot;
+  readonly offlineShell: OfflineShellTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
   readonly streaming: WorldStreamingTelemetrySnapshot;
@@ -73,6 +87,9 @@ export function installTelemetryExport(
   streamingService: WorldStreamingService,
   flythroughService: FlythroughService,
   benchmarkService: BenchmarkService,
+  installerService: InstallerService,
+  installedModelSource: InstalledModelSource,
+  offlineShellService: OfflineShellService | null,
   formatBenchmarkReport: (report: BenchmarkReport) => string,
   startStreamingTraversal: () => void,
   identity: ParallaxRuntimeIdentity,
@@ -119,6 +136,9 @@ export function installTelemetryExport(
         streamingService.snapshot(),
         flythroughService.snapshot(),
         benchmarkService.snapshot(),
+        installerService.snapshot(),
+        installedModelSource.snapshot(),
+        offlineShellService?.snapshot() ?? unavailableOfflineShellTelemetrySnapshot(),
         frozenIdentity,
       ),
     prepareFlythrough(): void {
@@ -150,6 +170,9 @@ export function installTelemetryExport(
               streamingService.snapshot(),
               flythroughService.snapshot(),
               benchmarkService.snapshot(),
+              installerService.snapshot(),
+              installedModelSource.snapshot(),
+              offlineShellService?.snapshot() ?? unavailableOfflineShellTelemetrySnapshot(),
               frozenIdentity,
             ),
           );
@@ -169,6 +192,10 @@ export function installTelemetryExport(
       const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
       const unsubscribeFlythrough = flythroughService.subscribe(publishAfterWiring);
       const unsubscribeBenchmark = benchmarkService.subscribe(publishAfterWiring);
+      const unsubscribeInstaller = installerService.subscribe(publishAfterWiring);
+      const unsubscribeInstalledModelSource = installedModelSource.subscribe(publishAfterWiring);
+      const unsubscribeOfflineShell =
+        offlineShellService?.subscribe(publishAfterWiring) ?? (() => undefined);
       wiring = false;
       publish();
       return () => {
@@ -178,6 +205,9 @@ export function installTelemetryExport(
         unsubscribeStreaming();
         unsubscribeFlythrough();
         unsubscribeBenchmark();
+        unsubscribeInstaller();
+        unsubscribeInstalledModelSource();
+        unsubscribeOfflineShell();
       };
     },
   });
@@ -197,6 +227,9 @@ function snapshot(
   streaming: WorldStreamingTelemetrySnapshot,
   flythrough: FlythroughTelemetrySnapshot,
   benchmark: BenchmarkTelemetrySnapshot,
+  installer: ReturnType<InstallerService["snapshot"]>,
+  installedModelSource: InstalledModelSourceTelemetrySnapshot,
+  offlineShell: OfflineShellTelemetrySnapshot,
   identity: ParallaxRuntimeIdentity,
 ): ParallaxTelemetrySnapshot {
   return Object.freeze({
@@ -204,6 +237,10 @@ function snapshot(
     benchmark,
     flythrough,
     identity,
+    installedModelSource,
+    installStore: installer.installStore,
+    installerTransfer: installer.installerTransfer,
+    offlineShell,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
     streaming,

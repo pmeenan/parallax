@@ -1,10 +1,11 @@
-import type {
-  GreyboxCell,
-  GreyboxDistrict,
-  GreyboxLodTier,
-  GreyboxPrimitive,
-  GreyboxSceneConfig,
-  WorldVec3,
+import {
+  canonicalStreamingCellId,
+  type GreyboxCell,
+  type GreyboxDistrict,
+  type GreyboxLodTier,
+  type GreyboxPrimitive,
+  type GreyboxSceneConfig,
+  type WorldVec3,
 } from "@parallax/engine";
 import type {
   FeatureRuleSpec,
@@ -120,7 +121,7 @@ export function sampleGreyboxTerrain(spec: GreyboxDistrictSpec, x: number, z: nu
 }
 
 function cellId(spec: GreyboxDistrictSpec, x: number, z: number): string {
-  return `${spec.world.id}-cell-${String(x).padStart(2, "0")}-${String(z).padStart(2, "0")}`;
+  return canonicalStreamingCellId(spec.world.id, [x, z]);
 }
 
 function featureOffset(

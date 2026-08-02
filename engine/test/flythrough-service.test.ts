@@ -7,6 +7,7 @@ import {
   createFlythroughService,
   FLYTHROUGH_STABILIZATION_MS,
 } from "../src/flythrough/flythrough-service";
+import { idlePsoWarmupTelemetrySnapshot } from "../src/render/pso-warmup-contract";
 import type {
   FlythroughCheckpointRenderEvidence,
   RenderFlythroughTelemetry,
@@ -669,6 +670,8 @@ function renderSnapshot(flythrough: RenderFlythroughTelemetry | null): RenderTel
     frameCount: 1,
     greyboxWorld: null,
     recentFrames: [],
+    psoWarmup: idlePsoWarmupTelemetrySnapshot(),
+    retainedPsoWarmupFailure: null,
     renderPixelSize: { height: 720, width: 1_280 },
     renderPixelSizeOverride: null,
     recovery: {
@@ -799,6 +802,10 @@ function streamingSnapshot(): WorldStreamingTelemetrySnapshot {
     failureMessage: null,
     flythroughObserverUpdateCount: 0,
     hardwareConcurrency: 1,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 2,
     observerUpdateCount: 0,
     opfsAccessHandleCount: 256,
     opfsAccessHandleOpenDurationMs: 10,
@@ -812,7 +819,11 @@ function streamingSnapshot(): WorldStreamingTelemetrySnapshot {
     residentGpuBytes: 1,
     residentGpuBytesHighWater: 1,
     renderRecoveryCount: 0,
-    schemaVersion: 7,
+    renderBatchCellCountHighWater: 9,
+    renderBatchDirectUploadMsHighWater: 1,
+    renderBatchRequestCount: 1,
+    renderBatchTransactionCount: 1,
+    schemaVersion: 11,
     settledRecoveryCheckpoint: Object.freeze({
       flythroughObserverUpdateCount: 0,
       observerUpdateCount: 0,
@@ -822,6 +833,19 @@ function streamingSnapshot(): WorldStreamingTelemetrySnapshot {
     }),
     settledObserverUpdateCount: 0,
     state: "streaming",
+    startupTiming: {
+      accessHandlesOpenedAtMs: 4,
+      contract: "streaming-startup-timing@1",
+      decodePoolCreatedAtMs: 5,
+      finalAdmissionCompletedAtMs: null,
+      initialResidencyReadyAtMs: 6,
+      provisioningStartedAtMs: 2,
+      releaseBindingCompletedAtMs: null,
+      releaseResolutionCompletedAtMs: 3,
+      schemaVersion: 1,
+      sourceKind: "privileged-legacy-network",
+      workerStartedAtMs: 1,
+    },
     workerGeneration: 1,
   };
 }

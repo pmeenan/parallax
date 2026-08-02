@@ -1,12 +1,18 @@
 import type { GreyboxCell, GreyboxMaterial, WorldVec3 } from "../world/world-contract";
+import type { StreamingStartupTimingSnapshot } from "./streaming-startup-telemetry";
 
-export const STREAMING_TELEMETRY_SCHEMA_VERSION = 7;
+export const STREAMING_TELEMETRY_SCHEMA_VERSION = 11;
+export const STREAMING_DECODE_PROTOCOL_VERSION = 2;
 export const STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS = 0.1;
 export const STREAMING_CELL_LOAD_BUDGET_MS = 250;
 export const STREAMING_DECODE_WORKER_MAXIMUM = 4;
 export const STREAMING_DECODE_WORKER_RESERVED_THREADS = 2;
 export const STREAMING_RESIDENT_CELL_LIMIT = 9;
 export const STREAMING_RESIDENT_ENCODED_BUDGET_BYTES = 16 * 1024 * 1024;
+export const STREAMING_DEPENDENCY_ENCODED_MAX_BYTES = 8 * 1024 * 1024;
+export const STREAMING_DEPENDENCY_DECODED_MAX_BYTES = 32 * 1024 * 1024;
+export const STREAMING_BATCH_STAGING_BUDGET_BYTES = 128 * 1024 * 1024;
+export const STREAMING_DISTRICT_INDEX_SCHEMA_VERSION = 2;
 
 export interface StreamingCellIndexEntry {
   readonly bytes: number;
@@ -14,7 +20,80 @@ export interface StreamingCellIndexEntry {
   readonly coordinate: readonly [number, number];
   readonly path: string;
   readonly sha256: string;
+  readonly dependencies?: readonly string[];
 }
+
+export interface StreamingKtx2DependencyIndexEntry {
+  readonly bytes: number;
+  readonly decode: Readonly<{
+    readonly colorSpace: "srgb";
+    readonly format: "rgba8";
+    readonly height: number;
+    readonly version?: 1;
+    readonly width: number;
+  }>;
+  readonly dependencies: readonly string[];
+  readonly format: "ktx2";
+  readonly path: string;
+  readonly resourceId: string;
+  readonly sha256: string;
+}
+
+export interface StreamingLegacyMeshoptDependencyIndexEntry {
+  readonly bytes: number;
+  readonly decode: Readonly<{
+    readonly count: number;
+    readonly mode: "ATTRIBUTES";
+    readonly stride: 12;
+  }>;
+  readonly dependencies: readonly string[];
+  readonly format: "meshopt";
+  readonly path: string;
+  readonly resourceId: string;
+  readonly sha256: string;
+}
+
+export interface StreamingMeshoptVertexDependencyIndexEntry {
+  readonly bytes: number;
+  readonly decode: Readonly<{
+    readonly count: number;
+    readonly layout: "position-normal-uv-f32";
+    readonly mode: "ATTRIBUTES";
+    readonly stride: 32;
+    readonly version: 1;
+  }>;
+  readonly dependencies: readonly [string];
+  readonly format: "meshopt";
+  readonly path: string;
+  readonly resourceId: string;
+  readonly sha256: string;
+}
+
+export interface StreamingMeshoptIndexDependencyIndexEntry {
+  readonly bytes: number;
+  readonly decode: Readonly<{
+    readonly count: number;
+    readonly indexFormat: "uint32";
+    readonly mode: "TRIANGLES";
+    readonly stride: 4;
+    readonly version: 1;
+    readonly vertexCount: number;
+  }>;
+  readonly dependencies: readonly [string, string];
+  readonly format: "meshopt";
+  readonly path: string;
+  readonly resourceId: string;
+  readonly sha256: string;
+}
+
+export type StreamingMeshoptDependencyIndexEntry =
+  | StreamingLegacyMeshoptDependencyIndexEntry
+  | StreamingMeshoptVertexDependencyIndexEntry
+  | StreamingMeshoptIndexDependencyIndexEntry;
+
+export type StreamingDependencyIndexEntry =
+  | StreamingKtx2DependencyIndexEntry
+  | StreamingMeshoptDependencyIndexEntry;
 
 export interface StreamingDistrictIndex {
   readonly bounds: Readonly<{ maximum: WorldVec3; minimum: WorldVec3 }>;
@@ -22,27 +101,36 @@ export interface StreamingDistrictIndex {
   readonly cells: readonly StreamingCellIndexEntry[];
   readonly districtId: string;
   readonly materials: readonly GreyboxMaterial[];
-  readonly schemaVersion: 1;
+  readonly resources?: readonly StreamingDependencyIndexEntry[];
+  readonly schemaVersion: 1 | typeof STREAMING_DISTRICT_INDEX_SCHEMA_VERSION;
 }
 
 export interface StreamingCellLoadTelemetry {
+  readonly batchDirectUploadMs: number;
   readonly batchCellCount: number;
   readonly batchCellOrdinal: number;
   readonly batchFlythroughObserverSequence: number;
   readonly batchObserverUpdateCount: number;
   readonly batchOrdinal: number;
+  readonly batchTransactionId: string;
   readonly cellId: string;
   readonly decodeMs: number;
   readonly decodeRoundTripMs: number;
   readonly decodeWaitMs: number;
+  readonly dependencyCount?: number;
+  readonly dependencyDecodeMs?: number;
+  readonly dependencyDecodedBytes?: number;
+  readonly dependencyEncodedBytes?: number;
+  readonly dependencyReadMs?: number;
+  readonly dependencyUploadBytes?: number;
+  readonly dependencyUploadMs?: number;
   readonly encodedBytes: number;
   readonly gpuBytes: number;
   readonly opfsAccessRoundTripMs: number;
   readonly opfsReadMs: number;
   readonly opfsWaitMs: number;
-  readonly renderCommitRoundTripMs: number;
-  readonly renderUploadRoundTripMs: number;
-  readonly renderUploadWaitMs: number;
+  readonly renderTransactionRoundTripMs: number;
+  readonly renderTransactionWaitMs: number;
   readonly sequence: number;
   readonly streamingWorkerRemainderMs: number;
   readonly totalMs: number;
@@ -64,9 +152,21 @@ export interface WorldStreamingTelemetrySnapshot {
   readonly currentObservers: readonly WorldVec3[];
   readonly decodeQueueDepthHighWater: number;
   readonly decodeWorkerCount: number;
+  readonly dependencyDecodeFailureCount?: number;
+  readonly dependencyDecodedBytes?: number;
+  readonly dependencyEncodedBytesRead?: number;
+  readonly dependencyReadCount?: number;
+  readonly dependencyUploadBytes?: number;
+  readonly dependencyUploadCount?: number;
+  readonly dependencyCache?: StreamingResourceCacheTelemetry;
+  readonly dependencyGpuCache?: StreamingResourceCacheTelemetry;
   readonly encodedBytesRead: number;
   readonly failureMessage: string | null;
   readonly hardwareConcurrency: number;
+  readonly installedReleaseDigest: string | null;
+  readonly installedResourceBytes: number;
+  readonly installedResourceCount: number;
+  readonly legacyNetworkRequestCount: number;
   readonly flythroughObserverUpdateCount: number;
   readonly observerUpdateCount: number;
   readonly opfsAccessHandleCount: number;
@@ -81,15 +181,31 @@ export interface WorldStreamingTelemetrySnapshot {
   readonly residentGpuBytes: number;
   readonly residentGpuBytesHighWater: number;
   readonly renderRecoveryCount: number;
+  readonly renderBatchCellCountHighWater: number;
+  readonly renderBatchDirectUploadMsHighWater: number;
+  readonly renderBatchRequestCount: number;
+  readonly renderBatchTransactionCount: number;
+  readonly psoWarmupGameplayOverlapCount?: number;
   readonly schemaVersion: typeof STREAMING_TELEMETRY_SCHEMA_VERSION;
   readonly settledRecoveryCheckpoint: StreamingRecoveryCheckpoint | null;
   readonly settledObserverUpdateCount: number;
   readonly state: "idle" | "starting" | "provisioning" | "streaming" | "failed" | "disposed";
+  readonly startupTiming: StreamingStartupTimingSnapshot | null;
   readonly workerGeneration: number;
 }
 
+export type StreamingContentSource =
+  | Readonly<{
+      readonly kind: "installed-release";
+      readonly releaseDigest: string;
+    }>
+  | Readonly<{
+      readonly buildManifestUrl: string;
+      readonly kind: "privileged-legacy-network";
+    }>;
+
 export interface StreamingStartRequest {
-  readonly buildManifestUrl: string;
+  readonly contentSource: StreamingContentSource;
   readonly districtId: string;
   readonly initialObservers: readonly WorldVec3[];
   readonly kind: "start";
@@ -137,17 +253,114 @@ export type StreamingWorkerResponse =
 export interface DecodeCellRequest {
   readonly bytes: ArrayBuffer;
   readonly cellId: string;
+  readonly dependencies: readonly DecodeDependencyRequest[];
   readonly districtId: string;
   readonly kind: "decode-cell";
+  readonly protocolVersion: typeof STREAMING_DECODE_PROTOCOL_VERSION;
   readonly schemaVersion: 1;
   readonly taskId: number;
+}
+
+export interface DecodeDependencyRequest {
+  readonly bytes: ArrayBuffer;
+  readonly descriptor: StreamingDependencyIndexEntry;
+}
+
+export interface DecodedKtx2Dependency {
+  readonly cacheKey: string;
+  readonly descriptor: StreamingKtx2DependencyIndexEntry;
+  readonly decodeMs: number;
+  readonly decodedBytes: number;
+  readonly encodedBytes: number;
+  readonly format: "ktx2";
+  readonly height: number;
+  readonly resourceId: string;
+  readonly rgba: ArrayBuffer;
+  readonly width: number;
+}
+
+export interface DecodedMeshoptDependency {
+  readonly cacheKey: string;
+  readonly descriptor: StreamingMeshoptDependencyIndexEntry;
+  readonly decodeMs: number;
+  readonly decodedBytes: number;
+  readonly encodedBytes: number;
+  readonly format: "meshopt";
+  readonly kind: "legacy-positions";
+  readonly positions: ArrayBuffer;
+  readonly resourceId: string;
+  readonly vertexCount: number;
+}
+
+export interface DecodedMeshoptVertexDependency {
+  readonly attributes: ArrayBuffer;
+  readonly cacheKey: string;
+  readonly descriptor: StreamingMeshoptVertexDependencyIndexEntry;
+  readonly decodeMs: number;
+  readonly decodedBytes: number;
+  readonly encodedBytes: number;
+  readonly format: "meshopt";
+  readonly kind: "vertex-attributes";
+  readonly resourceId: string;
+  readonly vertexCount: number;
+}
+
+export interface DecodedMeshoptIndexDependency {
+  readonly cacheKey: string;
+  readonly descriptor: StreamingMeshoptIndexDependencyIndexEntry;
+  readonly decodeMs: number;
+  readonly decodedBytes: number;
+  readonly encodedBytes: number;
+  readonly format: "meshopt";
+  readonly indexCount: number;
+  readonly indices: ArrayBuffer;
+  readonly kind: "indices";
+  readonly resourceId: string;
+}
+
+export type DecodedStreamingDependency =
+  | DecodedKtx2Dependency
+  | DecodedMeshoptDependency
+  | DecodedMeshoptVertexDependency
+  | DecodedMeshoptIndexDependency;
+
+export interface CachedStreamingDependencyReference {
+  readonly cacheKey: string;
+  readonly descriptor: StreamingDependencyIndexEntry;
+  readonly format: "ktx2" | "meshopt";
+  readonly kind: "cached-dependency-reference";
+  readonly resourceId: string;
+}
+
+export type RenderStreamingDependency =
+  | CachedStreamingDependencyReference
+  | DecodedStreamingDependency;
+
+export interface StreamingResourceCacheTelemetry {
+  readonly acquireCount: number;
+  readonly hitCount: number;
+  readonly liveDecodedBytes: number;
+  readonly liveEncodedBytes: number;
+  readonly liveRefCount: number;
+  readonly liveResourceCount: number;
+  readonly missCount: number;
+  readonly releaseCount: number;
+  readonly resources: readonly Readonly<{
+    readonly cacheKey: string;
+    readonly format: "ktx2" | "meshopt";
+    readonly ownedBytes: number;
+    readonly refCount: number;
+    readonly resourceId: string;
+  }>[];
 }
 
 export interface DecodeCellResponse {
   readonly cell: GreyboxCell;
   readonly decodeMs: number;
+  readonly dependencies: readonly DecodedStreamingDependency[];
   readonly encodedBytes: number;
   readonly kind: "decoded-cell";
+  readonly protocolVersion: typeof STREAMING_DECODE_PROTOCOL_VERSION;
   readonly taskId: number;
 }
 
@@ -160,11 +373,21 @@ export interface DecodeFailureResponse {
 export type DecodeWorkerRequest = DecodeCellRequest;
 export type DecodeWorkerResponse = DecodeCellResponse | DecodeFailureResponse;
 
-export interface RenderStreamCellRequest {
-  readonly cell: GreyboxCell;
+export interface RenderBatchTransactionMember {
+  readonly batchCellOrdinal: number;
   readonly cellId: string;
+  readonly cell: GreyboxCell;
+  readonly dependencies: readonly RenderStreamingDependency[];
   readonly encodedBytes: number;
-  readonly kind: "stream-cell";
+}
+
+export interface RenderBatchTransactionRequest {
+  readonly batchCellCount: number;
+  readonly batchDemandEncodedBytes: number;
+  readonly batchOrdinal: number;
+  readonly batchTransactionId: string;
+  readonly kind: "render-batch-transaction";
+  readonly members: readonly RenderBatchTransactionMember[];
   readonly requestId: number;
 }
 
@@ -174,49 +397,53 @@ export interface RenderEvictCellRequest {
   readonly requestId: number;
 }
 
-export interface RenderCommitCellRequest {
-  readonly cellId: string;
-  readonly kind: "commit-cell";
-  readonly requestId: number;
-  readonly uploadRequestId: number;
-}
+export type RenderStreamingRequest = RenderBatchTransactionRequest | RenderEvictCellRequest;
 
-export type RenderStreamingRequest =
-  | RenderCommitCellRequest
-  | RenderEvictCellRequest
-  | RenderStreamCellRequest;
-
-export interface RenderStreamCellResponse {
+export interface RenderBatchTransactionMemberResponse {
+  readonly batchCellOrdinal: number;
+  readonly cellGpuBytes: number;
   readonly cellId: string;
   readonly gpuBytes: number;
-  readonly kind: "stream-cell-complete";
-  readonly requestId: number;
+  readonly dependencyUploadBytes: number;
+  readonly dependencyUploadCount: number;
+  readonly dependencyUploadMs: number;
+  readonly psoWarmupGameplayOverlap: boolean;
   readonly uploadMs: number;
+}
+
+export interface RenderBatchTransactionResponse {
+  readonly batchCellCount: number;
+  readonly batchDirectUploadMs: number;
+  readonly batchDemandEncodedBytes: number;
+  readonly batchEncodedBytes: number;
+  readonly batchGpuBytes: number;
+  readonly batchOrdinal: number;
+  readonly batchTransactionId: string;
+  readonly kind: "render-batch-transaction-complete";
+  readonly members: readonly RenderBatchTransactionMemberResponse[];
+  readonly dependencyGpuCache: StreamingResourceCacheTelemetry;
+  readonly requestId: number;
 }
 
 export interface RenderEvictCellResponse {
   readonly cellId: string;
   readonly freedGpuBytes: number;
+  readonly freedCellGpuBytes: number;
+  readonly dependencyGpuCache: StreamingResourceCacheTelemetry;
   readonly kind: "evict-cell-complete";
   readonly requestId: number;
 }
 
-export interface RenderCommitCellResponse {
-  readonly cellId: string;
-  readonly kind: "commit-cell-complete";
-  readonly requestId: number;
-}
-
 export interface RenderStreamingFailureResponse {
+  readonly batchTransactionId: string | null;
   readonly kind: "streaming-render-failure";
   readonly message: string;
   readonly requestId: number;
 }
 
 export type RenderStreamingResponse =
-  | RenderCommitCellResponse
+  | RenderBatchTransactionResponse
   | RenderEvictCellResponse
-  | RenderStreamCellResponse
   | RenderStreamingFailureResponse;
 
 export interface RenderStreamingFlythroughObservers {

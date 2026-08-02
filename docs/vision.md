@@ -85,10 +85,10 @@ remain open rather than being inferred from dev-01 or callback/logical-size sign
 - Cross-browser support. Chrome latest+ only, by design (D-002). Advisory benchmark
   runs of the unchanged build in other engines are research inputs, not a support
   commitment or permission to add compatibility paths (D-025).
-- Low-end or mobile hardware. The baseline is capable consumer hardware — an M1-class
-  MacBook Pro gates the Standard tier, a high-end Windows rig gates Showcase (D-018);
-  hardware is an evolving target and the question is what the platform supports given
-  sufficient hardware.
+- Low-end or mobile hardware. The baseline is capable consumer hardware; dev-01 is the
+  sole enforced hardware gate. The Standard profile and macOS hardware remain
+  aspirational advisory planning/research inputs (D-150); hardware is an evolving
+  target and the question is what the platform supports given sufficient hardware.
 - First-visit instant load, traditional Core Web Vitals, or SEO. This is an installed
   application that happens to be delivered through a browser.
 - Monetization, accounts, or live-ops infrastructure.

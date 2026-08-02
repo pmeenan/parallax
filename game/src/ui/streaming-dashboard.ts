@@ -144,12 +144,12 @@ export function createStreamingDashboardModel(
         ),
         metric(
           "encoded-memory",
-          "Encoded budget bytes",
+          "Encoded residency / reservation high-water",
           `${formatBytes(snapshot.residentEncodedBytes)} · high ${formatBytes(
             snapshot.residentEncodedBytesHighWater,
           )}`,
           "neutral",
-          "Current bytes are resident encoded packages; high-water also includes in-flight reserved decoded bytes.",
+          "Current bytes are resident encoded packages; high-water is the peak resident bytes plus accepted in-flight encoded batch reservations.",
         ),
         metric(
           "gpu-memory",
@@ -194,18 +194,12 @@ export function createStreamingDashboardModel(
           ({ decodeWaitMs }) => decodeWaitMs,
         ),
         stageMetric(
-          "stage-upload",
-          "Render upload p95",
+          "stage-transaction",
+          "Render transaction p95",
           loadSamples,
-          ({ renderUploadRoundTripMs }) => renderUploadRoundTripMs,
+          ({ renderTransactionRoundTripMs }) => renderTransactionRoundTripMs,
           ({ uploadMs }) => uploadMs,
-          ({ renderUploadWaitMs }) => renderUploadWaitMs,
-        ),
-        timingMetric(
-          "stage-commit",
-          "Render commit p95",
-          p95(loadSamples, ({ renderCommitRoundTripMs }) => renderCommitRoundTripMs),
-          loadSamples.length,
+          ({ renderTransactionWaitMs }) => renderTransactionWaitMs,
         ),
         timingMetric(
           "stage-remainder",

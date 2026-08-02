@@ -1,21 +1,28 @@
 # Reference machines
 
 Budget tiers (docs/budgets.md) are defined against budget *envelopes*, not against
-whatever hardware happens to run the test. Machines listed here are the physical
-fleet; add machines, don't silently swap them (harness rule 4). Chrome channel:
+whatever hardware happens to run the test. Under D-150, dev-01 is the sole required
+physical/reference/budget/milestone gate. Other machines and profiles are optional,
+findings-oriented research: they require no registration for milestone entry or exit
+and cannot invalidate dev-01 acceptance. Machines listed here are the physical fleet;
+add machines, don't silently swap registered identities (harness rule 4). Chrome channel:
 **stable**, operationally pinned via archived **Chrome for Testing** binaries at the
 current stable milestone (installed branded stable auto-updates and can't serve as a
 reproducible baseline; a periodic parity smoke run on it guards against divergence).
 "Same version" across platforms = same milestone + V8 revision. Canary is permitted
 only when testing Chrome-side changes and is always labeled as such (D-019).
 
-The current automation pin is Chrome for Testing **151.0.7922.34**, revision
-**1654411** (`harness/chrome/stable.json`, selected 2026-07-20 from the official CfT
-Stable availability endpoint and promoted after the M0-exit physical gate). Schema-v26
-artifact `1e01757c47269eb6bd09077a1a71b5571b22580908d00c7729b2610d8f6665f8`
-passed all six core runs and 24 blocking checks on dev-01 under Node 24.18.0 before its
-2026-07-20 promotion. Archived binaries are machine-local and are not checked into this
-repository.
+The current automation pin is Chrome for Testing **151.0.7922.71**, revision
+**1654411** (`harness/chrome/stable.json`, selected 2026-08-01 from the official CfT
+known-good feed at the M2-exit/M3-entry dependency checkpoint). Its archived win64
+executable SHA-256 is
+`112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`.
+The pin is adopted: D-149 accepted the dev-01 same-source `.34`/`.71` transition,
+D-152 accepted installed branded-Stable parity, and D-153 accepted the final physical
+production smoke with rendered-output review. The preceding 151.0.7922.34 binary remains
+the retained transition and reconstruction anchor. No follow-up adoption gate or other
+machine gate is pending. Archived binaries are machine-local and are not checked into
+this repository.
 
 ## dev-01 — primary dev machine; Showcase-tier gate and calibration reference
 
@@ -37,10 +44,10 @@ console: RDP/remote display adapters are detected and reported as `invalid` (D-0
 when the requested viewport and Windows video-controller mode still say 3840×2160.
 
 **Note:** Showcase budgets are **calibrated to this machine** (D-018) — it defines the
-platform-ceiling tier; the transfer-to-modest-hardware story belongs to the Standard
-tier. Envelopes (GPU ≤ 14 GB, CPU-side ≤ 16 GB) are purposeful ceilings, not machine
-capacity: the harness flags envelope violations even though the host has far more
-headroom.
+platform-ceiling tier and, under D-150, the sole enforced gate. Envelopes (GPU ≤ 14 GB,
+CPU-side ≤ 16 GB) are purposeful ceilings, not machine capacity: the harness flags
+envelope violations even though the host has far more headroom. Transfer-to-modest-
+hardware work remains optional Standard-profile research.
 
 ## mac-01 — exploratory (between standard and showcase)
 
@@ -52,15 +59,16 @@ headroom.
 gate initially; findings-oriented. Unified memory makes the CPU/GPU envelope split from
 budgets.md an interesting research question on this host rather than a hard rule.
 
-## standard-target — Standard-tier profile  `not yet a pinned machine`
+## standard-target — advisory Standard-tier planning profile  `not a required pinned machine`
 
-The Standard-tier (1440p @ 120 Hz) gate is currently a **target profile**, not a
-registered machine:
+The Standard-tier (1440p @ 120 Hz) envelope is an **advisory target profile**, not a
+required registered machine:
 
 - MacBook Pro (2021), Apple **M1 Pro**, 16 GB unified memory, ProMotion display
 - Chrome stable on macOS; Dawn backend: Metal
 
-It registers as **standard-01** when the physical unit is recorded here with: exact
+It may register as **standard-01** for repeatable optional research when a physical
+unit is recorded here with: exact
 model and size (14" vs 16" differ in GPU-core options, thermals, and native
 resolution), M1 Pro CPU/GPU core configuration, display mode and **verified 120 Hz
 behavior under Chrome** (ProMotion is adaptive — confirm the presentation path actually
@@ -71,12 +79,11 @@ paces at 120 Hz), and macOS build. (D-018)
   *accounting* split on this profile — both draw from the same 16 GB, alongside macOS
   and Chrome overhead. The combined envelope total is the real constraint; the harness
   reports both views.
-- **Deliberately modest:** a 2021-class, widely-owned machine keeps the Standard tier
-  honest — this is the "transfers to hardware people actually have" gate.
-- With the Standard gate on Metal and dev-01 on D3D12, **both Dawn backends are
-  gate-level**; backend-divergent behavior (pipeline compile, cache, memory) is
-  automatically surfaced by tier runs and feeds rough-edges.
-- Until registration, Standard-tier runs execute on dev-01 with envelope enforcement
-  and are labeled **provisional** (envelope enforcement does not reproduce real memory
-  pressure, bandwidth, or GPU-performance behavior — provisional results never satisfy
-  a Standard-tier exit criterion).
+- **Deliberately modest:** a 2021-class, widely-owned machine keeps the Standard
+  planning envelope useful for the "transfers to hardware people actually have"
+  research question.
+- Metal/D3D12 comparisons can surface backend-divergent pipeline, cache, and memory
+  findings, but only dev-01/D3D12 is gate-level.
+- Standard-envelope runs may execute provisionally on dev-01. A later physical
+  Standard run can improve transfer evidence, but neither registration nor a result is
+  required for a milestone exit (D-150).

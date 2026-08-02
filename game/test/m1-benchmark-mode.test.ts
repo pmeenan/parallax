@@ -43,6 +43,7 @@ describe("M1 benchmark mode", () => {
         id: "fixed-worker-render-pixels@1",
       },
       environmentCaptures: [],
+      releaseDigest: { state: "measured", value: "b".repeat(64) },
       facets: {
         budgetEvaluation: { reasons: ["unsupported"], status: "not-evaluated" },
         referenceEligibility: { reasons: ["page unavailable"], status: "not-evaluated" },
@@ -70,7 +71,7 @@ describe("M1 benchmark mode", () => {
       resultContract: "benchmark-result@1",
       scenario: "flythrough-d1@1",
       scenarioContract: M1_BENCHMARK_DEFINITION.scenario,
-      schemaVersion: 3,
+      schemaVersion: 6,
       verdict: {
         kind: "advisory",
         label: "Google Chrome advisory result",
@@ -87,6 +88,7 @@ describe("M1 benchmark mode", () => {
 
     const text = formatM1BenchmarkReport(report);
     expect(text).toContain("Google Chrome advisory result");
+    expect(text).toContain(`Install release: \`${"b".repeat(64)}\``);
     expect(text).toContain("allRealmJsHeap: unsupported");
     expect(text).toContain("Budget evaluation: **not-evaluated**");
     expect(text).toContain("repeat 1 streamingCellLoadP95Ms: **failed**");
@@ -102,7 +104,7 @@ describe("M1 benchmark mode", () => {
         presetId: report.preset.id,
         progress: 1,
         report,
-        schemaVersion: 2,
+        schemaVersion: 5,
         state: "completed",
       }),
     ).toContain("advisory");

@@ -1,0 +1,430 @@
+import type { PsoWarmupTelemetrySnapshot } from "@parallax/engine";
+import type { ChromePin } from "./chrome-pin.js";
+import {
+  SMOKE_MANDATORY_METRIC_SET_VERSION,
+  SMOKE_METRICS,
+  SMOKE_REPORT_SCHEMA_VERSION,
+} from "./runs/smoke.js";
+import type { SourceIdentity } from "./source-identity.js";
+
+const greyboxWorld = {
+  cellCount: 256,
+  clearColor: [0.32, 0.64, 0.92, 1],
+  colliderCount: 708,
+  districtId: "district-1-surface",
+  dynamicLighting: true,
+  heightSampleCount: 256 * 17 * 17,
+  mainThreadScenePostMessageMs: 4,
+  mainThreadWorldGenerationMs: 20,
+  materialCount: 8,
+  materializationMs: 12.5,
+  observedLighting: {
+    intensityMaximum: 0.8,
+    intensityMinimum: 0.6,
+    intensityRange: 0.2,
+    phaseMaximum: 0.7,
+    phaseMinimum: 0.5,
+    phaseRange: 0.2,
+    sampleCount: 120,
+  },
+  renderedFeaturePrimitiveCount: 318,
+  renderedOutput: {
+    clearColorRgb: [82, 163, 235],
+    height: 720,
+    pngSha256: "d".repeat(64),
+    visiblePixelCount: 500_000,
+    visiblePixelRatio: 500_000 / (1_280 * 720),
+    width: 1_280,
+  },
+  renderedTerrainPatchCount: 256,
+  renderedTriangleCount: 10_000,
+  selectedLodCellCounts: [12, 48, 196],
+  worldBoundsMeters: {
+    maximum: [2_048, 256, 2_048],
+    minimum: [-2_048, -32, -2_048],
+  },
+};
+
+const streamingSamples = Array.from({ length: 10 }, (_, index) => ({
+  batchCellCount: index < 9 ? 9 : 1,
+  batchCellOrdinal: index < 9 ? index + 1 : 1,
+  batchDirectUploadMs: index < 9 ? 27 : 3,
+  batchFlythroughObserverSequence: 0,
+  batchObserverUpdateCount: index < 9 ? 1 : 2,
+  batchOrdinal: index < 9 ? 2 : 3,
+  batchTransactionId: index < 9 ? "1:2:1:0" : "1:3:2:0",
+  cellId: `cell-${index}`,
+  decodeMs: 1,
+  decodeRoundTripMs: 2,
+  decodeWaitMs: 1,
+  encodedBytes: 10_000,
+  gpuBytes: 20_000,
+  opfsAccessRoundTripMs: 3,
+  opfsReadMs: 2,
+  opfsWaitMs: 1,
+  renderTransactionRoundTripMs: 5,
+  renderTransactionWaitMs: 2,
+  sequence: index + 1,
+  streamingWorkerRemainderMs: 1 + index,
+  totalMs: 11 + index,
+  uploadMs: 3,
+}));
+
+const streaming = {
+  cellLoadAttributionP95: {
+    decodeMs: 1,
+    decodeRoundTripMs: 2,
+    decodeWaitMs: 1,
+    opfsAccessRoundTripMs: 3,
+    opfsReadMs: 2,
+    opfsWaitMs: 1,
+    renderTransactionRoundTripMs: 5,
+    renderTransactionWaitMs: 2,
+    streamingWorkerRemainderMs: 10,
+    uploadMs: 3,
+  },
+  cellLoadP95Ms: 20,
+  cellLoadSampleCount: 10,
+  cellLoadSamples: streamingSamples,
+  cpuBudgetRejectionCount: 0,
+  currentObservers: [[0, 12, 0]],
+  decodeQueueDepthHighWater: 9,
+  decodeWorkerCount: 4,
+  encodedBytesRead: 190_000,
+  failureMessage: null,
+  flythroughObserverUpdateCount: 0,
+  hardwareConcurrency: 16,
+  installedReleaseDigest: null,
+  installedResourceBytes: 0,
+  installedResourceCount: 0,
+  legacyNetworkRequestCount: 2,
+  measurementCellLoadSamples: streamingSamples,
+  measurementProactiveEvictionCount: 10,
+  measurementStartBatch: null,
+  measurementStartCellLoadSampleCount: 0,
+  measurementStartFlythroughObserverUpdateCount: 0,
+  measurementStartObserverUpdateCount: 0,
+  measurementStartProactiveEvictionCount: 0,
+  measurementStartResidentCellCount: 9,
+  measurementStartSettledObserverUpdateCount: 0,
+  observerUpdateCount: 10,
+  opfsAccessHandleCount: 256,
+  opfsAccessHandleOpenDurationMs: 10,
+  opfsPackageCount: 256,
+  opfsProvisionedBytes: 3_000_000,
+  proactiveEvictionCount: 10,
+  renderBatchCellCountHighWater: 9,
+  renderBatchDirectUploadMsHighWater: 27,
+  renderBatchRequestCount: 2,
+  renderBatchTransactionCount: 2,
+  renderRecoveryCount: 0,
+  residentCellCount: 9,
+  residentCellIds: ["a", "b", "c", "d", "e", "f", "g", "h", "i"],
+  residentEncodedBytes: 90_000,
+  residentEncodedBytesHighWater: 90_000,
+  residentGpuBytes: 180_000,
+  residentGpuBytesHighWater: 180_000,
+  schemaVersion: 11,
+  settledObserverUpdateCount: 10,
+  settledRecoveryCheckpoint: {
+    flythroughObserverUpdateCount: 0,
+    observerUpdateCount: 10,
+    observers: [[0, 12, 0]],
+    residentCellIds: ["a", "b", "c", "d", "e", "f", "g", "h", "i"],
+    workerGeneration: 1,
+  },
+  state: "streaming",
+  startupTiming: {
+    accessHandlesOpenedAtMs: 4,
+    contract: "streaming-startup-timing@1",
+    decodePoolCreatedAtMs: 5,
+    finalAdmissionCompletedAtMs: null,
+    initialResidencyReadyAtMs: 6,
+    provisioningStartedAtMs: 2,
+    releaseBindingCompletedAtMs: null,
+    releaseResolutionCompletedAtMs: 3,
+    schemaVersion: 1,
+    sourceKind: "privileged-legacy-network",
+    workerStartedAtMs: 1,
+  },
+  workerGeneration: 1,
+};
+
+const machine = {
+  arch: "x64",
+  cpu: {
+    cores: 24,
+    logicalProcessors: 32,
+    name: "Intel(R) Core(TM) i9-14900KF",
+  },
+  display: {
+    dimensionTolerancePixels: 2,
+    height: 2160,
+    refreshRateHz: 60,
+    refreshRateToleranceHz: 1,
+    width: 3840,
+  },
+  gateTiers: ["showcase"],
+  gpu: {
+    architecture: "lovelace",
+    backend: "D3D12",
+    deviceId: 9986,
+    driverVersion: "32.0.16.1074",
+    name: "NVIDIA GeForce RTX 4080 SUPER",
+    subSysId: 1094980696,
+    vendor: "nvidia",
+    vendorId: 4318,
+  },
+  id: "dev-01",
+  minimumPhysicalMemoryBytes: 128000000000,
+  osBuild: "26200.8875",
+  platform: "win32",
+  powerSchemeGuid: "381b4222-f694-41f0-9685-ff5bb260df2e",
+  schemaVersion: 1,
+};
+
+const host = {
+  cpu: machine.cpu,
+  os: { build: machine.osBuild, caption: "Microsoft Windows 11 Pro" },
+  physicalMemoryBytes: 137277173760,
+  power: { guid: machine.powerSchemeGuid, name: "Balanced" },
+  remoteSession: false,
+  videoControllers: [
+    {
+      driverVersion: machine.gpu.driverVersion,
+      height: machine.display.height,
+      name: machine.gpu.name,
+      pnpDeviceId: "PCI\\VEN_10DE&DEV_2702&SUBSYS_41441458&REV_A1",
+      refreshRateHz: machine.display.refreshRateHz,
+      width: machine.display.width,
+    },
+  ],
+};
+
+const browserDisplay = {
+  probeFailures: [],
+  refreshRatesHz: [60],
+  screen: {
+    availHeight: 2160,
+    availWidth: 3840,
+    colorDepth: 24,
+    devicePixelRatio: 1,
+    height: 2160,
+    width: 3840,
+  },
+};
+
+export function completePsoQualificationSmokeReport(input: {
+  readonly artifactDigest: string;
+  readonly chromePin: ChromePin;
+  readonly executableSha256: string;
+  readonly psoWarmup: PsoWarmupTelemetrySnapshot;
+  readonly releaseDigest: string;
+  readonly source: SourceIdentity;
+}): Record<string, unknown> & { runs: Record<string, unknown>[] } {
+  const target = {
+    artifactDigest: input.artifactDigest,
+    artifactDigestVerified: true,
+    kind: "local",
+    localServerStarted: true,
+    origin: "http://127.0.0.1:4173",
+    releaseDigest: input.releaseDigest,
+    releaseDigestVerified: true,
+    servingContract: {
+      artifactBytes: 100,
+      artifactCount: 4,
+      conditionalArtifactCount: 4,
+      documentCacheControl: "no-cache",
+      documentConditionalStatus: 304,
+      documentMimeType: "text/html; charset=utf-8",
+      documentStatus: 200,
+      isolation: "coop-coep",
+      manifestCacheControl: "no-cache",
+      manifestConditionalStatus: 304,
+      manifestStatus: 200,
+      nosniff: true,
+      representations: [
+        { bytes: 25, count: 1, mimeTypes: ["text/html"], representation: "html" },
+        {
+          bytes: 25,
+          count: 1,
+          mimeTypes: ["application/javascript"],
+          representation: "javascript",
+        },
+        { bytes: 25, count: 1, mimeTypes: ["application/json"], representation: "json" },
+        { bytes: 25, count: 1, mimeTypes: ["application/wasm"], representation: "wasm" },
+      ],
+    },
+  };
+  const budgetChecks = [
+    { actual: 10, limit: 20, metric: "allRealmJsHeapHighWaterBytes", passed: true },
+    { actual: 0, limit: 0, metric: "mainThreadLongTasksOver50Ms", passed: true },
+    {
+      actual: 0,
+      limit: 0,
+      metric: "pipelineCreationActivityOverlappingMeasurement",
+      passed: true,
+    },
+    {
+      actual: 0,
+      limit: 0,
+      metric: "shaderCompilationsOverlappingMeasurement",
+      passed: true,
+    },
+    { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
+  ];
+  const runs: Record<string, unknown>[] = [];
+  for (let repeat = 1; repeat <= 3; repeat += 1) {
+    for (const profile of ["fresh", "warm"] as const) {
+      const fresh = profile === "fresh";
+      runs.push({
+        budgetChecks: structuredClone(budgetChecks),
+        dawnPipeline: {
+          state: "measured",
+          value: {
+            backend: "D3D12",
+            pipelineActivity: {
+              asyncInitializationCount: 0,
+              count: 3,
+              maxDurationMs: 1,
+              overlappingMeasurement: 0,
+              syncComputeCount: 0,
+              syncRenderCount: 3,
+              totalDurationMs: 2,
+            },
+            pipelineCache: {
+              compute: {
+                reason:
+                  "No backend D3D12 compute PSO cache operation occurred in this scenario run",
+                state: "not-applicable",
+              },
+              render: {
+                state: "measured",
+                value: { hitCount: fresh ? 0 : 3, missCount: fresh ? 3 : 0 },
+              },
+            },
+            shaderCache: {
+              hitCount: fresh ? 0 : 6,
+              missesOverlappingMeasurement: 0,
+              missCount: fresh ? 6 : 0,
+              requestCount: 6,
+            },
+          },
+        },
+        greyboxWorld: { state: "measured", value: greyboxWorld },
+        browserDisplayAfter: structuredClone(browserDisplay),
+        browserDisplayBefore: structuredClone(browserDisplay),
+        launchOrdinal: runs.length + 1,
+        launchStartedAfterSequenceMs: runs.length * 10_000,
+        profile,
+        profileLineage: {
+          history: fresh ? ["fresh"] : ["fresh", "warm"],
+          id: `lineage-${repeat}`,
+        },
+        psoWarmup: { state: "measured", value: input.psoWarmup },
+        repeat,
+        renderSurfaceAfter: { height: 2160, width: 3840 },
+        renderSurfaceBefore: { height: 2160, width: 3840 },
+        renderSurfaceChanges: [],
+        streaming: { state: "measured", value: streaming },
+      });
+    }
+  }
+  const mandatoryMetrics = SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map(
+    (metric) => metric.name,
+  );
+  return {
+    artifactDigest: input.artifactDigest,
+    baseline: { reason: "No promoted baseline exists", state: "untracked" },
+    build: { engineAndRenderWorkerBytes: 500, totalBuildBytes: 1_000 },
+    callbackPacingVariance: [],
+    chromePin: input.chromePin,
+    coreRunFailure: null,
+    environment: {
+      adapter: {
+        architecture: machine.gpu.architecture,
+        backend: machine.gpu.backend,
+        description: machine.gpu.name,
+        device: "0x2702",
+        driver: `D3D12 driver version ${machine.gpu.driverVersion}`,
+        isFallbackAdapter: false,
+        type: "discrete GPU",
+        vendor: machine.gpu.vendor,
+      },
+      browserCommandLine: "chrome.exe --enable-webgpu-developer-features",
+      browserDisplay: structuredClone(browserDisplay),
+      browserProduct: `Chrome/${input.chromePin.version}`,
+      browserRevision: input.chromePin.browserRevision,
+      browserUserAgent: `Chrome/${input.chromePin.version}`,
+      executableSha256: input.executableSha256,
+      gateIdentity: { state: "measured", value: true },
+      gpuDevices: [
+        {
+          deviceId: machine.gpu.deviceId,
+          deviceString: machine.gpu.name,
+          driverVendor: "NVIDIA",
+          driverVersion: machine.gpu.driverVersion,
+          revision: 161,
+          subSysId: machine.gpu.subSysId,
+          vendorId: machine.gpu.vendorId,
+          vendorString: "",
+        },
+      ],
+      host: structuredClone(host),
+      hostAfterRuns: structuredClone(host),
+      jsVersion: "15.1.0",
+      machine: structuredClone(machine),
+      machineId: "dev-01",
+      requestedTier: "showcase",
+      sandboxVerified: true,
+      target,
+      targetDisplayMode: "3840x2160@60Hz",
+      targetPostflight: { identity: target, state: "verified" },
+      targetPreflight: { identity: target, state: "verified" },
+    },
+    facets: {
+      budgetEvaluation: { evaluatedChecks: 30, reasons: [], status: "passed" },
+      environment: { reasons: [], status: "passed" },
+      evidenceCompleteness: { reasons: [], status: "passed" },
+    },
+    finalizationFailure: null,
+    generatedAt: "2026-07-29T00:00:00.000Z",
+    harnessRuntime: {
+      nodeExecutableSha256: "e".repeat(64),
+      nodeVersion: "v24.18.0",
+    },
+    incompleteMetrics: [],
+    informationalFailures: [],
+    mandatoryMetricSet: {
+      metrics: mandatoryMetrics,
+      version: SMOKE_MANDATORY_METRIC_SET_VERSION,
+    },
+    passed: true,
+    postRunIdentity: { state: "measured" },
+    releaseDigest: input.releaseDigest,
+    reportPersistence: { state: "measured" },
+    runs,
+    scenario: "smoke@1",
+    schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
+    source: input.source,
+    streamingCellLoadP95Variance: [
+      {
+        absoluteP95RangeMs: 0,
+        allowedAbsoluteP95RangeMs: 2,
+        profile: "fresh",
+        relativeP95Range: 0,
+        state: "measured",
+      },
+      {
+        absoluteP95RangeMs: 0,
+        allowedAbsoluteP95RangeMs: 2,
+        profile: "warm",
+        relativeP95Range: 0,
+        state: "measured",
+      },
+    ],
+    v8CodeCacheDiagnostics: [],
+    v8CodeCacheDiagnosticsRequested: false,
+    vizPresentationFeedbackCallbackVariance: [],
+  };
+}

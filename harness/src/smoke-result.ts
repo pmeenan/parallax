@@ -24,6 +24,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
+  psoWarmup: "PSO warmup trace replay",
   reportFinalization: "report finalization",
   sabRingBuffer: "SAB ring-buffer transport",
   streaming: "world streaming pipeline",
@@ -36,6 +37,11 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
 export const SMOKE_EVIDENCE_METRIC_NAMES: readonly string[] = Object.freeze(
   Object.values(EVIDENCE_METRIC_NAMES),
 );
+export const SMOKE_ENVIRONMENT_METRIC_NAME = "verified gate environment identity" as const;
+export const SMOKE_CHECKED_METRIC_NAMES: readonly string[] = Object.freeze([
+  SMOKE_ENVIRONMENT_METRIC_NAME,
+  ...SMOKE_EVIDENCE_METRIC_NAMES,
+]);
 
 function registryMandatory(name: string): boolean {
   const metric = SMOKE_METRICS.find((candidate) => candidate.name === name);
@@ -45,8 +51,28 @@ function registryMandatory(name: string): boolean {
   return metric.mandatoryForHarnessV1;
 }
 
-// Fail loudly at module load if the registry and this module ever drift apart.
+export function assertSmokeMetricRegistryCoverage(
+  metrics: readonly Readonly<{ mandatoryForHarnessV1: boolean; name: string }>[],
+  checkedNames: readonly string[],
+): void {
+  const registered = metrics.map(({ name }) => name).sort();
+  const checked = [...checkedNames].sort();
+  if (
+    new Set(registered).size !== registered.length ||
+    new Set(checked).size !== checked.length ||
+    registered.length !== checked.length ||
+    registered.some((name, index) => name !== checked[index])
+  ) {
+    throw new Error("Smoke metric registry and blocking-check producers drifted");
+  }
+}
+
+// Fail loudly at module load if either side of the registry/producer contract drifts.
 for (const name of SMOKE_EVIDENCE_METRIC_NAMES) registryMandatory(name);
+if (!registryMandatory(SMOKE_ENVIRONMENT_METRIC_NAME)) {
+  throw new Error("Smoke environment metric must remain mandatory");
+}
+assertSmokeMetricRegistryCoverage(SMOKE_METRICS, SMOKE_CHECKED_METRIC_NAMES);
 
 interface EvidenceState {
   readonly reason?: string;
@@ -92,9 +118,12 @@ export interface SmokeEvidenceInput {
     readonly dawnPipeline: EvidenceState;
     readonly gpuMemory: EvidenceState;
     readonly greyboxWorld: EvidenceState;
-    readonly http: Readonly<{ readonly value: LocalServerMetrics }>;
+    readonly http:
+      | Readonly<{ readonly state: "measured"; readonly value: LocalServerMetrics }>
+      | Readonly<{ readonly reason: string; readonly state: "not-applicable" }>;
     readonly jsHeap: EvidenceState;
     readonly profile: "fresh" | "warm";
+    readonly psoWarmup: EvidenceState;
     readonly repeat: number;
     readonly sabRingBuffer: EvidenceState;
     readonly streaming: EvidenceState;
@@ -174,13 +203,17 @@ export function collectSmokeEvidenceChecks(
         run.v8CodeCache,
       ),
     ]),
-    ...input.incompleteMetrics.map((metric) =>
-      evidenceCheck(
+    ...input.incompleteMetrics.map((metric) => {
+      const mandatory = registryMandatory(metric.metric);
+      if (metric.mandatoryForHarnessV1 !== mandatory) {
+        throw new Error(`Incomplete metric registry drifted for ${metric.metric}`);
+      }
+      return evidenceCheck(
         `${metric.metric}: ${metric.state} (${evidenceReason(metric)})`,
-        metric.mandatoryForHarnessV1,
+        mandatory,
         metric,
-      ),
-    ),
+      );
+    }),
     ...input.callbackPacingVariance.map((metric) =>
       evidenceCheck(
         `${metric.profile} callback pacing variance: ${evidenceReason(metric)}`,
@@ -207,6 +240,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: Dawn pipeline compile/cache evidence ${run.dawnPipeline.state} (${evidenceReason(run.dawnPipeline)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.dawnPipeline),
         run.dawnPipeline,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: PSO warmup trace replay ${run.psoWarmup.state} (${evidenceReason(run.psoWarmup)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.psoWarmup),
+        run.psoWarmup,
       ),
     ),
     ...input.runs.map((run) =>
@@ -252,13 +292,21 @@ export function collectSmokeEvidenceChecks(
       ),
     ),
     ...input.runs.flatMap((run) =>
-      evaluateHttpServingEvidence(run.profile, run.repeat, run.http.value).map((observation) =>
-        Object.freeze({
-          description: observation.description,
-          mandatory: registryMandatory(EVIDENCE_METRIC_NAMES.httpServing),
-          measured: observation.satisfied,
-        }),
-      ),
+      run.http.state === "measured"
+        ? evaluateHttpServingEvidence(run.profile, run.repeat, run.http.value).map((observation) =>
+            Object.freeze({
+              description: observation.description,
+              mandatory: registryMandatory(EVIDENCE_METRIC_NAMES.httpServing),
+              measured: observation.satisfied,
+            }),
+          )
+        : [
+            evidenceCheck(
+              `${run.profile} repeat ${run.repeat}: HTTP serving evidence ${run.http.state} (${run.http.reason})`,
+              registryMandatory(EVIDENCE_METRIC_NAMES.httpServing),
+              run.http,
+            ),
+          ],
     ),
   ]);
 }

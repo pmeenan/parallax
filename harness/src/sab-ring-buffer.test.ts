@@ -29,6 +29,13 @@ const measuredSnapshot: SabRingBufferSpikeTelemetrySnapshot = Object.freeze({
 });
 
 describe("SAB ring-buffer smoke evidence", () => {
+  it("rejects non-object input without a caller-side assertion", () => {
+    expect(resolveSabRingBufferMetric("not telemetry")).toMatchObject({ state: "invalid" });
+    expect(() => requireSabRingBufferCompleteAtMeasurementBoundary(null)).toThrow(
+      "not complete at the measurement boundary",
+    );
+  });
+
   it("accepts the exact completed transport contract", () => {
     expect(resolveSabRingBufferMetric(measuredSnapshot)).toMatchObject({ state: "measured" });
   });

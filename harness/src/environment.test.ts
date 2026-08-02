@@ -8,6 +8,7 @@ import {
   loadMachineDescriptor,
   type MachineDescriptor,
   parseDisplayRefreshRates,
+  projectCdpGpuDevice,
   safeMachineIdForFilename,
 } from "./environment.js";
 
@@ -104,6 +105,23 @@ const validObservation: GateEnvironmentObservation = {
 };
 
 describe("gate environment validation", () => {
+  it("projects only the exact CDP GPU evidence fields", () => {
+    expect(
+      projectCdpGpuDevice({
+        ...validObservation.primaryGpu,
+        extraCdpField: "future protocol addition",
+      }),
+    ).toEqual(validObservation.primaryGpu);
+  });
+
+  it("fails closed when projected CDP GPU fields are missing or mistyped", () => {
+    const { vendorId: _missingVendorId, ...missing } = validObservation.primaryGpu;
+    expect(() => projectCdpGpuDevice(missing)).toThrow(/structure is invalid/);
+    expect(() => projectCdpGpuDevice({ ...validObservation.primaryGpu, revision: "161" })).toThrow(
+      /structure is invalid/,
+    );
+  });
+
   it("accepts a fully matched local reference-machine observation", () => {
     expect(evaluateGateEnvironment(descriptor, validObservation)).toEqual({
       state: "measured",

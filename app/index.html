@@ -98,6 +98,58 @@
       }
       .streaming-dashboard-details h3 { margin-top: 0.65rem; }
       .streaming-dashboard-details ul { margin: 0; padding-left: 1.25rem; color: #c8e0ff; }
+      .installer-shell {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+        background:
+          radial-gradient(circle at 50% 20%, rgb(30 78 135 / 45%), transparent 42rem),
+          #040713;
+      }
+      .installer-card {
+        width: min(44rem, 100%);
+        max-height: calc(100dvh - 2rem);
+        overflow: auto;
+        padding: clamp(1.25rem, 4vw, 2.5rem);
+        border: 1px solid rgb(110 180 255 / 45%);
+        border-radius: 0.75rem;
+        background: rgb(3 8 20 / 92%);
+        box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 45%);
+      }
+      .installer-card h1 { font-size: 1.35rem; }
+      .installer-card > p { margin-top: 0.65rem; line-height: 1.5; }
+      .installer-card progress { width: 100%; height: 1rem; margin: 1.25rem 0 0.5rem; }
+      .installer-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35rem 1rem;
+        margin: 1rem 0;
+        font: 0.72rem/1.4 ui-monospace, monospace;
+      }
+      .installer-metrics div { display: flex; justify-content: space-between; gap: 0.75rem; }
+      .installer-metrics dt { color: #8db6e8; }
+      .installer-metrics dd { margin: 0; overflow-wrap: anywhere; text-align: right; }
+      .installer-warning { color: #ffd28a; }
+      .installer-error { color: #ff8e8e; }
+      .installer-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }
+      .installer-actions button {
+        min-height: 2.5rem;
+        padding: 0.45rem 0.9rem;
+        border: 1px solid rgb(110 180 255 / 55%);
+        border-radius: 0.35rem;
+        background: #0b1730;
+        color: inherit;
+      }
+      .installer-actions button:disabled { opacity: 0.45; }
+      .uninstall-panel { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgb(110 180 255 / 25%); }
+      .uninstall-panel > p { margin-top: 0.5rem; line-height: 1.5; }
+      .uninstall-panel dialog { max-width: min(38rem, calc(100% - 2rem)); border: 1px solid rgb(255 142 142 / 55%); border-radius: 0.5rem; background: #08101f; color: inherit; }
+      .uninstall-panel dialog::backdrop { background: rgb(0 0 0 / 72%); }
+      .uninstall-panel h2 { margin-top: 0; }
+      .uninstall-panel ul { line-height: 1.5; }
+      [hidden] { display: none; }
       @media (max-width: 42rem) {
         .streaming-dashboard-grid { grid-template-columns: 1fr; }
       }
@@ -113,8 +165,59 @@
   </head>
   <body>
     <main>
-      <canvas id="render-canvas" aria-label="Parallax WebGPU render output"></canvas>
-      <section class="status-panel" aria-live="polite">
+      <section id="installer-shell" class="installer-shell" aria-labelledby="installer-title">
+        <div class="installer-card">
+          <h1 id="installer-title">Install Parallax</h1>
+          <p>A browser-native game installation. Downloads are verified and stored locally in Chrome.</p>
+          <p id="installer-status" role="status" aria-live="polite" aria-atomic="true">
+            Preparing installer…
+          </p>
+          <p id="installer-warning" class="installer-warning" role="status" hidden></p>
+          <p id="installer-error" class="installer-error" role="alert" hidden></p>
+          <progress id="installer-progress" max="1" value="0" aria-label="Installation progress"></progress>
+          <dl class="installer-metrics" aria-label="Installation byte progress">
+            <div><dt>Total</dt><dd id="installer-total-bytes">0 B</dd></div>
+            <div><dt>Planned download</dt><dd id="installer-planned-download-bytes">0 B</dd></div>
+            <div><dt>Downloaded</dt><dd id="installer-downloaded-bytes">0 B</dd></div>
+            <div><dt>Reused</dt><dd id="installer-reused-bytes">0 B</dd></div>
+            <div><dt>Resumed</dt><dd id="installer-resumed-bytes">0 B</dd></div>
+            <div><dt>Verified</dt><dd id="installer-verified-bytes">0 B</dd></div>
+            <div><dt>Resources</dt><dd id="installer-completed-resources">0 / 0</dd></div>
+            <div><dt>Current resource</dt><dd id="installer-current-resource">Waiting</dd></div>
+          </dl>
+          <div class="installer-actions">
+            <button id="installer-start" type="button">Install Parallax</button>
+            <button id="installer-cancel" type="button" disabled>Cancel</button>
+            <button id="installer-repair" type="button" disabled>Repair installation</button>
+            <button id="installer-launch" type="button" disabled>Launch Parallax</button>
+            <button id="installer-reload" type="button" hidden>Reload page</button>
+          </div>
+          <section class="uninstall-panel" aria-labelledby="uninstall-title">
+            <h2 id="uninstall-title">Remove local installation</h2>
+            <p>Uninstall is always user-initiated and requires a separate confirmation.</p>
+            <button id="uninstall-open" type="button">Uninstall Parallax…</button>
+            <dialog id="uninstall-confirmation" aria-labelledby="uninstall-confirm-title">
+              <h2 id="uninstall-confirm-title">Remove Parallax data from this Chrome profile?</h2>
+              <p>This removes Parallax's installed game assets and app-owned model, OPFS data, Cache Storage entries, IndexedDB databases, and service-worker registrations for this origin. It also removes any future Parallax saves and settings stored in that origin.</p>
+              <p><strong>Save export:</strong> unavailable because this build has no save-game subsystem and therefore no saved progress to export.</p>
+              <button id="uninstall-export-saves" type="button" disabled>Export saves (no saves available)</button>
+              <p>Page code cannot observe or promise removal of Chrome's HTTP cache, V8 code cache, or Dawn/GPU caches. The alternate endpoint asks Chrome to clear origin storage and cache; the harness measures those observable effects separately.</p>
+              <p id="uninstall-status" role="status" aria-live="assertive" aria-atomic="true">No uninstall has run in this page.</p>
+              <p id="uninstall-alert" role="alert" aria-live="assertive" aria-atomic="true" hidden></p>
+              <form id="uninstall-site-data-form" action="/uninstall" method="post">
+              <div class="installer-actions">
+                <button id="uninstall-client-confirm" type="button">Confirm client-side uninstall</button>
+                <button id="uninstall-site-data-confirm" type="submit">Confirm and use Chrome site-data removal</button>
+                <button id="uninstall-cancel" type="button" autofocus>Keep installation</button>
+                <button id="uninstall-reload" type="button" hidden>Reload after uninstall attempt</button>
+              </div>
+              </form>
+            </dialog>
+          </section>
+        </div>
+      </section>
+      <canvas id="render-canvas" aria-label="Parallax WebGPU render output" hidden></canvas>
+      <section id="runtime-status" class="status-panel" aria-live="polite" hidden>
         <h1>Parallax</h1>
         <p id="status">Booting local build…</p>
       </section>
@@ -123,8 +226,8 @@
         <p id="app-owned-llm-status">idle</p>
         <button id="app-owned-llm-start" type="button">Install / run probe</button>
       </section>
-      <section id="streaming-dashboard" class="status-panel streaming-dashboard"></section>
-      <section id="benchmark-mode" class="status-panel benchmark-panel"></section>
+      <section id="streaming-dashboard" class="status-panel streaming-dashboard" hidden></section>
+      <section id="benchmark-mode" class="status-panel benchmark-panel" hidden></section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>

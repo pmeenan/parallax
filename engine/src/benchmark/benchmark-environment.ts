@@ -1,3 +1,19 @@
+import { BUILD_MANIFEST_SCHEMA_VERSION } from "../build/build-manifest-contract";
+import {
+  OFFLINE_SHELL_GENERATION_SCHEMA_VERSION,
+  OFFLINE_SHELL_SAVE_SCHEMA_VERSION,
+} from "../offline-shell/shell-generation-contract";
+import {
+  INSTALL_MANIFEST_PATH,
+  INSTALL_MANIFEST_SCHEMA_VERSION,
+  parseInstallManifest,
+} from "../storage/install-manifest";
+import { scaleStreamingDependencyResourceId } from "../streaming/scale-streaming-resource-id";
+import {
+  canonicalStreamingDistrictIndexResourceId,
+  parseStreamingCellArtifactSource,
+} from "../streaming/streaming-cell-identity";
+import { STREAMING_DISTRICT_INDEX_SCHEMA_VERSION } from "../streaming/streaming-protocol";
 import {
   type BenchmarkBrowserIdentity,
   type BenchmarkCapability,
@@ -40,7 +56,7 @@ type NavigatorWithBenchmarkSurfaces = Navigator & {
 
 // Independent page-consumer pin. Harness regression coverage binds this to the
 // producer-side build-manifest contract so either side drifting fails review.
-export const BENCHMARK_BUILD_MANIFEST_SCHEMA_VERSION = 11;
+export const BENCHMARK_BUILD_MANIFEST_SCHEMA_VERSION = BUILD_MANIFEST_SCHEMA_VERSION;
 
 export interface BenchmarkLongTaskMonitor {
   finish(): BenchmarkMetric<number>;
@@ -64,13 +80,13 @@ export async function captureBrowserBenchmarkEnvironment(
   _preset: BenchmarkQualityPreset,
 ): Promise<BenchmarkEnvironmentIdentity> {
   const benchmarkNavigator = navigator as NavigatorWithBenchmarkSurfaces;
-  const [browser, artifactDigest, gpuAdapter] = await Promise.all([
+  const [browser, buildIdentity, gpuAdapter] = await Promise.all([
     readBrowserIdentity(benchmarkNavigator),
-    readArtifactDigest(),
+    readBuildIdentity(),
     readGpuAdapter(benchmarkNavigator),
   ]);
   return Object.freeze({
-    artifactDigest,
+    artifactDigest: buildIdentity.artifactDigest,
     browser,
     capabilities: readCapabilities(benchmarkNavigator),
     gpuAdapter,
@@ -89,6 +105,7 @@ export async function captureBrowserBenchmarkEnvironment(
         : notApplicableMetric<true>(
             "Only Chrome on a registered reference machine can carry budgets",
           ),
+    releaseDigest: buildIdentity.releaseDigest,
     screen: readScreenIdentity(),
   });
 }
@@ -208,31 +225,308 @@ function parseReducedUserAgent(userAgent: string): Readonly<{
   return Object.freeze({ engine: "unknown", name: "unknown", version: null });
 }
 
-async function readArtifactDigest(): Promise<BenchmarkMetric<string>> {
+export async function readBuildIdentity(): Promise<
+  Readonly<{ artifactDigest: BenchmarkMetric<string>; releaseDigest: BenchmarkMetric<string> }>
+> {
   try {
     const response = await fetch(new URL("/build-manifest.json", location.href), {
       cache: "no-store",
     });
     if (!response.ok) {
-      return invalidMetric(`Build manifest request returned HTTP ${response.status}`);
+      throw new Error(`Build manifest request returned HTTP ${response.status}`);
     }
-    const bytes = await response.arrayBuffer();
-    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+    const buildBytes = await response.arrayBuffer();
+    const parsed = JSON.parse(new TextDecoder().decode(buildBytes)) as unknown;
     if (
       !record(parsed) ||
+      !hasExactKeys(parsed, [
+        "artifacts",
+        "gameContentEntrypoints",
+        "installManifestEntrypoint",
+        "offlineShell",
+        "schemaVersion",
+        "workerEntrypoints",
+      ]) ||
       parsed.schemaVersion !== BENCHMARK_BUILD_MANIFEST_SCHEMA_VERSION ||
       !Array.isArray(parsed.artifacts) ||
       !Array.isArray(parsed.workerEntrypoints) ||
-      !Array.isArray(parsed.gameContentEntrypoints)
+      !Array.isArray(parsed.gameContentEntrypoints) ||
+      !record(parsed.installManifestEntrypoint) ||
+      !hasExactKeys(parsed.installManifestEntrypoint, ["path", "schemaVersion"]) ||
+      parsed.installManifestEntrypoint.path !== INSTALL_MANIFEST_PATH ||
+      parsed.installManifestEntrypoint.schemaVersion !== INSTALL_MANIFEST_SCHEMA_VERSION ||
+      !record(parsed.offlineShell) ||
+      !hasExactKeys(parsed.offlineShell, [
+        "generationSchemaVersion",
+        "saveSchemaVersion",
+        "serviceWorkerPath",
+      ]) ||
+      parsed.offlineShell.generationSchemaVersion !== OFFLINE_SHELL_GENERATION_SCHEMA_VERSION ||
+      parsed.offlineShell.saveSchemaVersion !== OFFLINE_SHELL_SAVE_SCHEMA_VERSION ||
+      parsed.offlineShell.serviceWorkerPath !== "service-worker.js"
     ) {
-      return invalidMetric(
+      throw new Error(
         `Build manifest does not satisfy schema v${BENCHMARK_BUILD_MANIFEST_SCHEMA_VERSION} identity fields`,
       );
     }
-    return measuredMetric(hex(await crypto.subtle.digest("SHA-256", bytes)));
+    const workerEntrypoints = parsed.workerEntrypoints;
+    const gameContentEntrypoints = parsed.gameContentEntrypoints;
+    const artifacts = parseBuildArtifacts(parsed.artifacts);
+    validateBuildEntrypoints(workerEntrypoints, gameContentEntrypoints, artifacts);
+    const installArtifacts = artifacts.filter(
+      (artifact) => artifact.path === INSTALL_MANIFEST_PATH,
+    );
+    const installArtifact = installArtifacts[0];
+    if (installArtifacts.length !== 1 || installArtifact === undefined) {
+      throw new Error("Build manifest does not bind the install-manifest artifact");
+    }
+    const installResponse = await fetch(new URL(`/${INSTALL_MANIFEST_PATH}`, location.href), {
+      cache: "no-store",
+    });
+    if (!installResponse.ok) {
+      throw new Error(`Install manifest request returned HTTP ${installResponse.status}`);
+    }
+    const installBytes = await installResponse.arrayBuffer();
+    const installDigest = hex(await crypto.subtle.digest("SHA-256", installBytes));
+    if (
+      installBytes.byteLength !== installArtifact.bytes ||
+      installDigest !== installArtifact.sha256
+    ) {
+      throw new Error("Install manifest bytes do not match the build manifest");
+    }
+    parseInstallManifest(
+      JSON.parse(new TextDecoder().decode(installBytes)) as unknown,
+      artifacts
+        .filter((artifact) => artifact.path !== INSTALL_MANIFEST_PATH)
+        .map((artifact) =>
+          expectedInstallResource(artifact, workerEntrypoints, gameContentEntrypoints),
+        ),
+    );
+    return Object.freeze({
+      artifactDigest: measuredMetric(hex(await crypto.subtle.digest("SHA-256", buildBytes))),
+      releaseDigest: measuredMetric(installDigest),
+    });
   } catch (error: unknown) {
-    return invalidMetric(`Build artifact identity is unavailable: ${errorMessage(error)}`);
+    const invalid = invalidMetric<string>(
+      `Build artifact identity is unavailable: ${errorMessage(error)}`,
+    );
+    return Object.freeze({ artifactDigest: invalid, releaseDigest: invalid });
   }
+}
+
+export function expectedInstallResource(
+  artifact: BenchmarkBuildArtifact,
+  workers: readonly unknown[],
+  districts: readonly unknown[],
+): import("../storage/install-manifest").InstallResource {
+  const base = { bytes: artifact.bytes, sha256: artifact.sha256, source: artifact.path };
+  if (artifact.path === "index.html")
+    return {
+      ...base,
+      id: "app-shell-document-index",
+      kind: "document",
+      scope: "app-shell",
+      target: "shell",
+    };
+  if (artifact.path === "service-worker.js")
+    return {
+      ...base,
+      id: "common-worker-service",
+      kind: "worker",
+      scope: "common",
+      target: "shell",
+    };
+  for (const [pattern, id, scope] of [
+    [/^immutable\/app-[a-f0-9]{64}\.js$/, "app-shell-module-app", "app-shell"],
+    [/^immutable\/engine-[a-f0-9]{64}\.js$/, "common-module-engine", "common"],
+    [/^immutable\/game-[a-f0-9]{64}\.js$/, "game-specific-module-game", "game-specific"],
+  ] as const) {
+    if (pattern.test(artifact.path)) return { ...base, id, kind: "module", scope, target: "shell" };
+  }
+  const worker = workers.find((candidate) => record(candidate) && candidate.path === artifact.path);
+  if (record(worker))
+    return {
+      ...base,
+      id: `common-worker-${String(worker.role)}`,
+      kind: "worker",
+      scope: "common",
+      target: "shell",
+    };
+  const wasm = artifact.path.match(/^immutable\/([a-z0-9-]+)-[a-f0-9]{64}\.wasm$/);
+  if (wasm?.[1] !== undefined)
+    return {
+      ...base,
+      id: `common-wasm-${wasm[1]}`,
+      kind: "wasm",
+      scope: "common",
+      target: "shell",
+    };
+  if (/^immutable\/pso-warmup-trace-[a-f0-9]{64}\.json$/.test(artifact.path))
+    return {
+      ...base,
+      id: "game-specific-pso-warmup-trace",
+      kind: "asset-pack",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  if (/^immutable\/representative-streaming-ktx2-[a-f0-9]{64}\.ktx2$/.test(artifact.path))
+    return {
+      ...base,
+      id: "game-specific-streaming-00-texture",
+      kind: "asset-pack",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  if (/^immutable\/representative-streaming-meshopt-[a-f0-9]{64}\.meshopt$/.test(artifact.path))
+    return {
+      ...base,
+      id: "game-specific-streaming-01-mesh",
+      kind: "asset-pack",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  const productionStreaming = artifact.path.match(
+    /^immutable\/streaming-(texture|vertices|indices)-[a-f0-9]{64}\.(ktx2|meshopt)$/,
+  );
+  if (productionStreaming !== null) {
+    const role = productionStreaming[1];
+    if (role !== "texture" && role !== "vertices" && role !== "indices") {
+      throw new Error(`Streaming asset-pack role is invalid: ${artifact.path}`);
+    }
+    return {
+      ...base,
+      id: scaleStreamingDependencyResourceId(role, artifact.sha256),
+      kind: "asset-pack",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  }
+  const district = districts.find(
+    (candidate) => record(candidate) && candidate.path === artifact.path,
+  );
+  if (record(district))
+    return {
+      ...base,
+      id: canonicalStreamingDistrictIndexResourceId(String(district.districtId)),
+      kind: "district-index",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  if (/^immutable\/[a-z0-9-]+-cell-/.test(artifact.path)) {
+    const identity = parseStreamingCellArtifactSource(artifact.path);
+    if (identity.sha256 !== artifact.sha256) {
+      throw new Error(`Streaming cell filename hash does not match artifact: ${artifact.path}`);
+    }
+    return {
+      ...base,
+      id: identity.resourceId,
+      kind: "world-cell",
+      scope: "game-specific",
+      target: "opfs",
+    };
+  }
+  throw new Error(`Build artifact has no exact install classification: ${artifact.path}`);
+}
+
+interface BenchmarkBuildArtifact {
+  readonly bytes: number;
+  readonly path: string;
+  readonly sha256: string;
+}
+
+function parseBuildArtifacts(input: readonly unknown[]): readonly BenchmarkBuildArtifact[] {
+  const paths = new Set<string>();
+  const hashes = new Set<string>();
+  return input.map((candidate) => {
+    if (
+      !record(candidate) ||
+      !hasExactKeys(candidate, ["bytes", "path", "sha256"]) ||
+      !Number.isSafeInteger(candidate.bytes) ||
+      (candidate.bytes as number) <= 0 ||
+      typeof candidate.path !== "string" ||
+      candidate.path === "" ||
+      !/^[A-Za-z0-9._/-]+$/.test(candidate.path) ||
+      candidate.path.startsWith("/") ||
+      candidate.path.includes("\\") ||
+      candidate.path
+        .split("/")
+        .some((segment) => segment === "" || segment === "." || segment === "..") ||
+      typeof candidate.sha256 !== "string" ||
+      !/^[a-f0-9]{64}$/.test(candidate.sha256) ||
+      paths.has(candidate.path) ||
+      hashes.has(candidate.sha256)
+    ) {
+      throw new Error("Build manifest contains an invalid or duplicate artifact");
+    }
+    paths.add(candidate.path);
+    hashes.add(candidate.sha256);
+    return Object.freeze({
+      bytes: candidate.bytes as number,
+      path: candidate.path,
+      sha256: candidate.sha256,
+    });
+  });
+}
+
+function validateBuildEntrypoints(
+  workers: readonly unknown[],
+  districts: readonly unknown[],
+  artifacts: readonly BenchmarkBuildArtifact[],
+): void {
+  const artifactPaths = new Set(artifacts.map((artifact) => artifact.path));
+  const roles = new Set<string>();
+  const workerPaths = new Set<string>();
+  for (const worker of workers) {
+    if (
+      !record(worker) ||
+      !hasExactKeys(worker, ["path", "role", "targetType"]) ||
+      typeof worker.path !== "string" ||
+      typeof worker.role !== "string" ||
+      !["decode", "installer", "render", "streaming", "wasm-thread"].includes(worker.role) ||
+      worker.targetType !== "worker" ||
+      !artifactPaths.has(worker.path) ||
+      roles.has(worker.role) ||
+      workerPaths.has(worker.path)
+    ) {
+      throw new Error("Build manifest contains an invalid worker entrypoint");
+    }
+    roles.add(worker.role);
+    workerPaths.add(worker.path);
+  }
+  if (workers.length !== 5 || roles.size !== 5) {
+    throw new Error("Build manifest does not contain the exact five worker roles");
+  }
+  if (districts.length === 0) throw new Error("Build manifest contains no district entrypoint");
+  const districtIds = new Set<string>();
+  const districtPaths = new Set<string>();
+  for (const district of districts) {
+    if (
+      !record(district) ||
+      !hasExactKeys(district, ["districtId", "path", "schemaVersion", "scope", "targetType"]) ||
+      typeof district.districtId !== "string" ||
+      district.districtId === "" ||
+      typeof district.path !== "string" ||
+      district.schemaVersion !== STREAMING_DISTRICT_INDEX_SCHEMA_VERSION ||
+      district.scope !== "game-specific" ||
+      district.targetType !== "district" ||
+      !artifactPaths.has(district.path) ||
+      districtIds.has(district.districtId) ||
+      districtPaths.has(district.path)
+    ) {
+      throw new Error("Build manifest contains an invalid district entrypoint");
+    }
+    districtIds.add(district.districtId);
+    districtPaths.add(district.path);
+  }
+}
+
+function hasExactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
+  const keys = Object.keys(value).sort();
+  const sortedExpected = [...expected].sort();
+  return (
+    keys.length === sortedExpected.length &&
+    keys.every((key, index) => key === sortedExpected[index])
+  );
 }
 
 async function readGpuAdapter(

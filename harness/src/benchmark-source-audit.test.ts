@@ -31,7 +31,7 @@ describe("D-025 in-game benchmark ownership", () => {
 
   it("exposes automation through the same public start and result methods used by the UI", async () => {
     const [app, telemetry] = await Promise.all([
-      readFile(resolve("app/src/main.ts"), "utf8"),
+      readFile(resolve("app/src/runtime.ts"), "utf8"),
       readFile(resolve("engine/src/telemetry/telemetry-export.ts"), "utf8"),
     ]);
 

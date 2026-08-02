@@ -12,7 +12,9 @@ const shippedDirectory = join(repositoryRoot, "engine/dist");
 const expectedOutputs = Object.freeze([
   "decode-worker.js",
   "engine.js",
+  "installer-worker.js",
   "render-worker.js",
+  "service-worker.js",
   "streaming-worker.js",
   "wasm-thread-worker.js",
 ]);

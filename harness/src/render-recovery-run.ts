@@ -71,8 +71,20 @@ import {
   RENDER_RECOVERY_TELEMETRY_SCHEMA_VERSION,
 } from "./runs/render-recovery.js";
 import { parseQualityTier, QUALITY_TIER_PROFILES } from "./runs/smoke.js";
-import { createLocalServer, listenLocalServer, stopLocalServer } from "./server.js";
 import { readSourceIdentity } from "./source-identity.js";
+import {
+  assertHarnessNavigationUrl,
+  captureTargetPostflight,
+  failedTargetEvidence,
+  formatTargetVerificationEvidence,
+  type HarnessTargetIdentity,
+  type HarnessTargetVerificationEvidence,
+  harnessRuntimeUrl,
+  parseHarnessTargetArguments,
+  reconcileTargetPostflight,
+  startHarnessTarget,
+  verifiedTargetEvidence,
+} from "./target.js";
 import { readTelemetry } from "./telemetry.js";
 import { errorMessage } from "./value-utils.js";
 
@@ -97,6 +109,9 @@ interface EnvironmentIdentity {
   readonly machineId: string;
   readonly requestedTier: ReturnType<typeof parseQualityTier>;
   readonly sandboxVerified: boolean;
+  readonly target: HarnessTargetIdentity;
+  readonly targetPostflight: HarnessTargetVerificationEvidence;
+  readonly targetPreflight: HarnessTargetVerificationEvidence;
   readonly targetDisplayMode: string;
 }
 
@@ -120,6 +135,14 @@ const machineRoot = join(repositoryRoot, "harness/machines");
 await main();
 
 async function main(): Promise<void> {
+  const targetOptions = parseHarnessTargetArguments(process.argv.slice(2));
+  if (targetOptions.remainingArguments.length > 0) {
+    throw new Error(
+      `render-recovery accepts only --target; received ${targetOptions.remainingArguments
+        .map((argument) => JSON.stringify(argument))
+        .join(", ")}`,
+    );
+  }
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
   const chromePin = await loadChromePin(join(repositoryRoot, "harness/chrome/stable.json"));
@@ -134,9 +157,13 @@ async function main(): Promise<void> {
     nodeExecutableSha256: (await sha256File(process.execPath)).sha256,
     nodeVersion: process.version,
   });
-  const server = createLocalServer({ root: buildRoot });
-  const address = await listenLocalServer(server);
-  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const target = await startHarnessTarget({
+    artifactDigest: build.artifactDigest,
+    buildManifest: build.manifest,
+    buildRoot,
+    request: targetOptions.request,
+  });
+  const baseUrl = target.baseUrl;
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-render-recovery-"));
   const attempts: RenderRecoveryAttempt[] = [];
   try {
@@ -149,12 +176,19 @@ async function main(): Promise<void> {
         chromePin,
         machineId,
         tier,
-        baseUrl,
+        target.probeUrl,
         executableSha256,
+        target.identity,
       );
     } catch (error: unknown) {
       runFailure = `Identity inspection failed: ${errorMessage(error)}`;
-      environment = invalidEnvironmentIdentity(machineId, tier, executableSha256, runFailure);
+      environment = invalidEnvironmentIdentity(
+        machineId,
+        tier,
+        executableSha256,
+        runFailure,
+        target.identity,
+      );
     }
     for (const definition of RENDER_RECOVERY_ATTEMPTS) {
       attempts.push(
@@ -175,6 +209,17 @@ async function main(): Promise<void> {
         runFailure,
         `Environment revalidation failed: ${errorMessage(error)}`,
       );
+    }
+    const targetPostflight = reconcileTargetPostflight(
+      environment.target,
+      await captureTargetPostflight(target.revalidate),
+    );
+    if (targetPostflight.state === "verified") {
+      environment = recordTargetPostflightSuccess(environment, targetPostflight);
+    } else {
+      const targetFailure = `Serving target postflight failed: ${targetPostflight.reason}`;
+      runFailure = appendFailure(runFailure, targetFailure);
+      environment = recordTargetPostflightFailure(environment, targetFailure);
     }
     try {
       if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== build.artifactDigest) {
@@ -258,6 +303,7 @@ async function main(): Promise<void> {
         version: RENDER_RECOVERY_MANDATORY_METRIC_SET_VERSION,
       }),
       passed,
+      releaseDigest: build.releaseDigest,
       runFailure,
       scenario: RENDER_RECOVERY_SCENARIO,
       schemaVersion: RENDER_RECOVERY_REPORT_SCHEMA_VERSION,
@@ -291,7 +337,7 @@ async function main(): Promise<void> {
     if (!passed || contractValidationFailure !== null) process.exitCode = 1;
   } finally {
     await rm(profileRoot, { force: true, recursive: true });
-    await stopLocalServer(server);
+    await target.stop();
   }
 }
 
@@ -380,7 +426,9 @@ async function runAttempt(
     if (message.type() === "error") capture.browserErrors.push(message.text());
   });
   try {
-    await page.goto(baseUrl, { waitUntil: "load" });
+    const runtimeUrl = harnessRuntimeUrl(baseUrl);
+    await page.goto(runtimeUrl, { waitUntil: "load" });
+    assertHarnessNavigationUrl(page.url(), runtimeUrl, `render-recovery ${definition.id}`);
     browserDisplayBefore = await readBrowserDisplayIdentity(context, page);
     await waitForInitialCohort(page);
     capture.latestTelemetry = await readTelemetry(page);
@@ -700,6 +748,7 @@ function invalidEnvironmentIdentity(
   requestedTier: ReturnType<typeof parseQualityTier>,
   executableSha256: string,
   reason: string,
+  target: HarnessTargetIdentity,
 ): EnvironmentIdentity {
   return Object.freeze({
     adapter: null,
@@ -717,6 +766,9 @@ function invalidEnvironmentIdentity(
     machineId,
     requestedTier,
     sandboxVerified: false,
+    target,
+    targetPostflight: failedTargetEvidence("Serving target postflight has not run"),
+    targetPreflight: verifiedTargetEvidence(target),
     targetDisplayMode: QUALITY_TIER_PROFILES[requestedTier].targetDisplayMode,
   });
 }
@@ -731,8 +783,9 @@ async function inspectEnvironment(
   chromePin: ChromePin,
   machineId: string,
   tier: ReturnType<typeof parseQualityTier>,
-  baseUrl: string,
+  probeUrl: string,
   executableSha256: string,
+  target: HarnessTargetIdentity,
 ): Promise<EnvironmentIdentity> {
   const machine = await loadMachineDescriptor(machineRoot, machineId).catch(() => null);
   const hostResultPromise = tryReadWindowsHostIdentity();
@@ -759,7 +812,8 @@ async function inspectEnvironment(
     const primaryGpu = systemInfo.gpu.devices[0];
     if (primaryGpu === undefined) throw new Error("CDP did not report a primary GPU");
     const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(`${baseUrl}/__parallax/identity`, { waitUntil: "load" });
+    await page.goto(probeUrl, { waitUntil: "load" });
+    assertHarnessNavigationUrl(page.url(), probeUrl, "render-recovery identity probe");
     const adapter = await readWebGpuAdapterIdentity(page).catch(() => null);
     const browserDisplay = await readBrowserDisplayIdentity(context, page).catch(() => null);
     const commandLine = await readChromeCommandLine(context);
@@ -800,6 +854,9 @@ async function inspectEnvironment(
       machineId: machine?.id ?? machineId,
       requestedTier: tier,
       sandboxVerified,
+      target,
+      targetPostflight: failedTargetEvidence("Serving target postflight has not run"),
+      targetPreflight: verifiedTargetEvidence(target),
       targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
     });
   } finally {
@@ -830,6 +887,38 @@ async function revalidateEnvironment(
   });
 }
 
+function recordTargetPostflightSuccess(
+  environment: EnvironmentIdentity,
+  targetPostflight: Extract<HarnessTargetVerificationEvidence, { state: "verified" }>,
+): EnvironmentIdentity {
+  return Object.freeze({
+    ...environment,
+    targetPostflight,
+  });
+}
+
+function recordTargetPostflightFailure(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  return invalidateTargetEnvironment(
+    Object.freeze({ ...environment, targetPostflight: failedTargetEvidence(reason) }),
+    reason,
+  );
+}
+
+function invalidateTargetEnvironment(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  const failures =
+    environment.gateIdentity.state === "invalid" ? [...environment.gateIdentity.reasons] : [];
+  return Object.freeze({
+    ...environment,
+    gateIdentity: invalidEnvironmentGate([...failures, reason]),
+  });
+}
+
 function formatReport(report: {
   readonly artifactDigest: string;
   readonly attempts: readonly RenderRecoveryAttempt[];
@@ -840,6 +929,7 @@ function formatReport(report: {
   readonly generatedAt: string;
   readonly mandatoryMetricSet: Readonly<{ readonly version: number }>;
   readonly passed: boolean;
+  readonly releaseDigest: string;
   readonly runFailure: string | null;
   readonly schemaVersion: number;
   readonly source: Awaited<ReturnType<typeof readSourceIdentity>>;
@@ -850,7 +940,11 @@ function formatReport(report: {
     `- Scenario: \`${RENDER_RECOVERY_SCENARIO}\``,
     `- Result: **${report.passed ? "PASS" : "FAIL"}**`,
     `- Generated: ${report.generatedAt}`,
-    `- Artifact: \`${report.artifactDigest}\``,
+    `- Build artifact: \`${report.artifactDigest}\``,
+    `- Install release: \`${report.releaseDigest}\``,
+    `- Serving target: **${report.environment.target.kind}** \`${report.environment.target.origin}\``,
+    `- Target preflight: **${formatTargetVerificationEvidence(report.environment.targetPreflight)}**`,
+    `- Target postflight: **${formatTargetVerificationEvidence(report.environment.targetPostflight)}**`,
     `- Source commit: \`${report.source.commit}\``,
     `- Dirty-tree digest: \`${report.source.dirtyTreeDigest ?? "clean"}\``,
     `- Chrome: ${report.chromePin.version}`,

@@ -80,6 +80,7 @@ Everything else is on demand. Each doc, and the questions it answers:
 | [docs/game-design.md](docs/game-design.md) | World, districts, tone, content rules. Read for anything touching game content, world, or art |
 | [docs/rough-edges.md](docs/rough-edges.md) | Platform findings log. Grep it before adding a finding (avoid duplicates) or debugging platform weirdness (it may be known) |
 | [docs/chrome-platform-gaps.md](docs/chrome-platform-gaps.md) | Chrome-facing synthesis of missing capabilities, prioritized asks, evidence, and why each change would help |
+| [docs/upstream-contributions.md](docs/upstream-contributions.md) | Candidate upstream patches and regression fixtures derived from measured findings |
 | [docs/rendering-engine-research.md](docs/rendering-engine-research.md) | The living rendering-research evidence pack (D-004/D-046/D-076/D-078/D-080/D-098): sourced cases against Unity, three.js, Godot, Bevy; the measured Babylon Lite selection, sole-renderer commitment, bounded interop gaps, and P-002 geometry/splat outcome. Read when the engine choice is questioned, before repeating any "engine X can't do Y" claim, or before working around a suspected Babylon limitation |
 | [docs/dependencies.md](docs/dependencies.md) | Exact-pin currency policy, risk-tier upgrade gates, 28-day/milestone cadence, and review ledger. Read at dependency checkpoints or before changing any external version pin |
 
@@ -139,25 +140,12 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 ## Current status
 
-Milestones **M0 (harness + skeleton) and M1 (Greybox District 1 streaming) are
-complete**; M2 is in progress after its 2026-07-26 entry currency checkpoint — see
-[docs/plan.md](docs/plan.md) and [docs/dependencies.md](docs/dependencies.md). M1 closes
-only for registered dev-01 Showcase and evaluated mandatory metrics. It makes no claim for
-Standard or unsupported physical presentation, worker long tasks, combined CPU
-resident memory, or page-attributed GPU residency.
+Milestones **M0 (harness + skeleton), M1 (Greybox District 1 streaming), and M2
+(install/launch/run lifecycle + caches) are complete**. **M3 (gameplay core + NPC AI)
+is pending and next.**
 
-Post-M1 candidate work includes D-117's memory64 experiment removal (build manifest
-v11 and public telemetry v25), D-118's smoke schema v47 / mandatory metric set v23
-and flythrough schema v14 / mandatory metric set v7 contracts, and D-120's preflight
-baseline-store validation. Its final D-097 physical `smoke@1` passed all six
-launches, all three facets, and 30/30 checks in
-`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
-(SHA-256 `ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`).
-The same-artifact first attempt's retained startup fetch failure is RE-044.
-No additional public benchmark, flythrough, render-recovery, privileged diagnostic,
-or physical smoke is required for this candidate; it does not reopen M1.
-
-See [docs/plan.md](docs/plan.md), D-115–D-120 in
-[docs/decisions.md](docs/decisions.md), [docs/budgets.md](docs/budgets.md), and
-[docs/rough-edges.md](docs/rough-edges.md) for authoritative detail.
-Keep this paragraph current when plan.md milestone status changes (root rule 6).
+Use [docs/plan.md](docs/plan.md) for the live checklist, active scope, exit criteria,
+and closure evidence; [docs/dependencies.md](docs/dependencies.md) for dependency
+currency. Exact accepted contracts and evidence belong in
+[docs/decisions.md](docs/decisions.md), [docs/budgets.md](docs/budgets.md),
+[docs/rough-edges.md](docs/rough-edges.md), source, and result artifacts.

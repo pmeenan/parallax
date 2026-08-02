@@ -16,15 +16,27 @@ logged, no constraints yet)
 | Feature area | Web-novel angle | Status | Milestone |
 | --- | --- | --- | --- |
 | Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; D-112 makes the authoritative cohort, residency, storage, latency-stage, queue, and eviction telemetry visible in-game; D-115 defers no-visible-pop visual diff to M5 representative art; hard district swaps | active | M1, M4, M5 visual gate |
-| Install/update lifecycle | Multi-GB browser-native installer; asset-only updates gated on warm-launch performance staying within budget, with cache-lifecycle evidence recorded best-effort (D-051); full offline; clean confirmed uninstall with measured full-removal (D-024) | active | M2 |
-| High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M5 |
+| Install/update lifecycle | Multi-GB browser-native installer; D-144 qualifies the asset-only-update warm-launch outcome under the fixed budget while retaining cache attribution as best-effort evidence (D-051); full offline; clean confirmed uninstall with measured full-removal (D-024) | implemented | M2 complete (D-153) |
+| High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M4.5, M5 |
+| Lighting, GI & atmosphere | Fully dynamic time-of-day/weather lighting with no ray-tracing extension available — technique selection under that constraint, fire/torch many-light nights, volumetric sky/clouds/fog; the gap analysis is itself a deliverable (D-140) | active | M4.5 |
+| Terrain & procedural materials | Instruction-set terrain and generated materials: placements/features authored and deterministic, geometry/textures generated at install or runtime — trading install bytes for compute (M2 research tie-in, D-140) | active | M4.5 |
+| Water, vegetation & wind | District-scale vegetation instancing, one shared wind signal driving grass/trees/cloth/smoke/rain, water rendering vs. simulation costed separately (D-140) | active | M4.5 |
+| Image pipeline | Hand-built TAA/temporal upscaler (no DLSS/FSR equivalent on the web), HDR canvas output, full post stack (D-140) | active | M4.5 |
+| GPU-driven rendering & texture residency | Compute occlusion culling and indirect draws without mesh shaders/bindless; virtual texturing beside the geometry streaming system (D-140) | active | M4.5 |
+| NPC navigation & crowds | Navmesh over streamed procedural cells plus village-scale crowd movement under the sim determinism constraints (D-140) | active | M3 |
+| Combat, progression & crafting | Full mechanics stack inside the deterministic sim worker — replays double as gameplay regression tests; original slice-scale ruleset, no D&D-protected material (D-141) | active | M3.5 |
+| Quests & journal | Quest state as versioned save-schema sim state; the journal is a queryable play-history log feeding Summarizer recaps and localization (D-141) | active | M3.5 |
+| Game UI stack | DOM/CSS overlay on a worker-owned WebGPU canvas as the web-idiomatic bet — free accessibility/IME/subtitles/translation — vs in-canvas UI; compositing latency is the research question (D-141; D-143 spike resolves P-008, runnable pre-M3) | active | M3 decision |
+| Music & audio content | Weather/danger/district-adaptive score plus AI-generated music/SFX pipeline; the sim event hooks it consumes are a design-now constraint on M3 — see constraints section below (D-141) | active (hooks designed M3) | M6 |
+| Animation content | Retargeted and/or AI-generated locomotion/combat/schedule animation sets across all races/monster body types, QA-gated (D-141) | active | M5 |
+| Cinematics & scripted cameras | Undecided: cheap scripted-camera moments vs an explicit rule-out — needs a decision before M6 rather than staying an implicit omission (D-141) | explored | M6 |
 | Geometry representation & LOD | D-098 retains classic triangle LOD for the current D1 path because neither bounded challenger supplied fully eligible displacement evidence; this was not a valid triangle-performance win. Representation-agnostic streaming/asset boundaries preserve a future full virtual-geometry, relightable-splat, higher-density-art, or capture-UGC reopening without shipping the closed spike's apparatus. | active | M1 decision, M5 content |
 | Conversational NPCs | App-owned on-device Gemma 4 E2B QAT-GGUF on wllama, WebGPU by default with an explicit CPU/WASM headroom mode (D-074/D-096); no server, works offline, hash-verified in OPFS. Context is assembled by the engine/ai knowledge service (D-033), structured game-state tier first. Aspiration (game-design.md): NPCs shouldn't be blindingly distinguishable from real players | active | M3 |
 | Simulation & save | Deterministic fixed-timestep sim worker; input-command log doubles as replay + harness regression format | active | M3 |
-| Character & animation | Babylon animation system + AI-generated rigged characters from the assets pipeline | active | M3, M5 |
-| Physics | Scoped at M3: likely Havok WASM (Babylon-integrated) in/beside the sim worker; determinism requirement may force alternatives — see P-003 implications | explored | M3 |
+| Character & animation | Babylon animation system + AI-generated rigged characters from the assets pipeline; M5 adds explore-and-decide character-surface/dynamics tracks (skin/SSS, eyes, hair/fur, cloth, muscle deformation, IK) at the "NPC ≈ player" visual bar (D-140) | active | M3, M5 |
+| Physics | Scoped at M3: likely Havok WASM (Babylon-integrated) in/beside the sim worker; determinism requirement may force alternatives — see P-003 implications. M6 adds ragdoll/rope/buoyancy garnish (D-140); destructible environments are ruled out (D-140) | explored | M3, M6 |
 | Spatial audio | WebAudio worklets, HRTF panning, underground/surface acoustic contrast as a showcase | explored (direction sketched; no binding constraints recorded yet — promote to `designed` only with a constraints section like Multiplayer's) | M6 |
-| VFX & weather | Full weather system is core creative direction (game-design.md): sun→overcast→storms, lightning, day/night, fire/area lighting; GPU-compute particles. Dynamic-lighting consequence binds the renderer from M1 (architecture.md) | designed (renderer constraint active from M1; full system M6) | M1 constraint, M6 build |
+| VFX & weather | Full weather system is core creative direction (game-design.md): sun→overcast→storms, lightning, day/night, fire/area lighting; GPU-compute particles. Dynamic-lighting consequence binds the renderer from M1 (architecture.md); fire/torch lighting lands with the M4.5 lighting track and the shared particle/volumetrics substrate at M6 (D-140) | designed (renderer constraint active from M1; full system M6) | M1 constraint, M4.5 lighting, M6 build |
 | Photo mode | Cheap, high-value web flex: canvas capture, offline render-quality crank, shareable output | explored | M6 |
 | P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |
 | Input | Keyboard/mouse (Pointer Lock w/ `unadjustedMovement`, Keyboard Lock for Esc/system keys in fullscreen), Gamepad API incl. haptics, Fullscreen, Screen Wake Lock | active | M3 |
@@ -53,10 +65,10 @@ area is active) · `stretch` (only if a cheap opportunity appears) · `parked`
 | "Previously on…" quest recaps | Summarizer API over the player's own event/quest log | Save-game recaps are rare and hand-authored in AAA; here they're generated from the actual play history on-device. | explore (M3+) |
 | Built-in highlight capture | WebCodecs rolling replay buffer (encode in a worker) + Web Share / file save | ShadowPlay-style "clip the last 30 seconds" without any installed software; pairs with photo mode. Also exercises WebCodecs/WebGPU interop (finding-rich territory). | explore (M6) |
 | Adaptive triggers & rich haptics | Gamepad API haptic actuators; WebHID for DualSense adaptive triggers/LEDs/touchpad | Most native PC games don't even drive DualSense adaptive triggers; a browser game doing it is a statement. WebHID device support doubles as accessibility hardware support. | explore (M6) |
-| Self-tuning fidelity | Compute Pressure API + battery state | Games ship static quality presets; a web game can adapt to thermal/power pressure live. Research question: is the signal the web gets actually good enough? (rough-edges either way) | explore (M2+; telemetry first) |
+| Self-tuning fidelity | Compute Pressure API + battery state | Games ship static quality presets; a web game can adapt to thermal/power pressure live. Research question: is the signal the web gets actually good enough? (rough-edges either way) | explore (unscheduled; new plan item required) |
 | Companion surfaces | Window Management (map/inventory on a second monitor), Document Picture-in-Picture (minimap/dialog persists while alt-tabbed) | Multi-window companion UX is nearly nonexistent in native games because windowing is painful there; on the web it's the native idiom. | explore (M6) |
 | Multi-camera views | Window Management + additional render targets: in-game cameras (deployable drones, security feeds, scenic vistas) rendered to separate OS windows/monitors | Simultaneous independent viewpoints are a luxury even in native titles; a drone feed living on your second monitor while you play on the first is a showcase moment. Platform research bonus: how does one WebGPU device best drive multiple windows (second canvas context vs. frame transport vs. captureStream)? — finding-rich either way. | explore (M6) |
-| Install ergonomics | Background Fetch (install continues with the tab closed), PWA install + Badging/Notifications for world events | An installer that outlives the tab, and an app icon whose badge reflects the game world. Extends the M2 lifecycle work. | explore (M2) |
+| Install ergonomics | Background Fetch (install continues with the tab closed), PWA install + Badging/Notifications for world events | An installer that outlives the tab, and an app icon whose badge reflects the game world. Extends the completed M2 lifecycle work. | explore (unscheduled; new plan item required) |
 | Web-native modding | File System Access API: user mounts a local mod directory as an overlay asset source (through QA-gate-shaped validation) | Modding on the web with no filesystem hacks — a sandboxed, permissioned mod folder. | explore (post-M6) |
 | Scan-your-world UGC | Phone-scanned Gaussian splats (room/object captures) imported as in-game content — file picker / mod-folder overlay in, splat-validation gate, placed in the world | Bring your actual desk, dog statue, or living room into the game. Native AAA has no UGC path this cheap. D-098 did not ship a splat renderer: capture-origin content is a distinct future workload that must reopen the representation choice with its own dynamic-relighting, validation, storage, and performance evidence. | explore (post-M6, new decision required) |
 | Proximity voice chat | `getUserMedia` + WebRTC audio, spatialized through the WebAudio graph | Ties into M7 multiplayer; browser-native voice with positional audio, no third-party overlay. | parked (M7) |
@@ -87,10 +99,11 @@ architectural requirements **now** (violations are M7 rewrites):
 2. **Input-command pattern.** All player intent enters the sim as serializable commands
    (timestamped, ordered). No gameplay code mutates sim state directly from UI/input
    handlers.
-3. **Determinism-friendly sim.** Same command log ⇒ same state hash — **cross-machine,
-   within a pinned Chrome version** (D-016): verified across Windows and macOS hosts
-   from M3, since single-host determinism says nothing about cross-peer lockstep
-   suitability. No `Math.random()` without a seeded RNG owned by the sim; no wall-clock
+3. **Determinism-friendly sim.** Same command log ⇒ same state hash — required through
+   repeated same-host replay on pinned dev-01 from M3 (D-150). Cross-machine Windows /
+   macOS comparison remains an aspirational, advisory design objective for future P2P;
+   it can produce findings but cannot block a milestone. No `Math.random()` without a
+   seeded RNG owned by the sim; no wall-clock
    reads inside the sim step; no iteration-order-dependent logic over unordered
    collections; no wasm paths sensitive to NaN bit patterns. The harness checks this
    from M3 (it's also what makes replays a regression tool).
@@ -111,3 +124,14 @@ option open.
 
 District count/topology is data. No system may hard-code district identity; transitions
 are described by the world graph, not by code paths.
+
+## Design-now constraints: adaptive audio event hooks (build at M6)
+
+The adaptive music system (M6) reacts to gameplay state; retrofitting events into a
+finished sim is a rewrite. Binding from M3 (D-141): the sim worker's event stream is a
+first-class, serializable, observable output — combat state changes, danger/aggro
+transitions, district/weather/time-of-day transitions, quest beats — consumable by any
+listener without reaching into sim internals. The replay log already requires most of
+this; audio adds only the requirement that events are *semantic* (named transitions,
+not frame diffs) and stable across save-schema versions. The quest/journal system
+(M3.5) and Summarizer recaps consume the same stream.

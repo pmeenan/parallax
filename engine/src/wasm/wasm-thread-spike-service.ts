@@ -215,10 +215,6 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
         const response = await fetch(wasmArtifactUrl());
         if (disposed || telemetry.state !== "running") return;
         if (!response.ok) throw new Error(`WASM artifact fetch failed with ${response.status}`);
-        const bytes = await response.arrayBuffer();
-        if (disposed || telemetry.state !== "running") return;
-        const module = await WebAssembly.compile(bytes);
-        if (disposed || telemetry.state !== "running") return;
         const memory = new WebAssembly.Memory({
           initial: WASM_THREAD_SPIKE_MEMORY_PAGES,
           maximum: WASM_THREAD_SPIKE_MEMORY_PAGES,
@@ -228,9 +224,12 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
           throw new Error("WASM shared memory did not produce a SharedArrayBuffer");
         }
         sharedMemory = memory;
+        const moduleBytes = requireWasmArtifactResponseMetadata(response);
+        const module = await WebAssembly.compileStreaming(response);
+        if (disposed || telemetry.state !== "running") return;
         publish({
           ...telemetry,
-          moduleBytes: bytes.byteLength,
+          moduleBytes,
           moduleLoadAndCompileElapsedMs: performance.now() - moduleLoadStartedAt,
         });
         if (disposed || telemetry.state !== "running") return;
@@ -274,6 +273,24 @@ export function createWasmThreadSpikeService(): WasmThreadSpikeService {
       return () => listeners.delete(listener);
     },
   });
+}
+
+function requireWasmArtifactResponseMetadata(response: Response): number {
+  const contentType = response.headers.get("content-type");
+  if (contentType !== "application/wasm") {
+    throw new Error(
+      `WASM artifact response MIME type must be application/wasm; received ${contentType ?? "missing"}`,
+    );
+  }
+  const contentLength = response.headers.get("content-length");
+  if (contentLength === null || !/^[1-9][0-9]*$/u.test(contentLength)) {
+    throw new Error("WASM artifact response Content-Length is missing or non-canonical");
+  }
+  const bytes = Number(contentLength);
+  if (!Number.isSafeInteger(bytes)) {
+    throw new Error("WASM artifact response Content-Length exceeds the safe integer range");
+  }
+  return bytes;
 }
 
 function workerArtifactUrl(): URL {

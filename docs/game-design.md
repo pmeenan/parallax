@@ -52,7 +52,133 @@ implementations throughout.
 
 Structure: the normal AAA quest scaffolding — **high-level objectives** (a main arc)
 plus **side quests**, tracked in a journal (which also feeds the Summarizer-recap
-feature).
+feature). The slice-scale ruleset below (v1, D-142) makes this concrete.
+
+## Mechanics — slice-scale ruleset v1 (D-142)
+
+The concrete ruleset behind the genre paragraph above. **Slice-scale** means deep
+enough that no system is toy-grade, small enough to build and balance for a
+two-district demo. Every number here is a starting point for M3.5's iterative
+balancing — replays are the balance instrument — not a sacred constant; tuning changes
+freely, structural changes (new pools, new resolution model) go through decisions. All
+names are original; anything marked *(working name)* is a placeholder until the M5
+art/creative pass. Nothing here may reproduce D&D-protected names, creatures, or
+mechanics text.
+
+### Resolution core
+
+- Everything resolves inside the deterministic sim as contested **checks** — a seeded
+  roll plus an attacker rating against a defender rating — with all randomness drawn
+  from named, sim-owned seeded RNG streams (`combat`, `loot`, `ambient`, …). One
+  stream per system, so adding a system never perturbs another system's replay
+  sequence.
+- Four attributes: **Might** (melee power, carry, force checks), **Finesse**
+  (accuracy, evasion, ranged, subtle actions), **Vitality** (health, resistances,
+  stamina depth), **Attunement** (aether pool, spell potency, catalyst efficiency).
+- Three pools: **Health**, **Stamina** (dodges, sprints, power attacks, blocking),
+  **Aether** (spellcasting; regenerates slowly in combat, quickly at rest).
+- Damage channels (slice): **physical**, **ember**, **frost**, **venom**, **aether** —
+  chosen deliberately to double as rendering/VFX showcases (fire lighting, frost/snow
+  and wet-surface response).
+- Status conditions (slice, bounded): Burning (damage over time, fire-lit), Chilled
+  (slowed recovery), Envenomed (damage over time, healing suppressed), Staggered
+  (action interrupted), Exposed (guard broken). A new condition is a design change,
+  not a content add.
+
+### Combat — deliberate real-time
+
+- Attacks are committed actions with wind-up → active → recovery phases measured in
+  sim ticks. Player intent arrives as input commands (features.md M7 constraint 2) and
+  monsters use the same action model — one resolution path for everyone.
+- Contact during the active phase triggers the check: accuracy (Finesse + weapon +
+  stance) against guard (Finesse + armor + state). Blocking and dodging spend Stamina
+  to raise guard or grant avoidance frames. No twitch aiming: targeting is soft-lock;
+  skill expression is positioning, stamina management, and reading telegraphs.
+- Every monster attack has a readable telegraph with a minimum wind-up. "Fast" enemies
+  get shorter recoveries, never unreadable wind-ups.
+
+### Magic — aetherwork
+
+Magic is **aetherwork**: shaping ambient aether through a **catalyst**. The
+science/alchemy vein is load-bearing, not flavor:
+
+- Spells are abilities (see loadout below) that spend Aether and require an equipped
+  catalyst; the catalyst determines potency and specialization.
+- Catalysts and **tonics** are crafted at the alembic from **reagents** harvested in
+  the world; better catalysts are the crafting endgame of the slice.
+- Base catalysts are bought or found so magic is accessible early; crafting is what
+  makes it yours.
+
+### Progression — classless, loadout-driven
+
+- XP from quests, combat, and discovery. Level cap **10** for the slice. Each level
+  grants one attribute point plus one **ability pick** from a single shared pool.
+- Ability pool (slice): **12–16 authored abilities** across martial techniques,
+  aetherwork spells, and **knacks** (passives/utility).
+- Loadout: **4 active slots + 2 knack slots**. Build identity comes from the loadout
+  limit, not class walls.
+- Three playable folk at character creation *(working names)*: **Human**, **Skarn**
+  (stone-blooded, sturdy), and **Wickfolk** (small, quick, catacomb-canny) — minor
+  attribute modifiers plus cosmetic identity. Full visual distinctiveness is an M5
+  character-pipeline deliverable (design implication #5).
+
+### Crafting, gathering, economy — slice depth
+
+- Three stations, each an NPC-owned world landmark (feeding schedules and the
+  living-village showcase): **forge** (weapons/armor and upgrades), **alembic**
+  (catalysts and tonics), **hearth** (food buffs).
+- Gathering is district content: crops and herbs in the fields, timber and game in the
+  forest, fish and salvage on the shore, ores and relics in the catacombs. Materials
+  are cell content and stream like everything else.
+- **20–30 recipes** total for the slice. Single currency: **marks** *(working name)*.
+  Vendor NPCs hold stock and buy back; prices are static data for the slice — a
+  dynamic economy is explicitly out of scope (below).
+- Loot: containers and monster drops from seeded deterministic tables; rarity tiers
+  Common / Fine / Exceptional / Mythic; found and crafted gear carries **0–2
+  modifiers** from a bounded affix list.
+
+### Death — respawn with a recoverable cost
+
+- **Waystones** *(working name)* at landmarks (village square, castle gate, forest
+  edge, each catacomb entrance) are rest and respawn anchors; resting restores pools
+  and sets the respawn point.
+- On defeat the player wakes at the last waystone; a **satchel** holding carried loose
+  materials (never equipped gear or quest items) drops at the fall site and persists
+  until recovered. A second death replaces it — one satchel in the world at a time.
+  Local aggro resets; no world-time or XP penalty.
+
+### Bestiary (slice)
+
+Six to eight archetypes chosen for AI/animation variety, not volume *(all working
+names)*: **burrow-gnawers** (field vermin, swarm behavior), **greymaws** (forest pack
+predator), **wayland brigands** (humanoid — they fight *and* talk, exercising the
+dialog/combat seam), **skitterlings** (catacomb swarm), **hollow wardens** (armored
+catacomb sentinels, elite), and one slice boss beneath the catacombs *(working title:
+the Warden Below)*. Monster kits use the same action and resolution model as players.
+
+### Quests and journal
+
+- Quest state machines are data: stages with typed objectives (reach / collect /
+  defeat / talk / craft / deliver), advanced **only** by semantic sim events (the
+  D-141 event stream). LLM dialog can surface, flavor, and hand out quests, but a
+  state transition happens only through a validated structured intent (D-074) —
+  free-form model text never mutates quest state.
+- Slice content: one main arc *(working title: "The Undercroft Stirs")* — signs of
+  disturbance beneath the village lead from fields/village investigation down into the
+  catacombs and the slice boss, deliberately driving repeated D1↔D2 transitions
+  through different entrances (M4's exercise). Plus **6–10 side quests**, at least one
+  exercising each system: a bounty (combat), a commission (crafting), a
+  harvest/delivery (gathering/economy), a persuasion errand (LLM dialog), and a
+  vista/exploration hunt (streaming world).
+- The journal is the append-only, save-schema-versioned play-history log — the same
+  stream that feeds Summarizer recaps and localization.
+
+### Explicitly out of scope for the slice
+
+No stealth system, no mounts/vehicles, no factions/reputation, no dynamic economy
+simulation, no equipment durability, no companion/pet system, no fast travel
+(waystones are anchors, not a teleport network). Each is a deliberate slice-scale cut,
+not an oversight; adding one back is a decision-log change, not a content add.
 
 ## Art direction
 
@@ -105,3 +231,12 @@ brings actual humans in; until then the bar is "NPCs don't feel like vending mac
    state).
 5. **Races and monsters** set the bar for the character pipeline (M5): multiple rigged,
    animated body types, not one hero mesh.
+6. **Rules are data; rolls are streams** (D-142). Ability, status, loot, recipe, and
+   quest definitions are versioned data tables in `game/` consumed by the sim, and all
+   randomness flows through named per-system seeded RNG streams — both are what keep
+   repeated same-host replays stable on pinned dev-01 as content grows. Cross-machine
+   replay stability remains a future-P2P design objective, not a current gate (D-150;
+   features.md M7 constraint 3).
+7. **LLM output never mutates state directly** (D-074/D-142). Quest, trade, and any
+   other state-affecting outcome of dialog crosses into the sim only as a validated
+   structured intent; free-form text is presentation.

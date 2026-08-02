@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { scaleStreamingDependencyResourceId } from "../../engine/src/streaming/scale-streaming-resource-id.ts";
 import { buildRustWasm } from "./build-wasm.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
@@ -87,8 +88,37 @@ runPnpm(["--filter", "@parallax/engine", "build"]);
 runPnpm(["--filter", "@parallax/game", "build"]);
 runPnpm(["--filter", "@parallax/app", "build"]);
 
+const engineInput = join(repositoryRoot, "engine/dist/engine.js");
+const engineBuildModule = await import(pathToFileURL(engineInput).href);
+if (
+  !Number.isSafeInteger(engineBuildModule.BUILD_MANIFEST_SCHEMA_VERSION) ||
+  !Number.isSafeInteger(engineBuildModule.INSTALL_MANIFEST_SCHEMA_VERSION) ||
+  !Number.isSafeInteger(engineBuildModule.OFFLINE_SHELL_GENERATION_SCHEMA_VERSION) ||
+  !Number.isSafeInteger(engineBuildModule.OFFLINE_SHELL_SAVE_SCHEMA_VERSION) ||
+  !Number.isSafeInteger(engineBuildModule.STREAMING_DISTRICT_INDEX_SCHEMA_VERSION) ||
+  engineBuildModule.STREAMING_DISTRICT_INDEX_SCHEMA_VERSION < 1 ||
+  typeof engineBuildModule.INSTALL_MANIFEST_PATH !== "string" ||
+  typeof engineBuildModule.INSTALL_MANIFEST_GAME_ID !== "string" ||
+  typeof engineBuildModule.OFFLINE_SHELL_SERVICE_WORKER_PATH !== "string"
+) {
+  throw new Error("Engine build does not export the build/install/offline schema contracts");
+}
+const buildManifestSchemaVersion = engineBuildModule.BUILD_MANIFEST_SCHEMA_VERSION;
+const districtIndexSchemaVersion = engineBuildModule.STREAMING_DISTRICT_INDEX_SCHEMA_VERSION;
+const installManifestGameId = engineBuildModule.INSTALL_MANIFEST_GAME_ID;
+const installManifestPath = engineBuildModule.INSTALL_MANIFEST_PATH;
+const installManifestSchemaVersion = engineBuildModule.INSTALL_MANIFEST_SCHEMA_VERSION;
+const offlineShellGenerationSchemaVersion =
+  engineBuildModule.OFFLINE_SHELL_GENERATION_SCHEMA_VERSION;
+const offlineShellSaveSchemaVersion = engineBuildModule.OFFLINE_SHELL_SAVE_SCHEMA_VERSION;
+const offlineShellServiceWorkerPath = engineBuildModule.OFFLINE_SHELL_SERVICE_WORKER_PATH;
+
 await mkdir(join(outputRoot, "immutable"), { recursive: true });
 await cp(join(repositoryRoot, "app/dist"), outputRoot, { recursive: true });
+await cp(
+  join(repositoryRoot, "engine/dist/service-worker.js"),
+  join(outputRoot, "service-worker.js"),
+);
 const gameContentEntrypoints = await writeGreyboxWorldArtifacts();
 
 const decoderWasmArtifacts = [];
@@ -119,7 +149,7 @@ const wasmThreadOutputName = contentAddressedNameFromBytes(
 await writeFile(join(outputRoot, "immutable", wasmThreadOutputName), wasmThreadBytes);
 
 const workerDescriptors = [];
-for (const role of ["decode", "render", "streaming", "wasm-thread"]) {
+for (const role of ["decode", "installer", "render", "streaming", "wasm-thread"]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
   if (role === "render") {
     let source = bytes.toString("utf8");
@@ -127,6 +157,11 @@ for (const role of ["decode", "render", "streaming", "wasm-thread"]) {
       source = replaceExactlyOnce(source, artifact.token, artifact.outputName);
     }
     bytes = Buffer.from(source);
+  }
+  if (role === "decode") {
+    const msc = decoderWasmArtifacts.find((artifact) => artifact.scope === "msc-transcoder");
+    if (msc === undefined) throw new Error("MSC decoder artifact is unavailable");
+    bytes = Buffer.from(replaceExactlyOnce(bytes.toString("utf8"), msc.token, msc.outputName));
   }
   if (role === "streaming") {
     const decodeWorker = workerDescriptors.find((worker) => worker.role === "decode");
@@ -146,7 +181,6 @@ for (const role of ["decode", "render", "streaming", "wasm-thread"]) {
   workerDescriptors.push({ outputName, role });
 }
 
-const engineInput = join(repositoryRoot, "engine/dist/engine.js");
 let engineSource = await readFile(engineInput, "utf8");
 engineSource = replaceExactlyOnce(engineSource, "__WLLAMA_WASM_ARTIFACT__", wllamaWasmOutputName);
 for (const worker of workerDescriptors.filter((candidate) => candidate.role !== "decode")) {
@@ -163,6 +197,16 @@ engineSource = replaceExactlyOnce(
 );
 const engineOutputName = contentAddressedNameFromBytes("engine", Buffer.from(engineSource));
 await writeFile(join(outputRoot, "immutable", engineOutputName), engineSource);
+if (typeof engineBuildModule.serializePsoWarmupTrace !== "function") {
+  throw new Error("Engine build does not export the PSO warmup trace contract");
+}
+const psoWarmupTraceBytes = Buffer.from(engineBuildModule.serializePsoWarmupTrace());
+const psoWarmupTraceOutputName = contentAddressedNameFromBytes(
+  "pso-warmup-trace",
+  psoWarmupTraceBytes,
+  ".json",
+);
+await writeFile(join(outputRoot, "immutable", psoWarmupTraceOutputName), psoWarmupTraceBytes);
 
 const htmlModuleReferences = [];
 for (const descriptor of moduleDescriptors) {
@@ -193,15 +237,38 @@ for (const descriptor of htmlModuleReferences) {
 validateImmutableReferences(index, htmlModuleReferences.length);
 await writeFile(indexPath, index);
 
-const artifacts = (await collectArtifacts(outputRoot)).sort((left, right) =>
+const localArtifacts = (await collectArtifacts(outputRoot)).sort((left, right) =>
   compareCodepoints(left.path, right.path),
 );
+const installManifest = await createInstallManifest(localArtifacts, {
+  gameContentEntrypoints,
+  workerDescriptors,
+});
+const installManifestBytes = Buffer.from(`${JSON.stringify(installManifest, null, 2)}\n`);
+await writeFile(join(outputRoot, installManifestPath), installManifestBytes);
+const artifacts = [
+  ...localArtifacts,
+  {
+    bytes: installManifestBytes.byteLength,
+    path: installManifestPath,
+    sha256: createHash("sha256").update(installManifestBytes).digest("hex"),
+  },
+].sort((left, right) => compareCodepoints(left.path, right.path));
 await writeFile(
   join(outputRoot, "build-manifest.json"),
   `${JSON.stringify(
     {
-      schemaVersion: 11,
+      schemaVersion: buildManifestSchemaVersion,
       gameContentEntrypoints,
+      installManifestEntrypoint: {
+        path: installManifestPath,
+        schemaVersion: installManifestSchemaVersion,
+      },
+      offlineShell: {
+        generationSchemaVersion: offlineShellGenerationSchemaVersion,
+        saveSchemaVersion: offlineShellSaveSchemaVersion,
+        serviceWorkerPath: offlineShellServiceWorkerPath,
+      },
       workerEntrypoints: workerDescriptors.map((worker) => ({
         path: `immutable/${worker.outputName}`,
         role: worker.role,
@@ -214,13 +281,166 @@ await writeFile(
   )}\n`,
 );
 runPnpm(["verify:repeatable"]);
+await verifyInstallerRepairProductionReplayModuleGraph();
+
+async function createInstallManifest(localArtifacts, context) {
+  const engineModule = await import(
+    pathToFileURL(join(repositoryRoot, "engine/dist/engine.js")).href
+  );
+  if (
+    typeof engineModule.parseInstallManifest !== "function" ||
+    typeof engineModule.parseStreamingCellArtifactSource !== "function" ||
+    typeof engineModule.canonicalStreamingDistrictIndexResourceId !== "function" ||
+    typeof engineModule.canonicalAppOwnedLlmModelResourceId !== "function" ||
+    !Array.isArray(engineModule.APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS)
+  ) {
+    throw new Error("Engine build does not export the install-manifest and model contracts");
+  }
+  const districtIndexes = new Map(
+    context.gameContentEntrypoints.map((entrypoint) => [entrypoint.path, entrypoint.districtId]),
+  );
+  const workerRoles = new Map(
+    context.workerDescriptors.map((worker) => [`immutable/${worker.outputName}`, worker.role]),
+  );
+  const resources = localArtifacts.map((artifact) =>
+    classifyLocalInstallArtifact(artifact, { districtIndexes, engineModule, workerRoles }),
+  );
+  for (const artifact of engineModule.APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS) {
+    resources.push({
+      bytes: artifact.bytes,
+      id: engineModule.canonicalAppOwnedLlmModelResourceId(artifact.path),
+      kind: "model",
+      scope: "common",
+      sha256: artifact.sha256,
+      source: `immutable/model-${artifact.sha256}.gguf`,
+      target: "opfs",
+    });
+  }
+  resources.sort((left, right) => compareCodepoints(left.id, right.id));
+  const candidate = {
+    gameId: installManifestGameId,
+    resources,
+    schemaVersion: installManifestSchemaVersion,
+  };
+  engineModule.parseInstallManifest(
+    candidate,
+    resources.filter((resource) => resource.kind !== "model"),
+  );
+  return candidate;
+}
+
+function classifyLocalInstallArtifact(artifact, context) {
+  if (artifact.path === "index.html") {
+    return installResource(artifact, "app-shell-document-index", "document", "app-shell", "shell");
+  }
+  if (artifact.path === "service-worker.js") {
+    return installResource(artifact, "common-worker-service", "worker", "common", "shell");
+  }
+  if (/^immutable\/app-[a-f0-9]{64}\.js$/.test(artifact.path)) {
+    return installResource(artifact, "app-shell-module-app", "module", "app-shell", "shell");
+  }
+  if (/^immutable\/engine-[a-f0-9]{64}\.js$/.test(artifact.path)) {
+    return installResource(artifact, "common-module-engine", "module", "common", "shell");
+  }
+  if (/^immutable\/game-[a-f0-9]{64}\.js$/.test(artifact.path)) {
+    return installResource(
+      artifact,
+      "game-specific-module-game",
+      "module",
+      "game-specific",
+      "shell",
+    );
+  }
+  const workerRole = context.workerRoles.get(artifact.path);
+  if (workerRole !== undefined) {
+    return installResource(artifact, `common-worker-${workerRole}`, "worker", "common", "shell");
+  }
+  if (/^immutable\/[a-z0-9-]+-[a-f0-9]{64}\.wasm$/.test(artifact.path)) {
+    const scope = artifact.path.replace(/^immutable\//, "").replace(/-[a-f0-9]{64}\.wasm$/, "");
+    return installResource(artifact, `common-wasm-${scope}`, "wasm", "common", "shell");
+  }
+  if (/^immutable\/pso-warmup-trace-[a-f0-9]{64}\.json$/.test(artifact.path)) {
+    return installResource(
+      artifact,
+      "game-specific-pso-warmup-trace",
+      "asset-pack",
+      "game-specific",
+      "opfs",
+    );
+  }
+  if (/^immutable\/representative-streaming-ktx2-[a-f0-9]{64}\.ktx2$/.test(artifact.path)) {
+    return installResource(
+      artifact,
+      "game-specific-streaming-00-texture",
+      "asset-pack",
+      "game-specific",
+      "opfs",
+    );
+  }
+  if (/^immutable\/representative-streaming-meshopt-[a-f0-9]{64}\.meshopt$/.test(artifact.path)) {
+    return installResource(
+      artifact,
+      "game-specific-streaming-01-mesh",
+      "asset-pack",
+      "game-specific",
+      "opfs",
+    );
+  }
+  const productionStreaming = artifact.path.match(
+    /^immutable\/streaming-(texture|vertices|indices)-[a-f0-9]{64}\.(ktx2|meshopt)$/,
+  );
+  if (productionStreaming !== null) {
+    const role = productionStreaming[1];
+    return installResource(
+      artifact,
+      scaleStreamingDependencyResourceId(role, artifact.sha256),
+      "asset-pack",
+      "game-specific",
+      "opfs",
+    );
+  }
+  const districtId = context.districtIndexes.get(artifact.path);
+  if (districtId !== undefined) {
+    return installResource(
+      artifact,
+      context.engineModule.canonicalStreamingDistrictIndexResourceId(districtId),
+      "district-index",
+      "game-specific",
+      "opfs",
+    );
+  }
+  if (/^immutable\/[a-z0-9-]+-cell-/.test(artifact.path)) {
+    const identity = context.engineModule.parseStreamingCellArtifactSource(artifact.path);
+    if (identity.sha256 !== artifact.sha256) {
+      throw new Error(`Streaming cell filename hash does not match artifact: ${artifact.path}`);
+    }
+    return installResource(artifact, identity.resourceId, "world-cell", "game-specific", "opfs");
+  }
+  throw new Error(`Production artifact has no install-manifest classification: ${artifact.path}`);
+}
+
+function installResource(artifact, id, kind, scope, target) {
+  return {
+    bytes: artifact.bytes,
+    id,
+    kind,
+    scope,
+    sha256: artifact.sha256,
+    source: artifact.path,
+    target,
+  };
+}
 
 async function writeGreyboxWorldArtifacts() {
   const gameModuleUrl = pathToFileURL(join(repositoryRoot, "game/dist/game.js"));
   const engineModuleUrl = pathToFileURL(join(repositoryRoot, "engine/dist/engine.js"));
-  const [gameModule, engineModule] = await Promise.all([
+  const productionFixtureModuleUrl = pathToFileURL(
+    join(repositoryRoot, "engine/src/streaming/production-compressed-fixtures.generated.ts"),
+  );
+  const [gameModule, engineModule, productionFixtureModule] = await Promise.all([
     import(gameModuleUrl.href),
     import(engineModuleUrl.href),
+    import(productionFixtureModuleUrl.href),
   ]);
   if (
     typeof gameModule.createGreyboxScene !== "function" ||
@@ -228,8 +448,13 @@ async function writeGreyboxWorldArtifacts() {
   ) {
     throw new Error("Game build does not export the greybox generator and district registry");
   }
-  if (typeof engineModule.validateGreyboxDistrict !== "function") {
-    throw new Error("Engine build does not export validateGreyboxDistrict");
+  if (
+    typeof engineModule.validateGreyboxDistrict !== "function" ||
+    typeof engineModule.canonicalStreamingCellArtifactIdentity !== "function" ||
+    typeof engineModule.canonicalStreamingDistrictIndexResourceId !== "function" ||
+    typeof engineModule.streamingDistrictArtifactScope !== "function"
+  ) {
+    throw new Error("Engine build does not export greybox and streaming-cell identity contracts");
   }
   if (gameModule.GREYBOX_DISTRICT_SPECS.length === 0) {
     throw new Error("Game greybox district registry is empty");
@@ -237,13 +462,71 @@ async function writeGreyboxWorldArtifacts() {
   const districtIds = new Set();
   const artifactScopes = new Set();
   const entrypoints = [];
+  const fixture = productionFixtureModule.PRODUCTION_COMPRESSED_STREAMING_FIXTURES?.find(
+    ({ id }) => id === "compact",
+  );
+  if (
+    fixture === undefined ||
+    !Number.isSafeInteger(fixture.vertexCount) ||
+    !Number.isSafeInteger(fixture.indexCount)
+  ) {
+    throw new Error("Accepted compact production compressed streaming fixture is unavailable");
+  }
+  const textureBytes = Buffer.from(fixture.ktx2, "base64");
+  const vertexBytes = Buffer.from(fixture.attributes, "base64");
+  const indexBytes = Buffer.from(fixture.indices, "base64");
+  const fixtureId = (role, bytes) =>
+    scaleStreamingDependencyResourceId(role, createHash("sha256").update(bytes).digest("hex"));
+  const textureId = fixtureId("texture", textureBytes);
+  const vertexId = fixtureId("vertices", vertexBytes);
+  const indexId = fixtureId("indices", indexBytes);
+  const dependencyResources = [
+    writeCompressedFixture(textureBytes, "streaming-texture", ".ktx2", {
+      decode: {
+        colorSpace: "srgb",
+        format: "rgba8",
+        height: fixture.height,
+        version: 1,
+        width: fixture.width,
+      },
+      dependencies: [],
+      format: "ktx2",
+      resourceId: textureId,
+    }),
+    writeCompressedFixture(vertexBytes, "streaming-vertices", ".meshopt", {
+      decode: {
+        count: fixture.vertexCount,
+        layout: "position-normal-uv-f32",
+        mode: "ATTRIBUTES",
+        stride: 32,
+        version: 1,
+      },
+      dependencies: [textureId],
+      format: "meshopt",
+      resourceId: vertexId,
+    }),
+    writeCompressedFixture(indexBytes, "streaming-indices", ".meshopt", {
+      decode: {
+        count: fixture.indexCount,
+        indexFormat: "uint32",
+        mode: "TRIANGLES",
+        stride: 4,
+        version: 1,
+        vertexCount: fixture.vertexCount,
+      },
+      dependencies: [textureId, vertexId],
+      format: "meshopt",
+      resourceId: indexId,
+    }),
+  ];
+  const resolvedDependencyResources = await Promise.all(dependencyResources);
   for (const districtSpec of gameModule.GREYBOX_DISTRICT_SPECS) {
     const district = gameModule.createGreyboxScene(districtSpec).world;
     engineModule.validateGreyboxDistrict(district);
     if (districtIds.has(district.id))
       throw new Error(`Duplicate greybox district id ${district.id}`);
     districtIds.add(district.id);
-    const artifactScope = contentArtifactScope(district.id);
+    const artifactScope = engineModule.streamingDistrictArtifactScope(district.id);
     if (artifactScopes.has(artifactScope)) {
       throw new Error(`Greybox district artifact scope collides: ${artifactScope}`);
     }
@@ -253,19 +536,23 @@ async function writeGreyboxWorldArtifacts() {
       const bytes = Buffer.from(
         `${JSON.stringify({ districtId: district.id, schemaVersion: district.schemaVersion, cell })}\n`,
       );
-      const coordinate = cell.coordinate.map(coordinateArtifactToken).join("-");
-      const outputName = contentAddressedNameFromBytes(
-        `${artifactScope}-cell-${coordinate}`,
-        bytes,
-        ".json",
+      const identity = engineModule.canonicalStreamingCellArtifactIdentity(
+        district.id,
+        cell.coordinate,
+        createHash("sha256").update(bytes).digest("hex"),
       );
+      if (identity.cellId !== cell.id) {
+        throw new Error(`Greybox cell identity is not canonical: ${cell.id}`);
+      }
+      const outputName = identity.source.replace(/^immutable\//, "");
       await writeFile(join(outputRoot, "immutable", outputName), bytes);
       cellEntries.push({
         bytes: bytes.byteLength,
         cellId: cell.id,
         coordinate: cell.coordinate,
-        path: `immutable/${outputName}`,
-        sha256: createHash("sha256").update(bytes).digest("hex"),
+        dependencies: [indexId],
+        path: identity.source,
+        sha256: identity.sha256,
       });
     }
     const indexBytes = Buffer.from(
@@ -274,13 +561,9 @@ async function writeGreyboxWorldArtifacts() {
         cellSizeMeters: district.cellSizeMeters,
         cells: cellEntries,
         districtId: district.id,
-        generator: district.generator,
-        lodHysteresisMeters: district.lodHysteresisMeters,
-        markers: district.markers,
         materials: district.materials,
-        schemaVersion: district.schemaVersion,
-        standardTraversalMetersPerSecond: district.standardTraversalMetersPerSecond,
-        units: district.units,
+        resources: resolvedDependencyResources,
+        schemaVersion: districtIndexSchemaVersion,
       })}\n`,
     );
     const indexName = contentAddressedNameFromBytes(`${artifactScope}-index`, indexBytes, ".json");
@@ -289,7 +572,7 @@ async function writeGreyboxWorldArtifacts() {
       Object.freeze({
         districtId: district.id,
         path: `immutable/${indexName}`,
-        schemaVersion: district.schemaVersion,
+        schemaVersion: districtIndexSchemaVersion,
         scope: "game-specific",
         targetType: "district",
       }),
@@ -298,20 +581,20 @@ async function writeGreyboxWorldArtifacts() {
   return Object.freeze(entrypoints);
 }
 
-function contentArtifactScope(id) {
-  const scope = id
-    .toLowerCase()
-    .replaceAll(/[^a-z0-9]+/g, "-")
-    .replaceAll(/^-|-$/g, "");
-  if (scope === "") throw new Error(`Greybox district id has no safe artifact scope: ${id}`);
-  return scope;
-}
-
-function coordinateArtifactToken(value) {
-  if (!Number.isInteger(value))
-    throw new Error(`Greybox cell coordinate is not an integer: ${value}`);
-  const magnitude = String(Math.abs(value)).padStart(2, "0");
-  return value < 0 ? `n${magnitude}` : magnitude;
+async function writeCompressedFixture(bytes, scope, extension, descriptor) {
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) {
+    throw new Error(`Compressed streaming fixture ${scope} is empty`);
+  }
+  const body = Buffer.from(bytes);
+  const sha256 = createHash("sha256").update(body).digest("hex");
+  const outputName = `${scope}-${sha256}${extension}`;
+  await writeFile(join(outputRoot, "immutable", outputName), body);
+  return {
+    bytes: body.byteLength,
+    ...descriptor,
+    path: `immutable/${outputName}`,
+    sha256,
+  };
 }
 
 function runPnpm(arguments_) {
@@ -328,6 +611,28 @@ function runPnpm(arguments_) {
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
   }
+}
+
+async function verifyInstallerRepairProductionReplayModuleGraph() {
+  const modulePath = join(
+    repositoryRoot,
+    "harness/dist/types/installer-repair-production-replay-run.js",
+  );
+  const contractModulePath = join(
+    repositoryRoot,
+    "harness/dist/types/installer-repair-production-replay-contract.js",
+  );
+  const [replayModule, contractModule] = await Promise.all([
+    import(pathToFileURL(modulePath).href),
+    import(pathToFileURL(contractModulePath).href),
+  ]);
+  contractModule.assertInstallerRepairProductionReplayCompiledModule(replayModule);
+  const [buildBytes, installBytes] = await Promise.all([
+    readFile(join(outputRoot, "build-manifest.json")),
+    readFile(join(outputRoot, installManifestPath)),
+  ]);
+  replayModule.validateProductionReplayArtifactIdentity(buildBytes, installBytes);
+  console.info("Installer Repair production replay compiled module graph: import passed");
 }
 
 async function contentAddressedName(scope, path) {

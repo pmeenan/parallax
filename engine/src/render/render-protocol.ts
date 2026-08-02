@@ -9,6 +9,7 @@ import type {
 } from "../workers/sab-ring-buffer-spike-protocol";
 import type { GreyboxSceneConfig } from "../world/world-contract";
 import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
+import type { PsoWarmupTelemetrySnapshot, PsoWarmupTraceBundle } from "./pso-warmup-contract";
 
 export type { GreyboxSceneConfig } from "../world/world-contract";
 
@@ -44,6 +45,7 @@ export interface RenderStartMessage {
   readonly flythroughTransportSequence: number;
   readonly height: number;
   readonly kind: "start";
+  readonly psoWarmupTrace: PsoWarmupTraceBundle;
   readonly sabRingBufferSpike: SabRingBufferSpikeConfig;
   readonly scene: GreyboxSceneConfig;
   readonly streamingPort: MessagePort;
@@ -125,6 +127,7 @@ export interface RenderReadyMessage {
   readonly firstFrame: RenderFrameSample;
   readonly greyboxWorld: GreyboxWorkerRenderTelemetry;
   readonly kind: "ready";
+  readonly psoWarmup: PsoWarmupTelemetrySnapshot;
   readonly workerInitToFirstFrameMs: number;
 }
 
@@ -138,6 +141,7 @@ export interface RenderErrorMessage {
   readonly cause: "render-error";
   readonly kind: "error";
   readonly message: string;
+  readonly psoWarmup: PsoWarmupTelemetrySnapshot | null;
 }
 
 export interface RenderDeviceLostMessage {

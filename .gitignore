@@ -5,6 +5,8 @@ dist/
 engine/wasm/*/pkg/
 engine/wasm/*/target/
 harness/results/
+# Harness evidence is machine-local even if a runner-relative cwd bug adds a directory level.
+harness/**/results/
 harness/chrome/cft/
 *.patch
 .claude/

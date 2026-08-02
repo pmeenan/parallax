@@ -21,7 +21,7 @@
   "dependencies": {
     "@babylonjs/ktx2decoder": "9.17.0",
     "@babylonjs/lite": "1.12.0",
-    "@noble/hashes": "2.0.1",
+    "@noble/hashes": "2.2.0",
     "@wllama/wllama": "3.5.1",
     "draco3dgltf": "1.5.7",
     "meshoptimizer": "1.2.0"

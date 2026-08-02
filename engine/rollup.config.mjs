@@ -92,6 +92,16 @@ export default defineConfig([
     output: { ...sharedOutput, entryFileNames: "engine.js" },
   },
   {
+    input: "src/workers/installer-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "installer-worker.js", inlineDynamicImports: true },
+  },
+  {
+    input: "src/workers/service-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "service-worker.js", inlineDynamicImports: true },
+  },
+  {
     input: "src/workers/render-worker.ts",
     plugins: createPlugins(),
     output: { ...sharedOutput, entryFileNames: "render-worker.js", inlineDynamicImports: true },

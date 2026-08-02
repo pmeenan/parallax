@@ -2,6 +2,8 @@ import {
   STREAMING_DECODE_WORKER_MAXIMUM,
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
+  STREAMING_STARTUP_TIMING_CONTRACT,
+  STREAMING_STARTUP_TIMING_SCHEMA_VERSION,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
   STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS,
   type StreamingCellLoadTelemetry,
@@ -19,18 +21,19 @@ export interface StreamingCellLoadAttributionP95 {
   readonly opfsAccessRoundTripMs: number;
   readonly opfsReadMs: number;
   readonly opfsWaitMs: number;
-  readonly renderCommitRoundTripMs: number;
-  readonly renderUploadRoundTripMs: number;
-  readonly renderUploadWaitMs: number;
+  readonly renderTransactionRoundTripMs: number;
+  readonly renderTransactionWaitMs: number;
   readonly streamingWorkerRemainderMs: number;
   readonly uploadMs: number;
 }
 
 export interface StreamingMeasurementStartBatch {
+  readonly batchDirectUploadMs: number;
   readonly batchCellCount: number;
   readonly batchFlythroughObserverSequence: number;
   readonly batchObserverUpdateCount: number;
   readonly batchOrdinal: number;
+  readonly batchTransactionId: string;
   readonly completedCellIds: readonly string[];
   readonly completedCellOrdinals: readonly number[];
 }
@@ -191,16 +194,20 @@ export function requireStreamingEvidence(
   if (
     !validMeasurementStartBatch(
       measurementStartBatch,
+      telemetry.workerGeneration,
       measurementStartCellLoadSampleCount,
       measurementStartObserverUpdateCount,
       measurementStartFlythroughObserverUpdateCount,
-      measurementStartSettledObserverUpdateCount,
     )
   ) {
     throw new Error("World-streaming measurement-start batch is invalid");
   }
   if (
-    !validRetainedBoundaryPrefix(telemetry.cellLoadSamples, measurementStartCellLoadSampleCount) ||
+    !validRetainedBoundaryPrefix(
+      telemetry.cellLoadSamples,
+      measurementStartCellLoadSampleCount,
+      telemetry.workerGeneration,
+    ) ||
     (measurementStart !== undefined &&
       (!validRetainedSequenceWindow(
         measurementStart.cellLoadSamples,
@@ -209,6 +216,7 @@ export function requireStreamingEvidence(
         !validRetainedBoundaryPrefix(
           measurementStart.cellLoadSamples,
           measurementStartCellLoadSampleCount,
+          measurementStart.workerGeneration,
         )))
   ) {
     throw new Error("World-streaming retained pre-window prefix is invalid");
@@ -248,6 +256,8 @@ export function requireStreamingEvidence(
     measurementCellLoadSamples.some(
       (sample) =>
         sample.cellId === "" ||
+        sample.batchTransactionId !==
+          canonicalBatchTransactionId(telemetry.workerGeneration, sample) ||
         !positiveInteger(sample.batchCellCount) ||
         sample.batchCellCount > STREAMING_RESIDENT_CELL_LIMIT ||
         !positiveInteger(sample.batchCellOrdinal) ||
@@ -269,10 +279,10 @@ export function requireStreamingEvidence(
         !nonNegativeFinite(sample.decodeRoundTripMs) ||
         !nonNegativeFinite(sample.decodeMs) ||
         !nonNegativeFinite(sample.decodeWaitMs) ||
-        !nonNegativeFinite(sample.renderUploadRoundTripMs) ||
+        !nonNegativeFinite(sample.renderTransactionRoundTripMs) ||
         !nonNegativeFinite(sample.uploadMs) ||
-        !nonNegativeFinite(sample.renderUploadWaitMs) ||
-        !nonNegativeFinite(sample.renderCommitRoundTripMs) ||
+        !nonNegativeFinite(sample.renderTransactionWaitMs) ||
+        !nonNegativeFinite(sample.batchDirectUploadMs) ||
         !nonNegativeFinite(sample.streamingWorkerRemainderMs) ||
         !Number.isInteger(sample.encodedBytes) ||
         sample.encodedBytes <= 0 ||
@@ -289,7 +299,6 @@ export function requireStreamingEvidence(
       measurementStartBatch,
       telemetry.observerUpdateCount,
       telemetry.flythroughObserverUpdateCount,
-      telemetry.settledObserverUpdateCount,
       measurementStartObserverUpdateCount,
       measurementStartFlythroughObserverUpdateCount,
       measurementStartSettledObserverUpdateCount,
@@ -307,13 +316,12 @@ export function requireStreamingEvidence(
     ),
     opfsReadMs: p95(measurementCellLoadSamples.map((sample) => sample.opfsReadMs)),
     opfsWaitMs: p95(measurementCellLoadSamples.map((sample) => sample.opfsWaitMs)),
-    renderCommitRoundTripMs: p95(
-      measurementCellLoadSamples.map((sample) => sample.renderCommitRoundTripMs),
+    renderTransactionRoundTripMs: p95(
+      measurementCellLoadSamples.map((sample) => sample.renderTransactionRoundTripMs),
     ),
-    renderUploadRoundTripMs: p95(
-      measurementCellLoadSamples.map((sample) => sample.renderUploadRoundTripMs),
+    renderTransactionWaitMs: p95(
+      measurementCellLoadSamples.map((sample) => sample.renderTransactionWaitMs),
     ),
-    renderUploadWaitMs: p95(measurementCellLoadSamples.map((sample) => sample.renderUploadWaitMs)),
     streamingWorkerRemainderMs: p95(
       measurementCellLoadSamples.map((sample) => sample.streamingWorkerRemainderMs),
     ),
@@ -359,6 +367,30 @@ function streamingSnapshotFailure(
   if (telemetry.state !== "streaming" || telemetry.failureMessage !== null) {
     return `state=${String(telemetry.state)}, failureMessage=${String(telemetry.failureMessage)}`;
   }
+  const installedRelease =
+    typeof telemetry.installedReleaseDigest === "string" &&
+    /^[a-f0-9]{64}$/.test(telemetry.installedReleaseDigest);
+  if (
+    !nonNegativeInteger(telemetry.installedResourceBytes) ||
+    !nonNegativeInteger(telemetry.installedResourceCount) ||
+    !nonNegativeInteger(telemetry.legacyNetworkRequestCount) ||
+    (installedRelease &&
+      (telemetry.installedResourceBytes === 0 ||
+        telemetry.installedResourceCount === 0 ||
+        telemetry.legacyNetworkRequestCount !== 0)) ||
+    (!installedRelease &&
+      (telemetry.installedReleaseDigest !== null ||
+        telemetry.installedResourceBytes !== 0 ||
+        telemetry.installedResourceCount !== 0 ||
+        telemetry.legacyNetworkRequestCount < 2))
+  ) {
+    return `content source installedReleaseDigest=${String(telemetry.installedReleaseDigest)}, installed=${String(telemetry.installedResourceCount)}/${String(telemetry.installedResourceBytes)} bytes, legacyRequests=${String(telemetry.legacyNetworkRequestCount)}`;
+  }
+  const startupFailure = streamingStartupTimingFailure(
+    telemetry.startupTiming,
+    installedRelease ? "installed-release" : "privileged-legacy-network",
+  );
+  if (startupFailure !== null) return startupFailure;
   if (
     !Number.isInteger(telemetry.decodeWorkerCount) ||
     telemetry.decodeWorkerCount < 1 ||
@@ -451,6 +483,19 @@ function streamingSnapshotFailure(
     return `GPU residency current=${String(telemetry.residentGpuBytes)}, highWater=${String(telemetry.residentGpuBytesHighWater)}`;
   }
   if (
+    !positiveInteger(telemetry.renderBatchTransactionCount) ||
+    !positiveInteger(telemetry.renderBatchRequestCount) ||
+    telemetry.renderBatchTransactionCount > telemetry.renderBatchRequestCount ||
+    telemetry.renderBatchRequestCount - telemetry.renderBatchTransactionCount > 1 ||
+    (telemetry.settledObserverUpdateCount === telemetry.observerUpdateCount &&
+      telemetry.renderBatchRequestCount !== telemetry.renderBatchTransactionCount) ||
+    !positiveInteger(telemetry.renderBatchCellCountHighWater) ||
+    telemetry.renderBatchCellCountHighWater > STREAMING_RESIDENT_CELL_LIMIT ||
+    !nonNegativeFinite(telemetry.renderBatchDirectUploadMsHighWater)
+  ) {
+    return `render batch transactions completed/requested=${String(telemetry.renderBatchTransactionCount)}/${String(telemetry.renderBatchRequestCount)}, cellHighWater=${String(telemetry.renderBatchCellCountHighWater)}, directUploadHighWaterMs=${String(telemetry.renderBatchDirectUploadMsHighWater)}`;
+  }
+  if (
     !nonNegativeInteger(telemetry.proactiveEvictionCount) ||
     (policy === "measurement-history" && telemetry.proactiveEvictionCount === 0)
   ) {
@@ -487,6 +532,51 @@ function streamingSnapshotFailure(
   return null;
 }
 
+function streamingStartupTimingFailure(
+  input: WorldStreamingTelemetrySnapshot["startupTiming"],
+  expectedSourceKind: "installed-release" | "privileged-legacy-network",
+): string | null {
+  if (input === null) return "startup timing is missing";
+  if (
+    Object.keys(input).sort().join(",") !==
+      "accessHandlesOpenedAtMs,contract,decodePoolCreatedAtMs,finalAdmissionCompletedAtMs,initialResidencyReadyAtMs,provisioningStartedAtMs,releaseBindingCompletedAtMs,releaseResolutionCompletedAtMs,schemaVersion,sourceKind,workerStartedAtMs" ||
+    input.contract !== STREAMING_STARTUP_TIMING_CONTRACT ||
+    input.schemaVersion !== STREAMING_STARTUP_TIMING_SCHEMA_VERSION ||
+    input.sourceKind !== expectedSourceKind
+  ) {
+    return "startup timing identity is invalid";
+  }
+  const ordered =
+    expectedSourceKind === "installed-release"
+      ? [
+          input.workerStartedAtMs,
+          input.provisioningStartedAtMs,
+          input.releaseBindingCompletedAtMs,
+          input.releaseResolutionCompletedAtMs,
+          input.accessHandlesOpenedAtMs,
+          input.finalAdmissionCompletedAtMs,
+          input.decodePoolCreatedAtMs,
+          input.initialResidencyReadyAtMs,
+        ]
+      : [
+          input.workerStartedAtMs,
+          input.provisioningStartedAtMs,
+          input.releaseResolutionCompletedAtMs,
+          input.accessHandlesOpenedAtMs,
+          input.decodePoolCreatedAtMs,
+          input.initialResidencyReadyAtMs,
+        ];
+  if (
+    (expectedSourceKind === "privileged-legacy-network" &&
+      (input.releaseBindingCompletedAtMs !== null || input.finalAdmissionCompletedAtMs !== null)) ||
+    ordered.some((value) => typeof value !== "number" || !Number.isFinite(value) || value < 0) ||
+    ordered.some((value, index) => index > 0 && (value as number) < (ordered[index - 1] as number))
+  ) {
+    return "startup timing milestone ordering is invalid";
+  }
+  return null;
+}
+
 function validTimingAttribution(sample: StreamingCellLoadTelemetry): boolean {
   const tolerance = STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS;
   return (
@@ -497,16 +587,15 @@ function validTimingAttribution(sample: StreamingCellLoadTelemetry): boolean {
     ) &&
     withinTolerance(sample.decodeRoundTripMs, sample.decodeMs + sample.decodeWaitMs, tolerance) &&
     withinTolerance(
-      sample.renderUploadRoundTripMs,
-      sample.uploadMs + sample.renderUploadWaitMs,
+      sample.renderTransactionRoundTripMs,
+      sample.uploadMs + sample.renderTransactionWaitMs,
       tolerance,
     ) &&
     withinTolerance(
       sample.totalMs,
       sample.opfsAccessRoundTripMs +
         sample.decodeRoundTripMs +
-        sample.renderUploadRoundTripMs +
-        sample.renderCommitRoundTripMs +
+        sample.renderTransactionRoundTripMs +
         sample.streamingWorkerRemainderMs,
       tolerance,
     )
@@ -518,7 +607,6 @@ function validBatchIdentity(
   measurementStartBatch: StreamingMeasurementStartBatch | null,
   measurementEndObserverUpdateCount: number,
   measurementEndFlythroughObserverUpdateCount: number,
-  measurementEndSettledObserverUpdateCount: number,
   measurementStartObserverUpdateCount: number,
   measurementStartFlythroughObserverUpdateCount: number,
   measurementStartSettledObserverUpdateCount: number,
@@ -530,10 +618,16 @@ function validBatchIdentity(
     readonly flythroughObserverSequence: number;
     readonly observerUpdateCount: number;
     readonly ordinal: number;
+    readonly transactionId: string;
+    readonly directUploadMs: number;
+    uploadMs: number;
   }[] = [];
   for (const sample of samples) {
     const existing = batches.at(-1);
     if (existing === undefined || existing.ordinal !== sample.batchOrdinal) {
+      if (batches.some((batch) => batch.transactionId === sample.batchTransactionId)) {
+        return false;
+      }
       if (existing !== undefined) {
         if (
           sample.batchOrdinal !== existing.ordinal + 1 ||
@@ -555,6 +649,9 @@ function validBatchIdentity(
         flythroughObserverSequence: sample.batchFlythroughObserverSequence,
         observerUpdateCount: sample.batchObserverUpdateCount,
         ordinal: sample.batchOrdinal,
+        transactionId: sample.batchTransactionId,
+        directUploadMs: sample.batchDirectUploadMs,
+        uploadMs: sample.uploadMs,
       });
       continue;
     }
@@ -562,6 +659,8 @@ function validBatchIdentity(
       existing.cellCount !== sample.batchCellCount ||
       existing.flythroughObserverSequence !== sample.batchFlythroughObserverSequence ||
       existing.observerUpdateCount !== sample.batchObserverUpdateCount ||
+      existing.transactionId !== sample.batchTransactionId ||
+      existing.directUploadMs !== sample.batchDirectUploadMs ||
       existing.cellOrdinals.has(sample.batchCellOrdinal) ||
       existing.cellIds.has(sample.cellId)
     ) {
@@ -569,6 +668,7 @@ function validBatchIdentity(
     }
     existing.cellOrdinals.add(sample.batchCellOrdinal);
     existing.cellIds.add(sample.cellId);
+    existing.uploadMs += sample.uploadMs;
   }
   const first = batches[0];
   const last = batches.at(-1);
@@ -631,6 +731,9 @@ function validBatchIdentity(
     return false;
   }
   for (const [index, batch] of batches.entries()) {
+    if (batch.directUploadMs + STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS < batch.uploadMs) {
+      return false;
+    }
     const boundaryOrdinals =
       index === 0 && continuesStartBatch
         ? new Set(measurementStartBatch.completedCellOrdinals)
@@ -648,11 +751,7 @@ function validBatchIdentity(
     const observedCellCount = boundaryOrdinals.size + batch.cellOrdinals.size;
     if (observedCellCount > batch.cellCount) return false;
     const complete = observedCellCount === batch.cellCount;
-    const legitimatelyTruncatedAtEnd =
-      index === batches.length - 1 &&
-      measurementEndSettledObserverUpdateCount < measurementEndObserverUpdateCount &&
-      batch.observerUpdateCount > measurementEndSettledObserverUpdateCount;
-    if (!complete && !legitimatelyTruncatedAtEnd) return false;
+    if (!complete) return false;
   }
   return true;
 }
@@ -669,6 +768,7 @@ function deriveMeasurementStartBatch(
 function validRetainedBoundaryPrefix(
   samples: readonly StreamingCellLoadTelemetry[],
   measurementStartCellLoadSampleCount: number,
+  workerGeneration: number,
 ): boolean {
   const retainedAtBoundary = samples.filter(
     (sample) => sample.sequence <= measurementStartCellLoadSampleCount,
@@ -681,26 +781,40 @@ function validRetainedBoundaryPrefix(
     readonly flythroughObserverSequence: number;
     readonly observerUpdateCount: number;
     readonly ordinal: number;
+    readonly transactionId: string;
+    readonly directUploadMs: number;
+    uploadMs: number;
   }[] = [];
   for (const sample of retainedAtBoundary) {
+    const launchHydration = sample.batchOrdinal === 1;
     if (
       sample.cellId === "" ||
+      sample.batchTransactionId !== canonicalBatchTransactionId(workerGeneration, sample) ||
+      !nonNegativeFinite(sample.batchDirectUploadMs) ||
       !positiveInteger(sample.batchCellCount) ||
       sample.batchCellCount > STREAMING_RESIDENT_CELL_LIMIT ||
       !positiveInteger(sample.batchCellOrdinal) ||
       sample.batchCellOrdinal > sample.batchCellCount ||
       !nonNegativeInteger(sample.batchFlythroughObserverSequence) ||
-      !positiveInteger(sample.batchObserverUpdateCount) ||
       sample.batchFlythroughObserverSequence > sample.batchObserverUpdateCount ||
       !positiveInteger(sample.batchOrdinal) ||
-      sample.batchOrdinal < 2 ||
-      sample.batchOrdinal > sample.batchObserverUpdateCount + 1 ||
+      (launchHydration
+        ? sample.batchObserverUpdateCount !== 0 ||
+          sample.batchFlythroughObserverSequence !== 0 ||
+          sample.sequence !== sample.batchCellOrdinal
+        : !positiveInteger(sample.batchObserverUpdateCount) ||
+          sample.batchOrdinal < 2 ||
+          sample.batchOrdinal > sample.batchObserverUpdateCount + 1) ||
       sample.batchOrdinal > sample.sequence + 1
     ) {
       return false;
     }
     const existing = batches.at(-1);
     if (existing === undefined || existing.ordinal !== sample.batchOrdinal) {
+      if (batches.some((batch) => batch.transactionId === sample.batchTransactionId)) {
+        return false;
+      }
+      if (launchHydration && batches.length !== 0) return false;
       if (
         existing !== undefined &&
         (sample.batchOrdinal !== existing.ordinal + 1 ||
@@ -721,6 +835,9 @@ function validRetainedBoundaryPrefix(
         flythroughObserverSequence: sample.batchFlythroughObserverSequence,
         observerUpdateCount: sample.batchObserverUpdateCount,
         ordinal: sample.batchOrdinal,
+        transactionId: sample.batchTransactionId,
+        directUploadMs: sample.batchDirectUploadMs,
+        uploadMs: sample.uploadMs,
       });
       continue;
     }
@@ -728,6 +845,8 @@ function validRetainedBoundaryPrefix(
       existing.cellCount !== sample.batchCellCount ||
       existing.flythroughObserverSequence !== sample.batchFlythroughObserverSequence ||
       existing.observerUpdateCount !== sample.batchObserverUpdateCount ||
+      existing.transactionId !== sample.batchTransactionId ||
+      existing.directUploadMs !== sample.batchDirectUploadMs ||
       existing.cellIds.has(sample.cellId) ||
       existing.cellOrdinals.has(sample.batchCellOrdinal)
     ) {
@@ -735,13 +854,13 @@ function validRetainedBoundaryPrefix(
     }
     existing.cellIds.add(sample.cellId);
     existing.cellOrdinals.add(sample.batchCellOrdinal);
+    existing.uploadMs += sample.uploadMs;
   }
   const prefixStartsAtSequenceOne = retainedAtBoundary[0]?.sequence === 1;
   return batches.every(
     (batch, index) =>
-      index === batches.length - 1 ||
-      (index === 0 && !prefixStartsAtSequenceOne) ||
-      batch.cellOrdinals.size === batch.cellCount,
+      batch.directUploadMs + STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS >= batch.uploadMs &&
+      ((index === 0 && !prefixStartsAtSequenceOne) || batch.cellOrdinals.size === batch.cellCount),
   );
 }
 
@@ -768,10 +887,12 @@ function deriveMeasurementStartBatchFromSamples(
     (sample) => sample.batchOrdinal === last.batchOrdinal,
   );
   return Object.freeze({
+    batchDirectUploadMs: last.batchDirectUploadMs,
     batchCellCount: last.batchCellCount,
     batchFlythroughObserverSequence: last.batchFlythroughObserverSequence,
     batchObserverUpdateCount: last.batchObserverUpdateCount,
     batchOrdinal: last.batchOrdinal,
+    batchTransactionId: last.batchTransactionId,
     completedCellIds: Object.freeze(batchSamples.map((sample) => sample.cellId)),
     completedCellOrdinals: Object.freeze(batchSamples.map((sample) => sample.batchCellOrdinal)),
   });
@@ -779,43 +900,56 @@ function deriveMeasurementStartBatchFromSamples(
 
 function validMeasurementStartBatch(
   batch: StreamingMeasurementStartBatch | null,
+  workerGeneration: number,
   measurementStartCellLoadSampleCount: number,
   measurementStartObserverUpdateCount: number,
   measurementStartFlythroughObserverUpdateCount: number,
-  measurementStartSettledObserverUpdateCount: number,
 ): boolean {
   if (batch === null) return measurementStartCellLoadSampleCount === 0;
+  const launchHydration = batch.batchOrdinal === 1;
   return (
     measurementStartCellLoadSampleCount > 0 &&
     positiveInteger(batch.batchCellCount) &&
+    nonNegativeFinite(batch.batchDirectUploadMs) &&
+    batch.batchTransactionId === canonicalBatchTransactionId(workerGeneration, batch) &&
     batch.batchCellCount <= STREAMING_RESIDENT_CELL_LIMIT &&
     positiveInteger(batch.batchOrdinal) &&
-    batch.batchOrdinal >= 2 &&
-    positiveInteger(batch.batchObserverUpdateCount) &&
-    nonNegativeInteger(batch.batchFlythroughObserverSequence) &&
-    batch.batchFlythroughObserverSequence <= batch.batchObserverUpdateCount &&
-    batch.batchOrdinal <= batch.batchObserverUpdateCount + 1 &&
     batch.batchOrdinal <= measurementStartCellLoadSampleCount + 1 &&
-    validObserverProgress(
-      batch.batchObserverUpdateCount,
-      batch.batchFlythroughObserverSequence,
-      measurementStartObserverUpdateCount,
-      measurementStartFlythroughObserverUpdateCount,
-    ) &&
+    (launchHydration
+      ? batch.batchObserverUpdateCount === 0 &&
+        batch.batchFlythroughObserverSequence === 0 &&
+        measurementStartCellLoadSampleCount === batch.batchCellCount &&
+        validObserverProgress(
+          batch.batchObserverUpdateCount,
+          batch.batchFlythroughObserverSequence,
+          measurementStartObserverUpdateCount,
+          measurementStartFlythroughObserverUpdateCount,
+        )
+      : batch.batchOrdinal >= 2 &&
+        positiveInteger(batch.batchObserverUpdateCount) &&
+        nonNegativeInteger(batch.batchFlythroughObserverSequence) &&
+        batch.batchFlythroughObserverSequence <= batch.batchObserverUpdateCount &&
+        batch.batchOrdinal <= batch.batchObserverUpdateCount + 1 &&
+        validObserverProgress(
+          batch.batchObserverUpdateCount,
+          batch.batchFlythroughObserverSequence,
+          measurementStartObserverUpdateCount,
+          measurementStartFlythroughObserverUpdateCount,
+        )) &&
     Array.isArray(batch.completedCellIds) &&
     Array.isArray(batch.completedCellOrdinals) &&
     batch.completedCellIds.length > 0 &&
     batch.completedCellIds.length === batch.completedCellOrdinals.length &&
     batch.completedCellIds.length <= measurementStartCellLoadSampleCount &&
-    batch.completedCellIds.length <= batch.batchCellCount &&
-    (batch.batchObserverUpdateCount > measurementStartSettledObserverUpdateCount ||
-      batch.completedCellIds.length === batch.batchCellCount) &&
+    batch.completedCellIds.length === batch.batchCellCount &&
     batch.completedCellIds.every((cellId) => typeof cellId === "string" && cellId !== "") &&
     new Set(batch.completedCellIds).size === batch.completedCellIds.length &&
     batch.completedCellOrdinals.every(
       (ordinal) => positiveInteger(ordinal) && ordinal <= batch.batchCellCount,
     ) &&
-    new Set(batch.completedCellOrdinals).size === batch.completedCellOrdinals.length
+    new Set(batch.completedCellOrdinals).size === batch.completedCellOrdinals.length &&
+    (!launchHydration ||
+      batch.completedCellOrdinals.every((ordinal, index) => ordinal === index + 1))
   );
 }
 
@@ -828,6 +962,8 @@ function compatibleMeasurementStartBatchFacts(
   if (
     left === null ||
     left.batchCellCount !== right.batchCellCount ||
+    left.batchDirectUploadMs !== right.batchDirectUploadMs ||
+    left.batchTransactionId !== right.batchTransactionId ||
     left.batchFlythroughObserverSequence !== right.batchFlythroughObserverSequence ||
     left.batchObserverUpdateCount !== right.batchObserverUpdateCount ||
     left.batchOrdinal !== right.batchOrdinal
@@ -867,10 +1003,12 @@ function compatibleMeasurementStartBatchFacts(
 
 function sameBatchIdentity(
   batch: Readonly<{
+    directUploadMs: number;
     cellCount: number;
     flythroughObserverSequence: number;
     observerUpdateCount: number;
     ordinal: number;
+    transactionId: string;
   }>,
   boundary: StreamingMeasurementStartBatch,
 ): boolean {
@@ -878,7 +1016,9 @@ function sameBatchIdentity(
     batch.cellCount === boundary.batchCellCount &&
     batch.flythroughObserverSequence === boundary.batchFlythroughObserverSequence &&
     batch.observerUpdateCount === boundary.batchObserverUpdateCount &&
-    batch.ordinal === boundary.batchOrdinal
+    batch.ordinal === boundary.batchOrdinal &&
+    batch.transactionId === boundary.batchTransactionId &&
+    batch.directUploadMs === boundary.batchDirectUploadMs
   );
 }
 
@@ -955,4 +1095,15 @@ function nonNegativeInteger(value: number): boolean {
 
 function positiveInteger(value: number): boolean {
   return Number.isInteger(value) && value > 0;
+}
+
+function canonicalBatchTransactionId(
+  workerGeneration: number,
+  batch: Readonly<{
+    readonly batchFlythroughObserverSequence: number;
+    readonly batchObserverUpdateCount: number;
+    readonly batchOrdinal: number;
+  }>,
+): string {
+  return `${workerGeneration}:${batch.batchOrdinal}:${batch.batchObserverUpdateCount}:${batch.batchFlythroughObserverSequence}`;
 }

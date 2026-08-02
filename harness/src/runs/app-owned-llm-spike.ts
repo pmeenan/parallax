@@ -12,7 +12,7 @@ import { type Distribution, distribution } from "../aggregate.js";
 import type { BudgetCheck } from "../budgets.js";
 
 export const APP_OWNED_LLM_SPIKE_SCENARIO = "app-owned-llm-spike@1";
-export const APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION = 2;
+export const APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION = 3;
 export const APP_OWNED_LLM_TTFT_SAMPLES = 20;
 export const APP_OWNED_LLM_TOTAL_GENERATIONS = 30;
 export const APP_OWNED_LLM_TTFT_P95_LIMIT_MS = 1_500;

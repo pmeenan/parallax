@@ -34,7 +34,7 @@ numbered finding (or a decisions.md entry) once there's evidence:
 - **Dawn pipeline cache observability:** launch-1 vs launch-2 compile behavior; can we
   prove cache hits? The bigger idea: **shippable/distributable PSO caches** so players
   don't each pay warmup once per device (connects to existing COS code-cache work).
-- **V8 wasm code cache discipline:** does our immutable-URL + `instantiateStreaming`
+- **V8 wasm code cache discipline:** does our immutable-URL + `compileStreaming`
   + 304 setup reliably preserve the code cache across launches and asset-only updates?
 - **OPFS throughput ceilings:** sync access handle read bandwidth from decode-pool
   workers; contention behavior with N readers; OPFS vs Cache Storage per asset class.
@@ -84,6 +84,67 @@ COS APIs exist):
   hash-based sharing index?
 
 ## Findings
+
+## RE-046: Chrome exposes no origin-scoped proof of HTTP, V8, or Dawn cache eviction
+
+- **Date / Chrome version:** 2026-07-31; pinned Chrome for Testing 151.0.7922.34 on
+  Windows 11 dev-01; executable SHA-256
+  `409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`.
+- **Layer:** uninstall lifecycle / cache observability.
+- **Status:** open.
+- **What we expected / What happened:** D-024 requires measured full-removal coverage.
+  Both client-side teardown and the direct-network `Clear-Site-Data` path could prove
+  that unique nonempty OPFS, service-worker, Cache Storage, and IndexedDB sentinels were
+  gone and that quota usage fell. The available cache probes could not prove the same
+  for the origin's HTTP cache, V8 code cache, or Dawn GPU caches. CDP response cache
+  flags and GPU histograms are cumulative/process-level signals, and V8 trace events do
+  not expose an origin-scoped code-cache inventory or deletion operation.
+- **Repro:** run the D-147 `uninstall-verification@1` physical qualifier in two fresh
+  profiles. It records before/after CDP network-cache flags, V8 trace event counts, and
+  D3D12/Dawn histogram probes around each destructive path while separately proving the
+  four observable storage surfaces. The accepted primary result is
+  `uninstall-verification-v3-2026-08-01T01-42-43-231Z.json` (SHA-256
+  `3a4f177af4d6b12dce9b2063ef09c9f1b75e2485751c236487c9f24864d32e9b`).
+- **Impact on Parallax:** the uninstall UI and evidence can truthfully claim removal of
+  app-owned origin storage plus positive quota release, and the header can request
+  storage/cache clearing, but Parallax cannot independently verify complete eviction of
+  those three browser-managed caches. They remain explicit `unobservable` facets rather
+  than inferred successes.
+- **Proposed improvement:** expose a privileged, origin-scoped cache-inventory and
+  eviction-result diagnostic covering HTTP resources, V8 code artifacts, and WebGPU
+  pipeline/shader caches, with attribution strong enough for an installed web
+  application's uninstall verifier. A production app need not receive cache contents;
+  exact affected-entry/byte counts and completion identity would be sufficient.
+
+## RE-045: Dedicated workers can observe but cannot request persistent storage
+
+- **Date / Chrome version:** 2026-07-29; pinned Chrome for Testing 151.0.7922.34 on
+  Windows 11 dev-01; executable SHA-256
+  `409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`.
+- **Layer:** storage / worker API surface.
+- **Status:** open.
+- **What we expected / What happened:** D-133 needs its installer worker to own OPFS,
+  quota observation, and network transfer without main-thread work. A fresh-profile
+  visible-Chrome `DedicatedWorkerGlobalScope` exposed working
+  `navigator.storage.getDirectory()`, `estimate()`, and `persisted()` plus OPFS sync
+  access handles and Web Locks. `persisted()` returned `false`, but
+  `navigator.storage.persist` was `undefined`. The one-byte sync write/flush/size/read
+  boundary and exclusive-lock query succeeded. The ignored schema-v1 result SHA-256 is
+  `abf808f0ab4fffc00e4ae71b431fe240e77ee0d5d95986b3dd5eea18dabe2d6b`.
+- **Repro:** launch pinned visible Chrome at a fresh localhost profile, create a
+  dedicated worker, enumerate the four `StorageManager` methods, call
+  estimate/persisted/getDirectory, create and flush a sync access handle, and acquire
+  and query one exclusive Web Lock. The exact disposable probe is retained under
+  `harness/results/d133-surface-probe/`.
+- **Impact on Parallax:** installer transfer, quota estimation, OPFS writes, and lock
+  ownership remain correctly worker-owned, but the meaningful user-gesture persistence
+  request must cross a separate main-thread UX boundary. D-133 observes persistence
+  state and deliberately does not attempt a worker fallback.
+- **Proposed improvement:** expose `StorageManager.persist()` to dedicated workers when
+  a user-activation token or explicitly delegated permission is available, so a
+  long-running native-class installer can keep its complete storage lifecycle in one
+  realm. The checked 2026-07-29 Storage/File System/Web Locks specifications match the
+  observed split; this is a capability request, not a Chrome/spec discrepancy.
 
 ## RE-044: A localhost worker fetch rejected opaquely before streaming provisioning
 
@@ -179,6 +240,90 @@ COS APIs exist):
   explicit decision against then-current Chrome evidence; do not restore D-111's
   apparatus wholesale. Only evidence that isolates a browser/platform boundary should
   mature this into a Chrome-facing claim.
+- **D-122 trigger and malformed result:** D-121's production smoke and its one permitted
+  same-artifact retry both completed six launches, target pre/post verification, and
+  30/30 absolute checks, but respectively exceeded D-116's fresh+warm and warm-only
+  1 ms repeatability floor. The slow cells again concentrate outside direct OPFS work,
+  in render upload/commit round-trip wait. D-122 authorized one smaller direct-port
+  diagnostic to separate request preparation, streaming-to-render dispatch,
+  render-worker operation and bookkeeping, and acknowledgement plus streaming
+  continuation. It cross-checks those components against the unchanged ordinary
+  upload/commit round-trip samples and preserves the existing render-worker `uploadMs`
+  endpoint.
+- **D-122 retained invalid evidence:** D-122's only invocation is consumed and retained
+  at
+  `harness/results/streaming-tail-diagnostic-1-bb200ab2c331-dev-01-showcase-2026-07-26T20-22-38.699Z.json`
+  (SHA-256
+  `75165f270397e89f064763159e96823b3df3354524eecc114c8a800ceccd6bd3`;
+  source commit `7fdc5465b5903751301a4e319a160848eacefac6`, dirty-tree digest
+  `68ae52d5d89b3c40dd51096acf989ca9e77cc06676fda3f043421fe9845aaa6a`).
+  Its production preflight/postflight and registered physical dev-01/Showcase
+  environment gate were valid, but the result remained invalid with six null evidence
+  fields: every attempt stopped at the first readiness predicate because its serialized
+  page callback referenced the unavailable Node-module
+  `TELEMETRY_SCHEMA_VERSION`. It produced no timing, controls, correlation, runtime,
+  or platform evidence and does not change RE-043's attribution status.
+- **D-123 replacement / D-124 closure:** the exact no-retry replacement was consumed
+  against the same verified `bb200ab2c331...` production artifact and is retained at
+  `harness/results/streaming-tail-diagnostic-1-bb200ab2c331-dev-01-showcase-2026-07-26T20-47-12.563Z.json`
+  (SHA-256
+  `69e5af5598b06ca5eea99b649049d1d2803ef8638ae2d74cc0c9e886e0c9c4a6`;
+  source commit `7fdc5465b5903751301a4e319a160848eacefac6`, dirty-tree digest
+  `aae43b0e5ba3e8531acf386a5ea09b44edb5e6f4abe1dec695dcd97f04489f8f`;
+  consumption-record SHA-256
+  `44558176c73a60f21aca9dff9d9cb154dc7a0868731e4bead017b2cea148a74f`).
+  Production preflight/postflight and the registered physical dev-01/Showcase
+  environment passed with pinned Chrome for Testing 151.0.7922.34. The result remains
+  `invalid`, `qualifies: false`: exactly five attempts have valid evidence and fresh
+  repeat 2 is null because `control 8 timestamps are misordered`; GPU completion is
+  unsupported and no retry is authorized.
+- Across the valid attempts, ordinary total p95s were 2.010, 1.515, 2.065, 1.700, and
+  2.515 ms. The illustrative warm-repeat-3 nearest-rank total-p95 cell measured
+  2.515 ms; its 1.770 ms commit round trip consisted of 1.195 ms outbound dispatch,
+  0 ms worker operation/bookkeeping, and 0.575 ms acknowledgement/continuation, while
+  direct OPFS access/read, decode, upload operation, and streaming-worker remainder
+  stayed small. This localizes application-visible waiting across the streaming/render
+  realm boundary but cannot identify browser versus OS scheduling and does not observe
+  GPU completion or presentation. It supports no Chrome defect claim, runtime
+  scheduling prescription, metric deletion, or D-116 change.
+- D-124 leaves this entry open, preserves both retained results/consumption records and
+  verified D-099 bundles, and removes the complete closed experiment. A future
+  investigation requires a new directly triggered bounded decision; do not restore the
+  D-122/D-123 apparatus wholesale.
+- **D-125 bounded product correction:** the final cleaned D-121 production smoke is
+  retained failed at
+  `smoke-1-8e932618990f-dev-01-showcase-2026-07-27T00-17-19-184Z.json`
+  (SHA-256
+  `dbc45ae35014b9010f3c84e7ca56c8288756a5b91d6327a324b3f722d9ba061b`).
+  All absolute checks passed; fresh repeatability passed, while warm
+  3.380/2.055/2.730 ms p95s spread 1.325 ms. D-125 removes the application-owned
+  per-cell message amplification by making each scheduler load batch one atomic upload
+  plus commit transaction. It does not change D-116, claim GPU completion, or identify
+  browser versus OS scheduling. RE-043 therefore remains open.
+- **D-126 bounded product correction:** D-125's exact production artifact
+  `d6ed5d3560c498f62071d6f235baec32191ad7b0cac4172908919159144a7189`
+  is retained failed in
+  `smoke-1-d6ed5d3560c4-dev-01-showcase-2026-07-27T01-43-29-439Z.json`
+  (SHA-256
+  `ec93b944b8ca296f4462f389cef806939d036a3b0fc76463aa0e6803ce27fd7f`).
+  All 30 absolute checks passed. Warm 3.170/3.515/4.140 ms p95s passed at
+  0.970 ms spread; fresh 4.245/3.585/2.995 ms failed at 1.250 ms. D-125's
+  three-cell batching had reduced twelve messages to four (3×); D-126 removes
+  the remaining commit crossing and uses one request/response with reverse rollback.
+  It still does not observe GPU completion or distinguish browser from OS scheduling,
+  so D-116 is unchanged and RE-043 remains open.
+- **D-127 qualification boundary:** the one authorized post-D-126 production report
+  `smoke-1-9d4c1be5c290-dev-01-showcase-2026-07-27T02-43-18-518Z.json`
+  (SHA-256
+  `ca7a7288ecf6d44787ed1a2f685459c3e81a364cc3d1218adc91dd4d97d681b9`)
+  passed all six launches, all three facets, and 30/30 checks on exact artifact
+  `9d4c1be5c290133a58c9ad90327591804121b226be84cae4c333d3442f2dc86b`.
+  Fresh p95s 1.980000019/2.024999976/2.314999938 ms spread
+  0.334999919 ms; warm p95s 1.639999986/1.694999933/2.375 ms spread
+  0.735000014 ms. Both passed D-116's unchanged 1 ms arm. Every launch retained
+  74 requests and 74 completed transactions, but one passing short-smoke cohort
+  supplies no causal distinction between browser, OS scheduler, or GPU completion.
+  RE-043 therefore remains open.
 
 ## RE-042: Continuous-page 4K streaming exposes unstable asynchronous OPFS access residuals
 

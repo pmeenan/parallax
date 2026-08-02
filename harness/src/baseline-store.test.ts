@@ -12,14 +12,48 @@ import {
   parseBaselineEligibleReport,
   promoteBaseline,
 } from "./baseline-store.js";
+import { resolveExpectedPsoWarmupTraceIdentity } from "./pso-warmup-trace.js";
 import {
+  SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
+  SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
   SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
 } from "./runs/smoke.js";
 import { requireStreamingEvidence } from "./streaming-evidence.js";
 
 const cleanup: string[] = [];
+const psoIdentity = resolveExpectedPsoWarmupTraceIdentity();
+const validPsoWarmup = Object.freeze({
+  buildCompatibilityDigest: psoIdentity.buildCompatibilityDigest,
+  cacheHitCount: 1,
+  cacheMissCount: 1,
+  compiledCount: 1,
+  contract: "pso-warmup-telemetry@1" as const,
+  deferredCount: 1,
+  entries: Object.freeze([
+    Object.freeze({
+      compileAttemptCount: 1,
+      compileDurationMs: 1,
+      compiled: true,
+      id: psoIdentity.entry.id,
+      requestCount: 2,
+      stateDigest: psoIdentity.entry.stateDigest,
+    }),
+  ]),
+  failure: null,
+  failureCount: 0,
+  maximumCompileDurationMs: 1,
+  queueHighWater: 1,
+  releaseDigest: null,
+  requestedCount: 2,
+  schemaVersion: 1 as const,
+  source: "privileged-embedded" as const,
+  state: "ready" as const,
+  totalDurationMs: 2,
+  traceEntryCount: 1,
+  traceSha256: psoIdentity.sha256,
+});
 
 const validGreyboxWorld = Object.freeze({
   cellCount: 256,
@@ -62,11 +96,13 @@ const validGreyboxWorld = Object.freeze({
 const validStreamingSamples = Object.freeze(
   Array.from({ length: 10 }, (_, index) =>
     Object.freeze({
+      batchDirectUploadMs: index < 9 ? 27 : 3,
       batchCellCount: index < 9 ? 9 : 1,
       batchCellOrdinal: index < 9 ? index + 1 : 1,
       batchFlythroughObserverSequence: 0,
       batchObserverUpdateCount: index < 9 ? 1 : 2,
       batchOrdinal: index < 9 ? 2 : 3,
+      batchTransactionId: index < 9 ? "1:2:1:0" : "1:3:2:0",
       cellId: `cell-${index}`,
       decodeMs: 1,
       decodeRoundTripMs: 2,
@@ -76,9 +112,8 @@ const validStreamingSamples = Object.freeze(
       opfsAccessRoundTripMs: 3,
       opfsReadMs: 2,
       opfsWaitMs: 1,
-      renderCommitRoundTripMs: 1,
-      renderUploadRoundTripMs: 4,
-      renderUploadWaitMs: 1,
+      renderTransactionRoundTripMs: 5,
+      renderTransactionWaitMs: 2,
       sequence: index + 1,
       streamingWorkerRemainderMs: 1 + index,
       totalMs: 11 + index,
@@ -94,9 +129,8 @@ const validStreaming = Object.freeze({
     opfsAccessRoundTripMs: 3,
     opfsReadMs: 2,
     opfsWaitMs: 1,
-    renderCommitRoundTripMs: 1,
-    renderUploadRoundTripMs: 4,
-    renderUploadWaitMs: 1,
+    renderTransactionRoundTripMs: 5,
+    renderTransactionWaitMs: 2,
     streamingWorkerRemainderMs: 10,
     uploadMs: 3,
   }),
@@ -111,6 +145,10 @@ const validStreaming = Object.freeze({
   failureMessage: null,
   flythroughObserverUpdateCount: 0,
   hardwareConcurrency: 16,
+  installedReleaseDigest: null,
+  installedResourceBytes: 0,
+  installedResourceCount: 0,
+  legacyNetworkRequestCount: 2,
   observerUpdateCount: 10,
   opfsAccessHandleCount: 256,
   opfsAccessHandleOpenDurationMs: 10,
@@ -133,7 +171,11 @@ const validStreaming = Object.freeze({
   residentGpuBytes: 180_000,
   residentGpuBytesHighWater: 180_000,
   renderRecoveryCount: 0,
-  schemaVersion: 7 as const,
+  renderBatchCellCountHighWater: 9,
+  renderBatchDirectUploadMsHighWater: 27,
+  renderBatchRequestCount: 2,
+  renderBatchTransactionCount: 2,
+  schemaVersion: 11 as const,
   settledRecoveryCheckpoint: Object.freeze({
     flythroughObserverUpdateCount: 0,
     observerUpdateCount: 10,
@@ -143,6 +185,19 @@ const validStreaming = Object.freeze({
   }),
   settledObserverUpdateCount: 10,
   state: "streaming" as const,
+  startupTiming: {
+    accessHandlesOpenedAtMs: 4,
+    contract: "streaming-startup-timing@1" as const,
+    decodePoolCreatedAtMs: 5,
+    finalAdmissionCompletedAtMs: null,
+    initialResidencyReadyAtMs: 6,
+    provisioningStartedAtMs: 2,
+    releaseBindingCompletedAtMs: null,
+    releaseResolutionCompletedAtMs: 3,
+    schemaVersion: 1 as const,
+    sourceKind: "privileged-legacy-network" as const,
+    workerStartedAtMs: 1,
+  },
   workerGeneration: 1,
 });
 
@@ -155,6 +210,7 @@ afterEach(async () => {
 });
 
 function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligibleReport {
+  const target = targetIdentity("a".repeat(64));
   const budgetChecks = (heapActual: number) => [
     {
       actual: heapActual,
@@ -177,6 +233,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       budgetChecks: budgetChecks(actual),
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "fresh" as const,
+      psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,
       streaming: { state: "measured" as const, value: validStreaming },
     })),
@@ -184,6 +241,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       budgetChecks: budgetChecks(actual),
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
       profile: "warm" as const,
+      psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,
       streaming: { state: "measured" as const, value: validStreaming },
     })),
@@ -192,14 +250,35 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     artifactDigest: "a".repeat(64),
     baseline: { reason: "No promoted baseline exists", state: "untracked" },
     build: { engineAndRenderWorkerBytes: 500, totalBuildBytes: 1_000 },
-    chromePin: { revision: "100", version: "150.0.0.0" },
+    callbackPacingVariance: [],
+    chromePin: {
+      channel: "stable",
+      downloads: { win64: "https://example.invalid/chrome.zip" },
+      executableSha256: { win64: "b".repeat(64) },
+      revision: "100",
+      version: "150.0.0.0",
+    },
+    coreRunFailure: null,
     environment: {
       adapter: { backend: "D3D12", driver: "1" },
+      browserCommandLine: "chrome.exe --enable-webgpu-developer-features",
+      browserDisplay: { screen: { height: 2160, width: 3840 } },
+      browserProduct: "Chrome/150.0.0.0",
+      browserRevision: "revision-100",
+      browserUserAgent: "Chrome/150.0.0.0",
       executableSha256: "b".repeat(64),
+      gateIdentity: { state: "measured", value: true },
+      gpuDevices: [{ deviceId: 1, vendorId: 1 }],
+      host: { os: "Windows" },
       hostAfterRuns: { os: "Windows" },
+      jsVersion: "15.0.0",
       machine: { id: "dev-01" },
       machineId: "dev-01",
       requestedTier: "showcase",
+      sandboxVerified: true,
+      target,
+      targetPostflight: { identity: target, state: "verified" },
+      targetPreflight: { identity: target, state: "verified" },
       targetDisplayMode: "3840x2160@60Hz",
     },
     facets: {
@@ -214,13 +293,19 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     finalizationFailure: null,
     generatedAt: "2026-07-20T00:00:00.000Z",
     harnessRuntime: { nodeExecutableSha256: "e".repeat(64), nodeVersion: "v24.18.0" },
-    mandatoryMetricSet: { metrics: mandatoryMetricNames, version: 23 },
+    incompleteMetrics: [],
+    informationalFailures: [],
+    mandatoryMetricSet: {
+      metrics: mandatoryMetricNames,
+      version: SMOKE_MANDATORY_METRIC_SET_VERSION,
+    },
     passed: true,
     postRunIdentity: { state: "measured" },
     reportPersistence: { state: "measured" },
+    releaseDigest: "b".repeat(64),
     runs,
     scenario: "smoke@1",
-    schemaVersion: 47,
+    schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
     source: { commit: "c".repeat(40), dirtyTreeDigest: null },
     streamingCellLoadP95Variance: [
       {
@@ -238,8 +323,47 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
         state: "measured",
       },
     ],
+    v8CodeCacheDiagnostics: [],
     v8CodeCacheDiagnosticsRequested: false,
+    vizPresentationFeedbackCallbackVariance: [],
     ...overrides,
+  };
+}
+
+function targetIdentity(artifactDigest: string): BaselineEligibleReport["environment"]["target"] {
+  return {
+    artifactDigest,
+    artifactDigestVerified: true,
+    kind: "local",
+    localServerStarted: true,
+    origin: "http://127.0.0.1:4173",
+    releaseDigest: "b".repeat(64),
+    releaseDigestVerified: true,
+    servingContract: {
+      artifactBytes: 100,
+      artifactCount: 4,
+      conditionalArtifactCount: 4,
+      documentCacheControl: "no-cache",
+      documentConditionalStatus: 304,
+      documentMimeType: "text/html; charset=utf-8",
+      documentStatus: 200,
+      isolation: "coop-coep",
+      manifestCacheControl: "no-cache",
+      manifestConditionalStatus: 304,
+      manifestStatus: 200,
+      nosniff: true,
+      representations: [
+        { bytes: 25, count: 1, mimeTypes: ["text/html"], representation: "html" },
+        {
+          bytes: 25,
+          count: 1,
+          mimeTypes: ["application/javascript"],
+          representation: "javascript",
+        },
+        { bytes: 25, count: 1, mimeTypes: ["application/json"], representation: "json" },
+        { bytes: 25, count: 1, mimeTypes: ["application/wasm"], representation: "wasm" },
+      ],
+    },
   };
 }
 
@@ -271,7 +395,7 @@ describe("baseline result store", () => {
     expect(evaluateBaseline(report(), promoted)).toMatchObject({ state: "current" });
 
     const candidate = report({
-      chromePin: { revision: "101", version: "151.0.0.0" },
+      chromePin: { ...report().chromePin, revision: "101", version: "151.0.0.0" },
       runs: report().runs.map((run) => ({
         ...run,
         budgetChecks: run.budgetChecks.map((check) =>
@@ -288,6 +412,91 @@ describe("baseline result store", () => {
     expect(frameComparison?.baseline).toBe(11);
     expect(frameComparison?.candidate).toBeCloseTo(13.2);
     expect(frameComparison?.relativeDelta).toBeCloseTo(0.2);
+  });
+
+  it("preserves a real schema-v1 three-part D-087 anchor as an ineligible local predecessor", async () => {
+    const paths = await fixture();
+    const candidateBytes = Buffer.from(JSON.stringify(report()));
+    await promoteBaseline({
+      actor: "legacy-actor",
+      reason: "pre-D-121 local anchor",
+      reportBytes: candidateBytes,
+      reportPath: paths.reportPath,
+      storePath: paths.storePath,
+    });
+    const qualified = await loadBaselineStore(paths.storePath);
+    const qualifiedKey = "smoke@1|dev-01|showcase|local|http://127.0.0.1";
+    const qualifiedRecord = qualified.entries[qualifiedKey];
+    if (qualifiedRecord === undefined) throw new Error("Expected qualified fixture anchor");
+    const { target: _removedTarget, ...legacyComparisonEnvironment } =
+      qualifiedRecord.comparisonEnvironment;
+    const legacyRecord: BaselineRecord = {
+      ...qualifiedRecord,
+      comparisonEnvironment: legacyComparisonEnvironment,
+    };
+    await writeFile(
+      paths.storePath,
+      `${JSON.stringify(
+        {
+          entries: { "smoke@1|dev-01|showcase": legacyRecord },
+          schemaVersion: 1,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    const legacyStore = await loadBaselineStore(paths.storePath);
+    const legacyEvaluation = evaluateBaseline(report(), legacyStore);
+    expect(legacyEvaluation).toMatchObject({
+      baseline: { promotedBy: "legacy-actor", promotionReason: "pre-D-121 local anchor" },
+      reason: expect.stringContaining("Pre-D-121 local baseline predecessor"),
+      state: "ineligible",
+    });
+    const candidate = report({ baseline: legacyEvaluation });
+    await expect(
+      promoteBaseline({
+        actor: "migration-actor",
+        reason: "implicit migration must fail",
+        reportBytes: Buffer.from(JSON.stringify(candidate)),
+        reportPath: paths.reportPath,
+        storePath: paths.storePath,
+      }),
+    ).rejects.toThrow(/--rebaseline/);
+
+    const staleCandidate = report({
+      baseline:
+        legacyEvaluation.state === "ineligible"
+          ? {
+              ...legacyEvaluation,
+              baseline: { ...legacyEvaluation.baseline, reportDigest: "f".repeat(64) },
+            }
+          : legacyEvaluation,
+    });
+    await expect(
+      promoteBaseline({
+        actor: "migration-actor",
+        allowIneligible: true,
+        reason: "stale explicit migration",
+        reportBytes: Buffer.from(JSON.stringify(staleCandidate)),
+        reportPath: paths.reportPath,
+        storePath: paths.storePath,
+      }),
+    ).rejects.toThrow(/stale/);
+
+    await promoteBaseline({
+      actor: "migration-actor",
+      allowIneligible: true,
+      reason: "reviewed target-qualified migration",
+      reportBytes: Buffer.from(JSON.stringify(candidate)),
+      reportPath: paths.reportPath,
+      storePath: paths.storePath,
+    });
+    const migrated = await loadBaselineStore(paths.storePath);
+    expect(migrated.entries["smoke@1|dev-01|showcase"]).toEqual(legacyRecord);
+    expect(migrated.entries[qualifiedKey]).toMatchObject({
+      promotedBy: "migration-actor",
+      promotionReason: "reviewed target-qualified migration",
+    });
   });
 
   it.each([
@@ -334,7 +543,7 @@ describe("baseline result store", () => {
     });
   });
 
-  it("keeps a structurally valid older metric set ineligible before comparing metric keys", async () => {
+  it("keeps a structurally valid pre-D-126 metric set v26 ineligible before comparing metric keys", async () => {
     const paths = await fixture();
     await promoteBaseline({
       actor: "lead-agent",
@@ -354,7 +563,7 @@ describe("baseline result store", () => {
         ...store.entries,
         [key]: {
           ...baseline,
-          mandatoryMetricSetVersion: baseline.mandatoryMetricSetVersion - 1,
+          mandatoryMetricSetVersion: 26,
           metrics: baseline.metrics.slice(0, -1),
         },
       },
@@ -462,13 +671,33 @@ describe("baseline result store", () => {
     ).toThrow(/budgetChecks must contain measured observations/);
   });
 
-  it("requires the exact v23 mandatory metric list and measured D-090 evidence in every run", () => {
+  it("rejects a verified postflight identity that validly drifted from preflight", () => {
+    const value = report();
+    const driftedTarget = {
+      ...value.environment.target,
+      servingContract: {
+        ...value.environment.target.servingContract,
+        documentCacheControl: "no-cache, must-revalidate",
+      },
+    };
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...value,
+        environment: {
+          ...value.environment,
+          targetPostflight: { identity: driftedTarget, state: "verified" },
+        },
+      }),
+    ).toThrow(/target preflight\/postflight evidence is contradictory/);
+  });
+
+  it("requires the exact current mandatory metric list and measured D-090/PSO evidence in every run", () => {
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),
         mandatoryMetricSet: {
           metrics: mandatoryMetricNames.filter((metric) => metric !== "greybox world content"),
-          version: 23,
+          version: SMOKE_MANDATORY_METRIC_SET_VERSION,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly.*greybox world content/);
@@ -477,7 +706,7 @@ describe("baseline result store", () => {
         ...report(),
         mandatoryMetricSet: {
           metrics: [...mandatoryMetricNames, "greybox world content"],
-          version: 23,
+          version: SMOKE_MANDATORY_METRIC_SET_VERSION,
         },
       }),
     ).toThrow(/mandatoryMetricSet\.metrics must contain exactly/);
@@ -554,6 +783,32 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/runs\[0\]\.streaming\.state must be measured/);
+    for (const invalidStreaming of [
+      { ...validStreaming, cellLoadSamples: [] },
+      {
+        ...validStreaming,
+        cellLoadSamples: validStreamingSamples.map((sample, index) =>
+          index === 0 ? { ...sample, totalMs: Number.NaN } : sample,
+        ),
+      },
+    ]) {
+      expect(() =>
+        parseBaselineEligibleReport({
+          ...report(),
+          runs: report().runs.map((run, index) =>
+            index === 0
+              ? {
+                  ...run,
+                  streaming: {
+                    state: "measured",
+                    value: invalidStreaming,
+                  },
+                }
+              : run,
+          ),
+        }),
+      ).toThrow(/runs\[0\]\.streaming\.value is invalid/);
+    }
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),
@@ -582,10 +837,12 @@ describe("baseline result store", () => {
                   value: {
                     ...validStreaming,
                     measurementStartBatch: {
+                      batchDirectUploadMs: 27,
                       batchCellCount: 9,
                       batchFlythroughObserverSequence: 0,
                       batchObserverUpdateCount: 1,
                       batchOrdinal: 2,
+                      batchTransactionId: "1:2:1:0",
                       completedCellIds: validStreamingSamples
                         .slice(0, 9)
                         .map((sample) => sample.cellId),
@@ -636,6 +893,38 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/streaming budget checks must agree/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                psoWarmup: {
+                  state: "measured",
+                  value: { ...validPsoWarmup, traceSha256: "e".repeat(64) },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/PSO warmup telemetry does not match the exact trace identity/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                psoWarmup: {
+                  reason: "PSO warmup retained a failed prior worker generation 1",
+                  state: "invalid",
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/runs\[0\]\.psoWarmup\.state must be measured/);
   });
 
   it("rejects a reason on measured streaming cell-load p95 variance evidence", () => {
@@ -653,7 +942,7 @@ describe("baseline result store", () => {
     ).toThrow(/streamingCellLoadP95Variance\[0\]\.reason must be absent when state is measured/);
   });
 
-  it("accepts bounded near-zero streaming repeatability and rejects forged or promotable failures", async () => {
+  it("validates bounded streaming repeatability while allowing invalid diagnostics to be promoted", async () => {
     const p95Values = [2.435, 1.85, 2.375, 2.445, 1.965, 2.355];
     const scaledStreaming = (targetP95: number) => {
       const scale = targetP95 / 20;
@@ -665,9 +954,8 @@ describe("baseline result store", () => {
         opfsAccessRoundTripMs: sample.opfsAccessRoundTripMs * scale,
         opfsReadMs: sample.opfsReadMs * scale,
         opfsWaitMs: sample.opfsWaitMs * scale,
-        renderCommitRoundTripMs: sample.renderCommitRoundTripMs * scale,
-        renderUploadRoundTripMs: sample.renderUploadRoundTripMs * scale,
-        renderUploadWaitMs: sample.renderUploadWaitMs * scale,
+        renderTransactionRoundTripMs: sample.renderTransactionRoundTripMs * scale,
+        renderTransactionWaitMs: sample.renderTransactionWaitMs * scale,
         streamingWorkerRemainderMs: sample.streamingWorkerRemainderMs * scale,
         totalMs: sample.totalMs * scale,
         uploadMs: sample.uploadMs * scale,
@@ -747,34 +1035,36 @@ describe("baseline result store", () => {
     });
     const overLimitSummaries = summariesFor(overLimitRuns);
     expect(overLimitSummaries[0]).toMatchObject({ state: "invalid" });
-    const failedBounded = report({
-      facets: {
-        budgetEvaluation: {
-          evaluatedChecks: 30,
-          reasons: ["Mandatory metric evidence is incomplete"],
-          status: "not-evaluated",
-        },
-        environment: { reasons: [], status: "passed" },
-        evidenceCompleteness: {
-          reasons: ["fresh streaming cell-load p95 repeatability is invalid"],
-          status: "failed",
-        },
-      },
-      passed: false,
+    const diagnosticBounded = report({
+      informationalFailures: overLimitSummaries.flatMap((summary) =>
+        summary.state === "invalid"
+          ? [`${summary.profile} streaming cell-load p95 variance: ${summary.reason}`]
+          : [],
+      ),
       runs: overLimitRuns,
       streamingCellLoadP95Variance: overLimitSummaries,
     });
-    expect(parseBaselineEligibleReport(failedBounded)).toMatchObject({ passed: false });
+    expect(parseBaselineEligibleReport(diagnosticBounded)).toMatchObject({
+      facets: {
+        budgetEvaluation: { evaluatedChecks: 30, status: "passed" },
+        environment: { status: "passed" },
+        evidenceCompleteness: { status: "passed" },
+      },
+      passed: true,
+    });
     const paths = await fixture();
     await expect(
       promoteBaseline({
         actor: "lead-agent",
-        reason: "must not promote invalid repeatability",
-        reportBytes: Buffer.from(JSON.stringify(failedBounded)),
+        reason: "informational repeatability must not block promotion",
+        reportBytes: Buffer.from(JSON.stringify(diagnosticBounded)),
         reportPath: paths.reportPath,
         storePath: paths.storePath,
       }),
-    ).rejects.toThrow(/aggregate-passing/);
+    ).resolves.toMatchObject({
+      mandatoryMetricSetVersion: SMOKE_MANDATORY_METRIC_SET_VERSION,
+      reportSchemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
+    });
   });
 
   it("validates the same report bytes recorded by the audit digest", async () => {
@@ -788,6 +1078,14 @@ describe("baseline result store", () => {
         storePath: paths.storePath,
       }),
     ).rejects.toThrow(/artifactDigest/);
+  });
+
+  it("requires top-level release identity to match the verified target before promotion", () => {
+    const { releaseDigest: _omitted, ...missingRelease } = report();
+    expect(() => parseBaselineEligibleReport(missingRelease)).toThrow(/releaseDigest/);
+    expect(() =>
+      parseBaselineEligibleReport({ ...report(), releaseDigest: "c".repeat(64) }),
+    ).toThrow(/target release digest must match releaseDigest/);
   });
 
   it("rejects partial, duplicate, contradictory, and facet-inconsistent gate evidence", async () => {
@@ -850,7 +1148,7 @@ describe("baseline result store", () => {
       storePath: paths.storePath,
     });
     const firstStore = await loadBaselineStore(paths.storePath);
-    const firstBaseline = firstStore.entries["smoke@1|dev-01|showcase"];
+    const firstBaseline = firstStore.entries["smoke@1|dev-01|showcase|local|http://127.0.0.1"];
     if (firstBaseline === undefined) throw new Error("Expected the first promoted baseline");
     const replacementReport = report({
       baseline: { baseline: firstBaseline, metrics: [], state: "current" },
@@ -864,7 +1162,7 @@ describe("baseline result store", () => {
     });
 
     const replaced = await loadBaselineStore(paths.storePath);
-    expect(replaced.entries["smoke@1|dev-01|showcase"]).toMatchObject({
+    expect(replaced.entries["smoke@1|dev-01|showcase|local|http://127.0.0.1"]).toMatchObject({
       promotedBy: "second",
       promotionReason: "replacement baseline",
     });
@@ -880,14 +1178,27 @@ describe("baseline result store", () => {
       storePath: paths.storePath,
     });
     const firstStore = await loadBaselineStore(paths.storePath);
-    const firstBaseline = firstStore.entries["smoke@1|dev-01|showcase"];
+    const firstBaseline = firstStore.entries["smoke@1|dev-01|showcase|local|http://127.0.0.1"];
     if (firstBaseline === undefined) throw new Error("Expected the first promoted baseline");
+    const originalEnvironment = report().environment;
     const changedArtifact = report({
       artifactDigest: "d".repeat(64),
       baseline: {
         baseline: firstBaseline,
         reason: "artifact differs",
         state: "ineligible",
+      },
+      environment: {
+        ...originalEnvironment,
+        target: targetIdentity("d".repeat(64)),
+        targetPostflight: {
+          identity: targetIdentity("d".repeat(64)),
+          state: "verified",
+        },
+        targetPreflight: {
+          identity: targetIdentity("d".repeat(64)),
+          state: "verified",
+        },
       },
     });
     await expect(
@@ -930,7 +1241,11 @@ describe("baseline result store", () => {
     });
     const staleCandidate = report({
       baseline: { baseline: firstBaseline, metrics: [], state: "candidate" },
-      chromePin: { revision: "101", version: "151.0.0.0" },
+      chromePin: { ...report().chromePin, revision: "101", version: "151.0.0.0" },
+      environment: {
+        ...report().environment,
+        browserProduct: "Chrome/151.0.0.0",
+      },
     });
     await expect(
       promoteBaseline({
@@ -968,8 +1283,8 @@ describe("baseline result store", () => {
 
     const store = await loadBaselineStore(paths.storePath);
     expect(Object.keys(store.entries).sort()).toEqual([
-      "smoke@1|dev-01|showcase",
-      "smoke@1|dev-02|showcase",
+      "smoke@1|dev-01|showcase|local|http://127.0.0.1",
+      "smoke@1|dev-02|showcase|local|http://127.0.0.1",
     ]);
   });
 

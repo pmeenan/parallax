@@ -15,9 +15,11 @@ const measuredEnvironment = collectSmokeEnvironmentFacetInput({ state: "measured
 const completedCoreRuns = { completedRuns: 6, expectedRuns: 6, failure: null };
 
 function httpDelta(overrides: Partial<LocalServerMetrics> = {}): {
+  readonly state: "measured";
   readonly value: LocalServerMetrics;
 } {
   return {
+    state: "measured",
     value: {
       bytesServed: 1_024,
       bytesServedByPathClass: { document: 512, immutable: 512, other: 0 },
@@ -55,6 +57,7 @@ describe("smoke result adapters", () => {
           http: httpDelta(),
           jsHeap: { state: "measured" },
           profile: "fresh",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { state: "measured" },
           streaming: { state: "measured" },
@@ -121,6 +124,7 @@ describe("smoke result adapters", () => {
           http: httpDelta(),
           jsHeap: { state: "measured" },
           profile: "fresh",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { state: "measured" },
           streaming: { state: "measured" },
@@ -142,7 +146,7 @@ describe("smoke result adapters", () => {
       evidenceChecks.find((check) =>
         check.description.includes("streaming cell-load p95 variance"),
       ),
-    ).toMatchObject({ mandatory: true, measured: true });
+    ).toMatchObject({ mandatory: false, measured: true });
     expect(
       evidenceChecks.find((check) => check.description.includes("core measurement runs completed")),
     ).toMatchObject({ mandatory: true, measured: true });
@@ -154,7 +158,7 @@ describe("smoke result adapters", () => {
     }
   });
 
-  it("fails closed when current-path streaming p95 repeatability exceeds the gate", () => {
+  it("keeps over-1ms short-smoke streaming repeatability diagnostic while all facets and 30 checks pass", () => {
     const evidenceChecks = collectSmokeEvidenceChecks({
       callbackPacingVariance: [{ profile: "fresh", state: "measured" }],
       coreRunCompletion: completedCoreRuns,
@@ -164,7 +168,7 @@ describe("smoke result adapters", () => {
       streamingCellLoadP95Variance: [
         {
           profile: "fresh",
-          reason: "p95 relative range 0.302430 exceeds 0.100000",
+          reason: "streaming cell-load p95 absolute range 1.15 exceeds the allowed 1",
           state: "invalid",
         },
       ],
@@ -172,16 +176,129 @@ describe("smoke result adapters", () => {
       vizPresentationFeedbackCallbackVariance: [],
     });
     const facets = evaluateResultFacets({
-      budgetChecks: [{ description: "observed checks passed", passed: true }],
+      budgetChecks: Array.from({ length: 30 }, (_, index) => ({
+        description: `budget check ${index + 1}`,
+        passed: true,
+      })),
       environment: measuredEnvironment,
       evidenceChecks,
     });
 
-    expect(facets.evidenceCompleteness.status).toBe("failed");
-    expect(facets.evidenceCompleteness.reasons.join(" ")).toContain(
-      "streaming cell-load p95 variance",
+    expect(
+      evidenceChecks.find((check) =>
+        check.description.includes("streaming cell-load p95 variance"),
+      ),
+    ).toMatchObject({ mandatory: false, measured: false });
+    expect(
+      collectSmokeInformationalFailures({ evidenceChecks, v8CodeCacheDiagnostics: [] }),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("streaming cell-load p95 absolute range 1.15"),
+      ]),
     );
-    expect(facets.budgetEvaluation.status).toBe("not-evaluated");
+    expect(facets).toMatchObject({
+      budgetEvaluation: { evaluatedChecks: 30, status: "passed" },
+      environment: { status: "passed" },
+      evidenceCompleteness: { status: "passed" },
+    });
+  });
+
+  it.each([
+    "streaming cell-load p95 is missing",
+    "streaming cell-load p95 is non-finite",
+  ])("still fails mandatory evidence when a per-launch streaming metric is invalid: %s", (reason) => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
+      runs: [
+        {
+          dawnPipeline: { state: "measured" },
+          greyboxWorld: { state: "measured" },
+          gpuMemory: { state: "measured" },
+          http: httpDelta(),
+          jsHeap: { state: "measured" },
+          profile: "fresh",
+          psoWarmup: { state: "measured" },
+          repeat: 1,
+          sabRingBuffer: { state: "measured" },
+          streaming: { reason, state: "invalid" },
+          wasmThreads: { state: "measured" },
+        },
+      ],
+      streamingCellLoadP95Variance: [
+        { profile: "fresh", reason: "diagnostic cohort is incomplete", state: "invalid" },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks: Array.from({ length: 30 }, (_, index) => ({
+        description: `budget check ${index + 1}`,
+        passed: true,
+      })),
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    expect(
+      evidenceChecks.find((check) => check.description.includes("world streaming pipeline")),
+    ).toMatchObject({ mandatory: true, measured: false });
+    expect(facets.evidenceCompleteness.status).toBe("failed");
+    expect(facets.budgetEvaluation).toMatchObject({
+      evaluatedChecks: 30,
+      status: "not-evaluated",
+    });
+  });
+
+  it("still fails the unchanged 250ms per-launch streaming budget", () => {
+    const evidenceChecks = collectSmokeEvidenceChecks({
+      callbackPacingVariance: [],
+      coreRunCompletion: completedCoreRuns,
+      incompleteMetrics: [],
+      reportFinalization: { state: "measured" },
+      runs: [],
+      streamingCellLoadP95Variance: [
+        { profile: "fresh", reason: "diagnostic range exceeds 1ms", state: "invalid" },
+      ],
+      v8CodeCacheDiagnostics: [],
+      vizPresentationFeedbackCallbackVariance: [],
+    });
+    const budgetChecks = collectSmokeBudgetFacetChecks({
+      runs: [
+        {
+          budgetChecks: [
+            ...Array.from({ length: 29 }, (_, index) => ({
+              actual: 0,
+              limit: 1,
+              metric: `passingBudget${index + 1}`,
+              passed: true,
+            })),
+            {
+              actual: 251,
+              limit: 250,
+              metric: "streamingCellLoadP95Ms",
+              passed: false,
+            },
+          ],
+          profile: "fresh",
+          repeat: 1,
+        },
+      ],
+    });
+    const facets = evaluateResultFacets({
+      budgetChecks,
+      environment: measuredEnvironment,
+      evidenceChecks,
+    });
+
+    expect(facets.evidenceCompleteness.status).toBe("passed");
+    expect(facets.budgetEvaluation).toMatchObject({
+      evaluatedChecks: 30,
+      reasons: ["fresh repeat 1: streamingCellLoadP95Ms 251 > 250"],
+      status: "failed",
+    });
   });
 
   it("fails the mandatory core-run-completion check when core runs are incomplete", () => {
@@ -205,6 +322,7 @@ describe("smoke result adapters", () => {
           http: httpDelta(),
           jsHeap: { state: "measured" },
           profile: "fresh",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { state: "measured" },
           streaming: { state: "measured" },
@@ -254,6 +372,7 @@ describe("smoke result adapters", () => {
           }),
           jsHeap: { state: "measured" },
           profile: "warm",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { state: "measured" },
           streaming: { state: "measured" },
@@ -311,6 +430,7 @@ describe("smoke result adapters", () => {
           http: httpDelta(),
           jsHeap: { reason: "worker target disappeared", state: "invalid" },
           profile: "fresh",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { state: "measured" },
           streaming: { state: "measured" },
@@ -353,6 +473,7 @@ describe("smoke result adapters", () => {
           http: httpDelta(),
           jsHeap: { state: "measured" },
           profile: "fresh",
+          psoWarmup: { state: "measured" },
           repeat: 1,
           sabRingBuffer: { reason: "record corruption", state: "invalid" },
           streaming: { state: "measured" },

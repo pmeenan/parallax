@@ -1,13 +1,21 @@
 # Chrome platform gaps exposed by Parallax
 
 Chrome-facing synthesis of the platform changes that would most improve AAA-scale web games and
-their measurement. Updated 2026-07-16 from a mix of registered physical-console Chrome for
-Testing 150.0.7871.115 experiments and explicitly labeled local CfT/branded-Chrome diagnostics
-on Parallax's Windows/D3D12 reference machine; each evidence entry states its provenance.
+their measurement. Updated 2026-08-01 through M2 closure from registered physical-console Chrome
+for Testing experiments and explicitly labeled CfT/branded-Chrome diagnostics on Parallax's
+Windows/D3D12 dev-01 reference machine; each evidence entry states its provenance. D-150 makes
+dev-01 the sole required gate, so this synthesis makes no Standard, Metal, or other-hardware
+claim.
 
 This is the actionable report; [rough-edges.md](rough-edges.md) remains the evidence source of
 truth with exact versions, measurements, reproductions, mitigations, and source links. A request
 stays here while the underlying finding is open, even when Parallax has a usable heuristic.
+
+M2 closed under D-153 after the exact-current CfT 151.0.7922.71 production `smoke@1`
+passed schema v62 / mandatory metric set v28 with all six launches, all three facets,
+30/30 checks, and rendered output on dev-01. D-151 separately accepted the measured
+install/launch/update lifecycle. Those outcomes establish the project budgets at that exact
+scope; they do not resolve the mechanism-observability requests below.
 
 ## Priority model
 
@@ -42,7 +50,7 @@ from a successful frame; then correlate a page's 120-frame marker window to exac
 successful display events.
 
 Evidence: [RE-006](rough-edges.md#re-006-viz-trace-omits-whether-a-presentation-feedback-callback-represents-failure),
-[D-035](decisions.md#d-035-viz-presentation-feedback-trace-is-diagnostic-not-a-presentation-gate--2026-07-13-accepted),
+[D-035](decisions.md#d-035-viz-presentation-feedback-trace-is-diagnostic-not-a-presentation-gate--2026-07-13-accepted-partially-superseded-by-d-051--the-authoritative-presentation-metric-is-informational-and-no-longer-fails-harness-v1),
 and Chromium's current
 [`Display::DidReceivePresentationFeedback`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/viz/service/display/display.cc).
 
@@ -56,7 +64,8 @@ some cache data was read, but cannot prove which URL/context produced or accepte
 **Why it helps:** install/launch/run applications need to verify that immutable app, engine, and
 worker artifacts survive warm launches and asset-only updates without silently reparsing. Exact
 outcomes also distinguish a browser regression from application cache invalidation. M0 correctly
-makes this mechanism evidence informational; M2 will gate launch and asset-only-update performance.
+makes this mechanism evidence informational; M2 gated launch and asset-only-update performance
+at the user-visible boundaries while retaining mechanism evidence as non-gating.
 The request remains P0 for the platform-research goal: without resource-level outcomes, a
 warm-launch regression cannot be attributed to V8 cache behavior versus HTTP delivery, worker
 startup, or another layer.
@@ -72,7 +81,7 @@ timestamp → positive production → positive consumption with no re-production
 must report a rejection for only that resource.
 
 Evidence: [RE-009](rough-edges.md#re-009-streamed-es-module-traces-omit-v8-code-cache-consumption-results),
-[RE-010](rough-edges.md#re-010-render-worker-module-exposes-no-url-attributed-code-cache-production-event),
+[RE-010](rough-edges.md#re-010-module-workers-expose-incomplete-url-attributed-v8-code-cache-events),
 and Blink's current
 [`v8_code_cache.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/bindings/core/v8/v8_code_cache.cc)
 and
@@ -104,6 +113,17 @@ and Chromium's
 [graphics-memory metrics guidance](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/memory/graphics_metrics.md).
 
 ## P1 requests
+
+### Expose origin-scoped browser-cache inventory and eviction completion
+
+Parallax's accepted M2 uninstall qualifier proved that both app teardown paths removed unique
+nonempty OPFS, service-worker, Cache Storage, and IndexedDB sentinels and released quota. Chrome
+exposed no origin-scoped proof for HTTP cache, V8 code cache, or Dawn pipeline/shader cache
+eviction: available CDP flags, trace events, and GPU histograms are cumulative, process-scoped,
+or omit an inventory/deletion result. Add a privileged origin-scoped diagnostic returning the
+affected entry/byte counts and exact completion identity for those browser-managed caches. The
+production page need not receive cache contents. Evidence:
+[RE-046](rough-edges.md#re-046-chrome-exposes-no-origin-scoped-proof-of-http-v8-or-dawn-cache-eviction).
 
 ### Expose Prompt API model bytes and a deterministic lifecycle test hook
 
@@ -184,6 +204,17 @@ semantics would make memory budgets substantially more credible. Evidence:
 
 ## P2 requests
 
+### Allow user-activated persistent-storage requests from dedicated workers
+
+The M2 installer worker could own OPFS sync access handles, quota estimation, persistence-state
+observation, and Web Locks, but `navigator.storage.persist()` was absent. Parallax therefore
+keeps transfer and storage work in the worker while brokering the user-gesture persistence
+request through the window. Expose `persist()` to dedicated workers under an explicit delegated
+user-activation/permission contract so a native-class installer can keep one lifecycle owner.
+This is a capability request matching the checked API split, not a Chrome/spec discrepancy.
+Evidence:
+[RE-045](rough-edges.md#re-045-dedicated-workers-can-observe-but-cannot-request-persistent-storage).
+
 ### Expose Prompt API sessions in dedicated workers
 
 The window-only API keeps model orchestration and streaming callbacks on the main thread while the
@@ -191,7 +222,7 @@ rest of Parallax's high-rate platform work is worker-owned. Define the worker's 
 document/permissions-policy relationship and expose the existing session/streaming shape in
 dedicated workers. Evidence:
 [RE-016](rough-edges.md#re-016-prompt-api-remains-window-only-in-chrome-150) and
-[D-017](decisions.md#d-017-prompt-api-operational-model--window-broker-activation-correct-download-authored-fallback--2026-07-11-accepted-supersedes-d-007).
+[D-017](decisions.md#d-017-prompt-api-operational-model--window-broker-activation-correct-download-authored-fallback--2026-07-11-superseded-by-d-096-supersedes-d-007).
 
 ### Preserve memory-dump request identity in trace export
 

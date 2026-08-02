@@ -1,0 +1,1 @@
+export const BUILD_MANIFEST_SCHEMA_VERSION = 15;

@@ -1,6 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-service";
-import { createRenderService } from "../src/render/render-service";
+import { createInstalledModelSource } from "../src/ai/installed-model-source";
+import { idleInstallerTransferTelemetrySnapshot } from "../src/install/installer-protocol";
+import {
+  idlePsoWarmupTelemetrySnapshot,
+  type PsoWarmupFailure,
+} from "../src/render/pso-warmup-contract";
+import {
+  createRenderService,
+  type RenderService,
+  type RenderTelemetrySnapshot,
+} from "../src/render/render-service";
+import { unavailableInstallStoreTelemetrySnapshot } from "../src/storage/opfs-release-store";
 import { createWorldStreamingService } from "../src/streaming/world-streaming-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
 import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-service";
@@ -8,8 +19,14 @@ import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-serv
 describe("combined telemetry export", () => {
   it("delivers one current initial snapshot and returns teardown when the listener throws", () => {
     let benchmarkState: "idle" | "resetting" | "running" = "idle";
+    const baseRenderService = createRenderService();
+    let renderOverride: RenderTelemetrySnapshot | null = null;
+    const renderService: RenderService = {
+      ...baseRenderService,
+      snapshot: () => renderOverride ?? baseRenderService.snapshot(),
+    };
     const telemetry = installTelemetryExport(
-      createRenderService(),
+      renderService,
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
       createWorldStreamingService(),
@@ -51,12 +68,42 @@ describe("combined telemetry export", () => {
             presetId: "test@1",
             progress: 0,
             report: null,
-            schemaVersion: 2,
+            schemaVersion: 5,
             state: benchmarkState,
           }) as const,
         start: () => undefined,
         subscribe: () => () => undefined,
       },
+      {
+        cancel: () => Promise.resolve(true),
+        dispose: () => Promise.resolve(),
+        install: () =>
+          Promise.resolve({
+            readyBytes: 0,
+            readyResourceCount: 0,
+            releaseDigest: "a".repeat(64),
+          }),
+        repair: () =>
+          Promise.resolve({
+            readyBytes: 0,
+            readyResourceCount: 0,
+            releaseDigest: "a".repeat(64),
+          }),
+        requestPersistence: () => Promise.resolve(true),
+        snapshot: () => ({
+          installStore: unavailableInstallStoreTelemetrySnapshot(),
+          installerTransfer: idleInstallerTransferTelemetrySnapshot(),
+        }),
+        subscribe: () => () => undefined,
+        targetStatus: () =>
+          Promise.resolve({
+            active: false,
+            activeReleaseDigest: null,
+            releaseDigest: "a".repeat(64),
+          }),
+      },
+      createInstalledModelSource(null),
+      null,
       () => "",
       () => undefined,
       {
@@ -72,9 +119,39 @@ describe("combined telemetry export", () => {
       appOwnedLlmSpike: { state: "idle" },
       benchmark: { state: "idle" },
       identity: { engineVersion: "test", gameVersion: "test" },
+      installedModelSource: { state: "unavailable" },
+      installStore: { schemaVersion: 3, state: "unavailable" },
+      installerTransfer: {
+        operationRepairAttemptCount: 0,
+        operationRepairedBytes: 0,
+        operationRepairedResourceCount: 0,
+        schemaVersion: 9,
+        state: "idle",
+      },
+      offlineShell: { schemaVersion: 2, state: "unavailable" },
       streaming: { state: "idle" },
       wasmThreadSpike: { state: "idle" },
     });
+
+    for (const failure of psoFailures()) {
+      const failed = failedPsoWarmupSnapshot(failure);
+      renderOverride = Object.freeze({
+        ...baseRenderService.snapshot(),
+        psoWarmup: failed,
+        retainedPsoWarmupFailure: Object.freeze({
+          snapshot: failed,
+          workerGeneration: 1,
+        }),
+        state: "failed",
+      });
+      expect(telemetry.snapshot().render).toMatchObject({
+        psoWarmup: { failure, state: "failed" },
+        retainedPsoWarmupFailure: {
+          snapshot: { failure, state: "failed" },
+          workerGeneration: 1,
+        },
+      });
+    }
 
     const unsubscribe = telemetry.subscribe(() => {
       deliveries += 1;
@@ -97,3 +174,72 @@ describe("combined telemetry export", () => {
     consoleError.mockRestore();
   });
 });
+
+function failedPsoWarmupSnapshot(failure: PsoWarmupFailure) {
+  const replayFailure = failure.class === "compile";
+  return Object.freeze({
+    ...idlePsoWarmupTelemetrySnapshot(),
+    buildCompatibilityDigest: "a".repeat(64),
+    cacheMissCount: replayFailure ? 1 : 0,
+    compiledCount: 0,
+    deferredCount: replayFailure ? 1 : 0,
+    entries: replayFailure
+      ? Object.freeze([
+          Object.freeze({
+            compileAttemptCount: 1,
+            compileDurationMs: 2,
+            compiled: false,
+            id: failure.entryId,
+            requestCount: 1,
+            stateDigest: "b".repeat(64),
+          }),
+        ])
+      : Object.freeze([]),
+    failure,
+    failureCount: 1,
+    maximumCompileDurationMs: replayFailure ? 2 : 0,
+    queueHighWater: replayFailure ? 1 : 0,
+    requestedCount: replayFailure ? 1 : 0,
+    source: "privileged-embedded" as const,
+    state: "failed" as const,
+    traceEntryCount: 1,
+    traceSha256: "c".repeat(64),
+  });
+}
+
+function psoFailures(): readonly PsoWarmupFailure[] {
+  return Object.freeze([
+    Object.freeze({
+      class: "parse",
+      detail: "Trace JSON is invalid",
+      entryId: null,
+      phase: "trace-parse",
+      requestIndex: null,
+      traceIndex: null,
+    }),
+    Object.freeze({
+      class: "incompatibility",
+      detail: "Renderer identity differs",
+      entryId: null,
+      phase: "trace-validation",
+      requestIndex: null,
+      traceIndex: null,
+    }),
+    Object.freeze({
+      class: "unknown-entry",
+      detail: "Trace entry is unknown",
+      entryId: "unknown-entry",
+      phase: "request-validation",
+      requestIndex: 1,
+      traceIndex: null,
+    }),
+    Object.freeze({
+      class: "compile",
+      detail: "Pipeline creation failed",
+      entryId: "babylon-lite.standard-opaque-msaa4",
+      phase: "compile",
+      requestIndex: 1,
+      traceIndex: 0,
+    }),
+  ]);
+}

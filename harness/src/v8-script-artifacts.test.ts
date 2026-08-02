@@ -16,6 +16,7 @@ describe("V8 script artifact selection", () => {
         artifact("immutable/game.js"),
         artifact("immutable/render-worker.js"),
         artifact("immutable/decode-worker.js"),
+        artifact("immutable/installer-worker.js"),
         artifact("immutable/streaming-worker.js"),
         artifact("immutable/wasm-thread-worker.js"),
         artifact("immutable/module.wasm"),
@@ -24,16 +25,30 @@ describe("V8 script artifact selection", () => {
         Object.freeze({
           districtId: "district-1-surface",
           path: "immutable/district-1.json",
-          schemaVersion: 1,
+          schemaVersion: 2,
           scope: "game-specific",
           targetType: "district",
         }),
       ]),
-      schemaVersion: 11,
+      installManifestEntrypoint: Object.freeze({
+        path: "install-manifest.json",
+        schemaVersion: 1,
+      }),
+      offlineShell: Object.freeze({
+        generationSchemaVersion: 1,
+        saveSchemaVersion: 1,
+        serviceWorkerPath: "service-worker.js",
+      }),
+      schemaVersion: 15,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/decode-worker.js",
           role: "decode",
+          targetType: "worker",
+        }),
+        Object.freeze({
+          path: "immutable/installer-worker.js",
+          role: "installer",
           targetType: "worker",
         }),
         Object.freeze({
@@ -59,6 +74,7 @@ describe("V8 script artifact selection", () => {
       "immutable/engine.js",
       "immutable/game.js",
       "immutable/render-worker.js",
+      "immutable/installer-worker.js",
       "immutable/streaming-worker.js",
     ]);
   });

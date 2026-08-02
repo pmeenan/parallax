@@ -107,7 +107,7 @@ describe("physical-console preflight", () => {
       ].map(() => name),
     );
 
-    expect(calls).toHaveLength(8);
+    expect(calls).toHaveLength(13);
     expect(wrappedCalls).toEqual(calls);
   });
 });

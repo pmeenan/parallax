@@ -6,7 +6,11 @@ import {
   TELEMETRY_SCHEMA_VERSION,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
-import { SMOKE_EVIDENCE_METRIC_NAMES } from "../smoke-result.js";
+import {
+  assertSmokeMetricRegistryCoverage,
+  SMOKE_CHECKED_METRIC_NAMES,
+  SMOKE_EVIDENCE_METRIC_NAMES,
+} from "../smoke-result.js";
 import {
   parseQualityTier,
   parseSmokeRunOptions,
@@ -36,7 +40,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(47);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(64);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -106,7 +110,7 @@ describe("smoke@1 contract", () => {
     expect(
       SMOKE_METRICS.find((metric) => metric.name === "streaming cell-load p95 variance"),
     ).toMatchObject({
-      mandatoryForHarnessV1: true,
+      mandatoryForHarnessV1: false,
       probe: "implemented",
     });
     expect(SMOKE_METRICS.find((metric) => metric.name === "HTTP serving evidence")).toMatchObject({
@@ -120,7 +124,7 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(23);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(29);
     expect(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS).toBe(1);
     expect(SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toBe(0.1);
     expect(SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS).toBe(10_000);
@@ -147,12 +151,22 @@ describe("smoke@1 contract", () => {
     ).toContain("PresentationFeedback.kFailure");
   });
 
-  it("registers every evidence-check metric name the smoke result adapters use", () => {
-    const registered = new Set(SMOKE_METRICS.map((metric) => metric.name));
+  it("keeps every advertised metric and blocking-check producer in exact symmetry", () => {
+    const registered = SMOKE_METRICS.map((metric) => metric.name).sort();
     expect(SMOKE_EVIDENCE_METRIC_NAMES.length).toBeGreaterThan(0);
-    for (const name of SMOKE_EVIDENCE_METRIC_NAMES) {
-      expect(registered).toContain(name);
-    }
+    expect([...SMOKE_CHECKED_METRIC_NAMES].sort()).toEqual(registered);
+    expect(() =>
+      assertSmokeMetricRegistryCoverage(
+        [...SMOKE_METRICS, { mandatoryForHarnessV1: true, name: "advertised without a producer" }],
+        SMOKE_CHECKED_METRIC_NAMES,
+      ),
+    ).toThrow(/drifted/u);
+    expect(() =>
+      assertSmokeMetricRegistryCoverage(SMOKE_METRICS, [
+        ...SMOKE_CHECKED_METRIC_NAMES,
+        "producer without an advertised metric",
+      ]),
+    ).toThrow(/drifted/u);
   });
 
   it("keeps budgets.md aligned with the executable mandatory metric-set version", async () => {

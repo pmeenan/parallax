@@ -70,7 +70,7 @@ describe("benchmark service", () => {
         id: "fixed-worker-render-pixels@1",
       },
       resultContract: "benchmark-result@1",
-      schemaVersion: 3,
+      schemaVersion: 6,
       repeatPolicy: {
         count: 3,
         lineage: "continuous-page",
@@ -309,6 +309,26 @@ describe("benchmark service", () => {
     });
   });
 
+  it("treats release identity as comparison-relevant across capture boundaries", async () => {
+    const service = createBenchmarkService(
+      renderHarness(),
+      flythroughHarness().service,
+      definition,
+      platform({ releaseDigestDriftAfterFirstCapture: true }),
+    );
+
+    service.start();
+    await settle(service);
+
+    expect(service.snapshot().state).toBe("failed");
+    expect(service.snapshot().report?.attempts[0]).toMatchObject({
+      failureMessage: expect.stringContaining(
+        "Captured comparison-relevant in-game environment identity changed across benchmark repeats",
+      ),
+      state: "invalid",
+    });
+  });
+
   it("retains CSS viewport drift without treating it as fixed-worker workload drift", async () => {
     const service = createBenchmarkService(
       renderHarness(),
@@ -487,7 +507,7 @@ describe("benchmark service", () => {
         excludedRecordedFields: ["screen.viewportCssPixels"],
         id: "fixed-worker-render-pixels@1",
       },
-      schemaVersion: 3,
+      schemaVersion: 6,
     });
     expect(report?.environmentCaptures).toHaveLength(1);
     expect(report?.environmentCaptures[0]?.capabilities).toContainEqual({
@@ -935,6 +955,7 @@ function platform(options: {
   readonly driftFromCapture?: number;
   readonly onMonitor?: () => void;
   readonly onMonitorFinish?: () => void;
+  readonly releaseDigestDriftAfterFirstCapture?: boolean;
   readonly unavailableCapability?: string;
   readonly viewportDriftAfterFirstCapture?: boolean;
 }): BenchmarkPlatform {
@@ -942,7 +963,7 @@ function platform(options: {
   return {
     async captureEnvironment() {
       captureCount += 1;
-      return environment(
+      const captured = environment(
         options.unavailableCapability,
         (options.driftAfterFirstCapture === true && captureCount > 1) ||
           (options.driftFromCapture !== undefined && captureCount >= options.driftFromCapture)
@@ -950,6 +971,9 @@ function platform(options: {
           : 8,
         options.viewportDriftAfterFirstCapture === true && captureCount > 1 ? 1_079 : 1_080,
       );
+      return options.releaseDigestDriftAfterFirstCapture === true && captureCount > 1
+        ? Object.freeze({ ...captured, releaseDigest: measuredMetric("c".repeat(64)) })
+        : captured;
     },
     createLongTaskMonitor() {
       options.onMonitor?.();
@@ -1015,6 +1039,7 @@ function environment(
     hostIdentity: unsupportedMetric<never>("page unavailable"),
     powerAndSessionState: unsupportedMetric<never>("page unavailable"),
     referenceEligibility: unsupportedMetric<true>("page unavailable"),
+    releaseDigest: measuredMetric("b".repeat(64)),
     screen: Object.freeze({
       availableCssPixels: Object.freeze({ height: 1_080, width: 1_920 }),
       colorDepth: 24,
@@ -1298,6 +1323,10 @@ function streamingSnapshot(
     failureMessage: null,
     flythroughObserverUpdateCount: observerUpdateCount,
     hardwareConcurrency: 8,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 2,
     observerUpdateCount,
     opfsAccessHandleCount: 256,
     opfsAccessHandleOpenDurationMs: 10,
@@ -1311,21 +1340,44 @@ function streamingSnapshot(
     residentGpuBytes: 1,
     residentGpuBytesHighWater: 1,
     renderRecoveryCount: 0,
-    schemaVersion: 7,
+    renderBatchCellCountHighWater: 1,
+    renderBatchDirectUploadMsHighWater: 1,
+    renderBatchRequestCount: Math.max(1, sampleCount),
+    renderBatchTransactionCount: Math.max(1, sampleCount),
+    schemaVersion: 11,
     settledObserverUpdateCount: observerUpdateCount,
     settledRecoveryCheckpoint: null,
     state: "streaming",
+    startupTiming: legacyStartupTiming(),
     workerGeneration: 1,
   });
 }
 
+function legacyStartupTiming() {
+  return {
+    accessHandlesOpenedAtMs: 4,
+    contract: "streaming-startup-timing@1",
+    decodePoolCreatedAtMs: 5,
+    finalAdmissionCompletedAtMs: null,
+    initialResidencyReadyAtMs: 6,
+    provisioningStartedAtMs: 2,
+    releaseBindingCompletedAtMs: null,
+    releaseResolutionCompletedAtMs: 3,
+    schemaVersion: 1,
+    sourceKind: "privileged-legacy-network",
+    workerStartedAtMs: 1,
+  } as const;
+}
+
 function streamingSample(sequence: number): StreamingCellLoadTelemetry {
   return {
+    batchDirectUploadMs: 1,
     batchCellCount: 1,
     batchCellOrdinal: 1,
     batchFlythroughObserverSequence: sequence,
     batchObserverUpdateCount: sequence,
     batchOrdinal: sequence,
+    batchTransactionId: `1:${sequence}:${sequence}:${sequence}`,
     cellId: `${sequence}`,
     decodeMs: 1,
     decodeRoundTripMs: 1,
@@ -1335,9 +1387,8 @@ function streamingSample(sequence: number): StreamingCellLoadTelemetry {
     opfsAccessRoundTripMs: 1,
     opfsReadMs: 1,
     opfsWaitMs: 0,
-    renderCommitRoundTripMs: 1,
-    renderUploadRoundTripMs: 1,
-    renderUploadWaitMs: 0,
+    renderTransactionRoundTripMs: 1,
+    renderTransactionWaitMs: 0,
     sequence,
     streamingWorkerRemainderMs: 1,
     totalMs: sequence,

@@ -27,6 +27,3958 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-154: Make short-smoke streaming repeatability informational without weakening per-launch gates (2026-08-02, accepted)
+
+**Decision:** Advance `smoke@1` to report schema v64 / mandatory metric set v29 and
+remove only its three-fresh/three-warm streaming cell-load p95 cross-launch
+repeatability result from mandatory evidence and facet authority. Continue to compute
+the exact D-116 bounded result (`max(10% × minimum cohort p95, 1 ms)`), validate it by
+recomputing from the six launch records, retain invalid reasons and ranges in JSON and
+Markdown, and include invalid states among non-blocking informational failures. Keep
+each launch's streaming evidence mandatory and keep the 250 ms p95 budget and all 30
+budget checks unchanged. Do not change flythrough or public-benchmark repeatability.
+
+**Context:** The immutable schema-v63 production-target report
+`smoke-1-2404befc4e5d-dev-01-showcase-2026-08-02T21-26-10-326Z.{json,md}`
+(JSON/Markdown SHA-256
+`157da01e5f9380cab43122d16d58ba964958238e13eee37636c866cd2efe5428` /
+`8caf05bb68ea162b4ee89d95f678611f365d44c1dbeab892cacc5da7dbd4eead`)
+completed all six core launches with no core-run failure, exact verified production
+pre/post build/release identity, and a passing registered dev-01 Showcase environment.
+Its fresh and warm streaming p95 absolute ranges were
+1.1499998569488525/1.2650001049041748 ms against the 1 ms allowance. That made evidence
+completeness fail and withheld the otherwise populated 30-check budget verdict even
+though each individual launch retained valid streaming evidence and remained within
+the separate 250 ms absolute budget. This decision does not relabel that failed report
+or infer a cause for its measured variation; it corrects the prospective authority of
+a short-scenario diagnostic that is not itself a performance budget.
+
+**Consequences:** Current validators still reject forged, missing, non-finite, negative,
+or structurally inconsistent streaming observations and recompute the diagnostic from
+the per-launch evidence. Baseline parsing and promotion may accept an invalid
+cross-launch diagnostic only when the report otherwise passes all facets and checks;
+the invalid diagnostic remains explicit. A fresh schema-v64 production-target result
+is required by D-097/workflow before a later candidate is accepted. D-153's retained
+closure evidence and all historical reports remain immutable.
+
+**Qualification evidence (2026-08-02):** Retain the first schema-v64 production attempt
+`smoke-1-2404befc4e5d-dev-01-showcase-2026-08-02T21-47-55-215Z.{json,md}` as failed
+(JSON/Markdown SHA-256
+`1af2c47a72180407199897990b4f3abf45db49a1497f2b0560269fe435d8ebf8` /
+`d4417d8c20d5f714f7e83fb8ca45a43f520cb65db69bad558cc8720ee325d893`).
+The physical environment changed during that run to a remote session and Microsoft
+Remote Display Adapter at 6017x3386/32 Hz; callback pacing and one heap sample became
+invalid. It is environment-invalid evidence and is not relabeled. Its over-limit fresh
+streaming range remained correctly visible only as an informational failure.
+
+After the user restored the physical console, the one adjudicated corrected report
+`smoke-1-2404befc4e5d-dev-01-showcase-2026-08-02T21-53-48-499Z.{json,md}` passed
+(JSON/Markdown SHA-256
+`fa88dcb2f14d4608e02a53dbc5bb7951508a79670aa418eaba755c64e21ac9b0` /
+`71fa1951e038968a9216bab1e64a5883e42dbb43918a9371669534cb1560e990`).
+It binds source `7fdc5465b5903751301a4e319a160848eacefac6` /
+`e007e3389eea6f26d4f3e498360683fda9de47dc766a1db235bc0e89fe9164a1`,
+artifact/release
+`2404befc4e5d0e2faa0c75c8e9893fe0c5c93ba57589698b4edf648525c1e9bb` /
+`61d3c12f08737f3dae8756da14c2d7e1b1191e249a5a9005500af34c69e5e785`,
+and exact verified production pre/post identity under CfT 151.0.7922.71 on registered
+dev-01 Showcase. All six launches, all three facets, and all 30 unchanged checks passed.
+Fresh/warm informational streaming ranges were 0.8849999904632568/0.4100000858306885 ms.
+Independent validation accepted the report. This evidence-only recording is covered by
+D-119 and requires no additional physical run.
+
+**Reopen if:** short-smoke repeatability becomes demonstrably predictive of a player-
+visible regression that the per-launch 250 ms budget and longer scenario gates miss; a
+new calibrated threshold is adopted with evidence; or any implementation suppresses
+the diagnostic rather than merely removing its facet authority.
+
+## D-153: Close M2 on the exact dev-01 candidate and advance to M3 (2026-08-01, accepted)
+
+**Decision:** Close M2. Every M2 plan item is complete, D-149 accepts the full
+M2-exit/M3-entry dependency checkpoint, D-150 makes dev-01 the sole required physical
+gate, D-151 accepts the exact install/launch/update lifecycle evidence, and D-152 accepts
+the required installed branded-Stable parity result. Treat M3 as the next active
+milestone. This is a D-119 evidence-only closure: it changes no runtime or harness byte,
+budget, threshold, mandatory evidence contract, dependency/browser pin, deployment
+content, or registered-machine descriptor and therefore requires no new run.
+
+**Context:** The exact-current CfT 151.0.7922.71 production `smoke@1` report
+`smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-02T00-30-12-454Z.{json,md}`
+binds source `7fdc5465b5903751301a4e319a160848eacefac6` /
+`95a0fa40b928d2a2ba5a98b8481a66a1d174925a8399d5dd0a9b722fe707a48e`,
+artifact/release
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b` /
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`,
+and JSON/Markdown SHA-256
+`6028aa225b14e6c32398ead849dc00784f075c4b410e61a336376b970e105a8e` /
+`1b00d8746308e0297d93f7e68c1c14cb8f0437d2832249efe7029a2328e02a20`.
+Exact pre/post production identity, versioned nginx MIME/isolation behavior, registered
+dev-01 physical-console and sandbox identity, all six launches, all three facets,
+schema v62 / mandatory metric set v28, all 30 checks, and rendered output passed. The
+baseline remains untracked. The exact production artifact was already deployed with
+the five model objects preserved and the versioned nginx configuration installed; KTX2
+is served as `image/ktx2`.
+
+The final deterministic closure gate preserved repeatable build output, linted 422
+files, passed 2,274 tests across 172 files with one skip, and passed
+`git diff --check`. D-149 and D-152 retain the browser-transition and branded-parity
+evidence, including their immutable failed attempts and exact claim boundaries. The
+M2 platform synthesis is current in
+[chrome-platform-gaps.md](chrome-platform-gaps.md); the underlying rough-edge entries
+remain the evidence source of truth.
+
+**Consequences:** M2 is complete only at the accepted dev-01 Showcase scope. No
+Standard or other-hardware result is implied, no baseline is promoted, and the separate
+branded result remains baseline-ineligible, nonpromotable, and not budget-authoritative.
+M3 may begin against the accepted Node 24.18.1 / CfT 151.0.7922.71 checkpoint without
+repeating M2's already accepted physical qualifiers. Historical failures and D-138
+evidence remain immutable.
+
+**Reopen if:** an accepted evidence identity or retained verdict is invalidated; the
+production artifact/config no longer matches the exact qualified candidate; a later
+runtime, harness, budget, pin, or registered-machine change triggers D-097; or a future
+milestone explicitly depends on an M2 lifecycle property outside the recorded scope.
+
+## D-152: Bind branded Chrome parity to exact product plus truthful reduced-UA identity (2026-08-01, accepted)
+
+**Decision:** Advance `branded-parity@1` to schema v2. Keep the installed executable's
+exact four-component file version bound to the exact `Browser.getVersion.product`
+`Chrome/<version>` value. Accept the single Chrome user-agent token only when its
+four-component value is either that same exact full version or the exact reduced
+`<major>.0.0.0` form. Reject another family, major, partial reduction, mismatched full
+version, or multiple Chrome tokens. Persist the independently validated installed
+identity and bounded exact-key raw `Browser.getVersion` tuple before relational
+validation, so a contradiction remains visible in failed evidence without ever passing.
+
+**Context:** The immutable schema-v1 attempts
+`branded-parity-v1-2026-08-01T23-45-46-873Z/result.{json,md}` (SHA-256
+`12a59e930c3d31a1a5a8e5434fa1d827f26fa180f5fcc7977c491de703ac71b6` /
+`678af5e3b1bcac4a707ba115effff555debee5bcce1a70f78cf571aad0fb7e24`)
+and `branded-parity-v1-2026-08-01T23-58-58-934Z/result.{json,md}` (SHA-256
+`e0809f6208cd7b5acf8b5cb71c54acef5b80237a063c3bc9947d3fb9a95c8d33` /
+`f8ef58588ac9045e0ac4dfea1ab4e132265aafa5181b9781bd6d5af9636205fc`)
+failed respectively on inbox PowerShell module-path harness drift and an impossible
+full-version reduced-UA harness contract. Both remain immutable and adjudicated; neither
+is a Chrome rough-edge claim. One bounded identity-only launch on dev-01 using the
+reviewed branded launcher observed installed/product
+`151.0.7922.72`, revision `@2903d8558c752b5a554a1a47b4ea7219ba1a31ef`, UA
+`Chrome/151.0.0.0`, V8 `15.1.206.10`, and protocol `1.3`; Chrome was immediately
+closed and no parity scenario ran.
+
+The corrected `branded-parity@1` schema-v2 pair
+`branded-parity-v2-2026-08-02T00-19-27-032Z/result.{json,md}` passed with
+JSON/Markdown SHA-256
+`94bfed662d329612fe4fe2717a1950b8afcf1d0f4a8a6ca9950adc2ebd9abed9` /
+`f33c187f4e60478bef9cdbf85c7c61b4fbd84659fd184e3d2313b13b9178dddd`.
+It binds source `7fdc5465b5903751301a4e319a160848eacefac6` /
+`95a0fa40b928d2a2ba5a98b8481a66a1d174925a8399d5dd0a9b722fe707a48e`,
+artifact/release
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b` /
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`,
+installed branded Chrome 151.0.7922.72 executable SHA-256
+`7ef01c7774d223c14034de437d3f33040b1199f5ed322b45e49245419027c5d9`,
+exact CDP product `Chrome/151.0.7922.72`, revision
+`@2903d8558c752b5a554a1a47b4ea7219ba1a31ef`, and reduced UA
+`Chrome/151.0.0.0`. Its six launches, three facets, and 30/30 smoke checks passed.
+
+**Consequences:** Full executable/product identity and selected-CfT major/build
+comparability remain fail-closed. UA validation describes the strongest exact
+relationship the current branded browser truthfully exposes. The D-149 installed
+branded-Stable parity trigger is satisfied. The result remains baseline-ineligible,
+nonpromotable, and not budget-authoritative, so it neither replaces nor invalidates the
+final pinned-CfT dev-01 qualification. Old results remain immutable.
+
+**Reopen if:** Chrome changes the desktop UA reduction form, CDP stops exposing an
+exact full product version, or a stronger stable browser-owned identity becomes
+available.
+
+## D-151: Accept the exact dev-01 install-lifecycle exit and remove redundant new-object verification (2026-08-01, accepted)
+
+**Decision:** Treat a successful `finalizePartial` return from the sole production OPFS
+release store as the verification boundary for a newly transferred object. The store
+returns that reference only after exact partial size/SHA-256 validation, replacement
+copy and flush, an exact size/SHA-256 reread of the published bytes, and creation of the
+immutable verified marker. The installer transfer layer therefore does not immediately
+call `verifyObject` and hash those same new bytes a third time. A resource discovered as
+an already verified/reused object still goes through `verifyObject`, and release
+activation still runs `verifyRelease` across the complete staged release before ready
+marking and publication.
+
+Accept the dev-01 Showcase
+`asset-update-v8-lifecycle@3` result
+`harness/results/asset-update-v8/asset-update-v8-v3-2026-08-01T19-10-36-547Z.{json,md}`
+as the exact-candidate M2 install/launch/update lifecycle exit evidence. It binds CfT
+151.0.7922.71 and base artifact/release
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b` /
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`.
+JSON/Markdown SHA-256 are
+`a7060701006fbcea03b26dd6281eee4d2e9d0b66fd176d4766a3e716489a83d6` /
+`c9e1d7723e9c83149bb43136dbb598a77d048b6bfc5a378deccfea5b0f868ee8`.
+
+**Context:** The prior D-144 pair closed the bounded V8/asset-only-update item but did
+not qualify a full initial install or fresh installed launch for the final M2 candidate.
+The v3 qualifier therefore measures installer-worker network-active time independently
+from wall time and gates their residual as local critical-path work. Earlier retained v3
+attempts exposed a source-representation mismatch, two genuine local-work budget
+failures, and result/post-validation contract drift. A pre-final passing pair preceded
+the final exact V8 diagnostic-state correction. They remain evidence, but none is the
+accepted result and none establishes a Chrome rough edge.
+
+The accepted run completed the 99,359.9553 ms initial install with an exact
+21,286.798001527786 ms installer-worker network-active union across two control requests
+and 266 full-resource Range transfers totaling 2,621,468,856 bytes. The resulting
+78,073.15729847222 ms network-idle/local-critical residual passed the unchanged 90,000
+ms ceiling. The final-verification first-observed span was 16,232.9675 ms under 20 ms
+polling. Fresh installed launch was 5,821.355 ms against the 30-second ceiling;
+pre/post-update warm launches were 9,157.250/5,681.140 ms against the 10-second ceiling,
+with a signed post-minus-pre delta of -3,476.110 ms. Exact authority and independent
+post-validation passed.
+
+**Consequences:** M2's dev-01 lifecycle exit checkbox is satisfied for this exact
+candidate. The full-store activation verification and reused-object corruption check
+remain intact while newly downloaded bytes avoid an immediately redundant full reread
+and hash. V8 trace, cache, and production diagnostics retain their exact measured or
+invalid states and remain non-gating; they are not cache-hit evidence. The relative
+post-update launch threshold remains unset.
+
+At this decision boundary D-149, its `.34`/`.71` transition, final production smoke,
+branded-Stable parity, nginx installation, deployment, and M2 closure were still
+independent open gates. D-149, D-152, and D-153 subsequently record their completion.
+
+**Reopen if:** another store implementation can return a reference without the exact
+finalization sequence above; new-object finalization stops rereading published bytes or
+writing an immutable marker; reused resources stop receiving `verifyObject`; activation
+stops running complete `verifyRelease`; or a later accepted lifecycle result invalidates
+the measured budget conclusion.
+
+## D-150: Make dev-01 the sole required hardware qualification gate (2026-08-01, accepted)
+
+**Decision:** Unless a future explicit human decision changes the policy, dev-01 is the
+sole required physical/reference, budget, and milestone entry/exit gate for every
+milestone. Standard-profile, macOS/Metal, cross-machine replay, cross-hardware transfer,
+and all other-machine work remain aspirational planning or exploratory/advisory
+research. They may produce platform findings, but cannot block a milestone or invalidate
+an exact-candidate dev-01 acceptance. Deterministic replay remains required as repeated
+same-host replay on pinned dev-01; cross-machine determinism remains a design objective
+for future P2P, not a current gate. Browser-pin comparisons and installed branded-Stable
+parity remain required when their standing triggers fire, but run on dev-01. This changes
+machine coverage, not browser, source, artifact, evidence, or physical-console
+correctness.
+
+**Context:** The project currently has one registered and calibrated gate machine,
+dev-01. Prior plan clauses required hardware that was unregistered or unavailable and
+therefore turned aspirational transfer and cross-platform goals into milestone blockers
+without improving the validity of dev-01 evidence. The human explicitly set dev-01 as
+the only required test machine on 2026-08-01. D-150 supersedes D-016's cross-machine
+verification gate, D-018's Standard gate provisions, and D-141's mandatory M6 Standard
+qualification provision while preserving their multiplayer, transfer, Metal/D3D12, and
+planning intent.
+
+**Consequences:** M2 closes on exact-candidate dev-01 cold-install/warm-launch evidence;
+M3 and M3.5 require same-host deterministic replay on dev-01; M6 qualification is
+dev-01-only. Standard numerical budgets and machine profiles remain advisory envelopes.
+Optional other-hardware results are labeled findings-oriented and never promoted as a
+required substitute for dev-01. Existing historical results and claims keep their
+original scope.
+
+**Reopen if:** the human explicitly adds a required machine or profile; a committed
+multiplayer architecture requires a cross-machine acceptance gate; or dev-01 no longer
+represents the intended Showcase target and a replacement is explicitly registered and
+adopted.
+
+## D-149: Accept the M2-exit/M3-entry dependency checkpoint (2026-08-01, accepted)
+
+**Decision:** Adopt four bounded dependency changes for the M2-exit/M3-entry currency
+checkpoint: Node 24.18.1 from 24.18.0,
+Chrome for Testing Stable 151.0.7922.71 from
+151.0.7922.34 at unchanged CfT revision 1654411, harness-only `sharp` 0.35.3 from
+0.34.5, and transitive PostCSS 8.5.25 from 8.5.17. Keep pnpm 11.12.0 and the exact
+Vite/Vitest manifest pins; PostCSS moves through their existing compatible ranges with
+no override. Retain every other repository-selected input under the explicit selected,
+deferred, or current disposition in the dated dependency checkpoint.
+
+**Context:** Node 24.18.1 is a 2026-07-29 security release with three high-severity and
+multiple lower-severity fixes. Its official Windows x64 ZIP matched SHA-256
+`ec56b84a7551893ab2324ebdfdc4ab974a63b4781162600b68a1293cc3e53765`;
+the extracted `node.exe` matched
+`ac51903c4c111815d52280b1fdcc8da067cbb37e2fe1a765097b85c3292c8582`.
+The official CfT known-good feed binds 151.0.7922.71 to revision 1654411; the installed
+win64 browser reports `Chrome/151.0.7922.71`, CDP revision
+`@ef35003457e93c278f911a334b06e4a5f8967e06`, and executable SHA-256
+`112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`.
+GitHub's reviewed advisories mark `sharp` versions before 0.35.0 and PostCSS through
+8.5.17 affected; the selected candidate versions clear both findings. Official Node release and
+checksums, CfT feed, npm metadata, upstream releases, and GitHub advisories were checked
+2026-08-01. Deterministic gates and exact identities are recorded in
+[dependencies.md](dependencies.md#full-checkpoint--2026-08-01-m2-exit--m3-entry).
+
+The same-source transition retained CfT 151.0.7922.34 anchor
+`smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-01T23-33-08-928Z.{json,md}`
+(SHA-256
+`9e82f666df9ab559e26972c20ac466329f5783d20a2f71a2da033c2e1383b40a` /
+`c631475fa912d167ed273b76ec9f1d0e2a5ca12da0f15f0da49f2611ea8c844b`)
+and selected CfT 151.0.7922.71 half
+`smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-01T23-40-44-832Z.{json,md}`
+(SHA-256
+`3053a55fa243414e786cf58356fcad1788ed861be2a8fc5eb28877d20d03a984` /
+`5da376c711a7d1200e1ce046e36c53ed0e5e040b98182e5641ffd56bbf33e0fa`).
+Both bind source `7fdc5465b5903751301a4e319a160848eacefac6` /
+`66dc25c2649ff8d82cc7413fb44349b719dedcd27cc7ba1cb506ad34e4a585f9`,
+artifact/release
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b` /
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`,
+and the same `smoke@1` scenario. Each passed schema v62 / mandatory metric set
+v28 with all six launches, all three facets, and 30/30 checks. Transition review found
+no calibrated relative threshold or pin-specific regression; it does not invent one.
+
+D-152 accepts the separately required installed branded-Stable parity result. The final
+exact-current CfT 151.0.7922.71 production report
+`smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-02T00-30-12-454Z.{json,md}`
+(SHA-256
+`6028aa225b14e6c32398ead849dc00784f075c4b410e61a336376b970e105a8e` /
+`1b00d8746308e0297d93f7e68c1c14cb8f0437d2832249efe7029a2328e02a20`)
+binds current source `7fdc5465b5903751301a4e319a160848eacefac6` /
+`95a0fa40b928d2a2ba5a98b8481a66a1d174925a8399d5dd0a9b722fe707a48e`
+and artifact/release
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b` /
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`.
+Exact pre/post production identity, MIME/isolation, registered dev-01 physical-console
+and sandbox identity, rendered output, six launches, three facets, and 30/30 checks
+passed under schema v62 / mandatory metric set v28.
+
+**Consequences:** Node 24.18.1, CfT 151.0.7922.71, harness-only `sharp` 0.35.3,
+and transitive PostCSS 8.5.25 are accepted current/reference inputs. The old Node and
+CfT 151.0.7922.34 installs remain intact for reconstruction. No baseline was promoted;
+the branded result remains baseline-ineligible, nonpromotable, and not
+budget-authoritative. No gate on another machine is added. This checkpoint satisfies
+M3 entry; D-153 closes M2's separate exit after all M2 items and production gates are
+complete.
+
+**Reopen if:** a relevant advisory or release appears; a deferred component-family
+trigger in dependencies.md fires; exact install, build, or repeatability diverges; the
+`sharp` rendered-output fixture changes; or a later qualifying dev-01 result finds a
+pin-specific regression.
+
+## D-148: Retire the literal 100 GiB write qualifier; accept modeled install-manifest plus representative physical scale (2026-08-01, accepted)
+
+**Decision:** Amend D-009's scale-proof mechanism. Keep a deterministic model that
+generates exact bytes for a ≥100 GiB document and submits the document decoded from
+those bytes to the production install-manifest parser. The parser's summary is the
+authority for resource count and byte accounting, and the SHA-256 of the exact manifest
+bytes is manifest-level release
+identity. Comparing three accepted documents describes a one-resource update and a
+source rotation at the manifest level without materializing resource bodies or
+executing transfer, resume, integrity, update, cleanup, or eviction at 100 GiB. Accept
+the representative streaming qualifier as the physical scale boundary:
+its modeled inventory is 165,505,371,388 bytes across 71,680 resources and its
+materialized decode → GPU-upload target is 2,623,040,066 bytes. The accepted
+`scale-streaming-v1-2026-08-01T11-18-11-203Z.{json,md}` SHA-256 values are
+`e2a2028b548e27934ea5a6365cb4f9ce690dca8b7a9bcf5cf8b4fb2dbd5833b2` /
+`243c31b2e430cc7db720257b8d2b592ed7ab6ff0611bffef38ac73ccd1def910`.
+
+The representative corpus also advances the district index to schema v2. Its seventh
+top-level `resources` key contains exact content-addressed KTX2, legacy meshopt, and
+versioned meshopt vertex/index descriptors; per-cell `dependencies` name their roots.
+Descriptors form an acyclic, topologically resolved graph. The streaming worker keeps
+a reference-counted CPU dependency cache correlated with render-worker GPU ownership,
+so shared resources are decoded/uploaded once and released only after their last
+resident cell. Each dependency is capped at 8 MiB encoded and 32 MiB decoded, and one
+atomic batch may stage at most 128 MiB. These are fail-closed content and allocation
+bounds, not measured resident-memory claims.
+
+Delete the dedicated physical lifecycle runner, evidence schema, orchestration tests,
+quota-UX-only helpers, and public store-retention export. The production store keeps
+its private two-checkpoint pruning policy.
+
+**Context:** Current Chromium source sets the temporary storage pool to 80% of total
+disk and the per-storage-key quota to 75% of that pool, a nominal 60% of total disk.
+The local C: volume reported 1,998,819,684,352 total bytes, implying a nominal
+approximately 1.199 TB per-key ceiling, subject to storage pressure and free space.
+Chromium's static quota feature reports the privacy-shaped `usage + 10 GiB`, not that
+internal ceiling. The WHATWG Storage Standard deliberately leaves quota policy
+implementation-defined and specifies a conservative estimate, while OPFS is quota
+bound and does not prompt for permission. Sources checked 2026-08-01:
+[WHATWG Storage](https://storage.spec.whatwg.org/),
+[web.dev OPFS](https://web.dev/articles/origin-private-file-system), Chromium
+[`quota_features.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_features.cc),
+[`quota_settings.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_settings.cc), and
+[`quota_manager_impl.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_manager_impl.cc).
+
+Four physical lifecycle attempts remain immutable history under
+`harness/results/scale-lifecycle/`. The first incorrectly treated Chromium's
+privacy-shaped `usage + 10 GiB` estimate as total hard capacity. The second rejected an
+asynchronous progress overshoot, and the third assumed one retained checkpoint when the
+product retains two. The fourth retained only the generic failure `Scale lifecycle
+progress stalled`, with no phase, diagnostics, journal, or deadline state; it is
+underdiagnosed harness evidence and supports no transfer or Chrome attribution. None
+demonstrated a Chrome capacity limit. The latest
+`scale-lifecycle-v2-2026-08-01T13-56-10-939Z.{json,md}` SHA-256 values are
+`76eb44956bd87786c8732b955643002e11e0d492e4a43710c22abe4e6f508280` /
+`9219b97a6eccdda2379ea3515abc4be9cdaec1c310474260b8d94a17327fe88b`.
+No Chrome rough edge is claimed from these attempts.
+
+**Consequences:** M2's scale item closes on size-independent production
+install-manifest parsing, summary arithmetic, manifest-level identity/change
+descriptions, and representative physical streaming evidence. Separate bounded M2
+physical qualifiers—not this model—support actual transfer, resume, integrity, update,
+cleanup, and eviction mechanisms. This decision makes no literal 100 GiB execution
+claim and does not guarantee capacity on every machine. A reported quota estimate is
+planning evidence, never install admission authority; actual bounded transfers remain
+resumable, integrity-checked, and `QuotaExceededError`-aware. D-009's ≥100 GiB
+architectural floor remains, but its instruction to grow a physical filler write until
+a platform limit appears is superseded. The accepted scale result did not close M2's
+then-current multi-machine exit gate; D-150 later replaces that gate with exact-candidate
+dev-01 qualification.
+
+**Reopen if:** production install-manifest parsing, summary accounting, or
+manifest-level identity/change contracts develop a size-dependent path not covered by
+the model; representative encoding, file-distribution, dependency, decode, or upload
+properties change materially; a current browser measurement contradicts the reviewed
+quota implementation; or a real install exposes a reproducible limit below the
+supported product scale.
+
+## D-147: Accept the confirmed dual-mechanism uninstall lifecycle (2026-07-31, accepted)
+
+**Decision:** Close D-024's M2 uninstall item with two explicit, destructive, reload-only
+paths behind the same in-shell confirmation surface. The client-side path first disposes
+the installer runtime, obtains exclusive cross-client authority, and then enumerates,
+deletes, and twice rechecks service-worker registrations, Cache Storage, IndexedDB, and
+OPFS before reporting success and measured quota release. The static path is the exact
+same-origin, query-free `POST /uninstall` endpoint with
+`Clear-Site-Data: "storage", "cache"`; the stable service worker must pass that request
+directly to the network rather than synthesize or proxy its response. Both paths lock all
+installer/destructive actions once started and require reload before reuse. The save
+export control remains visibly unavailable and states why: M2 has no save-game subsystem
+and therefore no saved progress to export.
+
+Accept `uninstall-verification@1` schema v3 as the bounded physical qualifier. It uses a
+fresh profile and browser process per mechanism, seeds unique nonempty sentinels plus a
+32 MiB OPFS payload, independently observes storage and quota before and after, requires
+exact product telemetry for the client-side operation, and binds the header path to the
+completed direct-network request. Product and harness `navigator.storage.estimate()` and
+inventory samples are separate time windows: each must be internally exact and positive,
+while the unique per-operation sentinels bind them. Incidental full-inventory or estimate
+equality across those windows is not an acceptance predicate.
+
+**Context:** Physical qualification exposed two real product defects. The first
+client-side pass retained `parallax-offline-shell-v1` because the shell platform kept an
+IndexedDB connection open; the corrected adapter opens and closes the database around
+each operation, including failure. The second was the stable worker's
+`respondWith(fetch(request))` handling of `/uninstall`: a Clear-Site-Data response must
+come from the network navigation/request boundary, so the worker now deliberately leaves
+that exact endpoint unhandled. Other failed attempts localized collector setup, response
+provenance, result-lifecycle, and cross-window comparison defects; every pair remains
+immutable under `harness/results/uninstall-verification/`. The final two rejected
+cross-window reports have JSON/Markdown SHA-256
+`97b81bb7fb74105f79f2c8dacd642579e7af93efb18d7107035e5c4cf4a2e2d3` /
+`77cf66def4b81787e8b934d31e2918f92ed0298c1e5e43a762b88469565bd33f`
+and
+`f5833951903775e2a698cfc0fb238df8bb9b5b3fc9eea2d7ed86a7fea0c7383c` /
+`3467a635d584516df90e7012e9aa9a5a8fb5ad54aead5d37f08972fcab63b4dc`.
+One intervening preflight-only pair records the missing-`dist` operator error with
+JSON/Markdown SHA-256
+`cdfa6cfe2a78f7e0eff82ff590a90c2fff196e1b6b7d219df7549404bda93c08` /
+`75708f74f8b283a40e0b6cbe539c719154db31981bbc39da30ee6fd1f2be4cb0`;
+it never launched Chrome or evaluated product behavior.
+
+The accepted pair
+`uninstall-verification-v3-2026-08-01T01-42-43-231Z.{json,md}` has JSON/Markdown
+SHA-256
+`3a4f177af4d6b12dce9b2063ef09c9f1b75e2485751c236487c9f24864d32e9b` /
+`63be4b24077caebd6b89fcdbf78598f94763b396c4a77a2c497ed8eb131606a4`.
+It binds artifact/release
+`b4085ad29b37afe696653687d7433f1de7ab21380e8fc86748fcd209f8d06544` /
+`1b20e95ee4b28a968c077f11b73f36077b66258c0df07556e7a06bd7bee81a14`,
+pinned Chrome 151.0.7922.34, registered `dev-01` Showcase, and exact source identity.
+The client-side arm released 22,931,758 independently observed bytes and reported a
+33,657,928-byte product-window release. The header arm released 33,643,554 bytes and
+retained an exact completed status-200 network response with no service-worker
+provenance. Both cleared every seeded OPFS, service-worker, Cache Storage, and IndexedDB
+sentinel, used distinct processes/profiles, and passed cleanup plus post-validation.
+
+**Consequences:** Close only M2's Uninstall path. HTTP cache, V8 code cache, and Dawn GPU
+cache probes were attempted but cannot prove origin-scoped eviction; RE-046 records that
+platform observability gap. This result is local physical evidence and makes no
+production-deployment, scale-corpus, multi-machine, or M2-exit claim. Scale tests are
+next.
+
+**Reopen if:** a destructive path can start without explicit confirmation; another
+client can retain authority; any observable surface or positive quota evidence is
+omitted; the endpoint is service-worker mediated or loses exact method/header/source
+provenance; a save subsystem lands without a real export path; or Chrome exposes an
+origin-scoped cache inventory/eviction API that can replace RE-046's unobservable
+verdicts.
+
+---
+
+## D-146: Make installer target discovery network-first and accept the bounded offline fault lifecycle (2026-07-31, accepted)
+
+**Decision:** Controlled app pages request only the root `build-manifest.json` and
+`install-manifest.json` installer-target documents with the exact
+`x-parallax-installer-target: network-first-with-offline-shell-fallback` marker. The
+stable service worker treats only same-origin, query-free `GET` requests for those two
+paths with that marker as network-first. A network response wins regardless of status;
+only a fetch `TypeError` permits fallback to the selected, independently verified
+offline-shell cache. Other errors propagate. All other shell requests keep D-138's
+existing cache policy. Shell/release mismatch diagnostics include both exact digests.
+
+Accept `offline-fault-lifecycle@1` as the bounded M2 offline fault qualifier. It runs
+three ordered cells against one registered physical environment and exact retained
+D-138/D-144/D-145 provenance: (1) terminate a live asset-only update after an exact
+8 MiB checkpoint and prove restart resumes that checkpoint without publishing the
+partial release; (2) stop the origin, prove connection refusal, relaunch a different
+browser process with offline configured before navigation, and reach exact Ready with
+zero network requests; and (3) delete one selected-generation cached response, prove a
+stopped-origin fail-closed rollback with no mixed-generation response, then restore the
+origin and reach exact post-update Ready after refetching the corrupt path. Evidence is
+create-only and collision-safe, records exact browser/source/build/release/process,
+cache, journal, checkpoint, accounting, cleanup, and pre/post authority, and preserves
+every terminal attempt as an immutable JSON-primary/Markdown pair.
+
+**Context:** The first four retained attempts localized qualifier defects without
+weakening product predicates. They respectively exposed a missing Chrome developer
+switch and concurrent environment probe, an extra failure-evidence key, a server that
+was still reachable before the claimed offline navigation, and a Ready-only wait that
+ignored an immediate typed terminal failure. Their JSON/Markdown SHA-256 pairs are:
+
+- `offline-fault-lifecycle-v1-2026-07-31T22-13-14-688Z`: `946645311f6b4821f228aee85214bd391c0f1898f3a371ba16a61d749c32350b` / `1ab0149bd52f1a2e5045e3efcea3f23e787c841ca05cd954e87df99bcfe925b7`;
+- `offline-fault-lifecycle-v1-2026-07-31T22-16-43-255Z`: `5c1879add4ce9533e4adbc0bb8ede514a8dca648952c9386b4f70b591fc91d0` / `5ed92df0c758e79545d3d3c217bbaa4cf7b44a9e6fbf8b7e5038db096883637c`;
+- `offline-fault-lifecycle-v1-2026-07-31T22-19-36-521Z`: `e6ab011cb3cac1332e1aa04692f4409a14b74c37c78582fa351e15a085bd87a6` / `064f53153730c1452160cd1cfaaadb3d3810bd0d4438f8a1ba7ca70677936b00`;
+- `offline-fault-lifecycle-v1-2026-07-31T22-27-34-570Z`: `bd6d3c074686e7e3ebb19df34d537d7d9c0eccbdd9ba6e57722472c1f3d886e` / `33eb629570cf532c6678865efd0898dc93c471b2de20e1e924d95eb466def378`.
+
+The fifth pair
+`offline-fault-lifecycle-v1-2026-07-31T23-05-38-732Z.{json,md}` retained JSON/Markdown
+SHA-256 `266970f0389ce7eaccbea8754056128963f14100a3a632c83ff6b3173a4154da` /
+`4eba79b28e92ba9b2e0fb79207e27cebf8957b65aea035a6542b28fe9d84e638`.
+It passed interrupted update and stopped-origin restart, then truthfully failed online
+corrupt-cache recovery with exact `shell-release-mismatch`: the controlled app's
+`cache: no-store` installer-target requests were still intercepted by the stable worker
+and returned the pre-update cached manifests, while the worker's own update fetch saw
+the post-update network manifests. This was a product split-authority defect, not a
+measurement threshold. The network-first rule above resolves that defect and is covered
+for exact method, origin, query, header, path, status, and TypeError-only fallback.
+
+Because the product correction changed shipped bytes, the earlier D-145 pass remains
+valid history but could not authorize the corrected artifact. One current-artifact
+schema-v12 trust refresh passed all eight cells. Its pair
+`installer-trust-faults-v12-2026-07-31T23-19-36-299Z.{json,md}` has JSON/Markdown
+SHA-256 `7316cab2603750f4a25108d848640ca1e1fbe52b81647b5a360c17a6cb992637` /
+`75b3dca9cf2ed9568382897b1ec337b045d56da05f680e1ba7d2347c1a20adf4`
+and canonical payload SHA-256
+`1db69917ce7963f05b0c95ddc1dfa10debb7cc9d4dc4753d9ced13ed86769e8c`.
+It binds artifact/release
+`29616033e34061fa9da270bd99aae657c392e1bf34d154de2574ce6bde7d5179` /
+`2dc78203a4fa1cf7ae6e9f2a131507b4db113f90d7b7e1c00e1fa68855f15914`.
+
+The single post-fix offline qualification
+`offline-fault-lifecycle-v1-2026-07-31T23-37-54-560Z.{json,md}` passed all three cells
+in order against that exact artifact/release and Chrome 151.0.7922.34. Its
+JSON/Markdown SHA-256 are
+`7f55441d0c57972941746f321683d82c71407c527846b41ec7cea18d928a965e` /
+`233aac8c2ca6a292ce0ce6331fee74acbf57ad3d2bd0d5f888a3ccc8cd318adf`.
+It retained complete cleanup, exact source/provenance post-validation, 8 MiB resumed
+plus 24 MiB downloaded for the interrupted resource, separate browser process IDs,
+connection-refused stopped-origin probes, zero offline network requests, exact cache
+inventories, fail-closed rollback, and a 25-response online recovery journal that
+refetched the removed path.
+
+**Consequences:** Close M2's Offline fault suite. D-138 supplies offline hard reload,
+D-145 supplies disk-full/quota injection, and this decision supplies interrupted
+update, browser restart offline, and corrupt-cache recovery without duplicating those
+large prior qualifiers. This does not close Uninstall, Scale tests, the multi-machine
+exit gate, or M2.
+
+Later root-rule-12 cleanup on 2026-08-02 removes the closed
+`offline-fault-lifecycle` runner, evidence/deadline/cancellation/provenance/orchestration
+modules, partial-witness helper, tests, package command, and routine source assertions.
+Its ignored result and D-099 reconstruction artifacts remain untouched; the hashes,
+measurements, conclusions, and reopen conditions recorded here remain authoritative.
+
+**Reopen if:** installer-target documents gain another root path; an offline fallback
+can be selected without independent generation validation; a non-`TypeError` failure
+falls back; the three-cell evidence cannot be revalidated from its exact retained
+inputs; or a supported browser/service-worker change invalidates the stopped-origin or
+process-restart boundary.
+
+---
+
+## D-145: Gate qualification on product invariants and retain raw observations (2026-07-31, accepted)
+
+**Decision:** M2 browser qualifiers retain bounded, ordered raw runtime telemetry as
+their primary diagnostic input and gate only the product invariants required by the
+acceptance claim: exact identity and authority, typed fault and resource identity,
+publication, repair or recovery, accounting or conservation, and cleanup. Exact
+callback/publication counts, fixed phase positions, and a closed-world event topology
+are mandatory only when the claim itself depends on them. Equivalent intermediate
+planning, progress, or store publications remain diagnostic and do not independently
+fail qualification.
+
+The active installer-trust result contract is schema v12. Its nested raw-observation
+failure evidence is schema v3: complete ordered validation, transition-proof
+accounting, and SHA-256 hashing continue for the full accepted stream, while the
+diagnostic artifact retains a byte-bounded prefix, rolling tail containing the actual
+immediate predecessor, exact accepted count, retained-window digest, full-stream hash
+commitment, and exactly one separately bounded rejected sample. The raw artifact is
+limited to 524,288 bytes, each serialized observation to 69,632 bytes, and the
+rejected-sample envelope to 73,728 bytes; the immutable trust report remains bounded to
+8 MiB. Active capture stores a bounded exact projection of install-store publication
+plus installer-transfer release identity and the canonical structured failure tuple,
+while historical full-snapshot and compact-v2 raw evidence remains valid. New active
+transition proofs are schema v3 and bind an exact final-barrier witness for every
+observed phase; proof schemas v1/v2 are historical-only. Trusted evidence must cross
+the production recorder/barrier and the same
+ownership/finalization seam used by the runner; a plain transition or synthetic
+fallback cannot mint it. The shared compact outcome contract covers all eight cells and
+the failed mid-append attempt, including outer authority/resource/cell-position
+rebinding. Successful result schema v5 is unchanged. Raw-evidence schema v2 and result
+schemas through v11 remain available only to validate retained historical evidence.
+
+Milestone execution also changes as follows: use a fresh minimal-context subagent for
+each bounded implementation or review project; use focused tests, typecheck, and lint
+during correction; run one full deterministic gate after implementation and review
+converge; and run at most the one authorized physical attempt for that converged
+candidate. A third correction pass caused solely by evidence machinery triggers a
+qualifier redesign or simplification before more proof structure or physical attempts
+are added.
+
+**Context:** D-138 required fifteen evidence-contract corrections. The subsequent
+installer-trust attempts exposed a missing idle transition and a repeated equivalent
+planning publication; both were defects in the harness's exact event model rather than
+product or Chrome failures. Preserving and extending that closed-world graph consumed
+most of the implementation and review effort while sometimes preventing the actual raw
+failure from being retained. That behavior had drifted away from D-049's task-sized
+units and D-097's per-final-candidate gate cadence. The schema-v11 physical pair remains
+immutable and failed with JSON/Markdown SHA-256
+`df4b0eec4bffca1a8c5df7090950bc497b8fc0a01ada1129bc1f148b019ecb98`/
+`1cd11af1a69a5c1140fd076172d3a7bc2488fd9a0512079a8b0915e42a157697`
+and canonical binding
+`6c8d1421623dd1e042c58ea9facdb5b79546217bae08db16e67f159c4acf34d6`.
+
+The first schema-v12 physical pair
+`installer-trust-faults-v12-2026-07-31T15-49-19-378Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`735e5538670810fee79849a5635b9d49e643ad41cacea62daefcfbe651ecb0ca`/
+`46372de222531f8a0181544129ee0bb7386cd1bbf1608e10e1231a4409669843`
+and canonical payload SHA-256
+`aeaa68f1e92f02d62e07c89042112f30f379b920f44695a84b196a08aa066535`.
+It completed zero cells and failed during `retain-seed-transitions`: an unexpected
+queued callback exception rejected the barrier while the recorder's structured error
+remained `null`, and the page boundary discarded the caught reason before relaying that
+`null`. This is a qualifier implementation defect; no product cell invariant or Chrome
+behavior was evaluated. The correction guards malformed binding prefixes, converts
+every queued callback parse failure to the first typed `binding-outcome-invalid`
+failure, preserves existing structured failures, and otherwise transports one
+bounded/redacted queue-internal cause. It adds no event cardinality or topology rule.
+
+The corrected schema-v12 pair
+`installer-trust-faults-v12-2026-07-31T16-19-13-719Z.{json,md}` also remains failed,
+with JSON/Markdown SHA-256
+`edc1177d8056f38507b3b36baba65a6bc6f2055306b9a10933f215525e30b769`/
+`074d1a018249c71dced756e707d7c3da621f97dfa0a5a0b74d66a64e9af3abb6`
+and canonical payload SHA-256
+`1f5c0652eafba0987fdf9f90907b61d0f15258a721db8aa19c3d2c06f864c7e6`.
+It again completed zero cells, but the corrected boundary localized the failure to a
+`binding-outcome-invalid` acknowledgement at seed order 6 after order 5 was accepted.
+The Node recorder retained no rejected raw sample, establishing that the raw
+observation had been accepted and the structured page↔Node acknowledgement envelope
+failed afterward. This still evaluated no product cell invariant and establishes no
+Chrome finding.
+
+That result activates this decision's third evidence-only correction trigger. The live
+binding first stopped transporting the structured kind/predicate/prefix envelope and
+returned only a boolean acknowledgement. The resulting pair
+`installer-trust-faults-v12-2026-07-31T16-42-04-880Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`36548dea73d28443045b24acd2f5d55797dcf55f15a9d672aa7330593129b5b8`/
+`7de009806d2d70a1f190cfd6f76325770ec3e22d080e5689fe1990c9445cd092`
+and canonical payload SHA-256
+`0b1730306f5f19f674b1e045042b3e2b6f64cf70769fadb2cbcae2927bb1204b`.
+It again completed zero cells and failed at the same seed order 6 after order 5 was
+accepted, with no rejected raw sample. Removing the structured envelope therefore did
+not remove the failure: the live per-event callback acknowledgement itself was the
+wrong qualification boundary. This still evaluated no product invariant or Chrome
+behavior.
+
+The active qualifier now removes that callback boundary entirely. The page synchronously
+snapshots each raw observation and projected transition into an aligned bounded window;
+its existing clear/phase/seal barrier atomically rotates the window and returns the
+batch. Node exact-checks the batch shape and alignment and feeds every raw observation,
+in order, to the authoritative recorder before deriving milestones or continuing.
+Capture errors are bounded, redacted, typed, and fail the next barrier. Historical
+prefix-bearing and binding-diagnostic evidence remains
+backward-valid, but no active binding, acknowledgement, prefix hash/count transport, or
+replacement event topology exists. This is a deletion of incidental proof transport,
+not another event model.
+
+The first barrier-batch physical pair
+`installer-trust-faults-v12-2026-07-31T17-20-02-628Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`235469d11cfc84d35c872e807c7afed2a23d320d95ab7dc18ad326a2a5684a85`/
+`0820d1cac262adee3d8afea352f22175df025c67fdf9880aec1390225b0320d8`
+and canonical payload SHA-256
+`2deae28de4209518625df2955d1acfd15a7737d37b8b7448619f00764c3b640d`.
+It completed zero cells and failed at `retain-seed-transitions` because the first
+barrier-batch implementation deferred its durability-warning DOM read until a
+microtask, then reported a typed `InstallerTrustTransitionCaptureError` at that commit
+boundary. This is qualifier capture drift; no product invariant or Chrome behavior was
+evaluated. The correction removes the deferred capture layer. The app's diagnostic
+event continues to supply the event-time persistence classification synchronously; the
+transition stream retains its compatibility warning projection from that classification,
+while the existing dedicated persistence recorder remains solely responsible for
+verifying the actual rendered warning and its terminal consistency. There is no
+pending-capture queue, timer, later DOM read, or product-byte change.
+
+The corrected synchronous-capture pair
+`installer-trust-faults-v12-2026-07-31T17-29-42-528Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`5ffb2bfeaefdad2810d00717d07e9b19897132a399a44eae987b8a4f590cada8`/
+`10267bf69d8cb3c3ee4380765450bd0591cdad6949374d88e1153e28cac9cb4f`
+and canonical payload SHA-256
+`331dfd2435c2fa2e596faa1d336686ca1066a94b8b3734388ddd757dde42a899`.
+It passed the page-to-Node boundary and validated 168 ordered raw seed observations,
+then failed the 450,535-byte accepted-prefix ceiling before cell 1. The ceiling had
+incorrectly become a runtime publication limit; it evaluated no product invariant or
+Chrome behavior.
+
+The first attempted capacity correction retained the partial reservation
+`installer-trust-faults-v12-2026-07-31T17-36-11-929Z.{json,md}` with JSON/Markdown
+SHA-256
+`3c368febc1ba8d6597abe06aac4ce4bd29136f9e813f9c87d559c9f518fa045d`/
+`1e773d08d4359d38323dae99ec9f741120cf7a755d395faa017f82854eaedf6a`.
+It validated 750 seed observations before reaching the enlarged 2 MiB raw ceiling,
+then correctly failed immutable JSON readback because the shared result writer is
+bounded to 4 MiB; its Markdown remains the owned `finalization-failed` placeholder, so
+this is not a terminal pair. Raising coupled evidence ceilings was the wrong fix.
+
+The active correction keeps the original 512 KiB raw-artifact and 8 MiB trust-report
+bound, aligns the shared immutable writer's readback ceiling from 4 MiB to that already
+declared report limit,
+and stores only the five telemetry fields actually consumed by transition consistency:
+store active release/state and transfer state/failure code/failure resource. Full
+snapshots remain independently validated in cell and terminal evidence, and historical
+full-telemetry raw observations remain backward-valid. The measured 750-event seed
+compactly occupies 341,088 bytes, leaving bounded headroom without relaxing a product
+predicate, constraining publication count, or changing product bytes.
+
+The compact-retention physical pair
+`installer-trust-faults-v12-2026-07-31T17-45-34-492Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`fa1eee3253eef4bace71c15d58dfd34026b9123b8c5c258029f81c5b6ded2709`/
+`2be6d17a840d2916bc7f6dbb0833ff32919552b4ae783aaa01636f75c683ecb9`
+and canonical payload SHA-256
+`c1b47f2710339f66f8ac6d0ac548fe1082c74f6057f9939d41796e6183719c33`.
+It validated 990 ordered compact seed observations for the first
+`reused-object-corruption` cell and then reached the unchanged 450,535-byte retained
+prefix ceiling at `retain-seed-transitions`. No cell invariant or Chrome behavior
+failed. This disproves the assumption that compacting five telemetry fields alone
+provides sufficient bounded headroom. The retained-prefix ceiling must no longer be a
+live acceptance gate: the next bounded qualifier project must separate complete stream
+validation/hash/accounting from bounded diagnostic retention. No further physical retry
+is authorized for the current prefix-gated design.
+
+The reviewed correction performs that separation without raising a ceiling or changing
+product bytes. Nested raw evidence advances from schema v2 to v3 only. The recorder
+continues exact online validation, transition-proof construction, observation counting,
+and full-stream hashing after the diagnostic prefix fills; it retains a fixed byte-split
+prefix and rolling tail so a rejected sample is checked against its actual immediate
+predecessor. The retained windows and rejected sample remain independently bounded and
+hashed, and the full accepted count plus stream digest commit the omitted middle.
+Historical schema-v2 evidence remains backward-valid. Focused tests validate 1,220
+compact observations beyond the former 990-event ceiling, then retain and independently
+reject a later semantic phase regression; adversarial predecessor-tail mutation also
+fails. This converged design is eligible for one physical schema-v12 qualification only
+after the deterministic gate passes.
+
+That deterministic gate passed repeatable build, typecheck, Biome over 367 files,
+149 test files / 1,863 passing tests with one skip, and `git diff --check`. The first
+bounded-evidence physical pair
+`installer-trust-faults-v12-2026-07-31T18-03-51-764Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`738d2597af2e2af916ea79cd70ca63a1fb498d268f9569f4615e610a1a532bb2`/
+`11ab8cf6b9fe4cd6a30a966429fd3513f7cbc0b12a6744e1e69a17d6d964385b`
+and canonical payload SHA-256
+`3c54f908bec1885ee5e80c246cc35e21ff53a544505089ca008bb37ec4298374`.
+It retained and validated 5,785 ordered seed observations, then rejected order 5,786
+when the store changed from `publishing` with no active release to `ready` with the
+exact active release while transfer remained `verifying`, UI remained `installing`,
+and release/shell-generation UI authority remained null. Direct product tracing confirms
+the intended sequence is `verifyRelease` → `markReleaseReady` → atomic `publishRelease`
+→ return from the worker operation → transfer `ready` → app/UI Ready. The rejected
+observation is therefore the legitimate store-publication handoff after complete
+verification, not premature publication, a product trust failure, or a Chrome finding.
+
+The reviewed correction allows only that exact intermediate shape: store `ready`, exact
+active release, transfer `verifying`, UI `installing`, and no release or shell-generation
+UI authority. It continues to reject store `publishing`, a wrong active digest, any
+pre-Ready shell/release authority, other pre-Ready transfer states, and every
+failure-phase publication. This changes no product bytes, result/evidence schema, or
+bound and is eligible for one corrected physical qualification after its deterministic
+gate.
+
+That corrected deterministic gate passed repeatable build, typecheck, Biome over 367
+files, 149 test files / 1,864 passing tests with one skip, and `git diff --check`. The
+next physical pair
+`installer-trust-faults-v12-2026-07-31T18-11-34-819Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`573824c6517c5e5c78db3a0376114942c4d5bd7d2e048527805bcb8945826f01`/
+`226beac9b3b3260f4061dacc8d43c715cf7acae907be977fddf7f8756614020b`
+and canonical payload SHA-256
+`29f87eceacf25e67c2bc3700102cd2e30bb7294a0157e1a34a563bb6b47a907e`.
+It completed the first five cells and reached the next quota-failure terminal, where
+the active raw semantic validator accepted the typed failure with no authority and a
+safely idle store. Aggregate proof finalization then re-ran the legacy closed-world
+validator, which required the independent store subsystem itself to be `failed` and
+raised `contradictory transfer failure`. The result correctly retained five completed
+cells, null failed-cell evidence, exact failure provenance, and no cleanup failure. This
+is a qualifier finalization defect, not a product trust failure or Chrome finding.
+
+The correction removes that duplicate legacy semantic gate from active schema-v12
+acceptance as a class instead of adding another store-state exception. A separate
+active-raw aggregate validator retains exact proof envelope/state/edge identity,
+trail/gap feasibility, dimension accounting, phase completeness and monotonicity,
+authority, shared typed outcomes, and terminal verdicts, but does not require incidental
+planning milestones or legacy operation/store topology. Recorder finalization and every
+live schema-v12 completed-cell, pending, passed, and terminal-pair validation path use
+that mode. Schemas through v11 remain on the unchanged historical validator. The live
+raw barrier rejects an unexpected product terminal before the historical product-terminal
+fallback can finalize. Independent adversarial review traced those routes, validated the
+retained failed pair under the corrected code, and passed 189 focused tests with no
+finding. This changes no product bytes, schema, or evidence bound.
+
+The next physical pair
+`installer-trust-faults-v12-2026-07-31T18-44-29-502Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`dc62c17f9f5eb3cf1e7d4ce220c0493bed190243615929628c75c5706b64875c`/
+`084c6d19ec362def7d53528f33e252ab9cfb84677a2cc6a53b75cf0d0a5a1402`
+and canonical payload SHA-256
+`1b426e3a3aab2d9c47890f94058c37715ac28fc463d7190d48b6e385140006df`.
+It completed six cells, then rejected order 33 of
+`mid-append-quota-resume` attempt 2 while UI persistence was requesting and the
+worker/store snapshot still exposed the exact failed quota state from attempt 1. This
+was a mixed-time page/worker observation captured between their independent clocks,
+not a product trust failure or Chrome finding.
+
+The accepted correction makes every raw sample retain and validate telemetry-native
+publication safety, exact transfer release identity, exact cell/phase structured fault
+identity, and same-source persistence/warning consistency. Cross-clock UI-to-worker
+equality and phase outcomes run only at explicit page-to-Node barriers. Transition-proof
+schema v3 binds the exact final barrier for every observed phase, and current schema-v12
+passing evidence requires v3; proof v2 is available only through a closed validator for
+the exact immutable 18:44 failed JSON/Markdown pair and its full authority. The exact
+prior attempt-1 quota tuple may remain diagnostic during attempt-2 handoff, but any
+store/transfer state, release identity, or fault-field mutation fails, and a stale tuple
+at the Ready barrier fails cross-surface consistency. Independent re-review accepted the
+complete projection after 61 focused tests. This changes no product bytes or outer
+result schema. The single converged deterministic gate then passed repeatable build,
+typecheck, Biome over 367 files, 149 test files / 1,901 passing tests with one skip,
+and `git diff --check`; the candidate is eligible for one physical qualification.
+
+That physical pair
+`installer-trust-faults-v12-2026-07-31T20-14-14-758Z.{json,md}` remains failed with
+JSON/Markdown SHA-256
+`fcbffb29215727a5ade03f2d695718bb0217881ece4e08c1483960d99857a969`/
+`b51586b9b0b81a99bbf2efea950b5de80fc22bb967c2858249baced7841c68ac`
+and canonical payload SHA-256
+`1df333d70c1f988d10f7416d17c6c7633389cc496999e54335ab5caab029c7fe`.
+It again completed six cells and rejected order 33 of the mid-append attempt-2 handoff,
+but the complete retained sample established the remaining semantic error: transfer
+telemetry held the exact release digest while the store publication digest remained
+null and both subsystems retained the exact failed quota tuple. Authoritative worker
+source sets transfer `activeReleaseDigest` to the operation target when the request
+starts and does not clear it on typed failure; only install-store `activeReleaseDigest`
+is publication authority. The qualifier had incorrectly required both to be null.
+
+The reviewed correction requires the transfer target to equal the exact release digest,
+the store publication to remain null, both states to remain failed, and every structured
+quota field to remain exact. Null or wrong transfer targets, non-null store publication,
+state changes, diagnostic mutations, and stale Ready-barrier telemetry all fail. Source-
+traced independent re-review passed 62 focused tests. This is a qualifier semantic
+correction only; product bytes and outer evidence schema remain unchanged. Its
+corrected deterministic gate passed repeatable build, typecheck, Biome over 367 files,
+149 test files / 1,902 passing tests with one skip, and `git diff --check`.
+
+The corrected physical pair
+`installer-trust-faults-v12-2026-07-31T20-39-51-656Z.{json,md}` is accepted with
+JSON/Markdown SHA-256
+`7cc0cbaf170d11c1444016c07b8059eecdfde8d1b7c7b9de02cbdcf620e797d4`/
+`df0014b4c5245ea1f38efcb35d3234bcbe7610b3302333f88a982d58c7bfae8e`
+and canonical payload SHA-256
+`fa641190100ef324eb60c4ca8e6a7834b1cbdfe95effbe4ea2ddc516e80c7ff4`.
+Pinned sandboxed Chrome 151.0.7922.34 passed the exact eight cells in required order
+with fresh disposable profiles, transition-proof schema v3 and exact phase-final
+barriers throughout, no terminal failure, exact artifact/release identity, and complete
+cleanup. Independent review recomputed both embedded manifest identities, all three
+evidence hashes, source/browser/environment authority, accounting, injected-fault
+outcomes, fail-closed publication, repair/resume, persistence-denial truth, and the
+exact Markdown companion. This closes Installer trust + crash-safety only.
+
+**Consequences:** This narrows proof machinery, not product correctness. Identity,
+authority, integrity, repair/recovery, accounting, and cleanup remain fail-closed. The
+new evidence contract requires a complete deterministic gate and a new physical result;
+historical attempts and adjudications are preserved. Reviews should attack the product
+invariants and raw-evidence provenance instead of requiring incidental publication
+cardinality.
+
+**Reopen if:** bounded raw evidence is insufficient to adjudicate a failure, tolerance
+for equivalent publications permits a product invariant violation to pass, or an
+acceptance claim genuinely requires an exact internal publication topology.
+
+---
+
+## D-144: Qualify the asset-only update launch outcome and keep V8 attribution best-effort (2026-07-30, accepted)
+
+**Decision:** Accept `asset-update-v8-lifecycle@2` as the bounded M2
+asset-only-update/V8 lifecycle contract. One invocation owns a single persistent
+profile and orders exact initial install/Ready, fresh launch, produce diagnostic,
+pre-update diagnostic and warm launch, publication of a manifest-verified
+non-executable-only release diff, transfer/final verification/publication/Ready,
+post-update warm launch, and post-update diagnostic. It fails unless the executable
+resource set and its aggregate identity are unchanged, the changed/unchanged resource
+sets and transfer accounting are exact, both warm launches are at most 10 seconds, and
+the target, active store release, offline-shell generation, Ready state, and Launch
+authority all name the exact expected release. The signed post-minus-pre launch delta
+is retained. The relative-regression threshold remains explicitly `null`; this one
+pair does not calibrate or imply one.
+
+The accepted same-profile dev-01 Showcase result is
+`harness/results/asset-update-v8/asset-update-v8-v2-2026-07-30T10-05-24-152Z.{json,md}`
+(JSON/Markdown SHA-256
+`be82dd00ba7af11d64c7cdae2899d80befd010279065c643f7fd3f11b155fb24`/
+`95d6fc8bb47d39a71ed40dbdb7d1a5e95873a4aa179feeda98873bf5a93a2028`).
+Pinned Chrome for Testing 151.0.7922.34 used one persistent registered dev-01
+Showcase profile. The pre artifact/release were
+`2dbb7b95bb776e1e76d1d416db6c69a42d0df3d9a662aeea595a4dad7014edc6`/
+`c75e8f95ac4c55961a573cfdfe695e854994cc296c5dab8463c5a1b5fdedaa1c`;
+the post artifact/release were
+`5d2e2dcdea4d150992fd448f655ad63cd60f2353ffda6cb5f7e1360182675b1b`/
+`d464a4dcc1b8c1d00415b2e34b5b92380012ac6c18fee53233081117e62433dc`.
+Exactly the district index and cell 00-00 changed, both non-executable. The other 282
+resources and executable identity digest
+`dd7736a1ab68879cf05b946c5771e9a2ed585cff46a08beb230ece09fb96fc1e`
+were unchanged. Transfer downloaded 72,759 bytes; final verification covered all
+263 resources and 2,621,434,134 bytes; store, shell, Ready, and Launch authority were
+exact.
+
+The fresh launch measured 6,098.435 ms. The pre-update and post-update warm launches
+measured 5,831.760 and 5,748.105 ms, both inside the unchanged fixed 10-second
+ceiling, with signed delta −83.655 ms. This is the complete in-app
+`launch-to-interactive@2` outcome. It does not weaken the ceiling, average away a
+failure, or convert the unset relative threshold into a verdict.
+
+V8 evidence remains narrow. All four best-effort traces reported zero data loss.
+Fresh and produce cache/production attribution remained `invalid` because the initial
+installer navigation preloaded app, engine, game, and installer scripts and therefore
+mixed their cache lineages. Pre/post cache attribution remained `invalid` because the
+expected compilation events were absent. Separately valid pre/post production evidence
+measured zero code-cache re-production across all six cacheable scripts.
+`WebAssembly.instantiateStreaming` was measured against the exact pinned Wasm artifact
+on produce, pre-warm, and post-warm. These observations establish lossless collection,
+absence of observed re-production, and the exact streaming API/artifact; they do not
+prove a V8 cache hit or successful cache consumption.
+
+**Current implementation correction (2026-08-02):** lifecycle-v3 and the selected
+thread-spike service now use `WebAssembly.compileStreaming` on the original fetched
+response, then structured-clone the exact compiled `WebAssembly.Module` to both workers
+for their used runtime instances. Exact `application/wasm` and canonical positive
+`Content-Length` response metadata retain artifact-size authority without cloning and
+fully buffering the body a second time. The unused main-thread instance, its imports,
+and its unreachable externref initializer are removed. Retained lifecycle-v2 evidence
+and its validator continue to require the recorded `instantiateStreaming` value; this
+implementation correction creates no new cache-hit or performance claim.
+
+**Retained failures and correction:** all earlier result pairs remain immutable and
+keep their original verdicts.
+
+- The first v1 pair
+  `asset-update-v8-v1-2026-07-30T06-26-26-687Z.{json,md}` remains `pending`
+  (JSON/Markdown SHA-256
+  `618c70fa63fa3099b9c6076e828f92765c5c43cf97c343655a57df45c0b10446`/
+  `5d92b8b7236c0528debc0bd422e3a6fbb170bad8bd615d986af51452a9049026`).
+  The v1 finalizer failed to replace its reserved pending pair with terminal failure
+  evidence, so it carries no lifecycle verdict.
+- The valid v1 budget failure
+  `asset-update-v8-v1-2026-07-30T07-03-59-378Z.{json,md}` remains failed
+  (JSON/Markdown SHA-256
+  `9785a506c98eba3d7651a3e54b1f0d483d819faebb46a4091f66430a8f8535f2`/
+  `9e9aea4abb3769e54f6e0b0b25d5786b2ec862c054b3167cab9d9ef78778edf2`);
+  pre/post warm launches measured 8,714.375/14,834.930 ms.
+- The v2 diagnostic candidate
+  `asset-update-v8-v2-2026-07-30T07-36-11-804Z.{json,md}` remains failed
+  (JSON/Markdown SHA-256
+  `7a1920327b707dbbade5df9af8c240121c19db6377688c7ae550914517697a03`/
+  `d191c53a92eb4e5c32761aeabfde2f843a50f435da37a0f104f2a84af297fe64`);
+  pre/post measured 9,821.055/13,541.615 ms.
+- The first corrected v2 candidate
+  `asset-update-v8-v2-2026-07-30T07-53-40-357Z.{json,md}` remains failed
+  (JSON/Markdown SHA-256
+  `89fe1b0a8b613fc3a1aa31bee0e4f76d3415c6da19354edf0b6e834d199b79f9`/
+  `41c3d3ec0e97280c0e69743c11d83a7cc7b24dc2638523f02c02b05bc05b9573`);
+  pre/post measured 9,009.270/10,157.520 ms.
+
+The phase timing added in v2 localized project work rather than a browser cache
+failure. Ordinary runtime admission had reused the full release-selection routine:
+each active-release query/admission could revalidate every OPFS object for both the
+newest active release and the complete previous rollback release, despite needing only
+the active identity. The accepted correction gives ordinary admission an active-only
+resolver: it reads commit ordinals newest-first, stops at one unambiguous eligible
+active release, validates/caches that release, and does not publish an incomplete
+active-only answer into the active/previous telemetry pair. Full active/previous scans
+remain where rollback, publication, reconciliation, and GC require them. Each retained
+pair above belongs to its then-current changed candidate; the accepted run follows this
+reviewed correctness/performance correction and is not an unchanged-artifact retry.
+
+Streaming telemetry advances to v11 to expose exact worker launch-startup phase timing,
+and the public envelope advances to v35. Smoke/flythrough/render-recovery report schemas
+advance to v61/v28/v24. Smoke mandatory metric set v28 and the other scenarios'
+mandatory metric sets and all thresholds are unchanged.
+
+The final D-097 production report is
+`harness/results/smoke-1-2dbb7b95bb77-dev-01-showcase-2026-07-30T11-16-07-360Z.{json,md}`
+(JSON/Markdown SHA-256
+`015a6edda2cd7a72be2862afcf028430996b7e0596fbca6332e42470318d0eee`/
+`1feda3865885e805ae856302e137a210d40c5c4fe8282d6e93cba2bb44771ec1`).
+Production preflight/postflight both bound exact artifact/release
+`2dbb7b95bb776e1e76d1d416db6c69a42d0df3d9a662aeea595a4dad7014edc6`/
+`c75e8f95ac4c55961a573cfdfe695e854994cc296c5dab8463c5a1b5fdedaa1c`.
+Under schema v61 / mandatory metric set v28 all six launches, all three facets, and
+30/30 checks passed. The baseline remains untracked. No V8 smoke diagnostic was
+requested because the dedicated asset-update lifecycle already supplied this item's
+targeted V8 evidence.
+
+**Sources checked (2026-07-30):** the five immutable local JSON/Markdown lifecycle
+pairs above; the accepted result's raw target, release-diff, transfer, launch,
+authority, trace, production, and Wasm records; the current OPFS active-selection
+implementation and deterministic tests; and the final production smoke JSON/Markdown.
+No current browser-support claim or web source is required for this decision.
+
+**Consequences:** Close only M2's V8 code-cache/asset-only-update checkbox. The
+install/update feature remains active: Installer UX, repair, offline faults, uninstall,
+scale tests, multi-machine exit qualification, and M2 itself remain open. The earlier
+failures are project finalization, correctness, performance, and harness evidence; they
+establish no browser bug, specification gap, or new rough-edge entry.
+
+**Reopen if:** an asset-only update changes executable identity; the fixed pre/post
+warm-launch gate regresses; enough representative measured pairs justify proposing a
+relative threshold; active-only admission no longer preserves exact release authority;
+the executable/cacheable script topology or pinned Wasm identity changes; or Chrome
+exposes authoritative per-artifact cache-consumption evidence that can replace the
+best-effort attribution contract.
+
+## D-143: Bound the game-UI substrate spike (2026-07-29, accepted)
+
+**Decision:** Run one bounded spike to resolve **P-008 (game UI substrate)**: whether
+main-thread DOM/CSS layered over the worker-owned WebGPU canvas can carry the game's
+UI — frame-coherent world-anchored elements, low-latency HUD, heavy screens without
+input disruption — or whether some or all surfaces must render in-canvas. A hybrid
+split is a first-class outcome, not a failure. This entry is the experiment contract;
+a later entry records the result and resolves P-008.
+
+**Apparatus.** A probe layer on the existing app shell (the render worker already runs
+the greybox flythrough), sized as a spike:
+
+- **Probe A — world-anchored DOM:** a marker/nameplate tracks a designated moving
+  world object through the standard 12 m/s traversal. The render worker publishes
+  per-frame screen-space position stamped with frame ID + timestamp over the existing
+  telemetry/SAB path; the main thread applies it as a DOM transform. Measured:
+  positional staleness — how many rendered frames (and ms) old the applied position is
+  when it becomes visible — plus screenshot evidence at speed.
+- **Probe B — event-rate HUD:** three pool bars and an event ticker driven by
+  synthetic sim-shaped events at combat-plausible burst rates (10–30 events/s).
+  Measured: event→visible latency and main-thread task cost.
+- **Probe C — heavy screen:** an inventory grid (≥200 slots with images) and a journal
+  text page opened/closed repeatedly during the flythrough. Measured: UI-attributable
+  main-thread long tasks, input-capture→worker-command-enqueue delay under load,
+  dropped/late inputs, and render-worker frame-time deltas.
+- **Probe D — in-canvas comparison arm:** Probe A/B equivalents rendered by the render
+  worker as simple quads/text (bounded — no UI framework), producing the comparison
+  numbers for the same metrics.
+
+Frame correlation uses frame IDs stamped on both sides; presentation-time attribution
+uses what the platform actually exposes (rAF timestamps, capture-based evidence where
+needed). If DOM-vs-worker-frame presentation alignment is not cleanly observable, that
+unobservability is itself a logged finding — the absence of any primitive to
+frame-lock main-thread DOM updates to a worker's canvas presentation is exactly the
+class of rough edge this spike exists to surface. The accessibility/i18n payoff
+claims are spot-verified, not assumed: screen-reader name/role/value on the HUD
+probes and Translator API over probe text, recorded pass/fail as evidence.
+
+**Predeclared verdict criteria** (per surface class; any mix is a valid outcome):
+
+- *World-anchored:* DOM is eligible only if p95 positional staleness ≤ 1 rendered
+  frame with no visible detachment in the screenshot evidence at 12 m/s; otherwise
+  world-anchored UI is in-canvas.
+- *HUD:* DOM is eligible only if p95 event→visible ≤ 50 ms and burst rates produce no
+  UI-attributable main-thread long task > 50 ms.
+- *Heavy screens:* DOM is eligible only if input-capture→command-enqueue p95 stays
+  within one sim tick (working value 16.7 ms at 60 Hz) with zero dropped inputs
+  during open/close cycling.
+
+Thresholds are fixed before the run; recalibrating one afterward requires its own
+decision entry with the measured case, never a silent relax-to-pass.
+
+**Bounds and cadence.** No production UI framework selection (that is a later, separate
+decision over the winning substrate); no visual design work. Metrics enter a versioned
+harness scenario/schema (root rule 3 — extending the harness is part of the spike);
+verdict-carrying numbers come from registered dev-01 under pinned Chrome at the
+physical console, and other runs are advisory. The spike has no sim dependency and may
+run before M3 opens; it must conclude before M3's dialog-presentation work starts.
+Closed-experiment rules apply: after the resolving decision, probe apparatus is
+removed, with a D-099 reconstruction bundle if the measured source is dirty. Findings
+go to rough-edges.md either way — a clean pass on all criteria is as much a platform
+result as a failure.
+
+**Context:** D-141 scheduled the UI-stack track at M3; game-design.md's ruleset
+(D-142) now defines the real consumers (HUD pools, world-anchored nameplates,
+inventory/journal screens, dialog presentation). The DOM bet's upside — free
+accessibility, IME, subtitles, and the translation surface infinite localization
+needs — is worthless if world-anchored or combat-rate UI can't hold frame coherence
+over a worker-rendered canvas, and no current source settles that; it must be
+measured (root rules 3/10).
+
+**Consequences:** plan.md's M3 UI item and the features.md Game UI stack row point
+here; P-008 is registered in the proposed/open list. The resolving entry will assign
+each UI surface class (world-anchored, HUD, screens, dialog) to DOM or in-canvas and
+becomes binding on all M3+/M3.5 UI work.
+
+**Reopen if:** the resolving verdict is later contradicted by representative-content
+measurements (M5 art-pass scenes or M3.5 combat-rate reality differing from the
+synthetic burst model), or a Chrome change materially alters DOM/worker-canvas
+compositing behavior — either triggers a bounded re-run under then-current pins, not
+a silent verdict flip.
+
+## D-142: Adopt slice-scale ruleset v1 (2026-07-29, accepted)
+
+**Decision:** The M3.5 ruleset design pass ran early (pulled ahead of M3 because the
+sim data model and save schema derive from it). The human chose the four structural
+forks in the 2026-07-29 design session; game-design.md's "Mechanics — slice-scale
+ruleset v1" section is the spec home. The core choices:
+
+- **Combat: deliberate real-time.** Committed wind-up/active/recovery actions in sim
+  ticks, resolved by contested checks (seeded roll + rating vs. rating) — stat-driven
+  under the hood, positioning/stamina/telegraph-reading on the surface, soft-lock
+  targeting, no twitch aiming. One action/resolution model shared by players and
+  monsters. Chosen over action combat and pausable-tactical for fit with the
+  fixed-timestep deterministic sim, command-pattern input, cross-machine replay
+  hashing, and future P2P.
+- **Magic: aether pool + crafted catalysts.** Spells spend a regenerating Aether pool
+  and require an equipped catalyst crafted from harvested reagents — deliberately
+  fusing magic, crafting, gathering, loot, and economy into one loop rather than
+  three disconnected demos.
+- **Progression: classless + ability loadout.** One shared authored pool (12–16
+  abilities), 4 active + 2 knack slots, level cap 10, three playable folk with minor
+  modifiers. Chosen over light classes (≈3× authoring for the slice) and
+  skill-by-use (grind-shaped, replay-noisy).
+- **Death: waystone respawn + recoverable satchel.** Demo-friendly, save-scum-free,
+  fully inside the sim, and the waystone network doubles as world landmarks.
+
+Supporting structure: four attributes (Might/Finesse/Vitality/Attunement), three
+pools, five damage channels chosen to double as rendering/VFX showcases, five bounded
+status conditions, 20–30 recipes, three NPC-owned crafting stations,
+district-partitioned gathering, seeded loot tables with rarity tiers and 0–2 affixes,
+a 6–8 archetype bestiary, one main arc engineered to drive repeated D1↔D2 transitions
+(M4's exercise), and 6–10 side quests covering every system. Explicit slice
+exclusions (stealth, mounts, factions, dynamic economy, durability, companions, fast
+travel) are recorded in the spec; re-adding one is a decision, not a content add.
+
+Two binding architecture implications were added to game-design.md: rules are
+versioned data tables with named per-system seeded RNG streams (replay stability as
+content grows), and LLM output mutates state only through validated structured
+intents (D-074).
+
+**Context:** D-141 created the ruleset design pass as M3.5's first track;
+running it before M3 de-risks the sim data model (damage/status shapes entity
+components, the magic model shapes ability/resource state, crafting shapes the item
+schema). Tuning values in the spec are starting points for M3.5's replay-driven
+balancing and change freely; this entry binds only the structural choices above. No
+D&D-protected names, creatures, or mechanics text; all names original, placeholders
+marked *(working name)* pending the M5 creative pass.
+
+**Consequences:** game-design.md carries the spec; plan.md's M3.5 ruleset checkbox is
+annotated but stays unchecked until M3.5's balancing consumes and validates it. The
+M3 sim data model, save schema, event-stream vocabulary, and NPC behavior scoping all
+derive from this spec.
+
+**Reopen if:** M3 determinism work invalidates per-contact contested checks;
+greybox playtests show deliberate real-time reads poorly at the 12 m/s traversal
+scale; M3.5 balancing demands a structural change (new pool, new resolution model);
+or the M5 character pipeline cannot deliver three visually distinct folk plus the
+bestiary within budget.
+
+## D-141: Fill the gameplay, UI, audio-content, and animation plan gaps (2026-07-29, accepted; mandatory Standard-tier qualification provision superseded by D-150)
+
+**Decision:** Second pass of the D-140 gap review, applying the same test — systems the
+vision and game-design docs promise ("no system is toy-grade") that no plan item
+builds:
+
+- New milestone **M3.5 — Gameplay systems** between M3 and M4 (D-140's numbering
+  convention; nothing renumbered). Its first track is a ruleset design pass expanding
+  game-design.md's single genre paragraph into a slice-scale mechanics spec; then
+  combat, creature/monster behavior AI (distinct from LLM dialog), progression,
+  items/crafting/economy/loot, and quests/journal — all deterministic sim-worker state
+  under the M3 replay constraints, greybox-first. Replays double as gameplay
+  regression tests.
+- **M3 gains the UI-stack track:** decide the game's UI substrate before the first
+  real screens exist. Leading bet: DOM/CSS overlay on the worker-owned WebGPU canvas
+  (free accessibility, IME, subtitles, and the translation surface infinite
+  localization needs) versus in-canvas UI, with main-thread-DOM vs. worker-frame
+  compositing latency as the research question — a finding either way. HUD, dialog,
+  journal, inventory, and settings/remap all consume the outcome.
+- **M6's one-line audio item expands** into spatial-audio tech, an adaptive music
+  system (weather/danger/district-reactive), and SFX/ambience content plus the audio
+  asset pipeline `assets/` never had (its pipeline is visual-only). A design-now
+  constraints section in features.md binds M3: the sim event stream must expose
+  semantic, serializable gameplay events (combat/danger/weather/quest transitions)
+  that audio, quests/journal, and Summarizer recaps consume — retrofitting events at
+  M6 would be a rewrite.
+- **M5 gains the animation content pipeline:** retargeted and/or AI-generated
+  locomotion/combat/schedule animation sets across the races/monsters body types,
+  QA-gated — a distinct toolchain problem from mesh/texture generation. M3.5 combat
+  runs on placeholder animation until it lands.
+- **M6 gains Standard-tier qualification:** M1 closed Showcase-only (D-115/D-116) and
+  no plan item ever scheduled the Standard tier (registered mac-01, D-018). The
+  demo-goal claim "a stranger can play" must be measured on both gate tiers.
+- **Milestone exits gain a findings-synthesis checkpoint** (standing-workstream
+  amendment): update chrome-platform-gaps.md from the milestone's findings and
+  queue/publish the write-ups it earned at each exit, giving the primary goal-1
+  deliverable a forcing function instead of an indefinitely deferrable side task.
+- **Cinematics/scripted cameras are logged as undecided** — an `explored` feature row
+  requiring an explicit adopt-or-rule-out decision before M6, rather than an implicit
+  omission.
+
+**Context:** The D-140 review found the rendering-technology hole; this pass asked
+what else the plan promises but never schedules. M3's exit was "conversing NPCs" and
+M6's was "a demo a stranger can play," with combat, magic, monsters, progression,
+crafting, and quests (all committed in game-design.md) existing in no milestone; the
+architecture assigns "UI logic" to `game/` with no plan item choosing or building a UI
+stack; audio was one line of spatialization tech with no music system or audio asset
+path; and animation content was implied by "AI-generated rigged characters" while
+being a different toolchain problem. Non-goals were checked: low-end/mobile hardware,
+monetization/accounts, and cross-browser remain excluded; Standard tier is not
+low-end — it is an existing registered gate tier (D-018) that was simply never
+scheduled.
+
+**Consequences:** plan.md gains M3.5 and the M3/M5/M6 items above; features.md gains
+seven matrix rows and the adaptive-audio design-now constraints section. The M3 sim
+event stream is now a binding contract with three named consumers (audio, journal,
+recaps). Slice-scale ruleset depth is a design output of M3.5's first track, not a
+pre-commitment. Budgets follow the D-140 model where tracks are exploratory: measure
+first, calibrate budgets through decisions.
+
+**Reopen if:** the M3.5 ruleset design pass concludes a system should be cut or
+radically reduced for the slice (record the reduction, don't silently shrink); the UI
+spike's compositing measurements invalidate the DOM-overlay bet; M3.5 scope proves
+large enough to split; or Standard-tier qualification needs to move earlier because M5
+art decisions depend on Standard-tier headroom.
+
+## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted)
+
+**Decision:** The plan gains an explicit rendering/simulation technology program:
+
+- New milestone **M4.5 — Environment rendering technology** between M4 and M5.
+  Existing milestone numbers are deliberately not renumbered, so cross-doc references
+  to M5–M8 stay valid. Its tracks: lighting/shadows/GI (including fire/torch/magic
+  local-light nights), sky and atmosphere, instruction-set procedural terrain,
+  procedural materials (metals via the standard PBR path), vegetation plus a shared
+  wind system, water (rendering and simulation costed separately), reflections,
+  post-processing/AA/temporal upscaling/HDR output, transparency/OIT and decals,
+  GPU-driven rendering and occlusion culling, and virtual texturing.
+- M3 gains NPC navigation/crowds. M5 gains the character-surface/dynamics tracks
+  (skin/SSS, eyes, hair/fur, cloth, muscle deformation, movement/IK). M6's former
+  one-line "VFX and weather pass" expands into a shared GPU particle/volumetrics
+  substrate, fire/smoke coupled to the M4.5 lighting work, precipitation/accumulation,
+  and physics garnish (ragdolls, ropes/chains, buoyancy with a rowboat).
+
+Working model, binding for every track: **heavily iterative human-plus-agent
+exploration**, not spec-then-implement. Prototype competing approaches, measure their
+real costs on the harness, weigh cost against visual payoff and both project goals, and
+converge on a per-track decision entry — adopt (with measured cost), rule out, or
+defer — usually with rough-edges findings, since most tracks press directly on WebGPU
+gaps (no ray tracing, no mesh shaders, no bindless, no platform upscaler).
+
+**No pre-set budgets.** These tracks intentionally start without budgets.md
+allocations. Costs are discovered first; budgets are calibrated afterward through
+decision entries (the existing budgets.md recalibration model, run in discovery
+order). Root rule 3 is unchanged — adoption claims still come from harness numbers,
+and adopted features join the standard flythrough coverage.
+
+**Scope definitions and exclusions:** "Generated terrain" means instruction-set-driven
+procedural terrain: placements and features are authored and deterministic while
+geometry/textures are generated at install or runtime rather than fully modeled and
+downloaded — an install-size research angle tied to M2, not random worldgen.
+Destructible environments are ruled out: no track and no design-now constraints.
+
+**Context:** The plan previously jumped from greybox streaming (M1–M4) to the art pass
+(M5) and a one-line VFX pass (M6) with no milestone building the technology those
+passes stand on — M5's "swap greybox to final art" implicitly assumed terrain,
+vegetation, water, materials, lighting, and character-surface tech that no plan item
+created, and dynamic lighting was already a binding constraint (game-design.md
+implication #1) with nothing behind it. Destruction was considered and dropped: it
+conflicts with the deterministic-sim constraint (features.md M7 constraint 3), the
+immutable content-addressed streaming/install model, and D-090's separately authored
+collision, and carries no current creative requirement.
+
+**Consequences:** plan.md and features.md are updated in this change (new matrix rows;
+the High-fidelity rendering, VFX & weather, Character & animation, and Physics rows now
+reference the tracks). budgets.md gains per-feature entries only as tracks conclude.
+Ordering inside M4.5 is dependency-driven — lighting first, terrain/materials next —
+with substrate-independent tracks free to run concurrently.
+
+**Reopen if:** a track proves large enough to deserve its own milestone; measured
+dependencies invert the lighting-first ordering; destruction acquires a concrete
+creative need (a reopening decision must include determinism/streaming/collision
+impact analysis); or the instruction-set terrain angle fails its install-size/quality
+research premise.
+
+## D-139: Bind progressive boot warmup to a release-owned PSO trace (2026-07-30, accepted)
+
+**Decision:** Build-manifest v15 adds exactly one content-addressed JSON asset-pack with
+resource ID `game-specific-pso-warmup-trace`. The payload is
+`pso-warmup-trace@1`, not an opaque engine cache: it binds Babylon Lite 1.12.0, an exact
+render-state compatibility digest, priority-then-ID ordering, and the current logical
+Standard-material/opaque/MSAA4 pipeline family plus its state digest. The effective
+pipeline descriptor is derived and asserted at the Babylon registration boundary and
+canonically includes the explicit canvas/depth formats, shader/material/mesh features,
+vertex layouts and entry points, target blend/write state, primitive and depth/stencil
+state, and multisample defaults; a change to any field changes or invalidates identity.
+The existing install-manifest v1 vocabulary represents it as an exact game-specific/OPFS
+`asset-pack`; this adds no new install-manifest shape or kind. The release digest and
+resource SHA-256 bind its exact bytes.
+
+Ordinary runtime preflight reads the trace only through the admitted active-release
+binding, checks manifest/reference/path byte and SHA-256 identity, and parses exact
+canonical bytes. The render worker independently revalidates the structured-clone
+bundle, including trace identity and installed-release provenance. The explicit
+WebDriver-attested legacy runtime route uses the same embedded canonical trace and
+reports `privileged-embedded`; ordinary runtime has no embedded or network fallback.
+
+Before Ready and the first interactive frame, a render-worker-owned registry crosses a
+task boundary for every compile miss and invokes the matching Babylon scene
+registration. The same authoritative state request is replayed once and must become a
+registry hit without invoking the compile callback. Missing, duplicate-pending,
+unknown, incompatible, or failed requests fail startup. Parse, incompatibility,
+unknown-entry, and compile failures retain typed evidence through worker recovery and
+public export; a failed compile truthfully permits an uncompiled cache miss while
+preserving exact counter invariants. `pso-warmup-telemetry@1`
+records source/release/trace/build identities, request/compile/deferral and registry
+hit/miss counts, queue high-water, total/maximum/per-entry durations, request counts,
+and typed failure state.
+
+Public telemetry advances to v34. Smoke advances to report schema v60 and mandatory
+metric set v28 with exact progressive replay evidence in each of its six existing core
+launches. Flythrough and render-recovery advance to v27/v23 only because they consume
+the public envelope; their metric sets and thresholds do not change. Baseline promotion
+independently revalidates the new mandatory telemetry.
+
+The separately triggered `pnpm harness:pso-warmup:qualify <smoke.json> <result.json>`
+implements `pso-warmup-launch-pair@1`. It accepts only a passing smoke-v60/set-v28
+report with exact finalized facets, registered physical/source/browser/executable/
+target identities, and three exact ordered adjacent fresh/warm persistent D3D12
+lineages. It independently resolves the build/install manifests and trace bytes without
+importing engine constants, requires exact replay identity, conserves fresh
+render-pipeline/shader misses into paired warm hits and across lineages, and requires
+zero pipeline/shader compilation overlap with the gameplay measurement window. Before
+input validation it reserves collision-safe create-only JSON-primary and companion
+evidence; validation or companion failure still retains immutable sanitized failure
+evidence, while success requires a second authority validation. This is an independent
+consumer of D-036's
+existing Dawn trace plus subprocess-UMA evidence; application registry hits never
+substitute for Dawn backend cache evidence.
+
+**Context:** The exact local `@babylonjs/lite@1.12.0` package source and emitted
+render-worker build were inspected on 2026-07-29. The local Babylon scene-registration
+path owns current pipeline creation, but exposes no stable public serialized pipeline
+cache import. D-036's retained local Dawn evidence already distinguishes fresh
+misses from same-profile warm hits. The chosen artifact is therefore a project-owned
+declarative replay trace, while Dawn remains the authority for browser/backend cache
+behavior. No external technology claim or workaround is needed.
+
+The deterministic build emits a 3,907-byte trace with SHA-256
+`54d23fc5b78fc120d6af712e9579662a97b391ce71faddb28c60c024f2af2a20`,
+state digest
+`55da5b2f0c319263d25dcf57bf2ae6fe645986cb2f8812e604c778137fc985e4`,
+and compatibility digest
+`abd16f6b4964b1e9e147148a075deea28f4cf4e79c76dbf4f4dd2915a0acbf31`.
+The final build/repeatability, type, lint, diff, and unit gates pass 123 files / 1233
+tests, including hostile descriptor, exact-identity, qualifier, evidence-lifecycle, and
+typed-failure coverage.
+
+The accepted local D-097 smoke is
+`smoke-1-8f3ae8585efe-dev-01-showcase-2026-07-30T04-17-04-822Z.json`
+(SHA-256
+`1ec8212e2c5ef332dcdfdb6415b50cde03f4b0f28226be561d82433eee9f2562`)
+for artifact
+`8f3ae8585efecabd922bc8be15c426d60ff2467039954ac7e25253aafa76440b`
+and release
+`258e6b079eca14849ac1f1cb70d8a0af687e3b6de21accae30aecdc13f78fa07`.
+All six launches, all three facets, and 30/30 checks passed on registered dev-01
+Showcase. Its three fresh lineages each recorded 2 graphics-PSO and 4 shader misses;
+each adjacent warm launch recorded the conserved 2/4 hits, with zero opposite counts
+and zero gameplay overlap. The retained qualifier JSON/Markdown SHA-256 values are
+`d63fb00c0a5b8752f017085a3fd2ac7fc5c9645d9b9974167af677121d521fb8`/
+`c464f51bb74edfd9c7e701524ae61eca4dc359615967481682134149b81f9237`.
+Independent review recomputed the exact build, release, source, browser/executable,
+machine, target, trace, chronology, conservation, and evidence-ownership identities
+without findings. Two earlier qualifier pairs remain immutable: one failed before
+validation because an operator-supplied literal `--` shifted the arguments; the other
+truthfully exposed the qualifier's incorrect exact render-surface comparison. The
+correction now applies the registered ±2-pixel surface tolerance exactly, received
+independent review, and required the accepted new physical smoke because it changed
+source identity. Neither failed pair is final evidence.
+
+**Consequences:** The application now proves that every declared current pipeline
+family was progressively requested before gameplay and that its own registry
+deduplicated replay. The independently retained Dawn evidence establishes the exact
+fresh/warm backend outcome without inferring it from the application registry. Close
+only M2's PSO trace/progressive-warmup checkbox. The change does not alter a performance
+threshold, qualify Standard/Metal, publish/deploy an artifact, or close Installer UX or
+M2. V8 code-cache lifecycle evidence is the next active M2 project.
+
+**Reopen if:** a new material/render-pass family requires another trace entry; Babylon
+Lite changes the authoritative registration boundary; the render-state compatibility
+record changes; Dawn exposes a stable public pipeline-cache import; non-D3D12 cache
+evidence receives an independently validated contract; or measured boot progression
+requires a different yielding policy.
+
+## D-138: Select a complete release-bound offline shell generation explicitly (2026-07-29, accepted)
+
+**Decision:** Build one stable root-scope module worker at `/service-worker.js`, list it
+as an exact build/install artifact, and keep the build manifest outside its own artifact
+list so no self-hash cycle exists. Build-manifest v14 carries the exact offline-shell
+generation-schema v1, save-schema v1, and stable worker path. An ordinary app-shell
+target refresh or completed install explicitly registers the worker and sends a bounded
+prepare request; worker `install` and `activate` events only take control and never
+prepare, select, or delete a shell generation. D-135's WebDriver-attested automation
+branch neither creates this service nor depends on a shell generation. The service
+worker grants no authority from a request/client URL: a previously controlled
+automation page receives the exact selected cached shell resources, while non-shell
+legacy runtime requests fall through to the network normally.
+An explicit prepare checks the current network build when reachable; an initial network
+failure may reuse only a fully reverified active generation whose app entrypoint is the
+one already loaded. A reachable but malformed target never falls back to cached state.
+
+A generation binds the exact build-manifest SHA-256 `artifactDigest`, install-manifest
+SHA-256 `releaseDigest`, build/install/save schema versions, app and engine artifact
+identities, service-worker identity, and every install resource whose target is
+`shell`, plus the two manifest documents. Model shards, district data, and every other
+OPFS target are excluded from Cache Storage. Preparation fetches exact same-origin
+paths with reload semantics and redirects rejected, then independently checks 200
+status, final origin/path, byte length, SHA-256, MIME type, immutable-or-revalidating
+cache policy, `nosniff`, COOP, and COEP before retaining a response.
+
+Each generation has a separate Cache Storage namespace. A separate
+`parallax-offline-shell-prepare-v1` lock owns the complete preparation, while the
+`parallax-offline-shell-v1` exclusive Web Lock protects only short IndexedDB selection
+transactions and rollback. The candidate identity is durable before population;
+network transfer, population, and full-cache validation run outside the selection
+lock, followed by exact plan/candidate revalidation before one IndexedDB transaction
+changes `active`/`previous`. A failed or abandoned candidate cannot change the active
+selection, and cleanup cannot delete a currently authorized active/previous generation.
+Destructive uninstall acquires and holds the install-store, offline-shell prepare-owner,
+and offline-shell selection locks in that global order across the complete teardown; it
+never requests prepare ownership while already holding the selection lock.
+For a third generation, the durable transaction selects
+`active=C`/`previous=B` before best-effort deletion of obsolete A; a failed selection
+write removes only unselected C and preserves durable B/A plus both caches, while
+failed post-commit GC leaves an unselected orphan without failing activation. Fetch
+dispatch consults only the exact active generation, refuses
+reserved shell paths absent from it, and never searches another cache. If a selected
+response is missing or corrupt, the worker verifies the one compatible previous
+generation, atomically selects it, retires the failed generation from selection,
+best-effort deletes its cache, and can satisfy the same navigation from that rollback
+generation. No response mixes generations.
+
+Ready binds the exact selected shell generation and release. Exact-worker
+selection-change notifications from another controlled client invalidate Ready.
+Launch re-queries the exact active D-136 target without another full prepare/verify
+pass, then runtime performs D-137's final OPFS admission followed by one locked full
+shell `admit(expected)`. Successful locked admission is the already-loaded immutable
+page's shell boundary: a selection change before it fails typed, while a change after
+it applies to the next navigation and does not revoke the running code, regardless of
+whether the page has set its local `runtimeStarted` marker yet. Because the two manifest
+responses are selected shell resources,
+D-136 target discovery remains available offline; D-137 continues to open only exact
+active-release OPFS references. Incompatibility is a typed `shell-release-mismatch` and
+does not unlock Launch. Cached and generated failure responses preserve
+`Cross-Origin-Opener-Policy: same-origin`,
+`Cross-Origin-Embedder-Policy: require-corp`, and
+`X-Content-Type-Options: nosniff`.
+
+Offline-shell telemetry v2 exposes state, active/previous/candidate identities,
+prepare/verify/activate/rollback/failure and cache hit/miss counts, cumulative verified
+bytes/duration plus verification-duration high water, and a fixed zero
+mixed-generation count. The retained adapter failures below do not change that
+offline-shell schema. The accepted current runtime envelope is public telemetry v33
+with nested offline-shell v2, install-store v3, and installer-transfer v3;
+smoke/flythrough/render-recovery report schemas are v59/v26/v22; mandatory metric sets
+v27/v11/v5 are unchanged. Registration calls and awaits the stable registration's
+explicit `update()` inside the same request bound while online, then selects the newest
+installing, waiting, or active worker in that order. An offline `TypeError` from that
+update may reuse only the registration's exact activated `active` worker when it is
+already the page's controller and the root scope/script identity still match; a null or
+different controller, pending replacement, non-network error, or online failure is not
+suppressed. It waits for exact activation, rejects a
+redundant candidate, checks exact same-origin root script/scope, installs permanent
+state/controller/message listeners before the final activation recheck, and invalidates
+the cached endpoint on controller or worker-state changes. Registration does not
+complete until that exact activated candidate is also
+`navigator.serviceWorker.controller`; transient null/old control may wait only inside
+the existing request bound. Exact control loss/replacement advances page-local
+authority, rejects a response racing that change, and publishes typed failure telemetry
+so Ready and pre-admit Launch become unavailable. Each endpoint synchronously rechecks
+that its activated worker is still the exact current controller immediately before
+posting and before accepting a response; correctness does not depend on the queued
+`controllerchange` callback. Pre-admit Launch carries abortable shell authority through
+the complete D-137 OPFS preflight and locked shell admission, with the immutable-page
+boundary published only after both complete under the same still-current authority.
+Successful locked runtime admission is still that boundary; later control changes
+affect only future navigations. Container notifications are
+accepted only when `MessageEvent.source` is that exact activated worker. Every request
+captures an immutable request ID and owns its timeout and MessageChannel cleanup, so
+overlapping reverse-order responses cannot be mistaken for stale duplicates. The
+separately triggered
+`pnpm harness:offline-shell-adapter` is a fresh-profile visible-Chrome exercise that
+drives the ordinary Install flow to its exact Ready/Launch-enabled state, then checks
+real service-worker control, complete Cache Storage population, offline isolated reload,
+cached manifest identity, and OPFS-resource exclusion. Its local server exposes the
+exact pinned model shards through hard-linked immutable sources so the ordinary
+installer still transfers and verifies their bytes without making a second multi-GB
+fixture copy. The adapter transport does not rewrite any install source or manifest:
+every original manifest-bound path is served with its exact size/hash-derived strong
+ETag and strict single open-ended Range semantics (`206`, matching `If-Range`, or exact
+completed `416`). Same-origin GET requests carrying `Range` bypass offline-shell cache
+resolution and go directly to the network; ordinary non-Range shell requests remain
+cache-first. It is not run by deterministic gates and is not D-097 evidence. Adapter
+schema v4 requires a genuinely fresh profile to settle at exact ordinary UI/transfer
+`idle`, then records the actual UI `requesting-persistence`/`installing`/`ready` and
+installer-transfer `transferring`/`verifying`/`ready` plus install-store
+`writing`/`verifying`/`publishing`/`ready` transitions before claiming a fresh install.
+It binds the manifest-declared worker URL and canonical
+`artifactDigest:releaseDigest` generation to both the controlling worker and the
+ordinary UI's Ready authority online and after offline reload. It captures one exact
+controller across snapshot/cache/manifest inspection, rechecks its state/identity and
+the document's navigation identity around every asynchronous phase, and durably retains
+a bounded diagnostic ring installed before first navigation. Pending evidence is
+created before profile, serving-tree, model-link, and server setup. Missing fixtures,
+failed links, listen failures, and cleanup failures replace pending evidence with failed
+evidence; the server, partial serving tree/hard links, and profile are cleaned. Result
+stem reservation creates both JSON and Markdown placeholders exclusively before
+returning and advances through a bounded numeric suffix on either collision. It never
+deletes a result pathname after creation. Ownership of each successful `wx+` handle is
+registered before its first `stat`; initial identity failure retains the path and handle,
+writes bounded `reservation-abandoned` evidence through that exact handle, and closes it.
+Every other still-owned partial placeholder is likewise rewritten through its retained
+handle and closed before suffix advance or failure; a replaced pathname remains untouched
+and stops the reservation with its logical failure detail. Every later write uses the
+retained verified file handle. The runner retains both original `wx+`
+handles and records their BigInt `dev`/`ino`; each member must remain a distinct regular
+single-link file, and pathname `lstat` must resolve to the same recorded identity before
+and after every write. A terminal pair write that partly fails
+restores both owned placeholders to `finalization-failed` before the runner records the
+structured failed result; an unrecoverable ownership-state write identifies its
+logical result path and never touches unrelated bytes. Pending and failed setup
+evidence reports exact validated/linked model counts and bytes as `pending` or
+`incomplete`; only a fully
+completed passing setup may claim `hard-linked-exact`. Failed JSON and Markdown retain
+the same bounded/redacted primary failure, every cleanup failure with operation and
+logical path, and each possibly remaining logical path.
+
+**Context:** D-015 required offline navigation and isolation-header preservation;
+D-128–D-137 supplied exact shell artifacts, crash-safe installed objects, publication,
+reload discovery, and release-bound consumers, but ordinary navigation still depended
+on the network and no atomic shell selection existed. HTTP cache presence alone is not
+an application-level offline navigation contract.
+
+Current sources checked on 2026-07-29: the
+[Service Workers specification](https://www.w3.org/TR/service-workers/) for lifecycle,
+fetch, Cache Storage, and client-control semantics; the
+[Fetch Standard](https://fetch.spec.whatwg.org/) for reload cache mode, same-origin
+credentials, and redirect-error behavior; the
+[Web Locks API](https://www.w3.org/TR/web-locks/) for cross-context exclusive
+coordination; the
+[Indexed Database API 3.0](https://www.w3.org/TR/IndexedDB-3/) for atomic read/write
+transactions and the `strict` durability hint; and the
+[HTML Standard](https://html.spec.whatwg.org/multipage/browsers.html) for COOP/COEP
+cross-origin-isolation processing; and
+[HTTP Semantics RFC 9110](https://www.rfc-editor.org/rfc/rfc9110.html#name-range-requests)
+for strong validators, Range/If-Range, partial `206`, and unsatisfied `416` semantics.
+Those specifications define API semantics, not a
+passing Chrome qualification; the adapter is the bounded implementation check.
+
+**First-review correction:** Independent review rejected the initial proposal because
+it deleted obsolete A before committing C/B, trusted an unattested automation query in
+the service worker, admitted Launch from stale Ready state, cached an old active worker
+while its replacement installed, and compared overlapping replies against a mutable
+request ID. The first corrected candidate implemented commit-before-GC,
+no-URL-authority, Ready invalidation plus launch admission, replacement-safe
+registration, and per-request correlation. The adapter now inspects the activated
+controlling worker rather than `ready.active`.
+
+**Second-review correction:** Re-review rejected the corrected proposal because stable
+same-URL registration did not explicitly run `update()`, container notifications were
+not source-bound, the text incorrectly placed the admission boundary at
+`runtimeStarted`, Launch redundantly performed multiple full shell passes without
+byte/time telemetry, and admission failures could disagree with durable telemetry.
+The current candidate implements the explicit bounded update and listener ordering,
+exact-source filtering, locked-admit boundary, one Launch verification with telemetry
+v2, and durable exact failure response/telemetry contract above.
+
+**Third-review correction:** Re-review found that the outer preparation failure path
+and the default cached-generation rollback path discarded the partial byte/time
+measurement carried by a failed full verification. The current candidate folds each
+attempted measurement into cumulative count, bytes, duration, and high-water telemetry
+before durably recording failure or rollback, matching the admission paths.
+Late-resource candidate-corruption and cached-active rollback regressions require the
+exact partial work to remain observable.
+
+**Browser-adapter adjudication and fourth correction:** The first authorized browser
+adapter result,
+`offline-shell-adapter/adapter-v1-2026-07-29T18-32-53-347Z.json`
+(JSON SHA-256
+`9ba839b53a747a03221e6292c8f37153cf1494a77fda750a80d537ef3eed5db9`;
+Markdown SHA-256
+`7569bfa5d4c3809b5388f507c773ba12d0518149c06571cfa98d37be045100bc`),
+is retained failed on Chrome 151.0.7922.34 after the adapter's first control wait
+succeeded but a later inspection evaluation observed a null controller. Adapter v1
+split the observation across evaluations, so the evidence establishes an adapter TOCTOU
+and does not establish why page control became null; no Chrome rough edge is claimed.
+Review then found the separate product gap: registration activated a candidate without
+requiring it to be the page's exact controller, and `controllerchange` disposed the
+endpoint without revoking page-local Ready/pre-admit authority. The current correction
+implements the exact controller/authority and immutable-admit boundary contracts above.
+Adapter schema v2 retains bounded controller/state, page lifecycle/navigation,
+registration-slot, Playwright document/request/response, and safely available CDP
+service-worker diagnostics in pending/failed JSON, while executable fake-runtime tests
+cover null/replaced/state/navigation and reverse completion timing. Exactly one
+corrected v2 adapter run is authorized only after deterministic gates,
+build/repeatability, and independent review converge. The retained v1 JSON and Markdown
+are immutable.
+
+**Controller-continuity re-review and fifth correction:** Re-review rejected the
+fourth candidate because every reload required a successful network worker update,
+controller loss during OPFS preflight did not revoke Launch authority, endpoint
+correctness depended on delivery of `controllerchange`, and the adapter did not bind
+the exact worker/generation to the ordinary Ready UI online and offline. The current
+candidate adds the narrowly fail-closed offline-update reuse rule, synchronous endpoint
+identity checks, abortable pre-admit authority through OPFS preflight and locked admit,
+and exact manifest-worker/canonical-generation/ordinary-UI adapter assertions described
+above. The authorized corrected adapter-run count is unchanged.
+
+**Adapter-transport re-review and sixth correction:** Re-review accepted the product
+controller changes but rejected the adapter because the ordinary static server returned
+`200` to installer Range requests, the active service worker could substitute cached
+shell `200` responses, a preexisting Ready profile could pass, and setup failures before
+the protected block could leave pending evidence or temp state behind. The sixth
+candidate adds the exact no-rewrite Range transport, production-safe network
+pass-through for same-origin Range GETs, explicit fresh-idle and lifecycle-transition
+proof, and pending-first protected setup/cleanup contract above. Tests cover shell and
+model `206`, completed `416`, If-Range mismatch, invalid transport contracts, unchanged
+release-manifest bytes/digest, ordinary cache-vs-Range policy, preexisting Ready
+rejection, required transfer/publication-ready transitions, and retained
+missing-shard/link/listen failures with cleanup. The authorized corrected adapter-run
+count remains one and is still contingent on deterministic gates and independent
+review.
+
+**Evidence-lifecycle re-review and seventh correction:** Re-review accepted the
+transport, worker, and fresh-install corrections but rejected the adapter evidence
+lifecycle because timestamp collisions could overwrite retained Markdown, cleanup
+failures were collapsed into one message, and pending/failed setup could claim exact
+model linking before setup completed. The seventh candidate adds bounded exclusive
+JSON/Markdown result creation with suffix collision handling, structured
+primary-plus-all-cleanup failure evidence and logical remaining-path disclosure, and
+live validated/linked file-and-byte progress with pass-only `hard-linked-exact`. Tests
+seed colliding JSON/Markdown and prove their bytes remain unchanged after a failed
+result is written, exercise missing-shard/link/listen primaries with cleanup failures
+while verifying every cleanup attempt, cross-validate all structured failure fields in
+JSON and Markdown, and reject premature exact-setup claims. Schema v2 remains proposed
+and unretained, so this truthful strengthening does not consume a schema bump or the
+single authorized corrected adapter run. That run remains withheld pending
+deterministic gates and independent review.
+
+**Owned-pair re-review and eighth correction:** Final re-review found one remaining
+TOCTOU: the seventh candidate reserved JSON first but left Markdown unowned until
+terminal publication, so another writer could claim that Markdown path after the stem
+was returned. The eighth candidate reserves both create-only placeholders before
+return, carries one unpredictable ownership token in both, and verifies that token on
+an opened file handle before every pending or terminal write. Partial reservation
+removes only its own verified placeholder and advances to a bounded suffix; a cleanup
+failure or suffix exhaustion fails closed. Partial terminal publication restores both
+owned files to a matching `finalization-failed` state before failed-result publication,
+and exposes any ownership-state recovery failures by logical result path without
+touching unrelated bytes. Deterministic tests cover a collision after a first completed
+reservation, concurrent same-timestamp reservations, partial pair creation, bounded
+suffix exhaustion, matched passed/failed publication, one-side terminal failure and
+recovery, and refusal to modify replaced unrelated bytes. Schema v2 remains proposed
+and unretained, and the authorized browser-run count remains unchanged.
+
+**Filesystem-identity re-review and ninth correction:** Re-review found that a copied
+token or a hardlink/path replacement could satisfy the eighth candidate's text-only
+ownership check. It also found that all create failures were treated like suffix
+collisions, masking `EACCES`, `ENOSPC`, `EIO`, and similar failures. The ninth candidate
+retains the two original create-exclusive handles for the run, records their distinct
+nonzero Windows volume/file identities through Node 24's BigInt `dev`/`ino`, and
+requires handle and pathname identity equality, regular non-symbolic type, and link
+count one before and after every pending or terminal write. Writes use only the
+retained handle, so a pathname swap never modifies the replacement. Only an actual
+`EEXIST` during JSON or Markdown creation advances the suffix. Every other create error
+fails immediately; partial cleanup removes only a still-exact owned identity, and an
+`AggregateError` retains the original create error plus every cleanup error.
+
+On the validated Windows host, a local Node 24.18.0 probe returned matching nonzero
+`dev`/`ino` for a new path and its open handle. Node's `Stats` API does not expose the
+raw Windows reparse tag: the adapter therefore rejects the exposed symlink/junction
+classes through `lstat`, and rejects any redirection or replacement whose pathname
+identity/type differs from the retained regular-file handle. An exotic reparse point
+that Node reports as a regular file with the exact same volume/file identity is not
+separately classified by this adapter and would reopen the contract. Deterministic
+Windows tests exercise JSON-to-Markdown hardlink replacement, an additional hardlink,
+regular path replacement, copied-token impostors, a junction, and a file symlink when
+host privileges permit it; all preserve unrelated bytes. Injected `EACCES`, `ENOSPC`,
+and `EIO` tests prove immediate failure, exact partial cleanup, and original-plus-cleanup
+error retention. At that review boundary D-138 and schema v2 remained proposed; the
+browser run remained withheld.
+
+**Path-deletion and close-lifecycle re-review and tenth correction:** Re-review found
+that the ninth candidate still validated a pathname and then deleted it, leaving a
+replacement race, and that terminal publication could write `passed` before a handle
+close failed. The tenth candidate performs no pathname deletion in the result owner.
+Each still-owned partial placeholder becomes explicit bounded
+`reservation-abandoned` evidence carrying the create/collision failure and logical
+path, then its handle is closed. An ordinary `EEXIST` may advance only after successful
+abandonment; abandonment/path-identity/close failure stops immediately with the
+original plus every per-file failure. At most 100 partial abandoned files can be added
+by one exhausted invocation. If a pathname is replaced before abandonment, the
+replacement is untouched, the original handle is closed, and the structured aggregate
+identifies the failed logical result path.
+
+JSON and Markdown handle-close state is tracked independently and changes only after
+that exact close succeeds. Every call attempts both still-open handles; a later call
+retries only prior failures and a completed close is idempotent. Terminal publication
+writes and verifies the candidate pair, then closes both handles. Any close failure
+reacquires only a pathname that still matches the recorded identity, restores both
+artifacts to `finalization-failed`, and throws structured per-file close/recovery
+details; the runner then publishes a failed pair and retries closure. It reports a
+passing pair only after both closes succeed, and an unconditional runner `finally`
+attempts both closures on every exit. Tests cover replacement at the old
+validation/deletion boundary, bounded abandoned-orphan retention, publication plus
+recovery failure, first/second/both close failures, retry/idempotence, matching pair
+state, and closed-handle status. At that review boundary D-138 remained proposed and
+the browser run remained withheld.
+
+**Descriptor-lifetime re-review and eleventh correction:** Re-review found three
+remaining descriptor escape paths in the tenth candidate: the first post-`wx+` `stat`
+ran before the handle entered guarded ownership; failed reopened-handle validation
+suppressed a close rejection and dropped the still-open handle; and partial abandonment
+attempted close only once before returning. The eleventh candidate constructs the owned
+result-file record immediately after `wx+`, so initial stat/identity failure is retained
+as `reservation-abandoned` through the exact open handle and closure is attempted under
+the same guard. Reopen validation plus close failure now throws one aggregate containing
+both errors while preserving the handle/open state for a later retry; the handle becomes
+null only after its exact close succeeds.
+
+Partial abandonment retries only still-open handles for three bounded instrumented
+attempts, retains every attempt error beside the primary create/collision error, and
+keeps the complete owner set reachable through a final direct close attempt that test
+fault hooks cannot bypass. A real final `FileHandle.close()` rejection is also retained
+at process scope rather than leaving an unreachable live descriptor. Injected tests
+cover initial-stat failure, combined reopen-validation/close failure, repeated partial
+close with eventual success, and all three bounded close attempts failing before the
+final owned close; their handle counters prove successful closure at attempts 1, 2, 3,
+and 4 as applicable. At that review boundary D-138 remained proposed and the browser
+run remained withheld.
+
+**Retained v2 MIME-failure adjudication and twelfth correction:** The one authorized
+schema-v2 run is retained failed as
+`offline-shell-adapter/adapter-v2-2026-07-29T20-27-58-742Z.json`
+(JSON SHA-256
+`1fec1d32c69faa5749be5e8eb479aedf8b341ecd87a8ea68283049ef03e539e8`;
+Markdown SHA-256
+`e6d597e9ff9aa11c6b79a2451c916c4de9ee156619cd21e4fa9a7cc8a9756403`).
+It binds Chrome 151.0.7922.34, artifact
+`e1d6a8cebf7fadce2901e68d164bd3ca23563d1334fca4e483ade97371792b28`,
+release `5a835f9b81c1ff652e4941e16fc48bd16d44b96d0271b497ef0005e99f8f596a`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/247a40a7f33d86c34d015d8928b8c59fcfca9069e49ee873d5bdaf58e8c78542`.
+The service worker activated and controlled the page, but ordinary target refresh
+failed before transfer: generation descriptors required
+`application/javascript`, while the adapter's ordinary local server returned
+`text/javascript; charset=utf-8` for the first app module. MIME-essence validation
+therefore correctly raised `shell-contract`; the UI moved from `checking` to terminal
+reload-required `failed`, both buttons remained disabled, and transfer/store remained
+`idle`. This is deterministic project serving-contract drift, not a Chrome finding,
+and no unchanged-artifact retry is authorized.
+
+The correction deliberately selects one project JavaScript representation:
+`application/javascript`. The current production server was checked by bounded HEAD on
+2026-07-29 and returned that exact value for an immutable app module; the versioned
+nginx types table, ordinary local server, deployment/target validators, generation
+descriptors, and service-worker cache validation now agree. Validation compares the
+parsed MIME essence, so parameters such as `charset=utf-8` are normalized, but
+`text/javascript` and the other browser-recognized JavaScript MIME aliases are rejected
+as project-contract drift. This is narrower than browser support: the current
+[MIME Sniffing Standard](https://mimesniff.spec.whatwg.org/#javascript-mime-type)
+recognizes both `application/javascript` and `text/javascript` as JavaScript MIME
+types and defines MIME essence separately, while
+[nginx `types`](https://nginx.org/en/docs/http/ngx_http_core_module.html#types)
+maps configured extensions to response types. The exact-dist composition test now
+performs generation preparation through the ordinary server transport and retains a
+deterministic reproduction of the former mismatch.
+
+Because schema v2 is retained, the corrected adapter advances to schema v3. Diagnostics
+re-review rejected summary-only Markdown binding, permissive nested diagnostic values,
+and first-N capture. The correction keeps schema v3 unretained and makes every
+failure-time UI, installer/store/transfer/offline-shell telemetry, transition,
+service-worker request, controller, registration, and document object exact-keyed,
+bounded, redacted, and semantically cross-validated. Candidate release/generation,
+worker/scope, terminal transition, failure code/message/recovery, button authority,
+counters, and request ordering must agree. Unknown, oversized, or contradictory input
+becomes a typed `diagnostic-collection` failure instead of invented or partial fields.
+
+Event capture is now partitioned rolling retention for critical failures, controller
+changes, lifecycle checkpoints, network traffic, and routine diagnostics. Late failure
+checkpoints, page errors, service-worker failures, controller evidence, and terminal
+lifecycle checkpoints cannot be displaced by the ordinary request stream. The server
+journal aggregates every response/status and the exact expected/observed resource-path
+set for all 283 install resources, while separately retaining rolling response, Range,
+and failure tails; tail truncation cannot claim complete resource coverage. Terminal
+Markdown binds the canonical JSON tuple of terminal state, diagnostics,
+failure diagnostics, and server journal by exact base64url bytes plus SHA-256, and the
+runner validates that equality before pair publication. All prior create-only
+result-pair ownership, identity, close, and failure-recovery mechanics remain
+unchanged. Exactly one corrected-artifact schema-v3 run became eligible only after
+deterministic gates and independent review converged. No Chrome/adapter run was part of
+this correction. At that correction boundary D-138 remained proposed and Installer
+UX/M2 remained open.
+
+State-contract re-review then rejected treating every browser failure as the retained
+MIME failure, incomplete server-summary invariants, and bounded-but-open protocol
+strings. At that review boundary schema v3 remained unretained. Failure diagnostics now carry an exact
+phase/primary-classification discriminant with separate offline-shell preparation,
+installer transfer/store/persistence, runner-online inspection, and offline-reload
+validation branches. Each branch preserves the same raw surfaces but asserts only its
+own truthful UI/shell/transfer/button/checkpoint contract; offline-reload evidence also
+requires the retained pre-offline Ready/inspection checkpoints. The evidence parser
+independently pins all store, transfer, shell, UI, persistence, recovery, failure-code,
+worker, transition, and event enums so a producer-only widening cannot silently weaken
+the retained contract.
+
+The server summary now retains a complete canonical response population with
+multiplicity plus exact expected, observed, missing, and unexpected path sets. Range
+and failure populations, status/count summaries, path-set counts/digests, tail
+membership, and truncation are derived projections of those retained bytes rather than
+independent claims. Completeness is an exact biconditional: the expected and observed
+283-resource sets match, missing and unexpected sets are empty, and no failed response
+exists. A terminal `passed` state additionally requires that complete projection and
+the other passing gates. Contradictory booleans, counts, digests, enum values, phases,
+branches, populations, or tails fail diagnostic collection.
+
+Ordering re-review requires the journal to retain a complete monotonic response
+sequence and its canonical digest in addition to the multiplicity population. Range
+and failure sequences are exact filtered subsequences, and each rolling response,
+Range, or failure tail must equal the final `min(limit, count)` entries of its sequence,
+including duplicate entries. Population membership alone cannot establish a tail.
+
+Runner-online and offline-reload failures also retain the exact preceding Ready
+authority: Ready UI, enabled Launch/disabled Install, ready store and transfer,
+active offline shell, release digest, and canonical generation must all agree. An
+offline reload may either remain at that exact Ready projection or retain a failed
+transition whose immediate predecessor is a failure-free checking transition with the
+next sequence number, the same strictly positive adapter attempt, and the exact
+generation. Attempt zero is pre-attempt context and cannot authorize the edge.
+Intervening Ready or another attempt cannot be relabeled as causal; arbitrary checking or
+unavailable snapshots cannot substitute for Ready. The canonical terminal JSON/
+Markdown binding and accepted partitioned retention remain unchanged.
+
+**Retained v3 live-install adjudication and thirteenth correction:** The one authorized
+schema-v3 run is retained failed as
+`offline-shell-adapter/adapter-v3-2026-07-29T22-03-29-816Z.json`
+(JSON SHA-256
+`d2343b0f4f0e60d867534893fb045c2689aa55f9a169e9f455ff3c39d61a16a3`;
+Markdown SHA-256
+`eb6a24825642d0ac94ae52452f9a1e91b81bc8bdae63cd5bc18f9c79d599959e`;
+canonical terminal binding SHA-256
+`e87fa6cc5744cfa8563f2cf9a1798f1c8a55d0f812a8690ce516e8f02eaffd0b`).
+It binds Chrome 151.0.7922.34, artifact
+`30a44d3bb0506a2895bbd829d24aaa66a7890d1811ba89ae467d43bbfcbf11b4`,
+release `57246b8b8586d5a3d36173fcb68b3f3e35b9b7a44900f27a2ec2652dfd5c9305`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/43ef86b10d0201ab76096d20a29d9198ce252e336198ef811764da636c85fe6b`.
+The fixed 600-second Ready wait expired while the installer was still making forward
+progress: 253 of 262 OPFS resources and 2,621,395,425 of 2,621,430,227 planned bytes
+were complete, leaving 34,802 bytes across the current plus final eight cells. The
+retained transport recorded 254 successful Range responses and zero transport,
+validator, integrity, server, or app-reported failure. The exact
+degraded-durability warning accompanied a truthful persistence denial. This is not a
+Chrome finding.
+
+Code inspection and deterministic operation-count tests identify the project defect:
+every checkpoint and object finalization recomputed a recursive whole-store inventory.
+The install therefore performed work proportional to chunks × accumulated inventory
+plus resources × accumulated inventory; the small final cells became slower as the
+store grew even though network transport remained healthy. The correction keeps
+reconciliation/full refresh authoritative only at open, restart, explicit reconcile,
+garbage collection, and exceptional recovery boundaries. Under the existing store
+lock, ordinary partial mutations update only the affected partial and verified-object
+inventory entries and preserve exact aggregate counters. Deterministic stress tests
+assert zero global scans across hundreds of checkpoint appends and linear local
+operations across hundreds of resources, while injected interruption/reopen tests
+reconstruct exact counters from durable state.
+
+Install-store telemetry v3 and installer-transfer telemetry v3 add monotonic,
+cross-validated final-release verification phase, byte, resource, and total counters.
+They flow through the app diagnostic snapshot and public telemetry v33; smoke,
+flythrough, and render-recovery report schemas advance to v59/v26/v22 with mandatory
+metric sets v27/v11/v5 unchanged. Final verification still reads every release object
+and Ready remains impossible until the phase is exact `complete`.
+
+Because v3 evidence is retained, the adapter advances to schema v4. The fixed Ready
+wait is replaced by a 120-second no-progress watchdog over one monotonic tuple of
+downloaded, checkpointed, verified, completed-resource, and final-verification
+progress, plus a 30-minute absolute correctness ceiling. Only tuple progress resets the
+watchdog; duplicate UI events, state churn, or counter regression do not. Terminal UI
+failure stops immediately and retains a bounded sanitized underlying app/Playwright
+cause. A persistence denial remains eligible only with the exact degraded-durability
+warning and no durability claim. JSON and Markdown bind the configured limits,
+observed maximum/last progress gaps, last tuple, and terminal classification. The
+30-minute ceiling is evidence safety, not performance allowance: the standing install
+budget remains actual bandwidth plus at most 90 seconds local work. Exactly one
+corrected-artifact schema-v4 run became eligible only after deterministic gates and
+independent review converged. No Chrome/adapter run was part of this correction; the
+v1, v2, and v3 result pairs remain immutable. The build/repeatability, type, lint,
+diff, and unit gates passed 115 files / 1100 tests. At that correction boundary D-138
+remained proposed and Installer UX/M2 remained open.
+
+**Schema-v4 contract re-review and fourteenth correction:** Independent review found
+that a nonsettling Ready observation could outlive both liveness limits, retained causes
+were only length-bounded, the affected-entry path still reread and reparsed the complete
+release manifest, evidence filenames still used a fixed v3 stem, exceptional object
+failure could leave live inventory/selection stale, and the five final-verification
+fields were not cross-validated store-to-transfer. The corrected contract races every
+observation read against independently owned stall and absolute timers; the exact
+earliest deadline wins even at the boundary, aborts/ignores late reads, and cleans every
+timer/listener. One shared sanitizer removes local paths, URL credentials/query data,
+secret/token/user fields, and controls; validation recomputes that canonical form.
+Under the existing store lock, each session caches the exact SHA-bound parsed immutable
+manifest plus resource-ID map, invalidating it on reconcile, release-selection change,
+GC, exceptional recovery, and reopen. Stress gates record actual manifest reads,
+hashes, parses, and directory lists: 400 checkpoints and 200 resources perform no
+hot-path manifest validation or recursive inventory list, while local work remains
+linear. Any integrity/finalization/publication/rollback failure clears the cache and
+authoritatively refreshes inventory and selection before returning failure. Adapter
+result stems now derive from the pending schema (`adapter-v4-*`). Installer protocol
+and adapter diagnostics require exact equality of final-verification phase,
+bytes/resources, and both totals across store and transfer; Ready additionally requires
+complete counters equal to the release byte/resource totals. Hostile, corruption,
+reopen, rollback, deadline-race, late-read, and redaction tests fail closed. No browser,
+deployment, D-097, or new retained evidence is part of this correction; retained v1-v3
+remain immutable.
+
+**Retained v4 evidence adjudication and fifteenth correction:** The one authorized
+schema-v4 run is retained failed as
+`offline-shell-adapter/adapter-v4-2026-07-29T23-33-28-971Z.json`
+(JSON SHA-256
+`289ff895c16cf3c5cd94d84d4c8a47178668b18253c0f74251260449b9b89d39`;
+Markdown SHA-256
+`7370c6da55c9a2985c6cb5749052b6c529e1add2daf4f40c9228aa5432268b65`).
+It binds Chrome 151.0.7922.34, artifact
+`fed5ce02e5529526047c2526e3368e6038b114afc1df8730da1c4e61ef91cd9b`,
+release `1708f2b628a8eaa03b851b71ba55936ad19585dd135ba35d8eff9f07275ac378`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/5d2f06ff3748561e190a07f37f7daf61a06750594035fd0aaef447033e2b1b6e`.
+The ordinary browser lifecycle completed exact final verification for all 262 OPFS
+resources and 2,621,430,227 bytes, reached Ready, completed online and offline
+inspection under the same isolated generation, and retained complete 283-resource
+server coverage with 297 responses and zero failures. Result finalization nevertheless
+failed deterministically because generic POSIX-path redaction classified the typed
+leading-slash same-origin `server-response.detail.path` as a machine-local path. The
+diagnostics close was then invoked a second time and duplicated that same finalization
+failure as cleanup. This is harness evidence-contract/lifecycle drift, not a Chrome
+finding, and the v4 JSON/Markdown remain failed and immutable.
+
+The correction leaves strict generic redaction unchanged and adds one shared
+field-aware exception only for the exact typed server-response path. It requires a
+bounded canonical same-origin URL pathname with no scheme, authority, credentials,
+query, fragment, backslash, controls, dot traversal, encoded/nested traversal, unsafe
+decoded separators, or noncanonical encoding. Every opaque string still uses generic
+redaction; arbitrary event kinds and other fields cannot claim the exception. The same
+validator is applied before retention and during terminal JSON/Markdown validation.
+Diagnostics close now records its attempted state before invoking the first close, so
+a close failure remains the primary once; only a distinct failure from a genuine first
+cleanup close is appended. Adversarial field-scope, redaction, idempotence,
+canonical-binding, and single-close tests fail closed. At that correction boundary,
+exactly one corrected-artifact schema-v4 run became eligible only after deterministic
+gates and independent review converged. No Chrome/adapter run, deployment, D-097
+action, or new retained evidence was part of the correction; retained v1-v4 remain
+immutable.
+
+**Passing v4 acceptance evidence:** The one post-review corrected-artifact run passed
+as
+`offline-shell-adapter/adapter-v4-2026-07-30T00-02-06-305Z.{json,md}`.
+The JSON SHA-256 is
+`10b5ad394182d6114e99e0eb0cc4347735fc5854dff0cb84ff178b0812f9c1af`,
+the Markdown SHA-256 is
+`3177e40fff6118a81ea3a69be11bb1304a636ddf056443c32ae56dcc769f4cc2`,
+and their canonical terminal diagnostics binding is
+`09027941aaafde516ee6d9f70bf96cb3d80c33bafc8ac4da43cb5fd19d6de3f3`.
+It binds Chrome 151.0.7922.34 with executable SHA-256
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`,
+artifact
+`fed5ce02e5529526047c2526e3368e6038b114afc1df8730da1c4e61ef91cd9b`,
+release
+`1708f2b628a8eaa03b851b71ba55936ad19585dd135ba35d8eff9f07275ac378`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/5b6f79ea5e5b07ba11d62cf381893c638e8181f96103d1b2b23866590ca7acd8`.
+
+The complete lifecycle took 142,089 ms. Ordinary fresh-profile Ready completed in
+131,945 ms; its maximum observed progress gap was 27,299 ms and its terminal gap was
+4,009 ms, both within the exact 120-second stall watchdog. Final verification agreed
+store-to-transfer-to-UI at 2,621,430,227 bytes and 262 resources. The server journal
+proved complete 283/283 resource coverage across 297 responses, including 262 Range
+responses and zero failures. Online and offline inspection retained the exact same
+isolated, service-worker-controlled generation, complete shell cache, manifest
+identity, Ready authority, enabled Launch, and active release while excluding OPFS
+resources from Cache Storage. The main-thread persistence request was denied exactly;
+installation continued with the required degraded-durability warning and made no
+durability claim.
+
+Independent final review recomputed the pair hashes and binding, traced the exact
+identity and Ready/liveness/final-verification projections, checked complete server
+coverage plus the online/offline authority invariants, and accepted D-138 without
+further findings. The failed v1, v2, v3, and first v4 pairs and every adjudication above
+remain immutable evidence; acceptance neither relabels nor removes them.
+
+**Consequences:** Ordinary reload can recover the exact admitted shell and target
+manifests without network access while installed game/model objects remain in OPFS.
+Stable worker delivery is explicitly `no-cache` and exact-path; content-addressed shell
+objects retain immutable caching. Build and deployment validators fail closed on the
+v14 compatibility object and stable worker artifact. Deterministic tests cover
+complete-before-select ordering, stale-candidate recovery, replacement failure,
+selection-write failure, commit-before-GC, ignored orphan-GC failure, same-request
+rollback, no mixing, origin/path/header/MIME/cache/byte/hash rejection, offline manifest
+discovery, idempotent preparation, online update and exact offline-controller reuse,
+newest-worker activation/exact control/replacement, synchronous endpoint identity,
+overlapping request ordering/timeout/control-change isolation, privileged-route
+separation, cross-client Ready and controller-authority invalidation through OPFS
+preflight and locked admit, one-pass launch admission, post-admit selection/control
+continuity, exact-source
+notification filtering, and truthful selection/corruption admission failures.
+The retained pre-v4 ordering-corrected deterministic build/repeatability, lint, and
+unit gate passed 114 files / 1081 tests.
+
+D-138 closes only M2's service-worker offline-shell checkbox; Installer UX and M2
+remain open. The passing adapter exercised a fresh-profile local exact-byte install,
+including the five pinned model shards' 2,620,371,552 bytes, only as setup for ordinary
+Ready authority. Hard links avoided a second fixture copy but did not avoid the
+explicit localhost transfer. That result does not establish production-network
+transfer, performance, quota, persistence,
+interruption, or multi-GB lifecycle qualification. D-138 does not provide corruption-by-refetch,
+browser-restart-offline evidence, interrupted real updates, update UI, uninstall,
+quota/persistence qualification, code-cache/Dawn-cache conclusions, deployment,
+production verification, performance evidence, or a D-097 run. The next ordered
+standalone M2 project is PSO trace capture and progressive warmup at boot.
+
+Later root-rule-12 cleanup on 2026-08-02 removes the closed offline-shell browser
+adapter runner, diagnostics/lifecycle/inspection/fresh-install/setup modules, their
+tests, package command, and routine source assertions. The shared result-pair owner,
+progress liveness, diagnostic redaction, and exact-range projection remain under
+generic names because active installer-trust, OPFS, scale, and uninstall paths consume
+them. Ignored adapter results and D-099 reconstruction artifacts remain untouched; the
+hashes, measurements, conclusions, and reopen conditions recorded here remain
+authoritative.
+
+**Reopen if:** Chrome's bounded adapter contradicts the specified Cache/IndexedDB/Web
+Lock ordering, worker-served isolation headers do not preserve `crossOriginIsolated`,
+the stable-worker lifecycle cannot remain independent of release selection, save-schema
+compatibility needs a migration graph rather than exact equality, or measured shell
+classes belong in OPFS.
+
+## D-137: Bind ordinary runtime consumers to the exact active installed release (2026-07-29, accepted)
+
+**Decision:** Ordinary Launch carries the exact `releaseDigest` admitted by D-136 and
+fails closed unless that digest is still the release store's exact active selection.
+Before exposing the runtime UI, the app resolves both current ordinary consumer sets:
+the District 1 index plus every indexed world cell, and all five pinned app-owned model
+shards. Every resolution cross-checks resource ID, kind, scope, target, byte length,
+SHA-256 identity, release digest, and content-addressed OPFS object reference against
+the stored install manifest. A missing, aliased, malformed, out-of-release, or
+wrong-identity reference aborts Launch; there is no network or legacy-cache fallback.
+This validates D-136's durable verified-object records and sizes on open, not a new
+multi-GB launch-time rehash. Explicit repair and full-release verification remain later
+lifecycle operations.
+
+The streaming worker independently repeats the exact active-release binding, reads and
+strictly validates the installed district index, binds every index entry to its exact
+installed world-cell resource, and opens sync access handles directly on the release
+store's immutable content-addressed objects. Ordinary streaming does not fetch the
+build manifest, district index, or cells and does not create, provision, prune, or read
+the old `parallax-streaming-v1` subsystem cache. Streaming telemetry v10 distinguishes
+the exact installed digest/resource count/bytes from legacy network request count and
+requires those modes to be mutually exclusive.
+
+District-index v1 has one canonical semantic identity per cell. For district
+`districtId`, non-negative coordinate `[x,z]`, and content `sha256`, each coordinate
+token is base-10 padded to at least two digits; `cellId` is
+`<districtId>-cell-<xx>-<zz>`, immutable source is
+`immutable/<artifact-scope>-cell-<xx>-<zz>-<sha256>.json`, and install resource ID is
+`game-specific-world-cell-<artifact-scope>-<xx>-<zz>`. `artifact-scope` is the existing
+lower-case district ID with non-alphanumerics collapsed to hyphens. The generator,
+production build publisher/classifier, build-manifest validator, benchmark validator,
+and installed consumer share the engine-owned identity helper. The v1 district index
+itself has exactly `bounds`, `cellSizeMeters`, `cells`, `districtId`, `materials`, and
+`schemaVersion`; authored generator/marker/traversal metadata remains in the game
+bundle rather than the streaming index.
+
+The app-owned model consumer is an exact release-bound five-shard source contract with
+installed path, resource ID, byte length, and hash identity plus model-source telemetry
+v1. It resolves during Launch and exposes zero network fallbacks. D-137 deliberately
+does not invent an ordinary inference UI or retrofit the D-096 experimental wllama
+runner: there is no ordinary model invocation yet. Authored non-AI gameplay remains
+the optional-AI gameplay behavior, but it is not a storage, identity, integrity, or
+network fallback and cannot make a failed installed-source Launch succeed.
+
+The pre-M2 build-manifest fetch, world-cell download/cache path, and URL-driven wllama
+spike remain available only through D-135's exact
+`parallaxAutomation=runtime` route after WebDriver attestation. Smoke, flythrough,
+render-recovery, and app-owned-LLM runners use that privileged compatibility route;
+ordinary navigation cannot select it. Public telemetry advances to v31 and
+smoke/flythrough/render-recovery reports advance to v57/v24/v20 with mandatory metric
+sets v27/v11/v5 unchanged. This is an evidence-contract advance, not a metric,
+threshold, topology, scenario, or measurement change.
+
+**Context:** D-129 created immutable common/game object namespaces and exact release
+references; D-136 published and rediscovered an exact active release but intentionally
+left the pre-M2 consumers untouched. Launching that runtime could therefore re-download
+District 1 into a subsystem cache and had no release-bound model source, defeating the
+install/launch/run lifecycle even though publication itself was correct.
+
+**Consequences:** Ordinary runtime content is now release-coherent and network-silent
+for the migrated streaming and model sets. Main-thread preflight gives Launch a
+fail-closed boundary, while post-handle worker admission protects the independently
+executing streaming realm before decode, ready, or scheduling state. Deterministic adversarial
+coverage includes active-selection drift, wrong references, incomplete model shards,
+unbound index cells, malformed index identity, digest propagation, and a source audit
+that keeps fetch/provision/cache operations out of the installed branch. This project
+was rejected in its first independent review: batched cell resolution reparsed the
+manifest per resource, parallel preflights could outlive a rejected Launch, initial
+selection/manifest admission and worker post-handle admission were not atomic, and the
+district-index parser trusted material objects and insufficiently bounded coordinates.
+The corrected candidate reads and validates one manifest/staged record per ordered
+batch, runs model then streaming preflight sequentially before a final atomic
+admission, performs the worker's final atomic admission only after handles open and
+closes them on drift, and strictly validates canonical materials, ordered bounds, exact
+cell keys, and derived cell extents. The corrected build/repeatability, type, lint, and
+full unit gates now pass (99 files / 896 tests); D-137 remains proposed pending
+independent re-review. That re-review found two remaining gaps: path/size/hash binding
+did not prove cell ID, coordinate, source filename, and semantic resource ID described
+the same cell, and the district-index parser did not reject extra top-level keys. The
+corrected candidate now applies the shared schema-v1 identity helper at generation,
+classification, validation, and consumption; exact top-level keys and swapped
+ID/coordinate/path/resource fixtures fail before Launch. The second corrected
+build/repeatability, type, lint, diff, and full unit gates pass (100 files / 900 tests);
+final independent re-review traced the shared identity through generated `dist` and
+every validation layer and accepted D-137 without further findings. This project
+does not add ordinary inference, corruption-by-refetch, service-worker/offline shell
+activation, update/rollback UX, uninstall, deployment, physical evidence, or D-097
+qualification.
+
+**Reopen if:** runtime consumers need a transaction stronger than immutable
+active-release references, launch-time full-object rehash proves affordable and
+necessary, installed model inference requires a different browser-readable source
+shape, or lifecycle automation no longer needs the bounded privileged compatibility
+route.
+
+## D-136: Publish the verified target and rediscover its exact active selection (2026-07-29, accepted)
+
+**Decision:** Complete the installer worker's release transaction under D-133's
+whole-operation transfer lock. After every OPFS resource has transferred or been
+reused, the worker requires the returned byte and resource totals to equal the exact
+target install-manifest summary, verifies the complete staged release again through
+the release store, marks it ready, publishes it, and requires the resulting active
+selection to equal the target `releaseDigest`. No `install-complete` response or
+terminal `ready` telemetry is emitted before that exact publication succeeds.
+
+Cancellation remains effective through the potentially long whole-release verification:
+the activation boundary checks the operation signal before and after verification and
+again after ready marking, withholding publication when cancellation wins any of those
+boundaries. Publication is the final short durable commit after the last cancellation
+check; once that commit begins, `cancel-complete` reports that cancellation was too late
+instead of falsely claiming success. The app then reconciles exact target status,
+restores `ready` only for the exact active release, and preserves any typed publication
+or status failure. Aggregate release failures carry no fabricated resource identity.
+
+Advance the installer protocol to v2 with a strict `target-status` request/response.
+Both install and status requests carry the loaded app module's exact same-origin
+entrypoint path. Production accepts it only when it has the
+`immutable/app-<full-sha256>.js` form, the target build manifest lists that exact
+artifact, and the full filename digest equals its artifact SHA-256. This prevents an
+already-open old shell from publishing or launching a new release when deployment
+races the page; the typed `shell-incompatible` failure permits only Reload.
+
+The worker fetches and independently validates the current same-origin build and
+install manifests using the same canonical build-root resolver as installation, reads
+the store's eligible active selection, and reports both exact digests. The protocol
+accepts `active: true` only when `activeReleaseDigest === releaseDigest`. On ordinary
+reload, the app shell enters a checking state and unlocks Launch only for that exact
+current target; a different or absent active target remains installable, while a
+malformed target or incompatible loaded shell fails with typed recovery. A page-local
+generation guard prevents a late status response from overwriting an installation
+started afterward. Target discovery has a 30-second request bound that rejects and
+aborts even if the underlying operation never settles. Network/HTTP, response-URL,
+manifest-shape, manifest-integrity, and loaded-shell failures retain distinct typed
+classifications and recovery actions.
+
+The status query proves target-manifest identity and eligible publication metadata; it
+does not rehash every multi-GB object. Runtime consumers must still validate exact
+resource references as they open them and the later repair project owns
+corruption-by-refetch. This decision supersedes only D-135's narrow reload provision
+that required another explicit Install/Retry because no target-status API existed.
+
+Because terminal installer `ready` now means verified **and active**, advance
+installer-transfer telemetry to v2 and the public telemetry envelope to v30. Smoke,
+flythrough, and render-recovery reports advance to v56/v23/v19 respectively while
+their mandatory metric sets remain v27/v11/v5. No metric, threshold, topology,
+scenario, or measurement semantics change.
+
+**Context:** D-133 deliberately stopped at an unpublished ready release, and D-135
+could therefore gate only on an `install-complete` observed by the current page. That
+made every reload repeat the install action and left Launch starting the pre-M2 runtime
+without a durable active-release identity. D-129 already provides exact ready,
+publication, eligible-selection, and verification primitives. The build already names
+the app entry module with its full content SHA-256, giving the page a non-circular
+loaded-shell compatibility identity that can cross the worker boundary. The installer
+can therefore close this transaction without moving network, OPFS, lock, or activation
+ownership into the app shell.
+
+**Consequences:** Publication and reload discovery are deterministic and independently
+tested, including transfer-total mismatch, full-release integrity mismatch,
+cancellation at both verification boundaries, wrong active selection, exact loaded-app
+compatibility, strict protocol shape, stale UI response suppression, and active/inactive
+reload states. Terminal `install-complete` is additionally cross-validated against the
+same request's transfer-ready counters and the transfer/store active-release digests.
+Adversarial review rejected early-completion acceptance, the publication/cancel race,
+unbounded target discovery, collapsed target errors, and late-cancel loss of typed
+failures; all five were corrected with focused regression tests before acceptance.
+The corrected final gate passed 95 files / 880 tests, and final independent review
+accepted the slice without findings. This bounded key prevents cross-deployment
+app-module/release mixing; the
+later service-worker project still owns full HTML/engine/manifest/save-schema
+compatibility and atomic offline shell activation. This project does not yet migrate
+streaming/model consumers, add offline navigation, update/rollback UX, corruption
+repair, deploy, or provide new physical evidence. D-097 remains reserved for the final
+converged runtime-affecting M2 candidate.
+
+**Reopen if:** publication must coordinate atomically with a service-worker shell
+version, active-selection metadata cannot remain a fast launch gate, a later consumer
+requires a different compatibility identity, cancellation must be accepted after the
+publication commit starts, or update/rollback policy requires more than the current
+active/previous selection.
+
+## D-135: Gate app-shell installation and launch on an explicit user action (2026-07-29, accepted)
+
+**Decision:** Split app-shell startup from runtime startup. A normal navigation eagerly
+creates only D-133's installer service/worker and presents the installer shell; render,
+streaming, decode, telemetry-export, benchmark, and game-runtime services are created
+only after an explicit Launch action. Installation begins only from the shell's
+Install/Retry button. The same direct click call stack invokes the engine-owned
+`requestPersistence()` method, which calls `navigator.storage.persist()` before
+returning its promise. A `false` result is a visible degraded-durability warning and
+does not stop installation; a rejected request is an actionable failure that permits
+retry.
+
+The shell derives byte/resource progress from D-133's existing installer-transfer
+snapshot: total, planned download, newly downloaded, reused, resumed, verified,
+completed resource count, and current resource. Cancel remains available while
+persistence or transfer is active. Retry resumes through the worker/store contracts
+rather than creating a second resume implementation in the app. Quota, integrity,
+transport, validator, manifest, persistence, and unknown failures retain their typed
+classification and receive user-facing recovery text. The Launch button is enabled
+only after this page has observed an exact `install-complete` result and retained its
+`releaseDigest`; store counts or a prior page's generic `ready` state are not inferred
+to identify the current target.
+
+D-133's downloaded, resumed, verified, and completed-resource counters are
+worker-lifetime instrumentation. The shell snapshots them at the start of each
+Install/Retry action and displays only nonnegative operation deltas. Plan totals,
+planned-download bytes, and reuse are hidden until that attempt reaches a post-plan
+state, so an earlier attempt cannot be combined with a later plan or make retry
+progress reach completion early. A fail-closed worker/service protocol failure and a
+runtime boot failure are terminal for the current page: the shell preserves their
+classification, disables Install/Retry, and offers an explicit Reload action. Ordinary
+transfer, quota, integrity, validator, manifest, and persistence failures remain
+retryable.
+
+Existing privileged runners use one narrow compatibility route:
+`?parallaxAutomation=runtime` is honored only when `navigator.webdriver === true`.
+Smoke (including its V8 diagnostic), flythrough, render-recovery, and the app-owned-LLM
+runner add that exact parameter while retaining exact-navigation checks. Ordinary
+users cannot bypass the shell with the query parameter alone. The route preserves the
+pre-D-135 runtime and measurement path while M2 consumer migration is still pending.
+It changes neither report structure nor measurement semantics, so no report,
+telemetry, or mandatory-metric schema advances.
+
+This project deliberately stops before release publication/activation, consumer
+migration, service-worker/offline shell work, update/rollback UX, PSO warmup, or
+lifecycle evidence. Launch currently starts the existing pre-M2 runtime only after the
+target release reaches `ready`; it must not be described as consuming that OPFS
+release. A reload asks for explicit Install/Retry again and may complete mostly through
+reuse, because D-133 intentionally exposes no target-manifest readiness query separate
+from the explicit install operation.
+
+**Context:** D-133 proved the eager worker, resumable transfer, quota preflight,
+integrity verification, and transition to `ready`, but intentionally had no persistence
+request or UI and the old app entrypoint eagerly booted every runtime service. RE-045's
+2026-07-29 pinned-Chrome worker probe found `StorageManager.persisted()` available in a
+dedicated worker but `StorageManager.persist()` absent, requiring the persistence
+request to remain at the window/app-shell boundary. Keeping the platform call behind
+the engine service preserves layer ownership while the controller remains
+dependency-injected and testable.
+
+**Consequences:** The install gesture, persistence decision, operation-scoped progress,
+cancellation, retry, terminal reload, classified failures, and exact page-observed
+launch gate are independently unit-tested. The static runtime module is still part of
+the current app bundle; this decision defers shell-code precaching and module-fetch
+isolation to the service-worker project. D-097 still requires one physical smoke only
+after the complete reviewable runtime-affecting M2 candidate converges, not for this
+intermediate slice.
+
+The first review rejected the candidate because runtime-boot and fail-closed-worker
+errors entered unrecoverable Retry loops, retry progress combined lifetime counters
+with the new plan, and two documented metrics were absent from the UI. The corrected
+candidate adds explicit terminal recovery, per-attempt counter baselines and post-plan
+visibility, and renders planned bytes plus completed/total resources. The focused
+controller/service/automation/target suite passed 42/42 tests. The final deterministic
+gate passed 91 files / 854 tests, production builds, exact engine/Wasm repeatability,
+lint, and `git diff --check`. D-135 is accepted without deployment or physical
+qualification; those remain subject to D-097 after the complete reviewable M2 runtime
+candidate converges.
+
+**Reopen if:** Chrome's storage-persistence surface changes, the installer gains an
+exact current-target readiness query, harness automation no longer exposes WebDriver,
+runtime consumers migrate to published OPFS releases, or the service-worker shell
+introduces a different launch/compatibility coordinator.
+
+## D-134: Retain the first D-133 smoke as failed and correct exact heap-worker topology (2026-07-29, accepted)
+
+**Decision:** Retain
+`smoke-1-ab2674968dbd-dev-01-showcase-2026-07-29T14-05-58-150Z.json`
+(SHA-256
+`78cf5159c781147cc636e9f4a8852b5800a96f632a4133f458f90d9493459c18`;
+Markdown SHA-256
+`47a6c11032ad4f2010d8e47cedf83c26afccc6dd1af4dd6f428f0f506a644d46`)
+as failed. It measured the exact production artifact
+`ab2674968dbd7e7d64ee85f7d0d02a68c1d2e7b4b6bedba97f439d759c3952a9`
+and release
+`995a1c9a99af1e0c4f1f22ff0571607caeae0c830f21bdc79311936d7a1ab630`
+before and after all six launches. The environment facet passed, all six core launches
+completed, all 24 executed absolute budget checks passed, and both streaming and
+render-callback repeatability checks passed. The evidence facet failed and the budget
+facet was correctly `not-evaluated`: every all-realm JS-heap sample rejected the eager
+installer worker as an unknown target, so all six heap checks were withheld rather
+than silently measuring an incomplete target set.
+
+Classify this as deterministic harness contract drift introduced when D-133 added the
+fifth eager worker, not as an intermittent browser or product-runtime failure. One
+shared pure harness resolver now requires exactly one distinct build-manifest v13
+entrypoint for each of `decode|installer|render|streaming|wasm-thread`, rejects
+missing, duplicate, or unexpected role topology, and returns the exact steady-state
+target multiset: installer, render, streaming, and the telemetry-declared number of
+decode workers. The wasm-thread entrypoint remains part of the validated build
+topology but is excluded from the steady-state target set because those diagnostic
+workers are not live there. The existing all-realm sampler still rejects every
+unknown, missing, duplicate, or extra CDP target. Smoke advances to report schema v55
+and flythrough to v22; mandatory metric sets remain v27 and v11, and no metric,
+threshold, budget, launch count, duration, or product artifact changes.
+
+Authorize exactly one corrected D-097 production `smoke@1`, only after deterministic
+gates pass, adversarial review accepts the correction, and exact production
+artifact/release identity is reverified. There is no immediate same-artifact
+classification retry because the retained failure is already causally explained.
+D-133 remained proposed until that corrected smoke and final independent review passed.
+
+That single corrected run is retained as the accepted passing evidence:
+`smoke-1-ab2674968dbd-dev-01-showcase-2026-07-29T14-38-09-308Z.json`
+(SHA-256
+`87713a1fa9a73c1e5c83d9be8e30dc8441b51d26fb671d6e33be810dee994c4f`;
+Markdown SHA-256
+`62a42d958a5d9faac7c946fc6ba4471118f6a812e0067572eb112dd6ec0be31b`).
+Schema v55 / mandatory metric set v27 passed all six launches, all three facets,
+and 30/30 checks against the same exact production artifact and release before and
+after measurement. Every heap check measured exactly eight live realms: the page,
+installer, render, streaming, and four telemetry-declared decode workers. Fresh
+streaming p95 values were 1.920000076/2.210000038/2.280000210 ms, a
+0.360000134 ms spread; warm values were
+2.254999876/1.824999809/2.470000029 ms, a 0.645000219 ms spread. Both are within
+the unchanged 1 ms allowance. The baseline remains `untracked`; no retry or
+promotion occurred. The measured source is
+`7fdc5465b5903751301a4e319a160848eacefac6/7a8fb7a7a7c81bfa0b17aed02986895695f86273bda5d11f25091627b4589202`.
+Final review independently rechecked the JSON/Markdown hashes, exact pre/post
+production identity, all six launch records, all 30 checks, and the raw all-realm
+samples. Every heap sample contained exactly the page, installer, render, streaming,
+and four decode workers; every recorded high-water equalled the maximum raw aggregate
+sample. Callback, streaming, and presentation repeatability recomputed exactly.
+D-133 is therefore accepted. This does not close Installer UX or M2.
+
+**Context:** D-133 correctly added the installer worker to build-manifest v13 and made
+it eager so installer telemetry is observable before UI work. Smoke and flythrough
+still constructed the all-realm target multiset from only render, streaming, and
+decode roles. CDP therefore observed the exact additional installer target that the
+manifest declared, while the fail-closed sampler correctly refused to sum a topology
+its runner had not authorized. The correction is confined to harness measurement and
+evidence contracts. The current `dist` remains artifact
+`ab2674968dbd7e7d64ee85f7d0d02a68c1d2e7b4b6bedba97f439d759c3952a9`,
+release
+`995a1c9a99af1e0c4f1f22ff0571607caeae0c830f21bdc79311936d7a1ab630`,
+and installer-worker SHA-256
+`114c72048fac628e993faf7bf639da0c8814b52d736644fb5cf26eeac7f887ba`.
+
+**Consequences:** The failed schema-v54 result remains immutable and cannot qualify
+D-133. The schema-v55 correction measured the installer worker's live V8 heap in both
+fresh and warm launches and still fails closed if any target beyond the exact page plus
+resolved worker multiset appears. The harness-only correction implied no deployment;
+production identity was checked immediately before the one authorized run.
+
+**Reopen if:** the steady-state worker lifecycle changes, decode multiplicity stops
+being telemetry-declared, a worker role becomes non-eager or multiply instantiated, or
+CDP target ownership can no longer prove the exact page/worker context.
+
+## D-133: Use a dedicated transfer lock and strong-validator resumable installer worker (2026-07-29, accepted)
+
+**Decision:** Add an eager fifth dedicated worker, `installer`, and advance the exact
+build-manifest worker-role set to
+`decode|installer|render|streaming|wasm-thread` under schema v13. Its main-thread
+`InstallerService` exposes only install, cancel, snapshot, subscription, and disposal.
+The service owns no browser network, storage, quota, hashing, transfer-policy, or UI
+logic; production installation always begins from the fixed same-origin
+`/build-manifest.json`.
+
+The worker holds the separate exclusive Web Lock
+`parallax-installer-transfer-v1` from manifest fetch through quota preflight, transfer,
+final release verification, and ready marking. D-129 store methods retain their own
+short `parallax-install-store-v1` locks. The transfer lock is never nested inside the
+store lock and the store lock is never held across network waits. Cancellation aborts
+an active fetch, discards only the uncheckpointed in-memory tail, permits an in-flight
+append/flush/checkpoint to quiesce, retains staged/checkpointed state, and releases the
+transfer lock. Any resource failure or owner cancellation cooperatively aborts every
+sibling fetch/body task, preserves the primary classified failure, and withholds the
+operation result and transfer-lock release until all sibling tasks have settled. The
+worker stops at `ready`: it never publishes a release, changes active/previous
+selection, migrates a consumer, or requests persistence.
+Every readable positive safe request ID is consumed before the rest of its envelope is
+validated. The IDs increase strictly within one worker lifetime; the worker keeps only
+the latest ID, rejects duplicates and out-of-order requests even after a malformed newer
+envelope, and a new worker lifetime restarts that bounded sequence.
+InstallerService begins disposal with a synchronous closed-work boundary. New public
+work receives the typed disposed tuple, callers already awaiting non-disposal or
+persistence responses are rejected immediately, and repeated disposal shares the same
+terminal promise. Worker correlations become draining: their eventual parsed terminal
+response is consumed without re-settlement or ordinary live-result telemetry validation,
+and any unanswered drain is cleared when disposal acknowledgement proves worker
+quiescence. Persistence still invokes `navigator.storage.persist()` synchronously for
+user activation; the service-owned caller promise absorbs any later platform settlement.
+Manifest exact-key validation and durable install-store record serialization reject lone
+UTF-16 surrogates before canonicalization. Valid keys are ordered lexicographically by
+Unicode scalar value rather than locale or UTF-16 code-unit order.
+
+Every resource request, including offset zero, uses `Range: bytes=<offset>-`.
+A nonzero resume also requires the exact persisted strong `If-Range` validator.
+The shared store/transfer validator accepts exactly 1–1,024 ASCII `qdtext` characters
+inside quotes and rejects weak tags, empty tags, quoted-pair escapes, `obs-text`, and
+overlong tags.
+Only an exact same-origin 206 representation with the full expected
+Content-Range/Content-Length, absent Content-Encoding, and a stable strong ETag is
+consumed. A 200 fallback is cancelled without consumption. A 416 is usable only when
+the requested durable offset already equals the expected size and
+`Content-Range: bytes */<size>` proves that boundary. Complete fixed-size chunks are
+appended, flushed, and checkpointed; the only short chunk is the exact resource tail.
+Network/timeout errors and 408/429/500/502/503/504 receive at most three total attempts
+with fixed 250 ms and 1,000 ms delays; every retry re-reads durable state. The timeout is
+a network-idle deadline spanning fetch through first body byte and each later pending read,
+not local checkpoint work or the whole response body. On a resumed request only, a 200
+fallback or changed strong ETag on 206 permits one extra bounded recovery that cancels the
+body, discards the stale partial, and restarts from zero without resumed-byte credit; a
+second mismatch is terminal. All other contract, validator, encoding, range,
+overflow/underflow, and integrity failures are terminal.
+The D-151 correction advanced installer protocol v6, installer-transfer telemetry v8,
+public telemetry v38, smoke v63, flythrough v30, and render-recovery v26 solely to carry
+the truthful `store-discard-partial` failure-evidence tuple; metric sets and thresholds
+do not change.
+
+The 2026-08-02 M2 Repair-authority correction advances the live installer protocol to
+v7 and installer-transfer telemetry to v9. `repair` requests now carry the app shell's
+exact admitted release digest; the worker rejects a rediscovered different release as
+the canonical retryable `repair-target-mismatch` tuple before mutation. Failure
+responses and telemetry carry that expected digest plus an `operation|session` source,
+so nullable current-release state cannot fabricate authority for a later Repair. This
+changes protocol and diagnostic identity only; D-133's transfer policy, locks, budgets,
+and retained physical evidence remain unchanged and are not rebound by this correction.
+
+D-129 partial checkpoints advance to schema v2 and bind `strongEtag`. A legacy v1
+checkpoint cannot authorize resume and is removed while its partial data is
+conservatively truncated to zero. New `prepareResource`, `planRelease`, and bounded
+flushed quota-probe methods avoid message-text inference. Install-store telemetry
+advances to v2; installer-transfer telemetry starts at v1; the public envelope advances
+to v29. D-133 initially advanced smoke/flythrough/render-recovery reports to
+v54/v21/v18; D-134 subsequently advances smoke/flythrough to v55/v22 without changing
+mandatory metric sets or measurement semantics.
+
+Production concurrency and checkpoint size are selected by D-133's declared nine-cell
+calibration, run after implementation review. The selection rule was fixed before
+measurement: among cells with zero correctness/protocol failures and acceptable
+repeatability, choose the lowest concurrency and then the smallest checkpoint size
+within 5% of the best median ready throughput across concurrency 1/2/4 and checkpoint
+1/4/8 MiB using four exact same-origin 32 MiB synthetic resources. Calibration
+scenario `installer-transfer-policy-calibration@1` fixes one unmeasured warmup and
+three measured trials per cell, with acceptable repeatability defined before the run
+as a pure ready-throughput relative range no greater than 10%. Warmups run once in
+`c1-mib1, c1-mib4, c1-mib8, c2-mib1, c2-mib4, c2-mib8, c4-mib1, c4-mib4,
+c4-mib8` order. The three measured rounds use that order, its exact reverse, and the
+same order rotated left by three cells. Each trial starts after proving the calibration
+install-store root absent, stages a new release, counts all four resources as actual
+download rather than reuse, observes quota before/at-ready/after-cleanup, and proves
+the root absent again after result capture. Schema-v1 independent validation recomputes
+cell medians, repeatability, eligibility, and the declared tie-break from raw trials.
+It also anchors the exact warmup/measured orders and ordinals, zero-retry trials, all
+nine cell-to-policy mappings, and the four ordered synthetic byte/hash/strong-ETag
+identities rather than accepting those fields as report-authored self-description.
+The passing result selects production concurrency 1 and an 8 MiB checkpoint.
+
+**Context:** A disposable visible pinned-Chrome worker surface probe ran on 2026-07-29
+at 11:41:42 UTC using Chrome for Testing 151.0.7922.34
+(executable SHA-256
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`).
+The retained ignored result JSON has SHA-256
+`abf808f0ab4fffc00e4ae71b431fe240e77ee0d5d95986b3dd5eea18dabe2d6b`.
+Inside a `DedicatedWorkerGlobalScope`, `navigator.storage.getDirectory`,
+`estimate`, and `persisted`, OPFS sync access handles, and Web Locks request/query all
+worked. `persisted()` returned false; `persist()` was absent. This matches the checked
+2026-07-29 [Storage Standard](https://storage.spec.whatwg.org/), [File System
+Standard](https://fs.spec.whatwg.org/), and [Web Locks
+specification](https://www.w3.org/TR/web-locks/): workers can observe storage and own
+OPFS/Web Locks, while the persistence request stays in the later user-gesture
+main-thread UX.
+
+The due runtime-integrity dependency checkpoint adopted exact `@noble/hashes` 2.2.0.
+The signed immutable upstream release points at commit `81983c2` (2026-04-11); the
+zero-dependency ESM, Node `>=20.19`, `sideEffects: false`, `./sha2.js`, and `./utils.js`
+contracts used here are unchanged, and repository/GitHub advisory checks found no
+match. Isolated tarballs, 480 boundary/chunk comparisons, one 64 MiB comparison, and
+TypeScript compilation were checked before the exact pin/lock move; full
+`pnpm check` and explicit repeatability then passed. Only unminified `engine.js` and
+`installer-worker.js` changed, each by +6,596 bytes. That observation makes no
+performance claim; the full evidence and official links are in
+[dependencies.md](dependencies.md).
+
+The unchanged pinned-Chrome real-OPFS adapter also passed on both sides of the pin.
+The 2.0.1 result
+`adapter-v2-2026-07-29T12-05-01-406Z.json` has SHA-256
+`6b050ffc44cec855146bc31e53f22b1fe8fe97e146ecd1ca235e779d731de08b`,
+artifact `63b47da2768c0524214058aa7a8b269b7e65790faef946b391f77f8a731921f1`,
+release `884f8b611d62cd5436c32f42d960f9295e9bbe134edf1573c3390c7fa5d9e61c`,
+and dirty-source digest
+`7b96229e76fb7182f35a182f722ee6edd753ba2184095aada366cd816509054d`.
+The 2.2.0 result
+`adapter-v2-2026-07-29T12-07-25-730Z.json` has SHA-256
+`215efc51e710a349acb693234514cf4ea036052e7589c1267310dec06d16002f`,
+artifact `288a46c95c3aa9b9e6ddf9a36a8954b0601a60e47b9fd5a1aaa7afb4f01dc89a`,
+release `241b5d61180e6c1707579df5ab09ed8d28d2fc212147a224217182e2d61c560b`,
+and dirty-source digest
+`ba27a8015d60b99a5e5387dc0d6bf4787431cd87d4b573c76ac42095b3908e91`.
+Both used CfT 151.0.7922.34 with executable SHA-256
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`
+and passed the same five lifecycle/lock verdicts. These are bounded synthetic store
+adapter comparisons, not D-133 transfer qualification or performance evidence.
+
+The visible pinned-Chrome calibration then passed on 2026-07-29. Retained result
+`installer-transfer-calibration-v1-2026-07-29T12-45-30-495Z.json` has SHA-256
+`9afbc10aecda989883883ff499841444b399c14d7dd30c0b4600f8073a357e9e`;
+its Markdown SHA-256 is
+`9dd50ee60b9b8a652a5e0ac61c0bee714323a491a3175f0d2ca8f1e36f0b1e72`.
+It binds source
+`7fdc5465b5903751301a4e319a160848eacefac6/6b3702e6f0bb03ebcc509cf36aa2655c8696bc654a8e6e0617e516540700dd1f`,
+artifact
+`c3e3067afadbf0246d8670ddb455b405c9557d55f49a4e9154f60eda570c8015`,
+release
+`cc6e640634389d1df83c3297bfba151ed97be2b6f47a94cf72b96ba09b88b2df`,
+and the same CfT executable identity above on local, non-remote dev-01. The four
+33,554,432-byte same-origin resources had exact SHA-256/strong-ETag identities
+`f0831efe09084904341b63163c4801665f7d1bca9fd7cea53ef901a9beef3556`,
+`2168710c42c12b4a2a0dcfa872c84f2a6d41de459f4f1a1b958622c081b4b280`,
+`8bbb6cdf3ea86325592e15ae03efad41269e1ddd7a9b14fbc27d7198c74ddfcc`,
+and `42b67752331b15863260ca5f6997d442f2044ba3fa16b1bec93aed9638c763f9`.
+
+All 36 warmup/measured trials proved a clean install-store root before and after,
+downloaded all 134,217,728 bytes with four 206 requests, reused zero bytes, and
+reported zero retry, transport, validator, correctness, or protocol failures. Passing
+cells were c1-mib1 (6,969,500 B/s median; 3.30% range), c1-mib4 (13,977,191 B/s;
+2.61%), c1-mib8 (16,472,212 B/s; 4.12%), c2-mib1 (6,908,426 B/s; 4.69%), c2-mib4
+(13,970,194 B/s; 5.28%), and c4-mib1 (6,765,376 B/s; 2.18%). c2-mib8, c4-mib4, and
+c4-mib8 failed only the predeclared repeatability gate at 13.93%, 16.57%, and 20.06%.
+The best passing median was c1-mib8; its 15,648,602 B/s eligibility floor and the
+declared tie-break therefore select concurrency 1 / 8 MiB. This is a bounded
+ready-throughput policy selection, not a general network or OPFS throughput budget.
+
+D-099's ignored
+`d099-installer-transfer-calibration-6b3702e6f0bb-reconstruction` bundle captures the
+complete dirty source. Manifest SHA-256
+`ad1272ccdef9dd1d4800de396d58ae818efcbab928e3d20baa0f65c7cf018274`
+and verification SHA-256
+`baa3e26910865ee04ad207d97af9b18e42eb83d168d6824081423f0b84db2aab`
+record clean-scratch reconstruction of both source-identity fields; its untracked
+snapshot is archived with SHA-256
+`ccbb7935cbe28e437c19f8405212bc432927c2d9b1e5fa3df94eec052d18a547`.
+The
+calibration-only runner, server, synthetic generator, command, and fixtures are
+removed. After reconstruction, root rule 12 cleanup also removed the schema-v1 Markdown
+formatter and synthetic/adversarial envelope apparatus. A later root rule 12 pass removed
+the independent calibration validator and its SHA-pinned exact check because no live
+import or recurring gate consumed them. The ignored retained result, D-099 reconstruction
+records, and hashes and conclusions documented here remain the historical evidence.
+
+The selected constant changes the post-calibration product identity, so the result's
+pre-selection artifact above is not relabeled. The cleaned production candidate builds
+as artifact
+`9ad57a71c8d3ea73cb202df5fa461f7240d7bc9346125ccb28b6885ba6e78473`,
+release
+`9cc1a3bcd559e016864e6d3eea8d7bddcab6757888493188c8f94fd85faca6c5`,
+and installer worker
+`c4e32b6648e3a4973043629b923c65a6d9b30a6043cd57e118285c3a9d672e05`
+(123,450 bytes). Full `pnpm check` passed 87 files / 779 tests, and an explicit
+independent repeatability build reproduced every engine/worker/Wasm output. This
+post-selection candidate was the input to the then-pending interruption/lock
+qualification; no calibration metric is transferred to the new artifact.
+
+The first production-path interruption qualification attempt is retained as failed,
+not retried. Result
+`installer-transfer-qualification-v1-2026-07-29T13-21-17-338Z.json` has SHA-256
+`c7d825293585dc144bb8a3bd355cf0164715c63583017c26b4c62dc7c3e2c793`;
+its fail-honest Markdown has SHA-256
+`beaccda76c9a79a06a440ab980f58c0915d1e58feaf4ffa4221fef7bdd74bfdb`.
+It failed before any synthetic resource request because the production worker resolved
+the relative `install-manifest.json` entrypoint against its own hashed
+`/immutable/installer-worker-*.js` URL instead of the already fixed root
+`/build-manifest.json` URL. The measured artifact was
+`9ad57a71c8d3ea73cb202df5fa461f7240d7bc9346125ccb28b6885ba6e78473`,
+release
+`9cc1a3bcd559e016864e6d3eea8d7bddcab6757888493188c8f94fd85faca6c5`,
+and dirty source
+`118aa26b34bd8c2b42d334e8c10a07e9f03e45872d1037921d4817a23511a3dd`.
+The narrow correction derives one canonical root from the fetched build manifest and
+uses it for both the exact install-manifest entrypoint and every relative transfer
+source; neither may inherit the hashed worker directory. Hostile entrypoints and
+non-canonical build URLs fail closed, and the hashed-worker integration regression
+asserts exact root `synthetic/...` and `immutable/...` URLs without doubled path
+segments. Its corrected deterministic artifact/release/worker identities are recorded
+as artifact
+`ab2674968dbd7e7d64ee85f7d0d02a68c1d2e7b4b6bedba97f439d759c3952a9`,
+release
+`995a1c9a99af1e0c4f1f22ff0571607caeae0c830f21bdc79311936d7a1ab630`,
+and installer worker
+`114c72048fac628e993faf7bf639da0c8814b52d736644fb5cf26eeac7f887ba`
+(124,236 bytes). Full `pnpm check` passed 88 files / 815 tests and the explicit
+independent repeatability build reproduced every engine/worker/Wasm output. It required
+independent review before the single corrected qualification attempt described below;
+no unreviewed Chrome retry ran.
+
+That single independently authorized corrected qualification then passed. Retained
+result
+`installer-transfer-qualification-v1-2026-07-29T13-32-09-126Z.json` has SHA-256
+`9300dd554fbbe0e5fd1f7cb2285706949c81a3190f050392f057725117353627`;
+its Markdown SHA-256 is
+`882ba0a1ee5d5123937902d1c129925bcfd8607e001bd09240ca125fd22f20f8`.
+It binds corrected artifact/release above, source
+`7fdc5465b5903751301a4e319a160848eacefac6/83f7d4b8788efc4f6407a84f816f7186cc348408e07230d84ed37b4280e7cf0f`,
+CfT 151.0.7922.34 executable
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`,
+normal sandbox, local non-remote dev-01, and one profile retained across the abrupt
+restart.
+
+Scenario A killed the full Chrome process tree only after the exact 8,388,608-byte
+durable checkpoint. The initial `bytes=0-` request had no `If-Range` and aborted; after
+visible Chrome relaunched on the same profile, the first request was exactly
+`Range: bytes=8388608-` with persisted
+`If-Range: "sha256-ad1ad62ba82a32b066f442bdf5891e4bf03835b6c156a3960b873aece8e16f9d"`.
+The resumed worker made one 206 request for the remaining 25,165,824 bytes, recorded
+8,388,608 resumed bytes, and finished the exact 33,554,432-byte object ready with
+active/previous still null. Scenario B observed one held and one pending exclusive
+transfer lock. Client one downloaded the exact 33,554,432 bytes in one range request;
+client two waited 4,386.965 ms, issued zero resource requests, reused all 33,554,432
+bytes, and returned the same ready release. Both scenarios had zero retry, transport,
+validator, or integrity failures; final lock state was empty and both 750 ms
+post-result quiet windows were mutation-free.
+
+D-099 independently reconstructed both dirty measured sources. The failed-source
+bundle manifest/verification/archive SHA-256 values are
+`9707eb44e95c8826c103017e4d9ae7aeba7a91f94d8e124eea24c6c169dff169`,
+`f85b0479fca0e3ca15fa77395fc97d351f13050b8fe39fec2cb20f9e6ac230c1`,
+and `0eed270329b0e3e03520113087c2e0703748c5c714163bf5ad10aed0f3f908e7`.
+The passing-source bundle values are
+`ff2483c4f1800ce548f9233f8050cf3d74ab2897c9ea1b40c8c1b7959481162a`,
+`b77a31a8444f837c812a53856798c8817683da7a220ac96ab78b119e2ac34f15`,
+and `1356e49ad8a109b4d751a5f72032d3b6420ebf7b427fbc43bc902b05dd1a9119`.
+The qualification runner, paced server, synthetic generator, command, and fixtures are
+removed after reconstruction. Root rule 12 cleanup also removed the schema-v1 Markdown
+formatter and synthetic/adversarial envelope apparatus. Later root rule 12 cleanup
+removed the independent qualification validator and its retained-file tests as closed
+experiment apparatus too; no live import or recurring gate consumed them. The ignored
+failed and passing result files, D-099 reconstruction records, and the hashes and
+conclusions documented here remain the historical evidence. The calibration apparatus
+was removed on the same rule 12 boundary. This is bounded 32 MiB
+interruption/lock evidence, not power-loss, production/multi-GB completion, persistence,
+publication, consumer migration, update/offline, disk-full, or 100 GB evidence. D-133 is
+accepted by the final review recorded under D-134.
+
+**Consequences:** The deterministic implementation can transfer an exact staged release
+to ready without changing current consumers or activation state. Quota estimation is
+explicitly best-effort: required peak is missing download bytes plus the largest
+unverified copy-before-publish resource plus a fixed metadata reserve, followed by a
+1 MiB flushed write/remove probe. An incomplete estimate does not manufacture a
+failure; a clearly insufficient complete estimate or actual `QuotaExceededError`
+fails while preserving durable checkpoints. The worker observes but never requests
+persistence. Store-call failures are terminal rather than network-retry candidates:
+`QuotaExceededError` retains its typed DOM exception for quota classification, while
+other store faults use a typed terminal store error without message-text inference.
+
+This accepted decision claims the bounded calibration, 32 MiB browser
+interruption/lock qualification, and passing schema-v55 production smoke above, but no
+installer-driven multi-GB model completion, persistence
+grant/denial UX, power-loss or browser/OS-crash behavior, disk-full UX,
+publication/update/rollback, consumer migration, service-worker or offline behavior,
+uninstall, or 100 GB scale behavior. Installer UX and M2 remain open.
+
+**Reopen if:** browser qualification exposes a protocol/storage/lock defect, the source server cannot sustain
+the exact D-131 range/validator contract, Web Locks termination semantics change, OPFS
+checkpoint durability evidence changes, or later activation/consumer work requires a
+different ready boundary.
+
+## D-132: Retain the corrected production model-source qualification as passed (2026-07-29, accepted)
+
+**Decision:** Accept D-130's five exact self-hosted model resources and D-131's
+response-specific HTTP contract as qualified for the bounded production-source gate.
+The retained schema-v1 result is
+`model-source-v1-2026-07-29T11-24-32-356Z.json` (SHA-256
+`a305386877336b5d3083a78c1d28d2b514e0a0ed34d5aafe67500ed058676de4`;
+Markdown SHA-256
+`7152a0a92ea43e5da2809ffc2c5f64679d52c9759e5d4ba79740e6bc745af2c9`).
+It passed from 2026-07-29 11:24:32.356–11:24:36.883 UTC against artifact
+`108aee08e703a72c387a7766d0debad57fc07495c80141939a09380fe77ccb1c`,
+release
+`7eda948c4f28f10ffee048fa3ee5f442efb8444054bf09ecbc740467feb7176c`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/ba3be3021765f89600e435ca2ad9eaf95eeb9d85ef72fd3c83a764650ba5508a`.
+The command used Node v24.18.0 (executable SHA-256
+`9a4eb5f1c29c6a2e93852ead46b999e284a6a5ca8bab4d4e241d587d025a52de`).
+
+The retained schema-v1 file is historical evidence under its recorded digest; current
+code does not routinely parse or emit that host-path-bearing schema. D-130's corrected
+implementation emits schema v2, which identifies the local source logically and
+records only the Node executable basename plus its digest. This migration does not
+rewrite or relabel the retained D-132 evidence.
+
+The result binds all five resources and their exact 2,620,371,552-byte total from
+local source through the fixed `plex:/var/www/parallax-web.com/immutable` filesystem
+boundary. The webroot and immutable directory were UID/GID 1000/1000 and mode 0755.
+Each exact final object was a regular, non-symlink file with its D-130 byte length and
+SHA-256, UID/GID 1000/1000, and mode 0644. The installed nginx identity was separately
+adjudicated after the rollback-safe human-admin install: the reviewed local include
+SHA-256 was
+`df7f4a41d9e4625acc5065550b574cdc5d29ae8a31bd309a164f3dca1230ba89`;
+`/etc/nginx/sites-enabled/parallax-web.com` resolved to
+`/etc/nginx/sites-available/parallax-web.com`; that resolved active file was regular,
+root/root, mode 0644, and had the same SHA-256; nginx was active. No ownership or mode
+claim is made for the symlink itself.
+
+Public HTTP then passed all 25 bounded requests: five HEAD 200 responses, five
+matching-`If-Range` 206 responses, five stale-`If-Range` full 200 responses cancelled
+before reading body bytes, five plain one-byte 206 responses, and five unsatisfiable
+416 responses. The successful range bodies totaled exactly 10 bytes. The five bounded
+416 representations totaled 985 bytes. Each resource retained its strong ETag across
+HEAD, matching range, stale `If-Range`, and plain range. Full HEAD 200 responses used
+immutable caching and advertised byte ranges; every request carrying `Range` used
+`no-cache`; 206 responses bound exact one-byte `Content-Range`/length/body; and 416
+responses bound the exact unsatisfied `Content-Range`. No full model representation
+was downloaded over HTTP.
+
+**Context:** This is an evidence-only closure of the exact D-130/D-131 candidate and
+does not alter runtime, config, harness, schema, thresholds, or evidence semantics.
+D-131's earlier
+`model-source-v1-2026-07-29T04-44-24-184Z.json` failure remains failed under its
+recorded identities and digests. It stopped at the first shard's invalid blanket 206
+header expectation before the corrected include was installed; the later pass neither
+relabels nor erases it.
+
+**Consequences:** The model-source provisioning prerequisite for the later transfer
+executor is closed. This decision does not claim a production app deployment,
+installer runtime, OPFS transfer or resume, storage persistence or quota behavior,
+consumer migration or UI, Chrome/runtime/performance/D-097 qualification, a full HTTP
+model download, interruption recovery, update/rollback behavior, or offline behavior.
+Installer UX and M2 remain open. The installer worker/network transfer-resume executor
+moves to D-133 or later.
+
+**Reopen if:** any pinned resource identity or production path changes, the active
+nginx include or response behavior changes incompatibly, the production filesystem
+identity no longer meets D-130, or the transfer executor requires a stronger source
+contract than D-131 qualified.
+
+## D-131: Select immutable caching by request shape and validate range responses by HTTP semantics (2026-07-29, accepted)
+
+**Decision:** Amend only D-130's production cache selection and model-source HTTP
+evidence semantics. The nginx map key is now
+`"$status:$http_range:$uri"`: an exact immutable path receives
+`public, max-age=31536000, immutable` only for an ordinary full 200 or conditional
+304 with no `Range` request header. Every request carrying `Range`, including a stale
+`If-Range` request that resolves to a full 200, uses `no-cache`; 206 and 416 are
+required to use `no-cache`. The config does not force `Accept-Ranges` onto responses.
+
+The schema-v1 model-source result retains the same five request kinds and bounded-body
+policy but validates each response kind separately. A full 200 must advertise
+`Accept-Ranges: bytes`, bind exact Content-Length, type, security headers, no content
+encoding, and the same strong ETag. A 206 must bind the exact one-byte
+Content-Range/Length/body, type, security headers, no content encoding, and the same
+strong ETag; `Accept-Ranges` may be absent or `bytes`, but no other value is accepted.
+A 416 must bind only its status, exact unsatisfied `Content-Range`, bounded body, and
+semantic `no-cache` policy. Its error representation may be HTML, omit ETag and
+`Accept-Ranges`, and omit or duplicate security fields. Nullable result fields preserve
+that observed absence rather than inventing successful-response metadata. Repeated
+identical `no-cache` directives are evaluated as one semantic policy; conflicting
+directives still fail. The command's outer boundary converts any rejected verification
+to process exit code 1 after the inner lifecycle has atomically retained failed JSON
+and best-effort Markdown.
+
+**Context:** The first post-upload command is retained failed at
+`model-source-v1-2026-07-29T04-44-24-184Z.json` (SHA-256
+`55b502869608647d310cd73c4be575535fc90e234e0dd0f10fd8dae06b228f6a`;
+Markdown SHA-256
+`bde285de3171fd41782e01f42e37d184ccd43b5246333805c60e8489bcceb31e`).
+It records artifact
+`108aee08e703a72c387a7766d0debad57fc07495c80141939a09380fe77ccb1c`,
+release `7eda948c4f28f10ffee048fa3ee5f442efb8444054bf09ecbc740467feb7176c`,
+and source
+`7fdc5465b5903751301a4e319a160848eacefac6/ca2628ebc63e62467d6606ef2f6089120c611008fa1a03ed49b6f66a9d74a377`.
+It bound exact remote SSH identity and then stopped on the first shard's `range-0-0`
+blanket header mismatch. It did not record the later response shapes and is not
+relabeled.
+
+A separate operator probe from 2026-07-29 04:44:33–04:44:54 UTC observed that shard's
+actual transport. HEAD returned 200 with `Accept-Ranges: bytes`, a strong ETag,
+`application/octet-stream`, and immutable caching. Plain and matching-`If-Range`
+one-byte requests returned 206 with exact `Content-Length: 1`,
+`Content-Range: bytes 0-0/23532320`, the same strong ETag, no content encoding, no
+`Accept-Ranges`, and immutable caching. The unsatisfiable request returned 416 with
+`Content-Range: bytes */23532320`, a 197-byte HTML body, no ETag or `Accept-Ranges`,
+and duplicated identical immutable/security fields. Stale `If-Range` returned a full
+200 with `Accept-Ranges: bytes`, the same ETag, and immutable caching; the probe aborted
+it before downloading the full representation. This raw operator observation explains
+the correction but is distinct from the failed JSON evidence.
+
+RFC 9110 sections
+[13.1.5](https://www.rfc-editor.org/rfc/rfc9110.html#section-13.1.5),
+[14.3](https://www.rfc-editor.org/rfc/rfc9110.html#section-14.3),
+[14.4](https://www.rfc-editor.org/rfc/rfc9110.html#section-14.4), and
+[15.3.7](https://www.rfc-editor.org/rfc/rfc9110.html#section-15.3.7) distinguish
+`If-Range`, range advertisement, 206 representation metadata, and the recommendation
+that a 416 include an unsatisfied `Content-Range`; Parallax deliberately makes that
+field mandatory for this production contract. They do not make every
+successful-response field a 416 requirement. The nginx
+[`map` documentation](https://nginx.org/en/docs/http/ngx_http_map_module.html)
+supports a source string composed from multiple variables, while the
+[core-module documentation](https://nginx.org/en/docs/http/ngx_http_core_module.html)
+documents static-resource ETag generation and byte-range handling. Checked
+2026-07-29.
+
+**Consequences:** D-130's self-hosted identities, upload/deploy guards, manifest
+contract, and SSH evidence remain accepted. Its claim that the status-only cache map
+already had the required behavior is superseded. The corrected nginx include requires
+the existing human-admin rollback-safe install/reload step before the source command is
+rerun. The retained failure remains evidence; a later pass must use the corrected
+config and current reviewed verifier. This adds no installer worker, Chrome run,
+performance result, or D-097 qualification. D-132 retains the corrected production
+qualification as passed; the installer transfer executor moves to D-133 or later.
+
+**Reopen if:** production or an intermediary changes 200/206/416/If-Range behavior,
+the installer chooses a cache mode that depends on response caching, or a future
+content origin requires a different range/cache contract.
+
+## D-130: Self-host the exact generated GGUF shards as immutable install-only resources (2026-07-29, accepted; cache/evidence semantics amended by D-131)
+
+**Decision:** Supersede only D-128's model-source provisioning. The five D-074/D-096
+resources keep their exact IDs, kind, common scope, OPFS target, byte lengths, hashes,
+and 2,620,371,552-byte total, but their sources are now same-origin
+`immutable/model-<sha256>.gguf`. Install-manifest remains v1 and build-manifest remains
+v12. These are install-only pinned resources: they are served from the production
+webroot but remain absent from `dist`, the build-artifact inventory, and ordinary
+target preflight's full-artifact fetch. Independent engine and harness validators
+require the current build's resource inventory to equal the derived local artifacts
+plus those exact five source paths; an unknown sixth HTTPS or same-origin install-only
+resource and any collision with a normal build artifact fail closed. The generic
+document parser remains able to validate future manifest shapes without weakening this
+current-build policy.
+
+`deploy/model-content.json` v2 binds the exact logical five-shard set and the source
+identity `gemma-4-E2B-it-qat-GGUF-66a399f6` under registry key
+`production-model-content`; it contains no host path. The ignored
+`.parallax-toolchain.local.json` maps that key and exact version to the machine-local
+directory. The production deployer and model-source verifier use one bounded resolver
+that requires the checkout-bound registry schema, exact key/string types, an absolute
+canonical existing directory, and no reparse-point ancestor; missing or malformed
+state fails closed.
+The ordinary production deployer independently parses the hash-verified built
+install-manifest before any remote preview or mutation and requires its complete
+kind-model projection (ID, kind, common scope, OPFS target, canonical same-origin
+source, bytes, and SHA-256) to equal that validated deploy contract. Missing, extra,
+duplicate, noncanonical, or drifted model entries fail closed; the independent harness
+install-manifest and persisted-result pins remain separate validation witnesses rather
+than importing the deployer's implementation constant.
+`pnpm deploy:model-content` is a fixed-host/fixed-path, preview-by-default Windows
+operation. Before any remote mutation it streams and verifies every local byte/hash and
+requires every managed shard to be present. The later fixed package interface exposes
+mutation only as `pnpm deploy:model-content:apply`, whose fixed no-argument wrapper
+invokes the bounded deployer in the same PowerShell process with real `Deploy` and
+disabled `Confirm` switch values. The corresponding app commands are
+`pnpm deploy:production` and wrapper-backed `pnpm deploy:production:apply`; neither
+apply package script uses pnpm argument forwarding or exposes a configurable target.
+The approved underlying deploy mode reuses D-121's owner, permission, non-symlink, inode,
+mount-confinement, and exclusive-lock guards; each missing or wrong object is copied
+into the private lock directory, remotely size/SHA-256 verified, chmodded, and only
+then moved to its final immutable name. The guarded webroot supplies the required
+UID/GID; the immutable directory and final files must retain that ownership with modes
+0755/0644. Safely owned wrong modes may be normalized only through the fixed apply
+command. Wrong ownership, unsafe final types,
+or unexpected `model-*.gguf` objects block the operation. The exact inventory is read
+again under the owned lock before normalization or upload, so stale preview state is
+not trusted. It never deletes an unexpected object to make the check pass. Lock cleanup
+removes interrupted private uploads.
+
+Ordinary production replacement now requires all five remote objects to be exact
+before destructive mutation. Preview reports a blocker when they are absent, wrong,
+unsafe, or accompanied by managed-prefix extras. During an approved app deployment,
+the exact type/UID/GID/mode/byte identities are re-read under the owned lock and
+reasserted after the webroot is made and verified 0700 and before the objects move into
+the private lock. The ordinary webroot replacement runs, and
+the objects move back before public permissions are restored. Failure cleanup restores
+any already-preserved objects before any permitted lock release; a failure after the
+webroot becomes private instead retains that owned lock for manual recovery. Final
+verification requires the exact union of the frozen `dist` inventory and these five
+regular files, including
+their guarded UID/GID and 0755/0644 directory/file modes, with no other remote entry.
+This keeps the app deployer from erasing model content and keeps the model uploader
+from touching ordinary `dist` children.
+
+`pnpm harness:model-source-verification` is the bounded post-upload evidence command.
+It records JSON-primary schema v2 in a strict pending state before remote access. Its
+local evidence uses `production-model-content/<shard-name>` rather than a host path,
+and its Node identity uses the executable basename plus digest. Retained schema-v1
+D-132 artifacts are historical-only and are not accepted by the current validator. A
+fixed `ssh.exe plex` preflight hashes and stats the exact
+`/var/www/parallax-web.com/immutable` five-file set; it establishes full remote byte
+identity plus regular-file/non-symlink UID/GID/mode identity and must pass before any
+HTTP request. HTTP then proves only public transport behavior. For each shard it checks
+final URL, status, headers, Content-Length/Range, strong ETag, no Content-Encoding, and
+downloaded bytes for HEAD, `bytes=0-0`, an unsatisfiable range, matching `If-Range`,
+and stale `If-Range`. Exactly two successful one-byte bodies are read per shard
+(`bytes=0-0` and matching `If-Range`); HEAD reads none, the 416 body is bounded, and
+the stale-validator 200 body is cancelled immediately with zero downloaded bytes.
+Strict discriminated pending/passed/failed envelopes are independently validated
+before and after atomic JSON replacement, and state-honest Markdown is derived from the
+final envelope. This command is deliberately not run before model publication.
+
+**Context:** A bounded read-only check at 2026-07-29 03:35–03:37 UTC found that all
+five D-128 Hugging Face `resolve` URLs returned `404 EntryNotFound` for HEAD, the
+range cases, and both `If-Range` cases. The pinned upstream revision contains the
+2,620,370,976-byte unsplit GGUF, not Parallax's five locally generated
+`llama-gguf-split` outputs. All five local outputs re-hashed to their recorded
+identities. This is an asset-provisioning error, not a browser/platform finding.
+
+The installed D-121 nginx include accepts these names as immutable resources, serves
+byte ranges, and exposes strong ETags without content encoding. D-131 supersedes
+D-130's incorrect claim that no config change was required: the status-only cache map
+made range-request 206/416 and stale-`If-Range` 200 responses immutable, and the
+blanket verifier incorrectly required successful-response headers on 416.
+
+The deterministic implementation candidate contains 277 listed artifacts totaling
+10,846,956 bytes. Its build-manifest SHA-256 is
+`108aee08e703a72c387a7766d0debad57fc07495c80141939a09380fe77ccb1c`;
+its install-manifest/release SHA-256 is
+`7eda948c4f28f10ffee048fa3ee5f442efb8444054bf09ecbc740467feb7176c`.
+Two consecutive full builds matched both identities and the independent engine/Wasm
+repeatability gates. These identify the uncommitted local implementation, not uploaded model content,
+deployed application bytes, or HTTP verification evidence.
+The read-only model-deployment preview streamed and accepted all five local identities
+and reported all five remote final paths missing; the ordinary app-deployment preview
+reported the corresponding destructive-deploy blocker. Neither preview made a remote
+mutation.
+
+**Consequences:** The later transfer executor has a same-origin resumable source
+contract, but model upload and the bounded HTTP verifier remain explicit operational
+steps after review. This project adds no installer worker, UI, OPFS transfer, consumer
+migration, production upload, app deployment, Chrome launch, performance claim, or
+D-097 qualification. Installer UX and M2 remain open; D-132 retains the corrected
+production qualification as passed, and the installer executor is D-133 or later.
+
+**Reopen if:** the fixed production origin cannot store the selected model, the exact
+model/revision changes, production range/validator behavior fails the bounded verifier,
+or a separately reviewed content origin provides equivalent immutable identity and
+resume semantics.
+
+## D-129: Use validated append-only records for the OPFS release store (2026-07-28, accepted)
+
+**Decision:** Add the crash-safe `parallax-install-v1` OPFS release store as a bounded
+engine subsystem. Common objects live below `objects/common/sha256`; Parallax-specific
+objects live below `objects/games/parallax/sha256`. Equal hashes never alias across
+those physical namespaces. The store consumes D-128's exact install-manifest bytes and
+uses their SHA-256 as the release directory and identity.
+
+Release state is derived only from exact, newline-terminated immutable v1 records:
+verified-object, partial-checkpoint, staged, ready, published, commit, and abandoned. Every parser
+requires exact keys, safe integers, lower-case SHA-256, and filename/body identity.
+Large partials use bounded sync-access-handle appends followed by `flush()` and a new
+immutable checkpoint, retaining the newest two checkpoints per transfer. Recovery
+selects the highest valid checkpoint no greater than
+the file size and truncates any uncheckpointed tail. Finalization incrementally hashes
+the complete partial, copies bounded chunks into its hash-addressed object, re-reads and
+re-hashes the exact object, and only then publishes the verified marker. Any previous
+marker is removed before object mutation; missing or failed full verification removes
+it as well. A marker plus
+exact data size is sufficient for ordinary startup metadata reconciliation; the
+explicit integrity API streams and re-hashes bytes to detect same-size corruption.
+
+Ready is not active. Publication appends a uniquely named
+`<20-digit ordinal>-<releaseDigest>.json` commit. Active is the highest valid commit
+whose manifest, ready record, and every OPFS object remain eligible; previous is the
+next lower valid commit for a different release. Torn/ineligible newer commits are
+ignored. Rollback appends a new commit for previous. If record close completed but its
+caller did not observe success, recovery may accept the fully valid record; it can
+therefore observe old or new state, never a mixed release. No mutable status/pointer
+file exists. Selection work is bounded in steady state by retaining the newest 64
+ordinals plus active/previous anchors. An immutable published marker distinguishes
+obsolete published releases from ready-but-unpublished content after older commits are
+compacted; reconciliation repairs that marker if a commit close completed first.
+Abandonment is terminal, is allowed only before ready, and is rejected for ready,
+committed, active, or previous releases. Once abandoned, release-scoped resource lookup
+and both object/release integrity APIs reject, including a reference issued before
+abandonment.
+
+Every mutation and reconciliation uses one origin-wide exclusive Web Lock named
+`parallax-install-store-v1`; absence of Web Locks fails closed and there is no lease,
+timeout stealing, or `steal:true`. Reconciliation never auto-activates ready content.
+Garbage collection is deterministic, bounded, resumable, and rooted by active,
+previous, and every non-abandoned in-progress release. It never leaves
+`parallax-install-v1`, so saves and the existing streaming/model-cache roots are out of
+scope. Its entry limit is one shared mutation budget: published-marker repair occurs
+before commit pruning, then remaining budget may remove ordinary GC candidates.
+Reported removal entries/bytes and remaining work include commit cleanup exactly.
+Reconciliation accepts an explicit cleanup budget including zero and reports cleanup
+mutations, removal entries/bytes, and remaining work; a zero cleanup budget performs no
+metadata repair or pruning. Repair eligibility that binds or purports to bind the
+unique newest commit remains strict fail-closed authority, and ambiguous newest-commit
+authority is rejected without deleting its evidence. Superseded, orphaned, torn, or
+manifest-less non-current repair records are deterministic reconcilable garbage under
+the same budget; zero retains them with remaining work, while removal contributes exact
+mutation, entry, and byte counts. A durable current repair record independently makes
+that release ineligible, including at ordinary active admission while a crash-retained
+verified marker remains. Reconciliation validates every current-authority claim before
+mutation; marker revocation consumes one shared-budget removal mutation and its exact
+entry/byte counts. A zero budget retains that marker and reports remaining repair work.
+
+The platform policy is independent of DOM handles. A browser adapter and persistent
+deterministic in-memory filesystem cover exact reads, record replacement, bounded
+append/truncate/flush, listing/removal, locking, torn/short/quota faults, and restart
+reconstruction. Its shared FIFO mutex queues contenders, and reconstructing a facade
+cannot clear a live owner. Fault tests cover stage, checkpoint recovery, exact-size
+interrupted repair, finalization boundaries, torn publication, rollback, cross-scope
+identity, bounded metadata/GC, abandonment, confinement, and observer faults. The
+real-Chrome adapter exercise imports the adapter/store implementation from the exact
+D-129 build and stages a synthetic one-resource release through
+publication/reopen/reconciliation, two-store/two-worker serialization through the
+adapter's hard-coded lock, and queued progress after the owning worker terminates. Each
+contender acknowledges immediately after submitting its Web Lock request, and the
+runner waits for that acknowledgement before either the quiet window or owner
+termination. It retains pending then passed/failed machine-local JSON plus a
+human-readable report with browser, imported build-artifact, recorded production
+build-manifest release, and dirty-source identities. That production release identity
+is result/build provenance, not the staged OPFS release.
+
+The retained result
+`harness/results/opfs-release-store-adapter/adapter-v2-2026-07-29T03-23-51-061Z.json`
+(JSON SHA-256
+`370a724f18d9aec361cc9de93636c588b3965e62cd284fdcfe508534a35005fd`;
+Markdown SHA-256
+`7a8fd5c8f76cc0e8e4d72952ade3e29eb7534b480c2b88bef519800f4d4083c3`)
+passed in 1.728 seconds. All five evidence fields were true:
+`blockedBeforeRelease`, `firstFinalization`, `lifecycle`,
+`reopenReconciliation`, and `terminatedOwnerReleasedLock`. The runner imported the
+adapter/store implementation from artifact
+`5404dcd3299f5fd03564907d5002ba6b5a1e26f57089cc349370ba18a84b6f51`,
+and the result recorded production build-manifest release identity
+`79f9f463f84a55e072945851ad705f1089b2a868227a68d8cfac5f96fda98ef9`,
+source
+`7fdc5465b5903751301a4e319a160848eacefac6/f1136b8a32977ebb0243b366de95b30eef0cd62e17874ef3d619408e8dc0cc6f`,
+and Chrome 151.0.7922.34 executable SHA-256
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`.
+The recorded production `releaseDigest` is result/build provenance, not the digest of
+the synthetic one-resource release staged by the browser exercise. This is bounded
+proof of that small real-OPFS split-checkpoint/resume lifecycle through first
+finalization, verification, ready/publication, reopen/reconciliation/reverification,
+fixed Web Lock exclusion across workers, and a queued waiter proceeding after owner
+termination. It is not evidence for power loss or browser/OS crash, torn real writes,
+multi-GB transfer, network, quota, persistence, real update/rollback, production,
+performance, registered-environment identity, or D-097 qualification.
+
+**Context:** Current primary sources were checked 2026-07-28. The
+[File System Standard](https://fs.spec.whatwg.org/#api-filesystemfilehandle-createwritable)
+says implementations only “try to ensure” old-or-new contents for `createWritable()`,
+while sync-access writes require explicit flush for reflected changes. Chrome's
+[OPFS documentation](https://web.dev/articles/origin-private-file-system) documents
+file `move()`, but gives no atomicity guarantee, and the
+[WHATWG move proposal](https://github.com/whatwg/fs/pull/10) remains open with
+concurrency/handle questions. Therefore `move()` is not a release commit primitive.
+The [Web Locks draft](https://w3c.github.io/web-locks/) defines same-origin
+window/worker exclusion and releases an agent's locks when that agent terminates.
+
+**Consequences:** Runtime store parsing validates the exact self-authenticating manifest
+document, while D-128 build/harness validation continues to enforce the full local
+inventory and five pinned model shards. This permits bounded protocol qualification
+fixtures without weakening production build identity. Install-store telemetry starts
+at schema v1 with state, selection,
+inventory, byte-flow, integrity/quota/recovery/publication/rollback/GC counters, current
+work, duration, and failure. Public telemetry advances to v28 and initially reports the
+store explicitly `unavailable`; the later installer worker will forward live snapshots
+without opening OPFS on the app main thread. Smoke advances to report schema v53,
+flythrough to v20, and render recovery to v17. Their mandatory metric sets, populations,
+thresholds, and budget semantics do not change.
+
+The deterministic reviewed candidate contains 277 deployed artifacts totaling
+10,847,344 bytes. Its build-manifest SHA-256 is
+`5404dcd3299f5fd03564907d5002ba6b5a1e26f57089cc349370ba18a84b6f51`;
+its install-manifest/release SHA-256 is
+`79f9f463f84a55e072945851ad705f1089b2a868227a68d8cfac5f96fda98ef9`.
+Two same-host full builds matched those identities and the existing independent engine
+and Wasm repeatability checks. They identify this uncommitted candidate, not deployed
+or physically qualified production.
+
+This project adds no network fetch, installer UI, `persist()` request, shell/service
+worker activation, current streaming/model consumer migration, update policy, uninstall,
+deployment, baseline promotion, or physical qualification. Installer UX and the broader
+installer trust/crash-safety checkbox remain open; the installer worker/transfer
+executor is the next project. Reopen the publication primitive
+only with current specification guarantees plus an interrupted-operation Chrome
+experiment; implementation convenience alone is insufficient.
+
+## D-128: Bind M2 installation to install-manifest v1 and build-manifest v12 (2026-07-28, accepted)
+
+**D-130 supersedes only the five model source URLs; all other D-128 schema, identity,
+classification, placement, and dual-digest decisions remain current.**
+
+**Decision:** Introduce deterministic `install-manifest.json` schema v1 with exact
+top-level keys `gameId`, `resources`, and `schemaVersion`; `gameId` is `parallax`.
+Every resource has exactly `bytes`, `id`, `kind`, `scope`, `sha256`, `source`, and
+`target`. Scopes are `app-shell`, `common`, and `game-specific`; targets are `shell`
+and `opfs`; kinds are `document`, `module`, `worker`, `wasm`, `model`,
+`district-index`, `world-cell`, and `asset-pack`.
+
+Build-manifest v12 references it through the singular exact
+`installManifestEntrypoint: { path: "install-manifest.json", schemaVersion: 1 }`.
+The install manifest is an ordinary build artifact, but does not list itself. Its
+artifact SHA-256 is the explicit `releaseDigest`; it therefore avoids a self-reference
+while binding every other production artifact and every external install resource.
+The `build-manifest.json` SHA-256 remains the compatibility-preserving
+`artifactDigest` and continues to identify the exact serving inventory and
+entrypoints. Local/production target preflight verifies both identities independently.
+
+The current mapping is exact:
+
+- `index.html` and the app module are `app-shell/shell`;
+- the engine module, four workers, and runtime/decoder Wasm are `common/shell`;
+- the game module is `game-specific/shell`;
+- the generated district index and 256 world cells are `game-specific/opfs`;
+- D-074/D-096's five exact pinned GGUF shards are external HTTPS
+  `common/opfs/model` resources totaling 2,620,371,552 bytes.
+
+Resource IDs are stable lower-case semantic IDs derived from role or unhashed logical
+path, while SHA-256 is object identity. Common and game-specific OPFS namespaces remain
+distinct even when a future storage implementation addresses their bytes by hash.
+The engine owns the canonical browser-side parser. The harness has an independent
+parser and independently pins the five model identities. Both reject unsupported keys,
+types, placements, unsafe IDs/paths/integers, unsafe HTTPS URLs, duplicate IDs,
+sources, or hashes, ordering drift, aggregate overflow, incomplete or swapped local
+classification, build-metadata mismatch, and model drift. Build validation
+independently derives exact app/engine/game/worker/Wasm/district/cell classifications
+instead of trusting install-manifest labels. Build validation also preserves the exact
+four-worker and district-index invariants. The streaming worker pins the exact v12
+entrypoint shape before consuming it and rejects empty/unsafe or duplicate district
+IDs/paths, duplicate artifact paths/hashes, a missing install-manifest artifact, and
+any district path absent from the exact artifact inventory. That streaming-consumer
+validator deliberately leaves worker-role validation and full served-tree byte
+inventory to their owning runtime consumers and the independent harness validator;
+the selected district body is fetched and validated immediately afterward. The
+production deployer invokes the compiled independent harness validator against the
+frozen local tree before remote mutation;
+external model resources are deliberately absent from `dist`, deployment inventory,
+and the production target's full-artifact fetch.
+
+**Context:** M2 needs one deterministic contract before implementing resumable OPFS
+writes or installer state. The prior build manifest was a serving inventory, not an
+install plan. A separate listed install manifest can express external model shards
+without either deploying them or conflating remote install resources with served
+files, while preserving the established build-manifest `artifactDigest` semantic.
+D-010 also requires the common/game split before a future COS index exists.
+
+The first generated candidate contains 281 resources: 2 app-shell, 21 common, and 258
+game-specific; 19 shell and 262 OPFS. Scope bytes are 18,351 app-shell,
+2,629,905,218 common, and 1,096,851 game-specific. Target bytes are 9,589,285 shell
+and 2,621,431,135 OPFS. The generated install-manifest SHA-256 is
+`5ee4346cd960f6df61d3b6266f6fc4fb18d5c12dce4235130def8c5006140983`;
+the separately verified build-manifest SHA-256 is
+`7223ff0f1ba8d6c7879917930f2290fc31e949d9d747b2e7d414b86876d43fd7`.
+These hashes identify the reviewed dirty-tree candidate, not a deployed or qualified
+runtime.
+
+**Consequences:** The manifest contract is complete, but the Installer UX plan item
+remains open. This decision adds no OPFS writer, resume protocol, UI, service worker,
+update/uninstall behavior, scale corpus, Storage Buckets choice, streaming-bridge
+change, or installer telemetry. Runtime telemetry begins with the later installer state
+machine rather than inventing counters for a build-only contract.
+
+Every current report family that persisted the build artifact identity now also
+persists the release identity. `smoke@1` advances to report schema v52 with mandatory
+metric set v27 unchanged; `flythrough-d1@1` advances to v19/v11; render recovery to
+v16/v5; page benchmark result/status to v6/v5; and the app-owned-LLM report to v3 while
+its telemetry remains v3. The baseline store stays schema v1: its retained
+`artifactDigest` is the build-manifest SHA that cryptographically binds the listed
+install-manifest artifact SHA, and promotion first validates the report's exact dual
+target identity plus top-level/target release equality. Page benchmark repeat equality
+also treats both digests as comparison-relevant. No metric registry, population,
+threshold, or telemetry measurement semantic changed, so mandatory metric-set versions
+do not advance. No deployment, Chrome run, baseline promotion, or D-097 physical gate
+is authorized by this decision.
+
+## D-127: Qualify D-126's production artifact and close M2's production-deployment item (2026-07-27, accepted)
+
+**Decision:** Retain the passing production `smoke@1` report
+`smoke-1-9d4c1be5c290-dev-01-showcase-2026-07-27T02-43-18-518Z.json`
+(SHA-256
+`ca7a7288ecf6d44787ed1a2f685459c3e81a364cc3d1218adc91dd4d97d681b9`;
+Markdown SHA-256
+`a12ab47176d74766c272b69de5985144220bc93273fbaa78c3108f99bf74e71a`)
+as D-126's one authorized D-097 qualification. It measured exact production
+artifact
+`9d4c1be5c290133a58c9ad90327591804121b226be84cae4c333d3442f2dc86b`
+from source commit `7fdc5465b5903751301a4e319a160848eacefac6` and dirty-tree
+digest
+`f31df298595bae73ac61fb540bf8ebfaa9b31a5842ee8b13684c0139d95ce0b1`
+under `smoke@1` schema v51 / mandatory metric set v27. Production preflight and
+postflight each verified the exact same 276-artifact, 10,624,120-byte inventory
+and serving contract at `https://parallax-web.com`.
+
+The registered dev-01 Showcase physical-console environment and Chrome sandbox
+passed. All six launches completed; environment, evidence-completeness, and
+budget facets passed; and all 30 evaluated budget checks passed with no core-run
+or finalization failure. JSON-primary and Markdown persistence completed.
+Fresh streaming cell-load p95s were
+1.980000019/2.024999976/2.314999938 ms, a 0.334999919 ms spread within
+D-116's 1 ms allowance. Warm p95s were
+1.639999986/1.694999933/2.375 ms, a 0.735000014 ms spread within the same
+allowance.
+
+Every launch recorded 74 render-batch requests and 74 completed transactions.
+Each measurement window retained 48 samples arranged as 16 complete ordered
+three-cell batches, with exact canonical membership and the required timing
+conservation. This qualifies the current single-request/single-response
+transaction contract. It does not establish that halving D-125's four
+request/response messages per canonical batch to D-126's two caused the passing
+repeatability result, distinguish browser from OS scheduling, or observe GPU
+completion. D-116 is unchanged and RE-043 remains open.
+
+The report's baseline state is `untracked`; no baseline is promoted. No further
+physical smoke, public benchmark, flythrough, render-recovery, or V8 lifecycle
+run is required for this production-deployment item. Under D-119, this entry and
+the matching status-pointer updates are evidence-only closure of the exact
+retained result: they change no runtime, harness logic, build output, budget,
+threshold, evidence contract, pin, machine descriptor, or claim beyond that
+report.
+
+**Context:** D-121 put production serving/deployment and explicit target identity
+under version control. D-124 removed the consumed diagnostic. The cleaned
+candidate and D-125's first bounded correction each retained all 30 absolute
+checks but failed one D-116 cohort. D-126 then removed the remaining application-
+owned commit crossing and required exactly one post-correction qualification.
+The report above is that run and satisfies the production item's remaining exit
+condition without relabeling either failed predecessor.
+
+**Consequences:** Close only M2's production-deployment checkbox. M2 remains
+`in progress`; Installer UX is the next active project. Preserve D-125's failed
+report and verified D-099 reconstruction bundle. Existing D-122/D-123 retained
+evidence and D-124 closure are also unchanged.
+
+**Reopen if:** the exact retained report or artifact identity fails
+reverification; production serving no longer satisfies D-121; a later qualifying
+input changes under D-097; or new evidence directly triggers another bounded
+RE-043 investigation.
+
+---
+
+## D-126: Collapse the batch-atomic render transaction to one request and response (2026-07-26, accepted; supersedes D-125's two-phase protocol)
+
+**Status annotation:** D-127 records the passing one authorized post-D-126
+production smoke, closes M2's production-deployment checkbox, and leaves D-116
+unchanged and RE-043 open.
+
+**Decision:** Retain D-125's post-correction production report
+`smoke-1-d6ed5d3560c4-dev-01-showcase-2026-07-27T01-43-29-439Z.json`
+(SHA-256
+`ec93b944b8ca296f4462f389cef806939d036a3b0fc76463aa0e6803ce27fd7f`)
+as failed, and authorize no retry of its exact artifact
+`d6ed5d3560c498f62071d6f235baec32191ad7b0cac4172908919159144a7189`.
+All six launches and all 30 absolute budget checks completed and passed. Warm
+streaming repeatability passed with p95s
+3.170/3.515/4.140 ms and a 0.970 ms spread, but fresh p95s
+4.245/3.585/2.995 ms produced a 1.250 ms spread above D-116's unchanged 1 ms
+allowance. D-125's batching had already reduced the canonical three-cell
+replacement from twelve cross-realm messages to four, a 3× reduction, yet the
+failure remained.
+
+Replace D-125's ordered `stream-batch` request/response followed by a
+`commit-batch` request/response with one ordered `render-batch-transaction`
+request and one `render-batch-transaction-complete` response. The render worker
+fully validates exact transaction, request, batch, ordered membership, cell
+identity, encoded-byte accounting, and replay monotonicity before mutation. It
+uploads members in order. The upload primitive owns cleanup of a throwing member and
+does not make that member resident; the transaction boundary then rolls back all
+completed peers in reverse order. Invalid per-member/aggregate accounting occurs after
+the current member became resident, so it rolls back that member followed by all
+completed peers in reverse order. If the synchronous response-enqueue callback throws,
+the complete batch rolls back in reverse. A successful enqueue ends the transaction
+with no render-side pending map, cell state, timer, or later commit.
+
+The streaming worker retains its 5-second request timeout. Its aggregate encoded
+reservation spans preparation, request, response receipt, and exact response
+validation and releases exactly once on every success or failure path.
+Residency, GPU/encoded accounting, samples, and completed-transaction telemetry
+publish only after the sole response is received and validated. If an already
+enqueued response is subsequently lost, the streaming worker cannot command
+rollback over the missing response; it times out, fails the cohort, and the
+existing service teardown terminates the renderer. Disposal is fail-honest while
+draining: an outstanding transaction or scheduler failure is latched as `failed`
+and wins over the ordinary `disposed` acknowledgement, so teardown cannot be
+suppressed by a concurrent disposal request. This is honest fail-closed
+lifecycle containment, not an acknowledgement of GPU queue completion.
+
+Remove `renderUploadRoundTripMs`, `renderUploadWaitMs`, and
+`renderCommitRoundTripMs`. Add `renderTransactionRoundTripMs`, measured from
+each cell's decode completion through continuation after the sole response, and
+`renderTransactionWaitMs`, the portion outside that cell's direct `uploadMs`.
+Retain `uploadMs`, shared `batchDirectUploadMs`, and total OPFS-to-sole-response
+completion with 0.1 ms conservation tolerance. Replace upload/commit request
+counters with `renderBatchRequestCount` and retain
+`renderBatchTransactionCount`; their delta is 0 or 1 while unsettled and they
+are equal at settlement. Retain transaction identity, ordered membership,
+cell-count/direct-upload high waters, and the lack of WebGPU queue-completion
+or presentation attribution.
+
+Advance streaming telemetry to v9 and the public envelope to v27. Advance
+`smoke@1` to schema v51 / mandatory metric set v27,
+`flythrough-d1@1` to v18/v11, and render recovery to schema v15 while retaining
+metric set v5. Advance page benchmark result/status to v5/v4. Build manifest
+remains v11. These are exact-envelope/mandatory-evidence changes; the scenario,
+sample populations, D-116 cohorts, windows, nearest-rank p95, thresholds,
+scheduler, decode concurrency, OPFS work, and observers do not change.
+Pre-D-126 baselines are ineligible.
+
+After implementation and adversarial review converge, deterministically rebuild,
+deploy and verify the exact production artifact, then run exactly one D-097
+physical-console production smoke. No automatic retry is authorized; retain and
+adjudicate any failure before another run.
+
+**Context:** D-125 proved that scheduler batching removed per-cell amplification
+but left a second application-owned realm crossing solely to convert uploaded
+resources from uncommitted to committed. The render handler is synchronous: it
+can validate, upload, construct the complete response, and detect synchronous
+enqueue failure inside one call. Maintaining render-side resources across a
+second request therefore added traffic, pending state, a timer, and a response-loss
+state without adding a stronger observable completion boundary.
+
+**Consequences:** The normal three-cell batch now uses two cross-realm messages,
+half D-125's four and one-sixth the original twelve. Response loss after successful
+enqueue remains distinguishable only as a streaming-side timeout followed by
+cohort failure and renderer teardown. RE-043 remains open and D-116 is unchanged.
+D-125's result and verified D-099 reconstruction bundle remain immutable evidence.
+
+**Reopen if:** synchronous enqueue is no longer an honest ownership boundary;
+reverse rollback or lifecycle teardown fails to contain a partial/lost
+transaction; exact accounting or recovery membership cannot be preserved; an
+unchanged budget fails; or the one authorized smoke supplies evidence for a new
+action.
+
+---
+
+## D-125: Make each scheduler load batch one atomic render transaction (2026-07-26, accepted; two-phase protocol superseded by D-126)
+
+**Decision:** Retain the final cleaned D-121 production `smoke@1` report
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-27T00-17-19-184Z.json`
+(SHA-256
+`dbc45ae35014b9010f3c84e7ca56c8288756a5b91d6327a324b3f722d9ba061b`)
+as failed and deny a blind retry. Its six launches completed, all 30 absolute budget
+checks passed, and fresh streaming repeatability passed, but warm p95s
+3.380/2.055/2.730 ms produced a 1.325 ms spread above D-116's unchanged 1 ms
+allowance. Correct the concrete transaction amplification already visible in the
+ordinary architecture: coalesce every authoritative scheduler load batch into one
+ordered upload request/ack and one ordered commit request/ack. A normal three-cell
+replacement therefore uses four cross-realm messages rather than twelve.
+
+The render boundary remains two-phase and fail-closed. Upload acknowledgement follows
+complete upload of every declared member. Commit must reproduce exact transaction,
+batch, ordered cell identity, ordinals, membership count, and upload correlation.
+Malformed, missing, duplicate, extra, or reordered membership/correlation fails the
+streaming cohort. Partial upload rolls back all successfully uploaded peers. An
+uncommitted batch keeps the existing 5-second timeout and rolls back every member.
+Encoded-residency budget reservation is atomic over the aggregate batch and is released
+exactly on success or failure. Disposal rolls back pending render batches; recovery
+rehydrates the checkpoint's exact deterministic membership through the same transaction.
+
+Per-cell OPFS access/read, decode, direct upload duration, encoded/GPU bytes, sequence,
+and OPFS-to-post-commit total remain intact. Each cell's render-upload round trip starts
+at that cell's decode completion and ends at the shared upload acknowledgement, so it
+honestly includes waiting for decoded peers and peer upload work. The batch's direct
+upload duration and deterministic transaction identity are retained with every member,
+and streaming telemetry adds transaction/request counters plus cell-count and
+direct-upload high-water observations. Residency and samples become authoritative only
+after the shared commit acknowledgement. There is still no WebGPU queue-completion or
+presentation claim.
+
+Advance streaming telemetry to v8 and the public envelope to v26. Advance routine
+smoke to schema v50 / mandatory metric set v26 and flythrough to v17/v10 because their
+mandatory streaming validators require the new transaction evidence. Advance
+render-recovery to schema v14 while retaining mandatory metric set v5: its scenario and
+mandatory metrics are unchanged, but its exact telemetry snapshots now carry v8.
+Because the page-owned benchmark embeds those snapshots, its result schema advances to
+v4 and benchmark status telemetry to v3 without changing its advisory metrics, repeat
+policy, or 10% rule. Pre-D-125 baselines are intentionally ineligible. D-116's threshold, nearest-rank p95,
+sample population, measurement windows, fresh/warm cohorts, scheduler, decode
+concurrency, OPFS work, observers, and all waits are unchanged. Do not restore the
+D-122/D-123 diagnostic.
+
+After implementation and adversarial review converge, deterministically rebuild,
+deploy and verify the exact production artifact, then run exactly one D-097
+physical-console production smoke. No retry is authorized by this decision; any
+failure is retained and adjudicated before another run.
+
+**Context:** The final cleaned artifact
+`8e932618990f1c6d1fb8aaab2db2bbba016c7b2c21e41eda32d375798d51d87d`
+reproduced the same bounded warm-only failure after D-124 removed all diagnostic
+apparatus. Its ordinary implementation independently sent upload and commit
+transactions for each concurrently decoded member. The canonical three-cell movement
+batch therefore multiplied one scheduler decision into six requests/acks (twelve
+messages), while the sampled per-cell render wait included independent realm crossings.
+Batching removes that application-owned amplification without asserting that it is the
+browser/OS cause of RE-043 or changing a performance threshold.
+
+**Consequences:** This is a runtime and mandatory-evidence-contract change, so it needs
+the one post-review D-097 production smoke above. Old evidence remains immutable and
+ineligible for a v26 comparison. RE-043 remains open: this correction reduces
+application-owned cross-realm traffic but does not provide GPU completion or attribute
+remaining variance to Chrome.
+
+**Reopen if:** exact batch transaction evidence fails; partial upload, timeout,
+disposal, or recovery cannot preserve atomic membership/residency; the correction
+busts an unchanged budget; or the one authorized smoke fails and a new decision
+identifies an evidence-supported next action.
+
+---
+
+## D-124: Close the consumed streaming-tail diagnostic without prescribing a scheduling fix (2026-07-26, accepted)
+
+**Decision:** Retain D-123's single replacement as invalid, non-qualifying evidence;
+authorize no retry or further streaming-tail diagnostic. Keep D-116's 250 ms absolute
+cell-load budget and `max(10% × minimum p95, 1 ms)` short-smoke repeatability rule
+unchanged, and leave RE-043 open. The five valid attempts localize the ordinary
+application-visible tail inside cross-realm render request/acknowledgement waiting, but
+the experiment does not distinguish browser from OS scheduling, does not observe
+WebGPU queue completion or presentation, and therefore supports neither a Chrome
+finding nor a runtime scheduling prescription, metric deletion, or D-116 change.
+
+D-099 reconstruction is complete for both consumed source identities. Remove the
+closed D-122/D-123 experiment in this human-gate unit: its engine authorization and
+protocol shapes, timestamp/correlation/ring path, controls, worker and telemetry hooks,
+public methods, harness scenario/validator/runner/CLI/tests, package command, generated
+artifacts, and active operator instructions. Ordinary streaming telemetry v7, public
+telemetry v25, smoke schema v49 / mandatory metric set v25, its six ordinary core runs
+and their streaming samples, and every D-116 budget behavior remain unchanged. After
+review convergence, rebuild and redeploy the cleaned D-121 production candidate,
+verify exact public serving identity, and run its one final D-097 physical-console
+production smoke. That smoke qualifies the converged candidate; it is not a
+diagnostic retry.
+
+**Context:** The exact D-123 invocation was consumed once with no retry. Retained
+`streaming-tail-diagnostic@1` schema-v1 result
+`harness/results/streaming-tail-diagnostic-1-bb200ab2c331-dev-01-showcase-2026-07-26T20-47-12.563Z.json`
+has SHA-256
+`69e5af5598b06ca5eea99b649049d1d2803ef8638ae2d74cc0c9e886e0c9c4a6`;
+its consumption record has SHA-256
+`44558176c73a60f21aca9dff9d9cb154dc7a0868731e4bead017b2cea148a74f`.
+The measured source was commit
+`7fdc5465b5903751301a4e319a160848eacefac6` plus dirty-tree digest
+`aae43b0e5ba3e8531acf386a5ea09b44edb5e6f4abe1dec695dcd97f04489f8f`,
+and the exact production artifact was
+`bb200ab2c33196fd155192560e494b20f7c54705557cb86be8b74db7777f2958`.
+Production preflight and postflight verified the exact origin, artifact, and full
+serving contract. The registered dev-01/Showcase physical-console environment was
+measured with pinned Chrome for Testing 151.0.7922.34, the Chrome sandbox intact, and
+`remoteSession: false`.
+
+The report is correctly `status: invalid`, `qualifies: false`: five attempts contain
+valid evidence, while fresh repeat 2 has null evidence because zero-work
+`control 8 timestamps are misordered`; the no-retry contract is consumed. Actual GPU
+completion remains explicitly `unsupported`. Across the five valid attempts, ordinary
+total p95s were 2.010, 1.515, 2.065, 1.700, and 2.515 ms. The illustrative warm-repeat-3
+nearest-rank total-p95 cell measured 2.515 ms. Its 1.770 ms commit round trip consisted
+of 1.195 ms outbound dispatch, 0 ms worker operation/bookkeeping, and 0.575 ms
+acknowledgement/continuation; its direct OPFS read/access, decode, upload operation, and
+streaming-worker remainder were small. This is enough to locate the application
+boundary being waited on, but not the browser/OS/GPU cause of that wait.
+
+The ignored D-099 bundle at
+`harness/results/d099-streaming-tail-diagnostic-d123-bb200ab2c331-reconstruction/`
+is independently verified. Its complete tracked patch has SHA-256
+`b379003ed9c522ce5bbd3c3720d2ac99d25ad62bb1dfffdac5eb87716cef1ef5`;
+its complete untracked-file archive has SHA-256
+`ef1ef7d1f6fbb8d0b0fb0b409622e32be9677c7926121ab982db8a5268506af4`.
+It reconstructed the exact commit/digest above and reverified both retained D-123
+artifact hashes. D-122's retained invalid result, consumption record, and independently
+verified reconstruction bundle remain unchanged.
+
+**Consequences:** No diagnostic retry, GPU wait, scheduling tune, metric removal, or
+threshold change is implied. RE-043 remains the honest platform-research outcome.
+The cleaned runtime changes artifact identity, so production must be rebuilt,
+redeployed, independently verified, and qualified once under D-097 before the M2
+production item can close. Raw D-122/D-123 result, consumption, and bundle files remain
+best-effort machine-local evidence; the load-bearing facts above and RE-043 are the
+durable record.
+
+**Reopen if:** a future ordinary qualifying run produces a directly actionable
+repeatability failure and a new decision defines the smallest current experiment,
+observable boundary, authorization, and bounded run count. Do not restore the removed
+D-122/D-123 apparatus wholesale.
+
+---
+
+## D-123: Replace the consumed malformed D-122 invocation without changing its diagnostic contract (2026-07-26, accepted; consumed invalid, closed by D-124)
+
+**Status annotation:** D-124 records the consumed replacement, verified reconstruction,
+bounded observations, cleanup, and final qualification path. The pre-run decision below
+is retained as the exact authorization contract, not current operator instruction.
+
+**Decision:** Preserve D-122's consumed invocation and invalid verdict unchanged. Its
+result proved that D-122's first readiness predicate was malformed because Playwright
+serialized a callback that captured Node-module
+`TELEMETRY_SCHEMA_VERSION`; the page realm had no such binding. Authorize exactly one
+replacement physical-console invocation, with no retry, of the unchanged production
+`streaming-tail-diagnostic@1` schema-v1 scenario:
+
+```
+pnpm harness:streaming-tail-diagnostic -- --target https://parallax-web.com --authorization D-123-one-shot
+```
+
+D-123 changes only that predicate: its complete `{ globalName, schemaVersion }`
+argument is passed across the Playwright boundary and the serialized callback compares
+against `schemaVersion` from that argument. A Node `vm` scope-isolation regression
+executes the exact serialized callback without module bindings. The other diagnostic
+runner callbacks were audited for the same class of outer capture and require no
+change.
+
+The operator-facing authorization is now the harness-only constant
+`D-123-one-shot`, consumed exclusively through
+`harness/results/streaming-tail-diagnostic-d123-consumption.json`. The old
+`D-122-one-shot` operator argument is rejected and the existing D-122 consumption
+record is neither read nor changed. The already deployed engine artifact necessarily
+retains its internal D-122 protocol authorization; after accepting the D-123 operator
+token, the runner passes that unchanged internal value only when arming the engine.
+The report and consumption record identify D-123 operator authorization, while the
+existing validator continues to require the internal D-122 snapshot authorization.
+This translation does not change the deployed runtime, protocol, telemetry, artifact,
+scenario, timing, controls, correlation, validation, target, environment, one-shot,
+JSON-primary, postflight, or non-qualification contracts established by D-122.
+
+The replacement is valid only for build-manifest/artifact digest
+`bb200ab2c33196fd155192560e494b20f7c54705557cb86be8b74db7777f2958`
+at exact production origin `https://parallax-web.com`; the runner rejects a different
+validated build before pending JSON, consumption, or Chrome. Before its first Chrome
+launch, the runner still writes pending JSON and atomically consumes the new D-123
+record. It still performs the full registered-environment inspection and the same six
+fresh/warm attempts, and it remains `qualifies: false` with no budget, baseline,
+promotion, retry, or path to relabel D-122.
+
+**Context:** D-122 was consumed at `2026-07-26T20:22:38.699Z`. Its immutable retained
+result is
+`harness/results/streaming-tail-diagnostic-1-bb200ab2c331-dev-01-showcase-2026-07-26T20-22-38.699Z.json`
+(SHA-256
+`75165f270397e89f064763159e96823b3df3354524eecc114c8a800ceccd6bd3`,
+source commit `7fdc5465b5903751301a4e319a160848eacefac6`, dirty-tree digest
+`68ae52d5d89b3c40dd51096acf989ca9e77cc06676fda3f043421fe9845aaa6a`).
+It remains `status: invalid`, `qualifies: false`, with final failure
+`6 of 6 diagnostic attempts were invalid`. Every attempt's evidence is null because
+the first readiness predicate raised
+`ReferenceError: TELEMETRY_SCHEMA_VERSION is not defined`; none reached readiness,
+diagnostic arming, controls, warm-up, or measurement.
+
+Evidence independent of that malformed predicate completed successfully. Production
+preflight and the single retained postflight both verified the exact
+`bb200ab2c331...` artifact, all 276 conditional artifacts and 10,639,725 bytes, plus
+the required MIME/cache/ETag/304/isolation/nosniff contract. The registered
+dev-01/Showcase environment gate was measured at the physical console with
+`remoteSession: false`, the Chrome process sandbox verified, pinned CfT
+151.0.7922.34, D3D12, and the registered RTX 4080 SUPER/display/driver/host identity.
+That evidence establishes a runner-contract defect, not diagnostic timing evidence,
+a runtime regression, or a platform finding.
+
+D-099's ignored bundle at
+`harness/results/d099-streaming-tail-diagnostic-d122-bb200ab2c331-reconstruction/`
+is independently marked verified. Its 170,759-byte complete tracked binary patch
+(SHA-256
+`9b84b7271f21615a3c5f26737692e36f04cbe45585fa95f150cc535cb6302f8f`)
+and 195,072-byte complete untracked-file archive (SHA-256
+`087e8e367a52c11fe6d8588eb5f0267eb91165dcdf53ba355e2428df444fe7c5`)
+reconstructed the exact source commit and dirty-tree digest above in a clean scratch
+worktree, and reverified the retained result digest. D-123 does not modify that result,
+its D-122 consumption record, or the verified bundle.
+
+**Consequences:** D-122 is consumed and cannot be retried. D-123 is the only authorized
+replacement and remains unconsumed until its fixed consumption file is created by the
+runner. No production smoke is authorized before the replacement is consumed and
+reviewed. Afterward, quote its load-bearing observations, create and independently
+verify a new D-099 reconstruction bundle for its own measured source identity, and
+remove the complete temporary apparatus in this same human-gate unit before deciding
+whether a concrete change or exit decision permits production qualification.
+
+**Reopen if:** the D-123 invocation is lost before pending JSON exists, the new
+consumption/report authorization is not D-123, the artifact or production target
+differs, or retained evidence proves another exact-contract defect. An invalid or
+inconclusive replacement has no retry without a new decision.
+
+---
+
+## D-122: Authorize one bounded streaming-tail cross-realm diagnostic after production smoke repeatability failures (2026-07-26, accepted; consumed malformed, replacement consumed and closed by D-124)
+
+**Status annotation:** D-124 closes this experiment after D-123's single replacement
+was consumed and reconstructed. The command below is historical and is not authorized
+for reuse.
+
+**Decision:** Retain both failed D-121 production-target `smoke@1` reports and keep
+D-116's absolute 250 ms budget plus `max(10% × minimum p95, 1 ms)` short-smoke
+repeatability rule unchanged. Before another production qualification attempt,
+authorize exactly one physical-console invocation of:
+
+```
+pnpm harness:streaming-tail-diagnostic -- --target https://parallax-web.com --authorization D-122-one-shot
+```
+
+The opt-in `streaming-tail-diagnostic@1` schema-v1 runner accepts only the exact
+`https://parallax-web.com` target; omitted/default local and explicit local targeting
+are rejected before pending-result creation or authorization consumption. It reuses
+the ordinary three fresh plus three warm short-smoke traversal, ten-second warm-up,
+and 120-frame measurement boundaries. It is diagnostic evidence only: every report says
+`qualifies: false`, has no smoke/budget verdict or baseline/promotion surface, and
+cannot replace D-097 qualification. A fixed machine-local exclusive consumption
+record makes the authorization one-shot; there is no classification retry.
+
+Pending JSON and atomic one-shot consumption precede the first Chrome launch. The
+runner then uses the same registered-environment inspector as smoke, retaining the
+runtime Chrome version, command line and sandbox verdict, CDP GPU devices, WebGPU
+adapter, browser display, Windows host, machine descriptor, target identity, and
+evaluated machine/tier gate. A failed gate retains invalid JSON and prevents all six
+core attempts. Each attempted launch also waits for and validates the canonical SAB
+ring-buffer and Wasm-thread completion contracts before accepting an explicitly
+non-failed streaming state and arming diagnostic controls.
+
+The direct streaming/render `MessagePort` first runs sixteen sequential zero-work
+round trips and one fixed 10 ms render-worker busy-service positive control. Only
+after those controls arm the session may ordinary traversal warm-up begin. In the
+opt-in path, upload and commit requests retain epoch-relative
+`performance.timeOrigin + performance.now()` boundaries for the existing streaming
+phase start, request posted immediately before `postMessage`, render-handler entry,
+operation start/end, response ready, and the existing streaming phase end sampled
+immediately after the awaited acknowledgement. The report derives request preparation,
+outbound dispatch, render-worker total, operation, worker bookkeeping, and combined
+acknowledgement plus streaming-continuation time without clamping. Those five
+non-overlapping components must sum to the unchanged existing upload or commit
+round-trip sample within 0.1 ms; the diagnostic round trip and the ordinary
+`renderUploadRoundTripMs` / `renderCommitRoundTripMs` samples must also agree directly
+within 0.1 ms. The existing render-worker `uploadMs` boundary is unchanged, and its
+value must agree with upload operation time within the same tolerance. Reports add
+upload, commit, and combined summaries for preparation, outbound, worker,
+acknowledgement-plus-continuation, and round trip. Every duration must be finite,
+non-negative, and ordered. The positive operation must be at least 10 ms.
+
+A 64-entry ring retains **complete cells**, each with both upload and commit
+attribution. The runner selects records from the existing start/end
+`cellLoadSampleCount` boundary and requires exact cell ID, sample sequence, both
+request IDs, and batch identity. Warm-up records may age out. A missing, duplicate,
+orphaned, mismatched, non-contiguous, or out-of-order record invalidates the attempt, as does
+ring overflow that drops a sequence newer than measurement start. Reports keep raw
+selected diagnostic cells and their exact ordinary `StreamingCellLoadTelemetry`
+samples; p50/p95/max for diagnostic attribution plus ordinary total, OPFS, decode,
+render upload/commit, and streaming-worker remainder components; and the nearest-rank
+ordinary-total-latency p95 joined cell plus its selected joined batch peers. Diagnostic
+`uploadMs` must agree both with its operation boundary and with the ordinary sample.
+The retained join makes the p95 choice and all OPFS/decode/remainder attribution
+reconstructable. Reports do not impose an invented dominance threshold.
+Before diagnostic correlation or aggregation, the runner applies smoke's canonical
+ordinary streaming-evidence validator to the start/end snapshots and uses only its
+validated `measurementCellLoadSamples`. Its ten-sample minimum, finite and
+non-negative timing rules, attribution conservation, batch/boundary identity, observer
+progress, residency, eviction, and snapshot checks remain authoritative; the
+diagnostic does not duplicate or weaken them.
+
+JSON is primary and is written pending before the first Chrome launch, then updated
+after every attempt. Failures, timeouts, malformed messages, disposal, target
+postflight failure, source/build drift, and Markdown persistence failures retain an
+invalid partial. Target preflight/postflight, environment, source/build identity,
+controls, and all six attempts remain explicit. Actual GPU completion is
+`unsupported`: this experiment deliberately does not reach through private Babylon
+seams and does not call `GPUQueue.onSubmittedWorkDone()`, so its last boundary is
+render-worker response readiness rather than queue completion or presentation.
+Production target postflight is captured at most once. Catch/finalization handling
+retains that first evidence and never retries a failed verification or overwrites it
+with a later success.
+
+The timing basis was checked 2026-07-26 against the current W3C High Resolution Time
+Level 3 Recommendation, which specifies that `now()` values with the same time origin
+use the same monotonic clock and defines translation via time origin:
+https://www.w3.org/TR/hr-time-3/. The current WebGPU specification's queue completion
+surface was also checked; omitting it is a deliberate scope/perturbation boundary, not
+a claim that the API is absent: https://www.w3.org/TR/webgpu/#dom-gpuqueue-onsubmittedworkdone.
+
+**Context:** Corrected D-121 deployment and independent public validation succeeded
+for the exact production inventory and serving contract. The first production smoke
+then completed all six launches and all 30 absolute checks but failed only streaming
+repeatability: fresh p95s 3.370/3.175/2.060 ms (1.310 ms spread), warm
+2.105/3.160/2.590 ms (1.055 ms). Its single D-097 classification retry again
+completed all six launches and checks; fresh passed at 2.330/1.445/2.045 ms
+(0.885 ms), while warm failed at 1.985/1.910/3.860 ms (1.950 ms). Both target
+preflight/postflight verifications passed. OPFS direct read p95 remained
+0.035–0.085 ms, while the slow cells accumulated in render upload/commit round-trip
+wait. Network delivery, target verification, percentile arithmetic, and an absolute
+streaming regression are therefore not supported as causes. This directly triggers
+D-116's reopen condition and RE-043's still-unresolved worker/GPU boundary.
+
+The retained reports are
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T18-23-45-839Z.json`
+(SHA-256
+`1c96ee7c8d19d99b1c9a887c1e1425f5e5d0340a78c197ac63833e09c9722231`)
+and
+`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T18-26-29-257Z.json`
+(SHA-256
+`02c0424e828faeb8eefc9ac2a1cefb0a607e74de22620adeb6a3bff4cac396f3`).
+D-114 removed the old trace-heavy experiment. D-122 rebuilds only a small
+application-message attribution path and does not restore CDP tracing, presentation,
+heap, GPU allocator, or execution-state apparatus.
+
+**Consequences:** No further smoke is authorized until this one diagnostic is
+reviewed and consumed. Its evidence may justify a concrete runtime or measurement
+change, or may leave RE-043 unresolved; neither outcome weakens a gate. After the
+result is recorded, remove the command, protocol, timing, controls, ring, temporary
+tests, and public methods in the same human-gate change. Because that same gate would
+otherwise contain no committed runnable source, export and verify D-099's complete
+source-identity reconstruction bundle before cleanup. Only a concrete converged
+runtime/measurement change or a separately recorded exit decision can authorize the
+next production D-097 smoke.
+
+**Reopen if:** the single invocation is lost before a pending JSON exists (which would
+be an implementation defect requiring a new explicit authorization), or its retained
+evidence proves this contract itself malformed. Do not retry an invalid or
+inconclusive retained invocation, restore D-111, add a GPU wait, tune runtime
+scheduling, or change D-116 without a new decision.
+
+---
+
+## D-121: Version production serving/deployment and make serving target report identity (2026-07-26, accepted)
+
+**Decision:** Production serving is the checked-in
+`deploy/nginx/parallax-web.com.conf`: direct static nginx at
+`https://parallax-web.com`, rooted only at `/var/www/parallax-web.com`, with no
+Cloudflare/intermediary. Mutable navigation and build-manifest responses use
+`Cache-Control: no-cache`; resources whose `/immutable/` names carry a full SHA-256
+use `public, max-age=31536000, immutable`. COOP `same-origin`, COEP `require-corp`,
+cache policy, and `nosniff` use nginx `add_header ... always` so conditional 304s
+retain the serving contract. Only GET/HEAD and existing static files are served.
+Immutable caching is status-aware and applies only to successful 200/304 responses;
+missing immutable paths and 405s remain mutable `no-cache` errors. A server-level,
+route-aware method map emits `Allow: POST` for rejected `/uninstall` methods and
+`Allow: GET, HEAD` for other 405s without introducing a nested `add_header` inheritance
+boundary. Canonical HTTP and `www` origins redirect directly
+to the fixed HTTPS origin. Installing this file under `/etc/nginx` and reloading nginx
+is a separately documented human-admin action. The reviewed installer backs up the
+active include and trap-restores, revalidates, and reloads it if candidate validation
+or reload fails. Cleanup disables `set -e`, reports restoration/revalidation/reload
+failures, and never removes the caller-owned candidate; the operator wrapper deletes
+that candidate only after success.
+
+The checked-in PowerShell deployer has fixed host `plex` and fixed target
+`/var/www/parallax-web.com`. Every invocation performs a fresh pinned `pnpm build`,
+requires the local inventory to equal every manifest artifact plus the manifest itself,
+rejects the frozen `site/` placeholder and its obsolete memory64/Prompt-API framing,
+previews local/remote inventories, and resolves the exact remote path. The remote
+parent and webroot must be non-symlink directories owned by the SSH user with no group
+or world write bits; every destructive boundary rechecks their device/inode identity
+and rejects any webroot or descendant mount, including same-filesystem bind mounts.
+Preview is the default. Explicit `-Deploy` plus PowerShell's high-impact confirmation
+atomically acquires a fixed lock inside the webroot, makes and verifies the root 0700,
+moves the pinned model objects into that private lock, preserves only that owned lock
+while deleting the fixed webroot's other top-level children, then recursively copies
+the frozen `dist` children with `scp`. The deployer revalidates the frozen local
+path/size/hash inventory immediately before privatization and after copy, and remotely
+keeps the webroot 0700 during replacement, rejects symlinks, normalizes only descendant
+directory/file modes, and requires the exact directory/file mode/path/size/SHA-256
+inventory, rejecting any non-lock entry that is neither a regular file nor a directory,
+plus a final local-source revalidation before chmodding the root 0755 and
+releasing the lock. Any post-privatization failure retains the private root and owned
+lock for manual recovery; bounded cleanup may restore preserved model objects inside
+that private root and reports guarded recovery-state evidence, but never republishes
+partial bytes. Source drift, target replacement, contention, preservation/delete/copy/
+normalization failure, mixed/extra/special entries, or corruption fails closed.
+There is no `rsync`, staged publish, app backup, variable destination, or separate
+placeholder publisher.
+
+The fixed webroot is exclusively Parallax-owned exact-inventory storage. Unrelated
+files and ACME HTTP-01 challenge files are prohibited beneath it; certificate
+validation that needs filesystem writes must use a different location. Preview guards
+perform read-only remote inspection only, and a retained lock rejects preview with its
+fixed path and an explicit diagnostic. Manual recovery preserves the private 0700 root
+and lock until the exact models and combined inventory can be proven. The portable unit
+gate executes both the application deployment and model-content uploader mocked safety
+suites; optional Git-sh/WSL semantic fixtures are opt-in developer diagnostics and do
+not introduce machine-local executable paths into the acceptance gate.
+
+Privileged smoke, flythrough, and render-recovery keep local as the default and accept
+exactly `--target local` or `--target https://parallax-web.com`. Before Chrome starts,
+the verifier rejects redirects and requires `/` to remain on the exact selected origin,
+match manifest-listed `index.html` bytes, use correct HTML MIME, and pass mutable 200/
+conditional-304 cache, ETag, COOP/COEP, and `nosniff` checks. The manifest is bounded
+to 1 MiB; every manifest artifact is fetched with bounded concurrency eight and
+verified by exact bytes/size/SHA-256 plus correct HTML/JavaScript/JSON/Wasm MIME,
+status-specific mutable/immutable cache policy, isolation, `nosniff`, ETag, and
+conditional 304. Each request has a 10-second header deadline, a 30-second body
+deadline, and an expected-size body limit. Cache-Control parsing rejects malformed,
+duplicate, or conflicting directives instead of accepting a matching substring.
+Every Chrome app/identity navigation, including V8 diagnostics, must finish at the
+exact selected URL.
+
+The same complete check runs after measurement. Reports retain explicit verified
+preflight and verified/failed postflight evidence plus a compact representation-class
+summary; a postflight stall/failure persists as failed environment evidence and cannot
+render as verified, and an otherwise-valid identity change is retained as explicit
+drift failure rather than contradictory verified evidence. Baseline identity includes
+kind/origin, so local and production results cannot compare or promote across targets;
+local ephemeral ports normalize to the canonical loopback origin class. A pre-D-121
+three-part D-087 local anchor is recognized as the canonical local predecessor but
+remains intentionally ineligible
+until an explicit `--rebaseline` migration, retaining the existing stale-digest and
+actor/reason safeguards. Production selection never starts localhost.
+Because static nginx has no harness-only counter endpoint, production smoke records its
+local request-delta observation as `not-applicable`; target preflight remains mandatory
+environment evidence. Smoke advances to schema v49 / mandatory metric set v25,
+flythrough to v16/v9, and render-recovery to v13/v5. D-118 JSON-primary finalization
+semantics are unchanged.
+
+**Context:** Read-only production inspection on 2026-07-26 found nginx 1.30.2, direct
+SSH hosting, and only the frozen 7,468-byte placeholder in the webroot. The first live
+inspection at 15:16 UTC found `/` 200 and conditional 304 responses without COOP/COEP.
+The human corrected the live HTML location during this work; reinspection at 15:19 UTC
+found both responses retaining COOP/COEP and `no-cache, must-revalidate`, but the
+unversioned config still has extension-based caching that omits current immutable JSON/
+Wasm classes and the app is not deployed. Immutable behavior therefore cannot be
+qualified until deployment. The initial deploy review also found `/var/www` mode 0777
+and the webroot mode 0775. The human corrected both to non-symlink, `pmeenan`-owned
+0755 directories during the fix pass; read-only inspection verified that prerequisite,
+but no agent deployed content or changed nginx.
+
+A subsequent human-admin install attempt failed safely at `nginx -t`: nginx 1.30.2
+parsed the unquoted map regex quantifier `{64}` as configuration syntax and reported
+`unexpected "{"`. The installer restored and revalidated the prior live include. The
+checked-in candidate now quotes the complete regex token and at that point remained
+uninstalled pending a human retry; this failed attempt is not public serving
+qualification.
+
+After the corrected include was installed by the human, the first authorized app
+deployment attempt failed safely before the deletion command. Shell tracing showed
+that the generated lock check wrapped command substitution in literal parentheses,
+comparing `($(cat .../token))` instead of the token. The same defect prevented automatic
+release. Read-only inspection confirmed that the webroot still contained only the
+placeholder plus this deployer's lock; the human then removed only that lock after
+checking its exact path, token, and contents. The deployer now generates
+`test "$(cat .../token)" = '<token>'`, shares that construction between operation and
+release, executes correct-token/wrong-token/owned-lock cleanup tests against an isolated
+filesystem, and reports both the original operation failure and any cleanup failure.
+No app files were deleted or copied, and this attempt is not production deployment
+qualification.
+
+Inspection of that failed attempt also found the lock directory at mode 0775 and its
+token and uploaded expected inventory at 0664. The remote account's umask is 0002, and
+`getent group pmeenan` reports another member, `tkadlec`; a same-group process could
+therefore have modified the evidence used to authorize deletion or cleanup. Lock
+acquisition now sets umask 0077, creates the lock explicitly at 0700, and creates and
+chmods the token to 0600. Before trusting the token or removing the lock, the shared
+guard requires a non-symlink directory and regular non-symlink token, both owned by the
+current UID, at exact modes 0700/0600. The private directory gates the subsequently
+uploaded inventory. Executed shell tests prove the created modes, owner-valid success,
+wrong-token and group-accessible-mode rejection, owned-lock cleanup, and survival of a
+sibling sentinel.
+
+The second authorized deployment attempt passed lock validation, deleted the
+placeholder, and copied the complete app, then reported SSH failure during final
+inventory verification; owned-lock cleanup succeeded. Read-only inspection found the
+live app present (`/` 5,389 bytes; `build-manifest.json` 68,020 bytes). The failure was
+not an artifact mismatch: Windows `WriteAllLines` had serialized the expected inventory
+with CRLF while the remote actual inventory used LF, so sorted bytewise `cmp` failed.
+The same inspection found scp-created files at 0664 and an `immutable` directory at
+0707 under umask 0002. The lead immediately normalized the fixed live webroot to root
+and directories 0755 and files 0644 and verified no lock remained. The deployer now
+writes explicit UTF-8/no-BOM LF inventory bytes with a terminal newline, compares modes
+as part of the exact inventory, makes the webroot 0700 before preserving models and
+keeps it private through preservation/delete/copy, rejects symlinks and other special
+entries, and normalizes 0644/0755 before restoring the root to 0755. On any failure
+after privatization, guarded cleanup restores only any preserved model objects inside
+the 0700 root, retains the owned lock, and verifies and reports its private recovery state
+alongside the original error; it never normalizes or republishes partial application
+bytes. Descendant normalization and exact inventory comparison now occur while the root
+remains 0700, and a final local-source revalidation gates the separate root-publication
+step. The copied app is live but this failed attempt is not successful deployment or
+public harness qualification.
+
+Independent HTTPS verification then found a harness-only transport mismatch: Node
+24/Undici fetch advertised gzip and exposed a weak 200 ETag after transparent decoding,
+while conditional HEAD exposed nginx's strong ETag. Curl with identity encoding
+confirmed nginx's strong 200/304 ETags match. Exact target requests now force
+`Accept-Encoding: identity`, preserving manifest bytes/hash and stable ETag comparison.
+This is Node collector behavior, not Chrome runtime or production qualification.
+
+Current nginx documentation checked 2026-07-26 states that `add_header` normally
+applies to listed statuses including 304 and that `always` applies regardless of status;
+it also documents location-level header inheritance rules:
+https://nginx.org/en/docs/http/ngx_http_headers_module.html. MDN checked the same day
+documents COOP `same-origin` plus COEP `require-corp` or `credentialless` as the
+cross-origin-isolation conditions used by `SharedArrayBuffer`:
+https://developer.mozilla.org/en-US/docs/Web/API/Window/crossOriginIsolated. Local
+target unit tests exercise real Node-server 200/304 responses rather than relying on
+configuration inspection alone. The deployment behavior test executes the generated
+remote guard in a local shell to prove that `findmnt` failure fails closed and that
+reported descendant mounts are rejected. Its isolated fake transport separately checks
+PowerShell orchestration for preview/cancellation, guard/lock/inode failure handling,
+source drift, mid-preservation plus restoration failure, delete/first-copy/mid-copy/
+normalization/verification failure propagation, private-root/owned-lock retention,
+publication/release ordering, special-entry rejection, and deletion-command confinement
+to the fixed webroot. Those canned transport
+responses do not execute a sandboxed remote filesystem replacement, remote inventory
+verification, external-sentinel survival, or nginx rollback; installer rollback is
+currently checked by script structure and ordering only.
+
+**Consequences:** The M2 production checkbox remains open. A human must install/reload
+the versioned nginx config, run the reviewed destructive deployer, verify the public
+app and immutable responses, and later run the converged D-097 physical qualification.
+The frozen `site/index.html` source is unchanged and is not a deployment input.
+
+**Reopen if:** production requires dynamic origin behavior, the immutable naming
+contract changes, nginx cannot preserve required headers on cached responses, or
+operational evidence justifies a staged/atomic deployment design despite this
+explicitly requested fixed-webroot replacement.
+
 ## D-120: Validate the machine-local smoke baseline before launching Chrome (2026-07-26, accepted)
 
 **Decision:** `smoke@1` loads and parses its ignored machine-local baseline store during
@@ -2062,6 +6014,11 @@ Fresh/produce attribution measured across all three lineages. Warm cache-consump
 and render/streaming production remained informationally invalid for the existing
 RE-009/RE-010 Chrome observability gaps. The targeted run also retained and accepted a
 complete lossless core trace at 5,307.5 ms under D-094.
+
+The current threaded-Wasm diagnostic compiles its original response once through
+`WebAssembly.compileStreaming` and transfers that module to the two short-lived workers.
+Historical targeted and D-144 records retain their original `instantiateStreaming`
+identity; changing the current loader does not reinterpret those measurements.
 
 The schema-v30 report remains unpromoted: the checked-in store's older metric-set-v11
 anchor is intentionally incomparable with metric-set v14, so baseline replacement
@@ -5854,7 +9811,7 @@ baseline-promotion policy operates on CfT milestone advances.
 **Reopen if:** a committed feature needs an API that hasn't reached stable, or CfT
 proves behaviorally divergent from branded stable in a way that matters to findings.
 
-## D-018: Hardware gates — capable-consumer baseline; Showcase calibrated to dev-01; Standard gate is a target profile  (2026-07-11, accepted; supersedes D-009's hardware/tier provisions)
+## D-018: Hardware gates — capable-consumer baseline; Showcase calibrated to dev-01; Standard gate is a target profile  (2026-07-11, accepted; Standard-gate provisions superseded by D-150; supersedes D-009's hardware/tier provisions)
 **Decision:** D-009's install-scale provisions stand unchanged (≤ 12 GB experiment
 content; ≥ 100 GB architecture floor, not ceiling; synthetic scale tests). Its hardware
 and tier provisions are replaced:
@@ -5918,7 +9875,7 @@ persona card from M3; quest-critical interactions never require the model.
 for even constrained NPC dialog, or session limits make per-NPC state impractical
 (either outcome is itself a finding).
 
-## D-016: Multiplayer infrastructure and determinism scope  (2026-07-11, accepted)
+## D-016: Multiplayer infrastructure and determinism scope  (2026-07-11, accepted; cross-machine verification gate superseded by D-150)
 **Decision:** M7 multiplayer means **reliable internet co-play**: self-hosted signaling
 on the D-011 host and STUN are permitted; TURN relay is permitted if measured direct-
 connectivity failure rates warrant it. "Serverless" in project language means **no
@@ -6174,6 +10131,10 @@ a small portfolio site) judged negligible.
   characteristics) buys real protection beyond origin `persist()`, or is complexity
   without benefit. Decide during M2 with measurements; interim protection is origin
   persistence + explicit save export (architecture.md).
+- **P-008: Game UI substrate** — DOM/CSS overlay on the worker-owned WebGPU canvas
+  vs. in-canvas rendering, per UI surface class (world-anchored, HUD, screens,
+  dialog); a hybrid split is a valid outcome. Resolved by the D-143 bounded spike;
+  runnable pre-M3, must conclude before M3 dialog-presentation work.
 *(P-007, app-owned NPC inference vs. Prompt API, was resolved in favor of the measured
 app-owned backend by D-096 after D-074's phase-A qualification.)*
 *(P-002, geometry representation, was resolved by D-098: retain the incumbent triangle

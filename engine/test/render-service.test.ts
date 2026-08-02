@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createEmbeddedPsoWarmupTrace } from "../src/render/installed-pso-warmup";
 import type {
   RenderReadyMessage,
   RenderStartMessage,
@@ -106,6 +107,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => {
         throw new Error("Unexpected recovery");
       },
@@ -172,6 +174,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => {
         throw new Error("Unexpected recovery");
       },
@@ -286,6 +289,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => {
         throw new Error("Unexpected recovery");
       },
@@ -341,6 +345,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => {
         throw new Error("Unexpected recovery");
       },
@@ -406,6 +411,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort,
       streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
     });
@@ -441,6 +447,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint,
         settled: Promise.resolve(recoveryCheckpoint(2)),
@@ -488,6 +495,7 @@ describe("render service recovery", () => {
     service.start(canvas as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => {
         throw new Error("Unexpected recovery");
       },
@@ -527,6 +535,7 @@ describe("render service recovery", () => {
     service.start(canvas as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: settlement.promise,
@@ -580,6 +589,7 @@ describe("render service recovery", () => {
     service.start(canvas as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort,
       streamingPort: firstStreamingPort as unknown as MessagePort,
     });
@@ -651,6 +661,66 @@ describe("render service recovery", () => {
     service.dispose();
   });
 
+  it("retains the first typed PSO failure across replacement-generation readiness", async () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    const observed = [] as ReturnType<typeof service.snapshot>[];
+    service.subscribe((snapshot) => observed.push(snapshot));
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => ({
+        checkpoint: recoveryCheckpoint(1),
+        settled: Promise.resolve(recoveryCheckpoint(2)),
+        streamingPort: new FakeMessagePort(200) as unknown as MessagePort,
+      }),
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const failureMessage: RenderWorkerResponse = {
+      cause: "render-error",
+      kind: "error",
+      message: "PSO warmup compile failure",
+      psoWarmup: failedPsoWarmupSnapshot("compile failed"),
+    };
+    const serializedFailure = structuredClone(failureMessage);
+    expect(serializedFailure).toEqual(failureMessage);
+    requireWorker(0).emit(serializedFailure);
+
+    expect(service.snapshot()).toMatchObject({
+      psoWarmup: { state: "idle" },
+      retainedPsoWarmupFailure: {
+        snapshot: {
+          cacheMissCount: 1,
+          compiledCount: 0,
+          failure: { class: "compile", detail: "compile failed" },
+          state: "failed",
+        },
+        workerGeneration: 1,
+      },
+      state: "recovering",
+    });
+
+    requireWorker(1).emit(readyMessage());
+    await Promise.resolve();
+    expect(service.snapshot()).toMatchObject({
+      psoWarmup: { failure: null, state: "ready" },
+      retainedPsoWarmupFailure: {
+        snapshot: { failure: { class: "compile" }, state: "failed" },
+        workerGeneration: 1,
+      },
+      state: "ready",
+    });
+    expect(
+      observed.every(
+        (snapshot) =>
+          snapshot.retainedPsoWarmupFailure === null ||
+          snapshot.retainedPsoWarmupFailure.workerGeneration < snapshot.recovery.workerGeneration,
+      ),
+    ).toBe(true);
+    service.dispose();
+  });
+
   it("fails terminally when the replacement attempt faults before ready", () => {
     installBrowserFakes();
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -662,6 +732,7 @@ describe("render service recovery", () => {
     service.start(canvas as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: new Promise(() => undefined),
@@ -680,6 +751,7 @@ describe("render service recovery", () => {
       cause: "render-error",
       kind: "error",
       message: "replacement initialization failed",
+      psoWarmup: null,
     });
 
     expect(replacementWorker.terminated).toBe(true);
@@ -702,6 +774,48 @@ describe("render service recovery", () => {
     );
   });
 
+  it("keeps the first PSO failure strictly prior to a terminal replacement failure", () => {
+    installBrowserFakes();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const service = createRenderService();
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => ({
+        checkpoint: recoveryCheckpoint(1),
+        settled: new Promise(() => undefined),
+        streamingPort: new FakeMessagePort(200) as unknown as MessagePort,
+      }),
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    requireWorker(0).emit({
+      cause: "render-error",
+      kind: "error",
+      message: "first PSO failure",
+      psoWarmup: failedPsoWarmupSnapshot("first compile failed"),
+    });
+    requireWorker(1).emit({
+      cause: "render-error",
+      kind: "error",
+      message: "replacement PSO failure",
+      psoWarmup: failedPsoWarmupSnapshot("replacement compile failed"),
+    });
+
+    expect(service.snapshot()).toMatchObject({
+      psoWarmup: {
+        failure: { detail: "replacement compile failed" },
+        state: "failed",
+      },
+      recovery: { state: "exhausted", workerGeneration: 2 },
+      retainedPsoWarmupFailure: {
+        snapshot: { failure: { detail: "first compile failed" }, state: "failed" },
+        workerGeneration: 1,
+      },
+      state: "failed",
+    });
+  });
+
   it("allows a second deterministic probe so the bounded terminal path is testable", async () => {
     installBrowserFakes();
     const service = createRenderService();
@@ -710,6 +824,7 @@ describe("render service recovery", () => {
     service.start(canvas as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: Promise.resolve(recoveryCheckpoint(2)),
@@ -741,6 +856,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: settlement.promise,
@@ -768,6 +884,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: Promise.reject(new Error("checkpoint mismatch")),
@@ -797,6 +914,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort,
       streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
     });
@@ -832,6 +950,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: Promise.resolve(recoveryCheckpoint(2)),
@@ -864,6 +983,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort,
       streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
     });
@@ -909,6 +1029,7 @@ describe("render service recovery", () => {
     service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
       failStreamingCohort: () => undefined,
       mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
       restartStreamingCohort: () => ({
         checkpoint: recoveryCheckpoint(1),
         settled: new Promise(() => undefined),
@@ -1016,7 +1137,66 @@ function readyMessage(): RenderReadyMessage {
       }),
     }),
     kind: "ready",
+    psoWarmup: Object.freeze({
+      buildCompatibilityDigest: "a".repeat(64),
+      cacheHitCount: 1,
+      cacheMissCount: 1,
+      compiledCount: 1,
+      contract: "pso-warmup-telemetry@1",
+      deferredCount: 1,
+      entries: Object.freeze([
+        Object.freeze({
+          compileAttemptCount: 1,
+          compileDurationMs: 1,
+          compiled: true,
+          id: "babylon-lite.standard-opaque-msaa4",
+          requestCount: 2,
+          stateDigest: "b".repeat(64),
+        }),
+      ]),
+      failure: null,
+      failureCount: 0,
+      maximumCompileDurationMs: 1,
+      queueHighWater: 1,
+      releaseDigest: null,
+      requestedCount: 2,
+      schemaVersion: 1,
+      source: "privileged-embedded",
+      state: "ready",
+      totalDurationMs: 1,
+      traceEntryCount: 1,
+      traceSha256: "c".repeat(64),
+    }),
     workerInitToFirstFrameMs: 2,
+  });
+}
+
+function failedPsoWarmupSnapshot(detail: string) {
+  const ready = readyMessage().psoWarmup;
+  const entry = ready.entries[0];
+  if (entry === undefined) throw new Error("Ready PSO fixture has no entry");
+  return Object.freeze({
+    ...ready,
+    cacheHitCount: 0,
+    compiledCount: 0,
+    entries: Object.freeze([
+      Object.freeze({
+        ...entry,
+        compiled: false,
+        requestCount: 1,
+      }),
+    ]),
+    failure: Object.freeze({
+      class: "compile" as const,
+      detail,
+      entryId: entry.id,
+      phase: "compile" as const,
+      requestIndex: 1,
+      traceIndex: 0,
+    }),
+    failureCount: 1,
+    requestedCount: 1,
+    state: "failed" as const,
   });
 }
 

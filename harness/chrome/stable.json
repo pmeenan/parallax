@@ -1,14 +1,15 @@
 {
+  "browserRevision": "@ef35003457e93c278f911a334b06e4a5f8967e06",
   "channel": "stable",
   "downloads": {
-    "linux64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-linux64.zip",
-    "mac-arm64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/mac-arm64/chrome-mac-arm64.zip",
-    "mac-x64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/mac-x64/chrome-mac-x64.zip",
-    "win64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/win64/chrome-win64.zip"
+    "linux64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.71/linux64/chrome-linux64.zip",
+    "mac-arm64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.71/mac-arm64/chrome-mac-arm64.zip",
+    "mac-x64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.71/mac-x64/chrome-mac-x64.zip",
+    "win64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.71/win64/chrome-win64.zip"
   },
   "executableSha256": {
-    "win64": "409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2"
+    "win64": "112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc"
   },
   "revision": "1654411",
-  "version": "151.0.7922.34"
+  "version": "151.0.7922.71"
 }

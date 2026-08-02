@@ -20,6 +20,12 @@ import {
   uploadStreamingGreyboxCell,
   visibleStreamingMeshCount,
 } from "../render/lite-greybox-world";
+import type { PsoWarmupTraceBundle } from "../render/pso-warmup-contract";
+import {
+  createPsoWarmupRegistry,
+  type PsoWarmupRegistry,
+  psoWarmupTelemetryFailureSnapshot,
+} from "../render/pso-warmup-registry";
 import type {
   GreyboxSceneConfig,
   RenderDistributionTelemetry,
@@ -29,10 +35,12 @@ import type {
   RenderWorkerRequest,
   RenderWorkerResponse,
 } from "../render/render-protocol";
+import { createRenderStreamingBatchTransactionManager } from "../render/render-streaming-batch";
 import {
   createRenderedCheckpointFrameGate,
   createRenderedCheckpointQueue,
 } from "../render/rendered-checkpoint-queue";
+import { createStreamingWarmupArrivalGate } from "../render/streaming-warmup-arrival-gate";
 import type {
   RenderStreamingFaultBoundaryRequest,
   RenderStreamingFlythroughObservers,
@@ -101,12 +109,17 @@ function startRenderWorker(): void {
     | ((requestId: number, probe: "device-loss" | "worker-crash") => void)
     | null = null;
   let workerGeneration: number | null = null;
+  let activePsoWarmup: PsoWarmupRegistry | null = null;
 
   const postError = (error: unknown): void => {
+    const psoWarmup =
+      psoWarmupTelemetryFailureSnapshot(error) ??
+      (activePsoWarmup?.snapshot().state === "failed" ? activePsoWarmup.snapshot() : null);
     workerScope.postMessage({
       cause: "render-error",
       kind: "error",
       message: errorMessage(error),
+      psoWarmup,
     });
   };
 
@@ -175,12 +188,22 @@ function startRenderWorker(): void {
     streamingPort: MessagePort,
     initialFlythroughGeneration: number,
     initialFlythroughTransportSequence: number,
+    psoWarmupTrace: PsoWarmupTraceBundle,
   ): Promise<void> => {
     const initStartedAt = performance.now();
     try {
       const decoderBootstrap = installDecoderGlobals();
       const decoderFixtures = await runDecoderFixtures();
-      const renderer = await createLiteGreyboxWorld(canvas, width, height, config);
+      const psoWarmup = createPsoWarmupRegistry(psoWarmupTrace);
+      activePsoWarmup = psoWarmup;
+      const streamingWarmupArrivalGate =
+        createStreamingWarmupArrivalGate<StreamingToRenderMessage>();
+      streamingPort.onmessage = (event: MessageEvent<StreamingToRenderMessage>): void =>
+        streamingWarmupArrivalGate.receive(event.data);
+      streamingPort.onmessageerror = (): void =>
+        postError("Streaming render request was unreadable");
+      streamingPort.start();
+      const renderer = await createLiteGreyboxWorld(canvas, width, height, config, psoWarmup);
       observeLiteWebGpuDeviceLoss(renderer.engine, (loss) => {
         workerScope.postMessage({
           kind: "device-lost",
@@ -336,10 +359,16 @@ function startRenderWorker(): void {
           });
         }, postError);
       };
-      const pendingStreamingUploads = new Map<
-        number,
-        Readonly<{ cellId: string; timeout: ReturnType<typeof setTimeout> }>
-      >();
+      let activeBatchArrivedDuringPsoWarmup = false;
+      const streamingBatches = createRenderStreamingBatchTransactionManager({
+        evict: (cellId) => evictStreamingGreyboxCell(renderer, cellId),
+        onRollbackFailure: postError,
+        upload: ({ cell, dependencies }) =>
+          Object.freeze({
+            ...uploadStreamingGreyboxCell(renderer, cell, dependencies),
+            psoWarmupGameplayOverlap: activeBatchArrivedDuringPsoWarmup,
+          }),
+      });
       exerciseRecoveryAtBoundary = (requestId, probe): void => {
         if (flythroughScenario === null || flythroughAccumulator === null) {
           throw new Error("Recovery fault boundary requires an active flythrough");
@@ -357,8 +386,7 @@ function startRenderWorker(): void {
           requestId: streamingRequestId,
         } satisfies RenderStreamingFaultBoundaryRequest);
       };
-      streamingPort.onmessage = (event: MessageEvent<StreamingToRenderMessage>): void => {
-        const request = event.data;
+      streamingWarmupArrivalGate.activate((request: StreamingToRenderMessage): void => {
         try {
           if (request.kind === "fault-boundary-settled") {
             const pending = faultBoundaryRequests.get(request.requestId);
@@ -394,68 +422,48 @@ function startRenderWorker(): void {
             });
             return;
           }
-          if (request.kind === "stream-cell") {
-            const startedAt = performance.now();
-            const uploaded = uploadStreamingGreyboxCell(renderer, request.cell);
-            const timeout = setTimeout(() => {
-              const pending = pendingStreamingUploads.get(request.requestId);
-              if (pending?.cellId !== request.cellId) return;
-              pendingStreamingUploads.delete(request.requestId);
-              try {
-                evictStreamingGreyboxCell(renderer, request.cellId);
-              } catch (error: unknown) {
-                postError(error);
-              }
-            }, 5_000);
-            pendingStreamingUploads.set(
-              request.requestId,
-              Object.freeze({ cellId: request.cellId, timeout }),
-            );
-            streamingPort.postMessage({
-              cellId: request.cellId,
-              gpuBytes: uploaded.gpuBytes,
-              kind: "stream-cell-complete",
-              requestId: request.requestId,
-              uploadMs: performance.now() - startedAt,
-            } satisfies RenderStreamingResponse);
-          } else if (request.kind === "commit-cell") {
-            const pending = pendingStreamingUploads.get(request.uploadRequestId);
-            if (pending?.cellId !== request.cellId) {
-              throw new Error(
-                `Streaming commit ${request.requestId} arrived after upload ${request.uploadRequestId} was rolled back`,
-              );
+          if (request.kind === "render-batch-transaction") {
+            activeBatchArrivedDuringPsoWarmup =
+              streamingWarmupArrivalGate.arrivedDuringWarmup(request);
+            try {
+              streamingBatches.transact(request, (response) => streamingPort.postMessage(response));
+            } finally {
+              activeBatchArrivedDuringPsoWarmup = false;
             }
-            clearTimeout(pending.timeout);
-            pendingStreamingUploads.delete(request.uploadRequestId);
-            streamingPort.postMessage({
-              cellId: request.cellId,
-              kind: "commit-cell-complete",
-              requestId: request.requestId,
-            } satisfies RenderStreamingResponse);
           } else {
-            for (const [pendingId, pending] of pendingStreamingUploads) {
-              if (pending.cellId !== request.cellId) continue;
-              clearTimeout(pending.timeout);
-              pendingStreamingUploads.delete(pendingId);
-            }
+            const evicted = evictStreamingGreyboxCell(renderer, request.cellId);
             streamingPort.postMessage({
               cellId: request.cellId,
-              freedGpuBytes: evictStreamingGreyboxCell(renderer, request.cellId),
+              dependencyGpuCache: evicted.dependencyGpuCache,
+              freedCellGpuBytes: evicted.freedCellGpuBytes,
+              freedGpuBytes: evicted.freedGpuBytes,
               kind: "evict-cell-complete",
               requestId: request.requestId,
             } satisfies RenderStreamingResponse);
           }
         } catch (error: unknown) {
+          const failedRequest =
+            typeof request === "object" && request !== null
+              ? (request as Readonly<{
+                  readonly batchTransactionId?: unknown;
+                  readonly requestId?: unknown;
+                }>)
+              : null;
           streamingPort.postMessage({
+            batchTransactionId:
+              typeof failedRequest?.batchTransactionId === "string"
+                ? failedRequest.batchTransactionId
+                : null,
             kind: "streaming-render-failure",
             message: errorMessage(error),
-            requestId: request.requestId,
+            requestId:
+              Number.isSafeInteger(failedRequest?.requestId) &&
+              (failedRequest?.requestId as number) > 0
+                ? (failedRequest?.requestId as number)
+                : 0,
           } satisfies RenderStreamingResponse);
         }
-      };
-      streamingPort.onmessageerror = (): void =>
-        postError("Streaming render request was unreadable");
-      streamingPort.start();
+      });
 
       resizeScene = (nextWidth, nextHeight): void => {
         resizeLiteGreyboxWorld(renderer, nextWidth, nextHeight);
@@ -598,6 +606,7 @@ function startRenderWorker(): void {
             firstFrame: sample,
             greyboxWorld: renderer.telemetry,
             kind: "ready",
+            psoWarmup: psoWarmup.snapshot(),
             workerInitToFirstFrameMs: performance.now() - initStartedAt,
           });
           void runSabRingBufferSpike(sabRingBufferSpike).catch((error: unknown) => {
@@ -756,6 +765,7 @@ function startRenderWorker(): void {
       message.streamingPort,
       message.flythroughGeneration,
       message.flythroughTransportSequence,
+      message.psoWarmupTrace,
     );
   };
 }

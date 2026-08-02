@@ -7,32 +7,33 @@ targets** (status `provisional`) until M0/M1 measurements calibrate them. The ru
 about process, not permanence: recalibration happens through a decision-log entry, never
 by quietly editing a threshold to make a failing change pass.
 
-**Hardware baseline: capable consumer hardware, not low-end** (D-018). This experiment
-is not concerned with low-end devices — hardware is an evolving target, and the question
-is what the *platform* can do given sufficient hardware. Reference machines are defined
-in `harness/machines/`: the **standard-target profile** (M1 Pro MacBook Pro, 16 GB
-unified, 120 Hz — the Standard gate, deliberately a widely-owned 2021-class machine;
-registers as standard-01 once the physical unit is pinned) and **dev-01** (i9-14900KF /
-128 GB / RTX 4080 Super, 4K @ 60 Hz — the Showcase gate and its calibration reference,
-D-018). Chrome stable on both, pinned via Chrome for Testing archives (D-019); the two
-span Dawn's Metal and D3D12 backends, so backend divergence is surfaced by ordinary
-tier runs. Add machines, don't swap them.
+**Hardware baseline: capable consumer hardware, not low-end** (D-018/D-150). This
+experiment is not concerned with low-end devices — hardware is an evolving target, and
+the question is what the *platform* can do given sufficient hardware. **dev-01**
+(i9-14900KF / 128 GB / RTX 4080 Super, 4K @ 60 Hz, D3D12) is the sole enforced physical,
+budget, and milestone gate. The **standard-target profile** (M1 Pro MacBook Pro, 16 GB
+unified, 120 Hz, Metal) remains a planning/advisory envelope for optional cross-hardware
+research; registration and results on it or any other machine cannot block a milestone
+or invalidate a dev-01 acceptance. Browser/source correctness requirements still apply
+to qualifying runs on dev-01.
 
 ## Quality tiers and resolution
 
-Frame budgets are per-tier, at that tier's resolution on its reference machine — a tier
-that misses budget is a violation; "it's fine at 1080p" is not a defense of the 4K tier.
+Showcase budgets are enforced at dev-01's resolution. Standard retains its numerical
+profile as an advisory planning envelope; a Standard miss is a finding, not a milestone
+violation (D-150). "It's fine at 1080p" is not a defense of the enforced 4K tier.
 
 | Tier | Gate machine | Target resolution / refresh | Intent |
 | --- | --- | --- | --- |
-| Showcase | dev-01 (i9-14900KF / 128 GB / RTX 4080 Super, D3D12) | 4K @ 60 Hz (its display) | Platform-ceiling target, calibrated to dev-01 itself (D-018); transfer-to-modest-hardware is Standard's job |
-| Standard | standard-target profile (M1 Pro MacBook Pro 16 GB, 120 Hz, Metal — pending physical registration) | 1440p @ 120 Hz | The default experience; primary regression gate; the "hardware people actually own" story |
+| Showcase | dev-01 (i9-14900KF / 128 GB / RTX 4080 Super, D3D12) | 4K @ 60 Hz (its display) | Sole enforced gate, calibrated to dev-01 itself (D-018/D-150) |
+| Standard | standard-target profile (M1 Pro MacBook Pro 16 GB, 120 Hz, Metal — no registration required) | 1440p @ 120 Hz | Advisory planning envelope for optional transfer/cross-hardware research; never a milestone gate |
 
 ## Frame time (during gameplay, measured over scripted runs, per tier)
 
-Presentation intervals quantize to the gate display's refresh period, so gates are
-expressed per tier with rounding tolerance included (a 60 Hz interval is ~16.667 ms; a
-gate of "16.6" would fail perfect vsync — thresholds below use x.x̄4 tolerances).
+Presentation intervals quantize to the display's refresh period, so the enforced
+Showcase gate and advisory Standard profile use rounding tolerance (a 60 Hz interval is
+~16.667 ms; a gate of "16.6" would fail perfect vsync — thresholds below use x.x̄4
+tolerances).
 
 | Metric | Standard (120 Hz) | Showcase (4K @ 60 Hz) | Notes |
 | --- | --- | --- | --- |
@@ -65,20 +66,25 @@ numeric budgets remain unchanged for a future trustworthy provider.
 ## Memory (high-water marks during the standard flythrough, per tier)
 
 Showcase memory is calibrated to **dev-01 itself** (128 GB RAM, 16 GB VRAM — D-018):
-it is the platform-ceiling tier; its envelopes are provisional ceilings, not usage
-requirements. Standard is calibrated to the standard-target profile's 16 GB unified
-memory. The per-tier **envelopes** (CPU-side total, GPU total) are the enforced
-constraints; the category split within an envelope may be rebalanced as measurements
-come in, with a decision-log note. Aggregate budgets do not determine Wasm address
+it is the platform-ceiling tier and sole enforced gate; its envelopes are provisional
+ceilings, not usage requirements. Standard is calibrated to the standard-target
+profile's 16 GB unified memory as an advisory planning envelope. The Showcase CPU-side
+and GPU resident-memory envelopes remain standing targets but are not currently
+enforced: combined CPU resident memory and page-attributed WebGPU residency are
+unsupported under RE-014. The enforced memory check is the all-realm JS heap row below;
+logical Wasm, SAB, staging, and GPU-allocation counters remain non-residency evidence.
+Standard values remain useful for optional findings-oriented research. The category
+split within an envelope may be
+rebalanced as measurements come in, with a decision-log note. Aggregate budgets do not determine Wasm address
 width: memory is tracked per module, and D-117 requires an unavoidable measured
 single-module need before memory64 can reopen.
 
 | Metric | Standard | Showcase | Notes |
 | --- | --- | --- | --- |
-| CPU-side envelope (JS + WASM + SAB + staging) | ≤ 5 GB | ≤ 16 GB | Standard's gate profile has 16 GB *unified* memory: the CPU/GPU split is accounting there — combined CPU+GPU envelope (≤ 9 GB) plus macOS/Chrome overhead must fit in 16 GB, which is the real gate. Showcase's ≤ 16 GB is a purposeful provisional ceiling on a 128 GB host — an upper limit, not a usage target |
+| CPU-side envelope (JS + WASM + SAB + staging) | ≤ 5 GB | ≤ 16 GB | Standard's 16 GB *unified* planning profile makes the CPU/GPU split accounting there; combined CPU+GPU envelope (≤ 9 GB) plus macOS/Chrome overhead is the advisory transfer target. Showcase's ≤ 16 GB is a standing purposeful ceiling on a 128 GB host, but combined CPU residency is currently unsupported and not enforced |
 | — JS heap (all threads) | ≤ 2 GiB | ≤ 4 GiB | Exact byte limits are 2 × 1024³ and 4 × 1024³ (D-047) |
 | — WASM linear memory (sum of modules) | ≤ 2 GB | ≤ 8 GB | Per-module tracked; memory32 is selected for every current module. An aggregate sum beyond 4 GiB does not justify memory64; D-117 requires a concrete single-module need |
-| GPU memory envelope (as attributable) | ≤ 4 GB | ≤ 14 GB | Resident set + transient uploads; Showcase leaves ~2 GB of dev-01's 16 GB card for OS/compositor/browser |
+| GPU memory envelope (as attributable) | ≤ 4 GB | ≤ 14 GB | Resident set + transient uploads; Showcase leaves ~2 GB of dev-01's 16 GB card for OS/compositor/browser. Page-attributed WebGPU residency is currently unsupported and not enforced |
 | SAB pools | Fixed at boot | Fixed at boot | No runtime growth; sizes recorded per build |
 | Inter-district transition overlap peak | ≤ 1.25× steady-state GPU budget | ≤ 1.25× steady-state GPU budget | Both resident sets partially live during swap; overlap must still fit each tier's GPU envelope |
 
@@ -87,13 +93,22 @@ single-module need before memory64 can reopen.
 | Metric | Target | Notes |
 | --- | --- | --- |
 | Install size (D1+D2 experiment content) | ≤ 12 GB | Includes the selected app-owned NPC model's five exact GGUF shards (D-074/D-096) |
-| Install size (architecture floor) | ≥ 100 GB supported; no designed-in ceiling | The *content* of this experiment is ≤ 12 GB, but the install, manifest, integrity, update, and streaming systems must demonstrably work at 50–100 GB **as a minimum** — the goal is proving the web platform supports at-least-AAA install sizes, with no architectural limit short of disk/OPFS quota. Verified with a synthetic-asset scale test (see below), not left theoretical. Quota reality: an origin gets up to ~60% of **total** disk size, and `estimate()` can over-report writable space — preflight is best-effort; the real guarantee is `QuotaExceededError`-aware incremental writing with resume (architecture.md). (D-009, install provisions upheld by D-018) |
-| Install wall time | Bandwidth-bound + ≤ 90 s local work | Local work = integrity, unpack, PSO warmup |
+| Install size (architecture floor) | ≥ 100 GiB architectural/data-contract floor; no designed-in ceiling | The experiment-content limit is the separate row above. The ≥100 GiB model verifies that production install-manifest parsing, summary accounting, and manifest-byte release identity are size-independent. Actual transfer, resume, integrity, update, and streaming mechanisms have separate bounded M2 physical evidence; none is a literal 100 GiB execution claim. Capacity remains disk/quota-dependent, `estimate()` is non-authoritative planning evidence, and actual writes remain incremental, resumable, and `QuotaExceededError`-aware. (D-009/D-018/D-148) |
+| Install wall time | Bandwidth-bound + ≤ 90 s local work | D-151 accepts 99,359.9553 ms wall time: exact installer-worker network-active union 21,286.798001527786 ms, leaving 78,073.15729847222 ms local critical-path residual. Local work includes integrity, unpack, and PSO warmup. |
 | Launch 2+ → interactive gameplay | ≤ 10 s | Fully local; the number the demo lives or dies on |
-| Launch 1 (post-install) → gameplay | ≤ 30 s | |
-| Warm JavaScript code-cache lifecycle | targeted, recorded (non-gating) | Best-effort `harness:smoke:v8-cache` diagnostic: expect 0 rejected and 0 warm re-produced artifacts; every anomaly remains a finding, but mechanism state does not substitute for launch performance (D-051/D-095) |
-| Asset-only-update warm launch | ≤ 10 s; pre/post delta recorded | Performance outcome replaces the former “never invalidates V8 code caches” mechanism requirement; M2 measurements calibrate any relative-regression threshold through a new decision |
-| Offline launch | ≤ 1.10× warm-launch time (and within the ≤ 10 s budget) | Network killed post-install; served entirely by SW precache + OPFS |
+| Launch 1 (post-install) → gameplay | ≤ 30 s | D-151 accepts 5,821.355 ms on the exact dev-01 candidate |
+| Warm JavaScript code-cache lifecycle | targeted, recorded (non-gating) | Best-effort `harness:smoke:v8-cache` and D-144/D-151 asset-update diagnostics retain trace/cache/production states exactly; measured mechanism state does not prove cache hits or substitute for launch performance (D-051/D-095/D-144/D-151) |
+| Asset-only-update warm launch | pre and post ≤ 10 s; signed post-minus-pre delta recorded | D-151 accepts 9,157.250/5,681.140 ms and −3,476.110 ms; the relative-regression threshold remains explicitly unset rather than inferred from one pair |
+| Offline launch | ≤ 1.10× warm-launch time (and within the ≤ 10 s budget), standing target only | Network killed post-install; served entirely by SW precache + OPFS. D-138 proves exact offline authority and readiness but does not measure or enforce this timing ratio; a future timing gate must adopt it explicitly before claiming it passed |
+
+Accepted D-138's separately triggered offline-shell adapter uses a strict 120-second
+no-progress watchdog over monotonic installer/final-verification counters and a
+30-minute absolute evidence ceiling. Only counter progress resets the watchdog; UI
+events and state churn do not. Each potentially nonsettling observation read races both
+deadlines independently, and the exact earliest deadline wins at the boundary. These
+are fail-closed qualification-safety limits, not performance headroom. A passing
+adapter does not establish the install wall-time budget, which remains actual
+transfer bandwidth plus at most 90 seconds of local work.
 
 The M0 walking skeleton currently has 5,265,895 decoded JavaScript source code units. Its
 render-worker artifact contains 5,257,345 (99.84%), while artifacts with observed launch-2 cache
@@ -108,21 +123,23 @@ diagnostic measured launch 3 slower than launch 2 in two of three lineages. This
 path timer therefore neither establishes a consistent launch-2 → launch-3 saving nor assigns
 the outlier specifically to V8 cache serialization or consumption (D-043/D-044).
 
-**Scale tests (two corpora, M2):** proving "the web supports 100 GB games" requires
-more than proving OPFS holds 100 GB:
+**Scale tests (two corpora, M2; D-148):** scale is qualified at the contract and
+representative-workload boundaries below. It is not a literal 100 GiB disk-write gate.
 
-1. **Lifecycle corpus** — a synthetic manifest of at least 100 GB (generated filler)
-   exercising install/resume/integrity/update/eviction mechanics at scale. If a larger
-   size finds a platform limit, grow the test until it does — finding the actual
-   ceiling (if any) is part of the research.
-2. **Representative streaming corpus** — procedurally generated content with realistic
-   properties: real KTX2/meshopt encoding at production-like compression entropy,
-   realistic file counts and size distribution, per-cell dependency graphs, and full
-   decode → GPU-upload work during streaming runs. This is what makes the scale claim
-   about *running* a 100 GB-class game, not merely storing one.
+| Scale surface | Accepted evidence | Claim boundary |
+| --- | --- | --- |
+| Install architecture floor | A deterministic generated ≥100 GiB document is accepted by the production install-manifest parser. Its production summary supplies exact resource count and bytes; the manifest-byte SHA-256 supplies release identity. Manifest comparisons describe a one-resource update and a source rotation without materializing resource bodies. | Proves the parser, summary arithmetic, and manifest-level identity/change descriptions are size-independent. It executes no transfer, resume, integrity, update, cleanup, or eviction mechanism at 100 GiB. Those actual mechanisms are supported only by their separate bounded M2 physical qualifiers. |
+| Representative streaming | Model: 165,505,371,388 bytes / 71,680 resources. Physical decode → GPU-upload target: 2,623,040,066 bytes. Accepted `scale-streaming-v1-2026-08-01T11-18-11-203Z` JSON/Markdown SHA-256: `e2a2028b548e27934ea5a6365cb4f9ce690dca8b7a9bcf5cf8b4fb2dbd5833b2` / `243c31b2e430cc7db720257b8d2b592ed7ab6ff0611bffef38ac73ccd1def910`. | Proves the accepted realistic encoding, entropy, distribution, dependency, decode, and upload workload. It does not materialize the whole modeled inventory. |
+| Quota/capacity | Current Chromium defaults make the temporary pool 80% of total disk and a storage key 75% of that pool (nominally 60% of total disk). On the local 1,998,819,684,352-byte C: volume that is approximately 1.199 TB before storage pressure/free-space effects. | This is source-backed planning evidence, not a capacity guarantee or admission authority. Chromium's reported static quota is the privacy-shaped `usage + 10 GiB`; separately qualified bounded writes remain resumable and must handle `QuotaExceededError`. |
 
-Real-content budgets above are unaffected; these tests exist so nothing in the
-lifecycle or streaming architecture quietly assumes "a few GB."
+The Storage Standard leaves quota policy implementation-defined and requires only a
+conservative estimate; OPFS is quota-bound and does not prompt for permission. Sources
+checked 2026-08-01: [WHATWG Storage](https://storage.spec.whatwg.org/),
+[web.dev OPFS](https://web.dev/articles/origin-private-file-system), Chromium
+[`quota_features.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_features.cc),
+[`quota_settings.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_settings.cc), and
+[`quota_manager_impl.cc`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/storage/browser/quota/quota_manager_impl.cc).
+Real-content budgets above are unaffected.
 
 ## Streaming and transitions
 
@@ -234,6 +251,18 @@ passed on the 1 ms absolute arm rather than the 10% relative arm, consuming 46.5
 not change D-116's threshold, relabel M1's v45 evidence, or claim that the ten-minute
 route passed repeatability.
 
+D-127's later M2 production-deployment qualification
+`smoke-1-9d4c1be5c290-dev-01-showcase-2026-07-27T02-43-18-518Z.json`
+(SHA-256
+`ca7a7288ecf6d44787ed1a2f685459c3e81a364cc3d1218adc91dd4d97d681b9`)
+passed schema v51 / mandatory metric set v27 on registered dev-01 Showcase: all
+six launches, all three facets, and 30/30 checks passed. Fresh p95s
+1.980000019/2.024999976/2.314999938 ms produced a 0.334999919 ms spread;
+warm p95s 1.639999986/1.694999933/2.375 ms produced a 0.735000014 ms spread.
+Both satisfy D-116's unchanged 1 ms allowance. The result's baseline state is
+`untracked`; no baseline is promoted. This qualifies the M2 production item only,
+does not extend M1's evidence boundary, and does not change a budget or threshold.
+
 For M1 only, “zero budget violations” means every **evaluated mandatory M1 check**
 passed. It does not mean unsupported metrics passed or that every standing envelope was
 measured. The accepted coverage gaps are:
@@ -278,7 +307,7 @@ Definitions the harness implements; budgets above are meaningless without them.
 
 - **Frame time** = presentation interval (present-to-present), the thing the player
   sees. CPU submission time and GPU execution time are captured as *diagnostic*
-  breakdowns, not budget gates. Chrome 150 does not expose presentation success on the
+  breakdowns, not budget gates. Chrome 151 does not expose presentation success on the
   available Viz callback event (RE-006), so Harness-v1/M0 reports the authoritative metric as
   an informational failure and retains worker-callback/Viz-callback pacing only as heuristics
   (D-051). D-115 completes M1's revisit by accepting presentation as an explicit
@@ -328,7 +357,8 @@ Definitions the harness implements; budgets above are meaningless without them.
   terminal render `exhausted` plus streaming `failed` with restart count still one.
   The 30-second limit bounds recovery qualification; it is not a frame-time or launch
   budget and makes no claim that the full interval is acceptable player experience.
-  The scenario emits schema-v4 / metric-set-v3 JSON and Markdown with partial evidence
+  The scenario emits the report-schema and mandatory-metric-set versions exported by
+  `harness/src/runs/render-recovery.ts`, with JSON and Markdown partial evidence
   on failure, including elapsed fault-boundary time and the latest full telemetry/
   flythrough checkpoint list, plus per-attempt fresh-profile
   product, executable digest, adapter, requested tier, target and measured display,
@@ -409,7 +439,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   Chrome exposes no continuous cross-isolate live-retention peak (RE-012).
 - **GPU memory (D-050):** the tier envelope means page-attributed resident GPU allocation plus
   transient peaks, not GPU-process private memory or the sum of logical WebGPU resource sizes.
-  Chrome 150 exposes neither that total nor per-page/per-device attribution (RE-014). `smoke@1`
+  Chrome 151 exposes neither that total nor per-page/per-device attribution (RE-014). `smoke@1`
   requests a GPU-process memory-infra dump and retains its allocator inventory as diagnostic
   evidence, but reports the envelope metric `unsupported` and runs no GPU budget check. A future
   counter becomes gate-eligible only after allocation controls establish scope, residency,
@@ -437,14 +467,30 @@ Definitions the harness implements; budgets above are meaningless without them.
   investigations. The expected
   zero rejection/re-production checks remain in each result as diagnostics. M2 gates the
   user-visible outcome instead: warm and asset-only-update launches must remain within 10 s, and
-  the paired pre/post-update delta is recorded. M2 measurements calibrate any future relative-
-  regression threshold through the normal decision process.
+  the paired pre/post-update delta is recorded. D-151's accepted
+  `asset-update-v8-lifecycle@3` pair measured fresh/pre/post launches at
+  5,821.355/9,157.250/5,681.140 ms and a signed post-minus-pre delta of −3,476.110 ms.
+  All three launches passed their fixed ceilings. Its initial install measured
+  99,359.9553 ms wall time and an exact 21,286.798001527786 ms installer-worker
+  network-active union across two controls plus 266 full-resource Range transfers /
+  2,621,468,856 resource bytes. The independently post-validated residual was
+  78,073.15729847222 ms, within the 90,000 ms local-work budget; final-verification's
+  first-observed span was 16,232.9675 ms at 20 ms polls. All four V8 traces are measured,
+  while cache attribution is invalid in all four phases; production attribution is
+  invalid for fresh/produce and measured for pre/post warm. Those exact states are
+  non-gating diagnostics and do not prove cache hits. One pair does not calibrate a
+  relative limit:
+  `relativeRegressionThreshold` remains `null`, and no relative verdict exists.
 - **Variance gate:** unless a versioned scenario defines a bounded near-zero rule, if
   p95 varies more than 10% across the repeats, the result is `invalid` (fix the noise
   before trusting the number) — a noisy metric is a broken metric, not a passing one.
-  D-116's short `smoke@1` streaming check is the bounded exception: its absolute p95
-  spread must be at most `max(10% × minimum p95, 1 ms)`. The flythrough and public
-  benchmark retain their pure 10% relative-range rules.
+  D-154 retains D-116's bounded short-`smoke@1` streaming calculation unchanged as an
+  informational diagnostic: absolute p95 spread is compared with
+  `max(10% × minimum p95, 1 ms)`, and any invalid result remains visible without
+  controlling a facet or budget verdict. Each launch still requires valid streaming
+  evidence and independently enforces the unchanged 250 ms cell-load p95 budget. The
+  flythrough and public benchmark retain their pure 10% relative-range rules and
+  existing authority.
 - **Metric states:** every metric in a result is `measured`, `unsupported` (platform
   provides no way to observe it — itself a rough-edges candidate), `invalid` (observed
   but untrustworthy, with reason), or `not-applicable`. Budget gating fails on a busted
@@ -463,33 +509,76 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v23, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v29, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
   attribution, proactive eviction, zero encoded-budget rejections, and a representative cell-load p95 no
-  greater than 250 ms (D-090/D-091), plus D-116's mandatory prospective cell-load p95
-  bounded-repeatability verdict independently over its three fresh and three warm
-  repeats. Each absolute spread must be at most
-  `max(10% × minimum cohort p95, 1 ms)`. Missing, non-finite, negative, incomplete, or
-  over-limit cohorts are `invalid`; the report retains relative range, absolute spread,
-  and the computed allowance, while baseline promotion recomputes them from run
-  evidence. The check reuses the six existing core runs and adds no launches or
-  measurement duration. D-096 removed the superseded standalone OPFS
+  greater than 250 ms (D-090/D-091). D-154 removes only D-116's short-scenario
+  cross-launch repeatability result from mandatory evidence: the report still computes,
+  validates, and renders its three-fresh/three-warm relative range, absolute spread, and
+  allowance, and baseline parsing recomputes it from run evidence, but an invalid range
+  is a non-blocking informational diagnostic. Missing, non-finite, negative, or invalid
+  per-launch streaming evidence remains mandatory and fail-closed, and any per-launch
+  p95 above 250 ms still fails its budget check. The diagnostic reuses the six existing
+  core runs and adds no launches or measurement duration. D-096 removed the superseded standalone OPFS
   throughput/repeatability checks; per-cell OPFS read timing remains mandatory inside
   the representative streaming evidence. D-092 additionally requires the mandatory Rust/WASM
   evidence to distinguish module construction from Rust/wasm-bindgen startup and retain
   the exact pinned fixture's shared initialization state on failure. The report-finalization
   metric requires late build/source identity revalidation and JSON-primary persistence
   to complete; drift or a human-readable-report failure invalidates mandatory evidence
-  while retaining the JSON artifact. The corresponding `smoke@1` report schema is v47
-  and public telemetry is v25. Streaming telemetry v7
+  while retaining the JSON artifact. D-126 additionally requires exact single-response
+  batch-atomic render transaction identity, ordered membership, request/completion counters,
+  cell/direct-upload high-water, and conserved per-cell timing attribution. The
+     corresponding `smoke@1` report schema is v64
+     and public telemetry is v38. D-139 additionally requires exact
+   trace/build-compatibility identity, one progressive registry miss, one deduplicated
+   replay hit, complete entry coverage, and zero failures before product Ready. Its
+   separately triggered `pso-warmup-launch-pair@1` qualification consumes the same six
+   smoke launches and requires three exact fresh/warm D3D12 lineages: positive
+   render-pipeline and shader misses with zero hits when fresh, positive hits with zero
+   misses when warm, and zero pipeline/shader compile overlap with the gameplay
+   measurement window. These are correctness/evidence gates; no new duration threshold
+   is introduced. D-139's accepted registered dev-01 Showcase evidence retained three
+   exact fresh/warm lineages with 2 graphics-PSO and 4 shader misses per fresh launch,
+   the conserved 2/4 hits per paired warm launch, and zero gameplay overlap. This closes
+   the correctness/evidence gate without adding or recalibrating a duration threshold.
+   D-138's nested offline-shell telemetry v2
+   exposes cumulative verified bytes/duration and verification-duration high water so
+   the single full warm-Launch shell admission cost is observable; it adds no threshold.
+   The eager M2 installer worker forwards live
+    install-store telemetry v3 and installer-transfer telemetry v8; D-136 changes
+   terminal `ready` to require exact active publication but changes no metric or
+   threshold. D-133's separate bounded transfer-policy calibration selected
+   concurrency 1 / 8 MiB after c1-mib8 measured 16,472,212 B/s median with 4.12%
+   ready-throughput range. That result is policy evidence, not a standing performance
+   budget and not part of smoke's mandatory metric set.
+  D-134 preserves the first D-133 production smoke as failed after all six all-realm
+  heap samples rejected the newly eager installer worker as an unknown target. Its six
+  launches, 24 executed absolute checks, and repeatability checks passed, but the six
+  mandatory heap checks were withheld; evidence completeness failed and budget
+  evaluation correctly remained `not-evaluated`. Schema v55 now resolves the exact
+  installer, render, streaming, and telemetry-declared decode-worker target multiset
+  from build-manifest v13 while retaining exact unknown/extra-target rejection.
+  Mandatory metric set v27 and the all-realm heap ceiling are unchanged.
+  The one authorized corrected production smoke passed schema v55 / metric set v27:
+  all six heap checks measured exactly eight live realms (page, installer, render,
+  streaming, and four decode workers), all three facets and 30/30 checks passed, and
+  fresh/warm streaming p95 spreads were 0.360000134/0.645000219 ms against the
+  unchanged 1 ms allowance. This records evidence only and does not change a budget.
+  Streaming telemetry v11
+  additionally makes the ordinary exact installed-release source mutually exclusive
+  with the WebDriver-attested legacy-network source and records installed
+  resource count/bytes or legacy request count accordingly. This changes no streaming
+  metric or threshold.
+  It otherwise
   retains sequenced flythrough-observer and settled-observer counts and adds D-102's
-  deterministic batch identity plus internally validated OPFS/decode/upload/commit/wait
+  deterministic batch identity plus internally validated OPFS/decode/transaction/wait
   attribution plus D-104's generation-tagged settled recovery checkpoint without
   changing the short smoke traversal. D-108 additionally requires a positive exact
   package/open-access-handle match and a finite startup-open duration before streaming
-  evidence is eligible. Build-manifest v11 requires the four current workers,
+   evidence is eligible. Build-manifest v13 requires the five current workers,
   and the report records whether the targeted V8 diagnostic was requested (D-095/D-096).
   Initial streaming residency completes before traversal, and the
   streaming p95/proactive-eviction verdict uses
@@ -508,7 +597,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   count for stored-evidence revalidation; invalid smoke attempts preserve the raw
   start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-  `flythrough-d1@1` report schema v14/mandatory metric set v7 consumes flythrough
+      `flythrough-d1@1` report schema v30/mandatory metric set v11 consumes flythrough
   telemetry v3 and separately requires exact
   route and ordered environment completion, streamed presentation ownership with the
   preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,
@@ -535,19 +624,30 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Environment identity:** every result records machine ID, OS build, GPU driver
   version, browser name/engine/version/channel, GPU backend, power mode, display mode/refresh,
   run-script version, profile lineage (fresh vs. warm and its history), and the
-  artifact digest of the exact build measured (see harness/AGENTS.md — includes
+  artifact digest of the exact build measured. D-121 additionally records the serving
+  target kind and exact origin, whether an ephemeral local server was started, and
+  explicit pre/post verification that `/`, the served manifest digest, and every
+  manifest artifact match exact bytes and the MIME/cache/isolation/nosniff/ETag/304
+  contract under bounded fetch limits. D-128 keeps the build-manifest SHA as
+  `artifactDigest` and records the listed install-manifest SHA separately as
+  `releaseDigest`; every current pre/post target identity verifies both. Unsupported
+  origins, redirects, stalls, and target drift fail closed; local and production
+  baseline identities are incomparable,
+  and legacy local anchors require explicit migration.
+  (See harness/AGENTS.md — source identity includes
   dirty-tree identity, since agent work is measured pre-commit). Reference Chrome launches retain the process sandbox; an
   effective `--no-sandbox` switch invalidates production qualification and performance
   evidence. `smoke@1` schema v22 records the effective command line and verified
   sandbox state under D-062/D-066.
 - **Comparison eligibility (D-025):** benchmark results are directly comparable only
-  when artifact digest, scenario version, quality/resolution, warm-up/repeat policy, and
+  when build-artifact and release digests, scenario version, quality/resolution,
+  warm-up/repeat policy, and
   relevant environment fields match. Chrome reference-machine runs alone carry budget
   verdicts; other-browser runs are advisory, preserve `unsupported` metrics, and never
   substitute estimates for unavailable measurements. The benchmark is executed and
   measured in-game; optional launcher/collector automation is outside the measurement
   window and does not supply scenario pacing, metric aggregation, or result timings.
-  D-105/D-109's in-game `benchmark-result@1` schema v3 records three `continuous-page`
+  D-105/D-109's retained in-game `benchmark-result@1` schema v3 records three `continuous-page`
   repeats, while the harness `flythrough-d1@1` gate uses independent fresh profiles;
   those lineages are intentionally incomparable even for the same artifact, scenario,
   preset, and seed. The in-game page records UA/UA-CH, WebGPU adapter information,
@@ -564,7 +664,10 @@ Definitions the harness implements; budgets above are meaningless without them.
   pass. Promoting any field or aligning lineages requires a versioned contract change.
   D-115 completes the public Benchmark mode task on this fail-honest lifecycle and
   result-contract behavior rather than requiring advisory values to pass as a duplicate
-  M1 gate. The retained schema-v3 variance failures and `not-evaluated` budget facets
+  M1 gate. D-128 advances the current result/status envelope to v6/v5 to preserve
+  separate build-manifest `artifactDigest` and install-manifest `releaseDigest`
+  identities; its metrics, lineage, and advisory verdict are unchanged. The retained
+  schema-v3 variance failures and `not-evaluated` budget facets
   remain unchanged. In particular, Prompt callback-pacing diagnostics are not directly comparable with
   `smoke@1` pacing unless their recorded launch-switch environments also match.
 - **Baseline promotion (D-087):** `smoke@1` keeps one promoted machine-local result-store

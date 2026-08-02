@@ -10,11 +10,13 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
   return {
     cellLoadSampleCount: 12,
     cellLoadSamples: Array.from({ length: 12 }, (_, index) => ({
+      batchDirectUploadMs: index < 9 ? 27 : 9,
       batchCellCount: index < 9 ? 9 : 3,
       batchCellOrdinal: index < 9 ? index + 1 : index - 8,
       batchFlythroughObserverSequence: 0,
       batchObserverUpdateCount: index < 9 ? 1 : 2,
       batchOrdinal: index < 9 ? 2 : 3,
+      batchTransactionId: index < 9 ? "1:2:1:0" : "1:3:2:0",
       cellId: `cell-${index}`,
       decodeMs: 1,
       decodeRoundTripMs: 2,
@@ -24,9 +26,8 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
       opfsAccessRoundTripMs: 3,
       opfsReadMs: 2,
       opfsWaitMs: 1,
-      renderCommitRoundTripMs: 1,
-      renderUploadRoundTripMs: 4,
-      renderUploadWaitMs: 1,
+      renderTransactionRoundTripMs: 5,
+      renderTransactionWaitMs: 2,
       sequence: index + 1,
       streamingWorkerRemainderMs: index,
       totalMs: 10 + index,
@@ -40,6 +41,10 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
     failureMessage: null,
     flythroughObserverUpdateCount: 0,
     hardwareConcurrency: 16,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 2,
     observerUpdateCount: 12,
     opfsAccessHandleCount: 256,
     opfsAccessHandleOpenDurationMs: 10,
@@ -53,7 +58,11 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
     residentGpuBytes: 180_000,
     residentGpuBytesHighWater: 180_000,
     renderRecoveryCount: 0,
-    schemaVersion: 7,
+    renderBatchCellCountHighWater: 9,
+    renderBatchDirectUploadMsHighWater: 27,
+    renderBatchRequestCount: 2,
+    renderBatchTransactionCount: 2,
+    schemaVersion: 11,
     settledRecoveryCheckpoint: Object.freeze({
       flythroughObserverUpdateCount: 0,
       observerUpdateCount: 12,
@@ -63,6 +72,19 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
     }),
     settledObserverUpdateCount: 12,
     state: "streaming",
+    startupTiming: {
+      accessHandlesOpenedAtMs: 4,
+      contract: "streaming-startup-timing@1",
+      decodePoolCreatedAtMs: 5,
+      finalAdmissionCompletedAtMs: null,
+      initialResidencyReadyAtMs: 6,
+      provisioningStartedAtMs: 2,
+      releaseBindingCompletedAtMs: null,
+      releaseResolutionCompletedAtMs: 3,
+      schemaVersion: 1,
+      sourceKind: "privileged-legacy-network",
+      workerStartedAtMs: 1,
+    },
     workerGeneration: 1,
   };
 }
@@ -80,6 +102,8 @@ function successorFixture(successorObserverUpdateCount: number): Readonly<{
         batchCellOrdinal: index + 1,
         batchObserverUpdateCount: 1,
         batchOrdinal: 2,
+        batchTransactionId: "1:2:1:0",
+        batchDirectUploadMs: 6,
       };
     }
     if (index < 11) {
@@ -89,6 +113,8 @@ function successorFixture(successorObserverUpdateCount: number): Readonly<{
         batchCellOrdinal: index - 1,
         batchObserverUpdateCount: successorObserverUpdateCount,
         batchOrdinal: 3,
+        batchTransactionId: `1:3:${successorObserverUpdateCount}:0`,
+        batchDirectUploadMs: 27,
       };
     }
     return {
@@ -97,6 +123,8 @@ function successorFixture(successorObserverUpdateCount: number): Readonly<{
       batchCellOrdinal: 1,
       batchObserverUpdateCount: 3,
       batchOrdinal: 4,
+      batchTransactionId: "1:4:3:0",
+      batchDirectUploadMs: 3,
     };
   });
   const end = withSettledCheckpoint({
@@ -138,6 +166,8 @@ function generatedSamples(
         batchCellOrdinal,
         batchObserverUpdateCount,
         batchOrdinal,
+        batchTransactionId: `1:${batchOrdinal}:${batchObserverUpdateCount}:0`,
+        batchDirectUploadMs: batchCellCount * template.uploadMs,
         cellId: `generated-${sequence}`,
         sequence,
         streamingWorkerRemainderMs: sequence,
@@ -165,10 +195,35 @@ function boundarySamples(
       batchCellOrdinal: index + 1,
       batchObserverUpdateCount: 1,
       batchOrdinal: 2,
+      batchTransactionId: "1:2:1:0",
+      batchDirectUploadMs: batchCellCount * template.uploadMs,
       cellId: `boundary-${index + 1}`,
       sequence: index + 1,
       streamingWorkerRemainderMs: index + 1,
       totalMs: index + 11,
+    })),
+  );
+}
+
+function launchHydrationSamples(
+  completedCellCount = STREAMING_RESIDENT_CELL_LIMIT,
+  batchCellCount = completedCellCount,
+): readonly StreamingCellLoadTelemetry[] {
+  const template = validTelemetry().cellLoadSamples[0];
+  if (template === undefined) throw new Error("Streaming fixture has no sample");
+  return Object.freeze(
+    Array.from({ length: completedCellCount }, (_, index) => ({
+      ...template,
+      batchCellCount,
+      batchCellOrdinal: index + 1,
+      batchObserverUpdateCount: 0,
+      batchOrdinal: 1,
+      batchTransactionId: "1:1:0:0",
+      batchDirectUploadMs: batchCellCount * template.uploadMs,
+      cellId: `hydration-${index + 1}`,
+      sequence: index + 1,
+      streamingWorkerRemainderMs: 1_000 + index,
+      totalMs: 1_010 + index,
     })),
   );
 }
@@ -265,6 +320,61 @@ function smallPriorBatchFixture(measuredSampleCount: number): Readonly<{
   });
 }
 
+function completeStartFixture(measuredSampleCount = 10): Readonly<{
+  end: WorldStreamingTelemetrySnapshot;
+  start: WorldStreamingTelemetrySnapshot;
+}> {
+  const boundary = boundarySamples(9);
+  const measured = generatedSamples(measuredSampleCount, 10, 3, 2);
+  const allSamples = [...boundary, ...measured];
+  const lastObserverUpdateCount = allSamples.at(-1)?.batchObserverUpdateCount ?? 2;
+  return Object.freeze({
+    end: generatedSnapshot(allSamples, allSamples.length, lastObserverUpdateCount),
+    start: generatedSnapshot(boundary, boundary.length, 1),
+  });
+}
+
+function launchHydrationBoundaryFixture(measuredSampleCount = 10): Readonly<{
+  end: WorldStreamingTelemetrySnapshot;
+  start: WorldStreamingTelemetrySnapshot;
+}> {
+  const hydration = launchHydrationSamples();
+  const measured = generatedSamples(measuredSampleCount, hydration.length + 1, 2, 1);
+  const allSamples = [...hydration, ...measured];
+  const lastObserverUpdateCount = measured.at(-1)?.batchObserverUpdateCount ?? 0;
+  const installedRelease = {
+    installedReleaseDigest: "a".repeat(64),
+    installedResourceBytes: 60,
+    installedResourceCount: 3,
+    legacyNetworkRequestCount: 0,
+    startupTiming: {
+      accessHandlesOpenedAtMs: 5,
+      contract: "streaming-startup-timing@1" as const,
+      decodePoolCreatedAtMs: 7,
+      finalAdmissionCompletedAtMs: 6,
+      initialResidencyReadyAtMs: 8,
+      provisioningStartedAtMs: 2,
+      releaseBindingCompletedAtMs: 3,
+      releaseResolutionCompletedAtMs: 4,
+      schemaVersion: 1 as const,
+      sourceKind: "installed-release" as const,
+      workerStartedAtMs: 1,
+    },
+  };
+  return Object.freeze({
+    end: {
+      ...generatedSnapshot(allSamples, allSamples.length, lastObserverUpdateCount),
+      ...installedRelease,
+      proactiveEvictionCount: measured.length,
+    },
+    start: {
+      ...generatedSnapshot(hydration, hydration.length, 0),
+      ...installedRelease,
+      proactiveEvictionCount: 0,
+    },
+  });
+}
+
 function fixedBatchSamples(
   batchCellCount: number,
   completedCellCount: number,
@@ -281,6 +391,8 @@ function fixedBatchSamples(
       batchCellOrdinal: index + 1,
       batchObserverUpdateCount,
       batchOrdinal,
+      batchTransactionId: `1:${batchOrdinal}:${batchObserverUpdateCount}:0`,
+      batchDirectUploadMs: batchCellCount * template.uploadMs,
       cellId: `fixed-${batchOrdinal}-${index + 1}`,
       sequence: startSequence + index,
       streamingWorkerRemainderMs: startSequence + index,
@@ -313,6 +425,38 @@ function shortSmokeWindowFixture(endSettled: boolean): Readonly<{
 }
 
 describe("M1 streaming smoke evidence", () => {
+  it("requires mutually exclusive installed and privileged legacy content identity", () => {
+    const legacy = validTelemetry();
+    expect(() => requireStreamingEvidence(legacy)).not.toThrow();
+    const installed = {
+      ...legacy,
+      installedReleaseDigest: "a".repeat(64),
+      installedResourceBytes: 1_000,
+      installedResourceCount: 2,
+      legacyNetworkRequestCount: 0,
+      startupTiming: {
+        accessHandlesOpenedAtMs: 5,
+        contract: "streaming-startup-timing@1" as const,
+        decodePoolCreatedAtMs: 7,
+        finalAdmissionCompletedAtMs: 6,
+        initialResidencyReadyAtMs: 8,
+        provisioningStartedAtMs: 2,
+        releaseBindingCompletedAtMs: 3,
+        releaseResolutionCompletedAtMs: 4,
+        schemaVersion: 1 as const,
+        sourceKind: "installed-release" as const,
+        workerStartedAtMs: 1,
+      },
+    };
+    expect(() => requireStreamingEvidence(installed)).not.toThrow();
+    expect(() => requireStreamingEvidence({ ...installed, legacyNetworkRequestCount: 1 })).toThrow(
+      /content source/,
+    );
+    expect(() => requireStreamingEvidence({ ...legacy, legacyNetworkRequestCount: 0 })).toThrow(
+      /content source/,
+    );
+  });
+
   it("derives nearest-rank p95 from a complete movement-driven sample", () => {
     const evidence = requireStreamingEvidence(validTelemetry());
     expect(evidence.cellLoadP95Ms).toBe(21);
@@ -324,12 +468,130 @@ describe("M1 streaming smoke evidence", () => {
       opfsAccessRoundTripMs: 3,
       opfsReadMs: 2,
       opfsWaitMs: 1,
-      renderCommitRoundTripMs: 1,
-      renderUploadRoundTripMs: 4,
-      renderUploadWaitMs: 1,
+      renderTransactionRoundTripMs: 5,
+      renderTransactionWaitMs: 2,
       streamingWorkerRemainderMs: 11,
       uploadMs: 3,
     });
+  });
+
+  it("requires exact batch transaction counters and high-water observations", () => {
+    const telemetry = validTelemetry();
+    for (const mutation of [
+      { renderBatchRequestCount: 4 },
+      { renderBatchTransactionCount: 0 },
+      { renderBatchCellCountHighWater: 10 },
+      { renderBatchDirectUploadMsHighWater: Number.NaN },
+    ]) {
+      expect(() => requireStreamingEvidence({ ...telemetry, ...mutation })).toThrow(
+        /render batch transactions/,
+      );
+    }
+  });
+
+  it("allows one unsettled request and requires exact request/completion equality when settled", () => {
+    const telemetry = validTelemetry();
+    const checkpoint = telemetry.settledRecoveryCheckpoint;
+    if (checkpoint === null) throw new Error("Test checkpoint is absent");
+    expect(() =>
+      requireStreamingEvidence({
+        ...telemetry,
+        renderBatchRequestCount: telemetry.renderBatchTransactionCount + 1,
+        settledRecoveryCheckpoint: {
+          ...checkpoint,
+          observerUpdateCount: telemetry.observerUpdateCount - 1,
+        },
+        settledObserverUpdateCount: telemetry.observerUpdateCount - 1,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      requireStreamingEvidence({
+        ...telemetry,
+        renderBatchRequestCount: telemetry.renderBatchTransactionCount + 1,
+      }),
+    ).toThrow(/render batch transactions/);
+  });
+
+  it("rejects streaming-v8 counter and timing shapes", () => {
+    const telemetry = validTelemetry();
+    const { renderBatchRequestCount: _requestCount, ...withoutRequestCount } = telemetry;
+    expect(() =>
+      requireStreamingEvidence({
+        ...withoutRequestCount,
+        renderBatchCommitRequestCount: 2,
+        renderBatchUploadRequestCount: 2,
+        schemaVersion: 8,
+      } as unknown as WorldStreamingTelemetrySnapshot),
+    ).toThrow(/schemaVersion=8; expected 11/);
+    const [first, ...rest] = telemetry.cellLoadSamples;
+    if (first === undefined) throw new Error("Test sample is absent");
+    const {
+      renderTransactionRoundTripMs: _transactionRoundTrip,
+      renderTransactionWaitMs: _transactionWait,
+      ...withoutTransactionTiming
+    } = first;
+    expect(() =>
+      requireStreamingEvidence({
+        ...telemetry,
+        cellLoadSamples: [
+          {
+            ...withoutTransactionTiming,
+            renderCommitRoundTripMs: 1,
+            renderUploadRoundTripMs: 4,
+            renderUploadWaitMs: 1,
+          },
+          ...rest,
+        ],
+      } as unknown as WorldStreamingTelemetrySnapshot),
+    ).toThrow(/cell-load samples are invalid/);
+  });
+
+  it.each([
+    ["transaction decomposition", { renderTransactionWaitMs: 2.100_001 }],
+    ["total decomposition", { totalMs: 10.100_001 }],
+  ])("rejects independent timing conservation drift beyond 0.1 ms: %s", (_label, patch) => {
+    const telemetry = validTelemetry();
+    const samples = telemetry.cellLoadSamples.map((sample, index) =>
+      index === 0 ? { ...sample, ...patch } : sample,
+    );
+    expect(() => requireStreamingEvidence({ ...telemetry, cellLoadSamples: samples })).toThrow(
+      /cell-load samples are invalid/,
+    );
+  });
+
+  it("rejects noncanonical batch transaction identity, including internally consistent arbitrary IDs", () => {
+    const telemetry = validTelemetry();
+    const inconsistent = telemetry.cellLoadSamples.map((sample, index) =>
+      index === 1 ? { ...sample, batchTransactionId: "different" } : sample,
+    );
+    expect(() =>
+      requireStreamingEvidence({ ...telemetry, cellLoadSamples: inconsistent }),
+    ).toThrow();
+    const reused = telemetry.cellLoadSamples.map((sample) =>
+      sample.batchOrdinal === 3
+        ? { ...sample, batchTransactionId: "1:2:1:0", batchDirectUploadMs: 9 }
+        : sample,
+    );
+    expect(() => requireStreamingEvidence({ ...telemetry, cellLoadSamples: reused })).toThrow(
+      /cell-load samples are invalid/,
+    );
+    const arbitraryButInternallyConsistent = telemetry.cellLoadSamples.map((sample) => ({
+      ...sample,
+      batchTransactionId: sample.batchOrdinal === 2 ? "arbitrary-first" : "arbitrary-second",
+    }));
+    expect(() =>
+      requireStreamingEvidence({ ...telemetry, cellLoadSamples: arbitraryButInternallyConsistent }),
+    ).toThrow(/cell-load samples are invalid/);
+  });
+
+  it("requires batch direct-upload time to contain member direct uploads", () => {
+    const telemetry = validTelemetry();
+    const samples = telemetry.cellLoadSamples.map((sample, index) =>
+      index < 9 ? { ...sample, batchDirectUploadMs: 26 } : sample,
+    );
+    expect(() => requireStreamingEvidence({ ...telemetry, cellLoadSamples: samples })).toThrow(
+      /batch identity/,
+    );
   });
 
   it("requires a complete finite startup-open OPFS handle set", () => {
@@ -346,27 +608,188 @@ describe("M1 streaming smoke evidence", () => {
   });
 
   it("derives p95 and eviction evidence from the bounded measurement delta", () => {
-    const end = validTelemetry();
-    const start = {
-      ...end,
-      cellLoadSampleCount: 2,
-      cellLoadSamples: end.cellLoadSamples.slice(0, 2),
-      observerUpdateCount: 1,
-      proactiveEvictionCount: 2,
-      settledObserverUpdateCount: 0,
-    };
+    const { end, start } = completeStartFixture();
     const evidence = requireStreamingEvidence(end, start);
-    expect(evidence.cellLoadP95Ms).toBe(21);
+    expect(evidence.cellLoadP95Ms).toBe(29);
     expect(evidence.measurementCellLoadSamples).toHaveLength(10);
     expect(evidence.measurementProactiveEvictionCount).toBe(10);
     expect(evidence.measurementStartBatch).toEqual({
+      batchDirectUploadMs: 27,
       batchCellCount: 9,
       batchFlythroughObserverSequence: 0,
       batchObserverUpdateCount: 1,
       batchOrdinal: 2,
-      completedCellIds: ["cell-0", "cell-1"],
-      completedCellOrdinals: [1, 2],
+      batchTransactionId: "1:2:1:0",
+      completedCellIds: [
+        "boundary-1",
+        "boundary-2",
+        "boundary-3",
+        "boundary-4",
+        "boundary-5",
+        "boundary-6",
+        "boundary-7",
+        "boundary-8",
+        "boundary-9",
+      ],
+      completedCellOrdinals: [1, 2, 3, 4, 5, 6, 7, 8, 9],
     });
+  });
+
+  it("accepts the canonical launch-hydration runner boundary without measuring hydration", () => {
+    const { end, start } = launchHydrationBoundaryFixture();
+    const result = tryRequireStreamingEvidence(end, start);
+    expect(result.state).toBe("measured");
+    if (result.state !== "measured") throw new Error(result.failure.reason);
+    expect(result.value.measurementStartBatch).toMatchObject({
+      batchCellCount: STREAMING_RESIDENT_CELL_LIMIT,
+      batchFlythroughObserverSequence: 0,
+      batchObserverUpdateCount: 0,
+      batchOrdinal: 1,
+      batchTransactionId: "1:1:0:0",
+      completedCellOrdinals: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    });
+    expect(result.value.measurementStartCellLoadSampleCount).toBe(9);
+    expect(result.value.measurementCellLoadSamples.map(({ sequence }) => sequence)).toEqual([
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    ]);
+    expect(
+      result.value.measurementCellLoadSamples.every(({ batchOrdinal }) => batchOrdinal >= 2),
+    ).toBe(true);
+    expect(result.value.cellLoadP95Ms).toBe(29);
+    expect(result.value.cellLoadP95Ms).toBeLessThan(start.cellLoadSamples[0]?.totalMs ?? 0);
+  });
+
+  it("round-trips the launch-hydration boundary after the 256-entry ring evicts it", () => {
+    const fixture = launchHydrationBoundaryFixture(256);
+    const end = {
+      ...fixture.end,
+      cellLoadSamples: fixture.end.cellLoadSamples.slice(-256),
+    };
+    const stored = requireStreamingEvidence(end, fixture.start);
+    expect(stored.cellLoadSamples).toHaveLength(256);
+    expect(stored.cellLoadSamples[0]?.sequence).toBe(10);
+    expect(stored.measurementCellLoadSamples).toHaveLength(256);
+    expect(stored.measurementCellLoadSamples.every(({ batchOrdinal }) => batchOrdinal >= 2)).toBe(
+      true,
+    );
+    expect(() => requireStreamingEvidence(stored)).not.toThrow();
+    const boundary = stored.measurementStartBatch;
+    if (boundary === null) throw new Error("Launch-hydration boundary is absent");
+    expect(() =>
+      requireStreamingEvidence({
+        ...stored,
+        measurementStartBatch: {
+          ...boundary,
+          completedCellOrdinals: [...boundary.completedCellOrdinals].reverse(),
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("accepts a zero-observer launch batch behind a later measurement-start watermark", () => {
+    const hydration = launchHydrationSamples();
+    const measured = generatedSamples(10, 10, 2, 2);
+    const end = {
+      ...generatedSnapshot([...hydration, ...measured], 19, 3),
+      proactiveEvictionCount: measured.length,
+    };
+    const start = {
+      ...generatedSnapshot(hydration, hydration.length, 1),
+      proactiveEvictionCount: 0,
+    };
+    const evidence = requireStreamingEvidence(end, start);
+    expect(evidence.measurementStartBatch).toMatchObject({
+      batchFlythroughObserverSequence: 0,
+      batchObserverUpdateCount: 0,
+      batchOrdinal: 1,
+    });
+    expect(evidence.measurementCellLoadSamples.map(({ sequence }) => sequence)).toEqual([
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    ]);
+  });
+
+  it("rejects malformed or replayed launch-hydration boundary batches", () => {
+    const fixture = launchHydrationBoundaryFixture();
+    const mutateHydration = (
+      mutate: (sample: StreamingCellLoadTelemetry, index: number) => StreamingCellLoadTelemetry,
+    ): Readonly<{ end: WorldStreamingTelemetrySnapshot; start: WorldStreamingTelemetrySnapshot }> =>
+      Object.freeze({
+        end: {
+          ...fixture.end,
+          cellLoadSamples: fixture.end.cellLoadSamples.map((sample, index) =>
+            index < STREAMING_RESIDENT_CELL_LIMIT ? mutate(sample, index) : sample,
+          ),
+        },
+        start: {
+          ...fixture.start,
+          cellLoadSamples: fixture.start.cellLoadSamples.map(mutate),
+        },
+      });
+    const malformed = [
+      mutateHydration((sample) => ({ ...sample, batchCellCount: 10 })),
+      mutateHydration((sample, index) =>
+        index === 1 ? { ...sample, batchCellOrdinal: 1 } : sample,
+      ),
+      mutateHydration((sample, index) =>
+        index === 1 ? { ...sample, cellId: "hydration-1" } : sample,
+      ),
+      mutateHydration((sample) => ({
+        ...sample,
+        batchObserverUpdateCount: 1,
+        batchTransactionId: "1:1:1:0",
+      })),
+      mutateHydration((sample) => ({
+        ...sample,
+        batchFlythroughObserverSequence: 1,
+        batchObserverUpdateCount: 1,
+        batchTransactionId: "1:1:1:1",
+      })),
+      mutateHydration((sample) => ({ ...sample, batchTransactionId: "1:1:0:wrong" })),
+    ];
+    for (const candidate of malformed) {
+      expect(() => requireStreamingEvidence(candidate.end, candidate.start)).toThrow();
+    }
+
+    const partialStart = {
+      ...fixture.start,
+      cellLoadSampleCount: fixture.start.cellLoadSampleCount - 1,
+      cellLoadSamples: fixture.start.cellLoadSamples.slice(0, -1),
+    };
+    expect(() => requireStreamingEvidence(fixture.end, partialStart)).toThrow();
+
+    const repeatedOrdinalOne = fixture.end.cellLoadSamples.map((sample) =>
+      sample.batchOrdinal === 2
+        ? {
+            ...sample,
+            batchObserverUpdateCount: 0,
+            batchOrdinal: 1,
+            batchTransactionId: "1:1:0:0",
+          }
+        : sample,
+    );
+    expect(() =>
+      requireStreamingEvidence(
+        { ...fixture.end, cellLoadSamples: repeatedOrdinalOne },
+        fixture.start,
+      ),
+    ).toThrow();
+
+    const ordinalOneAfterMovement = fixture.end.cellLoadSamples.map((sample, index, samples) =>
+      index === samples.length - 1
+        ? {
+            ...sample,
+            batchObserverUpdateCount: 0,
+            batchOrdinal: 1,
+            batchTransactionId: "1:1:0:0",
+          }
+        : sample,
+    );
+    expect(() =>
+      requireStreamingEvidence(
+        { ...fixture.end, cellLoadSamples: ordinalOneAfterMovement },
+        fixture.start,
+      ),
+    ).toThrow();
   });
 
   it("rejects a leading split whose batch observer was already settled at start", () => {
@@ -397,7 +820,7 @@ describe("M1 streaming smoke evidence", () => {
     });
   });
 
-  it("uses monotonic sequence boundaries after the retained sample ring wraps", () => {
+  it("excludes the hydration prefix at the 256-sample ring boundary for smoke and traversal", () => {
     const base = validTelemetry();
     const template = base.cellLoadSamples[0];
     if (template === undefined) throw new Error("Streaming fixture has no sample");
@@ -407,6 +830,8 @@ describe("M1 streaming smoke evidence", () => {
       batchCellOrdinal: (index % 9) + 1,
       batchObserverUpdateCount: Math.floor(index / 9) + 2,
       batchOrdinal: Math.floor(index / 9) + 3,
+      batchTransactionId: `1:${Math.floor(index / 9) + 3}:${Math.floor(index / 9) + 2}:0`,
+      batchDirectUploadMs: index < 252 ? 27 : 12,
       sequence: index + 5,
       totalMs: index + 11,
       streamingWorkerRemainderMs: index + 1,
@@ -421,16 +846,18 @@ describe("M1 streaming smoke evidence", () => {
     });
     const start = withSettledCheckpoint({
       ...end,
-      cellLoadSampleCount: 250,
-      cellLoadSamples: samples.filter((sample) => sample.sequence <= 250),
-      observerUpdateCount: 29,
-      proactiveEvictionCount: 250,
+      cellLoadSampleCount: 247,
+      cellLoadSamples: samples.filter((sample) => sample.sequence <= 247),
+      observerUpdateCount: 28,
+      proactiveEvictionCount: 247,
       settledObserverUpdateCount: 28,
     });
     const evidence = requireStreamingEvidence(end, start);
+    expect(evidence.cellLoadSamples).toHaveLength(256);
     expect(evidence.measurementCellLoadSamples.map(({ sequence }) => sequence)).toEqual([
-      251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
+      248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260,
     ]);
+    expect(evidence.measurementCellLoadSamples.every(({ sequence }) => sequence > 247)).toBe(true);
     expect(evidence.cellLoadP95Ms).toBe(266);
   });
 
@@ -446,6 +873,8 @@ describe("M1 streaming smoke evidence", () => {
         batchCellOrdinal: (index % 9) + 1,
         batchObserverUpdateCount: batchOffset + 2,
         batchOrdinal: batchOffset + 3,
+        batchTransactionId: `1:${batchOffset + 3}:${batchOffset + 2}:0`,
+        batchDirectUploadMs: index < 252 ? 27 : 12,
         cellId: `ring-cell-${index}`,
         sequence: index + 5,
         streamingWorkerRemainderMs: index + 1,
@@ -471,48 +900,33 @@ describe("M1 streaming smoke evidence", () => {
   });
 
   it("recomputes a stored measurement window instead of trusting supplied samples", () => {
-    const telemetry = validTelemetry();
+    const { end: telemetry, start } = completeStartFixture();
     const evidence = requireStreamingEvidence({
       ...telemetry,
-      measurementStartBatch: {
-        batchCellCount: 9,
-        batchFlythroughObserverSequence: 0,
-        batchObserverUpdateCount: 1,
-        batchOrdinal: 2,
-        completedCellIds: ["cell-0", "cell-1"],
-        completedCellOrdinals: [1, 2],
-      },
+      measurementStartBatch: requireStreamingEvidence(telemetry, start).measurementStartBatch,
       measurementCellLoadSamples: [telemetry.cellLoadSamples[0]],
       measurementProactiveEvictionCount: 999,
-      measurementStartCellLoadSampleCount: 2,
+      measurementStartCellLoadSampleCount: 9,
       measurementStartFlythroughObserverUpdateCount: 0,
       measurementStartObserverUpdateCount: 1,
-      measurementStartProactiveEvictionCount: 2,
-      measurementStartSettledObserverUpdateCount: 0,
+      measurementStartProactiveEvictionCount: 9,
+      measurementStartSettledObserverUpdateCount: 1,
     });
     expect(evidence.measurementCellLoadSamples.map(({ sequence }) => sequence)).toEqual([
-      3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     ]);
     expect(evidence.measurementProactiveEvictionCount).toBe(10);
   });
 
   it("round-trips stored start-boundary evidence and cross-checks the retained raw prefix", () => {
-    const end = validTelemetry();
-    const start = {
-      ...end,
-      cellLoadSampleCount: 2,
-      cellLoadSamples: end.cellLoadSamples.slice(0, 2),
-      observerUpdateCount: 1,
-      proactiveEvictionCount: 2,
-      settledObserverUpdateCount: 0,
-    };
+    const { end, start } = completeStartFixture();
     const stored = requireStreamingEvidence(end, start);
     expect(requireStreamingEvidence(stored).measurementStartBatch).toEqual(
       stored.measurementStartBatch,
     );
 
     const tamperedPrefix = stored.cellLoadSamples.map((sample) =>
-      sample.sequence <= 2 ? { ...sample, cellId: `fake-${sample.sequence}` } : sample,
+      sample.sequence <= 9 ? { ...sample, cellId: `fake-${sample.sequence}` } : sample,
     );
     expect(() =>
       requireStreamingEvidence({ ...stored, cellLoadSamples: tamperedPrefix }),
@@ -520,15 +934,7 @@ describe("M1 streaming smoke evidence", () => {
   });
 
   it("round-trips producer-valid boundary states across retention and settlement shapes", () => {
-    const retainedSplitEnd = validTelemetry();
-    const retainedSplitStart = {
-      ...retainedSplitEnd,
-      cellLoadSampleCount: 2,
-      cellLoadSamples: retainedSplitEnd.cellLoadSamples.slice(0, 2),
-      observerUpdateCount: 1,
-      proactiveEvictionCount: 2,
-      settledObserverUpdateCount: 0,
-    };
+    const completeBoundary = completeStartFixture();
     const completeSuccessor = successorFixture(2);
     const retainedCompleteStart = {
       ...completeSuccessor.start,
@@ -542,9 +948,9 @@ describe("M1 streaming smoke evidence", () => {
         start: undefined,
       },
       {
-        end: retainedSplitEnd,
-        name: "retained split boundary",
-        start: retainedSplitStart,
+        end: completeBoundary.end,
+        name: "retained complete boundary",
+        start: completeBoundary.start,
       },
       {
         end: completeSuccessor.end,
@@ -557,9 +963,9 @@ describe("M1 streaming smoke evidence", () => {
         start: agedBoundaryFixture(4, 4, 256).start,
       },
       {
-        end: agedBoundaryFixture(4, 9, 256).end,
-        name: "aged-out split boundary and full measurement ring",
-        start: agedBoundaryFixture(4, 9, 256).start,
+        end: agedBoundaryFixture(9, 9, 256).end,
+        name: "aged-out complete boundary and full measurement ring",
+        start: agedBoundaryFixture(9, 9, 256).start,
       },
       {
         end: agedBoundaryFixture(9, 9, 255).end,
@@ -749,7 +1155,9 @@ describe("M1 streaming smoke evidence", () => {
     const successors = generatedSamples(256, 3, 3, 2);
     const end = generatedSnapshot(successors, 258, 30);
     const start = generatedSnapshot(boundary, 2, 2, 0);
-    expect(() => requireStreamingEvidence(end, start)).toThrow(/batch identity is invalid/);
+    expect(() => requireStreamingEvidence(end, start)).toThrow(
+      /measurement-start batch is invalid/,
+    );
   });
 
   it("orders the first measured batch after a zero-count start settlement watermark", () => {
@@ -760,6 +1168,7 @@ describe("M1 streaming smoke evidence", () => {
       const first = boundarySamples(1).map((sample) => ({
         ...sample,
         batchObserverUpdateCount: firstObserverUpdateCount,
+        batchTransactionId: `1:2:${firstObserverUpdateCount}:0`,
       }));
       const second = generatedSamples(9, 2, 3, secondObserverUpdateCount);
       const end = generatedSnapshot([...first, ...second], 10, secondObserverUpdateCount);
@@ -790,24 +1199,36 @@ describe("M1 streaming smoke evidence", () => {
       requireStreamingEvidence({
         ...telemetry,
         measurementStartBatch: {
-          batchCellCount: 3,
+          batchDirectUploadMs: 27,
+          batchCellCount: 9,
           batchFlythroughObserverSequence: 0,
-          batchObserverUpdateCount: 2,
-          batchOrdinal: 3,
-          completedCellIds: ["cell-9"],
-          completedCellOrdinals: [1],
+          batchObserverUpdateCount: 1,
+          batchOrdinal: 2,
+          batchTransactionId: "1:2:1:0",
+          completedCellIds: [
+            "cell-0",
+            "cell-1",
+            "cell-2",
+            "cell-3",
+            "cell-4",
+            "cell-5",
+            "cell-6",
+            "cell-7",
+            "cell-8",
+          ],
+          completedCellOrdinals: [1, 2, 3, 4, 5, 6, 7, 8, 9],
         },
-        measurementStartCellLoadSampleCount: 10,
+        measurementStartCellLoadSampleCount: 9,
         measurementStartFlythroughObserverUpdateCount: 0,
-        measurementStartObserverUpdateCount: 2,
-        measurementStartProactiveEvictionCount: 10,
+        measurementStartObserverUpdateCount: 1,
+        measurementStartProactiveEvictionCount: 9,
         measurementStartSettledObserverUpdateCount: 1,
       }),
     ).toThrow(/at least 10 completed replacements/);
   });
 
   it("accepts snapshots that bisect the eviction-before-load schedule phase", () => {
-    const telemetry = validTelemetry();
+    const { end: telemetry, start: completeStart } = completeStartFixture();
     const endSkew = requireStreamingEvidence(
       withSettledCheckpoint({
         ...telemetry,
@@ -817,18 +1238,16 @@ describe("M1 streaming smoke evidence", () => {
         settledObserverUpdateCount: telemetry.settledObserverUpdateCount - 1,
       }),
     );
-    expect(endSkew.measurementProactiveEvictionCount).toBe(13);
+    expect(endSkew.measurementProactiveEvictionCount).toBe(20);
 
     const startSkew = requireStreamingEvidence(
       telemetry,
       withSettledCheckpoint({
-        ...telemetry,
-        cellLoadSampleCount: 2,
-        cellLoadSamples: telemetry.cellLoadSamples.slice(0, 2),
+        ...completeStart,
         observerUpdateCount: 1,
-        proactiveEvictionCount: 3,
+        proactiveEvictionCount: 10,
         residentCellCount: STREAMING_RESIDENT_CELL_LIMIT - 1,
-        residentCellIds: telemetry.residentCellIds.slice(0, STREAMING_RESIDENT_CELL_LIMIT - 1),
+        residentCellIds: completeStart.residentCellIds.slice(0, STREAMING_RESIDENT_CELL_LIMIT - 1),
         settledObserverUpdateCount: 0,
       }),
     );
@@ -836,23 +1255,30 @@ describe("M1 streaming smoke evidence", () => {
     expect(startSkew.measurementProactiveEvictionCount).toBe(9);
   });
 
-  it("accepts the short smoke window with an unsettled start and settled or active end", () => {
-    for (const endSettled of [false, true]) {
-      const fixture = shortSmokeWindowFixture(endSettled);
-      const result = tryRequireStreamingEvidence(fixture.end, fixture.start);
-      expect(result.state).toBe("measured");
-      if (result.state === "measured") {
-        expect(result.value.measurementStartBatch).toMatchObject({
-          batchObserverUpdateCount: 2,
-          batchOrdinal: 2,
-        });
-        expect(result.value.measurementStartFlythroughObserverUpdateCount).toBe(0);
-        expect(result.value.measurementStartObserverUpdateCount).toBe(6);
-        expect(result.value.measurementStartSettledObserverUpdateCount).toBe(5);
-        expect(result.value.measurementStartResidentCellCount).toBe(9);
-        expect(result.value.residentCellCount).toBe(endSettled ? 9 : 8);
-        expect(() => requireStreamingEvidence(result.value)).not.toThrow();
-      }
+  it("accepts the short smoke window only after its final batch commits", () => {
+    const fixture = shortSmokeWindowFixture(true);
+    const result = tryRequireStreamingEvidence(fixture.end, fixture.start);
+    expect(result.state).toBe("measured");
+    if (result.state === "measured") {
+      expect(result.value.measurementStartBatch).toMatchObject({
+        batchObserverUpdateCount: 2,
+        batchOrdinal: 2,
+      });
+      expect(result.value.measurementStartFlythroughObserverUpdateCount).toBe(0);
+      expect(result.value.measurementStartObserverUpdateCount).toBe(6);
+      expect(result.value.measurementStartSettledObserverUpdateCount).toBe(5);
+      expect(result.value.measurementStartResidentCellCount).toBe(9);
+      expect(result.value.residentCellCount).toBe(9);
+      expect(() => requireStreamingEvidence(result.value)).not.toThrow();
+    }
+  });
+
+  it("fails closed when the short smoke end snapshot retains a partial final batch", () => {
+    const fixture = shortSmokeWindowFixture(false);
+    const result = tryRequireStreamingEvidence(fixture.end, fixture.start);
+    expect(result.state).toBe("invalid");
+    if (result.state === "invalid") {
+      expect(result.failure.reason).toContain("batch identity is invalid");
     }
   });
 
@@ -935,7 +1361,7 @@ describe("M1 streaming smoke evidence", () => {
         cellLoadSamples: samples,
         flythroughObserverUpdateCount: 2,
       }),
-    ).toThrow(/batch identity is invalid/);
+    ).toThrow(/cell-load samples are invalid/);
   });
 
   it("rejects an incomplete interior batch", () => {
@@ -966,21 +1392,21 @@ describe("M1 streaming smoke evidence", () => {
     ).toThrow(/batch identity is invalid/);
   });
 
-  it("accepts only the active final batch as truncated at an unsettled end snapshot", () => {
+  it("rejects an active partial final batch at an unsettled end snapshot", () => {
     const telemetry = validTelemetry();
     const cellLoadSamples = telemetry.cellLoadSamples.slice(0, 10);
-    const evidence = requireStreamingEvidence(
-      withSettledCheckpoint({
-        ...telemetry,
-        cellLoadSampleCount: cellLoadSamples.length,
-        cellLoadSamples,
-        observerUpdateCount: 2,
-        proactiveEvictionCount: cellLoadSamples.length,
-        settledObserverUpdateCount: 1,
-      }),
-    );
-    expect(evidence.measurementCellLoadSamples).toHaveLength(10);
-    expect(evidence.measurementCellLoadSamples.at(-1)?.batchOrdinal).toBe(3);
+    expect(() =>
+      requireStreamingEvidence(
+        withSettledCheckpoint({
+          ...telemetry,
+          cellLoadSampleCount: cellLoadSamples.length,
+          cellLoadSamples,
+          observerUpdateCount: 2,
+          proactiveEvictionCount: cellLoadSamples.length,
+          settledObserverUpdateCount: 1,
+        }),
+      ),
+    ).toThrow(/batch identity is invalid/);
   });
 
   it("rejects a truncated final batch already covered by the last settled observer", () => {
@@ -1005,6 +1431,7 @@ describe("M1 streaming smoke evidence", () => {
     const cellLoadSamples = telemetry.cellLoadSamples.slice(0, 10).map((sample) => ({
       ...sample,
       batchObserverUpdateCount: sample.batchOrdinal === 2 ? 3 : 4,
+      batchTransactionId: `1:${sample.batchOrdinal}:${sample.batchOrdinal === 2 ? 3 : 4}:0`,
     }));
     const end = withSettledCheckpoint({
       ...telemetry,
@@ -1035,6 +1462,7 @@ describe("M1 streaming smoke evidence", () => {
           batchCellOrdinal: index + 1,
           batchObserverUpdateCount: 1,
           batchOrdinal: 2,
+          batchTransactionId: "1:2:1:0",
         };
       }
       if (index < 11) {
@@ -1044,6 +1472,7 @@ describe("M1 streaming smoke evidence", () => {
           batchCellOrdinal: index - 1,
           batchObserverUpdateCount: 3,
           batchOrdinal: 4,
+          batchTransactionId: "1:4:3:0",
         };
       }
       return {
@@ -1052,6 +1481,7 @@ describe("M1 streaming smoke evidence", () => {
         batchCellOrdinal: 1,
         batchObserverUpdateCount: 4,
         batchOrdinal: 5,
+        batchTransactionId: "1:5:4:0",
       };
     });
     const end = withSettledCheckpoint({

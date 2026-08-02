@@ -20,7 +20,7 @@ project documentation.
 - [docs/plan.md](docs/plan.md) — milestone ladder and current status
 - [docs/rough-edges.md](docs/rough-edges.md) — platform findings log
 
-## Local M0 build
+## Local build
 
 Use the exact Node version in `.nvmrc`, then install the pinned pnpm toolchain and
 dependencies. Install rustup, then provision the first Rust/WASM module's exact toolchain
@@ -39,16 +39,34 @@ Run `pnpm check` for a clean production build, strict TypeScript, formatting/lin
 server and assembly contract tests, and the same-host engine repeatability gate.
 `pnpm test` is also safe on a clean checkout because it builds its fixture first.
 
-## M0 smoke harness
+Production deployment is documented in
+[`deploy/README.md`](deploy/README.md). `pnpm deploy:production` is a read-only preview
+that freshly builds/verifies `dist` and inventories the fixed `plex` webroot; only
+`pnpm deploy:production:apply`, through its fixed no-argument apply wrapper, requests
+replacement of the production webroot.
+The destructive path requires the documented permission/mount/inode invariants, holds
+an internal lock, and verifies the exact local and remote path/size/hash inventory. The
+frozen `site/` placeholder is not a deployment input.
 
-Harness v1 (complete — see [docs/plan.md](docs/plan.md) for remaining M0 items) drives
-the committed `smoke@1` scenario with the exact Chrome
+The separately pinned multi-GB model content has its own fixed-target preview:
+`pnpm deploy:model-content`; its explicit mutation is
+`pnpm deploy:model-content:apply` through the corresponding fixed no-argument wrapper.
+App deployment refuses to replace the webroot
+until those exact objects exist and preserves them across replacement. After upload,
+`pnpm harness:model-source-verification` binds full remote byte/type/owner/mode identity
+over fixed-target SSH, then records bounded production HEAD/range/If-Range transport
+evidence with response-specific 200/206/416 validation. It reads exactly two one-byte
+successful range bodies per shard and never a full model body.
+
+## Smoke harness
+
+The versioned harness drives the committed `smoke@1` scenario with the exact Chrome
 for Testing version and platform download URLs in `harness/chrome/stable.json`. Download
 the matching archive and extract the platform directory's contents to
 `harness/chrome/cft/<version>/` (gitignored) — the harness resolves the executable there
-by default, e.g. `harness/chrome/cft/150.0.7871.115/chrome.exe` on win64. Setting
+by default, e.g. `harness/chrome/cft/151.0.7922.71/chrome.exe` on win64. Setting
 `PARALLAX_CHROME_PATH` overrides the conventional location. The version check is exact; installed branded Chrome is not accepted for a
-gating run because the current platform's executable SHA-256 must also match. The first
+gating run because the current platform's executable SHA-256 must also match. The current
 pin contains a verified win64 digest for dev-01; another platform remains ineligible
 until its downloaded executable digest is promoted into the descriptor. Pin updates come from the
 [official CfT availability data](https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json).
@@ -57,11 +75,13 @@ until its downloaded executable digest is promoted into the descriptor. Pin upda
 $env:PARALLAX_MACHINE_ID = 'dev-01'
 $env:PARALLAX_TIER = 'showcase'
 pnpm harness:smoke
+# Explicit production target (local remains the default):
+pnpm harness:smoke -- --target https://parallax-web.com
 # Optional: $env:PARALLAX_CHROME_PATH overrides harness/chrome/cft/<version>/chrome.exe
 ```
 
-Run a reference-machine gate only while directly signed in at that machine's physical
-console. RDP and indirect/virtual display adapters are useful for development but make
+Run the required dev-01 gate only while directly signed in at its physical console
+(D-150). Other-machine runs are advisory. RDP and indirect/virtual display adapters are useful for development but make
 the environment identity invalid because they can change Chrome's display timing. The
 runner verifies the machine against its versioned descriptor in `harness/machines/`;
 GPU backend, driver, display, OS, and power state are measured rather than accepted as

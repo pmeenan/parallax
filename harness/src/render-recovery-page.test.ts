@@ -241,7 +241,7 @@ function recoverySnapshot(): ParallaxTelemetrySnapshot {
       sabRingBufferSpike: { state: "completed" },
       state: "ready",
     },
-    schemaVersion: 25,
+    schemaVersion: 36,
     streaming: {
       currentObservers: [[128, 12, 0]],
       flythroughObserverUpdateCount: 4,

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 2,
+  "source": {
+    "id": "gemma-4-E2B-it-qat-GGUF-66a399f6",
+    "registryKey": "production-model-content"
+  },
+  "resources": [
+    {
+      "bytes": 23532320,
+      "localName": "gemma-4-E2B-it-qat-UD-Q4_K_XL-split-00001-of-00005.gguf",
+      "remoteName": "model-ff074d7cae3cbda06f7a32b6d42c206bf88c2bee84c9d6165a0937ec2b61958d.gguf",
+      "sha256": "ff074d7cae3cbda06f7a32b6d42c206bf88c2bee84c9d6165a0937ec2b61958d"
+    },
+    {
+      "bytes": 1321205952,
+      "localName": "gemma-4-E2B-it-qat-UD-Q4_K_XL-split-00002-of-00005.gguf",
+      "remoteName": "model-1c5368744032e95ba212561c1985cd8017de6fd165fef1f648528e0be265d4a8.gguf",
+      "sha256": "1c5368744032e95ba212561c1985cd8017de6fd165fef1f648528e0be265d4a8"
+    },
+    {
+      "bytes": 508734272,
+      "localName": "gemma-4-E2B-it-qat-UD-Q4_K_XL-split-00003-of-00005.gguf",
+      "remoteName": "model-f8c3b5b6f05090ef292ed643357fed6b1df5381d0a21e11d3515580af3ef48f3.gguf",
+      "sha256": "f8c3b5b6f05090ef292ed643357fed6b1df5381d0a21e11d3515580af3ef48f3"
+    },
+    {
+      "bytes": 510543744,
+      "localName": "gemma-4-E2B-it-qat-UD-Q4_K_XL-split-00004-of-00005.gguf",
+      "remoteName": "model-ca3403a90060fc56b92e6b35acb0090eebb8b7eb11c4919536ba645f4d45c461.gguf",
+      "sha256": "ca3403a90060fc56b92e6b35acb0090eebb8b7eb11c4919536ba645f4d45c461"
+    },
+    {
+      "bytes": 256355264,
+      "localName": "gemma-4-E2B-it-qat-UD-Q4_K_XL-split-00005-of-00005.gguf",
+      "remoteName": "model-30c5c95b427827e9f1993f7df2e4d6cbdea2354811ab5dcafd6db41190cfb9f9.gguf",
+      "sha256": "30c5c95b427827e9f1993f7df2e4d6cbdea2354811ab5dcafd6db41190cfb9f9"
+    }
+  ]
+}

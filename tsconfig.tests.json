@@ -9,6 +9,16 @@
   "include": [
     "**/*.test.ts",
     "app/src/benchmark-ui-action.ts",
+    "app/src/installer-controller.ts",
+    "app/src/destructive-lifecycle-gate.ts",
+    "app/src/installer-ui.ts",
+    "app/src/installed-runtime-preflight.ts",
+    "app/src/launch-lifecycle.ts",
+    "app/src/retryable-success-latch.ts",
+    "app/src/runtime-launch-route.ts",
+    "app/src/runtime.ts",
+    "app/src/shell-launch-authority.ts",
+    "app/src/uninstall-ui.ts",
     "app/src/streaming-dashboard.ts",
     "vitest.config.ts"
   ],

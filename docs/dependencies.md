@@ -86,6 +86,9 @@ affected component family and does not reset the full-checkpoint clock.
 
 | Review date | Scope and outcome | Next checkpoint |
 | --- | --- | --- |
+| 2026-08-01 | **Accepted full repository checkpoint for M2 exit and M3 entry (D-149):** adopted Node 24.18.1, CfT Stable 151.0.7922.71 at unchanged revision 1654411, harness-only `sharp` 0.35.3, and transitive PostCSS 8.5.25. The graph clears both prior high advisories; `pnpm audit` reports zero advisories across 211 dependencies. The exact dev-01 `.34`/`.71` transition passed both schema-v62 / metric-set-v28 halves with six launches, three facets, and 30/30 checks. D-152's installed branded-Stable schema-v2 parity result passed the same core while remaining baseline-ineligible, nonpromotable, and not budget-authoritative. The final exact-current `.71` production smoke `smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-02T00-30-12-454Z.{json,md}` passed exact pre/post serving identity, rendered output, all six launches, all three facets, and 30/30 checks; JSON/Markdown SHA-256 are `6028aa225b14e6c32398ead849dc00784f075c4b410e61a336376b970e105a8e` / `1b00d8746308e0297d93f7e68c1c14cb8f0437d2832249efe7029a2328e02a20`. | This checkpoint satisfies M3 entry. Next full checkpoint: M3 exit or 2026-08-29, whichever comes first; relevant security notices and row-specific triggers remain immediate. |
+| 2026-07-29 | **D-133 targeted `@noble/hashes` integrity review:** adopted exact 2.2.0 from 2.0.1 after the overdue installer/integrity trigger fired. The signed immutable upstream 2.2.0 release points at commit `81983c2` (2026-04-11); repository and GitHub advisory checks found zero matches. The candidate remains zero-dependency ESM with Node `>=20.19`, `sideEffects: false`, and the consumed `./sha2.js` and `./utils.js` exports unchanged. Isolated npm tarball SHA-256 identities are `638ffb3053a7e7478c9e54a6e297f3601299ee570a41112e501af7050d086a0a` for 2.0.1 and `018b38bd7af36645fa0ece8f89eba21c828f3e4d219da5aacadd78bd0e654606` for 2.2.0. All 480 boundary/chunk comparisons and the 64 MiB comparison were byte-exact; isolated TypeScript compilation, `pnpm check`, and explicit engine/WASM repeatability passed. Only unminified `engine.js` and `installer-worker.js` changed, each by +6,596 bytes; no performance claim is made. The pre-pin and post-pin pinned-Chrome real-OPFS adapter results both passed the same unchanged five lifecycle/lock verdicts and are retained in D-133. | 2026-08-26, M2 exit, a noble-hashes release/advisory, a consumed-export change, or an integrity/OPFS regression. |
+| 2026-07-29 | **D-130 targeted GGUF provisioning correction:** retained model revision `66a399f68ddd113b06dff02fca9523e55465d11d` and the exact five generated split hashes/2,620,371,552-byte total. Read-only HEAD/range/If-Range checks proved the five previously constructed Hugging Face split URLs are 404 because that revision contains only the unsplit upstream GGUF. The exact local split outputs remain valid and are now provisioned as fixed same-origin `immutable/model-<sha256>.gguf` install-only resources. No model, runtime, or dependency pin changed. | Run the bounded production source verifier after upload; otherwise 2026-08-23, M2 exit, a selected-model change, or a production transport failure. |
 | 2026-07-26 | **Full repository checkpoint for M1 exit and M2 entry:** enumerated every direct external package, Node/pnpm, CfT, Rust/WASM/Cargo pins, the selected GGUF revision and artifact hashes, package-owned decoder binaries, the pinned Khronos glTF Sample Assets fixture, and the registered OS build and reference driver. No pin was adopted in this docs-only checkpoint. Current inputs were retained; newer CfT, Babylon Lite, KTX2 decoder, noble hashes, pnpm, Vite, Rollup, Biome, Playwright, sharp, Rust nightly, and Windows OOB candidates were deferred or found not applicable under the component-family gates below. `pnpm audit` reported two high development-only advisories in direct harness `sharp` and transitive PostCSS; their present trusted-input exposure and near-term remediation are recorded below. | 2026-08-23, M2 exit, a relevant security notice, or any earlier row-specific trigger. This checkpoint satisfies M2 entry. |
 | 2026-07-25 | **D-117 P-001 closeout:** M1 produced no production module with an unavoidable single address space beyond 4 GiB, so memory32 remains selected and the unconsumed D-086 WAT/runtime/harness apparatus was removed. Binaryen 131.0.0 remains required by the selected Rust/wasm-bindgen pipeline; no dependency pin changed. | No memory64-specific review unless D-117's concrete module-specific reopen condition is met. Normal Binaryen/Rust cadence continues. |
 | 2026-07-24 | **D-096 closed-backend cleanup:** removed `@types/dom-chromium-ai` 0.0.17 with the superseded Prompt API engine/harness surface. The selected wllama/GGUF backend and all other direct pins remain unchanged. Lockfile regeneration removed the unused type package; `pnpm check` passed with byte repeatability and 286 tests, and physical schema-v31/metric-set-v15 report `smoke-1-0b65dbea0692-dev-01-showcase-2026-07-25T02-31-34-110Z.json` passed all six launches, three facets, and 30 checks. | None unless a current plan item reopens a built-in Chrome AI API experiment. |
@@ -107,6 +110,137 @@ packages only when they share the same source, outcome, and gate; runtime-critic
 components always get individual rows. A targeted review records the same fields for its
 affected inputs in a ledger row or dated subsection, explicitly labeled as targeted so it
 cannot be mistaken for a full checkpoint.
+
+## Full checkpoint — 2026-08-01 (M2 exit + M3 entry)
+
+This review re-enumerated all 17 unique direct external JavaScript packages across the
+five workspace manifests, Node and pnpm, CfT, the Rust/WASM toolchain and resolved Cargo
+crates, the selected GGUF revision and five exact artifacts, package-owned decoder
+binaries, the Khronos fixture, and the registered OS/driver identity. Official release,
+registry, source, feed, and advisory data was checked on 2026-08-01. Four exact
+candidates are accepted as current/reference inputs after the dev-01 gates below.
+Every other input remains isolated behind its
+existing component-family gate.
+
+### Runtime and platform-critical inputs
+
+| Selected input | Candidate checked | Outcome and evidence | Next recheck / required gate |
+| --- | --- | --- | --- |
+| CfT Stable 151.0.7922.34, revision 1654411 | 151.0.7922.71, same revision | **Adopted and current after D-149.** The official known-good feed identifies `.71` as current Stable at the same base revision. The side-by-side win64 archive SHA-256 was `7ea2e94833ef710026c8cb08d0d2dafcb13f5d304d9c475ac07a3fa8c11d846c`; the downloaded ZIP was removed after extraction. The executable reports `Chrome/151.0.7922.71`, CDP revision `@ef35003457e93c278f911a334b06e4a5f8967e06`, and SHA-256 `112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`. The exact `.34` anchor, `.71` transition half, branded parity, and final exact-current `.71` production smoke all passed their D-149/D-152 contracts. `.34` remains intact for reconstruction. | 2026-08-29, M3 exit, a Stable advance, or a release relevant to an open Chrome finding. |
+| `@babylonjs/lite` 1.12.0 | 1.15.0 across 1.13.0–1.15.0 | **Deferred.** This remains a renderer-family change; the skipped range includes the previously reviewed recovery controls plus later renderer work. D-104's full-cohort recovery contract and private force-loss seam are not superseded by release availability. | Before M3 renderer-facing work or by 2026-08-08: isolated API/source review, render/recovery fixtures, repeatability, and same-scenario physical renderer gate. |
+| `@babylonjs/ktx2decoder` 9.17.0 and package-owned WASM | 9.19.0 across 9.18.0–9.19.0 | **Deferred.** The decoder package, binaries, and Babylon peer range move together and remain runtime-critical; no selected M2 dependency fix requires the move. | Before representative KTX2 content or by 2026-08-08: exact binary hashes, wrapper/API inspection, decoder fixtures, repeatability, and physical decoder/render gate. |
+| `draco3dgltf` 1.5.7 | 1.5.7 | **Current.** The package and copied decoder binary remain current. | 2026-08-29, a release/advisory, or representative Draco content. |
+| `meshoptimizer` 1.2.0 | 1.2.0 | **Current.** The package and copied decoder binary remain current. | 2026-08-29, a release/advisory, or representative meshopt content. |
+| `@noble/hashes` 2.2.0 | 2.2.0 | **Current after D-133.** The exact consumed SHA-256 exports and zero-dependency integrity contract remain unchanged; this checkpoint does not repeat the accepted physical adapter comparison. | 2026-08-29, a release/advisory, a consumed-export change, or an integrity/OPFS regression. |
+| `@wllama/wllama` 3.5.1, tag `766d28e03eeac044fe055327d06b83d3f9b84544`, llama.cpp `dd4623a74f0c85e6b1dd9ee99a92b9c67cac3708` | Same release and commits | **Current.** The stock selected runtime remains the latest official release; no rejected experiment patch or binary survives. | 2026-08-29, a release/advisory, or approved model-runtime work. |
+| Gemma 4 E2B QAT GGUF revision `66a399f68ddd113b06dff02fca9523e55465d11d`, five exact shard hashes, tokenizer/chat template | Repository head remains the selected revision | **Current.** D-130–D-132 changed provisioning and verified transport, not the model identity or bytes. | 2026-08-29, model/runtime work, or an upstream revision/advisory. |
+| Node 24.18.0 | 24.18.1 LTS | **Adopted and current after D-149.** The skipped patch fixes three high, five medium, and three low vulnerabilities. The official Windows x64 ZIP matched `ec56b84a7551893ab2324ebdfdc4ab974a63b4781162600b68a1293cc3e53765`; extracted `node.exe` matched `ac51903c4c111815d52280b1fdcc8da067cbb37e2fe1a765097b85c3292c8582` and reports `v24.18.1`. Node 24.18.0 remains installed for reconstruction. | 2026-08-29, M3 exit, a Node 24 advisory/release, or the Node 26 LTS transition review. |
+| Rust `nightly-2026-07-16` (`d0babd8b6`) | nightly channel dated 2026-08-01 | **Deferred.** `build-std` remains nightly-only; a nightly move can change allocator, SIMD, atomics, and generated layout and cannot be batched into this security/browser package checkpoint. | Before M3 Rust/WASM work or by 2026-08-08: skipped-range review, generated-layout assertions, repeatability, repeated RE-036 cohort, and physical `smoke@1`. |
+| wasm-bindgen crate + CLI 0.2.126 | 0.2.126 | **Current.** No release contains PR #5225, so the tracked relocation workaround cannot yet retire. | Every wasm-bindgen release and the tracked retirement gate above. |
+| Binaryen/npm 131.0.0 (`version_131`) | 131.0.0 | **Current.** The selected transform and local executable remain exact. | 2026-08-29, an advisory/release, or any WASM pipeline change. |
+| Resolved Cargo support crates and wasm-bindgen 0.2.126 family | Existing lock resolution | **Retained.** No direct Rust selection moved; the repeatable Wasm build preserved SHA-256 `3be99544a2c15e529d1bd27cd97cf453617d60189a8c61d611862ad504e03fc5`. | A Rust/wasm-bindgen change, relevant advisory, or 2026-08-29. |
+| Khronos glTF Sample Assets fixture commit `2bac6f8c57bf471df0d2a1e8a8ec023c7801dddf` | Same selected commit | **Current.** No fixture regeneration is part of this checkpoint. | A fixture regeneration or 2026-08-29. |
+| Registered dev-01 Windows build 26200.8875 and NVIDIA driver 32.0.16.1074 | Same observed machine state | **Current.** Read-only local inspection still matches the registered descriptor; no OS, driver, display, or power baseline changed. | Before the next registered physical result and whenever machine state changes. |
+
+### Build, measurement, and supporting inputs
+
+| Selected input | Candidate checked | Outcome and evidence | Next recheck / required gate |
+| --- | --- | --- | --- |
+| pnpm 11.12.0 | 11.18.0 across 11.13.0–11.18.0 | **Deferred.** The package-manager move can change lock/install policy and artifact identity. Keeping 11.12.0 isolates the four required adoptions; it is installed under the new Node and reports the exact version. | By 2026-08-08 or before the next dependency update: isolated lock/install comparison, frozen install, full check, repeatability, and physical smoke if bytes move. |
+| Vite 8.1.4 in `app/` and `game/` | 8.2.0 across 8.1.5–8.2.0 | **Deferred.** The skipped range can change build lifecycle, module resolution, and emitted launch artifacts. Neither manifest moved for the PostCSS remediation. | By 2026-08-08 or before M3 build changes: isolated build diff, repeatability, targeted diagnostics, and physical smoke if emitted bytes move. |
+| Playwright Core 1.61.1 | 1.62.1 across 1.62.0–1.62.1 | **Deferred.** Browser launch, tracing, screenshot, and mandatory-metric collection require their own automation-family review. | With the later physical CfT transition or by 2026-08-08: launch/trace/screenshot fixtures and registered physical smoke. |
+| `sharp` 0.34.5 | 0.35.3 | **Adopted and current after D-149.** GitHub marks versions before 0.35.0 affected by inherited libvips vulnerabilities and recommends current 0.35.3/libvips 8.18.3. The exact harness-only API remains local PNG decode; its negative fixture and the final dev-01 rendered-output gate passed. | 2026-08-29, M3 exit, a release/advisory, screenshot-format change, or external image-input proposal. |
+| Transitive PostCSS 8.5.17 through Vite/Vitest | 8.5.25 | **Adopted and current after D-149.** GitHub marks versions through 8.5.17 affected by previous-source-map path traversal. Existing Vite `^8.5.16` ownership permits 8.5.25; pnpm resolved it lockfile-only with no Vite/Vitest manifest change and no override. That owning resolution also selects compatible package-owned `nanoid` 3.3.16 from 3.3.15; it is not a direct repository selection. | 2026-08-29, M3 exit, a release/advisory, or any untrusted CSS/source-map input. |
+| `@biomejs/biome` 2.5.3 | 2.5.6 across 2.5.4–2.5.6 | **Deferred.** Parser, formatter, lint, and type-aware changes remain a separate supporting-tool review. | By 2026-08-08: isolated diagnostics/format diff and full check; no physical smoke if outputs remain unchanged. |
+| `@types/node` 24.13.3 | 24.13.3 on the selected Node 24 line; 26.1.2 is a different runtime major | **Current for the selected runtime line.** | With a Node-major transition, advisory, or 2026-08-29. |
+| Rollup 4.62.2 | 4.62.4 across 4.62.3–4.62.4 | **Deferred.** The 4.62.3 preserved-modules input-base fix is irrelevant to the current configuration, which has no `preserveModules` path. Version 4.62.4 fixes an older-Linux regression introduced by 4.62.3. Neither change justifies coupling a separate build-tool move to this checkpoint. | By 2026-08-08 or before the next build-tool change: isolated skipped-range review, frozen install, full check, repeatability, and artifact-byte comparison. |
+| TypeScript 7.0.2; Vitest 4.1.10; `@rollup/plugin-node-resolve` 16.0.3; esbuild 0.28.1 | Same releases | **Current.** Registry checks found no newer release for these selected inputs. | A release/advisory or 2026-08-29. |
+
+`pnpm audit --json` now reports zero critical, high, moderate, low, or informational
+advisories across 211 total dependencies (7 production, 204 development, and 138
+optional counts are overlapping audit metadata categories). The prior two high findings
+are removed by the exact `sharp` and PostCSS resolutions; no suppression or audit ignore
+was added.
+
+The deterministic prequalification gate used Node 24.18.1 and pnpm 11.12.0. Frozen install,
+production build, engine/WASM repeatability, typecheck, 20 targeted dependency/browser/
+build-contract tests, and the full 168-file unit run passed (2,171 passed, one skipped).
+After all review corrections, the final closure gate preserved repeatable build output,
+linted 422 files, passed 2,274 tests across 172 files with one skip, and passed
+`git diff --check`.
+Final build-manifest/artifact SHA-256 is
+`e4532dcec4d615501d2130425571c5d3e1128331187dcfd7ef92f99e4f44351b`;
+install-manifest/release SHA-256 is
+`be1a7f53c1b74a1aad1638cab5291fdc95bc7fdcba27f63604111efb4469a96e`.
+No performance claim follows from deterministic tests. D-149 accepts the exact
+dev-01 old-`.34`/new-`.71` transition, D-152's installed branded-Stable parity, and the
+final exact-current `.71` production smoke. The passing branded result is
+baseline-ineligible, nonpromotable, and not budget-authoritative; the final smoke
+baseline remains untracked. The production artifact was deployed with its exact model
+inventory preserved and the versioned nginx config installed.
+
+Closed experiments remain **not applicable**: D-095's Transformers/ONNX inputs, D-096's
+Prompt API surface, D-117's memory64 apparatus, and D-148's retired physical 100 GiB
+lifecycle runner are not reopened by dependency currency.
+
+Official sources checked on 2026-08-01: the
+[Node 24.18.1 security release and checksums](https://nodejs.org/en/blog/release/v24.18.1),
+[CfT known-good feed](https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json),
+[npm registry](https://registry.npmjs.org/),
+[sharp 0.35.3 release](https://github.com/lovell/sharp/releases/tag/v0.35.3),
+[sharp advisory](https://github.com/advisories/GHSA-f88m-g3jw-g9cj),
+[PostCSS 8.5.25 release](https://github.com/postcss/postcss/releases/tag/8.5.25),
+[PostCSS advisory](https://github.com/advisories/GHSA-r28c-9q8g-f849),
+[Rollup 4.62.3 release](https://github.com/rollup/rollup/releases/tag/v4.62.3),
+[Rollup 4.62.4 release](https://github.com/rollup/rollup/releases/tag/v4.62.4),
+[Babylon Lite releases](https://github.com/BabylonJS/Babylon-Lite/releases),
+[Babylon.js releases](https://github.com/BabylonJS/Babylon.js/releases),
+[Rust nightly manifests](https://static.rust-lang.org/dist/),
+[wasm-bindgen releases](https://github.com/wasm-bindgen/wasm-bindgen/releases),
+[Binaryen releases](https://github.com/WebAssembly/binaryen/releases), and the prior
+checkpoint's unchanged model, fixture, OS, and driver sources.
+
+## Targeted checkpoint — 2026-07-29 (`@noble/hashes` for D-133)
+
+D-133 made integrity hashing load-bearing and triggered the deferred 2.0.1→2.2.0
+runtime-critical review. The official
+[2.2.0 release](https://github.com/paulmillr/noble-hashes/releases/tag/2.2.0) is signed
+and immutable at commit `81983c2`, dated 2026-04-11. The
+[published package](https://www.npmjs.com/package/@noble/hashes/v/2.2.0) preserves the
+consumed zero-dependency ESM contract: Node `>=20.19`, `sideEffects: false`, and exports
+for `./sha2.js` and `./utils.js`. Repository-local audit and GitHub Advisory Database
+queries found no advisory matching either selected or candidate package. Independently
+downloaded npm tarballs hashed to
+`638ffb3053a7e7478c9e54a6e297f3601299ee570a41112e501af7050d086a0a`
+for 2.0.1 and
+`018b38bd7af36645fa0ece8f89eba21c828f3e4d219da5aacadd78bd0e654606`
+for 2.2.0.
+
+An isolated old/new comparison passed 480 exact boundary/chunk cases plus an exact
+64 MiB comparison and TypeScript compilation. The repository then changed only the
+engine package's exact pin and the corresponding lockfile resolution. `pnpm check`
+passed with 756 tests, and an additional explicit repeatability gate passed for the
+engine and Wasm. The unminified output comparison changed only `engine.js` and
+`installer-worker.js`, each by +6,596 bytes; this is an identity/size observation, not a
+performance claim.
+
+The same unchanged real-OPFS adapter gate passed before and after the pin move. The
+2.0.1 result is
+`adapter-v2-2026-07-29T12-05-01-406Z.json` (SHA-256
+`6b050ffc44cec855146bc31e53f22b1fe8fe97e146ecd1ca235e779d731de08b`;
+Markdown SHA-256
+`d1bf4147a308a0199b1a5a31e60471931db5d48a210b32517092a806b97f3289`);
+the 2.2.0 result is
+`adapter-v2-2026-07-29T12-07-25-730Z.json` (SHA-256
+`215efc51e710a349acb693234514cf4ea036052e7589c1267310dec06d16002f`;
+Markdown SHA-256
+`64c0af9beba33b2aed2f26da8b35cbfdff9150f8ea5aefbbbfb63f75f28a8e58`).
+Both used visible pinned CfT 151.0.7922.34 (executable SHA-256
+`409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2`)
+and passed `blockedBeforeRelease`, `firstFinalization`, `lifecycle`,
+`reopenReconciliation`, and `terminatedOwnerReleasedLock`. They are bounded synthetic
+store-adapter evidence, not installer transfer qualification, a performance result,
+production evidence, or D-097 smoke.
 
 ## Full checkpoint — 2026-07-26 (M1 exit + M2 entry)
 

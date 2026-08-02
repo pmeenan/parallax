@@ -8,18 +8,27 @@ import {
   createMeshFromData,
   createSceneContext,
   createStandardMaterial,
+  createTexture2DFromPixels,
   disposeMeshGpu,
   type Mesh,
   registerScene,
+  releaseTexture,
   removeFromScene,
   renderFrame,
   setEngineSize,
+  type Texture2D,
 } from "@babylonjs/lite";
 import type {
   FlythroughScenarioSample,
   FlythroughWeatherState,
 } from "../flythrough/flythrough-contract";
 import { flythroughCameraPose } from "../flythrough/flythrough-contract";
+import type {
+  RenderStreamingDependency,
+  StreamingResourceCacheTelemetry,
+} from "../streaming/streaming-protocol";
+import { createStreamingResourceCache } from "../streaming/streaming-resource-cache";
+import { streamingResourceCacheKey } from "../streaming/streaming-resource-key";
 import type {
   GreyboxCell,
   GreyboxHeightfieldGridPayload,
@@ -28,6 +37,12 @@ import type {
   GreyboxSceneConfig,
 } from "../world/world-contract";
 import { selectGreyboxCellLod, validateGreyboxDistrict } from "../world/world-contract";
+import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
+import {
+  PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
+  PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
+} from "./pso-warmup-contract";
+import type { PsoWarmupRegistry } from "./pso-warmup-registry";
 import type {
   FlythroughCheckpointRenderEvidence,
   GreyboxWorkerRenderTelemetry,
@@ -44,6 +59,15 @@ export interface GeometryBatch {
 export interface HeightfieldBatchEntry {
   readonly cell: GreyboxCell;
   readonly representation: GreyboxHeightfieldGridPayload;
+}
+
+interface StreamingDependencyGpuValue {
+  attributes: ArrayBuffer | null;
+  readonly format: "ktx2" | "meshopt";
+  readonly gpuBytes: number;
+  readonly mesh: Mesh | null;
+  readonly texture: Texture2D | null;
+  readonly vertexCount: number;
 }
 
 const WEATHER_INTENSITY = Object.freeze({
@@ -320,137 +344,177 @@ export async function createLiteGreyboxWorld(
   width: number,
   height: number,
   config: GreyboxSceneConfig,
+  psoWarmup: PsoWarmupRegistry,
 ) {
   const materializationStartedAt = performance.now();
   const validation = validateGreyboxDistrict(config.world);
-  const engine = await createEngine(canvas, { msaaSamples: 4 });
-  setEngineSize(engine, width, height);
-  const scene = createSceneContext(engine);
-  scene.clearColor = {
-    a: config.clearColor[3],
-    b: config.clearColor[2],
-    g: config.clearColor[1],
-    r: config.clearColor[0],
-  };
+  const engine = await createEngine(canvas, { format: "bgra8unorm", msaaSamples: 4 });
+  const psoObservation = observeStandardOpaquePsoRegistration(engine);
+  try {
+    setEngineSize(engine, width, height);
+    const scene = createSceneContext(engine);
+    scene.clearColor = {
+      a: config.clearColor[3],
+      b: config.clearColor[2],
+      g: config.clearColor[1],
+      r: config.clearColor[0],
+    };
 
-  const camera = createArcRotateCamera(
-    config.camera.alpha,
-    config.camera.beta,
-    config.camera.radius,
-    {
-      x: config.camera.target[0],
-      y: config.camera.target[1],
-      z: config.camera.target[2],
-    },
-  );
-  camera.nearPlane = config.camera.minZ;
-  camera.farPlane = Math.max(10_000, config.camera.radius * 3);
-  scene.camera = camera;
+    const camera = createArcRotateCamera(
+      config.camera.alpha,
+      config.camera.beta,
+      config.camera.radius,
+      {
+        x: config.camera.target[0],
+        y: config.camera.target[1],
+        z: config.camera.target[2],
+      },
+    );
+    camera.nearPlane = config.camera.minZ;
+    camera.farPlane = Math.max(10_000, config.camera.radius * 3);
+    scene.camera = camera;
 
-  const light = createHemisphericLight([0.25, 1, 0.15], 1);
-  addToScene(scene, light);
+    const light = createHemisphericLight([0.25, 1, 0.15], 1);
+    addToScene(scene, light);
 
-  const materials = new Map(config.world.materials.map((material) => [material.id, material]));
-  const primitivesByMaterial = new Map<string, GreyboxPrimitive[]>();
-  const heightfieldsByMaterial = new Map<string, HeightfieldBatchEntry[]>();
-  const selectedLodCellCounts: [number, number, number] = [0, 0, 0];
-  let renderedFeaturePrimitiveCount = 0;
-  let renderedTerrainPatchCount = 0;
-  for (const cell of config.world.cells) {
-    const selected = selectGreyboxCellLod(cell, config.lodObservers, {
-      hysteresisMeters: config.world.lodHysteresisMeters,
-    });
-    if (selected.lod === null) continue;
-    selectedLodCellCounts[selected.lod.tier] += 1;
-    for (const representation of selected.lod.representations) {
-      switch (representation.kind) {
-        case "triangle-boxes":
-          for (const primitive of representation.primitives) {
-            const primitives = primitivesByMaterial.get(primitive.materialId) ?? [];
-            primitives.push(primitive);
-            primitivesByMaterial.set(primitive.materialId, primitives);
-            renderedFeaturePrimitiveCount += 1;
+    const materials = new Map(config.world.materials.map((material) => [material.id, material]));
+    const primitivesByMaterial = new Map<string, GreyboxPrimitive[]>();
+    const heightfieldsByMaterial = new Map<string, HeightfieldBatchEntry[]>();
+    const selectedLodCellCounts: [number, number, number] = [0, 0, 0];
+    let renderedFeaturePrimitiveCount = 0;
+    let renderedTerrainPatchCount = 0;
+    for (const cell of config.world.cells) {
+      const selected = selectGreyboxCellLod(cell, config.lodObservers, {
+        hysteresisMeters: config.world.lodHysteresisMeters,
+      });
+      if (selected.lod === null) continue;
+      selectedLodCellCounts[selected.lod.tier] += 1;
+      for (const representation of selected.lod.representations) {
+        switch (representation.kind) {
+          case "triangle-boxes":
+            for (const primitive of representation.primitives) {
+              const primitives = primitivesByMaterial.get(primitive.materialId) ?? [];
+              primitives.push(primitive);
+              primitivesByMaterial.set(primitive.materialId, primitives);
+              renderedFeaturePrimitiveCount += 1;
+            }
+            break;
+          case "heightfield-grid": {
+            const heightfields = heightfieldsByMaterial.get(representation.materialId) ?? [];
+            heightfields.push(Object.freeze({ cell, representation }));
+            heightfieldsByMaterial.set(representation.materialId, heightfields);
+            renderedTerrainPatchCount += 1;
+            break;
           }
-          break;
-        case "heightfield-grid": {
-          const heightfields = heightfieldsByMaterial.get(representation.materialId) ?? [];
-          heightfields.push(Object.freeze({ cell, representation }));
-          heightfieldsByMaterial.set(representation.materialId, heightfields);
-          renderedTerrainPatchCount += 1;
-          break;
+          case "gaussian-splats":
+          case "meshlets":
+            throw new Error(
+              `Greybox preview cannot materialize ${representation.kind} representation ${representation.artifactId}`,
+            );
         }
-        case "gaussian-splats":
-        case "meshlets":
-          throw new Error(
-            `Greybox preview cannot materialize ${representation.kind} representation ${representation.artifactId}`,
-          );
       }
     }
-  }
 
-  let renderedTriangleCount = 0;
-  const previewMeshes: Mesh[] = [];
-  for (const materialDefinition of config.world.materials) {
-    const primitives = primitivesByMaterial.get(materialDefinition.id) ?? [];
-    const definition = requireMaterial(materials, materialDefinition.id);
-    const addGeometry = (geometry: GeometryBatch, suffix: string): void => {
-      const mesh = createMeshFromData(
-        engine,
-        `greybox-${materialDefinition.id}-${suffix}`,
-        geometry.positions,
-        geometry.normals,
-        geometry.indices,
-        geometry.uvs,
-      );
-      const material = createStandardMaterial();
-      material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
-      mesh.material = material;
-      addToScene(scene, mesh);
-      previewMeshes.push(mesh);
-      renderedTriangleCount += geometry.triangleCount;
-    };
-    if (primitives.length > 0) addGeometry(createGeometryBatch(primitives), "boxes");
-    const heightfields = heightfieldsByMaterial.get(materialDefinition.id) ?? [];
-    if (heightfields.length > 0) {
-      addGeometry(createHeightfieldGeometryBatch(heightfields), "heightfields");
+    let renderedTriangleCount = 0;
+    const previewMeshes: Mesh[] = [];
+    for (const materialDefinition of config.world.materials) {
+      const primitives = primitivesByMaterial.get(materialDefinition.id) ?? [];
+      const definition = requireMaterial(materials, materialDefinition.id);
+      const addGeometry = (geometry: GeometryBatch, suffix: string): void => {
+        const mesh = createMeshFromData(
+          engine,
+          `greybox-${materialDefinition.id}-${suffix}`,
+          geometry.positions,
+          geometry.normals,
+          geometry.indices,
+          geometry.uvs,
+        );
+        const material = createStandardMaterial();
+        material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
+        mesh.material = material;
+        addToScene(scene, mesh);
+        previewMeshes.push(mesh);
+        renderedTriangleCount += geometry.triangleCount;
+      };
+      if (primitives.length > 0) addGeometry(createGeometryBatch(primitives), "boxes");
+      const heightfields = heightfieldsByMaterial.get(materialDefinition.id) ?? [];
+      if (heightfields.length > 0) {
+        addGeometry(createHeightfieldGeometryBatch(heightfields), "heightfields");
+      }
     }
+    await psoWarmup.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, () =>
+      psoObservation.register(previewMeshes, () => registerScene(scene)),
+    );
+    // A second authoritative request proves that the registry deduplicates a repeated
+    // state without asking Babylon/Dawn to create the pipeline family again.
+    await psoWarmup.request(
+      PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
+      PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
+      () => {
+        throw new Error("PSO warmup registry invoked a compile callback for a cache hit");
+      },
+    );
+    await psoWarmup.finish();
+
+    const telemetry: GreyboxWorkerRenderTelemetry = Object.freeze({
+      cellCount: validation.cellCount,
+      clearColor: config.clearColor,
+      colliderCount: validation.colliderCount,
+      districtId: config.world.id,
+      dynamicLighting: true,
+      heightSampleCount: validation.heightSampleCount,
+      materialCount: config.world.materials.length,
+      materializationMs: performance.now() - materializationStartedAt,
+      renderedFeaturePrimitiveCount,
+      renderedTerrainPatchCount,
+      renderedTriangleCount,
+      selectedLodCellCounts: Object.freeze(selectedLodCellCounts),
+      worldBoundsMeters: Object.freeze({
+        maximum: config.world.bounds.maximum,
+        minimum: config.world.bounds.minimum,
+      }),
+    });
+
+    return {
+      animationStartedAt: null as number | null,
+      camera,
+      config,
+      engine,
+      light,
+      materials,
+      previousTimestamp: null as number | null,
+      presentationOwner: "preview" as "preview" | "streamed-residency",
+      previewMeshes: Object.freeze(previewMeshes),
+      psoWarmup,
+      scene,
+      streamingCells: new Map<
+        string,
+        Readonly<{
+          dependencyUploadBytes: number;
+          dependencyKeys: readonly string[];
+          gpuBytes: number;
+          meshes: readonly Mesh[];
+        }>
+      >(),
+      streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
+      streamingDependencyGpuBytes: 0,
+      flythroughSample: null as FlythroughScenarioSample | null,
+      telemetry,
+    };
+  } catch (error: unknown) {
+    try {
+      psoObservation.dispose();
+    } catch (cleanupError: unknown) {
+      const cleanupFailures =
+        cleanupError instanceof AggregateError ? cleanupError.errors : [cleanupError];
+      throw new AggregateError(
+        [error, ...cleanupFailures],
+        "Greybox world creation and PSO observer restoration failed",
+        { cause: error },
+      );
+    }
+    throw error;
   }
-  await registerScene(scene);
-
-  const telemetry: GreyboxWorkerRenderTelemetry = Object.freeze({
-    cellCount: validation.cellCount,
-    clearColor: config.clearColor,
-    colliderCount: validation.colliderCount,
-    districtId: config.world.id,
-    dynamicLighting: true,
-    heightSampleCount: validation.heightSampleCount,
-    materialCount: config.world.materials.length,
-    materializationMs: performance.now() - materializationStartedAt,
-    renderedFeaturePrimitiveCount,
-    renderedTerrainPatchCount,
-    renderedTriangleCount,
-    selectedLodCellCounts: Object.freeze(selectedLodCellCounts),
-    worldBoundsMeters: Object.freeze({
-      maximum: config.world.bounds.maximum,
-      minimum: config.world.bounds.minimum,
-    }),
-  });
-
-  return {
-    animationStartedAt: null as number | null,
-    camera,
-    config,
-    engine,
-    light,
-    materials,
-    previousTimestamp: null as number | null,
-    presentationOwner: "preview" as "preview" | "streamed-residency",
-    previewMeshes: Object.freeze(previewMeshes),
-    scene,
-    streamingCells: new Map<string, Readonly<{ gpuBytes: number; meshes: readonly Mesh[] }>>(),
-    flythroughSample: null as FlythroughScenarioSample | null,
-    telemetry,
-  };
 }
 
 export type LiteGreyboxWorld = Awaited<ReturnType<typeof createLiteGreyboxWorld>>;
@@ -472,7 +536,15 @@ function geometryGpuBytes(geometry: GeometryBatch): number {
 export function uploadStreamingGreyboxCell(
   renderer: LiteGreyboxWorld,
   cell: GreyboxCell,
-): Readonly<{ gpuBytes: number }> {
+  dependencies: readonly RenderStreamingDependency[] = Object.freeze([]),
+): Readonly<{
+  cellGpuBytes: number;
+  dependencyGpuCache: StreamingResourceCacheTelemetry;
+  dependencyUploadBytes: number;
+  dependencyUploadCount: number;
+  dependencyUploadMs: number;
+  gpuBytes: number;
+}> {
   if (renderer.streamingCells.has(cell.id)) {
     throw new Error(`Streaming cell ${cell.id} is already resident`);
   }
@@ -497,6 +569,9 @@ export function uploadStreamingGreyboxCell(
   const meshes: Mesh[] = [];
   const addedMeshes = new Set<Mesh>();
   let gpuBytes = 0;
+  let dependencyUploadBytes = 0;
+  let dependencyUploadCount = 0;
+  const dependencyKeys: string[] = [];
   const addGeometry = (materialId: string, geometry: GeometryBatch, suffix: string): void => {
     const definition = requireMaterial(renderer.materials, materialId);
     const mesh = createMeshFromData(
@@ -517,6 +592,243 @@ export function uploadStreamingGreyboxCell(
     gpuBytes += geometryGpuBytes(geometry);
   };
   try {
+    const dependencyUploadStartedAt = dependencies.length === 0 ? null : performance.now();
+    const dependencyIds = new Set<string>();
+    for (const dependency of dependencies) {
+      if (dependencyIds.has(dependency.resourceId)) {
+        throw new Error(`Streaming cell ${cell.id} repeats dependency ${dependency.resourceId}`);
+      }
+      dependencyIds.add(dependency.resourceId);
+      if (dependency.cacheKey !== streamingResourceCacheKey(dependency.descriptor)) {
+        throw new Error(`Streaming dependency ${dependency.resourceId} cache key is invalid`);
+      }
+      const acquired = renderer.streamingDependencyCache.acquire(dependency.descriptor);
+      dependencyKeys.push(acquired.key);
+      if (!acquired.miss) {
+        if (acquired.value === null || acquired.value.format !== dependency.format) {
+          throw new Error(`Streaming dependency ${dependency.resourceId} cache state is invalid`);
+        }
+        continue;
+      }
+      if ("kind" in dependency && dependency.kind === "cached-dependency-reference") {
+        throw new Error(`Streaming dependency ${dependency.resourceId} cache miss lacks payload`);
+      }
+      if (dependency.format === "ktx2") {
+        const rgba = new Uint8Array(dependency.rgba);
+        if (rgba.byteLength !== dependency.width * dependency.height * 4) {
+          throw new Error(`Streaming KTX2 dependency ${dependency.resourceId} is invalid`);
+        }
+        const texture = createTexture2DFromPixels(
+          renderer.engine,
+          rgba,
+          dependency.width,
+          dependency.height,
+          {
+            magFilter: "linear",
+            minFilter: "linear",
+            srgb: true,
+          },
+        );
+        let cacheOwnsTexture = false;
+        try {
+          renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, rgba.byteLength);
+          renderer.streamingDependencyCache.fulfill(acquired.key, {
+            attributes: null,
+            format: "ktx2",
+            gpuBytes: rgba.byteLength,
+            mesh: null,
+            texture,
+            vertexCount: 0,
+          });
+          cacheOwnsTexture = true;
+        } catch (error: unknown) {
+          if (!cacheOwnsTexture) releaseTexture(texture);
+          throw error;
+        }
+        renderer.streamingDependencyGpuBytes += rgba.byteLength;
+        dependencyUploadBytes += rgba.byteLength;
+        dependencyUploadCount += 1;
+      } else if (dependency.kind === "vertex-attributes") {
+        const attributes = new Float32Array(dependency.attributes);
+        if (
+          attributes.length !== dependency.vertexCount * 8 ||
+          attributes.some((value) => !Number.isFinite(value))
+        ) {
+          throw new Error(
+            `Streaming meshopt vertex dependency ${dependency.resourceId} is invalid`,
+          );
+        }
+        renderer.streamingDependencyCache.fulfill(acquired.key, {
+          attributes: dependency.attributes,
+          format: "meshopt",
+          gpuBytes: 0,
+          mesh: null,
+          texture: null,
+          vertexCount: dependency.vertexCount,
+        });
+      } else if (dependency.kind === "indices") {
+        const vertexResourceId = dependency.descriptor.dependencies[1];
+        const vertexDependency = dependencies.find(
+          (candidate) =>
+            candidate.resourceId === vertexResourceId &&
+            candidate.format === "meshopt" &&
+            candidate.kind === "vertex-attributes",
+        );
+        if (vertexDependency === undefined) {
+          throw new Error(
+            `Streaming meshopt index ${dependency.resourceId} lacks its vertex payload`,
+          );
+        }
+        const vertexKey = streamingResourceCacheKey(vertexDependency.descriptor);
+        const vertexCached = renderer.streamingDependencyCache.require(vertexKey);
+        const vertexValue = vertexCached.value;
+        if (vertexValue?.attributes === null || vertexValue === null) {
+          throw new Error(`Streaming meshopt vertex ${vertexResourceId} is unavailable`);
+        }
+        const interleaved = new Float32Array(vertexValue.attributes);
+        const positions = new Float32Array(vertexValue.vertexCount * 3);
+        const normals = new Float32Array(vertexValue.vertexCount * 3);
+        const uvs = new Float32Array(vertexValue.vertexCount * 2);
+        for (let vertex = 0; vertex < vertexValue.vertexCount; vertex += 1) {
+          positions.set(interleaved.subarray(vertex * 8, vertex * 8 + 3), vertex * 3);
+          normals.set(interleaved.subarray(vertex * 8 + 3, vertex * 8 + 6), vertex * 3);
+          uvs.set(interleaved.subarray(vertex * 8 + 6, vertex * 8 + 8), vertex * 2);
+        }
+        const indices = new Uint32Array(dependency.indices);
+        if (
+          indices.length !== dependency.indexCount ||
+          indices.length % 3 !== 0 ||
+          indices.some((value) => value >= vertexValue.vertexCount)
+        ) {
+          throw new Error(`Streaming meshopt index dependency ${dependency.resourceId} is invalid`);
+        }
+        const definition = requireMaterial(
+          renderer.materials,
+          renderer.config.world.materials[0]?.id ?? "",
+        );
+        const mesh = createMeshFromData(
+          renderer.engine,
+          `streaming-dependency-${dependency.resourceId}`,
+          positions,
+          normals,
+          indices,
+          uvs,
+        );
+        const attributeGpuBytes = interleaved.byteLength;
+        const indexGpuBytes = indices.byteLength;
+        let cacheOwnsMesh = false;
+        let sceneOwnsMesh = false;
+        try {
+          const material = createStandardMaterial();
+          material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
+          mesh.material = material;
+          mesh.visible = renderer.presentationOwner === "streamed-residency";
+          // Babylon may register the mesh before addToScene reports a failure. From this
+          // boundary onward cleanup must attempt scene removal, not local-only disposal.
+          sceneOwnsMesh = true;
+          addToScene(renderer.scene, mesh);
+          renderer.streamingDependencyCache.setOwnedBytes(vertexKey, 0, attributeGpuBytes);
+          renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, indexGpuBytes);
+          renderer.streamingDependencyCache.fulfill(acquired.key, {
+            attributes: null,
+            format: "meshopt",
+            gpuBytes: attributeGpuBytes + indexGpuBytes,
+            mesh,
+            texture: null,
+            vertexCount: 0,
+          });
+          cacheOwnsMesh = true;
+          vertexValue.attributes = null;
+        } catch (error: unknown) {
+          if (!cacheOwnsMesh) {
+            try {
+              if (sceneOwnsMesh) removeFromScene(renderer.scene, mesh);
+              else disposeMeshGpu(mesh);
+            } catch (cleanupError: unknown) {
+              throw new AggregateError(
+                [error, cleanupError],
+                `Streaming mesh index dependency ${dependency.resourceId} allocation and cleanup failed`,
+                error instanceof Error ? { cause: error } : undefined,
+              );
+            }
+          }
+          throw error;
+        }
+        renderer.streamingDependencyGpuBytes += attributeGpuBytes + indexGpuBytes;
+        dependencyUploadBytes += attributeGpuBytes + indexGpuBytes;
+        dependencyUploadCount += 2;
+      } else {
+        const positions = new Float32Array(dependency.positions);
+        if (
+          dependency.vertexCount !== 3 ||
+          positions.length !== dependency.vertexCount * 3 ||
+          positions.some((value) => !Number.isFinite(value))
+        ) {
+          throw new Error(`Streaming meshopt dependency ${dependency.resourceId} is invalid`);
+        }
+        const geometry: GeometryBatch = Object.freeze({
+          indices: new Uint32Array([0, 1, 2]),
+          normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1]),
+          positions,
+          triangleCount: 1,
+          uvs: new Float32Array([0, 0, 1, 0, 0.5, 1]),
+        });
+        const definition = requireMaterial(
+          renderer.materials,
+          renderer.config.world.materials[0]?.id ?? "",
+        );
+        const mesh = createMeshFromData(
+          renderer.engine,
+          `streaming-dependency-${dependency.resourceId}`,
+          geometry.positions,
+          geometry.normals,
+          geometry.indices,
+          geometry.uvs,
+        );
+        const meshGpuBytes = geometryGpuBytes(geometry);
+        let cacheOwnsMesh = false;
+        let sceneOwnsMesh = false;
+        try {
+          const material = createStandardMaterial();
+          material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
+          mesh.material = material;
+          mesh.visible = renderer.presentationOwner === "streamed-residency";
+          // Babylon may register the mesh before addToScene reports a failure. From this
+          // boundary onward cleanup must attempt scene removal, not local-only disposal.
+          sceneOwnsMesh = true;
+          addToScene(renderer.scene, mesh);
+          renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, meshGpuBytes);
+          renderer.streamingDependencyCache.fulfill(acquired.key, {
+            attributes: null,
+            format: "meshopt",
+            gpuBytes: meshGpuBytes,
+            mesh,
+            texture: null,
+            vertexCount: 0,
+          });
+          cacheOwnsMesh = true;
+        } catch (error: unknown) {
+          if (!cacheOwnsMesh) {
+            try {
+              if (sceneOwnsMesh) removeFromScene(renderer.scene, mesh);
+              else disposeMeshGpu(mesh);
+            } catch (cleanupError: unknown) {
+              throw new AggregateError(
+                [error, cleanupError],
+                `Streaming mesh dependency ${dependency.resourceId} allocation and cleanup failed`,
+                error instanceof Error ? { cause: error } : undefined,
+              );
+            }
+          }
+          throw error;
+        }
+        renderer.streamingDependencyGpuBytes += meshGpuBytes;
+        dependencyUploadBytes += meshGpuBytes;
+        dependencyUploadCount += 1;
+      }
+    }
+    const dependencyUploadMs =
+      dependencyUploadStartedAt === null ? 0 : performance.now() - dependencyUploadStartedAt;
     const referencedMaterialIds = new Set([
       ...primitivesByMaterial.keys(),
       ...heightfieldsByMaterial.keys(),
@@ -532,11 +844,24 @@ export function uploadStreamingGreyboxCell(
         addGeometry(materialId, createHeightfieldGeometryBatch(heightfields), "heightfield");
       }
     }
+    const dependencyGpuCache = dependencyGpuCacheSnapshot(renderer);
     renderer.streamingCells.set(
       cell.id,
-      Object.freeze({ gpuBytes, meshes: Object.freeze(meshes) }),
+      Object.freeze({
+        dependencyUploadBytes,
+        dependencyKeys: Object.freeze(dependencyKeys),
+        gpuBytes,
+        meshes: Object.freeze(meshes),
+      }),
     );
-    return Object.freeze({ gpuBytes });
+    return Object.freeze({
+      cellGpuBytes: gpuBytes,
+      dependencyGpuCache,
+      dependencyUploadBytes,
+      dependencyUploadCount,
+      dependencyUploadMs,
+      gpuBytes: gpuBytes + dependencyUploadBytes,
+    });
   } catch (error: unknown) {
     for (const mesh of meshes.reverse()) {
       if (addedMeshes.has(mesh)) {
@@ -545,6 +870,7 @@ export function uploadStreamingGreyboxCell(
         disposeMeshGpu(mesh);
       }
     }
+    releaseStreamingDependencyKeys(renderer, dependencyKeys);
     throw error;
   }
 }
@@ -645,14 +971,94 @@ async function finishFlythroughCheckpointCapture(
   });
 }
 
-export function evictStreamingGreyboxCell(renderer: LiteGreyboxWorld, cellId: string): number {
+export function evictStreamingGreyboxCell(
+  renderer: LiteGreyboxWorld,
+  cellId: string,
+): Readonly<{
+  dependencyGpuCache: StreamingResourceCacheTelemetry;
+  freedCellGpuBytes: number;
+  freedGpuBytes: number;
+}> {
   const resident = renderer.streamingCells.get(cellId);
   if (resident === undefined) throw new Error(`Streaming cell ${cellId} is not resident`);
-  for (const mesh of resident.meshes) {
-    removeFromScene(renderer.scene, mesh);
-  }
   renderer.streamingCells.delete(cellId);
-  return resident.gpuBytes;
+  const cleanupFailures: unknown[] = [];
+  for (const mesh of resident.meshes) {
+    try {
+      removeFromScene(renderer.scene, mesh);
+    } catch (error: unknown) {
+      cleanupFailures.push(error);
+    }
+  }
+  let dependencyFreedBytes = 0;
+  try {
+    dependencyFreedBytes = releaseStreamingDependencyKeys(renderer, resident.dependencyKeys);
+  } catch (error: unknown) {
+    cleanupFailures.push(error);
+  }
+  if (cleanupFailures.length > 0) {
+    throw new AggregateError(
+      cleanupFailures,
+      `Streaming cell ${cellId} eviction cleanup failed`,
+      cleanupFailures[0] instanceof Error ? { cause: cleanupFailures[0] } : undefined,
+    );
+  }
+  return Object.freeze({
+    dependencyGpuCache: dependencyGpuCacheSnapshot(renderer),
+    freedCellGpuBytes: resident.gpuBytes,
+    freedGpuBytes: resident.gpuBytes + dependencyFreedBytes,
+  });
+}
+
+function releaseStreamingDependencyKeys(
+  renderer: LiteGreyboxWorld,
+  keys: readonly string[],
+): number {
+  let freedBytes = 0;
+  const cleanupFailures: unknown[] = [];
+  for (let index = keys.length - 1; index >= 0; index -= 1) {
+    const key = keys[index];
+    if (key === undefined) continue;
+    let released: ReturnType<typeof renderer.streamingDependencyCache.release>;
+    try {
+      released = renderer.streamingDependencyCache.release(key);
+    } catch (error: unknown) {
+      cleanupFailures.push(error);
+      continue;
+    }
+    if (!released.final || released.value === null) continue;
+    if (released.value.mesh !== null) {
+      try {
+        removeFromScene(renderer.scene, released.value.mesh);
+      } catch (error: unknown) {
+        cleanupFailures.push(error);
+      }
+    }
+    if (released.value.texture !== null) {
+      try {
+        releaseTexture(released.value.texture);
+      } catch (error: unknown) {
+        cleanupFailures.push(error);
+      }
+    }
+    renderer.streamingDependencyGpuBytes -= released.value.gpuBytes;
+    freedBytes += released.value.gpuBytes;
+  }
+  if (cleanupFailures.length > 0) {
+    throw new AggregateError(cleanupFailures, "Streaming dependency cleanup failed");
+  }
+  return freedBytes;
+}
+
+function dependencyGpuCacheSnapshot(renderer: LiteGreyboxWorld): StreamingResourceCacheTelemetry {
+  const snapshot = renderer.streamingDependencyCache.snapshot();
+  if (
+    snapshot.liveDecodedBytes !== renderer.streamingDependencyGpuBytes ||
+    snapshot.liveEncodedBytes !== 0
+  ) {
+    throw new Error("Streaming dependency GPU cache accounting is invalid");
+  }
+  return snapshot;
 }
 
 export function renderLiteGreyboxWorld(

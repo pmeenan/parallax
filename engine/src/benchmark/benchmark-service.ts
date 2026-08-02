@@ -880,6 +880,9 @@ function assembleReport(
   const artifactDigest =
     firstEnvironment?.artifactDigest ??
     invalidMetric<string>("No benchmark attempt captured artifact identity");
+  const releaseDigest =
+    firstEnvironment?.releaseDigest ??
+    invalidMetric<string>("No benchmark attempt captured release identity");
   const browserName = firstEnvironment?.browser.name ?? "unknown";
   const verdict =
     budgetEvaluation.status === "passed" || budgetEvaluation.status === "failed"
@@ -909,6 +912,7 @@ function assembleReport(
     definitionId: definition.id,
     environmentComparisonPolicy: ENVIRONMENT_COMPARISON_POLICY,
     environmentCaptures: Object.freeze([...environmentCaptures]),
+    releaseDigest,
     facets: Object.freeze({ budgetEvaluation, referenceEligibility, scenarioEvidence }),
     generatedAt,
     metricStates: metricStates(attempts),
@@ -956,6 +960,7 @@ function capabilityFailureReport(
     definitionId: definition.id,
     environmentComparisonPolicy: ENVIRONMENT_COMPARISON_POLICY,
     environmentCaptures: Object.freeze([environment]),
+    releaseDigest: environment.releaseDigest,
     facets: Object.freeze({
       budgetEvaluation: notEvaluated,
       referenceEligibility: notEvaluated,
@@ -1150,6 +1155,7 @@ function comparisonRelevantEnvironment(environment: BenchmarkEnvironmentIdentity
   readonly hostIdentity: BenchmarkEnvironmentIdentity["hostIdentity"];
   readonly powerAndSessionState: BenchmarkEnvironmentIdentity["powerAndSessionState"];
   readonly referenceEligibility: BenchmarkEnvironmentIdentity["referenceEligibility"];
+  readonly releaseDigest: BenchmarkEnvironmentIdentity["releaseDigest"];
   readonly screen: Omit<BenchmarkEnvironmentIdentity["screen"], "viewportCssPixels">;
 }> {
   const { viewportCssPixels: _recordedDiagnostic, ...comparisonRelevantScreen } =
@@ -1163,6 +1169,7 @@ function comparisonRelevantEnvironment(environment: BenchmarkEnvironmentIdentity
     hostIdentity: environment.hostIdentity,
     powerAndSessionState: environment.powerAndSessionState,
     referenceEligibility: environment.referenceEligibility,
+    releaseDigest: environment.releaseDigest,
     screen: Object.freeze(comparisonRelevantScreen),
   });
 }

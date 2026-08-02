@@ -36,95 +36,86 @@ Sources: CDP (tracing, Performance domains), in-app telemetry exported by
 `engine/telemetry/` on a stable schema, and Chrome internals surfaces where CDP falls
 short (each gap in observability is itself a rough-edges finding — log it).
 
-## Standard runs (versioned contracts in `src/runs/`; deterministic by construction)
+## Run catalog (versioned contracts; deterministic by construction)
 
-- `smoke` — boot to first interactive frame and budget snapshot. Run once after the
-  final reviewable state of every runtime-affecting candidate, and rerun only when a
-  later fix changes a qualifying input (D-097; see `docs/workflow.md`).
-- `smoke --include-v8-code-cache` / `pnpm harness:smoke:v8-cache` — the same core
-  gate plus the three-lineage, nine-launch V8 lifecycle diagnostic. Run at browser,
-  Node, bundler, serving/cache, or lifecycle changes; dependency checkpoints; M2
-  install/update work; and explicit V8 investigations, not every change (D-095).
-- `app-owned-llm-spike` — exact-manifest cold install into OPFS, browser-restart warm
-  load, fixed Gemma dialog/schema/context fixtures, and render-worker impact (M0 P-007
-  phase-A evidence run).
-- `flythrough-d1` — the M1 standard 10-minute traversal (regression gate).
-- `render-recovery` — M1's isolated real device-loss / silent render-worker-crash /
-  bounded-retry qualification; never injects faults into routine smoke or flythrough.
-- `transition` — repeated D1↔D2 swaps against the transition contract (from M4).
-- `lifecycle` — cold install → launch-1 → relaunch → offline relaunch → asset-only
-  update → relaunch (from M2).
-- `determinism` — replay a canned command log N times, compare state hashes (from M3).
+- `pnpm harness:smoke` — boot to first interactive frame and collect the mandatory
+  budget snapshot. Run once for a converged runtime-affecting candidate under D-097 and
+  [the physical-gate cadence](../docs/workflow.md#validation-and-physical-gate-cadence).
+- `pnpm harness:smoke:v8-cache` — the smoke core plus the opt-in multi-lineage V8
+  lifecycle diagnostic. Run only for browser, Node, bundler, serving/cache, lifecycle,
+  dependency-checkpoint, or explicit V8 investigations under D-095.
+- `pnpm harness:branded-parity -- --target https://parallax-web.com` — opt-in
+  installed branded-Stable parity on physical-console dev-01/Showcase against
+  production. The fail-closed runner binds the registered executable's path, version,
+  digest, Google product/signature metadata, checked-in Chrome pin, launch channel, and
+  CDP browser identity. Every attempt is immutable; results are comparison-only,
+  baseline-ineligible, nonpromotable, and never pinned-CfT budget-authoritative (D-150).
+- `pnpm harness:app-owned-llm` — exact-manifest cold OPFS install, browser-restart
+  warm load, fixed dialog/schema/context fixtures, and render-worker impact.
+- `pnpm harness:flythrough-d1` — the standard ten-minute District 1 traversal.
+- `pnpm harness:render-recovery` — isolated real device-loss, silent render-worker
+  crash, and bounded-retry qualification; never injects faults into routine runs.
+- `pnpm harness:opfs-release-store-adapter` — fresh-profile browser adapter for the
+  crash-safe OPFS release-store contract.
+- `pnpm harness:installer-trust-faults` — bounded installer integrity, publication,
+  repair, quota, and typed-fault matrix.
+- `pnpm harness:installer-repair-production-replay` — exact retained production repair
+  replay against the current validator contract.
+- `pnpm harness:asset-update:v8` — same-profile install, warm-launch, asset-only update,
+  post-update launch, and best-effort V8 lifecycle diagnostic.
+- `pnpm harness:model-source-verification` — post-upload verification of the five fixed
+  production-source/install-only model objects through the local `model-content.json`
+  contract, SSH-side remote identity, and production HTTP delivery.
+- `pnpm harness:pso-warmup:qualify` — separately triggered release-bound PSO warmup
+  launch-pair qualifier; its source entry point defines required input paths.
+- `pnpm harness:uninstall-verification` — fresh-process qualification of the confirmed
+  client-side and direct-network uninstall mechanisms.
+- `pnpm harness:scale-streaming` — representative schema-v2 compressed dependency,
+  decode, cache-ownership, and GPU-upload scale qualifier.
+- `pnpm harness:baseline:promote` — guarded offline baseline-store promotion utility,
+  not a browser scenario or automatic post-run action.
+- `transition` — repeated D1↔D2 swaps against the transition contract.
+- `lifecycle` — cold install, launch, relaunch, offline relaunch, asset-only update,
+  and relaunch.
+- `determinism` — replay a fixed command log and compare state hashes.
 
-The game-facing benchmark mode (D-025/D-105, from M1) is a public runner for the same
-versioned scenarios, subsystem telemetry, metric states, facets, and variance rules. Its
-browser-neutral `benchmark-result@1` wrapper is deliberately separate from the
-privileged harness report; it embeds the complete flythrough evidence and makes every
-unavailable privileged field explicit. It is not a second scenario implementation. The
-whole benchmark lifecycle—scenario execution, warm-up, repeats,
-measurement windows, aggregation, and export—runs in-game without an external driver.
-Automation may only launch it and retrieve the completed result; launcher/collector
-activity is outside the measurement window and is not required for a valid manual run.
-Current page-only `benchmark-result@1` schema-v3 results use three continuous-page repeats and are labeled advisory
-even in Chrome because the page cannot attest the registered host, driver, power,
-physical-console session, or standing privileged metrics. They are not comparable with
-the harness's independent fresh-profile repeats. Raw CSS viewport geometry remains
-recorded but is not comparison identity while the worker render size is fixed and
-checkpoint-attested; every other captured environment field remains exact. Only harness-qualified Chrome runs on
-reference machines gate budgets.
-D-115 completes M1's Benchmark mode task on this implementation and fail-honest result
-contract. The retained complete schema-v3 reports still fail their unchanged 10%
-scenario checks and still have `not-evaluated` budget facets; correct failed exports
-qualify the mode, not the observed performance. They do not duplicate or override the
-authoritative privileged flythrough, and no further 30-plus-minute public run is an M1
-gate. D-115's final M1 contract uses D-102's schema-v4/metric-set-v4 flythrough as a
-versioned long-window anchor rather than claiming it passed the then-current v12/v6
-validator; D-104's qualifier, post-D-108 physical lifecycle evidence, and the final
-current smoke bridge the later contract/runtime changes. D-116 preserves the first
-schema-v44 / metric-set-v21 smoke as failed and advances the final smoke to schema v45 /
-mandatory metric set v22. It reuses the six existing core runs to require streaming
-cell-load p95 absolute spread no greater than
-`max(10% × minimum cohort p95, 1 ms)` independently for fresh and warm. The correction
-adds no launch or duration and does not relabel failed ten-minute variance. Final
-registered-dev-01 Showcase report
-`smoke-1-cf1a0420d451-dev-01-showcase-2026-07-26T03-19-56-378Z.json`
-(SHA-256
-`b10c83ff0019cd3b332eec322703e2556de4565ba3e01c942154909cfb5508c9`)
-passed schema v45 / metric set v22 across all six core runs, all three facets, and 30/30
-evaluated budget checks. It completes M1's measured-runtime-artifact link without changing the
-retained failed v44 or public results and without authorizing another M1 gate.
-D-117 subsequently removes the closed memory64 experiment and advances build manifest
-to v11, public telemetry to v25, smoke report to v46, flythrough report to v13, and
-render-recovery report to v11. Metric sets and measurement semantics are unchanged;
-all D-117 and bulk-review runtime fixes converged before the one ordinary D-097 physical
-smoke recorded below. No per-fix smoke, benchmark, flythrough, recovery, or privileged
-diagnostic was run. The smoke does not reopen M1.
-D-118 advances smoke to schema v47 / mandatory metric set v23 and flythrough to
-schema v14 / mandatory metric set v7. Both add explicit fail-closed report-finalization
-evidence: late build/source drift and Markdown formatter/write failures retain primary
-JSON and fail the evidence facet. Flythrough checkpoint validation also requires exact
-finite three-component camera/color vectors and finite non-inverted aggregate bounds.
-D-120 moves baseline-store loading to preflight and makes malformed selected entries
-fail soft without conflating valid older metric sets with corruption. The final
-post-review schema-v47 / metric-set-v23 physical smoke
-`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
-(SHA-256
-`ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
-passed all six launches, all three facets, and 30/30 checks. It was correctly
-`ineligible` for comparison with the older promoted metric-set-v11 anchor and was not
-promoted automatically. RE-044 retains the same-artifact first attempt's startup fetch
-failure; its one classification retry is this passing report. No additional post-M1
-physical gate is pending.
+The specialized opt-in adapters and qualifiers above use package scripts whose source
+entry points are the binding contracts; consult
+[docs/plan.md](../docs/plan.md), [docs/decisions.md](../docs/decisions.md), and retained
+results for triggers, exact schemas, identities, and accepted evidence. Do not infer a
+milestone gate or authorize a rerun from historical result prose.
+Closed D-133 installer-transfer calibration and qualification have no runner or package
+command. Later root rule 12 cleanup removed both validator/test pairs completely, leaving
+only ignored retained results, reconstruction records, and documented hashes and
+conclusions.
+Closed D-138 offline-shell adapter and D-146 offline-fault lifecycle qualification also
+have no runner or package command. Later root rule 12 cleanup removed their qualifier-
+only sources, tests, and routine source assertions while preserving generic result-pair,
+progress-liveness, diagnostic-redaction, and exact-range utilities used by active gates.
+
+The game-facing benchmark mode (D-025/D-105) is the public runner for the same versioned
+scenarios, telemetry, metric states, facets, and variance rules. It keeps its portable
+result wrapper separate from privileged harness reports and represents unavailable
+privileged fields explicitly. Scenario execution, warm-up, repeats, measurement
+windows, aggregation, and export remain in-game; automation may only launch and collect
+outside the measurement window. Page-owned reports cannot attest the registered host,
+power, physical-console session, or privileged metrics and are advisory rather than
+comparable to independent fresh-profile harness repeats.
+
+Current milestone state and closure evidence live only in
+[docs/plan.md](../docs/plan.md). Current schema and metric-set constants live in source;
+accepted decisions and evidence identities live in
+[docs/decisions.md](../docs/decisions.md) and retained `harness/results/` artifacts.
 
 ## Rules
 
 1. **Deterministic runs.** Scripted input/camera paths, fixed seeds, pinned Chrome
    version per report — operationally, archived Chrome for Testing binaries at the
    current stable milestone (D-019), so any past result can be re-run; the exact
-   version is recorded in every result. Installed branded-stable parity runs when a
-   Chrome pin is reviewed/adopted and when browser currency is assessed at the standing
-   dependency checkpoint (D-097). All launches retain Chrome's process sandbox; an effective
-   `--no-sandbox` switch invalidates reference evidence (D-062). Variance across
+   version is recorded in every result. Under D-150, installed branded-stable parity
+   runs when a Chrome pin is reviewed/adopted and when browser currency is assessed at
+   the standing dependency checkpoint. All launches retain Chrome's process sandbox;
+   an effective `--no-sandbox` switch invalidates reference evidence (D-062). Variance across
    repeats is itself a tracked metric — a noisy metric is a broken metric.
 2. **Results are diffable artifacts** (JSON + human-readable report), keyed by
    **artifact digest**, not commit: the hash of the exact built artifacts measured,

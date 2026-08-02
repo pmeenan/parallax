@@ -10,9 +10,14 @@ export type SabRingBufferMetric =
   | Readonly<{ readonly state: "measured"; readonly value: SabRingBufferSpikeTelemetrySnapshot }>
   | Readonly<{ readonly reason: string; readonly state: "invalid" }>;
 
-export function resolveSabRingBufferMetric(
-  snapshot: SabRingBufferSpikeTelemetrySnapshot,
-): SabRingBufferMetric {
+export function resolveSabRingBufferMetric(input: unknown): SabRingBufferMetric {
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    return Object.freeze({
+      reason: "SAB ring-buffer spike telemetry is not an object",
+      state: "invalid",
+    });
+  }
+  const snapshot = input as SabRingBufferSpikeTelemetrySnapshot;
   if (snapshot.state !== "completed") {
     return Object.freeze({
       reason:
@@ -56,7 +61,7 @@ export function resolveSabRingBufferMetric(
 }
 
 export function requireSabRingBufferCompleteAtMeasurementBoundary(
-  snapshot: SabRingBufferSpikeTelemetrySnapshot,
+  snapshot: unknown,
 ): SabRingBufferMetric & Readonly<{ readonly state: "measured" }> {
   const metric = resolveSabRingBufferMetric(snapshot);
   if (metric.state !== "measured") {

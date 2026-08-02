@@ -1,7 +1,12 @@
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { type ParallaxTelemetryExport, TELEMETRY_FRAME_BATCH_FRAMES } from "@parallax/engine";
+import { fileURLToPath } from "node:url";
+import {
+  type ParallaxTelemetryExport,
+  type PsoWarmupTelemetrySnapshot,
+  TELEMETRY_FRAME_BATCH_FRAMES,
+} from "@parallax/engine";
 import type { BrowserContext, CDPSession, Page } from "playwright-core";
 import {
   type BoundedRepeatabilityMetric,
@@ -17,12 +22,7 @@ import {
   evaluateBaselineSafely,
   loadBaselineStore,
 } from "./baseline-store.js";
-import {
-  readBrowserDisplayIdentity,
-  readChromeCommandLine,
-  readChromeDisplayRefreshRates,
-  readWebGpuAdapterIdentity,
-} from "./browser-probes.js";
+import { readChromeDisplayRefreshRates } from "./browser-probes.js";
 import {
   type BudgetCheck,
   type DiagnosticCheck,
@@ -36,12 +36,11 @@ import {
 } from "./budgets.js";
 import { type BuildManifest, readAndValidateBuildManifest, sha256File } from "./build-manifest.js";
 import {
+  type ChromeLaunchMode,
   type ChromePin,
   launchPersistentChrome,
-  loadChromePin,
+  loadSmokeChromePin,
   resolveChromeExecutablePath,
-  validateChromeExecutable,
-  validateChromeSandboxCommandLine,
 } from "./chrome-pin.js";
 import {
   D3D12_HISTOGRAM_PREFIX,
@@ -52,17 +51,10 @@ import {
 } from "./dawn-pipeline-trace.js";
 import {
   type BrowserDisplayIdentity,
-  type CdpGpuDevice,
-  type EnvironmentGateState,
   evaluateBrowserDisplay,
-  evaluateGateEnvironment,
   invalidEnvironmentGate,
-  loadMachineDescriptor,
-  type MachineDescriptor,
   safeMachineIdForFilename,
   tryReadWindowsHostIdentity,
-  type WebGpuAdapterIdentity,
-  type WindowsHostIdentity,
   type WindowsHostIdentityResult,
 } from "./environment.js";
 import { markerAlignedWindowStart, selectMeasurementFrameWindow } from "./frame-window.js";
@@ -74,6 +66,7 @@ import {
 } from "./gpu-memory.js";
 import { analyzeGreyboxRenderedOutput } from "./greybox-rendered-output.js";
 import { type GreyboxWorldEvidence, requireGreyboxWorld } from "./greybox-world-evidence.js";
+import { resolveHeapWorkerTargetUrls } from "./heap-worker-topology.js";
 import { formatHttpServingEvidence } from "./http-evidence.js";
 import {
   invalidateJsHeapMetric,
@@ -93,18 +86,24 @@ import {
   PRESENTATION_TRACE_START_MARKER,
   withTimeout,
 } from "./presentation-trace.js";
+import { resolvePsoWarmupEvidence } from "./pso-warmup-smoke-evidence.js";
+import {
+  type RegisteredEnvironmentIdentity as EnvironmentIdentity,
+  inspectRegisteredEnvironment,
+  type RegisteredBrowserValidation,
+} from "./registered-environment.js";
 import {
   evaluatePostRunIdentity,
   type FinalizationEvidence,
   invalidFinalizationEvidence,
   measuredFinalizationEvidence,
   persistJsonPrimaryReport,
+  type ReportPersistenceDependencies,
 } from "./report-finalization.js";
 import { evaluateResultFacets, type ResultFacets, resultFacetsPassed } from "./result-facets.js";
 import {
   parseQualityTier,
   parseSmokeRunOptions,
-  QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
@@ -132,12 +131,7 @@ import {
   requireSabRingBufferCompleteAtMeasurementBoundary,
   type SabRingBufferMetric,
 } from "./sab-ring-buffer.js";
-import {
-  createLocalServer,
-  type LocalServerMetrics,
-  listenLocalServer,
-  stopLocalServer,
-} from "./server.js";
+import type { LocalServerMetrics } from "./server.js";
 import {
   collectSmokeBudgetFacetChecks,
   collectSmokeEnvironmentFacetInput,
@@ -151,6 +145,17 @@ import {
   type StreamingEvidenceFailure,
   tryRequireStreamingEvidence,
 } from "./streaming-evidence.js";
+import {
+  assertHarnessNavigationUrl,
+  captureTargetPostflight,
+  failedTargetEvidence,
+  formatTargetVerificationEvidence,
+  type HarnessTargetVerificationEvidence,
+  harnessRuntimeUrl,
+  parseHarnessTargetArguments,
+  reconcileTargetPostflight,
+  startHarnessTarget,
+} from "./target.js";
 import { readTelemetry } from "./telemetry.js";
 import {
   decodedSourceCodeUnits,
@@ -241,13 +246,19 @@ interface RunMeasurement {
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
   readonly gpuMemory: GpuMemoryMetric;
   readonly greyboxWorld: MeasuredMetric<GreyboxWorldEvidence>;
-  readonly http: MeasuredMetric<LocalServerMetrics>;
+  readonly http:
+    | MeasuredMetric<LocalServerMetrics>
+    | Readonly<{
+        readonly reason: string;
+        readonly state: "not-applicable";
+      }>;
   readonly jsHeap: JsHeapMetric;
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
   readonly workerAnimationCallbackIntervalMs: MeasuredMetric<Distribution>;
   readonly profile: "fresh" | "warm";
+  readonly psoWarmup: MetricResult<PsoWarmupTelemetrySnapshot>;
   readonly profileLineage: {
     readonly history: readonly ("fresh" | "warm")[];
     readonly id: string;
@@ -306,26 +317,6 @@ type SmokeTraceDrainMetric =
       readonly state: "invalid";
     }>;
 
-interface EnvironmentIdentity {
-  readonly adapter: WebGpuAdapterIdentity | null;
-  readonly browserDisplay: BrowserDisplayIdentity | null;
-  readonly browserCommandLine: string;
-  readonly browserProduct: string;
-  readonly browserRevision: string;
-  readonly browserUserAgent: string;
-  readonly executableSha256: string;
-  readonly gateIdentity: EnvironmentGateState;
-  readonly gpuDevices: readonly CdpGpuDevice[];
-  readonly host: WindowsHostIdentity | null;
-  readonly hostAfterRuns: WindowsHostIdentity | null;
-  readonly jsVersion: string;
-  readonly machine: MachineDescriptor | null;
-  readonly machineId: string;
-  readonly requestedTier: QualityTier;
-  readonly sandboxVerified: true;
-  readonly targetDisplayMode: string;
-}
-
 interface RenderBuildEvidence {
   readonly engineAndRenderWorkerBytes: number;
   readonly engineArtifact: Readonly<{ bytes: number; path: string }>;
@@ -333,7 +324,7 @@ interface RenderBuildEvidence {
   readonly totalBuildBytes: number;
 }
 
-interface SmokeReport {
+export interface SmokeReport {
   readonly artifactDigest: string;
   readonly baseline: BaselineEvaluation;
   readonly build: RenderBuildEvidence;
@@ -358,6 +349,7 @@ interface SmokeReport {
   readonly passed: boolean;
   readonly postRunIdentity: FinalizationEvidence;
   readonly reportPersistence: FinalizationEvidence;
+  readonly releaseDigest: string;
   readonly vizPresentationFeedbackCallbackVariance: readonly {
     readonly profile: "fresh" | "warm";
     readonly reason?: string;
@@ -374,74 +366,141 @@ interface SmokeReport {
   readonly v8CodeCacheDiagnosticsRequested: boolean;
 }
 
+export type SmokeEvidenceReport = Omit<SmokeReport, "baseline">;
+
+export interface SmokeCommandConfiguration<TContext, TReport extends { readonly passed: boolean }> {
+  readonly arguments: readonly string[];
+  readonly beforeMeasurements?: (environment: EnvironmentIdentity) => Promise<void>;
+  readonly chromePin: ChromePin;
+  readonly executablePath: string;
+  readonly formatMarkdown: (report: TReport) => string;
+  readonly inspectValidation?: RegisteredBrowserValidation;
+  readonly prepareReportContext: () => Promise<TContext>;
+  readonly persistenceDependencies?: ReportPersistenceDependencies;
+  readonly reportPaths: (input: {
+    readonly artifactDigest: string;
+    readonly environment: EnvironmentIdentity;
+    readonly generatedAt: string;
+  }) => Readonly<{ readonly json: string; readonly markdown: string }>;
+  readonly toReport: (evidence: SmokeEvidenceReport, context: TContext) => TReport;
+  readonly resultLabel: string;
+  readonly summaryLabel: string;
+}
+
 interface HarnessRuntimeIdentity {
   readonly nodeExecutableSha256: string;
   readonly nodeVersion: string;
 }
 
-interface HeapWorkerUrls {
-  readonly decode: string;
-  readonly render: string;
-  readonly streaming: string;
+interface HeapWorkerTopologySource {
+  readonly baseUrl: string;
+  readonly manifest: BuildManifest;
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const buildRoot = join(repositoryRoot, "dist");
-const chromePinPath = join(repositoryRoot, "harness/chrome/stable.json");
 const machineRoot = join(repositoryRoot, "harness/machines");
 const outputRoot = join(repositoryRoot, "harness/results");
 
-await main();
+if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}
 
 async function main(): Promise<void> {
-  const options = parseSmokeRunOptions(process.argv.slice(2));
+  const targetOptions = parseHarnessTargetArguments(process.argv.slice(2));
+  parseSmokeRunOptions(targetOptions.remainingArguments);
+  requiredEnvironment("PARALLAX_MACHINE_ID");
+  parseQualityTier(process.env.PARALLAX_TIER);
+  const chromePin = await loadSmokeChromePin(repositoryRoot);
+  const executablePath = await resolveChromeExecutablePath(repositoryRoot, chromePin);
+  await runSmokeCommand({
+    arguments: process.argv.slice(2),
+    chromePin,
+    executablePath,
+    formatMarkdown: formatReport,
+    prepareReportContext: () => loadBaselineStore(baselineStorePath(repositoryRoot)),
+    reportPaths: ({ artifactDigest, environment, generatedAt }) =>
+      reportPaths({
+        artifactDigest,
+        generatedAt,
+        machineId: environment.machineId,
+        scenario: SMOKE_SCENARIO,
+        tier: environment.requestedTier,
+      }),
+    resultLabel: "Smoke result",
+    summaryLabel: "Smoke summary",
+    toReport: (evidence, baselineStore) =>
+      Object.freeze({
+        ...evidence,
+        baseline: evaluateBaselineSafely(evidence, baselineStore),
+      }),
+  });
+}
+
+export async function runSmokeCommand<TContext, TReport extends { readonly passed: boolean }>(
+  configuration: SmokeCommandConfiguration<TContext, TReport>,
+): Promise<TReport> {
+  const targetOptions = parseHarnessTargetArguments(configuration.arguments);
+  const options = parseSmokeRunOptions(targetOptions.remainingArguments);
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
-  const chromePin = await loadChromePin(chromePinPath);
-  const executablePath = await resolveChromeExecutablePath(repositoryRoot, chromePin);
+  const chromePin = configuration.chromePin;
+  const executablePath = configuration.executablePath;
+  const browserLaunchMode: ChromeLaunchMode =
+    configuration.inspectValidation === undefined ? "pinned-executable" : "branded-stable-channel";
   const validatedBuild = await readAndValidateBuildManifest(buildRoot);
   const artifactDigest = validatedBuild.artifactDigest;
   const build = renderBuildEvidence(validatedBuild.manifest);
   const v8ScriptArtifacts = options.includeV8CodeCache
     ? await readV8ScriptArtifacts(validatedBuild.manifest)
     : Object.freeze([]);
-  const heapWorkerArtifacts = await tryProbe("Build-manifest heap worker entrypoints", async () =>
-    Object.freeze({
-      decode: workerArtifactPath(validatedBuild.manifest, "decode"),
-      render: workerArtifactPath(validatedBuild.manifest, "render"),
-      streaming: workerArtifactPath(validatedBuild.manifest, "streaming"),
-    }),
-  );
+  const heapWorkerManifest = await tryProbe("Build-manifest heap worker entrypoints", async () => {
+    resolveHeapWorkerTargetUrls({
+      baseUrl: "https://heap-topology.invalid/",
+      decodeWorkerCount: 1,
+      manifest: validatedBuild.manifest,
+    });
+    return validatedBuild.manifest;
+  });
   const source = await readSourceIdentity(repositoryRoot);
   const harnessRuntime = Object.freeze({
     nodeExecutableSha256: (await sha256File(process.execPath)).sha256,
     nodeVersion: process.version,
   });
-  const baselineStore = await loadBaselineStore(baselineStorePath(repositoryRoot));
-  const server = createLocalServer({ root: buildRoot });
-  const address = await listenLocalServer(server);
-  const baseUrl = `http://127.0.0.1:${address.port}`;
-  const heapWorkerUrls: ProbeResult<HeapWorkerUrls> =
-    heapWorkerArtifacts.state === "measured"
+  const reportContext = await configuration.prepareReportContext();
+  const target = await startHarnessTarget({
+    artifactDigest,
+    buildManifest: validatedBuild.manifest,
+    buildRoot,
+    request: targetOptions.request,
+  });
+  const baseUrl = target.baseUrl;
+  const heapWorkerTopology: ProbeResult<HeapWorkerTopologySource> =
+    heapWorkerManifest.state === "measured"
       ? measured(
           Object.freeze({
-            decode: new URL(heapWorkerArtifacts.value.decode, `${baseUrl}/`).href,
-            render: new URL(heapWorkerArtifacts.value.render, `${baseUrl}/`).href,
-            streaming: new URL(heapWorkerArtifacts.value.streaming, `${baseUrl}/`).href,
+            baseUrl,
+            manifest: heapWorkerManifest.value,
           }),
         )
-      : heapWorkerArtifacts;
+      : heapWorkerManifest;
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-harness-"));
 
   try {
-    let environment = await inspectEnvironment(
-      executablePath,
-      join(profileRoot, "identity"),
+    let environment = await inspectRegisteredEnvironment({
       chromePin,
+      executablePath,
       machineId,
+      machineRoot,
+      probeUrl: target.probeUrl,
+      profilePath: join(profileRoot, "identity"),
+      target: target.identity,
       tier,
-      baseUrl,
-    );
+      ...(configuration.inspectValidation === undefined
+        ? {}
+        : { validation: configuration.inspectValidation }),
+    });
+    await configuration.beforeMeasurements?.(environment);
     const measurementSequenceStartedAtMs = performance.now();
     let launchOrdinal = 0;
     const runs: RunMeasurement[] = [];
@@ -466,8 +525,10 @@ async function main(): Promise<void> {
               profile,
               environment.adapter?.backend ?? null,
               tier,
-              heapWorkerUrls,
+              heapWorkerTopology,
               launchPosition,
+              target.localServerMetricsAvailable,
+              browserLaunchMode,
             ),
           );
         } catch (error) {
@@ -506,6 +567,7 @@ async function main(): Promise<void> {
                 v8ScriptArtifacts,
                 launchSequencePosition(++launchOrdinal, measurementSequenceStartedAtMs),
                 completedHistory,
+                browserLaunchMode,
               )
             : invalidV8CodeCacheDiagnosticRun(
                 `V8 code-cache diagnostic ${profile} phase was not launched because ${predecessorFailure}`,
@@ -584,6 +646,32 @@ async function main(): Promise<void> {
     });
     environment = revalidateRunDisplays(environment, runs);
     environment = revalidateHostEnvironment(environment, await tryReadWindowsHostIdentity());
+    if (configuration.inspectValidation !== undefined) {
+      try {
+        const postRunExecutableSha256 = (await sha256File(executablePath)).sha256;
+        if (postRunExecutableSha256 !== configuration.inspectValidation.executableSha256) {
+          environment = invalidateEnvironment(environment, [
+            `Branded Chrome executable changed during the run: expected ${configuration.inspectValidation.executableSha256}, received ${postRunExecutableSha256}`,
+          ]);
+        }
+      } catch (error) {
+        environment = invalidateEnvironment(environment, [
+          `Branded Chrome executable postvalidation failed: ${errorMessage(error)}`,
+        ]);
+      }
+    }
+    const targetPostflight = reconcileTargetPostflight(
+      environment.target,
+      await captureTargetPostflight(target.revalidate),
+    );
+    if (targetPostflight.state === "verified") {
+      environment = recordTargetPostflightSuccess(environment, targetPostflight);
+    } else {
+      environment = recordTargetPostflightFailure(
+        environment,
+        `Serving target postflight failed: ${targetPostflight.reason}`,
+      );
+    }
     const incompleteMetrics = Object.freeze(SMOKE_INCOMPLETE_METRICS.map(invalidMetric));
     const postRunIdentity = await evaluatePostRunIdentity(artifactDigest, source, {
       readArtifactDigest: async () =>
@@ -591,7 +679,7 @@ async function main(): Promise<void> {
       readSourceIdentity: () => readSourceIdentity(repositoryRoot),
     });
     const generatedAt = new Date().toISOString();
-    const assembleReport = (reportPersistence: FinalizationEvidence): SmokeReport => {
+    const assembleReport = (reportPersistence: FinalizationEvidence): TReport => {
       const finalizationFailure = finalizationFailureReason(postRunIdentity, reportPersistence);
       const reportFinalization =
         finalizationFailure === null
@@ -647,6 +735,7 @@ async function main(): Promise<void> {
         passed: resultFacetsPassed(facets),
         postRunIdentity,
         reportPersistence,
+        releaseDigest: validatedBuild.releaseDigest,
         runs,
         scenario: SMOKE_SCENARIO,
         schemaVersion: SMOKE_REPORT_SCHEMA_VERSION,
@@ -655,21 +744,21 @@ async function main(): Promise<void> {
         v8CodeCacheDiagnostics,
         v8CodeCacheDiagnosticsRequested: options.includeV8CodeCache,
         vizPresentationFeedbackCallbackVariance,
-      } satisfies Omit<SmokeReport, "baseline">;
-      const baseline = evaluateBaselineSafely(reportWithoutBaseline, baselineStore);
-      return Object.freeze({ ...reportWithoutBaseline, baseline });
+      } satisfies SmokeEvidenceReport;
+      return configuration.toReport(reportWithoutBaseline, reportContext);
     };
     await mkdir(outputRoot, { recursive: true });
-    const paths = reportPaths({
+    const paths = configuration.reportPaths({
       artifactDigest,
       generatedAt,
-      machineId: environment.machineId,
-      scenario: SMOKE_SCENARIO,
-      tier: environment.requestedTier,
+      environment,
     });
     const persistence = await persistJsonPrimaryReport({
+      ...(configuration.persistenceDependencies === undefined
+        ? {}
+        : { dependencies: configuration.persistenceDependencies }),
       failedReport: (reason) => assembleReport(invalidFinalizationEvidence(reason)),
-      formatMarkdown: formatReport,
+      formatMarkdown: configuration.formatMarkdown,
       jsonPath: paths.json,
       markdownPath: paths.markdown,
       pendingReport: assembleReport(
@@ -679,12 +768,14 @@ async function main(): Promise<void> {
     });
     if (persistence.markdown !== null) console.log(persistence.markdown);
     if (persistence.secondaryFailure !== null) console.error(persistence.secondaryFailure);
-    console.log(`Smoke result: ${paths.json}`);
-    if (persistence.markdown !== null) console.log(`Smoke summary: ${paths.markdown}`);
+    console.log(`${configuration.resultLabel}: ${paths.json}`);
+    if (persistence.markdown !== null)
+      console.log(`${configuration.summaryLabel}: ${paths.markdown}`);
     process.exitCode = persistence.finalReport.passed ? 0 : 1;
+    return persistence.finalReport;
   } finally {
     await rm(profileRoot, { force: true, recursive: true });
-    await stopLocalServer(server);
+    await target.stop();
   }
 }
 
@@ -883,106 +974,6 @@ function summarizeP95Repeatability(
       });
 }
 
-async function inspectEnvironment(
-  executablePath: string,
-  profilePath: string,
-  chromePin: ChromePin,
-  machineId: string,
-  tier: QualityTier,
-  baseUrl: string,
-): Promise<EnvironmentIdentity> {
-  const executableSha256 = await validateChromeExecutable(chromePin, executablePath);
-  let machine: MachineDescriptor | null = null;
-  let machineDescriptorFailure: string | null = null;
-  try {
-    machine = await loadMachineDescriptor(machineRoot, machineId);
-  } catch (error) {
-    machineDescriptorFailure = `Machine descriptor unavailable: ${errorMessage(error)}`;
-  }
-  const hostResultPromise = tryReadWindowsHostIdentity();
-  const context = await launchAfterPhysicalConsoleDisplayWake(() =>
-    launchPersistentChrome(executablePath, profilePath, ["--enable-webgpu-developer-features"]),
-  );
-  let session: CDPSession | null = null;
-  try {
-    const browser = context.browser();
-    if (browser === null) throw new Error("Playwright did not expose the launched browser");
-    session = await browser.newBrowserCDPSession();
-    const version = (await session.send("Browser.getVersion")) as {
-      product: string;
-      revision: string;
-      jsVersion: string;
-      userAgent: string;
-    };
-    const actualVersion = version.product.replace(/^Chrome\//, "");
-    if (actualVersion !== chromePin.version) {
-      throw new Error(
-        `Chrome for Testing version mismatch: expected ${chromePin.version}, received ${actualVersion}`,
-      );
-    }
-    const systemInfo = (await session.send("SystemInfo.getInfo")) as {
-      gpu: { devices: readonly CdpGpuDevice[] };
-    };
-    const browserCommandLine = await readChromeCommandLine(context);
-    const sandboxVerified = validateChromeSandboxCommandLine(browserCommandLine);
-    const primaryGpu = systemInfo.gpu.devices[0];
-    if (primaryGpu === undefined) throw new Error("CDP did not report a primary GPU");
-    const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(`${baseUrl}/__parallax/identity`, { waitUntil: "load" });
-    const adapterResult = await tryProbe("WebGPU adapter identity", () =>
-      readWebGpuAdapterIdentity(page),
-    );
-    const browserDisplayResult = await tryProbe("Browser display identity", () =>
-      readBrowserDisplayIdentity(context, page),
-    );
-    const adapter = adapterResult.state === "measured" ? adapterResult.value : null;
-    const browserDisplay =
-      browserDisplayResult.state === "measured" ? browserDisplayResult.value : null;
-    const hostResult = await hostResultPromise;
-    const host = hostResult.state === "measured" ? hostResult.host : null;
-    const identityFailures = [
-      ...(machineDescriptorFailure === null ? [] : [machineDescriptorFailure]),
-      ...(hostResult.state === "invalid" ? [hostResult.reason] : []),
-      ...(adapterResult.state === "invalid" ? [adapterResult.reason] : []),
-      ...(browserDisplayResult.state === "invalid" ? [browserDisplayResult.reason] : []),
-    ];
-    const gateIdentity =
-      machine === null || host === null || adapter === null || browserDisplay === null
-        ? invalidEnvironmentGate(identityFailures)
-        : evaluateGateEnvironment(machine, {
-            adapter,
-            arch: process.arch,
-            browserDisplay,
-            host,
-            platform: process.platform,
-            primaryGpu,
-            requestedTier: tier,
-          });
-    return Object.freeze({
-      adapter,
-      browserDisplay,
-      browserCommandLine,
-      browserProduct: version.product,
-      browserRevision: version.revision,
-      browserUserAgent: version.userAgent,
-      executableSha256,
-      gateIdentity,
-      gpuDevices: systemInfo.gpu.devices,
-      host,
-      hostAfterRuns: null,
-      jsVersion: version.jsVersion,
-      machine,
-      machineId: machine?.id ?? machineId,
-      requestedTier: tier,
-      sandboxVerified,
-      targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
-    });
-  } finally {
-    await session?.detach().catch(() => undefined);
-    await context.close();
-  }
-}
-
 async function measureRun(
   executablePath: string,
   profilePath: string,
@@ -991,13 +982,15 @@ async function measureRun(
   profile: "fresh" | "warm",
   dawnBackend: string | null,
   tier: QualityTier,
-  heapWorkerUrls: ProbeResult<HeapWorkerUrls>,
+  heapWorkerTopology: ProbeResult<HeapWorkerTopologySource>,
   launchPosition: LaunchSequencePosition,
+  localServerMetricsAvailable: boolean,
+  browserLaunchMode: ChromeLaunchMode,
 ): Promise<RunMeasurement> {
   // Server-metric window: snapshot immediately before browser launch and again only
   // after the browser context is fully closed, so late requests from this browser
   // instance cannot bleed into the next run's delta.
-  const before = await fetchServerMetrics(baseUrl);
+  const before = localServerMetricsAvailable ? await fetchServerMetrics(baseUrl) : null;
   const measurement = await measureRunWithBrowser(
     executablePath,
     profilePath,
@@ -1006,13 +999,21 @@ async function measureRun(
     profile,
     dawnBackend,
     tier,
-    heapWorkerUrls,
+    heapWorkerTopology,
     launchPosition,
+    browserLaunchMode,
   );
-  const after = await fetchServerMetrics(baseUrl);
+  const after = localServerMetricsAvailable ? await fetchServerMetrics(baseUrl) : null;
   return Object.freeze({
     ...measurement,
-    http: measured(subtractServerMetrics(after, before)),
+    http:
+      before === null || after === null
+        ? Object.freeze({
+            reason:
+              "Production nginx exposes no harness-only request-counter endpoint; target serving headers and conditional responses are verified separately in environment identity",
+            state: "not-applicable" as const,
+          })
+        : measured(subtractServerMetrics(after, before)),
   });
 }
 
@@ -1024,11 +1025,12 @@ async function measureRunWithBrowser(
   profile: "fresh" | "warm",
   dawnBackend: string | null,
   tier: QualityTier,
-  heapWorkerUrls: ProbeResult<HeapWorkerUrls>,
+  heapWorkerTopology: ProbeResult<HeapWorkerTopologySource>,
   launchPosition: LaunchSequencePosition,
+  browserLaunchMode: ChromeLaunchMode,
 ): Promise<Omit<RunMeasurement, "http">> {
   const context = await launchAfterPhysicalConsoleDisplayWake(() =>
-    launchPersistentChrome(executablePath, profilePath),
+    launchPersistentChrome(executablePath, profilePath, [], browserLaunchMode),
   );
   const page = context.pages()[0] ?? (await context.newPage());
   const errors: string[] = [];
@@ -1066,7 +1068,9 @@ async function measureRunWithBrowser(
     } else {
       smokeTraceFailure = traceStartResult.reason;
     }
-    await page.goto(baseUrl, { waitUntil: "load" });
+    const runtimeUrl = harnessRuntimeUrl(baseUrl);
+    await page.goto(runtimeUrl, { waitUntil: "load" });
+    assertHarnessNavigationUrl(page.url(), runtimeUrl, `smoke ${profile} repeat ${repeat}`);
     await page.waitForFunction(
       telemetryReady,
       {
@@ -1274,11 +1278,11 @@ async function measureRunWithBrowser(
     );
     const browserErrorsBeforeJsHeap = errors.length;
     let jsHeap: JsHeapMetric =
-      heapWorkerUrls.state === "measured"
-        ? await measureJsHeapMetric(context, page, heapWorkerUrls.value)
+      heapWorkerTopology.state === "measured"
+        ? await measureJsHeapMetric(context, page, heapWorkerTopology.value)
         : Object.freeze({
             evidence: null,
-            reason: heapWorkerUrls.reason,
+            reason: heapWorkerTopology.reason,
             state: "invalid",
           });
     const jsHeapBrowserErrors = errors.slice(browserErrorsBeforeJsHeap);
@@ -1301,6 +1305,7 @@ async function measureRunWithBrowser(
       throw new SmokeStreamingEvidenceError(streamingResult.failure);
     }
     const streaming = streamingResult.value;
+    const psoWarmup = resolvePsoWarmupEvidence(snapshot.render);
     return Object.freeze({
       budgetChecks: Object.freeze([
         ...(jsHeap.state === "measured"
@@ -1321,6 +1326,7 @@ async function measureRunWithBrowser(
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
       mainThreadLongTasksOver50Ms: measured(mainThreadLongTasks),
       profile,
+      psoWarmup,
       profileLineage: Object.freeze({
         history: profile === "fresh" ? (["fresh"] as const) : (["fresh", "warm"] as const),
         id: `lineage-${repeat}`,
@@ -1355,7 +1361,7 @@ async function measureRunWithBrowser(
 async function measureJsHeapSteadyStateWindow(
   context: BrowserContext,
   page: Page,
-  heapWorkerUrls: HeapWorkerUrls,
+  heapWorkerTopology: HeapWorkerTopologySource,
 ): Promise<JsHeapEvidence> {
   const browser = context.browser();
   if (browser === null) throw new Error("Playwright did not expose the launched browser");
@@ -1378,14 +1384,11 @@ async function measureJsHeapSteadyStateWindow(
       browserSession,
       pageSession,
       page.url(),
-      [
-        heapWorkerUrls.render,
-        heapWorkerUrls.streaming,
-        ...Array.from(
-          { length: topology.streaming.decodeWorkerCount },
-          () => heapWorkerUrls.decode,
-        ),
-      ],
+      resolveHeapWorkerTargetUrls({
+        baseUrl: heapWorkerTopology.baseUrl,
+        decodeWorkerCount: topology.streaming.decodeWorkerCount,
+        manifest: heapWorkerTopology.manifest,
+      }),
       SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
     );
     const start = await readTelemetry(page);
@@ -1420,10 +1423,10 @@ async function measureJsHeapSteadyStateWindow(
 async function measureJsHeapMetric(
   context: BrowserContext,
   page: Page,
-  heapWorkerUrls: HeapWorkerUrls,
+  heapWorkerTopology: HeapWorkerTopologySource,
 ): Promise<JsHeapMetric> {
   try {
-    return measured(await measureJsHeapSteadyStateWindow(context, page, heapWorkerUrls));
+    return measured(await measureJsHeapSteadyStateWindow(context, page, heapWorkerTopology));
   } catch (error) {
     return Object.freeze({
       evidence: error instanceof JsHeapValidationError ? error.evidence : null,
@@ -1442,6 +1445,7 @@ async function measureV8CodeCacheDiagnosticRun(
   buildArtifacts: readonly V8ScriptArtifact[],
   launchPosition: LaunchSequencePosition,
   completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
+  browserLaunchMode: ChromeLaunchMode,
 ): Promise<V8CodeCacheDiagnosticRun> {
   try {
     return await measureV8CodeCacheDiagnosticRunOnce(
@@ -1453,6 +1457,7 @@ async function measureV8CodeCacheDiagnosticRun(
       buildArtifacts,
       launchPosition,
       completedHistory,
+      browserLaunchMode,
     );
   } catch (error) {
     const reason = `V8 code-cache diagnostic launch failed: ${errorMessage(error)}`;
@@ -1498,9 +1503,10 @@ async function measureV8CodeCacheDiagnosticRunOnce(
   buildArtifacts: readonly V8ScriptArtifact[],
   launchPosition: LaunchSequencePosition,
   completedHistory: readonly V8CodeCacheDiagnosticRun["profile"][],
+  browserLaunchMode: ChromeLaunchMode,
 ): Promise<V8CodeCacheDiagnosticRun> {
   const context = await launchAfterPhysicalConsoleDisplayWake(() =>
-    launchPersistentChrome(executablePath, profilePath),
+    launchPersistentChrome(executablePath, profilePath, [], browserLaunchMode),
   );
   let trace: SmokeTraceCapture | null = null;
   let traceStartFailure: string | null = null;
@@ -1522,7 +1528,13 @@ async function measureV8CodeCacheDiagnosticRunOnce(
     } else {
       traceStartFailure = traceStartResult.reason;
     }
-    await page.goto(baseUrl, { waitUntil: "load" });
+    const runtimeUrl = harnessRuntimeUrl(baseUrl);
+    await page.goto(runtimeUrl, { waitUntil: "load" });
+    assertHarnessNavigationUrl(
+      page.url(),
+      runtimeUrl,
+      `smoke V8 code-cache ${profile} repeat ${repeat}`,
+    );
     await page.waitForFunction(
       telemetryReady,
       {
@@ -1978,6 +1990,33 @@ function invalidateEnvironment(
   });
 }
 
+function recordTargetPostflightSuccess(
+  environment: EnvironmentIdentity,
+  targetPostflight: Extract<HarnessTargetVerificationEvidence, { state: "verified" }>,
+): EnvironmentIdentity {
+  return Object.freeze({
+    ...environment,
+    targetPostflight,
+  });
+}
+
+function recordTargetPostflightFailure(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  return invalidateTargetEnvironment(
+    Object.freeze({ ...environment, targetPostflight: failedTargetEvidence(reason) }),
+    reason,
+  );
+}
+
+function invalidateTargetEnvironment(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  return invalidateEnvironment(environment, [reason]);
+}
+
 function jsonEquals(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -2127,6 +2166,13 @@ function formatReport(report: SmokeReport): string {
     const evidence = run.dawnPipeline.value;
     return `- ${run.profile} repeat ${run.repeat}: shader hits/misses ${evidence.shaderCache.hitCount}/${evidence.shaderCache.missCount}; graphics PSO ${formatDawnCachePath(evidence.pipelineCache.render)}; compute PSO ${formatDawnCachePath(evidence.pipelineCache.compute)}; gameplay-overlap pipeline/shader ${evidence.pipelineActivity.overlappingMeasurement}/${evidence.shaderCache.missesOverlappingMeasurement}`;
   });
+  const psoWarmupEvidence = report.runs.map((run) => {
+    if (run.psoWarmup.state !== "measured") {
+      return `- ${run.profile} repeat ${run.repeat}: ${run.psoWarmup.state} — ${run.psoWarmup.reason}`;
+    }
+    const evidence = run.psoWarmup.value;
+    return `- ${run.profile} repeat ${run.repeat}: ${evidence.state}; source ${evidence.source ?? "none"}; requested/compiled/deferred ${evidence.requestedCount}/${evidence.compiledCount}/${evidence.deferredCount}; registry hits/misses ${evidence.cacheHitCount}/${evidence.cacheMissCount}; failures ${evidence.failureCount}; total/max compile ${formatMilliseconds(evidence.totalDurationMs)}/${formatMilliseconds(evidence.maximumCompileDurationMs)}; trace ${evidence.traceSha256 ?? "none"}`;
+  });
   const gpuMemoryEvidence = report.runs.map((run) => {
     const metricSummary =
       run.gpuMemory.state === "measured"
@@ -2267,7 +2313,9 @@ function formatReport(report: SmokeReport): string {
     }),
   );
   const httpServingEvidence = report.runs.map((run) =>
-    formatHttpServingEvidence(run.profile, run.repeat, run.http.value),
+    run.http.state === "measured"
+      ? formatHttpServingEvidence(run.profile, run.repeat, run.http.value)
+      : `- ${run.profile} repeat ${run.repeat}: ${run.http.state} — ${run.http.reason}`,
   );
   const coreRunFailureLines =
     report.coreRunFailure === null
@@ -2319,14 +2367,18 @@ function formatReport(report: SmokeReport): string {
   const streamingVarianceEvidence = report.streamingCellLoadP95Variance.map((variance) =>
     variance.state === "measured"
       ? `- ${variance.profile}: measured absolute p95 range ${formatMilliseconds(variance.absoluteP95RangeMs)} (allowed ${formatMilliseconds(variance.allowedAbsoluteP95RangeMs)} = max(${(100 * SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toFixed(0)}% of the minimum, ${formatMilliseconds(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS)} floor)); relative range ${variance.relativeP95Range === null ? "unbounded at zero" : `${(100 * variance.relativeP95Range).toFixed(3)}%`}`
-      : `- ${variance.profile}: invalid — ${variance.reason}`,
+      : `- ${variance.profile}: diagnostic invalid (non-blocking) — ${variance.reason}`,
   );
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
     `Verdict: **${report.passed ? "PASS" : "FAIL"}**`,
-    `Artifact: \`${report.artifactDigest}\``,
+    `Build artifact: \`${report.artifactDigest}\``,
+    `Install release: \`${report.releaseDigest}\``,
     `Engine + render worker: **${formatBytes(report.build.engineAndRenderWorkerBytes)}** (${formatBytes(report.build.engineArtifact.bytes)} engine service + ${formatBytes(report.build.renderWorkerArtifact.bytes)} render worker)`,
+    `Serving target: **${report.environment.target.kind}** \`${report.environment.target.origin}\``,
+    `Target preflight: **${formatTargetVerificationEvidence(report.environment.targetPreflight)}**`,
+    `Target postflight: **${formatTargetVerificationEvidence(report.environment.targetPostflight)}**`,
     `Chrome: \`${report.environment.browserProduct}\``,
     `Harness runtime: \`${report.harnessRuntime.nodeVersion}\` (executable SHA-256 \`${report.harnessRuntime.nodeExecutableSha256}\`)`,
     `Sandbox: **${report.environment.sandboxVerified ? "verified" : "invalid"}**`,
@@ -2361,13 +2413,17 @@ function formatReport(report: SmokeReport): string {
     "",
     ...streamingEvidence,
     "",
-    "## D1 streaming repeatability",
+    "## D1 streaming repeatability diagnostic (informational)",
     "",
     ...streamingVarianceEvidence,
     "",
     "## Dawn pipeline/cache evidence",
     "",
     ...dawnEvidence,
+    "",
+    "## PSO warmup trace replay",
+    "",
+    ...psoWarmupEvidence,
     "",
     "## GPU memory observability",
     "",

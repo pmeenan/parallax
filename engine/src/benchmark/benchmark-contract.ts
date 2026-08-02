@@ -3,8 +3,8 @@ import type { FlythroughTelemetrySnapshot } from "../flythrough/flythrough-servi
 import type { RenderDistributionTelemetry } from "../render/render-protocol";
 import type { RenderPixelSize } from "../render/render-service";
 
-export const BENCHMARK_RESULT_SCHEMA_VERSION = 3;
-export const BENCHMARK_TELEMETRY_SCHEMA_VERSION = 2;
+export const BENCHMARK_RESULT_SCHEMA_VERSION = 6;
+export const BENCHMARK_TELEMETRY_SCHEMA_VERSION = 5;
 export const BENCHMARK_RESULT_CONTRACT = "benchmark-result@1";
 export const BENCHMARK_REPEAT_RELATIVE_RANGE_LIMIT = 0.1;
 
@@ -86,6 +86,7 @@ export interface BenchmarkEnvironmentIdentity {
   readonly hostIdentity: BenchmarkMetric<never>;
   readonly powerAndSessionState: BenchmarkMetric<never>;
   readonly referenceEligibility: BenchmarkMetric<true>;
+  readonly releaseDigest: BenchmarkMetric<string>;
   readonly screen: BenchmarkScreenIdentity;
 }
 
@@ -149,6 +150,7 @@ export interface BenchmarkReport {
     readonly id: "fixed-worker-render-pixels@1";
   }>;
   readonly environmentCaptures: readonly BenchmarkEnvironmentIdentity[];
+  readonly releaseDigest: BenchmarkMetric<string>;
   readonly facets: Readonly<{
     readonly budgetEvaluation: BenchmarkFacet;
     readonly referenceEligibility: BenchmarkFacet;

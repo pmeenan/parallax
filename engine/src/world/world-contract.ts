@@ -164,6 +164,46 @@ function assertUnique(id: string, ids: Set<string>, label: string): void {
   ids.add(id);
 }
 
+export function parseGreyboxMaterials(input: unknown): readonly GreyboxMaterial[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    throw new Error("Greybox district requires materials");
+  }
+  const materialIds = new Set<string>();
+  const materials = input.map((candidate, index): GreyboxMaterial => {
+    if (
+      typeof candidate !== "object" ||
+      candidate === null ||
+      Array.isArray(candidate) ||
+      Object.keys(candidate).sort().join(",") !== "color,id"
+    ) {
+      throw new Error(`material ${index} requires exact color and id keys`);
+    }
+    const material = candidate as Record<string, unknown>;
+    if (typeof material.id !== "string" || material.id.trim() === "") {
+      throw new Error("material id must not be empty");
+    }
+    assertUnique(material.id, materialIds, "material");
+    if (
+      !Array.isArray(material.color) ||
+      material.color.length !== 3 ||
+      material.color.some(
+        (component) =>
+          typeof component !== "number" ||
+          !Number.isFinite(component) ||
+          component < 0 ||
+          component > 1,
+      )
+    ) {
+      throw new Error(`material ${material.id} color must be a normalized finite vec3`);
+    }
+    return Object.freeze({
+      color: Object.freeze([...material.color]) as readonly [number, number, number],
+      id: material.id,
+    });
+  });
+  return Object.freeze(materials);
+}
+
 export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorldValidationSummary {
   if (district.schemaVersion !== 1) throw new Error("Unsupported greybox district schema");
   if (district.units !== "meters") throw new Error("Greybox district units must be meters");
@@ -195,15 +235,7 @@ export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorld
     throw new Error("Greybox district bounds must have positive extents");
   }
 
-  const materialIds = new Set<string>();
-  for (const material of district.materials) {
-    assertUnique(material.id, materialIds, "material");
-    validateVec3(material.color, `material ${material.id} color`);
-    if (material.color.some((component) => component < 0 || component > 1)) {
-      throw new Error(`material ${material.id} color must be normalized`);
-    }
-  }
-  if (materialIds.size === 0) throw new Error("Greybox district requires materials");
+  const materialIds = new Set(parseGreyboxMaterials(district.materials).map(({ id }) => id));
 
   const cellIds = new Set<string>();
   const cellCoordinates = new Set<string>();

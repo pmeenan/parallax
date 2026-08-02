@@ -55,6 +55,7 @@ import {
 import { parseQualityTier, QUALITY_TIER_PROFILES } from "./runs/smoke.js";
 import { createLocalServer, listenLocalServer, stopLocalServer } from "./server.js";
 import { readSourceIdentity, type SourceIdentity } from "./source-identity.js";
+import { harnessRuntimeUrl } from "./target.js";
 import { readTelemetry } from "./telemetry.js";
 import { errorMessage } from "./value-utils.js";
 
@@ -117,6 +118,7 @@ interface AppOwnedLlmSpikeReport {
     readonly coldInstall: AppOwnedLlmSpikeTelemetrySnapshot | null;
     readonly warmRestart: AppOwnedLlmSpikeTelemetrySnapshot | null;
   }>;
+  readonly releaseDigest: string;
   readonly generationWindowRenderCallbacks: Readonly<{
     readonly coldInstall: AppOwnedLlmRuntimeCollectors;
     readonly warmRestart: AppOwnedLlmRuntimeCollectors;
@@ -253,7 +255,7 @@ async function runAppOwnedLlmSpike(
     await stopLocalServer(server);
   }
 
-  await validatePostRunIdentity(build.artifactDigest, source, errors);
+  await validatePostRunIdentity(build.artifactDigest, build.releaseDigest, source, errors);
   const metrics = evaluateAppOwnedLlmRun({
     cold: cold.telemetry,
     generationFrames: warm.collectors.frames,
@@ -262,6 +264,7 @@ async function runAppOwnedLlmSpike(
   if (warm.collectors.failureMessage !== null) errors.push(warm.collectors.failureMessage);
   const report = createReport(
     build.artifactDigest,
+    build.releaseDigest,
     environment,
     errors,
     metrics,
@@ -309,7 +312,7 @@ async function runPhase(
     page.on("console", (message) => {
       if (message.type() === "error") errors.push(`${input.phase}: ${message.text()}`);
     });
-    const pageUrl = new URL(input.baseUrl);
+    const pageUrl = new URL(harnessRuntimeUrl(input.baseUrl));
     pageUrl.searchParams.set("appOwnedLlmSpike", fixtureOrder);
     pageUrl.searchParams.set("appOwnedLlmDevice", inferenceDevice);
     if (input.modelUrl !== undefined) {
@@ -525,6 +528,7 @@ function readGenerationWindowCollector(page: Page): Promise<AppOwnedLlmRuntimeCo
 
 function createReport(
   artifactDigest: string,
+  releaseDigest: string,
   environment: AppOwnedLlmEnvironmentIdentity,
   errors: readonly string[],
   metrics: AppOwnedLlmRunMetrics,
@@ -547,6 +551,7 @@ function createReport(
       telemetryCompleted,
     }),
     rawTelemetry: Object.freeze({ coldInstall: cold.telemetry, warmRestart: warm.telemetry }),
+    releaseDigest,
     generationWindowRenderCallbacks: Object.freeze({
       coldInstall: cold.collectors,
       warmRestart: warm.collectors,
@@ -609,11 +614,13 @@ export function createEnvironmentIdentity(
 
 async function validatePostRunIdentity(
   artifactDigest: string,
+  releaseDigest: string,
   source: SourceIdentity,
   errors: string[],
 ): Promise<void> {
   try {
-    if ((await readAndValidateBuildManifest(buildRoot)).artifactDigest !== artifactDigest) {
+    const build = await readAndValidateBuildManifest(buildRoot);
+    if (build.artifactDigest !== artifactDigest || build.releaseDigest !== releaseDigest) {
       errors.push("Built artifact identity changed during the app-owned LLM spike run");
     }
   } catch (error: unknown) {
@@ -686,6 +693,8 @@ function formatReport(report: AppOwnedLlmSpikeReport): string {
     `# ${APP_OWNED_LLM_SPIKE_SCENARIO}`,
     "",
     `- Result: **${report.passed ? "PASS" : "FAIL"}**`,
+    `- Build artifact: ${report.artifactDigest}`,
+    `- Install release: ${report.releaseDigest}`,
     `- Machine / tier: ${report.environment.machineId} / ${report.environment.qualityTier}`,
     `- Environment gate: ${report.environment.gate.state}`,
     `- Chrome: ${report.environment.browser?.version ?? "not measured"}; pinned CfT digest ${report.environment.browser?.executableSha256 ?? "not measured"}; production sandbox ${report.environment.browser?.sandboxed === true ? "verified" : "not measured"}`,

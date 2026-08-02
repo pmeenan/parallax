@@ -56,6 +56,7 @@ import {
   measuredJsHeap,
 } from "./flythrough-run-result.js";
 import { requireValidFlythroughTraceCompletion } from "./flythrough-trace-policy.js";
+import { resolveHeapWorkerTargetUrls } from "./heap-worker-topology.js";
 import {
   type JsHeapEvidence,
   type JsHeapMetric,
@@ -91,9 +92,21 @@ import {
   FLYTHROUGH_D1_WARMUP_POLICY,
 } from "./runs/flythrough-d1.js";
 import { parseQualityTier, QUALITY_TIER_PROFILES, SMOKE_TRACE_QUIESCE_MS } from "./runs/smoke.js";
-import { createLocalServer, listenLocalServer, stopLocalServer } from "./server.js";
 import { readSourceIdentity } from "./source-identity.js";
 import { requireStreamingEvidence, type StreamingEvidence } from "./streaming-evidence.js";
+import {
+  assertHarnessNavigationUrl,
+  captureTargetPostflight,
+  failedTargetEvidence,
+  formatTargetVerificationEvidence,
+  type HarnessTargetIdentity,
+  type HarnessTargetVerificationEvidence,
+  harnessRuntimeUrl,
+  parseHarnessTargetArguments,
+  reconcileTargetPostflight,
+  startHarnessTarget,
+  verifiedTargetEvidence,
+} from "./target.js";
 import { readTelemetry } from "./telemetry.js";
 import { errorMessage } from "./value-utils.js";
 
@@ -123,6 +136,9 @@ interface EnvironmentIdentity {
   readonly machineId: string;
   readonly requestedTier: QualityTier;
   readonly sandboxVerified: true;
+  readonly target: HarnessTargetIdentity;
+  readonly targetPostflight: HarnessTargetVerificationEvidence;
+  readonly targetPreflight: HarnessTargetVerificationEvidence;
   readonly targetDisplayMode: string;
 }
 
@@ -140,7 +156,8 @@ const machineRoot = join(repositoryRoot, "harness/machines");
 await main();
 
 async function main(): Promise<void> {
-  requireNoFlythroughD1Arguments(process.argv.slice(2));
+  const targetOptions = parseHarnessTargetArguments(process.argv.slice(2));
+  requireNoFlythroughD1Arguments(targetOptions.remainingArguments);
   const machineId = requiredEnvironment("PARALLAX_MACHINE_ID");
   const tier = parseQualityTier(process.env.PARALLAX_TIER);
   const chromePin = await loadChromePin(join(repositoryRoot, "harness/chrome/stable.json"));
@@ -155,13 +172,16 @@ async function main(): Promise<void> {
     nodeExecutableSha256: (await sha256File(process.execPath)).sha256,
     nodeVersion: process.version,
   });
-  const server = createLocalServer({ root: buildRoot });
-  const address = await listenLocalServer(server);
-  const baseUrl = `http://127.0.0.1:${address.port}`;
+  const target = await startHarnessTarget({
+    artifactDigest: build.artifactDigest,
+    buildManifest: build.manifest,
+    buildRoot,
+    request: targetOptions.request,
+  });
+  const baseUrl = target.baseUrl;
   const heapWorkerUrls = Object.freeze({
-    decode: new URL(workerArtifactPath(build.manifest, "decode"), `${baseUrl}/`).href,
-    render: new URL(workerArtifactPath(build.manifest, "render"), `${baseUrl}/`).href,
-    streaming: new URL(workerArtifactPath(build.manifest, "streaming"), `${baseUrl}/`).href,
+    baseUrl,
+    manifest: build.manifest,
   });
   const profileRoot = await mkdtemp(join(tmpdir(), "parallax-flythrough-d1-"));
   const attempts: FlythroughAttempt<FlythroughRun>[] = [];
@@ -172,7 +192,8 @@ async function main(): Promise<void> {
       chromePin,
       machineId,
       tier,
-      baseUrl,
+      target.probeUrl,
+      target.identity,
     );
     for (let repeat = 1; repeat <= FLYTHROUGH_D1_REPEATS; repeat += 1) {
       const attempt = await measureFlythroughAttempt(
@@ -196,6 +217,18 @@ async function main(): Promise<void> {
         ? null
         : `repeat ${invalidAttempt.repeat}: ${invalidAttempt.failureMessage ?? "unknown failure"}`;
     environment = await revalidateEnvironment(environment);
+    const targetPostflight = reconcileTargetPostflight(
+      environment.target,
+      await captureTargetPostflight(target.revalidate),
+    );
+    if (targetPostflight.state === "verified") {
+      environment = recordTargetPostflightSuccess(environment, targetPostflight);
+    } else {
+      environment = recordTargetPostflightFailure(
+        environment,
+        `Serving target postflight failed: ${targetPostflight.reason}`,
+      );
+    }
     const measuredEnvironmentFailures = measuredFlythroughEnvironmentFailures({
       attempts,
       chromePinVersion: chromePin.version,
@@ -284,6 +317,7 @@ async function main(): Promise<void> {
         passed: resultFacetsPassed(facets),
         postRunIdentity,
         reportPersistence,
+        releaseDigest: build.releaseDigest,
         repeats: FLYTHROUGH_D1_REPEATS,
         runFailure,
         scenario: FLYTHROUGH_D1_SCENARIO,
@@ -317,7 +351,7 @@ async function main(): Promise<void> {
     if (!persistence.finalReport.passed) process.exitCode = 1;
   } finally {
     await rm(profileRoot, { force: true, recursive: true });
-    await stopLocalServer(server);
+    await target.stop();
   }
 }
 
@@ -390,7 +424,9 @@ async function measureFlythroughResult(
         if (message.type() === "error") capture.browserErrors.push(message.text());
       });
       await installLongTaskObserver(page);
-      await page.goto(baseUrl, { waitUntil: "load" });
+      const runtimeUrl = harnessRuntimeUrl(baseUrl);
+      await page.goto(runtimeUrl, { waitUntil: "load" });
+      assertHarnessNavigationUrl(page.url(), runtimeUrl, `flythrough repeat ${repeat}`);
       await page.waitForFunction(
         (schemaVersion) => {
           const telemetry = Reflect.get(
@@ -541,9 +577,8 @@ async function measureFlythroughResult(
 }
 
 interface HeapWorkerUrls {
-  readonly decode: string;
-  readonly render: string;
-  readonly streaming: string;
+  readonly baseUrl: string;
+  readonly manifest: BuildManifest;
 }
 
 async function prepareFullWindowHeapCapture(
@@ -566,11 +601,11 @@ async function prepareFullWindowHeapCapture(
       browserSession,
       pageSession,
       page.url(),
-      [
-        workerUrls.render,
-        workerUrls.streaming,
-        ...Array.from({ length: topology.streaming.decodeWorkerCount }, () => workerUrls.decode),
-      ],
+      resolveHeapWorkerTargetUrls({
+        baseUrl: workerUrls.baseUrl,
+        decodeWorkerCount: topology.streaming.decodeWorkerCount,
+        manifest: workerUrls.manifest,
+      }),
       FLYTHROUGH_D1_JS_HEAP_SAMPLE_INTERVAL_MS,
     );
     return Object.freeze({
@@ -707,7 +742,8 @@ async function inspectEnvironment(
   chromePin: ChromePin,
   machineId: string,
   tier: QualityTier,
-  baseUrl: string,
+  probeUrl: string,
+  target: HarnessTargetIdentity,
 ): Promise<EnvironmentIdentity> {
   let machine: MachineDescriptor | null = null;
   let machineFailure: string | null = null;
@@ -743,7 +779,8 @@ async function inspectEnvironment(
     const primaryGpu = systemInfo.gpu.devices[0];
     if (primaryGpu === undefined) throw new Error("CDP did not report a primary GPU");
     const page = context.pages()[0] ?? (await context.newPage());
-    await page.goto(`${baseUrl}/__parallax/identity`, { waitUntil: "load" });
+    await page.goto(probeUrl, { waitUntil: "load" });
+    assertHarnessNavigationUrl(page.url(), probeUrl, "flythrough identity probe");
     let adapter: WebGpuAdapterIdentity | null = null;
     let adapterFailure: string | null = null;
     try {
@@ -797,6 +834,9 @@ async function inspectEnvironment(
       machineId: machine?.id ?? machineId,
       requestedTier: tier,
       sandboxVerified,
+      target,
+      targetPostflight: failedTargetEvidence("Serving target postflight has not run"),
+      targetPreflight: verifiedTargetEvidence(target),
       targetDisplayMode: QUALITY_TIER_PROFILES[tier].targetDisplayMode,
     });
   } finally {
@@ -955,6 +995,38 @@ async function revalidateEnvironment(
   });
 }
 
+function recordTargetPostflightSuccess(
+  environment: EnvironmentIdentity,
+  targetPostflight: Extract<HarnessTargetVerificationEvidence, { state: "verified" }>,
+): EnvironmentIdentity {
+  return Object.freeze({
+    ...environment,
+    targetPostflight,
+  });
+}
+
+function recordTargetPostflightFailure(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  return invalidateTargetEnvironment(
+    Object.freeze({ ...environment, targetPostflight: failedTargetEvidence(reason) }),
+    reason,
+  );
+}
+
+function invalidateTargetEnvironment(
+  environment: EnvironmentIdentity,
+  reason: string,
+): EnvironmentIdentity {
+  const failures =
+    environment.gateIdentity.state === "measured" ? [] : [...environment.gateIdentity.reasons];
+  return Object.freeze({
+    ...environment,
+    gateIdentity: invalidEnvironmentGate([...failures, reason]),
+  });
+}
+
 function collectP95Variance(runs: readonly FlythroughRun[]): readonly P95VarianceEvidence[] {
   return Object.freeze([
     varianceEvidence(
@@ -1084,8 +1156,10 @@ function formatReport(
     attempts: readonly FlythroughAttempt<FlythroughRun>[];
     budgetCoverage: ReturnType<typeof flythroughBudgetCoverage>;
     evidenceFailures: readonly string[];
+    environment: EnvironmentIdentity;
     facets: ResultFacets;
     passed: boolean;
+    releaseDigest: string;
     scenario: string;
   }>,
 ): string {
@@ -1096,7 +1170,11 @@ function formatReport(
     `# ${report.scenario} regression report`,
     "",
     `- Result: **${report.passed ? "PASS" : "FAIL"}**`,
-    `- Artifact: \`${report.artifactDigest}\``,
+    `- Build artifact: \`${report.artifactDigest}\``,
+    `- Install release: \`${report.releaseDigest}\``,
+    `- Serving target: **${report.environment.target.kind}** \`${report.environment.target.origin}\``,
+    `- Target preflight: **${formatTargetVerificationEvidence(report.environment.targetPreflight)}**`,
+    `- Target postflight: **${formatTargetVerificationEvidence(report.environment.targetPostflight)}**`,
     `- Completed repeats: ${runs.length}/${FLYTHROUGH_D1_REPEATS}`,
     `- Started attempts: ${report.attempts.length}/${FLYTHROUGH_D1_REPEATS}`,
     `- Environment facet: **${report.facets.environment.status}**`,
@@ -1118,9 +1196,9 @@ function formatReport(
           3,
         )}, decode wait ${run.streaming.cellLoadAttributionP95.decodeWaitMs.toFixed(
           3,
-        )}, upload wait ${run.streaming.cellLoadAttributionP95.renderUploadWaitMs.toFixed(
+        )}, transaction wait ${run.streaming.cellLoadAttributionP95.renderTransactionWaitMs.toFixed(
           3,
-        )}, commit round trip ${run.streaming.cellLoadAttributionP95.renderCommitRoundTripMs.toFixed(
+        )}, transaction round trip ${run.streaming.cellLoadAttributionP95.renderTransactionRoundTripMs.toFixed(
           3,
         )}, worker remainder ${run.streaming.cellLoadAttributionP95.streamingWorkerRemainderMs.toFixed(
           3,
@@ -1175,15 +1253,4 @@ async function readExpectedNodeVersion(root: string): Promise<string> {
     );
   }
   return nvmVersion;
-}
-
-function workerArtifactPath(
-  manifest: BuildManifest,
-  role: "decode" | "render" | "streaming",
-): string {
-  const entrypoint = manifest.workerEntrypoints.find((candidate) => candidate.role === role);
-  if (entrypoint === undefined) {
-    throw new Error(`Build manifest omitted the ${role} worker entrypoint`);
-  }
-  return entrypoint.path;
 }

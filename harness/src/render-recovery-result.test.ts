@@ -1,3 +1,7 @@
+import {
+  idleInstallerTransferTelemetrySnapshot,
+  unavailableInstallStoreTelemetrySnapshot,
+} from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import {
   renderRecoveryEnvironmentMatchesReference,
@@ -37,6 +41,53 @@ describe("render-recovery result schema", () => {
         },
       }),
     ).not.toThrow();
+  });
+
+  it("rejects a passing environment facet when target postflight failed", () => {
+    const value = invalidReport();
+    const { actual, pin, reference } = eligibleEnvironment();
+    expect(() =>
+      validateRenderRecoveryReportContract({
+        ...value,
+        attempts: value.attempts.map((attempt) => ({ ...attempt, environment: actual })),
+        chromePin: {
+          ...value.chromePin,
+          executableSha256: pin.executableSha256,
+          version: pin.version,
+        },
+        environment: {
+          ...value.environment,
+          ...reference,
+          gateIdentity: { state: "measured", value: true },
+          machineId: "dev-01",
+          targetPostflight: { reason: "postflight timed out", state: "failed" },
+        },
+        facets: {
+          ...value.facets,
+          environment: { reasons: [], status: "passed" },
+        },
+      }),
+    ).toThrow(/facets contradict/);
+  });
+
+  it("rejects a verified postflight identity that validly drifted from preflight", () => {
+    const value = invalidReport();
+    const driftedTarget = {
+      ...value.environment.target,
+      servingContract: {
+        ...value.environment.target.servingContract,
+        documentCacheControl: "no-cache, must-revalidate",
+      },
+    };
+    expect(() =>
+      validateRenderRecoveryReportContract({
+        ...value,
+        environment: {
+          ...value.environment,
+          targetPostflight: { identity: driftedTarget, state: "verified" },
+        },
+      }),
+    ).toThrow(/target evidence is contradictory/);
   });
 
   it.each([
@@ -998,6 +1049,7 @@ function eligibleEnvironment() {
 }
 
 function invalidReport() {
+  const target = recoveryTargetIdentity();
   return {
     artifactDigest: "a".repeat(64),
     attempts: RENDER_RECOVERY_ATTEMPTS.map(({ id }) => ({
@@ -1041,6 +1093,9 @@ function invalidReport() {
       machineId: "dev-01",
       requestedTier: "showcase",
       sandboxVerified: true,
+      target,
+      targetPostflight: { identity: target, state: "verified" },
+      targetPreflight: { identity: target, state: "verified" },
       targetDisplayMode: "1920x1080@60",
     },
     facets: {
@@ -1061,13 +1116,51 @@ function invalidReport() {
     },
     mandatoryMetricSet: {
       metrics: RENDER_RECOVERY_MANDATORY_METRICS,
-      version: 3,
+      version: 5,
     },
     passed: false,
+    releaseDigest: "b".repeat(64),
     runFailure: null,
     scenario: "render-recovery@1",
-    schemaVersion: 11,
+    schemaVersion: 26,
     source: { commit: "b".repeat(40), dirtyTreeDigest: null },
+  };
+}
+
+function recoveryTargetIdentity() {
+  return {
+    artifactDigest: "a".repeat(64),
+    artifactDigestVerified: true as const,
+    releaseDigest: "b".repeat(64),
+    releaseDigestVerified: true as const,
+    kind: "local" as const,
+    localServerStarted: true,
+    origin: "http://127.0.0.1:4173",
+    servingContract: {
+      artifactBytes: 100,
+      artifactCount: 4,
+      conditionalArtifactCount: 4,
+      documentCacheControl: "no-cache",
+      documentConditionalStatus: 304 as const,
+      documentMimeType: "text/html; charset=utf-8",
+      documentStatus: 200 as const,
+      isolation: "coop-coep" as const,
+      manifestCacheControl: "no-cache",
+      manifestConditionalStatus: 304 as const,
+      manifestStatus: 200 as const,
+      nosniff: true as const,
+      representations: [
+        { bytes: 25, count: 1, mimeTypes: ["text/html"], representation: "html" as const },
+        {
+          bytes: 25,
+          count: 1,
+          mimeTypes: ["application/javascript"],
+          representation: "javascript" as const,
+        },
+        { bytes: 25, count: 1, mimeTypes: ["application/json"], representation: "json" as const },
+        { bytes: 25, count: 1, mimeTypes: ["application/wasm"], representation: "wasm" as const },
+      ],
+    },
   };
 }
 
@@ -1108,6 +1201,7 @@ function needsRecoveryBaseline(latestTelemetry: unknown): boolean {
 function initialLatestTelemetry() {
   return {
     appOwnedLlmSpike: {},
+    benchmark: {},
     flythrough: {
       checkpointEvidence: [],
       failureMessage: null,
@@ -1121,6 +1215,20 @@ function initialLatestTelemetry() {
       validation: {},
     },
     identity: {},
+    installedModelSource: {
+      expectedArtifactBytes: 2_620_371_552,
+      expectedArtifactCount: 5,
+      failureMessage: null,
+      networkFallbackCount: 0,
+      releaseDigest: null,
+      resolvedArtifactBytes: 0,
+      resolvedArtifactCount: 0,
+      schemaVersion: 1,
+      state: "unavailable",
+    },
+    installStore: unavailableInstallStoreTelemetrySnapshot(),
+    installerTransfer: idleInstallerTransferTelemetrySnapshot(),
+    offlineShell: unavailableOfflineShell(),
     render: {
       decoderBootstrap: null,
       decoderFixtures: null,
@@ -1164,9 +1272,34 @@ function initialLatestTelemetry() {
       workerInitToFirstFrameMs: null,
       workerStartupToFirstFrameMs: null,
     },
-    schemaVersion: 25,
+    schemaVersion: 38,
     streaming: initialStreaming(),
     wasmThreadSpike: {},
+  };
+}
+
+function unavailableOfflineShell() {
+  return {
+    activateCount: 0,
+    activeArtifactDigest: null,
+    activeGenerationId: null,
+    activeReleaseDigest: null,
+    cacheHitCount: 0,
+    cacheMissCount: 0,
+    candidateGenerationId: null,
+    failureCode: null,
+    failureCount: 0,
+    failureMessage: null,
+    mixedGenerationCount: 0,
+    prepareCount: 0,
+    previousGenerationId: null,
+    rollbackCount: 0,
+    schemaVersion: 2,
+    state: "unavailable",
+    verifiedBytes: 0,
+    verifyCount: 0,
+    verifyDurationMs: 0,
+    verifyHighWaterMs: 0,
   };
 }
 
@@ -1182,6 +1315,10 @@ function initialStreaming() {
     failureMessage: null,
     flythroughObserverUpdateCount: 0,
     hardwareConcurrency: 0,
+    installedReleaseDigest: null,
+    installedResourceBytes: 0,
+    installedResourceCount: 0,
+    legacyNetworkRequestCount: 0,
     observerUpdateCount: 0,
     opfsAccessHandleCount: 0,
     opfsAccessHandleOpenDurationMs: 0,
@@ -1189,16 +1326,21 @@ function initialStreaming() {
     opfsProvisionedBytes: 0,
     proactiveEvictionCount: 0,
     renderRecoveryCount: 0,
+    renderBatchCellCountHighWater: 0,
+    renderBatchDirectUploadMsHighWater: 0,
+    renderBatchRequestCount: 0,
+    renderBatchTransactionCount: 0,
     residentCellCount: 0,
     residentCellIds: [],
     residentEncodedBytes: 0,
     residentEncodedBytesHighWater: 0,
     residentGpuBytes: 0,
     residentGpuBytesHighWater: 0,
-    schemaVersion: 7,
+    schemaVersion: 11,
     settledObserverUpdateCount: 0,
     settledRecoveryCheckpoint: null,
     state: "idle",
+    startupTiming: null,
     workerGeneration: 0,
   };
 }
@@ -1284,6 +1426,7 @@ function provisioningLatestTelemetry(hardwareConcurrency = 16, decodeWorkerCount
       opfsPackageCount: decodeWorkerCount === 0 ? 0 : 256,
       opfsProvisionedBytes: 1_024,
       state: "provisioning",
+      startupTiming: legacyStartupTiming(decodeWorkerCount > 0 ? "decode-pool" : "provisioning"),
     },
   };
 }
@@ -1301,6 +1444,7 @@ function recoveryProvisioningLatestTelemetry(decodeWorkerCount = 0) {
       opfsPackageCount: decodeWorkerCount === 0 ? 0 : 256,
       opfsProvisionedBytes: 1_024,
       state: "provisioning",
+      startupTiming: legacyStartupTiming(decodeWorkerCount > 0 ? "decode-pool" : "provisioning"),
     },
   };
 }
@@ -1328,6 +1472,7 @@ function streamingLatestTelemetry(
       decodeWorkerCount,
       encodedBytesRead: 9_000,
       hardwareConcurrency,
+      legacyNetworkRequestCount: 2,
       opfsAccessHandleCount: 256,
       opfsAccessHandleOpenDurationMs: 10,
       opfsPackageCount: 256,
@@ -1337,9 +1482,31 @@ function streamingLatestTelemetry(
       residentEncodedBytesHighWater: 9_000,
       residentGpuBytes: 18_000,
       residentGpuBytesHighWater: 18_000,
+      renderBatchCellCountHighWater: 9,
+      renderBatchDirectUploadMsHighWater: 1,
+      renderBatchRequestCount: 1,
+      renderBatchTransactionCount: 1,
       settledRecoveryCheckpoint: checkpoint,
       state: "streaming",
+      startupTiming: legacyStartupTiming("initial-residency"),
     },
+  };
+}
+
+function legacyStartupTiming(through: "provisioning" | "decode-pool" | "initial-residency") {
+  const throughDecodePool = through === "decode-pool" || through === "initial-residency";
+  return {
+    accessHandlesOpenedAtMs: throughDecodePool ? 4 : null,
+    contract: "streaming-startup-timing@1",
+    decodePoolCreatedAtMs: throughDecodePool ? 5 : null,
+    finalAdmissionCompletedAtMs: null,
+    initialResidencyReadyAtMs: through === "initial-residency" ? 6 : null,
+    provisioningStartedAtMs: 2,
+    releaseBindingCompletedAtMs: null,
+    releaseResolutionCompletedAtMs: throughDecodePool ? 3 : null,
+    schemaVersion: 1,
+    sourceKind: "privileged-legacy-network",
+    workerStartedAtMs: 1,
   };
 }
 
@@ -1596,11 +1763,13 @@ function beforeFaultBoundary() {
 
 function streamingCellLoadSample() {
   return {
+    batchDirectUploadMs: 1,
     batchCellCount: 1,
     batchCellOrdinal: 1,
     batchFlythroughObserverSequence: 1,
     batchObserverUpdateCount: 1,
     batchOrdinal: 2,
+    batchTransactionId: "1:2:1:1",
     cellId: "d1:0:0",
     decodeMs: 1,
     decodeRoundTripMs: 1,
@@ -1610,9 +1779,8 @@ function streamingCellLoadSample() {
     opfsAccessRoundTripMs: 1,
     opfsReadMs: 1,
     opfsWaitMs: 0,
-    renderCommitRoundTripMs: 1,
-    renderUploadRoundTripMs: 1,
-    renderUploadWaitMs: 0,
+    renderTransactionRoundTripMs: 1,
+    renderTransactionWaitMs: 0,
     sequence: 1,
     streamingWorkerRemainderMs: 1,
     totalMs: 5,

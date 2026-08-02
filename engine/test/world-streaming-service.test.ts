@@ -254,7 +254,10 @@ function snapshot(
 
 function startOptions() {
   return Object.freeze({
-    buildManifestUrl: "http://127.0.0.1/build-manifest.json",
+    contentSource: Object.freeze({
+      buildManifestUrl: "http://127.0.0.1/build-manifest.json",
+      kind: "privileged-legacy-network" as const,
+    }),
     districtId: "district-1-surface",
     initialObservers: Object.freeze([[0, 0, 0] as const]),
   });
