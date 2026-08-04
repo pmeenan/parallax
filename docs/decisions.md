@@ -3,9 +3,10 @@
 Newest first. Every entry: what was decided, why, and what would reopen it. Existing
 entries are never edited into a different decision — reversing or amending one gets a
 *new* entry that supersedes it (a status-line annotation on the old entry is fine).
-Entries that rest on claims about current technology state (API availability, browser
-support, tooling behavior) must be grounded in current sources or local experiments —
-not training knowledge — and note what was checked and when (root AGENTS.md rule 10).
+Entries are for expensive-to-reverse or silently-undoable choices, not routine
+implementation calls (D-155). When an entry hangs on a claim about current technology
+state (API availability, browser support, tooling behavior), check a current source or
+run a local experiment (root AGENTS.md rule 3).
 
 **Reading:** scan the D-NNN headings (or grep) and read only the entries your task
 touches. Full read is for structural or cross-cutting work.
@@ -24,6 +25,42 @@ Format:
 ## D-NNN: Title  (YYYY-MM-DD, status: accepted | proposed | superseded by D-MMM)
 Decision / Context / Consequences / Reopen if
 ```
+
+---
+
+## D-155: Process rightsized to MVP scale — one pass, human gate, reviews on demand (2026-08-04, accepted)
+
+**Decision:** The default unit of work is one agent implementing the task, running the
+repo checks (`pnpm check`, plus the one physical D-097 `pnpm harness:smoke` when the
+change qualifies), and handing the working tree to the human, who scans the note and
+diff and commits. The mandatory review pipeline — tech-lead adversarial pre-handoff
+review, reviewer-mode multi-agent fan-out with adversarial challenge, and
+fix-pass/verify-pass modes (D-026/D-027/D-030/D-049) — is removed. Reviews happen on
+demand: one agent, one pass over the whole uncommitted diff, hunting real defects
+(data loss/corruption, security, broken behavior) and fixing directly unless the human
+asked for a report only. Heavyweight review (multi-agent fan-out, adversarial
+challenge, fix/verify rounds) survives only as an owner-requested option for
+data-destroying or security-sensitive changes — the production deployer, OPFS
+install/uninstall deletion paths, and harness budget/evidence checks. Logging
+thresholds rise accordingly: decision entries only for expensive-to-reverse or
+silently-undoable choices; rough-edges entries when a quirk cost real debugging time;
+measurement/current-source grounding for the claims a decision actually hangs on
+(root rules 1–3 rewritten; old rules 3 and 10 merged; old 11/12 renumbered to 10/11).
+
+**Context:** Owner direction (2026-08-04): this is an MVP/PoC/demo with roughly one
+user, and the process was sized for production software. The same rightsizing was
+made in the owner's cve.meenan.dev repo and recorded there as its D-062.
+
+**Consequences:** Faster iteration; some defects reach the tree that the pipeline
+would have caught — accepted given the blast radius. Unchanged: the load-bearing
+constraints, the human commit gate (agents never commit), the D-097/D-145
+validation and physical-gate cadence, the production-deployment safety rules, the
+pinned-tool registry, and the closed-experiment rule. workflow.md's loop and its
+tech-lead, reviewer, fix-pass, and verify-pass sections are replaced by the lean
+build → commit loop with on-demand reviews.
+
+**Reopen if:** the project acquires real users or contributors, or regressions start
+costing more than reviews would.
 
 ---
 
@@ -8587,7 +8624,7 @@ enough.
 allocators with documented semantics, or OS/ETW tooling can attribute resident allocations to the
 page's WebGPU device across the D3D12 and Metal reference backends.
 
-## D-049: Task-sized work units; AI-led multi-agent review  (2026-07-14, accepted)
+## D-049: Task-sized work units; AI-led multi-agent review  (2026-07-14, accepted; multi-agent review structure retired by D-155 — task-sized units and the human gate stand)
 **Decision:** Two linked amendments to the D-026/D-027 operating models. (1) The
 tech-lead unit of work grows from a commit-sized slice to a **full plan.md task** by
 default — a full milestone when its tasks are tightly coupled. Work is no longer
@@ -9513,7 +9550,7 @@ scenario boundaries, aggregation, and export in-game before exposing benchmark m
 bootstrap is too error-prone, or the smoke scene needs an in-app measurement window to
 keep later D-025 manual and automated paths identical.
 
-## D-030: Findings handback runs in fix-pass and verify-pass modes  (2026-07-12, accepted)
+## D-030: Findings handback runs in fix-pass and verify-pass modes  (2026-07-12, accepted; modes retired by D-155)
 **Decision:** Two more kickoff prompts get encoded operating models in workflow.md,
 completing the review loop started by D-026/D-027. Handing an agent review results or
 findings ("here are the review findings — address them") invokes **fix-pass mode**: the
@@ -9599,7 +9636,7 @@ later D-020 level-2 gate.
 a required cache/code-cache experiment, or the assembled artifact contract cannot
 represent a new common/game-specific resource class without ambiguity.
 
-## D-027: Review passes run in reviewer mode  (2026-07-12, accepted; amended by D-049 — review is multi-agent)
+## D-027: Review passes run in reviewer mode  (2026-07-12, accepted; amended by D-049 — review is multi-agent; mode retired by D-155 — reviews are on-demand, one agent, one pass)
 **Decision:** A kickoff prompt asking for a review of current changes ("review the
 current changes") invokes the **reviewer operating model** in workflow.md: the unit
 under review is the entire uncommitted working tree (diff against last commit plus
@@ -9622,7 +9659,7 @@ mode's duty to address or rebut every finding.
 **Reopen if:** the handback loop proves slower than reviewers fixing in place — then
 define when a reviewer may fix directly (and how the implementing agent is informed).
 
-## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted; amended by D-049 — unit of work is task-sized, not commit-sized)
+## D-026: Milestone work runs in tech-lead mode  (2026-07-12, accepted; amended by D-049 — unit of work is task-sized, not commit-sized; operating model replaced by D-155's lean loop)
 **Decision:** A kickoff prompt naming a milestone ("start work on M0") invokes the
 **tech-lead operating model** defined in workflow.md: the lead agent scopes a
 commit-sized slice from plan.md in dependency order; delegates well-scoped pieces to

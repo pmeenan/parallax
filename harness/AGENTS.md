@@ -85,11 +85,11 @@ entry points are the binding contracts; consult
 results for triggers, exact schemas, identities, and accepted evidence. Do not infer a
 milestone gate or authorize a rerun from historical result prose.
 Closed D-133 installer-transfer calibration and qualification have no runner or package
-command. Later root rule 12 cleanup removed both validator/test pairs completely, leaving
+command. Later closed-experiment cleanup (root rule 11) removed both validator/test pairs completely, leaving
 only ignored retained results, reconstruction records, and documented hashes and
 conclusions.
 Closed D-138 offline-shell adapter and D-146 offline-fault lifecycle qualification also
-have no runner or package command. Later root rule 12 cleanup removed their qualifier-
+have no runner or package command. Later closed-experiment cleanup (root rule 11) removed their qualifier-
 only sources, tests, and routine source assertions while preserving generic result-pair,
 progress-liveness, diagnostic-redaction, and exact-range utilities used by active gates.
 

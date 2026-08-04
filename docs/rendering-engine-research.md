@@ -11,7 +11,7 @@ and supersedes the former `why-not-unity.md`
 **This is a living doc.** When updated information or a correction lands, the stale
 content is deleted, not struck through — git history is the archive (D-076). Every
 claim is sourced and dated; **re-verify before leaning on any of it in public**
-(root AGENTS.md rule 10). Per-section verification dates are noted inline.
+(root AGENTS.md rule 3). Per-section verification dates are noted inline.
 
 **The discipline that makes this doc usable:** it contains only *differentiators*
 and honestly-labeled weaknesses. Limits that are WebGPU spec limits bind every web

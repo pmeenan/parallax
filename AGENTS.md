@@ -64,8 +64,8 @@ updating the affected docs. Until that happens, the constraints below govern.
 
 ## Doc map — pull what the task needs, not everything
 
-Always read (it's short): [docs/workflow.md](docs/workflow.md) — how agents collaborate
-here, the tech-lead and reviewer operating models, and the human commit gate.
+Always read (it's short): [docs/workflow.md](docs/workflow.md) — the build → commit
+loop, on-demand reviews, and the human commit gate.
 
 Everything else is on demand. Each doc, and the questions it answers:
 
@@ -90,24 +90,29 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 ## Rules for all agents
 
-1. **Log decisions.** Any choice that a future agent could plausibly re-litigate
-   (technology, format, protocol, budget, naming) gets an entry in
-   [docs/decisions.md](docs/decisions.md) — including decisions to *not* do something.
-2. **Log platform findings.** Any browser bug, spec gap, surprising limit, performance
-   cliff, or missing capability goes in [docs/rough-edges.md](docs/rough-edges.md) with a
-   minimal reproduction or measurement. This is a primary project output — when in doubt,
-   log it.
-3. **Measure, don't assert.** Claims about performance ("this is faster", "this doesn't
-   hitch") must come from harness numbers, not reasoning. If the harness can't measure it
-   yet, extending the harness is part of the task.
+1. **Log decisions sparingly.** [docs/decisions.md](docs/decisions.md) is for choices
+   that are expensive to reverse or that a future agent might silently undo —
+   load-bearing constraints, published formats, storage layouts. Routine
+   implementation, naming, and scope calls don't get entries. A few entries per
+   milestone is the target, not per task.
+2. **Log findings that cost you.** A [docs/rough-edges.md](docs/rough-edges.md) entry
+   is warranted when a platform quirk burned real debugging time and will bite again;
+   skip the formal reproduction unless it's cheap to capture. (Findings produced
+   deliberately as goal-1 research output still carry their evidence — this threshold
+   is for quirks hit in passing.)
+3. **Measure what a decision hangs on.** When a design choice depends on a performance
+   number or a current platform capability, get a real harness number or check a
+   current source — an agent's training knowledge about fast-moving browser APIs is
+   presumed stale, and a measurement beats a search result. When a source and local
+   behavior disagree, trust the local behavior. Everything else: ship it and see.
 4. **Keep layers clean.** `game/` code never touches platform APIs directly — it goes
    through `engine/` interfaces. `engine/` code contains no game rules or content.
    Assets enter the library only through the QA gate in `assets/`.
 5. **Everything observable.** New systems ship with instrumentation (timings, memory
    counters, cache hit/miss) exposed to the harness from day one, not retrofitted.
-6. **Update docs in the same change.** If your work changes architecture, budgets, plan
-   status, or feature status, update the relevant doc as part of the same unit of work —
-   docs and code land together for human review.
+6. **Fix the docs the change makes wrong** — plan status, status paragraph, affected
+   doc — in the same unit of work, so docs and code land together for human review;
+   nothing more is owed.
 7. **TypeScript strict mode everywhere; no `any` without a comment stating why.** WGSL
    and Rust conventions live in `engine/AGENTS.md`.
 8. **Never commit.** Agents never run `git commit` (or `git push`, or anything that
@@ -118,21 +123,12 @@ the engine decision and assume Unity). Never cite them as a source of truth.
    conversation; every line added here costs every future agent. Detail belongs in
    `docs/` behind the doc map, not here. The same discipline applies to the
    per-directory `AGENTS.md` files.
-10. **Ground technology claims in current sources, not training knowledge.** This
-    project lives on APIs, browser features, and tooling that change monthly — an
-    agent's built-in knowledge about them should be presumed stale. Before making or
-    citing a claim about what an API/library/browser supports (in a decision, an
-    architecture choice, or a rough-edges write-up), verify against current
-    documentation via web search — or better, against a local experiment (root rule 3;
-    a measurement beats a search result). Decision-log entries that rest on
-    technology-state claims cite what was checked and when. When search and local
-    behavior disagree, trust the local behavior and log the discrepancy.
-11. **Reuse the machine-local tool registry.** Before searching for or downloading a
+10. **Reuse the machine-local tool registry.** Before searching for or downloading a
     pinned tool, read `.parallax-toolchain.local.json` when present, verify the recorded
     path/version, and update it after installing or moving a pinned tool. It is ignored
     machine state, never the source of truth for pins; see
     [docs/workflow.md](docs/workflow.md#machine-local-pinned-tool-registry).
-12. **Remove closed-experiment baggage.** Once a decision is recorded and no active
+11. **Remove closed-experiment baggage.** Once a decision is recorded and no active
     plan item or recurring gate consumes an experiment, delete its code, dependencies,
     build outputs, tests, and routine checks. Keep the evidence in decisions, findings,
     results, and git history; see
