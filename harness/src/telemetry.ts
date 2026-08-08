@@ -5,6 +5,8 @@ import {
   OFFLINE_SHELL_TELEMETRY_SCHEMA_VERSION,
   type ParallaxTelemetryExport,
   type ParallaxTelemetrySnapshot,
+  SIMULATION_TELEMETRY_SCHEMA_VERSION,
+  simulationSnapshotBufferBytes,
   TELEMETRY_GLOBAL_NAME,
 } from "@parallax/engine";
 import type { Page } from "playwright-core";
@@ -19,9 +21,90 @@ export async function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapsh
   validateInstallerSnapshotTelemetry(snapshot);
   validateInstalledModelSourceTelemetry(snapshot.installedModelSource);
   validateOfflineShellTelemetry(snapshot.offlineShell);
+  validateSimulationTelemetry(snapshot.simulation);
   validatePsoWarmupRenderTelemetryRelationship(snapshot.render);
   validateInstallerTelemetrySelection(snapshot);
   return snapshot;
+}
+
+export function validateSimulationTelemetry(
+  input: unknown,
+): asserts input is ParallaxTelemetrySnapshot["simulation"] {
+  const keys = [
+    "appliedCommandCount",
+    "droppedCatchUpTickCount",
+    "emittedEventCount",
+    "failureMessage",
+    "latestStateHash",
+    "loadCount",
+    "queuedCommandCount",
+    "queuedCommandCountHighWater",
+    "rejectedCommandCount",
+    "saveCount",
+    "schedulerLagHighWaterMs",
+    "schemaVersion",
+    "snapshotCount",
+    "snapshotEntityCapacity",
+    "snapshotSharedBytes",
+    "state",
+    "stepDurationHighWaterMs",
+    "tick",
+    "timestepHz",
+    "workerGeneration",
+  ].sort();
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new Error("simulation telemetry has an unsupported identity");
+  }
+  const telemetry = input as ParallaxTelemetrySnapshot["simulation"];
+  if (
+    JSON.stringify(Object.keys(telemetry).sort()) !== JSON.stringify(keys) ||
+    telemetry.schemaVersion !== SIMULATION_TELEMETRY_SCHEMA_VERSION ||
+    !["disposed", "failed", "idle", "running", "starting"].includes(telemetry.state)
+  ) {
+    throw new Error("simulation telemetry has an unsupported identity");
+  }
+  for (const counter of [
+    telemetry.appliedCommandCount,
+    telemetry.droppedCatchUpTickCount,
+    telemetry.emittedEventCount,
+    telemetry.loadCount,
+    telemetry.queuedCommandCount,
+    telemetry.queuedCommandCountHighWater,
+    telemetry.rejectedCommandCount,
+    telemetry.saveCount,
+    telemetry.snapshotCount,
+    telemetry.snapshotEntityCapacity,
+    telemetry.snapshotSharedBytes,
+    telemetry.tick,
+    telemetry.timestepHz,
+    telemetry.workerGeneration,
+  ]) {
+    if (!Number.isSafeInteger(counter) || counter < 0) {
+      throw new Error("simulation telemetry has an invalid counter");
+    }
+  }
+  if (
+    !Number.isFinite(telemetry.schedulerLagHighWaterMs) ||
+    telemetry.schedulerLagHighWaterMs < 0 ||
+    !Number.isFinite(telemetry.stepDurationHighWaterMs) ||
+    telemetry.stepDurationHighWaterMs < 0 ||
+    telemetry.queuedCommandCount > telemetry.queuedCommandCountHighWater ||
+    (telemetry.snapshotEntityCapacity > 0 &&
+      telemetry.snapshotSharedBytes !==
+        simulationSnapshotBufferBytes(telemetry.snapshotEntityCapacity)) ||
+    (telemetry.latestStateHash !== null && !/^[a-f0-9]{64}$/.test(telemetry.latestStateHash)) ||
+    (telemetry.failureMessage !== null && telemetry.failureMessage === "") ||
+    (telemetry.state === "failed") !== (telemetry.failureMessage !== null) ||
+    (telemetry.state === "running" &&
+      (telemetry.timestepHz === 0 ||
+        telemetry.workerGeneration === 0 ||
+        telemetry.snapshotEntityCapacity === 0 ||
+        telemetry.snapshotSharedBytes === 0 ||
+        telemetry.snapshotCount === 0 ||
+        telemetry.latestStateHash === null))
+  ) {
+    throw new Error("simulation telemetry values are inconsistent");
+  }
 }
 
 export function validateOfflineShellTelemetry(

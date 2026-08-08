@@ -39,7 +39,7 @@ export interface InstallerBuildManifest {
   readonly schemaVersion: typeof INSTALLER_BUILD_MANIFEST_SCHEMA_VERSION;
   readonly workerEntrypoints: readonly Readonly<{
     readonly path: string;
-    readonly role: "decode" | "installer" | "render" | "streaming" | "wasm-thread";
+    readonly role: "decode" | "installer" | "render" | "sim" | "streaming" | "wasm-thread";
     readonly targetType: "worker";
   }>[];
 }
@@ -71,6 +71,7 @@ const WORKER_ROLES = Object.freeze([
   "decode",
   "installer",
   "render",
+  "sim",
   "streaming",
   "wasm-thread",
 ] as const);
@@ -90,7 +91,7 @@ export function parseInstallerBuildManifest(input: unknown): InstallerBuildManif
     !Array.isArray(value.gameContentEntrypoints) ||
     !Array.isArray(value.workerEntrypoints)
   ) {
-    throw new Error("Installer requires build-manifest v15 arrays");
+    throw new Error("Installer requires build-manifest v16 arrays");
   }
   const install = exact(value.installManifestEntrypoint, ["path", "schemaVersion"]);
   if (
@@ -151,7 +152,7 @@ export function parseInstallerBuildManifest(input: unknown): InstallerBuildManif
     WORKER_ROLES.some((role) => !workers.has(role)) ||
     new Set(workers.values()).size !== WORKER_ROLES.length
   ) {
-    throw new Error("Installer requires exactly one distinct worker for every v15 role");
+    throw new Error("Installer requires exactly one distinct worker for every v16 role");
   }
   if (!artifactPaths.has(INSTALL_MANIFEST_PATH)) {
     throw new Error("Installer build manifest omits its install-manifest artifact");

@@ -120,7 +120,7 @@ describe("production deployment contract", () => {
     expect(script).toContain(".parallax-deploy.lock");
     expect(script).toContain("ExpectedParentIdentity");
     expect(script).toContain("expected.inventory");
-    expect(script).toContain("$manifest.schemaVersion -ne 15");
+    expect(script).toContain("$manifest.schemaVersion -ne 16");
     expect(script).toContain("offline-shell v1 compatibility contract");
     expect(script).toContain("stable service-worker artifact");
     expect(script).toContain("sha256sum");

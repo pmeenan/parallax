@@ -62,7 +62,7 @@ function estimateClearlyInsufficientAuthority(): InstallerTrustFaultAuthority {
         saveSchemaVersion: 1,
         serviceWorkerPath: "service-worker.js",
       },
-      schemaVersion: 15,
+      schemaVersion: 16,
       workerEntrypoints: [],
     }),
   );

@@ -4,6 +4,7 @@ const REQUIRED_WORKER_ROLES = Object.freeze([
   "decode",
   "installer",
   "render",
+  "sim",
   "streaming",
   "wasm-thread",
 ] as const);
@@ -18,9 +19,9 @@ export interface HeapWorkerTopologyInput {
 
 /**
  * Resolves the exact dedicated-worker target multiset that an all-realm JS-heap
- * sample must observe. The wasm-thread entrypoint is validated as part of the
- * build topology but excluded because those short-lived workers do not remain in
- * the steady-state application target set.
+ * sample must observe. The wasm-thread entrypoint is validated as part of the build
+ * topology but excluded because those short-lived workers do not remain in the
+ * steady-state application target set. The M3 sim worker is long-lived and mandatory.
  */
 export function resolveHeapWorkerTargetUrls(input: HeapWorkerTopologyInput): readonly string[] {
   if (!Number.isSafeInteger(input.decodeWorkerCount) || input.decodeWorkerCount < 1) {
@@ -69,6 +70,7 @@ export function resolveHeapWorkerTargetUrls(input: HeapWorkerTopologyInput): rea
   return Object.freeze([
     resolveRole("installer"),
     resolveRole("render"),
+    resolveRole("sim"),
     resolveRole("streaming"),
     ...Array.from({ length: input.decodeWorkerCount }, () => decodeUrl),
   ]);

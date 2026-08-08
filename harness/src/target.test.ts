@@ -558,7 +558,7 @@ async function localBuildFixture(): Promise<BuildFixture> {
       saveSchemaVersion: 1,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: [],
   } as unknown as BuildManifest;
   const manifestBytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);

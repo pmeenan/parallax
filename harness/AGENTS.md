@@ -39,7 +39,8 @@ short (each gap in observability is itself a rough-edges finding — log it).
 ## Run catalog (versioned contracts; deterministic by construction)
 
 - `pnpm harness:smoke` — boot to first interactive frame and collect the mandatory
-  budget snapshot. Run once for a converged runtime-affecting candidate under D-097 and
+  budget snapshot. Run once for a converged candidate that can affect this scenario's
+  exercised/evaluated surface under D-157 and
   [the physical-gate cadence](../docs/workflow.md#validation-and-physical-gate-cadence).
 - `pnpm harness:smoke:v8-cache` — the smoke core plus the opt-in multi-lineage V8
   lifecycle diagnostic. Run only for browser, Node, bundler, serving/cache, lifecycle,
@@ -171,10 +172,11 @@ accepted decisions and evidence identities live in
    including identity/reference and measured launches, with the scoped F15 preflight and
    confirm the monitor is visibly awake; one wake before a multi-minute sequence or a
    later browser action is not an acceptable wake boundary.
-   Under D-097, qualify the converged runtime-affecting candidate once rather than every
-   intermediate edit. Documentation-only, test-only, and machine-local tool-location
-   changes do not require this gate unless they change a budget, evidence contract, pin,
-   qualification claim, or another qualifying input listed in `docs/workflow.md`.
+   Under D-157, qualify the converged candidate once when it can affect a subsystem,
+   measurement, validator, or budget actually exercised by smoke, rather than after
+   every intermediate edit. Artifact identity drift alone is not a trigger. Record the
+   affected smoke surface—or the reason none is affected—as required by
+   `docs/workflow.md`.
 10. **Intermittent failures remain failures.** Retain an RE-008/RE-036-class failed
     report and make one immediate same-artifact retry for classification. The retry is
     a separate result and cannot relabel the failed report; further repetitions require

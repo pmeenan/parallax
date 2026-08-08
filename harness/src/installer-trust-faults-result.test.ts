@@ -103,7 +103,7 @@ const buildManifestBytes = Buffer.from(
       saveSchemaVersion: 1,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: [],
   }),
 );

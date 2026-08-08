@@ -9,7 +9,7 @@ import { createAssetUpdateV8FailedEvidence } from "./asset-update-v8-failure.js"
 const STARTED_AT = "2026-07-30T06:26:26.687Z";
 const COMPLETED_AT = "2026-07-30T06:33:12.000Z";
 const RESERVATION_ID = "bdb83cb8-27ed-4047-9f86-8ab34b1ff36e";
-const COMPANION = "asset-update-v8-v3-2026-07-30T06-26-26-687Z.md";
+const COMPANION = "asset-update-v8-v4-2026-07-30T06-26-26-687Z.md";
 
 describe("asset-update V8 failed-evidence fallback", () => {
   it("drops an invalid lifecycle claim but retains bounded raw transfer/journal diagnostics", () => {

@@ -24,6 +24,7 @@ import { validateHarnessTargetEvidence, validateHarnessTargetIdentity } from "./
 import {
   validateInstalledModelSourceTelemetry,
   validateOfflineShellTelemetry,
+  validateSimulationTelemetry,
 } from "./telemetry.js";
 import { isRecord } from "./value-utils.js";
 
@@ -333,6 +334,7 @@ function validateLatestTelemetry(value: unknown, label: string): void {
       "offlineShell",
       "render",
       "schemaVersion",
+      "simulation",
       "streaming",
       "wasmThreadSpike",
     ],
@@ -350,6 +352,7 @@ function validateLatestTelemetry(value: unknown, label: string): void {
     installerTransfer: telemetry.installerTransfer,
   });
   validateOfflineShellTelemetry(telemetry.offlineShell);
+  validateSimulationTelemetry(telemetry.simulation);
   requireRecord(telemetry.wasmThreadSpike, `${label} wasm threads`);
   validatePartialStreaming(telemetry.streaming, `${label} streaming`);
   validatePartialRender(telemetry.render, `${label} render`);

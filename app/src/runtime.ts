@@ -9,6 +9,7 @@ import {
   createInstalledModelSource,
   createOpfsReleaseStore,
   createRenderService,
+  createSimulationService,
   createWasmThreadSpikeService,
   createWorldStreamingService,
   type InstallerService,
@@ -30,6 +31,7 @@ import {
   formatM1BenchmarkReport,
   formatM1BenchmarkStatus,
   GREYBOX_DISTRICT_SPECS,
+  gameSimulationModuleUrl,
   identifyGame,
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
@@ -134,6 +136,7 @@ async function bootRuntimeAttempt(
   const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
   const wasmThreadSpikeService = createWasmThreadSpikeService();
   const streamingService = createWorldStreamingService();
+  const simulationService = createSimulationService();
   const previewDistrict = GREYBOX_DISTRICT_SPECS[0];
   if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
   const worldGenerationStartedAt = performance.now();
@@ -194,6 +197,7 @@ async function bootRuntimeAttempt(
     renderService,
     appOwnedLlmSpikeService,
     wasmThreadSpikeService,
+    simulationService,
     streamingService,
     flythroughService,
     benchmarkService,
@@ -288,6 +292,7 @@ async function bootRuntimeAttempt(
     let benchmarkActive = false;
     const benchmarkPrerequisitesReady = (): boolean =>
       renderService.snapshot().state === "ready" &&
+      simulationService.snapshot().state === "running" &&
       streamingService.snapshot().state === "streaming" &&
       wasmThreadSpikeService.snapshot().state === "completed";
     const updateStartAvailability = (): void => {
@@ -386,6 +391,7 @@ async function bootRuntimeAttempt(
     };
     renderService.subscribe(readinessChanged);
     streamingService.subscribe(readinessChanged);
+    simulationService.subscribe(readinessChanged);
     wasmThreadSpikeService.subscribe(readinessChanged);
   }
 
@@ -453,11 +459,14 @@ async function bootRuntimeAttempt(
   }
   const updateStatus = (): void => {
     const render = renderService.snapshot();
+    const simulation = simulationService.snapshot();
     const wasmThreads = wasmThreadSpikeService.snapshot();
     status.dataset.state = render.state;
     status.dataset.frameCount = render.frameCount.toString();
     status.dataset.wasmThreadState = wasmThreads.state;
     status.dataset.wasmThreadCompletedTasks = wasmThreads.completedTasks.toString();
+    status.dataset.simulationState = simulation.state;
+    status.dataset.simulationTick = simulation.tick.toString();
     status.dataset.wasmThreadWorkerMask = wasmThreads.workerMask.toString();
     const buildIdentity = `${identity.name} ${identity.version} / engine ${identity.engine.version}`;
     if (render.state === "ready") {
@@ -493,6 +502,16 @@ async function bootRuntimeAttempt(
   });
   wasmThreadSpikeService.subscribe(() => {
     updateStatus();
+  });
+  simulationService.subscribe((simulation) => {
+    updateStatus();
+    if (simulation.state === "running") {
+      launchLifecycle?.markSimulationReady();
+    } else if (simulation.state === "failed") {
+      launchLifecycle?.fail(
+        new Error(simulation.failureMessage ?? "Simulation failed before interactive gameplay"),
+      );
+    }
   });
   let wasmThreadSpikeStarted = false;
   renderService.subscribe((telemetry) => {
@@ -568,5 +587,13 @@ async function bootRuntimeAttempt(
     psoWarmupTrace,
     restartStreamingCohort: (checkpoint) => streamingService.restartAfterRenderFailure(checkpoint),
     streamingPort: streamingRenderPort,
+  });
+  launchLifecycle?.markSimulationWorkerRequested();
+  simulationService.start({
+    entityCapacity: 4_096,
+    gameModuleUrl: gameSimulationModuleUrl(),
+    seed: 0x5041_5258,
+    snapshotCadenceTicks: 2,
+    timestepHz: 60,
   });
 }

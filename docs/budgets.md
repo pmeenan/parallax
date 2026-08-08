@@ -46,6 +46,13 @@ tolerances).
 | Pipeline compiles during gameplay | 0 | 0 | All PSOs warmed at boot; any runtime compile is a bug + a finding |
 | Main-thread long tasks during gameplay | 0 > 50 ms | 0 > 50 ms | Main thread is orchestration-only |
 
+M3 simulation telemetry records step-duration and scheduler-lag high waters, dropped
+catch-up ticks, command queue high water, and the fixed snapshot SAB allocation. D-156
+does not invent a standalone sim-step threshold before the character/NPC workload
+exists; the unchanged frame, main-thread, heap, and fixed-SAB budgets remain enforced.
+Calibrate a subsystem threshold from the first representative M3 gameplay scenario
+rather than treating the empty foundation loop as capacity evidence.
+
 Any claim that Showcase content is "120 Hz-capable" requires a dedicated
 **uncapped-presentation capability run** (vsync off or a ≥120 Hz display) gated at
 present-interval p95 ≤ 8.34 ms — CPU/GPU diagnostics on a 60 Hz vsynced run cannot
@@ -509,7 +516,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v29, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v30, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
@@ -531,8 +538,8 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-     corresponding `smoke@1` report schema is v64
-     and public telemetry is v38. D-139 additionally requires exact
+  corresponding `smoke@1` report schema is v65
+  and public telemetry is v39. D-139 additionally requires exact
    trace/build-compatibility identity, one progressive registry miss, one deduplicated
    replay hit, complete entry coverage, and zero failures before product Ready. Its
    separately triggered `pso-warmup-launch-pair@1` qualification consumes the same six
@@ -597,7 +604,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   count for stored-evidence revalidation; invalid smoke attempts preserve the raw
   start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-      `flythrough-d1@1` report schema v30/mandatory metric set v11 consumes flythrough
+  `flythrough-d1@1` report schema v31/mandatory metric set v11 consumes flythrough
   telemetry v3 and separately requires exact
   route and ordered environment completion, streamed presentation ownership with the
   preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,

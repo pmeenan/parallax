@@ -117,6 +117,11 @@ export default defineConfig([
     output: { ...sharedOutput, entryFileNames: "streaming-worker.js", inlineDynamicImports: true },
   },
   {
+    input: "src/workers/sim-worker.ts",
+    plugins: createPlugins(),
+    output: { ...sharedOutput, entryFileNames: "sim-worker.js", inlineDynamicImports: true },
+  },
+  {
     input: "src/workers/wasm-thread-spike-worker.ts",
     plugins: createPlugins(),
     output: {

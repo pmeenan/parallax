@@ -826,6 +826,7 @@ function runtimeAuthoritySubsystemsReady(
 function runtimeAuthoritySubsystemFailed(snapshot: ParallaxTelemetrySnapshot): boolean {
   return (
     snapshot.render.state === "failed" ||
+    snapshot.simulation?.state === "failed" ||
     snapshot.streaming.state === "failed" ||
     snapshot.installedModelSource.state === "failed" ||
     snapshot.installerTransfer.state === "failed" ||

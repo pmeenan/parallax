@@ -792,7 +792,7 @@ describe("offline shell generation store", () => {
     const install = await resolveOfflineShellResource(platform, "install-manifest.json");
     expect(JSON.parse(new TextDecoder().decode(build?.response.bytes))).toMatchObject({
       offlineShell: { generationSchemaVersion: 1, saveSchemaVersion: 1 },
-      schemaVersion: 15,
+      schemaVersion: 16,
     });
     expect(JSON.parse(new TextDecoder().decode(install?.response.bytes))).toMatchObject({
       schemaVersion: 1,
@@ -1040,22 +1040,24 @@ function buildFixture(token: string, saveSchemaVersion = 1): BuildFixture {
       "public, max-age=31536000, immutable",
     ),
   };
-  const workers = ["decode", "installer", "render", "streaming", "wasm-thread"].map((role) => {
-    const bytes = new TextEncoder().encode(`${role}-${token}\n`);
-    const hash = sha256(bytes);
-    const path = `immutable/${role}-worker-${hash}.js`;
-    return {
-      artifact: { bytes: bytes.byteLength, path, sha256: hash },
-      bytes,
-      response: response(
-        path,
+  const workers = ["decode", "installer", "render", "sim", "streaming", "wasm-thread"].map(
+    (role) => {
+      const bytes = new TextEncoder().encode(`${role}-${token}\n`);
+      const hash = sha256(bytes);
+      const path = `immutable/${role}-worker-${hash}.js`;
+      return {
+        artifact: { bytes: bytes.byteLength, path, sha256: hash },
         bytes,
-        "application/javascript",
-        "public, max-age=31536000, immutable",
-      ),
-      role,
-    };
-  });
+        response: response(
+          path,
+          bytes,
+          "application/javascript",
+          "public, max-age=31536000, immutable",
+        ),
+        role,
+      };
+    },
+  );
   const local = [index, serviceWorker, app, engine, ...workers];
   const resources = local
     .map((resource) => {
@@ -1099,7 +1101,7 @@ function buildFixture(token: string, saveSchemaVersion = 1): BuildFixture {
       saveSchemaVersion,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: workers.map((worker) => ({
       path: worker.artifact.path,
       role: worker.role,

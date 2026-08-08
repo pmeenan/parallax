@@ -93,6 +93,9 @@ service worker     Stable root-scope offline-shell authority. Serves the selecte
 installer worker   Eager app-shell install/repair executor. Owns bounded transfer,
                    verification, and publication operations against the OPFS store.
 render worker      Babylon Lite scene + WebGPU device on OffscreenCanvas.
+sim worker         Engine-owned 60 Hz fixed-timestep scheduler. Dynamically imports
+                   one same-origin, content-addressed game simulation adapter; owns
+                   authoritative commands, state, semantic events, and save/load.
 AI workers         D-096 wllama/llama.cpp execution + OPFS model cache; wllama creates
                    its own inference worker/pthreads and, for the default D-074 path,
                    a separate WebGPU device.
@@ -106,11 +109,27 @@ wasm-thread worker Mandatory content-addressed build entrypoint used only by the
                    terminate before steady-state measurement.
 ```
 
-A fixed-timestep simulation worker remains design-now/build-later for gameplay and
-future multiplayer input; no production `sim` worker or build-manifest role exists
-yet. The build manifest therefore requires exactly the five dedicated-worker roles
-`decode|installer|render|streaming|wasm-thread`; the stable service worker is bound
-separately by `offlineShell.serviceWorkerPath`.
+D-156 adds the production simulation worker and build-manifest v16 role. The manifest
+requires exactly the six dedicated-worker roles
+`decode|installer|render|sim|streaming|wasm-thread`; the stable service worker remains
+bound separately by `offlineShell.serviceWorkerPath`. The common engine worker never
+imports game code statically: the app supplies the exact game-specific simulation
+artifact URL, and the worker admits only a same-origin content-addressed production
+path (or the exact development source path).
+
+The authoritative sim advances at 60 Hz from integer ticks. Input is an ordered stream
+of serializable `{sequence,targetTick,kind,payload}` commands; no game step reads wall
+time. The live authority and each replay receive distinct adapter instances from the
+admitted game-module factory, preventing adapter-local caches from crossing those
+boundaries. A versioned binary save envelope covers the tick, last applied sequence, next
+semantic-event sequence, game state, and every queued future command under one SHA-256
+binding. Presentation is a non-authoritative 30 Hz view: the sim worker publishes
+stable safe-integer entity IDs and transforms through a fixed-at-boot, triple-buffered
+SAB (4,096-entity production capacity), while game-payload state hashes, events, and
+telemetry use `postMessage`. Per-slot atomic generation markers reject torn reads;
+lagged consumers drop overwritten transform publications without discarding their
+events or telemetry. Consumers interpolate the two latest successfully read views over
+their actual tick interval and never mutate sim state.
 
 D-096 selects D-074's app-owned backend. It keeps heavy inference off the main thread,
 but wllama's small
@@ -134,8 +153,8 @@ measurement-gated and model-specific; this Gemma result does not pre-judge separ
 evaluated candidates. Player-derived context remains governed by the save-data
 privacy/lifecycle rules.
 
-Communication: SharedArrayBuffer ring buffers for high-rate data (streaming queues,
-sim→render state snapshots); `postMessage` with transferables for bulk handoffs;
+Communication: SharedArrayBuffer channels for high-rate data (streaming queues,
+sim→render presentation snapshots); `postMessage` with transferables for bulk handoffs;
 no structured-clone of large objects on hot paths. Every queue instrumented
 (depth, stall counts) for the harness. D-057 makes the base transport a pair of
 fixed-capacity SPSC rings, one owner per endpoint and direction; setup/control summaries
@@ -993,7 +1012,9 @@ observation.
    warmup from trace → resident-set preload for the player's saved location → gameplay.
    Warm-launch performance is gated on the outcome, not the cache mechanism (D-051):
    warm launch must land within the budgets.md ≤ 10 s budget, with the complete in-app
-   lifecycle measured by `launch-to-interactive@2`. The evidence classes differ and
+   lifecycle measured by `launch-to-interactive@3`. That boundary requires the
+   simulation worker to be requested and running in addition to shell admission,
+   streaming readiness, and the first rendered frame. The evidence classes differ and
    must not be conflated: **V8 code-cache lifecycle** (wasm via the current
    `compileStreaming`-then-worker-transfer path and stable URLs) is best-effort,
    non-gating diagnostics —
@@ -1024,6 +1045,10 @@ observation.
    threshold was calibrated, so it remains unset. V8 trace, cache, and production
    diagnostics retain their exact measured/invalid states; they remain best-effort
    observations, not cache-hit proof.
+   New runs use `asset-update-v8-lifecycle@4`, whose fresh/pre/post launch records
+   embed `launch-to-interactive@3` and the six-role release topology. The validator
+   retains D-151's v3 artifact only through an exact v3 / launch-v2 / five-role path;
+   historical evidence is never upgraded in place.
 5. **Uninstall (user-initiated, D-024):** a native-title lifecycle removes cleanly, not
    just installs. The shell offers uninstall behind an **explicit confirmation** that
    states what is deleted (installed assets, caches, service worker, saves). Save export

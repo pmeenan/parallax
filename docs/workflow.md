@@ -106,7 +106,7 @@ The deployer cannot install `/etc/nginx` configuration or reload nginx. Those ar
 separate human-admin actions using the exact rollback-safe installer command in
 `deploy/README.md`. The portable unit gate executes the mocked production and model-
 content deployment safety suites; optional POSIX semantic fixtures are not required.
-For each post-M2 runtime-affecting production candidate whose standing D-097 trigger
+For each post-M2 production candidate whose standing D-157 impact trigger
 fires, install any changed versioned config, deploy the exact candidate, and require
 local plus public header/artifact checks and the final production-target harness gate
 to pass before acceptance. D-153's M2 closure is not reopened by documentation-only work.
@@ -175,23 +175,31 @@ answered a settled decision.
 
 ## Validation and physical-gate cadence
 
-“Per change” means per final reviewable runtime-affecting candidate, not after every
-edit or review exchange (D-097).
+“Per change” means per final reviewable candidate whose changes can affect the selected
+scenario's exercised or evaluated surface, not after every edit or review exchange
+(D-157).
 
 - During implementation and review correction, run the focused tests, typecheck, and
   lint checks that cover the changed surface. Run `pnpm check` once after implementation
   and review corrections converge. Rerun that full gate only when a later change alters
   a qualifying input after the gate; do not rerun it after every intermediate edit or
   review exchange (D-145).
-- Run one physical-console `pnpm harness:smoke` after code and review fixes have
-  converged when the candidate changes a built app/engine/game/worker/Wasm artifact,
-  browser-facing behavior, harness or measurement logic, runtime dependency or
-  toolchain/browser pin, reference-machine descriptor, budget, or mandatory evidence
-  contract. A later fix to any of those inputs requires a new physical result.
-- Skip physical smoke for documentation-only, test-only, and machine-local
-  tool-location changes when they leave every qualifying input above unchanged.
-  Markdown changes to budgets, evidence contracts, pins, or qualification claims are
-  still qualifying changes.
+- Run one physical-console `pnpm harness:smoke` after code and review fixes converge
+  only when the candidate can affect a path the current smoke actually executes, a
+  value it collects, a validator/report contract it applies, or a smoke-specific
+  budget/reference input. Current exercised subsystems are the six-launch boot/launch
+  core, greybox rendering, world streaming, simulation replay/save-load, SAB transport,
+  Rust/Wasm threads, render callback pacing, all-worker heap, Dawn pipeline cache, PSO
+  warmup, serving/environment identity, telemetry, and report finalization.
+- A changed build artifact or digest is not sufficient by itself. Changes isolated to
+  non-exercised or specialized-scenario-only code use their own focused verification
+  and do not require routine smoke. Changes to smoke harness logic, its collector,
+  mandatory contract, budget, browser/tool input, or registered-machine descriptor do
+  require smoke when they can affect the smoke result.
+- Record the impact decision in the handoff as `Physical smoke: required — <affected
+  surface>` or `Physical smoke: not required — <why no current smoke surface is
+  affected>`. Trace imports, runtime startup, telemetry, validators, and budget
+  consumers to decide; do not infer impact solely from filenames or artifact drift.
 - After a completed qualifying run, D-119 permits the narrow evidence-only closure
   needed to mechanically record that exact report's path, digest, schema, mandatory
   metric set, and verdict and update status pointers. It requires no new physical run
@@ -199,7 +207,7 @@ edit or review exchange (D-097).
   budget/threshold, mandatory evidence contract, runtime/tool/browser pin,
   reference-machine descriptor, or claim beyond the report. The measured identity
   remains the report's own source tuple and runtime artifact; this exception prevents
-  an infinite run → document → rerun loop and does not weaken any D-097 gate.
+  an infinite run → document → rerun loop and does not weaken any applicable D-157 gate.
 - Keep opt-in diagnostics on their documented triggers. In particular, run the V8
   lifecycle diagnostic only under D-095. Run
   `pnpm harness:branded-parity -- --target https://parallax-web.com` on physical-console
@@ -270,8 +278,8 @@ artifact, and does not turn the failed post-D-108 ten-minute variance into a pas
 Do not run another 30-plus-minute public benchmark or privileged M1 diagnostic for this
 milestone. The D-110 full reruns and D-111/D-113 diagnostic are consumed, and D-114
 removed the closed apparatus. D-116's converged D-097 `smoke@1` completed the final M1
-exit action; that milestone completion does not waive D-097 for a subsequent
-runtime-affecting candidate. Do not rerun the already qualified flythrough or
+exit action; that milestone completion does not waive an applicable D-157 impact
+trigger for a subsequent candidate. Do not rerun the already qualified flythrough or
 render-recovery scenario. A future public benchmark invocation
 requires an ordinary direct product/research trigger under D-115's reopen conditions,
 remains subject to the unchanged schema-v3 metrics, and is not a deferred M1 gate.

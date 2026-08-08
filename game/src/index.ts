@@ -23,6 +23,18 @@ export { DISTRICT_1_FLYTHROUGH } from "./world/district-1.flythrough";
 export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-generator";
 export type { GreyboxDistrictSpec } from "./world/greybox-spec";
 
+interface DevelopmentImportMeta extends ImportMeta {
+  readonly env?: { readonly DEV?: boolean };
+}
+
+export function gameSimulationModuleUrl(): string {
+  return (
+    (import.meta as DevelopmentImportMeta).env?.DEV === true
+      ? new URL("./sim/m3-simulation.ts", import.meta.url)
+      : new URL(/* @vite-ignore */ "./__GAME_SIMULATION_ARTIFACT__", import.meta.url)
+  ).href;
+}
+
 export const GAME_VERSION = "0.0.0";
 
 const GATE_WATCH_NPC_DIALOG_PROMPT =

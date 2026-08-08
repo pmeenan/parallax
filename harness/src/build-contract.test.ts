@@ -23,7 +23,7 @@ describe("assembled build contract", () => {
 
     expect(index).not.toContain("__ENGINE_ARTIFACT__");
     expect(index).not.toContain("__GAME_ARTIFACT__");
-    expect(manifest.schemaVersion).toBe(15);
+    expect(manifest.schemaVersion).toBe(16);
     expect(manifest.installManifestEntrypoint).toEqual({
       path: "install-manifest.json",
       schemaVersion: 1,
@@ -44,7 +44,7 @@ describe("assembled build contract", () => {
     );
     expect(installManifest.gameId).toBe("parallax");
     expect(installSummary.countByTarget.opfs).toBe(266);
-    expect(installSummary.countByTarget.shell).toBe(21);
+    expect(installSummary.countByTarget.shell).toBe(23);
     expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
     expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
     expect(
@@ -73,11 +73,12 @@ describe("assembled build contract", () => {
       expect(index).toContain(`/${matches[0]?.path}`);
     }
 
-    expect(manifest.workerEntrypoints).toHaveLength(5);
+    expect(manifest.workerEntrypoints).toHaveLength(6);
     expect(manifest.workerEntrypoints.map((entrypoint) => entrypoint.role).sort()).toEqual([
       "decode",
       "installer",
       "render",
+      "sim",
       "streaming",
       "wasm-thread",
     ]);

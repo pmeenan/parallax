@@ -346,6 +346,48 @@ export type {
 } from "./render/render-service";
 export { createRenderService } from "./render/render-service";
 export type {
+  GameSimulationAdapter,
+  GameSimulationModule,
+  SimulationCommand,
+  SimulationPresentationEntity,
+  SimulationPresentationSnapshot,
+  SimulationReplayResult,
+  SimulationSemanticEvent,
+  SimulationStartOptions,
+  SimulationState,
+  SimulationStepResult,
+  SimulationTelemetrySnapshot,
+} from "./sim/simulation-protocol";
+export {
+  MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES,
+  MAXIMUM_SIMULATION_REPLAY_COMMANDS,
+  MAXIMUM_SIMULATION_REPLAY_TICKS,
+  SIMULATION_PROTOCOL_VERSION,
+  SIMULATION_SAVE_SCHEMA_VERSION,
+  SIMULATION_TELEMETRY_SCHEMA_VERSION,
+} from "./sim/simulation-protocol";
+export type { SimulationRuntime, SimulationRuntimeSnapshot } from "./sim/simulation-runtime";
+export {
+  assertSimulationReplayWorkload,
+  canonicalSimulationCommand,
+  createSimulationRuntime,
+  interpolateSimulationSnapshots,
+  runSimulationModuleReplay,
+  runSimulationReplay,
+} from "./sim/simulation-runtime";
+export type { SimulationService } from "./sim/simulation-service";
+export { createSimulationService } from "./sim/simulation-service";
+export type { SimulationSnapshotBufferWriter } from "./sim/simulation-snapshot-buffer";
+export {
+  createSimulationSnapshotBuffer,
+  createSimulationSnapshotBufferWriter,
+  readSimulationSnapshotBuffer,
+  SIMULATION_SNAPSHOT_BUFFER_SCHEMA_VERSION,
+  SIMULATION_SNAPSHOT_BUFFER_SLOT_COUNT,
+  SimulationSnapshotPublicationOverwrittenError,
+  simulationSnapshotBufferBytes,
+} from "./sim/simulation-snapshot-buffer";
+export type {
   InstallManifest,
   InstallManifestLocalArtifact,
   InstallManifestSummary,

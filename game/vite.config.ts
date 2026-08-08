@@ -4,14 +4,17 @@ export default defineConfig({
   build: {
     emptyOutDir: false,
     lib: {
-      entry: "src/index.ts",
+      entry: {
+        game: "src/index.ts",
+        "game-simulation": "src/sim/m3-simulation.ts",
+      },
       formats: ["es"],
     },
     minify: "esbuild",
     rollupOptions: {
       external: ["@parallax/engine"],
       output: {
-        entryFileNames: "game.js",
+        entryFileNames: "[name].js",
       },
     },
     sourcemap: false,

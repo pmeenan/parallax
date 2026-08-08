@@ -42,10 +42,11 @@ updating the affected docs. Until that happens, the constraints below govern.
   the app-owned AI model, shader/PSO warmup), then launches from local storage. Do not optimize
   for first-visit instant load; do optimize launch-2+ aggressively.
 - **Budgets are enforced, not eternal.** [docs/budgets.md](docs/budgets.md) defines the
-  performance budgets; the harness enforces them once per final reviewable
-  runtime-affecting change (D-097), and a change that busts a budget is not done. But
-  budgets themselves are recalibrated as measurements come in — through a decision-log
-  entry, never by weakening a check to make a change pass.
+  performance budgets; the relevant harness gate runs once per final reviewable change
+  that can affect a surface it actually exercises or evaluates (D-157), and a change
+  that busts an applicable budget is not done. Budgets themselves are recalibrated as
+  measurements come in — through a decision-log entry, never by weakening a check to
+  make a change pass.
 - **Design for what's coming.** Some features (P2P multiplayer over WebRTC data channels,
   district streaming at N>2) are design-now/build-later. Their constraints in
   [docs/features.md](docs/features.md) apply to today's architecture decisions.

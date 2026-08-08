@@ -18,7 +18,7 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 29;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 30;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS = 1;
 export const SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT = 0.1;
@@ -54,11 +54,10 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 38;
-// v64 keeps the bounded short-smoke streaming repeatability result as a validated
-// informational diagnostic while removing it from mandatory facet authority. It
-// preserves public telemetry v38 and every per-launch budget/evidence requirement.
-export const SMOKE_REPORT_SCHEMA_VERSION = 64;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 39;
+// v65 carries public telemetry v39 and advances mandatory metric set v30 because core
+// run completion now includes deterministic simulation replay plus worker save/load.
+export const SMOKE_REPORT_SCHEMA_VERSION = 65;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

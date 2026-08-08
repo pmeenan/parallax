@@ -76,7 +76,7 @@ function fixture() {
     })}\n`,
   );
   const installSha = bytesToHex(sha256(installBytes));
-  const workers = ["decode", "installer", "render", "streaming", "wasm-thread"].map(
+  const workers = ["decode", "installer", "render", "sim", "streaming", "wasm-thread"].map(
     (role, index) => ({
       path: `immutable/${role}-${String(index).repeat(64)}.js`,
       role,
@@ -108,13 +108,13 @@ function fixture() {
         saveSchemaVersion: 1,
         serviceWorkerPath: "service-worker.js",
       },
-      schemaVersion: 15,
+      schemaVersion: 16,
       workerEntrypoints: workers,
     },
   };
 }
 
-describe("installer build-manifest v15", () => {
+describe("installer build-manifest v16", () => {
   it("uses Unicode scalar ordering for canonical key comparisons", () => {
     expect(["\u{10000}", "\ue000"].sort(compareUnicodeScalars)).toEqual(["\ue000", "\u{10000}"]);
   });
@@ -129,7 +129,7 @@ describe("installer build-manifest v15", () => {
     );
   });
 
-  it("binds exact install bytes and all five worker roles", () => {
+  it("binds exact install bytes and all six worker roles", () => {
     const { installBytes, manifest } = fixture();
     const parsed = parseInstallerBuildManifest(manifest);
     const identity = validateInstallerManifestBytes(parsed, installBytes);
@@ -158,7 +158,7 @@ describe("installer build-manifest v15", () => {
         ...manifest,
         workerEntrypoints: manifest.workerEntrypoints.slice(1),
       }),
-    ).toThrow(/exactly one distinct worker for every v15 role/);
+    ).toThrow(/exactly one distinct worker for every v16 role/);
     expect(() =>
       parseInstallerBuildManifest({
         ...manifest,
@@ -187,7 +187,7 @@ describe("installer build-manifest v15", () => {
 
   it("rejects malformed schema, artifact identity, and install bytes", () => {
     const { installBytes, manifest } = fixture();
-    expect(() => parseInstallerBuildManifest({ ...manifest, schemaVersion: 13 })).toThrow(/v15/);
+    expect(() => parseInstallerBuildManifest({ ...manifest, schemaVersion: 15 })).toThrow(/v16/);
     expect(() =>
       parseInstallerBuildManifest({
         ...manifest,

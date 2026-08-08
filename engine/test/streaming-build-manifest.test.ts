@@ -8,7 +8,7 @@ describe("streaming build-manifest validation", () => {
   it("accepts the exact v14 shape consumed during provisioning", () => {
     expect(validateStreamingBuildManifest(fixture())).toMatchObject({
       gameContentEntrypoints: [{ districtId: "district-1-surface" }],
-      schemaVersion: 15,
+      schemaVersion: 16,
     });
   });
 
@@ -130,7 +130,7 @@ function fixture(): Fixture {
       saveSchemaVersion: 1,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: [],
   };
 }

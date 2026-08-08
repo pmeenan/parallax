@@ -15,12 +15,6 @@ const moduleDescriptors = Object.freeze([
     scope: "app",
     token: "/immutable/app.js",
   },
-  {
-    input: "game/dist/game.js",
-    mode: "copy",
-    scope: "game",
-    token: "__GAME_ARTIFACT__",
-  },
 ]);
 const decoderWasmDescriptors = Object.freeze([
   {
@@ -149,7 +143,7 @@ const wasmThreadOutputName = contentAddressedNameFromBytes(
 await writeFile(join(outputRoot, "immutable", wasmThreadOutputName), wasmThreadBytes);
 
 const workerDescriptors = [];
-for (const role of ["decode", "installer", "render", "streaming", "wasm-thread"]) {
+for (const role of ["decode", "installer", "render", "sim", "streaming", "wasm-thread"]) {
   let bytes = await readFile(join(repositoryRoot, `engine/dist/${role}-worker.js`));
   if (role === "render") {
     let source = bytes.toString("utf8");
@@ -209,6 +203,24 @@ const psoWarmupTraceOutputName = contentAddressedNameFromBytes(
 await writeFile(join(outputRoot, "immutable", psoWarmupTraceOutputName), psoWarmupTraceBytes);
 
 const htmlModuleReferences = [];
+const gameSimulationBytes = await readFile(join(repositoryRoot, "game/dist/game-simulation.js"));
+const gameSimulationOutputName = contentAddressedNameFromBytes(
+  "game-simulation",
+  gameSimulationBytes,
+);
+await writeFile(join(outputRoot, "immutable", gameSimulationOutputName), gameSimulationBytes);
+const gameSource = replaceExactlyOnce(
+  await readFile(join(repositoryRoot, "game/dist/game.js"), "utf8"),
+  "__GAME_SIMULATION_ARTIFACT__",
+  gameSimulationOutputName,
+);
+const gameOutputName = contentAddressedNameFromBytes("game", Buffer.from(gameSource));
+await writeFile(join(outputRoot, "immutable", gameOutputName), gameSource);
+htmlModuleReferences.push({
+  scope: "game",
+  token: "__GAME_ARTIFACT__",
+  outputName: gameOutputName,
+});
 for (const descriptor of moduleDescriptors) {
   const input = join(repositoryRoot, descriptor.input);
   const outputName = await contentAddressedName(descriptor.scope, input);
@@ -346,6 +358,15 @@ function classifyLocalInstallArtifact(artifact, context) {
     return installResource(
       artifact,
       "game-specific-module-game",
+      "module",
+      "game-specific",
+      "shell",
+    );
+  }
+  if (/^immutable\/game-simulation-[a-f0-9]{64}\.js$/.test(artifact.path)) {
+    return installResource(
+      artifact,
+      "game-specific-module-simulation",
       "module",
       "game-specific",
       "shell",

@@ -340,6 +340,11 @@ export function expectedInstallResource(
     [/^immutable\/app-[a-f0-9]{64}\.js$/, "app-shell-module-app", "app-shell"],
     [/^immutable\/engine-[a-f0-9]{64}\.js$/, "common-module-engine", "common"],
     [/^immutable\/game-[a-f0-9]{64}\.js$/, "game-specific-module-game", "game-specific"],
+    [
+      /^immutable\/game-simulation-[a-f0-9]{64}\.js$/,
+      "game-specific-module-simulation",
+      "game-specific",
+    ],
   ] as const) {
     if (pattern.test(artifact.path)) return { ...base, id, kind: "module", scope, target: "shell" };
   }
@@ -482,7 +487,7 @@ function validateBuildEntrypoints(
       !hasExactKeys(worker, ["path", "role", "targetType"]) ||
       typeof worker.path !== "string" ||
       typeof worker.role !== "string" ||
-      !["decode", "installer", "render", "streaming", "wasm-thread"].includes(worker.role) ||
+      !["decode", "installer", "render", "sim", "streaming", "wasm-thread"].includes(worker.role) ||
       worker.targetType !== "worker" ||
       !artifactPaths.has(worker.path) ||
       roles.has(worker.role) ||
@@ -493,8 +498,8 @@ function validateBuildEntrypoints(
     roles.add(worker.role);
     workerPaths.add(worker.path);
   }
-  if (workers.length !== 5 || roles.size !== 5) {
-    throw new Error("Build manifest does not contain the exact five worker roles");
+  if (workers.length !== 6 || roles.size !== 6) {
+    throw new Error("Build manifest does not contain the exact six worker roles");
   }
   if (districts.length === 0) throw new Error("Build manifest contains no district entrypoint");
   const districtIds = new Set<string>();

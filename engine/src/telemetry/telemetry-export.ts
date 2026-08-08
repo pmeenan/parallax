@@ -22,6 +22,13 @@ import type {
   RenderService,
   RenderTelemetrySnapshot,
 } from "../render/render-service";
+import type {
+  SimulationCommand,
+  SimulationPresentationSnapshot,
+  SimulationReplayResult,
+  SimulationTelemetrySnapshot,
+} from "../sim/simulation-protocol";
+import type { SimulationService } from "../sim/simulation-service";
 import type { InstallStoreTelemetrySnapshot } from "../storage/opfs-release-store-contract";
 import type {
   StreamingRecoveryCheckpoint,
@@ -31,9 +38,9 @@ import type { WorldStreamingService } from "../streaming/world-streaming-service
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v38 advances solely for D-151's truthful store-discard-partial
-// failure-evidence tuple.
-export const TELEMETRY_SCHEMA_VERSION = 38;
+// Public telemetry v39 adds the M3 fixed-timestep simulation worker and its observable
+// command/snapshot/save/replay state.
+export const TELEMETRY_SCHEMA_VERSION = 39;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -58,6 +65,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly offlineShell: OfflineShellTelemetrySnapshot;
   readonly render: RenderTelemetrySnapshot;
   readonly schemaVersion: typeof TELEMETRY_SCHEMA_VERSION;
+  readonly simulation: SimulationTelemetrySnapshot;
   readonly streaming: WorldStreamingTelemetrySnapshot;
   readonly wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot;
 }
@@ -73,6 +81,13 @@ export interface ParallaxTelemetryExport {
   ): Promise<StreamingRecoveryCheckpoint>;
   prepareFlythrough(): void;
   resetBenchmark(): Promise<void>;
+  loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
+  replaySimulation(
+    commands: readonly SimulationCommand[],
+    ticks: number,
+    seed: number,
+  ): Promise<SimulationReplayResult>;
+  saveSimulation(): Promise<Uint8Array>;
   snapshot(): ParallaxTelemetrySnapshot;
   startFlythrough(): void;
   startBenchmark(): void;
@@ -84,6 +99,7 @@ export function installTelemetryExport(
   renderService: RenderService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
+  simulationService: SimulationService,
   streamingService: WorldStreamingService,
   flythroughService: FlythroughService,
   benchmarkService: BenchmarkService,
@@ -133,6 +149,7 @@ export function installTelemetryExport(
         renderService.snapshot(),
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
+        simulationService.snapshot(),
         streamingService.snapshot(),
         flythroughService.snapshot(),
         benchmarkService.snapshot(),
@@ -147,6 +164,19 @@ export function installTelemetryExport(
     },
     resetBenchmark(): Promise<void> {
       return benchmarkService.reset();
+    },
+    loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot> {
+      return simulationService.load(bytes);
+    },
+    replaySimulation(
+      commands: readonly SimulationCommand[],
+      ticks: number,
+      seed: number,
+    ): Promise<SimulationReplayResult> {
+      return simulationService.replay(commands, ticks, seed);
+    },
+    saveSimulation(): Promise<Uint8Array> {
+      return simulationService.save();
     },
     startBenchmark(): void {
       benchmarkService.start();
@@ -167,6 +197,7 @@ export function installTelemetryExport(
               renderService.snapshot(),
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
+              simulationService.snapshot(),
               streamingService.snapshot(),
               flythroughService.snapshot(),
               benchmarkService.snapshot(),
@@ -189,6 +220,7 @@ export function installTelemetryExport(
       const unsubscribeRender = renderService.subscribe(publishAfterWiring);
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
+      const unsubscribeSimulation = simulationService.subscribe(publishAfterWiring);
       const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
       const unsubscribeFlythrough = flythroughService.subscribe(publishAfterWiring);
       const unsubscribeBenchmark = benchmarkService.subscribe(publishAfterWiring);
@@ -202,6 +234,7 @@ export function installTelemetryExport(
         unsubscribeRender();
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
+        unsubscribeSimulation();
         unsubscribeStreaming();
         unsubscribeFlythrough();
         unsubscribeBenchmark();
@@ -224,6 +257,7 @@ function snapshot(
   render: RenderTelemetrySnapshot,
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
+  simulation: SimulationTelemetrySnapshot,
   streaming: WorldStreamingTelemetrySnapshot,
   flythrough: FlythroughTelemetrySnapshot,
   benchmark: BenchmarkTelemetrySnapshot,
@@ -243,6 +277,7 @@ function snapshot(
     offlineShell,
     render,
     schemaVersion: TELEMETRY_SCHEMA_VERSION,
+    simulation,
     streaming,
     wasmThreadSpike,
   });

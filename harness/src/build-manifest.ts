@@ -65,7 +65,7 @@ export interface ManifestGameContentEntrypoint {
 
 export interface ManifestWorkerEntrypoint {
   readonly path: string;
-  readonly role: "decode" | "installer" | "render" | "streaming" | "wasm-thread";
+  readonly role: "decode" | "installer" | "render" | "sim" | "streaming" | "wasm-thread";
   readonly targetType: "worker";
 }
 
@@ -127,6 +127,7 @@ export function validateBuildManifestContentAddressedPaths(
     ["app-shell-module-app", "app"],
     ["common-module-engine", "engine"],
     ["game-specific-module-game", "game"],
+    ["game-specific-module-simulation", "game-simulation"],
   ]);
   for (const resource of installManifest.resources.filter(
     ({ kind, target }) =>
@@ -175,7 +176,7 @@ export async function readAndValidateBuildManifest(
       "workerEntrypoints",
     ])
   ) {
-    throw new Error("Build manifest v15 has unsupported or missing top-level keys");
+    throw new Error("Build manifest v16 has unsupported or missing top-level keys");
   }
   const manifest = parsedManifest as unknown as BuildManifest;
   if (manifest.schemaVersion !== BUILD_MANIFEST_SCHEMA_VERSION) {
@@ -187,7 +188,7 @@ export async function readAndValidateBuildManifest(
     !Array.isArray(manifest.workerEntrypoints)
   ) {
     throw new Error(
-      "Build manifest v15 requires artifact, game-content-entrypoint, and worker-entrypoint arrays",
+      "Build manifest v16 requires artifact, game-content-entrypoint, and worker-entrypoint arrays",
     );
   }
   if (
@@ -196,7 +197,7 @@ export async function readAndValidateBuildManifest(
     manifest.installManifestEntrypoint.path !== INSTALL_MANIFEST_PATH ||
     manifest.installManifestEntrypoint.schemaVersion !== INSTALL_MANIFEST_SCHEMA_VERSION
   ) {
-    throw new Error("Build manifest v15 requires the exact install-manifest v1 entrypoint");
+    throw new Error("Build manifest v16 requires the exact install-manifest v1 entrypoint");
   }
   if (
     !isRecord(manifest.offlineShell) ||
@@ -209,23 +210,24 @@ export async function readAndValidateBuildManifest(
     manifest.offlineShell.saveSchemaVersion !== OFFLINE_SHELL_SAVE_SCHEMA_VERSION ||
     manifest.offlineShell.serviceWorkerPath !== "service-worker.js"
   ) {
-    throw new Error("Build manifest v15 requires the exact offline-shell v1 contract");
+    throw new Error("Build manifest v16 requires the exact offline-shell v1 contract");
   }
   const workerRoles = manifest.workerEntrypoints.map((entrypoint) => entrypoint.role);
   const workerPaths = new Set(
     manifest.workerEntrypoints.map((entrypoint) => resolve(resolvedRoot, entrypoint.path)),
   );
   if (
-    manifest.workerEntrypoints.length !== 5 ||
+    manifest.workerEntrypoints.length !== 6 ||
     workerRoles.filter((role) => role === "decode").length !== 1 ||
     workerRoles.filter((role) => role === "installer").length !== 1 ||
     workerRoles.filter((role) => role === "render").length !== 1 ||
+    workerRoles.filter((role) => role === "sim").length !== 1 ||
     workerRoles.filter((role) => role === "streaming").length !== 1 ||
     workerRoles.filter((role) => role === "wasm-thread").length !== 1 ||
-    workerPaths.size !== 5
+    workerPaths.size !== 6
   ) {
     throw new Error(
-      "Build manifest v15 requires exactly one distinct decode, installer, render, streaming, and WASM-thread worker",
+      "Build manifest v16 requires exactly one distinct decode, installer, render, sim, streaming, and WASM-thread worker",
     );
   }
   const artifactPaths = new Set<string>();
@@ -270,6 +272,7 @@ export async function readAndValidateBuildManifest(
       (entrypoint.role !== "decode" &&
         entrypoint.role !== "installer" &&
         entrypoint.role !== "render" &&
+        entrypoint.role !== "sim" &&
         entrypoint.role !== "streaming" &&
         entrypoint.role !== "wasm-thread") ||
       entrypoint.targetType !== "worker" ||
@@ -280,7 +283,7 @@ export async function readAndValidateBuildManifest(
   }
   validateBuildManifestContentAddressedPaths(manifest);
   if (manifest.gameContentEntrypoints.length === 0) {
-    throw new Error("Build manifest v15 requires at least one game-content district entrypoint");
+    throw new Error("Build manifest v16 requires at least one game-content district entrypoint");
   }
   const districtIds = new Set<string>();
   const districtPaths = new Set<string>();
@@ -302,7 +305,7 @@ export async function readAndValidateBuildManifest(
       );
     }
     if (districtIds.has(entrypoint.districtId) || districtPaths.has(entrypoint.path)) {
-      throw new Error("Build manifest v15 requires unique game-content district IDs and paths");
+      throw new Error("Build manifest v16 requires unique game-content district IDs and paths");
     }
     districtIds.add(entrypoint.districtId);
     districtPaths.add(entrypoint.path);
@@ -335,11 +338,11 @@ export async function readAndValidateBuildManifest(
   );
   if (installArtifact === undefined) {
     throw new Error(
-      "Build manifest v15 does not list its install-manifest entrypoint as an artifact",
+      "Build manifest v16 does not list its install-manifest entrypoint as an artifact",
     );
   }
   if (!manifest.artifacts.some((artifact) => artifact.path === "service-worker.js")) {
-    throw new Error("Build manifest v15 does not list its service-worker artifact");
+    throw new Error("Build manifest v16 does not list its service-worker artifact");
   }
   const installBytes = await readFile(resolve(resolvedRoot, installArtifact.path));
   const expectedLocalResources = manifest.artifacts
@@ -472,6 +475,14 @@ function expectedLocalResource(
     return {
       ...base,
       id: "game-specific-module-game",
+      kind: "module",
+      scope: "game-specific",
+      target: "shell",
+    };
+  if (/^immutable\/game-simulation-[a-f0-9]{64}\.js$/.test(artifact.path))
+    return {
+      ...base,
+      id: "game-specific-module-simulation",
       kind: "module",
       scope: "game-specific",
       target: "shell",

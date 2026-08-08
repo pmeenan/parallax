@@ -1122,6 +1122,7 @@ async function measureRunWithBrowser(
     if ((await readTelemetry(page)).streaming.state !== "streaming") {
       throw new Error("World streaming failed before the measurement boundary");
     }
+    await verifySimulationFoundation(page);
     const warmupStartedAt = performance.now();
     await page.evaluate((globalName) => {
       const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
@@ -2029,9 +2030,61 @@ function telemetryReady(contract: { expectedSchemaVersion: number; globalName: s
   const snapshot = telemetry.snapshot();
   if (snapshot.render.state === "failed")
     throw new Error(snapshot.render.failureMessage ?? "Render failed");
+  if (snapshot.simulation.state === "failed")
+    throw new Error(snapshot.simulation.failureMessage ?? "Simulation failed");
   return (
-    snapshot.schemaVersion === contract.expectedSchemaVersion && snapshot.render.state === "ready"
+    snapshot.schemaVersion === contract.expectedSchemaVersion &&
+    snapshot.render.state === "ready" &&
+    snapshot.simulation.state === "running" &&
+    snapshot.simulation.tick > 0
   );
+}
+
+async function verifySimulationFoundation(page: Page): Promise<void> {
+  const evidence = await page.evaluate(async (globalName) => {
+    const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+    const command = (
+      sequence: number,
+      targetTick: number,
+      forward: number,
+      right: number,
+      yawRadians: number,
+    ) => {
+      const payload = new Uint8Array(12);
+      const view = new DataView(payload.buffer);
+      view.setFloat32(0, forward, true);
+      view.setFloat32(4, right, true);
+      view.setFloat32(8, yawRadians, true);
+      return { kind: "player.input-axes@1", payload, sequence, targetTick };
+    };
+    const commands = [command(0, 2, 1, 0, 0.25), command(1, 8, 0, 1, -0.5)];
+    const first = await telemetry.replaySimulation(commands, 120, 8_675_309);
+    const second = await telemetry.replaySimulation(commands, 120, 8_675_309);
+    const loaded = await telemetry.loadSimulation(first.finalSave);
+    const liveSave = await telemetry.saveSimulation();
+    return {
+      bytesMatch:
+        first.finalSave.length === second.finalSave.length &&
+        first.finalSave.every((value, index) => second.finalSave[index] === value),
+      finalStateHash: first.finalStateHash,
+      hashMatch: first.finalStateHash === second.finalStateHash,
+      liveSaveBytes: liveSave.byteLength,
+      loadedStateHash: loaded.stateHash,
+      tick: first.tick,
+    };
+  }, SMOKE_TELEMETRY_GLOBAL_NAME);
+  if (
+    !evidence.hashMatch ||
+    !evidence.bytesMatch ||
+    evidence.loadedStateHash !== evidence.finalStateHash ||
+    evidence.tick !== 120 ||
+    evidence.liveSaveBytes <= 64 ||
+    !/^[a-f0-9]{64}$/.test(evidence.finalStateHash)
+  ) {
+    throw new Error(
+      `Simulation determinism/save-load verification failed: ${JSON.stringify(evidence)}`,
+    );
+  }
 }
 
 async function installLongTaskObserver(page: Page): Promise<void> {

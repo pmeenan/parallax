@@ -20,6 +20,7 @@ import {
   formatAssetUpdateV8Markdown,
   type LaunchToInteractiveEvidence,
   type LegacyAssetUpdateV8Evidence,
+  type LegacyV3AssetUpdateV8Evidence,
   validateAssetUpdateV8Evidence,
   WARM_LAUNCH_BUDGET_MS,
 } from "./asset-update-v8-evidence.js";
@@ -139,8 +140,12 @@ describe("asset-only update V8 lifecycle evidence", () => {
     );
   });
 
-  it("keeps retained lifecycle-v2 identity discriminated from current lifecycle-v3", () => {
+  it("keeps retained identities discriminated from current lifecycle-v4", () => {
     type LegacyPassedEvidence = Extract<LegacyAssetUpdateV8Evidence, { readonly state: "passed" }>;
+    type LegacyV3PassedEvidence = Extract<
+      LegacyV3AssetUpdateV8Evidence,
+      { readonly state: "passed" }
+    >;
     expectTypeOf<
       LegacyAssetUpdateV8Evidence["contract"]
     >().toEqualTypeOf<"asset-update-v8-lifecycle@2">();
@@ -153,14 +158,41 @@ describe("asset-only update V8 lifecycle evidence", () => {
     >().toEqualTypeOf<false>();
     expectTypeOf<
       AssetUpdateV8Evidence["contract"]
+    >().toEqualTypeOf<"asset-update-v8-lifecycle@4">();
+    expectTypeOf<AssetUpdateV8Evidence["schemaVersion"]>().toEqualTypeOf<4>();
+    expectTypeOf<
+      LegacyV3AssetUpdateV8Evidence["contract"]
     >().toEqualTypeOf<"asset-update-v8-lifecycle@3">();
-    expectTypeOf<AssetUpdateV8Evidence["schemaVersion"]>().toEqualTypeOf<3>();
+    expectTypeOf<LegacyV3AssetUpdateV8Evidence["schemaVersion"]>().toEqualTypeOf<3>();
+    expectTypeOf<
+      LegacyV3PassedEvidence["result"]["launches"]["pre"]["lifecycle"]["contract"]
+    >().toEqualTypeOf<"launch-to-interactive@2">();
     expectTypeOf<
       LegacyPassedEvidence["result"]["v8"]["pre"]["wasmStreaming"]["api"]
     >().toEqualTypeOf<"instantiateStreaming">();
     expectTypeOf<
       PassedEvidence["result"]["v8"]["pre"]["wasmStreaming"]["api"]
     >().toEqualTypeOf<"compileStreaming">();
+  });
+
+  it("accepts retained lifecycle-v3 evidence only with exact launch-v2 shape", () => {
+    const evidence = retainedV3PassedEvidence();
+
+    expect(validateAssetUpdateV8Evidence(evidence)).toEqual(evidence);
+
+    const relabeledCurrent = mutableClone(evidence);
+    Reflect.set(relabeledCurrent, "contract", ASSET_UPDATE_V8_CONTRACT);
+    Reflect.set(relabeledCurrent, "schemaVersion", ASSET_UPDATE_V8_SCHEMA_VERSION);
+    relabeledCurrent.companion.path = "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md";
+    expect(() => validateAssetUpdateV8Evidence(relabeledCurrent)).toThrow(
+      "pre release embedded build manifest arrays are invalid",
+    );
+
+    const forged = mutableClone(evidence);
+    Reflect.set(forged.result.launches.pre.lifecycle, "simulationReadyAtMs", 1_250);
+    expect(() => validateAssetUpdateV8Evidence(forged)).toThrow(
+      "launch lifecycle has unsupported or missing keys",
+    );
   });
 
   it("rejects the retained instantiateStreaming API under the current lifecycle contract", () => {
@@ -226,7 +258,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
     ).toThrow("exceeds 30000 ms");
   });
 
-  it("rejects forged launch preflight and streaming startup subphase ordering", () => {
+  it("rejects forged launch preflight, simulation, and streaming startup ordering", () => {
     const preflightDrift = mutableClone(passedEvidence());
     preflightDrift.result.launches.post.lifecycle.preflightTiming.modelSourceReadyAtMs =
       preflightDrift.result.launches.post.lifecycle.preflightTiming.initialReleaseAdmissionAtMs - 1;
@@ -241,6 +273,13 @@ describe("asset-only update V8 lifecycle evidence", () => {
     expect(() =>
       validateAssetUpdateV8Evidence(workerDrift, expectedAuthorityFromMutable(workerDrift)),
     ).toThrow("Streaming startup timing identity or ordering is invalid");
+
+    const simulationDrift = mutableClone(passedEvidence());
+    simulationDrift.result.launches.post.lifecycle.simulationReadyAtMs =
+      simulationDrift.result.launches.post.lifecycle.simulationWorkerRequestedAtMs - 1;
+    expect(() =>
+      validateAssetUpdateV8Evidence(simulationDrift, expectedAuthorityFromMutable(simulationDrift)),
+    ).toThrow("milestone ordering");
 
     const impossibleWorkerSpan = mutableClone(passedEvidence());
     impossibleWorkerSpan.result.launches.post.lifecycle.streamingStartupTiming.initialResidencyReadyAtMs = 500;
@@ -583,7 +622,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
       hostile.result.initialInstall.networkIdleLocalCriticalPathMs += 1;
       const failed = createAssetUpdateV8FailedEvidence({
         authority: hostile.authority,
-        companionPath: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+        companionPath: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
         completedAt: COMPLETED_AT,
         error: new Error("synthetic lifecycle failure"),
         partialResult: hostile.result,
@@ -695,7 +734,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
 
     const failed = createAssetUpdateV8FailedEvidence({
       authority: overBudget.authority,
-      companionPath: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+      companionPath: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
       completedAt: COMPLETED_AT,
       error: new Error("initial-install residual exceeds 90000 ms"),
       partialResult: overBudget.result,
@@ -732,7 +771,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
 
     const failed = createAssetUpdateV8FailedEvidence({
       authority: malformed.authority,
-      companionPath: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+      companionPath: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
       completedAt: COMPLETED_AT,
       error: new Error(
         "initial-install network-idle/local-critical-path residual 110194.90880004576 exceeds 90000 ms",
@@ -781,7 +820,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
 
     const failed = createAssetUpdateV8FailedEvidence({
       authority: malformed.authority,
-      companionPath: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+      companionPath: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
       completedAt: COMPLETED_AT,
       error: new Error("synthetic initial-install failure"),
       partialResult: malformed.result,
@@ -1111,6 +1150,7 @@ describe("asset-only update V8 lifecycle evidence", () => {
 });
 
 interface PassedEvidenceOptions {
+  readonly legacyReleaseTopology?: boolean;
   readonly postDurationMs?: number;
   readonly postResources?: readonly InstallResource[];
   readonly preDurationMs?: number;
@@ -1123,9 +1163,14 @@ interface SyntheticRelease {
 }
 
 function passedEvidence(options: PassedEvidenceOptions = {}): PassedEvidence {
-  const pre = release(defaultResources());
-  const validPost = release(changedResources());
-  const post = release(options.postResources ?? changedResources());
+  const releaseResources = (resources: readonly InstallResource[]) =>
+    options.legacyReleaseTopology === true ? withoutSimulationResources(resources) : resources;
+  const pre = release(releaseResources(defaultResources()), options.legacyReleaseTopology);
+  const validPost = release(releaseResources(changedResources()), options.legacyReleaseTopology);
+  const post = release(
+    releaseResources(options.postResources ?? changedResources()),
+    options.legacyReleaseTopology,
+  );
   const authority = runAuthority(pre.authority);
   const preDurationMs = options.preDurationMs ?? 9_000;
   const postDurationMs = options.postDurationMs ?? 8_750;
@@ -1206,17 +1251,17 @@ function passedEvidence(options: PassedEvidenceOptions = {}): PassedEvidence {
       pre: targetObservation(pre),
     },
     v8: {
-      fresh: diagnostics("fresh"),
-      post: diagnostics("post-warm"),
-      pre: diagnostics("pre-warm"),
-      produce: diagnostics("produce"),
+      fresh: diagnostics("fresh", options.legacyReleaseTopology),
+      post: diagnostics("post-warm", options.legacyReleaseTopology),
+      pre: diagnostics("pre-warm", options.legacyReleaseTopology),
+      produce: diagnostics("produce", options.legacyReleaseTopology),
     },
     warmLaunchBudgetMs: WARM_LAUNCH_BUDGET_MS,
   };
   return {
     authority,
     companion: {
-      path: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+      path: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
       state: "passed",
     },
     completedAt: COMPLETED_AT,
@@ -1237,6 +1282,24 @@ function passedEvidence(options: PassedEvidenceOptions = {}): PassedEvidence {
     startedAt: STARTED_AT,
     state: "passed",
   };
+}
+
+function retainedV3PassedEvidence(): MutablePassedEvidence {
+  const evidence = mutableClone(passedEvidence({ legacyReleaseTopology: true }));
+  Reflect.set(evidence, "contract", "asset-update-v8-lifecycle@3");
+  Reflect.set(evidence, "schemaVersion", 3);
+  evidence.companion.path = "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md";
+  for (const launch of [
+    evidence.result.launches.fresh,
+    evidence.result.launches.post,
+    evidence.result.launches.pre,
+  ]) {
+    Reflect.set(launch.lifecycle, "contract", "launch-to-interactive@2");
+    Reflect.set(launch.lifecycle, "schemaVersion", 2);
+    Reflect.deleteProperty(launch.lifecycle, "simulationReadyAtMs");
+    Reflect.deleteProperty(launch.lifecycle, "simulationWorkerRequestedAtMs");
+  }
+  return evidence;
 }
 
 function initialInstallEvidence(release: SyntheticRelease) {
@@ -1284,7 +1347,7 @@ function failedEvidence(): Extract<AssetUpdateV8Evidence, { readonly state: "fai
   return {
     authority: passed.authority,
     companion: {
-      path: "asset-update-v8-v3-2026-07-30T12-00-00-000Z.md",
+      path: "asset-update-v8-v4-2026-07-30T12-00-00-000Z.md",
       state: "failed",
     },
     completedAt: COMPLETED_AT,
@@ -1313,7 +1376,10 @@ function failedEvidence(): Extract<AssetUpdateV8Evidence, { readonly state: "fai
   };
 }
 
-function release(resources: readonly InstallResource[]): SyntheticRelease {
+function release(
+  resources: readonly InstallResource[],
+  legacyReleaseTopology = false,
+): SyntheticRelease {
   const districtIndex = resources.find((resource) => resource.kind === "district-index");
   if (districtIndex === undefined) throw new Error("Synthetic release lacks a district index");
   const installManifest: InstallManifest = {
@@ -1355,7 +1421,7 @@ function release(resources: readonly InstallResource[]): SyntheticRelease {
       saveSchemaVersion: 1,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: [
       {
         path: `immutable/decode-${digest("7")}.js`,
@@ -1372,6 +1438,15 @@ function release(resources: readonly InstallResource[]): SyntheticRelease {
         role: "render",
         targetType: "worker",
       },
+      ...(legacyReleaseTopology
+        ? []
+        : [
+            {
+              path: `immutable/sim-${"cd".repeat(32)}.js`,
+              role: "sim" as const,
+              targetType: "worker" as const,
+            },
+          ]),
       {
         path: `immutable/streaming-${digest("a")}.js`,
         role: "streaming",
@@ -1384,12 +1459,20 @@ function release(resources: readonly InstallResource[]): SyntheticRelease {
       },
     ],
   };
+  if (legacyReleaseTopology) {
+    const gameContentEntrypoint = manifest.gameContentEntrypoints[0];
+    if (gameContentEntrypoint === undefined) {
+      throw new Error("Synthetic release lacks its game-content entrypoint");
+    }
+    Reflect.set(manifest, "schemaVersion", 15);
+    Reflect.set(gameContentEntrypoint, "schemaVersion", 1);
+  }
   const buildBytes = Buffer.from(`${JSON.stringify(manifest)}\n`);
   return {
     authority: {
       artifactDigest: sha256(buildBytes),
       buildManifestBase64: buildBytes.toString("base64"),
-      buildManifestSchemaVersion: 15,
+      buildManifestSchemaVersion: legacyReleaseTopology ? 15 : 16,
       installManifestBase64: installBytes.toString("base64"),
       releaseDigest,
     },
@@ -1480,6 +1563,15 @@ function defaultResources(): readonly InstallResource[] {
       target: "shell",
     },
     {
+      bytes: 1_536,
+      id: "game-specific-module-simulation",
+      kind: "module",
+      scope: "game-specific",
+      sha256: "de".repeat(32),
+      source: `immutable/game-simulation-${"de".repeat(32)}.js`,
+      target: "shell",
+    },
+    {
       bytes: 300,
       id: "common-wasm-thread-spike",
       kind: "wasm",
@@ -1552,6 +1644,15 @@ function defaultResources(): readonly InstallResource[] {
       target: "shell",
     },
     {
+      bytes: 1_024,
+      id: "common-worker-sim",
+      kind: "worker",
+      scope: "common",
+      sha256: "cd".repeat(32),
+      source: `immutable/sim-${"cd".repeat(32)}.js`,
+      target: "shell",
+    },
+    {
       bytes: 16_384,
       id: "common-worker-streaming",
       kind: "worker",
@@ -1592,6 +1693,14 @@ function changedResources(): readonly InstallResource[] {
     }
     return resource;
   });
+}
+
+function withoutSimulationResources(
+  resources: readonly InstallResource[],
+): readonly InstallResource[] {
+  return resources.filter(
+    ({ id }) => id !== "common-worker-sim" && id !== "game-specific-module-simulation",
+  );
 }
 
 function runAuthority(pre: AssetUpdateReleaseAuthority): AssetUpdateRunAuthority {
@@ -1650,7 +1759,7 @@ function launchLifecycle(releaseDigest: string, durationMs: number): LaunchToInt
   const startedAtMs = 1_000;
   return {
     attempt: 1,
-    contract: "launch-to-interactive@2",
+    contract: "launch-to-interactive@3",
     durationMs,
     failureMessage: null,
     interactiveAtMs: startedAtMs + durationMs,
@@ -1663,8 +1772,10 @@ function launchLifecycle(releaseDigest: string, durationMs: number): LaunchToInt
     },
     releaseDigest,
     renderFirstFrameAtMs: startedAtMs + 200,
-    schemaVersion: 2,
+    schemaVersion: 3,
     shellAdmissionAtMs: startedAtMs + 60,
+    simulationReadyAtMs: startedAtMs + 250,
+    simulationWorkerRequestedAtMs: startedAtMs + 80,
     startedAtMs,
     state: "interactive",
     streamingStartupTiming: {
@@ -1810,7 +1921,10 @@ function targetObservation(releaseIdentity: SyntheticRelease): AssetUpdateTarget
   };
 }
 
-function diagnostics(phase: AssetUpdateV8Diagnostics["phase"]): AssetUpdateV8Diagnostics {
+function diagnostics(
+  phase: AssetUpdateV8Diagnostics["phase"],
+  legacyReleaseTopology = false,
+): AssetUpdateV8Diagnostics {
   const wasmArtifact = {
     bytes: 300,
     path: `immutable/wasm-thread-spike-${digest("3")}.wasm`,
@@ -1847,6 +1961,15 @@ function diagnostics(phase: AssetUpdateV8Diagnostics["phase"]): AssetUpdateV8Dia
         path: `immutable/game-${digest("f")}.js`,
         sourceCodeUnits: 3_584,
       },
+      ...(legacyReleaseTopology
+        ? []
+        : [
+            {
+              bytes: 1_536,
+              path: `immutable/game-simulation-${"de".repeat(32)}.js`,
+              sourceCodeUnits: 1_536,
+            },
+          ]),
       {
         bytes: 4_096,
         path: `immutable/installer-${digest("8")}.js`,
@@ -1857,6 +1980,15 @@ function diagnostics(phase: AssetUpdateV8Diagnostics["phase"]): AssetUpdateV8Dia
         path: `immutable/render-${digest("9")}.js`,
         sourceCodeUnits: 8_192,
       },
+      ...(legacyReleaseTopology
+        ? []
+        : [
+            {
+              bytes: 1_024,
+              path: `immutable/sim-${"cd".repeat(32)}.js`,
+              sourceCodeUnits: 1_024,
+            },
+          ]),
       {
         bytes: 16_384,
         path: `immutable/streaming-${digest("a")}.js`,

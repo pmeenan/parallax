@@ -36,6 +36,8 @@ export interface LaunchLifecycleSnapshot {
   readonly renderFirstFrameAtMs: number | null;
   readonly schemaVersion: typeof LAUNCH_LIFECYCLE_SCHEMA_VERSION;
   readonly shellAdmissionAtMs: number | null;
+  readonly simulationReadyAtMs: number | null;
+  readonly simulationWorkerRequestedAtMs: number | null;
   readonly startedAtMs: number | null;
   readonly state: LaunchLifecycleState;
   readonly streamingStartupTiming: StreamingStartupTimingSnapshot | null;
@@ -49,6 +51,8 @@ export interface LaunchLifecycleTracker {
   markInstalledPreflightPhase(phase: InstalledRuntimePreflightPhase): void;
   markRenderFirstFrame(): void;
   markShellAdmission(): void;
+  markSimulationReady(): void;
+  markSimulationWorkerRequested(): void;
   markStreamingReady(startupTiming: StreamingStartupTimingSnapshot): void;
   markStreamingWorkerRequested(): void;
   snapshot(): LaunchLifecycleSnapshot;
@@ -68,6 +72,8 @@ export function createLaunchLifecycleTracker(
   let releaseDigest: string | null = null;
   let renderFirstFrameAtMs: number | null = null;
   let shellAdmissionAtMs: number | null = null;
+  let simulationReadyAtMs: number | null = null;
+  let simulationWorkerRequestedAtMs: number | null = null;
   let startedAtMs: number | null = null;
   let state: LaunchLifecycleState = "idle";
   let streamingReferencesReadyAtMs: number | null = null;
@@ -81,23 +87,33 @@ export function createLaunchLifecycleTracker(
     }
     return startedAtMs;
   };
+  const terminal = (): boolean => state === "failed" || state === "interactive";
   const finishIfInteractive = (): void => {
     if (
       state !== "launching" ||
       startedAtMs === null ||
       shellAdmissionAtMs === null ||
       renderFirstFrameAtMs === null ||
+      simulationReadyAtMs === null ||
       streamingReadyAtMs === null
     ) {
       return;
     }
     const completedAt = now();
-    const latestMilestone = Math.max(shellAdmissionAtMs, renderFirstFrameAtMs, streamingReadyAtMs);
+    const latestMilestone = Math.max(
+      shellAdmissionAtMs,
+      renderFirstFrameAtMs,
+      simulationReadyAtMs,
+      streamingReadyAtMs,
+    );
     if (
       completedAt < startedAtMs ||
       completedAt < latestMilestone ||
       shellAdmissionAtMs < startedAtMs ||
+      simulationWorkerRequestedAtMs === null ||
       streamingWorkerRequestedAtMs === null ||
+      simulationWorkerRequestedAtMs < streamingWorkerRequestedAtMs ||
+      simulationReadyAtMs < simulationWorkerRequestedAtMs ||
       renderFirstFrameAtMs < streamingWorkerRequestedAtMs ||
       streamingReadyAtMs < streamingWorkerRequestedAtMs
     ) {
@@ -112,6 +128,7 @@ export function createLaunchLifecycleTracker(
     current: number | null,
     assign: (value: number) => void,
   ): void => {
+    if (terminal()) return;
     if (current !== null) return;
     const started = requireLaunching(milestone);
     const observed = now();
@@ -145,6 +162,8 @@ export function createLaunchLifecycleTracker(
       releaseDigest = nextReleaseDigest;
       renderFirstFrameAtMs = null;
       shellAdmissionAtMs = null;
+      simulationReadyAtMs = null;
+      simulationWorkerRequestedAtMs = null;
       startedAtMs = observed;
       state = "launching";
       streamingReferencesReadyAtMs = null;
@@ -167,6 +186,7 @@ export function createLaunchLifecycleTracker(
       state = "failed";
     },
     markInstalledPreflightPhase(phase: InstalledRuntimePreflightPhase): void {
+      if (terminal()) return;
       const phases: ReadonlyArray<
         readonly [InstalledRuntimePreflightPhase, number | null, (value: number) => void]
       > = [
@@ -218,6 +238,7 @@ export function createLaunchLifecycleTracker(
       mark(`installed-${phase}`, selected[1], selected[2]);
     },
     markRenderFirstFrame(): void {
+      if (terminal()) return;
       if (streamingWorkerRequestedAtMs === null) {
         throw new Error("render-first-frame requires a streaming worker request");
       }
@@ -226,6 +247,7 @@ export function createLaunchLifecycleTracker(
       });
     },
     markShellAdmission(): void {
+      if (terminal()) return;
       if (finalReleaseAdmissionAtMs === null) {
         throw new Error("shell-admission requires completed installed runtime preflight");
       }
@@ -233,7 +255,26 @@ export function createLaunchLifecycleTracker(
         shellAdmissionAtMs = value;
       });
     },
+    markSimulationReady(): void {
+      if (terminal()) return;
+      if (simulationWorkerRequestedAtMs === null) {
+        throw new Error("simulation-ready requires a simulation worker request");
+      }
+      mark("simulation-ready", simulationReadyAtMs, (value) => {
+        simulationReadyAtMs = value;
+      });
+    },
+    markSimulationWorkerRequested(): void {
+      if (terminal()) return;
+      if (streamingWorkerRequestedAtMs === null) {
+        throw new Error("simulation-worker-requested requires a streaming worker request");
+      }
+      mark("simulation-worker-requested", simulationWorkerRequestedAtMs, (value) => {
+        simulationWorkerRequestedAtMs = value;
+      });
+    },
     markStreamingReady(nextStartupTiming: StreamingStartupTimingSnapshot): void {
+      if (terminal()) return;
       if (
         streamingWorkerRequestedAtMs === null ||
         !completeInstalledStreamingStartupTiming(nextStartupTiming)
@@ -246,6 +287,7 @@ export function createLaunchLifecycleTracker(
       });
     },
     markStreamingWorkerRequested(): void {
+      if (terminal()) return;
       if (shellAdmissionAtMs === null) {
         throw new Error("streaming-worker-requested requires shell admission");
       }
@@ -271,6 +313,8 @@ export function createLaunchLifecycleTracker(
         renderFirstFrameAtMs,
         schemaVersion: LAUNCH_LIFECYCLE_SCHEMA_VERSION,
         shellAdmissionAtMs,
+        simulationReadyAtMs,
+        simulationWorkerRequestedAtMs,
         startedAtMs,
         state,
         streamingStartupTiming,

@@ -277,7 +277,7 @@ function release(
       saveSchemaVersion: 1,
       serviceWorkerPath: "service-worker.js",
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: [
       {
         path: `immutable/render-${digest("6")}.js`,

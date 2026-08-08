@@ -39,7 +39,7 @@ describe("V8 script artifact selection", () => {
         saveSchemaVersion: 1,
         serviceWorkerPath: "service-worker.js",
       }),
-      schemaVersion: 15,
+      schemaVersion: 16,
       workerEntrypoints: Object.freeze([
         Object.freeze({
           path: "immutable/decode-worker.js",

@@ -58,8 +58,10 @@ import type {
 import { V8_MIN_CACHEABLE_SCRIPT_CODE_UNITS } from "./v8-code-cache-trace.js";
 import { selectV8ScriptManifestArtifacts } from "./v8-script-artifacts.js";
 
-export const ASSET_UPDATE_V8_CONTRACT = "asset-update-v8-lifecycle@3";
-export const ASSET_UPDATE_V8_SCHEMA_VERSION = 3;
+export const ASSET_UPDATE_V8_CONTRACT = "asset-update-v8-lifecycle@4";
+export const ASSET_UPDATE_V8_SCHEMA_VERSION = 4;
+const LEGACY_V3_ASSET_UPDATE_V8_CONTRACT = "asset-update-v8-lifecycle@3";
+const LEGACY_V3_ASSET_UPDATE_V8_SCHEMA_VERSION = 3;
 const LEGACY_ASSET_UPDATE_V8_CONTRACT = "asset-update-v8-lifecycle@2";
 const LEGACY_ASSET_UPDATE_V8_SCHEMA_VERSION = 2;
 export const WARM_LAUNCH_BUDGET_MS = 10_000;
@@ -142,7 +144,7 @@ export interface AssetUpdateReadyAuthority {
 
 export interface LaunchToInteractiveEvidence {
   readonly attempt: 1;
-  readonly contract: "launch-to-interactive@2";
+  readonly contract: "launch-to-interactive@3";
   readonly durationMs: number;
   readonly failureMessage: null;
   readonly interactiveAtMs: number;
@@ -155,8 +157,10 @@ export interface LaunchToInteractiveEvidence {
   }>;
   readonly releaseDigest: string;
   readonly renderFirstFrameAtMs: number;
-  readonly schemaVersion: 2;
+  readonly schemaVersion: 3;
   readonly shellAdmissionAtMs: number;
+  readonly simulationReadyAtMs: number;
+  readonly simulationWorkerRequestedAtMs: number;
   readonly startedAtMs: number;
   readonly state: "interactive";
   readonly streamingStartupTiming: StreamingStartupTimingSnapshot;
@@ -438,8 +442,13 @@ type LegacyAssetUpdateV8Diagnostics = Omit<AssetUpdateV8Diagnostics, "wasmStream
 
 type LegacyAssetUpdateLifecycleResult = Omit<
   AssetUpdateLifecycleResult,
-  "initialInstall" | "publication" | "v8"
+  "initialInstall" | "launches" | "publication" | "v8"
 > & {
+  readonly launches: Readonly<{
+    readonly fresh: LegacyV3AssetUpdateV8LaunchEvidence;
+    readonly post: LegacyV3AssetUpdateV8LaunchEvidence;
+    readonly pre: LegacyV3AssetUpdateV8LaunchEvidence;
+  }>;
   readonly publication: Omit<
     AssetUpdateLifecycleResult["publication"],
     "postTransfer" | "preTransfer"
@@ -455,9 +464,34 @@ type LegacyAssetUpdateLifecycleResult = Omit<
   }>;
 };
 
+type LegacyLaunchToInteractiveEvidence = Omit<
+  LaunchToInteractiveEvidence,
+  "contract" | "schemaVersion" | "simulationReadyAtMs" | "simulationWorkerRequestedAtMs"
+> & {
+  readonly contract: "launch-to-interactive@2";
+  readonly schemaVersion: 2;
+};
+
+type LegacyV3AssetUpdateV8LaunchEvidence = Omit<AssetUpdateV8LaunchEvidence, "lifecycle"> & {
+  readonly lifecycle: LegacyLaunchToInteractiveEvidence;
+};
+
+type LegacyV3AssetUpdateLifecycleResult = Omit<AssetUpdateLifecycleResult, "launches"> & {
+  readonly launches: Readonly<{
+    readonly fresh: LegacyV3AssetUpdateV8LaunchEvidence;
+    readonly post: LegacyV3AssetUpdateV8LaunchEvidence;
+    readonly pre: LegacyV3AssetUpdateV8LaunchEvidence;
+  }>;
+};
+
 type LegacyEvidenceIdentity = Readonly<{
   readonly contract: typeof LEGACY_ASSET_UPDATE_V8_CONTRACT;
   readonly schemaVersion: typeof LEGACY_ASSET_UPDATE_V8_SCHEMA_VERSION;
+}>;
+
+type LegacyV3EvidenceIdentity = Readonly<{
+  readonly contract: typeof LEGACY_V3_ASSET_UPDATE_V8_CONTRACT;
+  readonly schemaVersion: typeof LEGACY_V3_ASSET_UPDATE_V8_SCHEMA_VERSION;
 }>;
 
 type ReidentifiedAssetUpdateV8Evidence<T> =
@@ -474,7 +508,26 @@ type ReidentifiedAssetUpdateV8Evidence<T> =
       : Omit<T, "contract" | "schemaVersion"> & LegacyEvidenceIdentity;
 
 export type LegacyAssetUpdateV8Evidence = ReidentifiedAssetUpdateV8Evidence<AssetUpdateV8Evidence>;
-export type ValidatedAssetUpdateV8Evidence = AssetUpdateV8Evidence | LegacyAssetUpdateV8Evidence;
+
+type ReidentifiedLegacyV3AssetUpdateV8Evidence<T> =
+  T extends Readonly<{
+    readonly result: AssetUpdateLifecycleResult;
+  }>
+    ? Omit<T, "contract" | "result" | "schemaVersion"> &
+        LegacyV3EvidenceIdentity & { readonly result: LegacyV3AssetUpdateLifecycleResult }
+    : T extends Readonly<{ readonly partialResult: AssetUpdateLifecycleResult | null }>
+      ? Omit<T, "contract" | "partialResult" | "schemaVersion"> &
+          LegacyV3EvidenceIdentity & {
+            readonly partialResult: LegacyV3AssetUpdateLifecycleResult | null;
+          }
+      : Omit<T, "contract" | "schemaVersion"> & LegacyV3EvidenceIdentity;
+
+export type LegacyV3AssetUpdateV8Evidence =
+  ReidentifiedLegacyV3AssetUpdateV8Evidence<AssetUpdateV8Evidence>;
+export type ValidatedAssetUpdateV8Evidence =
+  | AssetUpdateV8Evidence
+  | LegacyAssetUpdateV8Evidence
+  | LegacyV3AssetUpdateV8Evidence;
 
 export interface AssetUpdateExpectedAuthority {
   readonly authority: AssetUpdateRunAuthority;
@@ -507,8 +560,14 @@ export function validateAssetUpdateV8Evidence(
   const legacyV2 =
     report.contract === LEGACY_ASSET_UPDATE_V8_CONTRACT &&
     report.schemaVersion === LEGACY_ASSET_UPDATE_V8_SCHEMA_VERSION;
+  const legacyV3 =
+    report.contract === LEGACY_V3_ASSET_UPDATE_V8_CONTRACT &&
+    report.schemaVersion === LEGACY_V3_ASSET_UPDATE_V8_SCHEMA_VERSION;
+  const legacyReleaseTopology = legacyV2 || legacyV3;
+  const legacyLaunchLifecycleV2 = legacyV2 || legacyV3;
   if (
     (!legacyV2 &&
+      !legacyV3 &&
       (report.contract !== ASSET_UPDATE_V8_CONTRACT ||
         report.schemaVersion !== ASSET_UPDATE_V8_SCHEMA_VERSION)) ||
     (report.state !== "pending" && report.state !== "failed" && report.state !== "passed")
@@ -532,7 +591,7 @@ export function validateAssetUpdateV8Evidence(
   if (
     companion.state !== report.state ||
     typeof companion.path !== "string" ||
-    !new RegExp(`^asset-update-v8-v${legacyV2 ? 2 : 3}-[A-Za-z0-9._-]+\\.md$`).test(
+    !new RegExp(`^asset-update-v8-v${legacyV2 ? 2 : legacyV3 ? 3 : 4}-[A-Za-z0-9._-]+\\.md$`).test(
       companion.path as string,
     )
   ) {
@@ -610,6 +669,8 @@ export function validateAssetUpdateV8Evidence(
             };
       validateLifecycleResult(report.partialResult, authority, {
         allowBudgetFailure: true,
+        legacyLaunchLifecycleV2,
+        legacyReleaseTopology,
         legacyV2,
       });
     }
@@ -655,10 +716,22 @@ export function validateAssetUpdateV8Evidence(
     postArtifactDigest: digestFromPartial(report.result, "artifact"),
     postReleaseDigest: digestFromPartial(report.result, "release"),
   };
-  validateLifecycleResult(report.result, expectedResultAuthority, { legacyV2 });
+  validateLifecycleResult(report.result, expectedResultAuthority, {
+    legacyLaunchLifecycleV2,
+    legacyReleaseTopology,
+    legacyV2,
+  });
   const resultRecord = record(report.result, "result");
-  const postRelease = validateReleaseAuthority(resultRecord.postRelease, "post", legacyV2);
-  const preRelease = validateReleaseAuthority(resultRecord.preRelease, "pre", legacyV2);
+  const postRelease = validateReleaseAuthority(
+    resultRecord.postRelease,
+    "post",
+    legacyReleaseTopology,
+  );
+  const preRelease = validateReleaseAuthority(
+    resultRecord.preRelease,
+    "pre",
+    legacyReleaseTopology,
+  );
   validateReadyAuthority(postValidation.ready, postRelease, preRelease.releaseDigest);
   validateTarget(postValidation.target, postRelease, authority.targetOrigin);
   const publication = record(resultRecord.publication, "publication");
@@ -751,6 +824,8 @@ function validateLifecycleResult(
   expected: AssetUpdateExpectedAuthority | undefined,
   options: Readonly<{
     readonly allowBudgetFailure?: boolean;
+    readonly legacyLaunchLifecycleV2?: boolean;
+    readonly legacyReleaseTopology?: boolean;
     readonly legacyV2?: boolean;
   }> = {},
 ): AssetUpdateLifecycleResult {
@@ -778,11 +853,15 @@ function validateLifecycleResult(
       "Asset-update result changed the launch budget or invented a relative threshold",
     );
   }
-  const preRelease = validateReleaseAuthority(result.preRelease, "pre", options.legacyV2 === true);
+  const preRelease = validateReleaseAuthority(
+    result.preRelease,
+    "pre",
+    options.legacyReleaseTopology === true,
+  );
   const postRelease = validateReleaseAuthority(
     result.postRelease,
     "post",
-    options.legacyV2 === true,
+    options.legacyReleaseTopology === true,
   );
   if (
     preRelease.artifactDigest === postRelease.artifactDigest ||
@@ -823,6 +902,7 @@ function validateLifecycleResult(
     preRelease.releaseDigest,
     profileId,
     false,
+    options.legacyLaunchLifecycleV2 === true,
   );
   if (options.legacyV2 !== true) {
     validateInitialInstallExitEvidence(
@@ -848,6 +928,7 @@ function validateLifecycleResult(
     preRelease.releaseDigest,
     profileId,
     options.allowBudgetFailure !== true,
+    options.legacyLaunchLifecycleV2 === true,
   );
   const post = validateLaunch(
     launches.post,
@@ -856,6 +937,7 @@ function validateLifecycleResult(
     postRelease.releaseDigest,
     profileId,
     options.allowBudgetFailure !== true,
+    options.legacyLaunchLifecycleV2 === true,
   );
   if (
     fresh.cacheState !== "setup" ||
@@ -1006,7 +1088,7 @@ function isLegacyV2Evidence(
 function validateReleaseAuthority(
   input: unknown,
   label: "post" | "pre",
-  legacyV2 = false,
+  legacyReleaseTopology = false,
 ): AssetUpdateReleaseAuthority & {
   readonly buildManifest: BuildManifest;
   readonly installManifest: InstallManifest;
@@ -1041,7 +1123,7 @@ function validateReleaseAuthority(
     installBytes,
     `${label} install manifest`,
   ) as unknown as InstallManifest;
-  validateEmbeddedReleaseStructure(buildManifest, installManifest, label, legacyV2);
+  validateEmbeddedReleaseStructure(buildManifest, installManifest, label, legacyReleaseTopology);
   if (buildManifest.schemaVersion !== release.buildManifestSchemaVersion) {
     throw new Error(`${label} release embedded manifest contract is invalid`);
   }
@@ -1066,7 +1148,7 @@ function validateEmbeddedReleaseStructure(
   manifest: BuildManifest,
   install: InstallManifest,
   label: "post" | "pre",
-  legacyV2: boolean,
+  legacyReleaseTopology: boolean,
 ): void {
   const manifestRecord = record(manifest, `${label} build manifest`);
   const installRecord = record(install, `${label} install manifest`);
@@ -1088,7 +1170,7 @@ function validateEmbeddedReleaseStructure(
     `${label} install manifest`,
   );
   if (
-    manifest.schemaVersion !== BUILD_MANIFEST_SCHEMA_VERSION ||
+    manifest.schemaVersion !== (legacyReleaseTopology ? 15 : BUILD_MANIFEST_SCHEMA_VERSION) ||
     !Array.isArray(manifest.artifacts) ||
     !Array.isArray(manifest.gameContentEntrypoints) ||
     !Array.isArray(manifest.workerEntrypoints)
@@ -1158,7 +1240,11 @@ function validateEmbeddedReleaseStructure(
       !artifacts.has(worker.path) ||
       worker.targetType !== "worker" ||
       typeof worker.role !== "string" ||
-      !new Set(["decode", "installer", "render", "streaming", "wasm-thread"]).has(worker.role) ||
+      !(
+        legacyReleaseTopology
+          ? new Set(["decode", "installer", "render", "streaming", "wasm-thread"])
+          : new Set(["decode", "installer", "render", "sim", "streaming", "wasm-thread"])
+      ).has(worker.role) ||
       workerRoles.has(worker.role) ||
       workerPaths.has(worker.path)
     ) {
@@ -1168,12 +1254,14 @@ function validateEmbeddedReleaseStructure(
     workerPaths.add(worker.path);
   }
   if (
-    workerRoles.size !== 5 ||
-    !["decode", "installer", "render", "streaming", "wasm-thread"].every((role) =>
-      workerRoles.has(role),
-    )
+    workerRoles.size !== (legacyReleaseTopology ? 5 : 6) ||
+    !(
+      legacyReleaseTopology
+        ? ["decode", "installer", "render", "streaming", "wasm-thread"]
+        : ["decode", "installer", "render", "sim", "streaming", "wasm-thread"]
+    ).every((role) => workerRoles.has(role))
   ) {
-    throw new Error(`${label} release lacks the exact five-worker topology`);
+    throw new Error(`${label} release lacks the exact admitted worker topology`);
   }
   validateBuildManifestContentAddressedPaths(manifest);
 
@@ -1191,7 +1279,8 @@ function validateEmbeddedReleaseStructure(
       entrypoint.districtId === "" ||
       typeof entrypoint.path !== "string" ||
       !artifacts.has(entrypoint.path) ||
-      entrypoint.schemaVersion !== (legacyV2 ? 1 : STREAMING_DISTRICT_INDEX_SCHEMA_VERSION) ||
+      entrypoint.schemaVersion !==
+        (legacyReleaseTopology ? 1 : STREAMING_DISTRICT_INDEX_SCHEMA_VERSION) ||
       entrypoint.scope !== "game-specific" ||
       entrypoint.targetType !== "district" ||
       districtIds.has(entrypoint.districtId) ||
@@ -1324,7 +1413,8 @@ function validateLaunch(
   releaseDigest: string,
   expectedProfileId: string | undefined,
   enforceBudget: boolean,
-): AssetUpdateV8LaunchEvidence {
+  legacyLifecycleV2: boolean,
+): AssetUpdateV8LaunchEvidence | LegacyV3AssetUpdateV8LaunchEvidence {
   const launch = record(input, `${phase} launch`);
   requireExactKeys(
     launch,
@@ -1342,42 +1432,43 @@ function validateLaunch(
   ) {
     throw new Error(`${phase} launch identity or persistent-profile lineage is invalid`);
   }
-  const lifecycle = validateLaunchLifecycle(launch.lifecycle, releaseDigest);
+  const lifecycle = validateLaunchLifecycle(launch.lifecycle, releaseDigest, legacyLifecycleV2);
   if (enforceBudget && lifecycle.durationMs > WARM_LAUNCH_BUDGET_MS) {
     throw new Error(
       `${phase} Launch-to-interactive duration ${lifecycle.durationMs} exceeds ${WARM_LAUNCH_BUDGET_MS} ms`,
     );
   }
-  return launch as unknown as AssetUpdateV8LaunchEvidence;
+  return launch as unknown as AssetUpdateV8LaunchEvidence | LegacyV3AssetUpdateV8LaunchEvidence;
 }
 
 function validateLaunchLifecycle(
   input: unknown,
   releaseDigest: string,
-): LaunchToInteractiveEvidence {
+  legacyLifecycleV2: boolean,
+): LaunchToInteractiveEvidence | LegacyLaunchToInteractiveEvidence {
   const lifecycle = record(input, "launch lifecycle");
-  requireExactKeys(
-    lifecycle,
-    [
-      "attempt",
-      "contract",
-      "durationMs",
-      "failureMessage",
-      "interactiveAtMs",
-      "preflightTiming",
-      "releaseDigest",
-      "renderFirstFrameAtMs",
-      "schemaVersion",
-      "shellAdmissionAtMs",
-      "startedAtMs",
-      "state",
-      "streamingStartupTiming",
-      "streamingWorkerRequestedAtMs",
-      "streamingReadyAtMs",
-    ],
-    "launch lifecycle",
-  );
-  for (const key of [
+  const lifecycleKeys = [
+    "attempt",
+    "contract",
+    "durationMs",
+    "failureMessage",
+    "interactiveAtMs",
+    "preflightTiming",
+    "releaseDigest",
+    "renderFirstFrameAtMs",
+    "schemaVersion",
+    "shellAdmissionAtMs",
+    "startedAtMs",
+    "state",
+    "streamingStartupTiming",
+    "streamingWorkerRequestedAtMs",
+    "streamingReadyAtMs",
+  ];
+  if (!legacyLifecycleV2) {
+    lifecycleKeys.push("simulationReadyAtMs", "simulationWorkerRequestedAtMs");
+  }
+  requireExactKeys(lifecycle, lifecycleKeys, "launch lifecycle");
+  const finiteLifecycleKeys = [
     "durationMs",
     "interactiveAtMs",
     "renderFirstFrameAtMs",
@@ -1385,15 +1476,20 @@ function validateLaunchLifecycle(
     "startedAtMs",
     "streamingWorkerRequestedAtMs",
     "streamingReadyAtMs",
-  ]) {
+  ];
+  if (!legacyLifecycleV2) {
+    finiteLifecycleKeys.push("simulationReadyAtMs", "simulationWorkerRequestedAtMs");
+  }
+  for (const key of finiteLifecycleKeys) {
     if (!finite(lifecycle[key]) || (lifecycle[key] as number) < 0) {
       throw new Error(`Launch lifecycle ${key} is invalid`);
     }
   }
   if (
     lifecycle.attempt !== 1 ||
-    lifecycle.contract !== "launch-to-interactive@2" ||
-    lifecycle.schemaVersion !== LAUNCH_LIFECYCLE_SCHEMA_VERSION ||
+    lifecycle.contract !==
+      (legacyLifecycleV2 ? "launch-to-interactive@2" : "launch-to-interactive@3") ||
+    lifecycle.schemaVersion !== (legacyLifecycleV2 ? 2 : LAUNCH_LIFECYCLE_SCHEMA_VERSION) ||
     lifecycle.state !== "interactive" ||
     lifecycle.failureMessage !== null ||
     lifecycle.releaseDigest !== releaseDigest
@@ -1404,6 +1500,10 @@ function validateLaunchLifecycle(
   const preflight = validatePreflightTiming(lifecycle.preflightTiming);
   const admitted = lifecycle.shellAdmissionAtMs as number;
   const workerRequested = lifecycle.streamingWorkerRequestedAtMs as number;
+  const simulationRequested = legacyLifecycleV2
+    ? null
+    : (lifecycle.simulationWorkerRequestedAtMs as number);
+  const simulationReady = legacyLifecycleV2 ? null : (lifecycle.simulationReadyAtMs as number);
   const rendered = lifecycle.renderFirstFrameAtMs as number;
   const streaming = lifecycle.streamingReadyAtMs as number;
   const interactive = lifecycle.interactiveAtMs as number;
@@ -1418,16 +1518,21 @@ function validateLaunchLifecycle(
     preflight.some((value, index) => index > 0 && value < (preflight[index - 1] as number)) ||
     admitted < finalPreflight ||
     workerRequested < admitted ||
+    (simulationRequested !== null && simulationRequested < workerRequested) ||
+    (simulationReady !== null &&
+      simulationRequested !== null &&
+      simulationReady < simulationRequested) ||
     rendered < workerRequested ||
     streaming < workerRequested ||
     streaming - workerRequested < workerStartupDurationMs ||
     interactive < rendered ||
+    (simulationReady !== null && interactive < simulationReady) ||
     interactive < streaming ||
     lifecycle.durationMs !== interactive - started
   ) {
     throw new Error("Launch lifecycle milestone ordering or duration is inconsistent");
   }
-  return lifecycle as unknown as LaunchToInteractiveEvidence;
+  return lifecycle as unknown as LaunchToInteractiveEvidence | LegacyLaunchToInteractiveEvidence;
 }
 
 function validatePreflightTiming(input: unknown): readonly number[] {

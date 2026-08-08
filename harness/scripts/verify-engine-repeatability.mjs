@@ -15,6 +15,7 @@ const expectedOutputs = Object.freeze([
   "installer-worker.js",
   "render-worker.js",
   "service-worker.js",
+  "sim-worker.js",
   "streaming-worker.js",
   "wasm-thread-worker.js",
 ]);

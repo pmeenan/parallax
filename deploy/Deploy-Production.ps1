@@ -360,7 +360,7 @@ function Get-ValidatedLocalDeployment {
 
     $manifestBytes = [System.IO.File]::ReadAllBytes($manifestPath)
     $manifest = [System.Text.Encoding]::UTF8.GetString($manifestBytes) | ConvertFrom-Json
-    if ($manifest.schemaVersion -ne 15 -or $null -eq $manifest.artifacts) {
+    if ($manifest.schemaVersion -ne 16 -or $null -eq $manifest.artifacts) {
         throw "Production dist has an unsupported build manifest schema: $($manifest.schemaVersion)"
     }
     $installEntrypoint = $manifest.installManifestEntrypoint

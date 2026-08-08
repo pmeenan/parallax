@@ -18,6 +18,12 @@ it to its delivered scope, final outcomes, unresolved carry-forwards, and exit e
 incremental run history remains in decisions.md, rough-edges.md, dependencies.md, and the
 harness result artifacts.
 
+Physical qualification is impact-matched under D-157. A plan item requires Showcase
+`smoke@1` only when its candidate can affect a subsystem, measurement, validator, or
+budget that smoke explicitly exercises. Items isolated to other surfaces use their
+relevant focused or specialized scenario instead; changed artifact identity alone does
+not create a smoke requirement.
+
 ## Standing gate — dependency currency
 
 D-079 and [dependencies.md](dependencies.md) apply to every milestone. Review all direct
@@ -208,7 +214,14 @@ The current platform synthesis and asks are in
 
 ## M3 — Gameplay core + NPC AI  `pending`
 
-- [ ] Sim worker: fixed timestep, input-commands, snapshot interpolation, save/load.
+- [x] Sim worker: engine-owned 60 Hz fixed timestep, ordered tick-stamped commands,
+      fixed-capacity triple-buffered SAB presentation snapshots with interpolation,
+      versioned binary save/load including queued commands, semantic events, and
+      same-host replay/save-load verification in `smoke@1` (D-156). Fresh-adapter
+      replay and terminal-lifecycle review fixes are included in the passing replacement
+      registered dev-01/Showcase schema-v65 / mandatory-metric-set-v30 qualification
+      `smoke-1-97de6eac2741-dev-01-showcase-2026-08-08T15-02-01-915Z.{json,md}`: all
+      three facets passed, 30/30 checks were evaluated, and no core-run failure occurred.
 - [ ] Character controller, camera, basic interaction loop in greybox D1.
 - [ ] NPC navigation and crowds (D-140): navmesh generation over streamed district
       geometry, pathfinding, and avoidance movement adequate for village NPC schedules

@@ -28,10 +28,138 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-157: Match physical qualification to the scenario's exercised surface (2026-08-08, accepted)
+
+**Decision:** Supersede D-097's artifact-wide physical-smoke trigger with an
+impact-based trigger. A final candidate requires the registered physical-console
+`pnpm harness:smoke` only when the change has a credible causal path to behavior,
+telemetry, evidence validation, or a budget that the current `smoke@1` scenario
+actually exercises or evaluates. Changing a built artifact or its digest is not, by
+itself, a physical-smoke trigger.
+
+The current smoke surface is the six-launch boot/launch core and its explicitly
+observed greybox rendering, world streaming, simulation replay/save-load, SAB
+transport, Rust/Wasm threads, render callback pacing, all-worker heap, Dawn pipeline
+cache, PSO warmup, serving/environment identity, telemetry, report finalization, and
+their smoke-specific validators and budgets. A change to one of those paths, its
+collector, its reference-machine inputs, or its smoke budget/mandatory contract
+requires one post-review physical smoke. A change isolated from every one of those
+paths does not.
+
+Changes to a subsystem exercised only by a specialized scenario use that scenario's
+own documented trigger; they do not inherit a routine smoke requirement merely because
+they alter app, engine, game, worker, Wasm, dependency, or build bytes. Likewise, a
+flythrough-only validator, an AI-only path, dormant future code, or a non-smoke budget
+does not trigger routine smoke unless the candidate also affects the smoke surface.
+Documentation-only, test-only, and machine-local changes remain exempt unless they
+change a smoke-specific contract, budget, reference input, or an existing
+candidate/result qualification claim.
+
+Every handoff records either `Physical smoke: required` with the affected smoke
+surface, or `Physical smoke: not required` with the reason no current smoke path is
+affected. Agents resolve uncertainty by tracing the scenario, telemetry, validators,
+and budget consumers; they do not use artifact identity drift as a proxy for impact.
+D-097's final-candidate batching, physical-console requirements, fail-closed evidence,
+and intermittent-failure rules remain in force when the impact trigger fires.
+
+**Context:** The routine Showcase smoke takes six physical launches and coordinates a
+local interactive display. Its evidence is valuable for the systems it runs, but an
+unrelated bundled subsystem can change artifact identity without executing during the
+scenario or affecting any collected value. Requiring the same physical run in that
+case spends scarce console time without increasing confidence in the change. The
+project already uses targeted opt-in qualifiers for subsystem-specific evidence; the
+routine gate should follow the same evidence-to-claim discipline.
+
+**Consequences:** `pnpm check` remains the universal deterministic handoff gate. The
+physical run becomes a mapped verification step instead of an artifact-wide tax. Plan
+items and handoffs must identify the applicable scenario surface explicitly, making an
+incorrect skip reviewable. Historical D-097 results and qualification decisions remain
+immutable; this changes only the trigger for future candidates and does not weaken any
+budget or scenario once applicable.
+
+**Reopen if:** impact analyses routinely miss regressions that the broad artifact-wide
+trigger would have caught; the smoke becomes cheap and unattended enough that broad
+coverage is again worthwhile; or the scenario gains an explicit whole-product property
+whose validity truly depends on every shipped byte.
+
+---
+
+## D-156: Establish the M3 simulation boundary and six-role worker topology (2026-08-08, accepted)
+
+**Decision:** Run authoritative gameplay in an engine-owned dedicated worker at a fixed
+60 Hz. Game code supplies one pure adapter through an exact same-origin,
+content-addressed game-simulation module; the common worker owns scheduling, ordered
+tick-stamped command admission, semantic event sequencing, binary save/load, hashing,
+and telemetry. Live authority and every replay use separate adapter instances created
+by the admitted game-module factory. Stable positive integer entity IDs and transforms
+publish at 30 Hz
+through a fixed-at-boot triple-buffered SAB sized for 4,096 entities. Rendering/UI may
+interpolate those presentation snapshots but cannot mutate authoritative state.
+
+Advance the build manifest to v16 with exactly
+`decode|installer|render|sim|streaming|wasm-thread`, public telemetry to v39, smoke to
+schema v65 / mandatory metric set v30, flythrough to schema v31, and render recovery to
+schema v27. Advance the installed launch lifecycle to `launch-to-interactive@3` /
+schema v3; interactive completion now requires an observed simulation-worker request
+and running state as well as the existing shell, streaming, and render milestones.
+Because asset-update evidence embeds that lifecycle shape, advance newly produced
+evidence to `asset-update-v8-lifecycle@4` / schema v4. Retained v3 evidence remains
+valid only with its exact `launch-to-interactive@2` shape and five-role release
+topology; it is not reinterpreted under the new lifecycle.
+`smoke@1` core-run completion now requires two identical 120-tick replays of
+the same non-empty input log plus worker save/load hash agreement. Save schema v1 binds
+the fixed timestep, tick, last applied sequence, next semantic-event sequence, game
+payload, and queued future commands under one SHA-256 digest. State hashes identify the
+canonical game payload without rebuilding the save/queue envelope on the 30 Hz
+presentation path. Cross-machine replay remains advisory under D-150.
+
+**Context:** M3 is the first milestone with authoritative gameplay state. The earlier
+architecture deliberately reserved a sim worker but build-manifest v15 admitted only
+five roles. Keeping the scheduler in `game/` would violate the platform boundary;
+statically bundling game rules into the worker would violate D-010's shareable common
+engine contract. Variable-size `postMessage` snapshots would also silently abandon the
+existing high-rate sim→render SAB constraint.
+
+**Consequences:** The empty foundation loop adds no standalone performance threshold.
+Step-duration/scheduler-lag high waters, dropped catch-up ticks, queue pressure, hashes,
+save/load counts, and exact SAB capacity/bytes are observable from day one; unchanged
+frame, heap, long-task, and fixed-SAB budgets still gate the candidate. Calibrate a
+sim-step threshold only after character and NPC workloads are representative. The next
+M3 item can add controller rules entirely in the game adapter and connect interpolated
+snapshots to rendering without changing command, save, or worker ownership.
+
+Each SAB slot uses an atomically committed generation marker so a recycled slot cannot
+be accepted while being rewritten; ticks and entity IDs use lossless safe-integer
+low/high words. A presentation consumer that falls three or more publications behind
+drops the stale transform view while still consuming its ordered semantic events and
+telemetry. Publication generations fail before signed-31-bit wrap. Synchronous replay
+requests are bounded to 10,000 ticks, 65,536 commands, and 16 MiB of command data, and a
+request timeout terminates the worker cohort rather than leaving an apparently-running
+wedged authority.
+
+**Qualification evidence:** The replacement registered dev-01/Showcase physical-console
+`smoke@1` result
+`smoke-1-97de6eac2741-dev-01-showcase-2026-08-08T15-02-01-915Z.{json,md}` qualifies the
+fresh-adapter replay and terminal-lifecycle review fixes. It passed schema v65 /
+mandatory metric set v30 with environment, evidence-completeness, and budget facets
+all passed, 30/30 checks evaluated, and no core-run failure. It binds artifact
+`97de6eac27417c97ee94f322305b352d73aee4a87970802ed318e6b7eb0c6c7e` and release
+`cfec1186befa476ae0b9ad09513af1815d7ef3b6231c5106b082e558a5e3a301`; the JSON SHA-256
+is `cf14bdffa7e2dbf6938606dd197501a2973aa3cabc2823a55838f95bf414e08a`. The prior
+schema-v65 result for artifact `656bca1dafb0…` remains valid evidence for that earlier
+candidate.
+
+**Reopen if:** measured structured-clone/control traffic rather than transform payloads
+becomes material; 4,096 presentation entities is insufficient for the slice; save
+migration needs a sectioned/delta successor; or future P2P evidence requires rollback
+or authoritative-state sync instead of deterministic command replay.
+
+---
+
 ## D-155: Process rightsized to MVP scale — one pass, human gate, reviews on demand (2026-08-04, accepted)
 
 **Decision:** The default unit of work is one agent implementing the task, running the
-repo checks (`pnpm check`, plus the one physical D-097 `pnpm harness:smoke` when the
+repo checks (`pnpm check`, plus the one physical D-157 `pnpm harness:smoke` when the
 change qualifies), and handing the working tree to the human, who scans the note and
 diff and commits. The mandatory review pipeline — tech-lead adversarial pre-handoff
 review, reviewer-mode multi-agent fan-out with adversarial challenge, and
@@ -53,7 +181,7 @@ made in the owner's cve.meenan.dev repo and recorded there as its D-062.
 
 **Consequences:** Faster iteration; some defects reach the tree that the pipeline
 would have caught — accepted given the blast radius. Unchanged: the load-bearing
-constraints, the human commit gate (agents never commit), the D-097/D-145
+constraints, the human commit gate (agents never commit), the D-157/D-145
 validation and physical-gate cadence, the production-deployment safety rules, the
 pinned-tool registry, and the closed-experiment rule. workflow.md's loop and its
 tech-lead, reviewer, fix-pass, and verify-pass sections are replaced by the lean
@@ -5862,7 +5990,7 @@ visual, storage, preparation, and environment evidence at both registered target
 
 ---
 
-## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, accepted)
+## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, superseded in trigger scope by D-157)
 
 **Decision:** Interpret the project's per-change performance requirement at the
 reviewable-candidate boundary, not after every edit or review exchange.

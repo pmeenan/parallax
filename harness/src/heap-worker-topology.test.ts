@@ -6,15 +6,17 @@ const workerEntrypoints = Object.freeze([
   worker("decode", "immutable/decode-worker-hash.js"),
   worker("installer", "immutable/installer-worker-hash.js"),
   worker("render", "immutable/render-worker-hash.js"),
+  worker("sim", "immutable/sim-worker-hash.js"),
   worker("streaming", "immutable/streaming-worker-hash.js"),
   worker("wasm-thread", "immutable/wasm-thread-worker-hash.js"),
 ]);
 
 describe("all-realm JS heap worker topology", () => {
-  it("resolves installer, render, streaming, and the exact decode multiplicity", () => {
+  it("resolves installer, render, sim, streaming, and the exact decode multiplicity", () => {
     expect(resolve(workerEntrypoints, 3)).toEqual([
       "https://example.test/immutable/installer-worker-hash.js",
       "https://example.test/immutable/render-worker-hash.js",
+      "https://example.test/immutable/sim-worker-hash.js",
       "https://example.test/immutable/streaming-worker-hash.js",
       "https://example.test/immutable/decode-worker-hash.js",
       "https://example.test/immutable/decode-worker-hash.js",
@@ -22,8 +24,8 @@ describe("all-realm JS heap worker topology", () => {
     ]);
   });
 
-  it("accepts the exact build-manifest v13 five-role topology", () => {
-    expect(resolve(workerEntrypoints, 1)).toHaveLength(4);
+  it("accepts the exact build-manifest v16 six-role topology", () => {
+    expect(resolve(workerEntrypoints, 1)).toHaveLength(5);
   });
 
   it("rejects a missing installer role", () => {
@@ -32,7 +34,7 @@ describe("all-realm JS heap worker topology", () => {
         workerEntrypoints.filter((entrypoint) => entrypoint.role !== "installer"),
         1,
       ),
-    ).toThrow("Expected exactly 5 worker entrypoints; received 4");
+    ).toThrow("Expected exactly 6 worker entrypoints; received 5");
   });
 
   it("rejects a duplicate installer role", () => {

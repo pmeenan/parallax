@@ -169,7 +169,7 @@ function targetFixture() {
     })}\n`,
   );
   const installDigest = bytesToHex(sha256(installBytes));
-  const workers = ["decode", "installer", "render", "streaming", "wasm-thread"].map(
+  const workers = ["decode", "installer", "render", "sim", "streaming", "wasm-thread"].map(
     (role, index) => ({
       path: `immutable/${role}-${String(index).repeat(64)}.js`,
       role,
@@ -199,7 +199,7 @@ function targetFixture() {
         saveSchemaVersion: 1,
         serviceWorkerPath: "service-worker.js",
       },
-      schemaVersion: 15,
+      schemaVersion: 16,
       workerEntrypoints: workers,
     },
     installBytes,

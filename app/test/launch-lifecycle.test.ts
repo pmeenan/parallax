@@ -18,8 +18,8 @@ describe("Launch-to-interactive lifecycle", () => {
   });
 
   it("measures the complete ordered in-app boundary", () => {
-    const times = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200];
-    const tracker = createLaunchLifecycleTracker(() => times.shift() ?? 200);
+    const times = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210, 220];
+    const tracker = createLaunchLifecycleTracker(() => times.shift() ?? 220);
 
     tracker.begin(releaseDigest);
     tracker.markInstalledPreflightPhase("initial-release-admission");
@@ -29,15 +29,18 @@ describe("Launch-to-interactive lifecycle", () => {
     tracker.markInstalledPreflightPhase("final-release-admission");
     tracker.markShellAdmission();
     tracker.markStreamingWorkerRequested();
+    tracker.markSimulationWorkerRequested();
     tracker.markStreamingReady(streamingStartupTiming());
     tracker.markRenderFirstFrame();
+    expect(tracker.snapshot().state).toBe("launching");
+    tracker.markSimulationReady();
 
     expect(tracker.snapshot()).toEqual({
       attempt: 1,
       contract: LAUNCH_LIFECYCLE_CONTRACT,
-      durationMs: 100,
+      durationMs: 120,
       failureMessage: null,
-      interactiveAtMs: 200,
+      interactiveAtMs: 220,
       preflightTiming: {
         finalReleaseAdmissionAtMs: 150,
         initialReleaseAdmissionAtMs: 110,
@@ -46,12 +49,14 @@ describe("Launch-to-interactive lifecycle", () => {
         streamingReferencesReadyAtMs: 130,
       },
       releaseDigest,
-      renderFirstFrameAtMs: 190,
+      renderFirstFrameAtMs: 200,
       schemaVersion: LAUNCH_LIFECYCLE_SCHEMA_VERSION,
       shellAdmissionAtMs: 160,
+      simulationReadyAtMs: 210,
+      simulationWorkerRequestedAtMs: 180,
       startedAtMs: 100,
       state: "interactive",
-      streamingReadyAtMs: 180,
+      streamingReadyAtMs: 190,
       streamingStartupTiming: streamingStartupTiming(),
       streamingWorkerRequestedAtMs: 170,
     });
@@ -67,6 +72,24 @@ describe("Launch-to-interactive lifecycle", () => {
       failureMessage: "streaming failed",
       state: "failed",
     });
+  });
+
+  it("ignores late subsystem milestones after a terminal failure", () => {
+    const tracker = createLaunchLifecycleTracker(() => 10);
+    tracker.begin(releaseDigest);
+    tracker.fail(new Error("streaming failed first"));
+    const failed = tracker.snapshot();
+
+    expect(() => {
+      tracker.markInstalledPreflightPhase("initial-release-admission");
+      tracker.markShellAdmission();
+      tracker.markStreamingWorkerRequested();
+      tracker.markSimulationWorkerRequested();
+      tracker.markRenderFirstFrame();
+      tracker.markStreamingReady(streamingStartupTiming());
+      tracker.markSimulationReady();
+    }).not.toThrow();
+    expect(tracker.snapshot()).toEqual(failed);
   });
 
   it("records a launch-control failure even when admitted identity was omitted before begin", () => {
@@ -103,11 +126,15 @@ describe("Launch-to-interactive lifecycle", () => {
     );
     expect(() => skipped.markShellAdmission()).toThrow("requires completed");
     expect(() => skipped.markStreamingWorkerRequested()).toThrow("requires shell admission");
+    expect(() => skipped.markSimulationWorkerRequested()).toThrow(
+      "requires a streaming worker request",
+    );
+    expect(() => skipped.markSimulationReady()).toThrow("requires a simulation worker request");
     expect(() => skipped.markStreamingReady(streamingStartupTiming())).toThrow(
       "requires complete worker startup timing",
     );
 
-    const terminalTimes = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 175];
+    const terminalTimes = [100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 175];
     const terminalBackwards = createLaunchLifecycleTracker(() => terminalTimes.shift() ?? 175);
     terminalBackwards.begin(releaseDigest);
     terminalBackwards.markInstalledPreflightPhase("initial-release-admission");
@@ -117,8 +144,10 @@ describe("Launch-to-interactive lifecycle", () => {
     terminalBackwards.markInstalledPreflightPhase("final-release-admission");
     terminalBackwards.markShellAdmission();
     terminalBackwards.markStreamingWorkerRequested();
+    terminalBackwards.markSimulationWorkerRequested();
     terminalBackwards.markStreamingReady(streamingStartupTiming());
-    expect(() => terminalBackwards.markRenderFirstFrame()).toThrow("clock moved backwards");
+    terminalBackwards.markRenderFirstFrame();
+    expect(() => terminalBackwards.markSimulationReady()).toThrow("clock moved backwards");
   });
 });
 

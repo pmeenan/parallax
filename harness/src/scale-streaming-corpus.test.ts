@@ -809,7 +809,7 @@ function productionFixture(): Readonly<{
       saveSchemaVersion: 1 as const,
       serviceWorkerPath: "service-worker.js" as const,
     },
-    schemaVersion: 15,
+    schemaVersion: 16,
     workerEntrypoints: Object.freeze([]),
   });
   return Object.freeze({ build, index, manifest });

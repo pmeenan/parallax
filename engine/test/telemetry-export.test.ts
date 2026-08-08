@@ -11,6 +11,7 @@ import {
   type RenderService,
   type RenderTelemetrySnapshot,
 } from "../src/render/render-service";
+import { createSimulationService } from "../src/sim/simulation-service";
 import { unavailableInstallStoreTelemetrySnapshot } from "../src/storage/opfs-release-store";
 import { createWorldStreamingService } from "../src/streaming/world-streaming-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
@@ -29,6 +30,7 @@ describe("combined telemetry export", () => {
       renderService,
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
+      createSimulationService(),
       createWorldStreamingService(),
       {
         abort: () => Promise.resolve(),

@@ -1122,7 +1122,7 @@ function invalidReport() {
     releaseDigest: "b".repeat(64),
     runFailure: null,
     scenario: "render-recovery@1",
-    schemaVersion: 26,
+    schemaVersion: 27,
     source: { commit: "b".repeat(40), dirtyTreeDigest: null },
   };
 }
@@ -1272,7 +1272,8 @@ function initialLatestTelemetry() {
       workerInitToFirstFrameMs: null,
       workerStartupToFirstFrameMs: null,
     },
-    schemaVersion: 38,
+    schemaVersion: 39,
+    simulation: idleSimulation(),
     streaming: initialStreaming(),
     wasmThreadSpike: {},
   };
@@ -1300,6 +1301,31 @@ function unavailableOfflineShell() {
     verifyCount: 0,
     verifyDurationMs: 0,
     verifyHighWaterMs: 0,
+  };
+}
+
+function idleSimulation() {
+  return {
+    appliedCommandCount: 0,
+    droppedCatchUpTickCount: 0,
+    emittedEventCount: 0,
+    failureMessage: null,
+    latestStateHash: null,
+    loadCount: 0,
+    queuedCommandCount: 0,
+    queuedCommandCountHighWater: 0,
+    rejectedCommandCount: 0,
+    saveCount: 0,
+    schedulerLagHighWaterMs: 0,
+    schemaVersion: 1,
+    snapshotCount: 0,
+    snapshotEntityCapacity: 0,
+    snapshotSharedBytes: 0,
+    state: "idle",
+    stepDurationHighWaterMs: 0,
+    tick: 0,
+    timestepHz: 0,
+    workerGeneration: 0,
   };
 }
 

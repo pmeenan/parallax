@@ -127,7 +127,7 @@ describe("asset-update V8 result pair", () => {
 
   it("suffixes an existing JSON collision without overwriting it", async () => {
     const root = await resultRoot();
-    const stem = "asset-update-v8-v3-2026-07-30T04-00-00-000Z";
+    const stem = "asset-update-v8-v4-2026-07-30T04-00-00-000Z";
     const collisionPath = join(root, `${stem}.json`);
     await writeFile(collisionPath, "owned-by-someone-else");
 
@@ -140,7 +140,7 @@ describe("asset-update V8 result pair", () => {
 
   it("retains a typed abandoned JSON reservation when the companion path collides", async () => {
     const root = await resultRoot();
-    const stem = "asset-update-v8-v3-2026-07-30T04-00-00-000Z";
+    const stem = "asset-update-v8-v4-2026-07-30T04-00-00-000Z";
     const markdownCollision = join(root, `${stem}.md`);
     await writeFile(markdownCollision, "existing companion");
 
@@ -703,7 +703,7 @@ describe("asset-update V8 result pair", () => {
 
   it("retains typed abandonment when initial validation fails after exclusive creation", async () => {
     const root = await resultRoot();
-    const stem = "asset-update-v8-v3-2026-07-30T04-00-00-000Z";
+    const stem = "asset-update-v8-v4-2026-07-30T04-00-00-000Z";
 
     await expect(
       reserveAssetUpdateV8Result(

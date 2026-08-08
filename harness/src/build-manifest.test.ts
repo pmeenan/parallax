@@ -32,6 +32,7 @@ async function writeFixture(
     ["decode", "export const worker = 'decode';"],
     ["installer", "export const worker = 'installer';"],
     ["render", "export const worker = 'render';"],
+    ["sim", "export const worker = 'sim';"],
     ["streaming", "export const worker = 'streaming';"],
     ["wasm-thread", "export const worker = 'wasm-thread';"],
   ]);
@@ -147,11 +148,12 @@ async function writeFixture(
         saveSchemaVersion: 1,
         serviceWorkerPath: "service-worker.js",
       },
-      schemaVersion: 15,
+      schemaVersion: 16,
       workerEntrypoints: [
         { path: workerPaths.get("decode"), role: "decode", targetType: "worker" },
         { path: workerPaths.get("installer"), role: "installer", targetType: "worker" },
         { path: workerPaths.get("render"), role: "render", targetType: "worker" },
+        { path: workerPaths.get("sim"), role: "sim", targetType: "worker" },
         { path: workerPaths.get("streaming"), role: "streaming", targetType: "worker" },
         { path: workerPaths.get("wasm-thread"), role: "wasm-thread", targetType: "worker" },
       ],
@@ -451,7 +453,7 @@ describe("build manifest validation", () => {
   it("accepts a served tree whose files are all listed in the manifest", async () => {
     const root = await writeFixture();
     const validated = await readAndValidateBuildManifest(root);
-    expect(validated.manifest.artifacts).toHaveLength(15);
+    expect(validated.manifest.artifacts).toHaveLength(16);
     expect(validated.artifactDigest).toMatch(/^[a-f0-9]{64}$/);
   });
 
@@ -637,7 +639,7 @@ describe("build manifest validation", () => {
     );
   });
 
-  it("rejects missing or duplicate worker roles in manifest v15", async () => {
+  it("rejects missing or duplicate worker roles in manifest v16", async () => {
     const root = await writeFixture();
     const manifestPath = join(root, "build-manifest.json");
     const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as {
@@ -647,7 +649,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct decode, installer, render, streaming, and WASM-thread worker",
+      "requires exactly one distinct decode, installer, render, sim, streaming, and WASM-thread worker",
     );
 
     const duplicateRoot = await writeFixture();
@@ -661,7 +663,7 @@ describe("build manifest validation", () => {
     await writeFile(duplicateManifestPath, JSON.stringify(duplicateManifest));
 
     await expect(readAndValidateBuildManifest(duplicateRoot)).rejects.toThrow(
-      "requires exactly one distinct decode, installer, render, streaming, and WASM-thread worker",
+      "requires exactly one distinct decode, installer, render, sim, streaming, and WASM-thread worker",
     );
   });
 
@@ -694,7 +696,7 @@ describe("build manifest validation", () => {
     await writeFile(manifestPath, JSON.stringify(manifest));
 
     await expect(readAndValidateBuildManifest(root)).rejects.toThrow(
-      "requires exactly one distinct decode, installer, render, streaming, and WASM-thread worker",
+      "requires exactly one distinct decode, installer, render, sim, streaming, and WASM-thread worker",
     );
   });
 
