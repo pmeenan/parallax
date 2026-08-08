@@ -13,6 +13,8 @@ import type { PsoWarmupTelemetrySnapshot, PsoWarmupTraceBundle } from "./pso-war
 
 export type { GreyboxSceneConfig } from "../world/world-contract";
 
+export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
+
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;
   readonly clearColor: readonly [number, number, number, number];
@@ -61,6 +63,11 @@ export interface RenderResizeMessage {
 
 export interface RenderGameplayPresentationMessage {
   readonly cameraPitchRadians: number;
+  readonly crowdEntities: readonly Readonly<{
+    readonly id: number;
+    readonly position: readonly [number, number, number];
+    readonly yawRadians: number;
+  }>[];
   readonly kind: "gameplay-presentation";
   readonly playerPosition: readonly [number, number, number];
   readonly playerYawRadians: number;

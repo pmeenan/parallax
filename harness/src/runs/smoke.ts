@@ -18,8 +18,13 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 31;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 32;
 export const SMOKE_REPEATS = 3;
+export const SMOKE_SIMULATION_GAMEPLAY_WORKLOAD = Object.freeze({
+  navigationPathQueryCount: 8,
+  navigationTileCount: 256,
+  npcAgentCount: 48,
+});
 export const SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS = 1;
 export const SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT = 0.1;
 export const SMOKE_BUDGET_METRICS = Object.freeze({
@@ -27,7 +32,7 @@ export const SMOKE_BUDGET_METRICS = Object.freeze({
   mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
   pipelineCreationActivityOverlappingMeasurement: "pipelineCreationActivityOverlappingMeasurement",
   shaderCompilationsOverlappingMeasurement: "shaderCompilationsOverlappingMeasurement",
-  simulationControllerStepHighWaterMs: "simulationControllerStepHighWaterMs",
+  simulationGameplayStepHighWaterMs: "simulationGameplayStepHighWaterMs",
   streamingCellLoadP95Ms: "streamingCellLoadP95Ms",
 } as const);
 export const SMOKE_BUDGET_METRIC_NAMES = Object.freeze(Object.values(SMOKE_BUDGET_METRICS));
@@ -56,8 +61,9 @@ export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 export const SMOKE_TELEMETRY_SCHEMA_VERSION = 41;
-// v67 carries public telemetry v41 and gates the moving-controller step high water.
-export const SMOKE_REPORT_SCHEMA_VERSION = 67;
+// v68 carries the deterministic 48-agent navigation/crowd workload and its combined
+// gameplay-simulation step high-water gate.
+export const SMOKE_REPORT_SCHEMA_VERSION = 68;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -74,7 +80,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("streaming cell-load p95 variance", false, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
-  metric("moving character controller step duration", true, "implemented"),
+  metric("character and NPC navigation/crowd step duration", true, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
   metric("attributable GPU memory", false, "implemented"),

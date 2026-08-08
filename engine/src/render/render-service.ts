@@ -22,6 +22,7 @@ import type {
   RenderWorkerRequest,
   RenderWorkerResponse,
 } from "./render-protocol";
+import { RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render-protocol";
 
 export type {
   FlythroughCheckpointRenderEvidence,
@@ -104,10 +105,19 @@ export interface RenderService {
 
 export interface RenderGameplayPresentation {
   readonly cameraPitchRadians: number;
+  readonly crowdEntities: readonly RenderGameplayEntity[];
   readonly playerPosition: readonly [number, number, number];
   readonly playerYawRadians: number;
   readonly sequence: number;
 }
+
+export interface RenderGameplayEntity {
+  readonly id: number;
+  readonly position: readonly [number, number, number];
+  readonly yawRadians: number;
+}
+
+export { RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render-protocol";
 
 export interface RenderStartupTelemetry {
   readonly failStreamingCohort: (message: string) => void;
@@ -973,7 +983,17 @@ export function createRenderService(): RenderService {
         presentation.sequence < 0 ||
         !Number.isFinite(presentation.cameraPitchRadians) ||
         !Number.isFinite(presentation.playerYawRadians) ||
-        presentation.playerPosition.some((value) => !Number.isFinite(value))
+        presentation.playerPosition.some((value) => !Number.isFinite(value)) ||
+        presentation.crowdEntities.length > RENDER_GAMEPLAY_CROWD_CAPACITY ||
+        presentation.crowdEntities.some(
+          (entity) =>
+            !Number.isSafeInteger(entity.id) ||
+            entity.id < 0 ||
+            !Number.isFinite(entity.yawRadians) ||
+            entity.position.some((value) => !Number.isFinite(value)),
+        ) ||
+        new Set(presentation.crowdEntities.map((entity) => entity.id)).size !==
+          presentation.crowdEntities.length
       ) {
         throw new Error("Gameplay presentation is invalid");
       }
@@ -985,6 +1005,14 @@ export function createRenderService(): RenderService {
       }
       latestGameplayPresentation = Object.freeze({
         ...presentation,
+        crowdEntities: Object.freeze(
+          presentation.crowdEntities.map((entity) =>
+            Object.freeze({
+              ...entity,
+              position: Object.freeze([...entity.position]) as readonly [number, number, number],
+            }),
+          ),
+        ),
         playerPosition: Object.freeze([...presentation.playerPosition]) as readonly [
           number,
           number,

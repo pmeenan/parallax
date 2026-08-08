@@ -98,7 +98,7 @@ describe("data-first greybox world generation", () => {
     expect(summary.cellCount).toBe(CELLS_PER_AXIS ** 2);
     expect(summary.heightSampleCount).toBe(CELLS_PER_AXIS ** 2 * HEIGHTFIELD_SAMPLES_PER_AXIS ** 2);
     expect(summary.colliderCount).toBeGreaterThan(0);
-    expect(summary.markerCount).toBe(7);
+    expect(summary.markerCount).toBe(15);
   });
 
   it("preserves stable IDs, ordering, neighbors, and deterministic generation", () => {

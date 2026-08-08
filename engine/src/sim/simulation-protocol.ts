@@ -5,7 +5,7 @@ import type {
   WorldBounds,
 } from "../world/world-contract";
 
-export const SIMULATION_PROTOCOL_VERSION = 2;
+export const SIMULATION_PROTOCOL_VERSION = 3;
 export const SIMULATION_SAVE_SCHEMA_VERSION = 1;
 export const SIMULATION_TELEMETRY_SCHEMA_VERSION = 3;
 export const MAXIMUM_SIMULATION_REPLAY_TICKS = 10_000;
@@ -124,6 +124,7 @@ export interface SimulationStartOptions {
 }
 
 export interface SimulationReplayResult {
+  readonly adapterInitializationDurationMs: number;
   readonly finalSave: Uint8Array;
   readonly finalStateHash: string;
   readonly gameCounters: Readonly<Record<string, number>>;

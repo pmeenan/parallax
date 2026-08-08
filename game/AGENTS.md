@@ -23,7 +23,8 @@ extend the engine interface (in `engine/`, following its rules) — don't tunnel
 game/
   world/       district/cell definitions, world graph, spawn tables (data-first)
   sim/         ✅ gameplay adapter/state plus runtime binding; D1 movement,
-               collision, camera presentation, and transition interaction are live
+               collision, transition interaction, and deterministic NPC navigation,
+               schedules, avoidance, and presentation are live
   npc/         persona cards, dialog schemas, memory policies
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)

@@ -93,6 +93,26 @@ const validGreyboxWorld = Object.freeze({
   }),
 });
 
+function simulationGameplayEvidence() {
+  return Object.freeze({
+    adapterInitializationHighWaterMs: 4,
+    movementDistanceMeters: 10,
+    navigationEdgeCount: 100,
+    navigationExpandedNodeCount: 24,
+    navigationGridBytes: 1_000,
+    navigationNodeCount: 50,
+    navigationPathNodeCount: 16,
+    navigationPathQueryCount: 8,
+    navigationTileCount: 256,
+    npcAgentCount: 48,
+    npcAvoidanceAdjustmentCount: 12,
+    npcMovementDistanceMeters: 20,
+    npcMovingAgentCount: 40,
+    npcScheduleTransitionCount: 8,
+    stepDurationHighWaterMs: 0.25,
+  });
+}
+
 const validStreamingSamples = Object.freeze(
   Array.from({ length: 10 }, (_, index) =>
     Object.freeze({
@@ -226,7 +246,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       passed: true,
     },
     { actual: 0, limit: 0, metric: "shaderCompilationsOverlappingMeasurement", passed: true },
-    { actual: 0.25, limit: 2, metric: "simulationControllerStepHighWaterMs", passed: true },
+    { actual: 0.25, limit: 2, metric: "simulationGameplayStepHighWaterMs", passed: true },
     { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
   ];
   const runs = [
@@ -238,7 +258,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       repeat: index + 1,
       simulationController: {
         state: "measured" as const,
-        value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+        value: simulationGameplayEvidence(),
       },
       streaming: { state: "measured" as const, value: validStreaming },
     })),
@@ -250,7 +270,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       repeat: index + 1,
       simulationController: {
         state: "measured" as const,
-        value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+        value: simulationGameplayEvidence(),
       },
       streaming: { state: "measured" as const, value: validStreaming },
     })),
@@ -939,7 +959,7 @@ describe("baseline result store", () => {
             ? {
                 ...run,
                 budgetChecks: run.budgetChecks.map((check) =>
-                  check.metric === "simulationControllerStepHighWaterMs"
+                  check.metric === "simulationGameplayStepHighWaterMs"
                     ? { ...check, actual: 0.5 }
                     : check,
                 ),
@@ -948,6 +968,50 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/controller budget check must agree/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                budgetChecks: run.budgetChecks.map((check) =>
+                  check.metric === "simulationGameplayStepHighWaterMs"
+                    ? { ...check, actual: 50, limit: 100, passed: true }
+                    : check,
+                ),
+                simulationController: {
+                  state: "measured",
+                  value: { ...run.simulationController.value, stepDurationHighWaterMs: 50 },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/authoritative gameplay limit/);
+    for (const [field, value] of [
+      ["npcAgentCount", 1],
+      ["navigationPathQueryCount", 1],
+      ["navigationTileCount", 1],
+      ["npcAvoidanceAdjustmentCount", 1.5],
+    ] as const) {
+      expect(() =>
+        parseBaselineEligibleReport({
+          ...report(),
+          runs: report().runs.map((run, index) =>
+            index === 0
+              ? {
+                  ...run,
+                  simulationController: {
+                    state: "measured",
+                    value: { ...run.simulationController.value, [field]: value },
+                  },
+                }
+              : run,
+          ),
+        }),
+      ).toThrow(/gameplay crowd evidence|safe integer/);
+    }
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),

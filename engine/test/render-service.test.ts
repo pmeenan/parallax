@@ -106,6 +106,7 @@ describe("render service recovery", () => {
     const service = createRenderService();
     const initial = Object.freeze({
       cameraPitchRadians: 0.2,
+      crowdEntities: Object.freeze([]),
       playerPosition: Object.freeze([1, 2, 3] as const),
       playerYawRadians: 0.5,
       sequence: 4,

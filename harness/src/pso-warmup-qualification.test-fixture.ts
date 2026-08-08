@@ -271,7 +271,7 @@ export function completePsoQualificationSmokeReport(input: {
       metric: "shaderCompilationsOverlappingMeasurement",
       passed: true,
     },
-    { actual: 0.25, limit: 2, metric: "simulationControllerStepHighWaterMs", passed: true },
+    { actual: 0.25, limit: 2, metric: "simulationGameplayStepHighWaterMs", passed: true },
     { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
   ];
   const runs: Record<string, unknown>[] = [];
@@ -329,7 +329,23 @@ export function completePsoQualificationSmokeReport(input: {
         renderSurfaceChanges: [],
         simulationController: {
           state: "measured",
-          value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+          value: {
+            adapterInitializationHighWaterMs: 4,
+            movementDistanceMeters: 10,
+            navigationEdgeCount: 100,
+            navigationExpandedNodeCount: 24,
+            navigationGridBytes: 1_000,
+            navigationNodeCount: 50,
+            navigationPathNodeCount: 16,
+            navigationPathQueryCount: 8,
+            navigationTileCount: 256,
+            npcAgentCount: 48,
+            npcAvoidanceAdjustmentCount: 12,
+            npcMovementDistanceMeters: 20,
+            npcMovingAgentCount: 40,
+            npcScheduleTransitionCount: 8,
+            stepDurationHighWaterMs: 0.25,
+          },
         },
         streaming: { state: "measured", value: streaming },
       });

@@ -27,7 +27,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   psoWarmup: "PSO warmup trace replay",
   reportFinalization: "report finalization",
   sabRingBuffer: "SAB ring-buffer transport",
-  simulationController: "moving character controller step duration",
+  simulationController: "character and NPC navigation/crowd step duration",
   streaming: "world streaming pipeline",
   streamingVariance: "streaming cell-load p95 variance",
   wasmThreads: "Rust/WASM threads",
@@ -274,7 +274,7 @@ export function collectSmokeEvidenceChecks(
     ),
     ...input.runs.map((run) =>
       evidenceCheck(
-        `${run.profile} repeat ${run.repeat}: moving character controller step duration ${run.simulationController.state} (${evidenceReason(run.simulationController)})`,
+        `${run.profile} repeat ${run.repeat}: character and NPC navigation/crowd step duration ${run.simulationController.state} (${evidenceReason(run.simulationController)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.simulationController),
         run.simulationController,
       ),

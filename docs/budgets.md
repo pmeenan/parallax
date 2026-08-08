@@ -45,15 +45,26 @@ tolerances).
 | GPU frame time (execute), distribution | recorded | recorded | **Non-gating diagnostic** — full distribution, same caveat |
 | Pipeline compiles during gameplay | 0 | 0 | All PSOs warmed at boot; any runtime compile is a bug + a finding |
 | Main-thread long tasks during gameplay | 0 > 50 ms | 0 > 50 ms | Main thread is orchestration-only |
-| Moving-controller sim step high water | ≤ 2.00 ms | ≤ 2.00 ms | Maximum across `smoke@1`'s two deterministic 120-tick controller executions; provisional controller-only envelope, recalibrated when representative NPC work joins the tick |
+| Character + 48-NPC navigation/crowd sim step high water | ≤ 2.00 ms | ≤ 2.00 ms | Maximum across `smoke@1`'s two deterministic 120-tick executions; includes player movement, tiled-navmesh path following, schedules, and pairwise avoidance |
 
 M3 simulation telemetry records step-duration and scheduler-lag high waters, dropped
 catch-up ticks, command queue high water, and the fixed snapshot SAB allocation. D-156
 did not invent a standalone sim-step threshold for its empty loop. D-158's first moving
-gameplay workload establishes the provisional ≤2.00 ms controller-only high-water gate,
-leaving at least 88% of a 60 Hz tick for later systems. NPC navigation/crowds must
-recalibrate the combined simulation envelope rather than treating this controller-only
-number as whole-M3 capacity evidence.
+gameplay workload established the provisional ≤2.00 ms controller-only high-water gate.
+The M3 NPC navigation/crowd change keeps that numeric ceiling while redefining the gated
+workload to include 48 scheduled agents, deterministic tiled navigation/pathfinding,
+and pairwise avoidance. This retains at least 88% of a 60 Hz tick for later systems;
+acceptance therefore depended on the converged physical report rather than assuming the
+controller result transferred. The same report records adapter/nav initialization high water and
+logical nav-grid/path storage; those boot costs are diagnostic while the existing
+launch-to-interactive budget continues to gate their user-visible effect.
+
+D-159's accepted registered dev-01 Showcase report
+`smoke-1-e93e5d805b97-dev-01-showcase-2026-08-08T21-36-03-455Z.json` passed schema v68 /
+mandatory metric set v32 with 36/36 checks. Combined character-plus-48-NPC step-duration
+high waters spanned 0.445–0.755 ms across the six launch measurements; the accepted
+maximum is 0.755 ms against the retained 2.00 ms envelope. Adapter/nav initialization
+high water spanned 93.545–94.740 ms.
 
 D-158's accepted registered dev-01 Showcase report
 `smoke-1-ea19e3ab0e9b-dev-01-showcase-2026-08-08T16-49-59-763Z.json` passed
@@ -524,7 +535,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v31, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v32, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
@@ -546,7 +557,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-   corresponding current `smoke@1` report schema is v67
+   corresponding current `smoke@1` report schema is v68
    and public telemetry is v41. D-139 additionally requires exact
    trace/build-compatibility identity, one progressive registry miss, one deduplicated
    replay hit, complete entry coverage, and zero failures before product Ready. Its

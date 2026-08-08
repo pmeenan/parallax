@@ -4,11 +4,15 @@ import {
   simulationWorldDefinition,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
+import { NPC_CROWD_BALANCE } from "../src/balance/npc-crowd";
+import { buildDeterministicNavigationMesh } from "../src/sim/deterministic-navigation";
 import {
   createGameSimulationAdapter,
   createPlayerInputCommand,
+  NPC_ENTITY_ID_START,
   PLAYER_ENTITY_ID,
 } from "../src/sim/m3-simulation";
+import { buildNpcScheduleSet } from "../src/sim/npc-schedules";
 import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
 import { createGreyboxScene } from "../src/world/greybox-generator";
 
@@ -27,9 +31,11 @@ describe("M3 game simulation adapter", () => {
       events: [{ kind: "input.command-applied", sequence: 0, tick: 1 }],
     });
     const saved = runtime.save();
-    expect(saved.presentation.entities).toEqual([
+    expect(saved.presentation.entities[0]).toEqual(
       expect.objectContaining({ id: PLAYER_ENTITY_ID, yawRadians: 1 }),
-    ]);
+    );
+    expect(saved.presentation.entities).toHaveLength(49);
+    expect(saved.presentation.entities[1]?.id).toBe(NPC_ENTITY_ID_START);
     expect(createSimulationRuntime(adapter, 0, 60).load(saved.saveBytes).presentation).toEqual(
       saved.presentation,
     );
@@ -78,6 +84,58 @@ describe("M3 game simulation adapter", () => {
     expect(() => adapter.deserializeState(bytes)).toThrow(/noncanonical interaction flag/);
   });
 
+  it("round-trips cumulative crowd counters beyond uint32 without truncation", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const bytes = adapter.serializeState(adapter.createInitialState(1));
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    view.setFloat64(68, 2 ** 32 + 48, true);
+    view.setFloat64(88, 2 ** 32 + 1, true);
+    const roundTripped = adapter.serializeState(adapter.deserializeState(bytes));
+    const roundTripView = new DataView(
+      roundTripped.buffer,
+      roundTripped.byteOffset,
+      roundTripped.byteLength,
+    );
+    expect(roundTripView.getFloat64(68, true)).toBe(2 ** 32 + 48);
+    expect(roundTripView.getFloat64(88, true)).toBe(2 ** 32 + 1);
+  });
+
+  it("rejects a finite off-mesh NPC pose in serialized state", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const bytes = adapter.serializeState(adapter.createInitialState(1));
+    new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setFloat32(96 + 12, 1e9, true);
+    expect(() => adapter.deserializeState(bytes)).toThrow(/invalid NPC values/);
+  });
+
+  it("rejects a walkable NPC pose whose saved path cursor is not directly reachable", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const navigation = buildDeterministicNavigationMesh(context.world, {
+      agentRadiusMeters: NPC_CROWD_BALANCE.agentRadiusMeters,
+      maximumGroundStepMeters: NPC_CROWD_BALANCE.maximumGroundStepMeters,
+      sampleSpacingMeters: NPC_CROWD_BALANCE.navigationSampleSpacingMeters,
+    });
+    const schedules = buildNpcScheduleSet(context.world, navigation);
+    const bytes = adapter.serializeState(adapter.createInitialState(1));
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const routeIndex = view.getUint16(96 + 4, true);
+    const targetStopIndex = view.getUint16(96 + 6, true);
+    const pathCursor = view.getUint16(96 + 8, true);
+    const target = schedules.routes[routeIndex]?.segments[targetStopIndex]?.nodes[pathCursor];
+    if (target === undefined) throw new Error("Test NPC target is unavailable");
+    const candidate = schedules.routes
+      .flatMap(({ segments }) => segments.flatMap(({ nodes }) => nodes))
+      .find((node) => !navigation.canTraverseSegment(node, target));
+    if (candidate === undefined) throw new Error("Test world has no path-inconsistent pose");
+    view.setFloat32(96 + 12, candidate[0], true);
+    view.setFloat32(
+      96 + 16,
+      navigation.groundHeight(candidate[0], candidate[2]) + NPC_CROWD_BALANCE.agentHeightMeters / 2,
+      true,
+    );
+    view.setFloat32(96 + 20, candidate[2], true);
+    expect(() => adapter.deserializeState(bytes)).toThrow(/invalid NPC values/);
+  });
+
   it("rejects a digest-valid save whose game payload violates input invariants", async () => {
     const adapter = createGameSimulationAdapter(context);
     const saved = createSimulationRuntime(adapter, 1, 60).save().saveBytes;
@@ -113,6 +171,7 @@ describe("M3 game simulation adapter", () => {
     const nearbyWorld = Object.freeze({
       ...simulationWorldDefinition(world),
       markers: Object.freeze([
+        ...simulationWorldDefinition(world).markers,
         Object.freeze({
           id: "test-transition",
           kind: "transition" as const,
@@ -143,6 +202,71 @@ describe("M3 game simulation adapter", () => {
       interactionActivationCount: 1,
       interactionAttemptCount: 1,
     });
+  });
+
+  it("generates tiled navigation and advances deterministic schedule crowds with avoidance", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const initial = adapter.createInitialState(123);
+    expect(adapter.telemetryCounters(initial).npcScheduleTransitionCount).toBe(0);
+    expect(
+      new Set(
+        adapter
+          .presentationSnapshot(initial)
+          .filter(({ id }) => id !== PLAYER_ENTITY_ID)
+          .map(({ position }) => position.join(",")),
+      ).size,
+    ).toBe(48);
+    const initialCrowd = adapter
+      .presentationSnapshot(initial)
+      .filter(({ id }) => id !== PLAYER_ENTITY_ID);
+    for (const [index, agent] of initialCrowd.entries()) {
+      for (const other of initialCrowd.slice(index + 1)) {
+        expect(
+          Math.hypot(agent.position[0] - other.position[0], agent.position[2] - other.position[2]),
+        ).toBeGreaterThanOrEqual(NPC_CROWD_BALANCE.agentRadiusMeters * 2);
+      }
+    }
+    const result = runSimulationReplay(adapter, 123, 60, [], 240);
+    expect(result.gameCounters).toMatchObject({
+      navigationPathQueryCount: 8,
+      navigationTileCount: world.cells.length,
+      npcAgentCount: 48,
+    });
+    expect(result.gameCounters.navigationNodeCount).toBeGreaterThan(60_000);
+    expect(result.gameCounters.navigationEdgeCount).toBeGreaterThan(
+      result.gameCounters.navigationNodeCount ?? 0,
+    );
+    expect(result.gameCounters.navigationExpandedNodeCount).toBeGreaterThan(0);
+    expect(result.gameCounters.navigationGridBytes).toBeGreaterThan(0);
+    expect(result.gameCounters.navigationPathNodeCount).toBeGreaterThan(8);
+    expect(result.gameCounters.npcMovementDistanceMeters).toBeGreaterThan(0);
+    expect(result.gameCounters.npcAvoidanceAdjustmentCount).toBeGreaterThan(0);
+    expect(result.gameCounters.npcScheduleTransitionCount).toBeGreaterThan(0);
+    expect(result.gameCounters.npcMovingAgentCount).toBeGreaterThan(0);
+  });
+
+  it("keeps every avoidance and waypoint-progress state serializable", () => {
+    const adapter = createGameSimulationAdapter(context);
+    let state = adapter.createInitialState(123);
+    for (let tick = 1; tick <= 240; tick += 1) {
+      const previous = new Map(
+        adapter
+          .presentationSnapshot(state)
+          .filter(({ id }) => id !== PLAYER_ENTITY_ID)
+          .map((entity) => [entity.id, entity.position] as const),
+      );
+      state = adapter.step(state, tick).state;
+      expect(() => adapter.serializeState(state)).not.toThrow();
+      for (const entity of adapter
+        .presentationSnapshot(state)
+        .filter(({ id }) => id !== PLAYER_ENTITY_ID)) {
+        const before = previous.get(entity.id);
+        if (before === undefined) throw new Error("Test crowd identity disappeared");
+        expect(
+          Math.hypot(entity.position[0] - before[0], entity.position[2] - before[2]),
+        ).toBeLessThanOrEqual(NPC_CROWD_BALANCE.movementMetersPerSecond / 60 + 0.000_01);
+      }
+    }
   });
 
   it("slides the capsule no farther than D1's authored AABB collision boundary", () => {

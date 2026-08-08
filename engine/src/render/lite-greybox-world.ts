@@ -48,6 +48,7 @@ import type {
   FlythroughCheckpointRenderEvidence,
   GreyboxWorkerRenderTelemetry,
 } from "./render-protocol";
+import { RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render-protocol";
 
 export interface GeometryBatch {
   readonly indices: Uint32Array;
@@ -388,6 +389,18 @@ export async function createLiteGreyboxWorld(
     playerMaterial.diffuseColor = [0.92, 0.58, 0.16];
     playerMesh.material = playerMaterial;
     addToScene(scene, playerMesh);
+    const crowdMaterial = createStandardMaterial();
+    crowdMaterial.diffuseColor = [0.2, 0.72, 0.44];
+    const crowdMeshes = Object.freeze(
+      Array.from({ length: RENDER_GAMEPLAY_CROWD_CAPACITY }, (_, index) => {
+        const mesh = createCapsule(engine, { height: 1.72, radius: 0.42, tessellation: 8 });
+        mesh.name = `gameplay-crowd-${index}`;
+        mesh.material = crowdMaterial;
+        mesh.visible = false;
+        addToScene(scene, mesh);
+        return mesh;
+      }),
+    );
     const markerMeshes = config.world.markers
       .filter((marker) => marker.kind === "transition")
       .map((marker) => {
@@ -467,7 +480,7 @@ export async function createLiteGreyboxWorld(
       }
     }
     await psoWarmup.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, () =>
-      psoObservation.register([...previewMeshes, playerMesh, ...markerMeshes], () =>
+      psoObservation.register([...previewMeshes, playerMesh, ...crowdMeshes, ...markerMeshes], () =>
         registerScene(scene),
       ),
     );
@@ -505,6 +518,7 @@ export async function createLiteGreyboxWorld(
       animationStartedAt: null as number | null,
       camera,
       config,
+      crowdMeshes,
       engine,
       light,
       materials,
@@ -550,6 +564,11 @@ export function applyGameplayPresentation(
   renderer: LiteGreyboxWorld,
   presentation: Readonly<{
     readonly cameraPitchRadians: number;
+    readonly crowdEntities: readonly Readonly<{
+      readonly id: number;
+      readonly position: readonly [number, number, number];
+      readonly yawRadians: number;
+    }>[];
     readonly playerPosition: readonly [number, number, number];
     readonly playerYawRadians: number;
   }>,
@@ -557,6 +576,13 @@ export function applyGameplayPresentation(
   renderer.playerMesh.visible = true;
   renderer.playerMesh.position.set(...presentation.playerPosition);
   renderer.playerMesh.rotation.y = presentation.playerYawRadians;
+  for (const [index, mesh] of renderer.crowdMeshes.entries()) {
+    const entity = presentation.crowdEntities[index];
+    mesh.visible = entity !== undefined;
+    if (entity === undefined) continue;
+    mesh.position.set(...entity.position);
+    mesh.rotation.y = entity.yawRadians;
+  }
   renderer.camera.target.x = presentation.playerPosition[0];
   renderer.camera.target.y = presentation.playerPosition[1] + 0.55;
   renderer.camera.target.z = presentation.playerPosition[2];
@@ -941,6 +967,7 @@ export function applyFlythroughSample(
   camera: Readonly<{ beta: number; heightMeters: number; radiusMeters: number }>,
 ): void {
   renderer.playerMesh.visible = false;
+  for (const mesh of renderer.crowdMeshes) mesh.visible = false;
   if (renderer.presentationOwner === "preview") {
     renderer.presentationOwner = "streamed-residency";
     for (const mesh of renderer.previewMeshes) mesh.visible = false;

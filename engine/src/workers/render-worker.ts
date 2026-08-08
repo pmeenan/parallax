@@ -439,6 +439,9 @@ function startRenderWorker(): void {
             activeFlythroughGeneration = request.nextFlythroughGeneration;
             flythroughTransportSequence = request.flythroughObserverUpdateCount;
             lastCompletedRunSequence = null;
+            if (latestGameplayPresentation !== null) {
+              applyGameplayPresentation(renderer, latestGameplayPresentation);
+            }
             workerScope.postMessage({
               flythroughGeneration: activeFlythroughGeneration,
               kind: "flythrough-reset-complete",

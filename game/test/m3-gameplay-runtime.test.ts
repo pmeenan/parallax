@@ -27,6 +27,7 @@ describe("M3 gameplay runtime", () => {
       tick: 10,
     } as ReturnType<SimulationService["snapshot"]>;
     let sampledPosition: readonly [number, number, number] = [2, 3, 4];
+    let sampledCrowdPosition: readonly [number, number, number] = [8, 2, 9];
     const commands: SimulationCommand[] = [];
     const presentations: RenderGameplayPresentation[] = [];
     const observers: (readonly [number, number, number])[][] = [];
@@ -56,7 +57,10 @@ describe("M3 gameplay runtime", () => {
     const simulation = {
       enqueue: (command: SimulationCommand) => commands.push(command),
       samplePresentation: () => ({
-        entities: [{ id: 1, position: sampledPosition, yawRadians: 0.5 }],
+        entities: [
+          { id: 1, position: sampledPosition, yawRadians: 0.5 },
+          { id: 1_000, position: sampledCrowdPosition, yawRadians: -0.25 },
+        ],
         stateHash: "a".repeat(64),
         tick: 12,
       }),
@@ -128,16 +132,25 @@ describe("M3 gameplay runtime", () => {
     expect(observers).toEqual([]);
     runtime.update(100, false, true);
     expect(presentations).toMatchObject([
-      { cameraPitchRadians: 0.2, playerPosition: [2, 3, 4], playerYawRadians: 0.5 },
+      {
+        cameraPitchRadians: 0.2,
+        crowdEntities: [{ id: 1_000, position: [8, 2, 9], yawRadians: -0.25 }],
+        playerPosition: [2, 3, 4],
+        playerYawRadians: 0.5,
+      },
     ]);
     expect(observers).toEqual([[[2, 3, 4]]]);
 
     runtime.update(116, false, true);
     expect(presentations).toHaveLength(1);
+    sampledCrowdPosition = [8.125, 2, 9];
+    runtime.update(125, false, true);
+    expect(presentations).toHaveLength(2);
     sampledPosition = [2.125, 3, 4];
     runtime.update(133, false, true);
     expect(presentations).toMatchObject([
       { playerPosition: [2, 3, 4] },
+      { crowdEntities: [{ position: [8.125, 2, 9] }] },
       { playerPosition: [2.125, 3, 4] },
     ]);
 

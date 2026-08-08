@@ -141,6 +141,24 @@ horizontal AABBs, and emits transition interaction as a semantic event. Controll
 distance, collision resolutions, and interaction attempts/activations are public sim
 counters.
 
+M3 NPC navigation derives a deterministic 16 m tiled grid from every cell in that same
+immutable collision projection. Walkability expands authored AABBs by the NPC capsule
+radius, rejects capsule-center boundary samples, sweeps every graph edge against thin
+colliders between samples, and admits only heightfield edges within the configured ground-step bound. Stable
+A* tie-breaking builds cyclic paths between tagged, authored schedule stops once per
+isolated adapter; no render LOD or live GPU resident set becomes simulation authority.
+Forty-eight stable-ID agents follow those paths at 60 Hz, dwell at schedule stops, and
+apply synchronous pairwise separation against previous-tick crowd poses and the current
+tick's post-controller player pose.
+The game-payload save schema covers each agent's route/stop/path cursor, dwell, pose, and
+crowd counters; load rejects off-mesh or ground-height-inconsistent NPC poses. Navmesh
+tile/node/edge counts, owned grid bytes, path queries/nodes/expansions, moving agents,
+schedule transitions, avoidance adjustments, and aggregate NPC distance are exported as
+game counters, while replay evidence records adapter/nav initialization duration outside
+the deterministic state. NPC transforms share the existing triple-buffered presentation SAB; the
+render worker maps them onto a fixed 64-mesh placeholder pool while scenario-owned
+flythrough presentation suppresses both player and crowd meshes.
+
 The interpolated player transform drives a placeholder capsule and third-person orbit
 camera in the render worker. Interactive player position also drives streaming
 observers. Flythrough/benchmark preflight and measurement explicitly own camera and

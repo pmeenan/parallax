@@ -3,7 +3,11 @@ import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/prom
 import { basename, dirname, join } from "node:path";
 import type { PsoWarmupTelemetrySnapshot } from "@parallax/engine";
 import { evaluateBoundedRepeatability } from "./aggregate.js";
-import type { BudgetCheck, QualityTier } from "./budgets.js";
+import {
+  type BudgetCheck,
+  type QualityTier,
+  SIMULATION_GAMEPLAY_STEP_BUDGET_MS,
+} from "./budgets.js";
 import {
   type GreyboxWorldEvidence,
   requireGreyboxWorldTelemetry,
@@ -17,6 +21,7 @@ import {
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
+  SMOKE_SIMULATION_GAMEPLAY_WORKLOAD,
   SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
   SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
 } from "./runs/smoke.js";
@@ -35,6 +40,24 @@ interface BaselineSourceIdentity {
   readonly dirtyTreeDigest: string | null;
 }
 
+interface SimulationGameplayEvidence {
+  readonly adapterInitializationHighWaterMs: number;
+  readonly movementDistanceMeters: number;
+  readonly navigationEdgeCount: number;
+  readonly navigationExpandedNodeCount: number;
+  readonly navigationGridBytes: number;
+  readonly navigationNodeCount: number;
+  readonly navigationPathNodeCount: number;
+  readonly navigationPathQueryCount: number;
+  readonly navigationTileCount: number;
+  readonly npcAgentCount: number;
+  readonly npcAvoidanceAdjustmentCount: number;
+  readonly npcMovementDistanceMeters: number;
+  readonly npcMovingAgentCount: number;
+  readonly npcScheduleTransitionCount: number;
+  readonly stepDurationHighWaterMs: number;
+}
+
 interface BaselineReportRun {
   readonly budgetChecks: readonly BudgetCheck[];
   readonly greyboxWorld: Readonly<{
@@ -48,10 +71,7 @@ interface BaselineReportRun {
   readonly repeat: number;
   readonly simulationController: Readonly<{
     readonly state: "measured";
-    readonly value: Readonly<{
-      readonly movementDistanceMeters: number;
-      readonly stepDurationHighWaterMs: number;
-    }>;
+    readonly value: SimulationGameplayEvidence;
   }>;
   readonly streaming: Readonly<{
     readonly state: "measured";
@@ -646,19 +666,9 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     if (run.simulationController.state !== "measured") {
       invalidReport(`runs[${runIndex}].simulationController.state must be measured`);
     }
-    requireRecord(run.simulationController.value, `runs[${runIndex}].simulationController.value`);
-    requireFiniteNonnegative(
-      run.simulationController.value.movementDistanceMeters,
-      `runs[${runIndex}].simulationController.value.movementDistanceMeters`,
-    );
-    if (run.simulationController.value.movementDistanceMeters <= 0) {
-      invalidReport(
-        `runs[${runIndex}].simulationController.value.movementDistanceMeters must be positive`,
-      );
-    }
-    requireFiniteNonnegative(
-      run.simulationController.value.stepDurationHighWaterMs,
-      `runs[${runIndex}].simulationController.value.stepDurationHighWaterMs`,
+    requireSimulationGameplayEvidence(
+      run.simulationController.value,
+      `runs[${runIndex}].simulationController.value`,
     );
     requireRecord(run.streaming, `runs[${runIndex}].streaming`);
     if (run.streaming.state !== "measured") {
@@ -710,11 +720,16 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
       );
     }
     const controllerCheck = run.budgetChecks.find(
-      (check) => check.metric === SMOKE_BUDGET_METRICS.simulationControllerStepHighWaterMs,
+      (check) => check.metric === SMOKE_BUDGET_METRICS.simulationGameplayStepHighWaterMs,
     );
     if (controllerCheck?.actual !== run.simulationController.value.stepDurationHighWaterMs) {
       invalidReport(
         `runs[${runIndex}] controller budget check must agree with measured controller evidence`,
+      );
+    }
+    if (controllerCheck.limit !== SIMULATION_GAMEPLAY_STEP_BUDGET_MS) {
+      invalidReport(
+        `runs[${runIndex}] controller budget check must use the authoritative gameplay limit`,
       );
     }
   }
@@ -1235,6 +1250,70 @@ function requireStringArray(value: unknown, path: string): void {
 function requireFiniteNonnegative(value: unknown, path: string): asserts value is number {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     invalidReport(`${path} must be a finite nonnegative number`);
+  }
+}
+
+function requireSimulationGameplayEvidence(
+  value: unknown,
+  path: string,
+): asserts value is SimulationGameplayEvidence {
+  requireRecord(value, path);
+  for (const field of [
+    "adapterInitializationHighWaterMs",
+    "movementDistanceMeters",
+    "navigationEdgeCount",
+    "navigationExpandedNodeCount",
+    "navigationGridBytes",
+    "navigationNodeCount",
+    "navigationPathNodeCount",
+    "navigationPathQueryCount",
+    "navigationTileCount",
+    "npcAgentCount",
+    "npcAvoidanceAdjustmentCount",
+    "npcMovementDistanceMeters",
+    "npcMovingAgentCount",
+    "npcScheduleTransitionCount",
+    "stepDurationHighWaterMs",
+  ] as const) {
+    requireFiniteNonnegative(value[field], `${path}.${field}`);
+  }
+  const evidence = value as unknown as SimulationGameplayEvidence;
+  if (
+    evidence.movementDistanceMeters <= 0 ||
+    evidence.navigationEdgeCount <= evidence.navigationNodeCount ||
+    evidence.navigationExpandedNodeCount <= 0 ||
+    evidence.navigationGridBytes <= 0 ||
+    evidence.navigationNodeCount <= 0 ||
+    evidence.navigationPathNodeCount <=
+      SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationPathQueryCount ||
+    evidence.navigationPathQueryCount !==
+      SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationPathQueryCount ||
+    evidence.navigationTileCount !== SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationTileCount ||
+    evidence.npcAgentCount !== SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.npcAgentCount ||
+    evidence.npcAvoidanceAdjustmentCount <= 0 ||
+    evidence.npcMovementDistanceMeters <= 0 ||
+    evidence.npcMovingAgentCount <= 0 ||
+    evidence.npcMovingAgentCount > evidence.npcAgentCount ||
+    evidence.npcScheduleTransitionCount <= 0
+  ) {
+    invalidReport(`${path} has invalid gameplay crowd evidence`);
+  }
+  for (const field of [
+    "navigationEdgeCount",
+    "navigationExpandedNodeCount",
+    "navigationGridBytes",
+    "navigationNodeCount",
+    "navigationPathNodeCount",
+    "navigationPathQueryCount",
+    "navigationTileCount",
+    "npcAgentCount",
+    "npcAvoidanceAdjustmentCount",
+    "npcMovingAgentCount",
+    "npcScheduleTransitionCount",
+  ] as const) {
+    if (!Number.isSafeInteger(evidence[field])) {
+      invalidReport(`${path}.${field} must be a safe integer`);
+    }
   }
 }
 

@@ -17,7 +17,7 @@ export interface DiagnosticCheck {
   readonly satisfied: boolean;
 }
 
-export const SIMULATION_CONTROLLER_STEP_BUDGET_MS = 2;
+export const SIMULATION_GAMEPLAY_STEP_BUDGET_MS = 2;
 
 const JS_HEAP_LIMIT_BYTES: Readonly<Record<QualityTier, number>> = Object.freeze({
   showcase: 4 * 1024 ** 3,
@@ -67,14 +67,14 @@ export function evaluatePipelineBudgets(
   ]);
 }
 
-export function evaluateSimulationControllerBudget(
+export function evaluateSimulationGameplayBudget(
   stepDurationHighWaterMs: number,
 ): readonly BudgetCheck[] {
   return Object.freeze([
     check(
-      SMOKE_BUDGET_METRICS.simulationControllerStepHighWaterMs,
+      SMOKE_BUDGET_METRICS.simulationGameplayStepHighWaterMs,
       stepDurationHighWaterMs,
-      SIMULATION_CONTROLLER_STEP_BUDGET_MS,
+      SIMULATION_GAMEPLAY_STEP_BUDGET_MS,
     ),
   ]);
 }

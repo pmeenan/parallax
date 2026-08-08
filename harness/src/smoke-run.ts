@@ -29,7 +29,7 @@ import {
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
-  evaluateSimulationControllerBudget,
+  evaluateSimulationGameplayBudget,
   evaluateStreamingBudgets,
   evaluateV8CodeCacheDiagnostics,
   evaluateV8CodeCacheReproductionDiagnostics,
@@ -117,6 +117,7 @@ import {
   SMOKE_REPEATS,
   SMOKE_REPORT_SCHEMA_VERSION,
   SMOKE_SCENARIO,
+  SMOKE_SIMULATION_GAMEPLAY_WORKLOAD,
   SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS,
   SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT,
   SMOKE_TELEMETRY_GLOBAL_NAME,
@@ -269,9 +270,7 @@ interface RunMeasurement {
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly sabRingBuffer: SabRingBufferMetric;
-  readonly simulationController: MeasuredMetric<
-    Readonly<{ movementDistanceMeters: number; stepDurationHighWaterMs: number }>
-  >;
+  readonly simulationController: MeasuredMetric<SimulationGameplayEvidence>;
   readonly streaming: MeasuredMetric<StreamingEvidence>;
   readonly wasmThreads: WasmThreadSpikeMetric;
   readonly traceDrain: SmokeTraceDrainMetric;
@@ -1318,7 +1317,7 @@ async function measureRunWithBrowser(
           : []),
         ...evaluateMainThreadBudgets(mainThreadLongTasks),
         ...pipelineBudgetChecks,
-        ...evaluateSimulationControllerBudget(simulationController.stepDurationHighWaterMs),
+        ...evaluateSimulationGameplayBudget(simulationController.stepDurationHighWaterMs),
         ...evaluateStreamingBudgets(streaming.cellLoadP95Ms),
       ]),
       browserDisplayAfter,
@@ -2046,9 +2045,7 @@ function telemetryReady(contract: { expectedSchemaVersion: number; globalName: s
   );
 }
 
-async function verifySimulationFoundation(
-  page: Page,
-): Promise<Readonly<{ movementDistanceMeters: number; stepDurationHighWaterMs: number }>> {
+async function verifySimulationFoundation(page: Page): Promise<SimulationGameplayEvidence> {
   const evidence = await page.evaluate(async (globalName) => {
     const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
     const command = (
@@ -2072,6 +2069,10 @@ async function verifySimulationFoundation(
     const loaded = await telemetry.loadSimulation(first.finalSave);
     const liveSave = await telemetry.saveSimulation();
     return {
+      adapterInitializationHighWaterMs: Math.max(
+        first.adapterInitializationDurationMs,
+        second.adapterInitializationDurationMs,
+      ),
       bytesMatch:
         first.finalSave.length === second.finalSave.length &&
         first.finalSave.every((value, index) => second.finalSave[index] === value),
@@ -2095,6 +2096,32 @@ async function verifySimulationFoundation(
     evidence.liveSaveBytes <= 64 ||
     evidence.gameCounters.movementDistanceMeters === undefined ||
     evidence.gameCounters.movementDistanceMeters <= 0 ||
+    evidence.gameCounters.navigationNodeCount === undefined ||
+    evidence.gameCounters.navigationNodeCount <= 0 ||
+    evidence.gameCounters.navigationEdgeCount === undefined ||
+    evidence.gameCounters.navigationEdgeCount <= evidence.gameCounters.navigationNodeCount ||
+    evidence.gameCounters.navigationExpandedNodeCount === undefined ||
+    evidence.gameCounters.navigationExpandedNodeCount <= 0 ||
+    evidence.gameCounters.navigationGridBytes === undefined ||
+    evidence.gameCounters.navigationGridBytes <= 0 ||
+    evidence.gameCounters.navigationPathNodeCount === undefined ||
+    evidence.gameCounters.navigationPathNodeCount <=
+      SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationPathQueryCount ||
+    evidence.gameCounters.navigationPathQueryCount !==
+      SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationPathQueryCount ||
+    evidence.gameCounters.navigationTileCount !==
+      SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.navigationTileCount ||
+    evidence.gameCounters.npcAgentCount !== SMOKE_SIMULATION_GAMEPLAY_WORKLOAD.npcAgentCount ||
+    evidence.gameCounters.npcMovementDistanceMeters === undefined ||
+    evidence.gameCounters.npcMovementDistanceMeters <= 0 ||
+    evidence.gameCounters.npcAvoidanceAdjustmentCount === undefined ||
+    evidence.gameCounters.npcAvoidanceAdjustmentCount <= 0 ||
+    evidence.gameCounters.npcScheduleTransitionCount === undefined ||
+    evidence.gameCounters.npcScheduleTransitionCount <= 0 ||
+    evidence.gameCounters.npcMovingAgentCount === undefined ||
+    evidence.gameCounters.npcMovingAgentCount <= 0 ||
+    !Number.isFinite(evidence.adapterInitializationHighWaterMs) ||
+    evidence.adapterInitializationHighWaterMs < 0 ||
     !Number.isFinite(evidence.stepDurationHighWaterMs) ||
     evidence.stepDurationHighWaterMs < 0 ||
     !/^[a-f0-9]{64}$/.test(evidence.finalStateHash)
@@ -2104,9 +2131,40 @@ async function verifySimulationFoundation(
     );
   }
   return Object.freeze({
+    adapterInitializationHighWaterMs: evidence.adapterInitializationHighWaterMs,
     movementDistanceMeters: evidence.gameCounters.movementDistanceMeters,
+    navigationEdgeCount: evidence.gameCounters.navigationEdgeCount,
+    navigationExpandedNodeCount: evidence.gameCounters.navigationExpandedNodeCount,
+    navigationGridBytes: evidence.gameCounters.navigationGridBytes,
+    navigationNodeCount: evidence.gameCounters.navigationNodeCount,
+    navigationPathNodeCount: evidence.gameCounters.navigationPathNodeCount,
+    navigationPathQueryCount: evidence.gameCounters.navigationPathQueryCount,
+    navigationTileCount: evidence.gameCounters.navigationTileCount,
+    npcAgentCount: evidence.gameCounters.npcAgentCount,
+    npcAvoidanceAdjustmentCount: evidence.gameCounters.npcAvoidanceAdjustmentCount,
+    npcMovementDistanceMeters: evidence.gameCounters.npcMovementDistanceMeters,
+    npcMovingAgentCount: evidence.gameCounters.npcMovingAgentCount,
+    npcScheduleTransitionCount: evidence.gameCounters.npcScheduleTransitionCount,
     stepDurationHighWaterMs: evidence.stepDurationHighWaterMs,
   });
+}
+
+interface SimulationGameplayEvidence {
+  readonly adapterInitializationHighWaterMs: number;
+  readonly movementDistanceMeters: number;
+  readonly navigationEdgeCount: number;
+  readonly navigationExpandedNodeCount: number;
+  readonly navigationGridBytes: number;
+  readonly navigationNodeCount: number;
+  readonly navigationPathNodeCount: number;
+  readonly navigationPathQueryCount: number;
+  readonly navigationTileCount: number;
+  readonly npcAgentCount: number;
+  readonly npcAvoidanceAdjustmentCount: number;
+  readonly npcMovementDistanceMeters: number;
+  readonly npcMovingAgentCount: number;
+  readonly npcScheduleTransitionCount: number;
+  readonly stepDurationHighWaterMs: number;
 }
 
 async function installLongTaskObserver(page: Page): Promise<void> {

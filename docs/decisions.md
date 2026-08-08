@@ -28,6 +28,69 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-159: Bind deterministic tiled navigation and a 48-agent village crowd to sim authority (2026-08-08, accepted)
+
+**Decision:** Derive D1 NPC navigation once per isolated game adapter from D-158's
+immutable simulation-world collision projection. A 16 m grid expands authored AABBs by
+the NPC capsule radius, rejects boundary samples, admits only bounded heightfield steps,
+and uses exact swept segment/AABB intersection for graph edges, diagonal avoidance
+movement, and saved-pose validation. Stable A* tie-breaking builds cyclic paths between
+data-authored `npc-schedule:*` / contiguous `npc-stop:*` markers. Live render LOD
+residency never becomes simulation authority.
+
+Run 48 stable-ID agents at 60 Hz. Agents start at collision-free phases, follow authored
+paths at a game-owned speed, dwell at stops, and apply synchronous pairwise separation
+against previous-tick crowd poses and the current post-controller player pose. Every
+accepted movement remains swept-clear and directly connected to its current waypoint;
+cursor advancement never exceeds the per-tick speed bound. Game save schema v4 stores
+route/stop/path cursor, dwell, pose, and wide cumulative crowd counters and rejects
+off-mesh, wrong-height, or path-inconsistent state. The existing presentation SAB
+carries player plus crowd transforms; the render worker consumes them through a fixed
+64-capsule placeholder pool and restores the latest gameplay presentation after
+scenario reset.
+
+Advance the sim worker protocol to v3 so replay evidence records adapter initialization
+duration. Advance `smoke@1` to schema v68 / mandatory metric set v32 and redefine the
+existing ≤2.00 ms sim-step gate as the combined controller plus exact 48-agent workload.
+The gate requires 256 navigation tiles, 8 path queries, positive topology/path work,
+movement, avoidance, and traveled schedule transitions. Grid bytes, path nodes,
+expansions, moving agents, distances, and initialization duration remain observable.
+
+**Context:** D-158 deliberately left NPC navigation as the next calibration point and
+forbade collision authority from following render residency. Coarse node-only obstacle
+tests let edges cross thin colliders; endpoint-only runtime tests, manufactured spawn
+transitions, narrow counters, and permissive saved poses could hide deadlock or corrupt
+long-lived state. Skeptic, adversarial, and external reviews exposed those cases before
+physical qualification; swept edges/movement, collision-free phasing, path-consistent
+save validation, wide counters, and per-tick serialization/displacement regressions
+close them.
+
+**Consequences:** The accepted physical-console report is schema-v68 / mandatory-
+metric-set-v32
+`smoke-1-e93e5d805b97-dev-01-showcase-2026-08-08T21-36-03-455Z.{json,md}`
+(JSON SHA-256 `b866a30b9cf9e5047613a14d521f2878c3bc9b389d7c3ff6c92a7188a5e5b0a3`;
+Markdown SHA-256 `6ac396f89c703cf508065208f4c2c1d8acfde4b176cd4df8916e379883531989`).
+All six registered dev-01/Showcase launches, all three facets, and 36/36 checks passed
+for artifact `e93e5d805b970246a3bf3a6ee5c0403b67c350d054b72e14fa21657d99367560`
+and release `6e41e5cad74582c83fb540aa555ad89e38c05b1cd1d447bde41a31014f492573`.
+Combined character/crowd step high water measured 0.445–0.755 ms (maximum 0.755 ms
+versus 2.00 ms); adapter/nav initialization measured 93.545–94.740 ms. Each replay
+reported 64,865 nodes, 128,716 edges, 330,245 grid bytes, 104 path nodes / 265 A*
+expansions across 8 queries, 48 moving agents, 1,855 avoidance adjustments,
+237.06979370117188 m aggregate NPC movement, and 6 traveled schedule transitions.
+The measured source identity is commit `bd175113e9367e02fb81055da74b856ee23eae9c` plus
+dirty-tree digest `f9980f11aa2d736b97ce3f86d3f6c0b5b6848924f7750d0e94357c641a5e27c7`.
+The report's old pre-D-121 local baseline predecessor is explicitly incomparable, so
+the PASS was not automatically promoted as a new baseline.
+
+**Reopen if:** village population or schedule density exceeds the 48-agent/64-mesh
+envelope; 16 m sampling cannot represent required traversal geometry; streamed
+collision admission must become sim-visible; avoidance needs velocity prediction or
+lane formation; save migration needs freeform repositioning; or representative later
+systems push the combined sim step toward 2.00 ms.
+
+---
+
 ## D-158: Bind the first playable controller to the deterministic sim and scenario-owned presentation (2026-08-08, accepted)
 
 **Decision:** The D1 character loop runs entirely through D-156's authority. The game

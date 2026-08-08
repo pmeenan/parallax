@@ -189,6 +189,7 @@ export function runSimulationReplay(
   }
   const final = runtime.save();
   return Object.freeze({
+    adapterInitializationDurationMs: 0,
     finalSave: final.saveBytes,
     finalStateHash: final.presentation.stateHash,
     gameCounters: canonicalGameCounters(runtime.gameCounters),
@@ -205,13 +206,13 @@ export function runSimulationModuleReplay(
   commands: readonly SimulationCommand[],
   ticks: number,
 ): SimulationReplayResult {
-  return runSimulationReplay(
-    module.createGameSimulationAdapter(context),
-    seed,
-    timestepHz,
-    commands,
-    ticks,
-  );
+  const startedAt = performance.now();
+  const adapter = module.createGameSimulationAdapter(context);
+  const adapterInitializationDurationMs = performance.now() - startedAt;
+  return Object.freeze({
+    ...runSimulationReplay(adapter, seed, timestepHz, commands, ticks),
+    adapterInitializationDurationMs,
+  });
 }
 
 export function canonicalGameCounters(

@@ -288,7 +288,7 @@ function validateGameModuleUrl(value: string): string {
 
 function validateStart(timestepHz: number, cadence: number): void {
   if (
-    SIMULATION_PROTOCOL_VERSION !== 2 ||
+    SIMULATION_PROTOCOL_VERSION !== 3 ||
     !Number.isSafeInteger(timestepHz) ||
     timestepHz <= 0 ||
     !Number.isSafeInteger(cadence) ||

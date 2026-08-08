@@ -235,10 +235,19 @@ The current platform synthesis and asks are in
       `0b533a01771d621553ff91e6c2c4dfef00ea7c9e35fd814c0b146379d86cf195`;
       Markdown SHA-256 is
       `d22ba583a7f2903b0d7960b07a1ad2f319be4ee543220225b76d0490b846bf69`.
-- [ ] NPC navigation and crowds (D-140): navmesh generation over streamed district
-      geometry, pathfinding, and avoidance movement adequate for village NPC schedules
-      (game-design.md); runs in/beside the sim worker under the same determinism
-      constraints as all sim state.
+- [x] NPC navigation and crowds (D-140/D-159): deterministic tiled navigation over
+      streamed-district collision data, stable pathfinding, authored cyclic village
+      schedules, and 48-agent avoidance run inside sim authority with versioned save
+      state and fixed-pool render presentation. After skeptic/adversarial review and
+      external-review fixes, the registered dev-01/Showcase schema-v68 / mandatory-
+      metric-set-v32 qualification
+      `smoke-1-e93e5d805b97-dev-01-showcase-2026-08-08T21-36-03-455Z.{json,md}`
+      passed all six launches, all three facets, and 36/36 checks. Combined character+
+      crowd step high water was 0.445–0.755 ms (maximum 0.755 ms versus 2.00 ms);
+      adapter/nav initialization was 93.545–94.740 ms. JSON SHA-256 is
+      `b866a30b9cf9e5047613a14d521f2878c3bc9b389d7c3ff6c92a7188a5e5b0a3`;
+      Markdown SHA-256 is
+      `6ac396f89c703cf508065208f4c2c1d8acfde4b176cd4df8916e379883531989`.
 - [ ] UI substrate spike (resolves P-008): measure whether main-thread DOM/CSS over
       the worker-owned WebGPU canvas can carry each UI surface class — world-anchored
       elements, event-rate HUD, heavy screens — against an in-canvas comparison arm,

@@ -30,6 +30,11 @@ export function createM3GameplayRuntime(
   let observedRejectedCommandCount = simulationService.snapshot().rejectedCommandCount;
   let presentationSequence = 0;
   let lastPresentedPitch = Number.NaN;
+  let lastPresentedCrowd: readonly Readonly<{
+    readonly id: number;
+    readonly position: readonly [number, number, number];
+    readonly yawRadians: number;
+  }>[] = Object.freeze([]);
   let lastPresentedYaw = Number.NaN;
   let lastPresentedPosition: readonly [number, number, number] = [
     Number.NaN,
@@ -124,6 +129,9 @@ export function createM3GameplayRuntime(
       const presentation = simulationService.samplePresentation(timestamp);
       const player = presentation?.entities.find((entity) => entity.id === PLAYER_ENTITY_ID);
       if (presentation === null || player === undefined) return;
+      const crowdEntities = presentation.entities.filter(
+        (entity) => entity.id !== PLAYER_ENTITY_ID,
+      );
       // Deduplicate on the interpolated pose, not the snapshot tick: interpolation
       // moves the presented transform between snapshot arrivals, so a tick gate
       // would freeze player/camera motion at the snapshot cadence.
@@ -132,12 +140,14 @@ export function createM3GameplayRuntime(
         player.yawRadians === lastPresentedYaw &&
         player.position[0] === lastPresentedPosition[0] &&
         player.position[1] === lastPresentedPosition[1] &&
-        player.position[2] === lastPresentedPosition[2]
+        player.position[2] === lastPresentedPosition[2] &&
+        samePresentedEntities(crowdEntities, lastPresentedCrowd)
       ) {
         return;
       }
       renderService.setGameplayPresentation({
         cameraPitchRadians: latestCameraPitchRadians,
+        crowdEntities,
         playerPosition: player.position,
         playerYawRadians: player.yawRadians,
         sequence: presentationSequence++,
@@ -145,6 +155,7 @@ export function createM3GameplayRuntime(
       lastPresentedPitch = latestCameraPitchRadians;
       lastPresentedYaw = player.yawRadians;
       lastPresentedPosition = player.position;
+      lastPresentedCrowd = crowdEntities;
       if (
         interactiveEnabled &&
         timestamp - lastStreamingObserverAt >= 100 &&
@@ -155,4 +166,32 @@ export function createM3GameplayRuntime(
       }
     },
   });
+}
+
+function samePresentedEntities(
+  left: readonly Readonly<{
+    readonly id: number;
+    readonly position: readonly [number, number, number];
+    readonly yawRadians: number;
+  }>[],
+  right: readonly Readonly<{
+    readonly id: number;
+    readonly position: readonly [number, number, number];
+    readonly yawRadians: number;
+  }>[],
+): boolean {
+  return (
+    left.length === right.length &&
+    left.every((entity, index) => {
+      const candidate = right[index];
+      return (
+        candidate !== undefined &&
+        entity.id === candidate.id &&
+        entity.yawRadians === candidate.yawRadians &&
+        entity.position[0] === candidate.position[0] &&
+        entity.position[1] === candidate.position[1] &&
+        entity.position[2] === candidate.position[2]
+      );
+    })
+  );
 }
