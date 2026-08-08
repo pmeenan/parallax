@@ -1,7 +1,7 @@
 # Chrome platform gaps exposed by Parallax
 
 Chrome-facing synthesis of the platform changes that would most improve AAA-scale web games and
-their measurement. Updated 2026-08-01 through M2 closure from registered physical-console Chrome
+their measurement. Updated 2026-08-08 through the M3 UI-substrate decision from registered physical-console Chrome
 for Testing experiments and explicitly labeled CfT/branded-Chrome diagnostics on Parallax's
 Windows/D3D12 dev-01 reference machine; each evidence entry states its provenance. D-150 makes
 dev-01 the sole required gate, so this synthesis makes no Standard, Metal, or other-hardware
@@ -53,6 +53,36 @@ Evidence: [RE-006](rough-edges.md#re-006-viz-trace-omits-whether-a-presentation-
 [D-035](decisions.md#d-035-viz-presentation-feedback-trace-is-diagnostic-not-a-presentation-gate--2026-07-13-accepted-partially-superseded-by-d-051--the-authoritative-presentation-metric-is-informational-and-no-longer-fails-harness-v1),
 and Chromium's current
 [`Display::DidReceivePresentationFeedback`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/viz/service/display/display.cc).
+
+### Provide page-visible frame locking and correlation for DOM overlays and worker canvases
+
+**Observed gap:** D-143's bounded apparatus identified and used no page-visible way to associate a
+main-thread DOM commit with a particular worker-owned OffscreenCanvas/WebGPU frame, request that
+they enter one compositor transaction, or observe when the two layers were composed and
+successfully presented together. This is not an exhaustive audit of Chrome-internal or proposed
+facilities. In the APIs exercised by the probe, application frame IDs and absolute monotonic
+timestamps stopped at the renderer/compositor boundary.
+
+**Why it helps:** native-class games need crisp world-space nameplates, interaction prompts, and
+other accessible DOM overlays while rendering WebGPU from a worker. Without synchronization and
+attribution, application latency, cross-thread scheduling, compositor skew, and capture timing
+cannot be separated. Parallax's registered 12 m/s probe measured DOM staleness at p95 2 frames
+and 5.028–10.616 px of captured detachment, forcing world anchors in-canvas even though DOM passed
+the separate event-rate HUD criterion.
+
+**Useful minimum change:** provide a page-scoped composition token accepted by a worker canvas
+submission and main-thread DOM commit, then expose the composed and successfully presented token
+with timestamps. A DevTools/Perfetto-only first step that correlates DOM commit, canvas frame,
+surface aggregation, and presentation under one page identity would at least make the delay
+attributable.
+
+**Acceptance test:** animate one worker-canvas marker and one DOM marker from the same world point
+while the main thread is variably loaded. Every accepted token must identify whether both updates
+shared a composition and presentation; deliberately delaying either side must be attributed to
+that stage rather than appearing as an unexplained pixel offset.
+
+Evidence: [RE-047](rough-edges.md#re-047-d-143-found-no-page-visible-frame-lock-or-presentation-attribution-across-dom-and-worker-webgpu)
+and [D-160](decisions.md#d-160-resolve-p-008-with-a-per-surface-hybrid-ui-substrate-2026-08-08-accepted).
 
 ### Expose the JavaScript code-cache lifecycle per resource and execution context
 

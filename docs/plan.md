@@ -212,7 +212,7 @@ inventory/eviction (RE-046); dedicated workers still cannot request persistence
 The current platform synthesis and asks are in
 [chrome-platform-gaps.md](chrome-platform-gaps.md).
 
-## M3 — Gameplay core + NPC AI  `pending`
+## M3 — Gameplay core + NPC AI  `in progress`
 
 - [x] Sim worker: engine-owned 60 Hz fixed timestep, ordered tick-stamped commands,
       fixed-capacity triple-buffered SAB presentation snapshots with interpolation,
@@ -248,14 +248,16 @@ The current platform synthesis and asks are in
       `b866a30b9cf9e5047613a14d521f2878c3bc9b389d7c3ff6c92a7188a5e5b0a3`;
       Markdown SHA-256 is
       `6ac396f89c703cf508065208f4c2c1d8acfde4b176cd4df8916e379883531989`.
-- [ ] UI substrate spike (resolves P-008): measure whether main-thread DOM/CSS over
-      the worker-owned WebGPU canvas can carry each UI surface class — world-anchored
-      elements, event-rate HUD, heavy screens — against an in-canvas comparison arm,
-      with predeclared per-surface verdict criteria and a hybrid split as a
-      first-class outcome. D-143 is the binding experiment contract (probes,
-      thresholds, bounds, cleanup). **Unblocked now:** no dependency on other M3 work;
-      it may run as the opening M3 work unit and must conclude before the
-      dialog-presentation work below starts.
+- [x] UI substrate spike (D-143/D-160; resolves P-008): the registered dev-01 physical
+      run selected a hybrid split without relaxing the predeclared criteria. DOM/CSS
+      passed for the HUD (32.410 ms event-to-visible p95, no attributable Long Task)
+      and carries dialog; world anchors move in-canvas after 2-frame p95 DOM staleness
+      plus 5.028–10.616 px captured detach; heavy screens move in-canvas after
+      17.800 ms input-to-enqueue p95 exceeded the 16.7 ms limit with zero drops. The
+      report and exact D-099 dirty-source reconstruction are retained under ignored
+      `harness/results/`; RE-047 records that the bounded apparatus identified no
+      page-visible DOM/worker-canvas presentation synchronization or attribution
+      primitive. Temporary apparatus was removed.
 - [ ] UI technology stack (D-141): build the shared UI substrate the spike verdict
       selects, before the first real screens exist. The DOM bet's payoff — free
       accessibility, IME, subtitles, and the translation surface infinite

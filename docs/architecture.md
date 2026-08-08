@@ -1374,8 +1374,14 @@ save/load, replay-driven harness tests, and the future multiplayer model.
 D-141 makes semantic, serializable sim events the shared boundary for gameplay, UI,
 audio, journal, and recap consumers. D-142 binds rules to versioned game-owned data,
 randomness to named seeded streams, and state-changing LLM output to validated intents.
-D-143 bounds the pre-M3 DOM/CSS-versus-in-canvas UI substrate spike; it does not select
-or install a production UI stack in advance.
+D-160 resolves D-143's measured UI-substrate spike with a per-surface hybrid. The render
+worker owns frame-coherent world anchors and heavy-screen visuals/interactions; the main
+thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,
+focus, and IME bridge, but never a duplicate visual tree. Sim events and commands remain
+the shared authority boundary, so neither UI substrate mutates game state directly.
+D-143 identified no application-facing frame transaction or attributed presentation
+primitive between the DOM overlay and worker-owned WebGPU canvas; RE-047 keeps the
+request open without claiming an exhaustive Chrome capability audit.
 
 ## NPC AI
 

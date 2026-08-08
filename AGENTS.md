@@ -139,7 +139,7 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 
 Milestones **M0 (harness + skeleton), M1 (Greybox District 1 streaming), and M2
 (install/launch/run lifecycle + caches) are complete**. **M3 (gameplay core + NPC AI)
-is pending and next.**
+is in progress; the UI technology stack is next.**
 
 Use [docs/plan.md](docs/plan.md) for the live checklist, active scope, exit criteria,
 and closure evidence; [docs/dependencies.md](docs/dependencies.md) for dependency

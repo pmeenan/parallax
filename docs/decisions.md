@@ -28,6 +28,101 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-160: Resolve P-008 with a per-surface hybrid UI substrate (2026-08-08, accepted)
+
+**Decision:** Use a hybrid game-UI substrate. Render **world-anchored UI** and the
+visual/high-churn portion of **heavy screens** in the render worker's WebGPU canvas.
+Render the **HUD** and **dialog** as main-thread DOM/CSS. A bounded, sparse DOM semantic
+bridge for in-canvas screens remains allowed for accessibility, text entry, and IME,
+but it must not recreate the measured 200-element visual grid or become a second visual
+presentation path. This resolves P-008 and supersedes D-143's experiment-only status.
+
+The assignment follows D-143's predeclared criteria without recalibration:
+
+- **World-anchored UI — in-canvas.** DOM round-trip staleness was p95 2 rendered
+  frames (maximum 4; 36,063 samples) versus the eligibility limit of 1 frame; the
+  in-canvas arm was p95 0. DOM application latency was p95 16.970 ms. All three
+  physical screenshots also showed the magenta DOM marker detached from the cyan
+  in-canvas marker: centroid separation was 10.616, 5.028, and 9.722 px against the
+  fixed 4 px capture limit. The raw report incorrectly encoded a threshold exceedance
+  as `invalid` rather than a measured value with failed eligibility. Because repository
+  metric semantics reserve `invalid` for untrustworthy evidence, D-160 does not consume
+  that state as a verdict. An independent RGB scan of the immutable PNGs reproduced
+  their hashes, color-pixel counts, and centroid distances exactly; visual inspection
+  also confirmed detachment. This adjudicates the schema defect without relabeling or
+  mutating the report.
+- **HUD — DOM/CSS.** At the scheduled 10/20/30-event/s phases, all 12,001 events were
+  scheduled and presented by both arms. DOM event-to-visible latency was p95
+  32.410 ms, below 50 ms; mutation cost was p95 0.040 ms; and no UI-attributable
+  main-thread Long Task exceeded 50 ms. The in-canvas comparison was p95 15.589 ms,
+  but D-143 did not require the faster arm when DOM passed.
+- **Heavy screens — in-canvas visual/interaction surface.** The 240-image inventory
+  plus journal cycled 300 times open and 300 times closed. Input capture-to-sim-command
+  enqueue was p95 17.800 ms, above the fixed 16.7 ms limit. All 600 inputs were still
+  enqueued with zero drops or sim rejections, and open/closed render-present intervals
+  were both p95 16.715 ms, but those secondary results do not erase the threshold
+  failure.
+- **Dialog — DOM/CSS.** Dialog is a low-update text and interaction surface rather than
+  a frame-coherent world anchor or 200-element high-churn screen. The harder DOM HUD
+  rate passed, and the probe exposed correct accessible progressbar name/role/range/
+  value semantics. DOM therefore preserves native focus, selection, IME, subtitles,
+  and accessibility where they matter most. Translator readiness is not claimed: the
+  exact English-to-Spanish probe returned `downloadable`, so no translation output was
+  produced or accepted.
+
+**Evidence:** The registered dev-01 physical-console Showcase run used pinned Chrome
+for Testing 151.0.7922.71 (executable SHA-256
+`112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`) and an RTX
+4080 SUPER. Pre/post host identity matched, remote-session state was false, the local
+candidate serving contract was reverified, and numeric coverage was valid. The report
+is `ui-substrate-probe-1-a41718b70818-dev-01-2026-08-08T23-08-45-806Z.json` (SHA-256
+`32b6bd7678b98b9217c8115935ddd544ed76fbb96b91b6b2e7f0d63df40d13b1`), build artifact
+`a41718b70818e7421827021ff2911d48a69e800bd9c5308aa346ffd1f47ec083`, release
+`f8c820ca6618fce0f99d06bc4e7159e3e3d37d708a47737ec4053bfb1a013289`, source commit
+`d27adb41164a6bb14a1533ceca76d6450fd6aca2`, and dirty-tree digest
+`a2442e785bdeea2521fc06508e15c13c502a338c3d78b28c1100713abe160515`.
+The report's numeric verdict coverage is valid and truthfully records two ineligible
+DOM surfaces. Its overall `valid: false` comes from the `ui-substrate-probe@1` schema
+defect above: the capture function used `invalid` for each trustworthy threshold
+failure. The independent
+`ui-substrate-probe-1-a41718b70818-dev-01-2026-08-08T23-08-45-806Z-independent-screenshot-validation.json`
+result (`ui-substrate-independent-screenshot-validation@1`, Python 3.14.3/Pillow
+12.3.0; SHA-256
+`915963035bafdd2fa2ecc6a151a1cb404cc3d395f443d502e83d3497c4701ab6`) re-read the
+three immutable PNGs without importing probe or harness image-analysis code and exactly
+reproduced 10.615561869230138, 5.0276036627770795, and 9.721641688037838 px. No raw
+artifact was rewritten. D-099 independently
+reconstructed the exact dirty source before cleanup in the ignored sibling directory
+ending `-reconstruction`; its 38,770-byte binary patch has SHA-256
+`af711b11597bb7316d69d47d0066ab9857f30310a361c8dc60f9239191990428` and its
+75,776-byte untracked archive has SHA-256
+`e79f28fd6b2eb037704350368066f217a94f158c812d3c8929d0fa50fa98b657`.
+
+The bounded apparatus identified and used no page-visible primitive that frame-locks or
+attributes compositor presentation of main-thread DOM to a worker-owned WebGPU canvas
+frame. This is an experiment-bounded observation, not an exhaustive audit of every
+Chrome-internal facility. Frame-ID round trips and captured pixels supplied the
+available evidence; RE-047 records the unresolved platform request. The temporary
+probe, protocol, render quads, app UI, scenario, tests, and commands are removed under
+the closed-experiment rule after this record and reconstruction bundle preserve their
+result.
+
+**Consequences:** The next M3 item builds one shared hybrid substrate: render-worker
+primitives and input routing for world anchors/heavy screens, DOM components for HUD/
+dialog, and an explicit semantic/focus bridge rather than duplicated visual trees.
+Production framework selection remains a separate implementation choice. Infinite
+localization remains unqualified until the Translator model is ready and exact output
+can be exercised offline.
+
+**Reopen if:** representative M3.5 combat or M5 content materially changes these
+measurements; Chrome adds a usable DOM/canvas frame transaction or attributed
+presentation primitive; a current Chrome release materially changes cross-thread
+composition; or an accessibility implementation cannot expose in-canvas screen
+semantics without reproducing the measured DOM cost. Reopening requires a bounded
+rerun under then-current pins and predeclared thresholds.
+
+---
+
 ## D-159: Bind deterministic tiled navigation and a 48-agent village crowd to sim authority (2026-08-08, accepted)
 
 **Decision:** Derive D1 NPC navigation once per isolated game adapter from D-158's
@@ -1357,7 +1452,7 @@ the executable/cacheable script topology or pinned Wasm identity changes; or Chr
 exposes authoritative per-artifact cache-consumption evidence that can replace the
 best-effort attribution contract.
 
-## D-143: Bound the game-UI substrate spike (2026-07-29, accepted)
+## D-143: Bound the game-UI substrate spike (2026-07-29, accepted; resolved by D-160)
 
 **Decision:** Run one bounded spike to resolve **P-008 (game UI substrate)**: whether
 main-thread DOM/CSS layered over the worker-owned WebGPU canvas can carry the game's
@@ -10424,10 +10519,8 @@ a small portfolio site) judged negligible.
   characteristics) buys real protection beyond origin `persist()`, or is complexity
   without benefit. Decide during M2 with measurements; interim protection is origin
   persistence + explicit save export (architecture.md).
-- **P-008: Game UI substrate** — DOM/CSS overlay on the worker-owned WebGPU canvas
-  vs. in-canvas rendering, per UI surface class (world-anchored, HUD, screens,
-  dialog); a hybrid split is a valid outcome. Resolved by the D-143 bounded spike;
-  runnable pre-M3, must conclude before M3 dialog-presentation work.
+*(P-008, game UI substrate, was resolved by D-160: render world anchors and heavy
+screens in-canvas, and HUD/dialog in DOM/CSS.)*
 *(P-007, app-owned NPC inference vs. Prompt API, was resolved in favor of the measured
 app-owned backend by D-096 after D-074's phase-A qualification.)*
 *(P-002, geometry representation, was resolved by D-098: retain the incumbent triangle

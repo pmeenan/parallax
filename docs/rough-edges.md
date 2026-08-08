@@ -85,6 +85,51 @@ COS APIs exist):
 
 ## Findings
 
+## RE-047: D-143 found no page-visible frame lock or presentation attribution across DOM and worker WebGPU
+
+- **Date / Chrome version:** 2026-08-08; pinned Chrome for Testing 151.0.7922.71 on
+  Windows 11 dev-01, RTX 4080 SUPER, physical 3840x2160@60 console; executable SHA-256
+  `112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`.
+- **Layer:** DOM / OffscreenCanvas / WebGPU / compositor observability.
+- **Status:** open.
+- **What we expected / What happened:** D-143 needed to decide whether main-thread DOM
+  could remain visually attached to a moving point rendered by a worker-owned WebGPU
+  canvas. The bounded apparatus identified and used neither a transaction that
+  associates a DOM update with a particular worker canvas frame nor a page API that
+  reports when both layers were composed and presented. This is an experiment-bounded
+  observation, not an exhaustive current-Chrome source audit. The best available
+  correlation in the probe was an absolute monotonic timestamp plus frame-ID
+  acknowledgement round trip, checked against captured pixels.
+  On the registered ten-minute 12 m/s route, DOM round-trip staleness was p95 2 frames
+  and maximum 4 across 36,063 worker frames, while the in-canvas marker remained at
+  p95 0. Captures at 60, 300, and 540 seconds measured 10.616, 5.028, and 9.722 px of
+  centroid separation against a predeclared 4 px visual-detachment limit.
+- **Repro:** the consumed `ui-substrate-probe@1` report is
+  `ui-substrate-probe-1-a41718b70818-dev-01-2026-08-08T23-08-45-806Z.json` (SHA-256
+  `32b6bd7678b98b9217c8115935ddd544ed76fbb96b91b6b2e7f0d63df40d13b1`), source commit
+  `d27adb41164a6bb14a1533ceca76d6450fd6aca2`, dirty-tree digest
+  `a2442e785bdeea2521fc06508e15c13c502a338c3d78b28c1100713abe160515`.
+  D-099's verified ignored reconstruction bundle preserves the exact apparatus after
+  closed-experiment cleanup. The worker rendered a cyan marker and published the
+  moving world point's normalized screen-space projection; the main thread transformed
+  a magenta DOM marker and
+  acknowledged the source frame after application. The harness sampled the worker's
+  last acknowledged source frame and captured both marker colors at three fixed route
+  checkpoints. The raw scenario mistakenly labeled threshold-exceeding captures
+  `invalid`; D-160 adjudicates that harness schema defect using an independent
+  Python/Pillow scan of the immutable PNGs that exactly reproduced their hashes,
+  pixel counts, and centroid distances.
+- **Impact on Parallax:** D-160 places world-anchored UI in-canvas. DOM remains eligible
+  for the measured HUD and inferred dialog surfaces, but Parallax cannot authoritatively
+  distinguish DOM scheduling delay, compositor-layer skew, canvas presentation delay,
+  or capture timing. Any future substrate rerun must retain round trips and screenshots
+  as approximations until a suitable boundary is identified or exposed.
+- **Proposed improvement:** expose a frame transaction/token that lets a worker canvas
+  submission and main-thread DOM update target the same composition, plus page-visible
+  composed/presented IDs and timestamps for both layers. At minimum, DevTools/Perfetto
+  should correlate the DOM commit, canvas frame, compositor frame, and successful
+  presentation under one page-attributed identity.
+
 ## RE-046: Chrome exposes no origin-scoped proof of HTTP, V8, or Dawn cache eviction
 
 - **Date / Chrome version:** 2026-07-31; pinned Chrome for Testing 151.0.7922.34 on
