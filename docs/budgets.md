@@ -45,13 +45,21 @@ tolerances).
 | GPU frame time (execute), distribution | recorded | recorded | **Non-gating diagnostic** — full distribution, same caveat |
 | Pipeline compiles during gameplay | 0 | 0 | All PSOs warmed at boot; any runtime compile is a bug + a finding |
 | Main-thread long tasks during gameplay | 0 > 50 ms | 0 > 50 ms | Main thread is orchestration-only |
+| Moving-controller sim step high water | ≤ 2.00 ms | ≤ 2.00 ms | Maximum across `smoke@1`'s two deterministic 120-tick controller executions; provisional controller-only envelope, recalibrated when representative NPC work joins the tick |
 
 M3 simulation telemetry records step-duration and scheduler-lag high waters, dropped
 catch-up ticks, command queue high water, and the fixed snapshot SAB allocation. D-156
-does not invent a standalone sim-step threshold before the character/NPC workload
-exists; the unchanged frame, main-thread, heap, and fixed-SAB budgets remain enforced.
-Calibrate a subsystem threshold from the first representative M3 gameplay scenario
-rather than treating the empty foundation loop as capacity evidence.
+did not invent a standalone sim-step threshold for its empty loop. D-158's first moving
+gameplay workload establishes the provisional ≤2.00 ms controller-only high-water gate,
+leaving at least 88% of a 60 Hz tick for later systems. NPC navigation/crowds must
+recalibrate the combined simulation envelope rather than treating this controller-only
+number as whole-M3 capacity evidence.
+
+D-158's accepted registered dev-01 Showcase report
+`smoke-1-ea19e3ab0e9b-dev-01-showcase-2026-08-08T16-49-59-763Z.json` passed
+schema v67 / mandatory metric set v31 with 36/36 checks. Its moving-controller
+step-duration high waters spanned 0.365–0.430 ms across the six launch measurements;
+the accepted maximum is 0.430 ms against the provisional 2.00 ms envelope.
 
 Any claim that Showcase content is "120 Hz-capable" requires a dedicated
 **uncapped-presentation capability run** (vsync off or a ≥120 Hz display) gated at
@@ -516,7 +524,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v30, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v31, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
@@ -538,8 +546,8 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-  corresponding `smoke@1` report schema is v65
-  and public telemetry is v39. D-139 additionally requires exact
+   corresponding current `smoke@1` report schema is v67
+   and public telemetry is v41. D-139 additionally requires exact
    trace/build-compatibility identity, one progressive registry miss, one deduplicated
    replay hit, complete entry coverage, and zero failures before product Ready. Its
    separately triggered `pso-warmup-launch-pair@1` qualification consumes the same six
@@ -604,7 +612,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   count for stored-evidence revalidation; invalid smoke attempts preserve the raw
   start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-  `flythrough-d1@1` report schema v31/mandatory metric set v11 consumes flythrough
+  `flythrough-d1@1` report schema v33/mandatory metric set v11 consumes flythrough
   telemetry v3 and separately requires exact
   route and ordered environment completion, streamed presentation ownership with the
   preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,

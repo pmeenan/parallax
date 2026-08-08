@@ -14,7 +14,7 @@
     "@parallax/engine": "workspace:*"
   },
   "scripts": {
-    "build": "vite build"
+    "build": "vite build --mode game && vite build --mode simulation"
   },
   "devDependencies": {
     "vite": "8.1.4"

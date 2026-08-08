@@ -34,7 +34,7 @@ engine/src/
   ai/          app-owned inference (D-074/D-096), knowledge service /       ✅
                retrieval context assembly (D-033), schema-constrained output
   audio/       WebAudio graph + worklets
-  input/       keyboard/mouse/gamepad → command stream
+  input/       ✅ keyboard/mouse capture → coalesced gameplay input frames
   sim/         ✅ fixed-timestep runtime, command/save contracts, snapshot SAB + interpolation
   save/        future higher-level save slots/deltas (binary sim envelope lives in sim/)
   telemetry/   counters, timings, harness export surface                   ✅ (export surface)

@@ -107,6 +107,15 @@ export {
 } from "./flythrough/flythrough-service";
 export type { EngineIdentity } from "./identity";
 export { ENGINE_VERSION, initializeEngine } from "./identity";
+export type {
+  GameplayInputFrame,
+  GameplayInputService,
+  GameplayInputTelemetrySnapshot,
+} from "./input/gameplay-input-service";
+export {
+  createGameplayInputService,
+  GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION,
+} from "./input/gameplay-input-service";
 export {
   AUTOMATION_RUNTIME_QUERY,
   AUTOMATION_RUNTIME_VALUE,
@@ -335,6 +344,7 @@ export type {
   GreyboxRenderTelemetry,
   RenderFlythroughTelemetry,
   RenderFrameSample,
+  RenderGameplayPresentation,
   RenderPixelSize,
   RenderRecoveryCause,
   RenderRecoveryProbeKind,
@@ -347,6 +357,7 @@ export type {
 export { createRenderService } from "./render/render-service";
 export type {
   GameSimulationAdapter,
+  GameSimulationContext,
   GameSimulationModule,
   SimulationCommand,
   SimulationPresentationEntity,
@@ -357,6 +368,8 @@ export type {
   SimulationState,
   SimulationStepResult,
   SimulationTelemetrySnapshot,
+  SimulationWorldCell,
+  SimulationWorldDefinition,
 } from "./sim/simulation-protocol";
 export {
   MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES,
@@ -365,6 +378,7 @@ export {
   SIMULATION_PROTOCOL_VERSION,
   SIMULATION_SAVE_SCHEMA_VERSION,
   SIMULATION_TELEMETRY_SCHEMA_VERSION,
+  simulationWorldDefinition,
 } from "./sim/simulation-protocol";
 export type { SimulationRuntime, SimulationRuntimeSnapshot } from "./sim/simulation-runtime";
 export {

@@ -3,6 +3,7 @@ import {
   captureScreenshot,
   createArcRotateCamera,
   createBoxData,
+  createCapsule,
   createEngine,
   createHemisphericLight,
   createMeshFromData,
@@ -377,6 +378,29 @@ export async function createLiteGreyboxWorld(
     const light = createHemisphericLight([0.25, 1, 0.15], 1);
     addToScene(scene, light);
 
+    const playerMesh = createCapsule(engine, {
+      height: 1.8,
+      radius: 0.55,
+      tessellation: 12,
+    });
+    playerMesh.name = "gameplay-player";
+    const playerMaterial = createStandardMaterial();
+    playerMaterial.diffuseColor = [0.92, 0.58, 0.16];
+    playerMesh.material = playerMaterial;
+    addToScene(scene, playerMesh);
+    const markerMeshes = config.world.markers
+      .filter((marker) => marker.kind === "transition")
+      .map((marker) => {
+        const mesh = createCapsule(engine, { height: 3, radius: 0.35, tessellation: 8 });
+        mesh.name = `interaction-${marker.id}`;
+        const material = createStandardMaterial();
+        material.diffuseColor = [0.25, 0.86, 0.95];
+        mesh.material = material;
+        mesh.position.set(marker.position[0], marker.position[1] + 1.5, marker.position[2]);
+        addToScene(scene, mesh);
+        return mesh;
+      });
+
     const materials = new Map(config.world.materials.map((material) => [material.id, material]));
     const primitivesByMaterial = new Map<string, GreyboxPrimitive[]>();
     const heightfieldsByMaterial = new Map<string, HeightfieldBatchEntry[]>();
@@ -443,7 +467,9 @@ export async function createLiteGreyboxWorld(
       }
     }
     await psoWarmup.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, () =>
-      psoObservation.register(previewMeshes, () => registerScene(scene)),
+      psoObservation.register([...previewMeshes, playerMesh, ...markerMeshes], () =>
+        registerScene(scene),
+      ),
     );
     // A second authoritative request proves that the registry deduplicates a repeated
     // state without asking Babylon/Dawn to create the pipeline family again.
@@ -499,6 +525,7 @@ export async function createLiteGreyboxWorld(
       streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
       streamingDependencyGpuBytes: 0,
       flythroughSample: null as FlythroughScenarioSample | null,
+      playerMesh,
       telemetry,
     };
   } catch (error: unknown) {
@@ -518,6 +545,39 @@ export async function createLiteGreyboxWorld(
 }
 
 export type LiteGreyboxWorld = Awaited<ReturnType<typeof createLiteGreyboxWorld>>;
+
+export function applyGameplayPresentation(
+  renderer: LiteGreyboxWorld,
+  presentation: Readonly<{
+    readonly cameraPitchRadians: number;
+    readonly playerPosition: readonly [number, number, number];
+    readonly playerYawRadians: number;
+  }>,
+): void {
+  renderer.playerMesh.visible = true;
+  renderer.playerMesh.position.set(...presentation.playerPosition);
+  renderer.playerMesh.rotation.y = presentation.playerYawRadians;
+  renderer.camera.target.x = presentation.playerPosition[0];
+  renderer.camera.target.y = presentation.playerPosition[1] + 0.55;
+  renderer.camera.target.z = presentation.playerPosition[2];
+  renderer.camera.alpha = gameplayCameraAlpha(presentation.playerYawRadians);
+  renderer.camera.beta = gameplayCameraBeta(presentation.cameraPitchRadians);
+  renderer.camera.radius = 9;
+  renderer.camera.nearPlane = 0.1;
+}
+
+export function gameplayCameraAlpha(playerYawRadians: number): number {
+  // ArcRotate's horizontal offset is (cos(alpha), sin(alpha)) in X/Z. Simulation yaw
+  // zero faces +Z and positive yaw turns toward +X, so the camera uses its exact
+  // opposite vector.
+  return -playerYawRadians - Math.PI / 2;
+}
+
+export function gameplayCameraBeta(cameraPitchRadians: number): number {
+  // Keep the neutral view just above the horizon. A steeper downward default makes
+  // the 4 km terrain sheet cover the whole viewport and hides the sky/clear color.
+  return Math.max(0.35, Math.min(Math.PI - 0.35, Math.PI / 2 - 0.08 + cameraPitchRadians));
+}
 
 export interface GreyboxLightingSample {
   readonly intensity: number;
@@ -880,6 +940,7 @@ export function applyFlythroughSample(
   sample: FlythroughScenarioSample,
   camera: Readonly<{ beta: number; heightMeters: number; radiusMeters: number }>,
 ): void {
+  renderer.playerMesh.visible = false;
   if (renderer.presentationOwner === "preview") {
     renderer.presentationOwner = "streamed-residency";
     for (const mesh of renderer.previewMeshes) mesh.visible = false;
@@ -895,6 +956,10 @@ export function applyFlythroughSample(
   renderer.camera.alpha = sample.headingRadians + Math.PI;
   renderer.camera.beta = camera.beta;
   renderer.camera.radius = camera.radiusMeters;
+}
+
+export function clearFlythroughPresentation(renderer: LiteGreyboxWorld): void {
+  renderer.flythroughSample = null;
 }
 
 export function captureFlythroughCheckpoint(

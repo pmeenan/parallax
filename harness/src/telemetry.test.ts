@@ -2,6 +2,7 @@ import {
   APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS,
   APP_OWNED_LLM_WLLAMA_MODEL_INSTALL_BYTES,
   createInstalledModelSource,
+  createSimulationService,
   idleInstallerTransferTelemetrySnapshot,
   unavailableInstallStoreTelemetrySnapshot,
   unavailableOfflineShellTelemetrySnapshot,
@@ -11,7 +12,19 @@ import {
   validateInstalledModelSourceTelemetry,
   validateInstallerTelemetrySelection,
   validateOfflineShellTelemetry,
+  validateSimulationTelemetry,
 } from "./telemetry.js";
+
+describe("simulation public telemetry", () => {
+  it("rejects primitive and array game-counter containers", () => {
+    const snapshot = createSimulationService().snapshot();
+    for (const gameCounters of [42, true, "counter", [], null]) {
+      expect(() => validateSimulationTelemetry({ ...snapshot, gameCounters })).toThrow(
+        /invalid game counters/,
+      );
+    }
+  });
+});
 
 describe("offline-shell public telemetry", () => {
   it("rejects non-object input without a caller-side assertion", () => {

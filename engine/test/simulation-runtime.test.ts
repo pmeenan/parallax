@@ -58,6 +58,9 @@ const adapter: GameSimulationAdapter<TestState> = Object.freeze({
   step(state: TestState): SimulationStepResult<TestState> {
     return Object.freeze({ events: Object.freeze([]), state });
   },
+  telemetryCounters(state: TestState): Readonly<Record<string, number>> {
+    return Object.freeze({ value: state.value });
+  },
 });
 
 function command(sequence: number, targetTick: number, value: number): SimulationCommand {
@@ -169,9 +172,10 @@ describe("simulation runtime", () => {
         return Object.freeze({ ...adapter });
       },
     });
-    const liveRuntime = createSimulationRuntime(module.createGameSimulationAdapter(), 7, 60);
+    const context = {} as Parameters<GameSimulationModule["createGameSimulationAdapter"]>[0];
+    const liveRuntime = createSimulationRuntime(module.createGameSimulationAdapter(context), 7, 60);
     const liveBeforeReplay = liveRuntime.save();
-    runSimulationModuleReplay(module, 7, 60, [command(0, 1, 2)], 1);
+    runSimulationModuleReplay(module, context, 7, 60, [command(0, 1, 2)], 1);
     expect(adapterCreationCount).toBe(2);
     expect(liveRuntime.save()).toEqual(liveBeforeReplay);
   });

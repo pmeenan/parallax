@@ -3,6 +3,7 @@ import {
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
+  evaluateSimulationControllerBudget,
   evaluateV8CodeCacheDiagnostics,
   evaluateV8CodeCacheReproductionDiagnostics,
 } from "./budgets";
@@ -32,6 +33,16 @@ describe("M0 implemented budgets", () => {
     ]);
     expect(evaluatePipelineBudgets(1, 0)[0]?.passed).toBe(false);
     expect(evaluatePipelineBudgets(0, 1)[1]?.passed).toBe(false);
+  });
+
+  it("gates the moving-controller replay step high water at two milliseconds", () => {
+    expect(evaluateSimulationControllerBudget(2)[0]).toEqual({
+      actual: 2,
+      limit: 2,
+      metric: "simulationControllerStepHighWaterMs",
+      passed: true,
+    });
+    expect(evaluateSimulationControllerBudget(2.001)[0]?.passed).toBe(false);
   });
 
   it("flags an explicitly observed V8 code-cache rejection", () => {

@@ -101,6 +101,42 @@ afterEach(() => {
 });
 
 describe("render service recovery", () => {
+  it("replays the latest monotonic gameplay presentation after worker readiness", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    const initial = Object.freeze({
+      cameraPitchRadians: 0.2,
+      playerPosition: Object.freeze([1, 2, 3] as const),
+      playerYawRadians: 0.5,
+      sequence: 4,
+    });
+    service.setGameplayPresentation(initial);
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("Unexpected recovery");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const worker = requireWorker(0);
+    expect(worker.requests).toHaveLength(1);
+    worker.emit(readyMessage());
+    expect(worker.requests.at(-1)?.message).toEqual({
+      ...initial,
+      kind: "gameplay-presentation",
+    });
+    service.setGameplayPresentation({ ...initial, sequence: 3 });
+    expect(worker.requests).toHaveLength(2);
+    service.setGameplayPresentation({ ...initial, playerPosition: [8, 9, 10], sequence: 5 });
+    expect(worker.requests.at(-1)?.message).toMatchObject({
+      kind: "gameplay-presentation",
+      playerPosition: [8, 9, 10],
+      sequence: 5,
+    });
+  });
+
   it("acknowledges preflight only after the worker rendered the exact sample and pixel size", async () => {
     installBrowserFakes();
     const service = createRenderService();
@@ -579,6 +615,8 @@ describe("render service recovery", () => {
     const firstStreamingPort = new FakeMessagePort(100);
     const replacementStreamingPort = new FakeMessagePort(200);
     const settlement = deferredStreamingSettlement();
+    const observedCanvases: HTMLCanvasElement[] = [];
+    service.subscribeCanvas((activeCanvas) => observedCanvases.push(activeCanvas));
     const restartStreamingCohort = vi.fn(() => ({
       checkpoint: recoveryCheckpoint(1),
       settled: settlement.promise,
@@ -608,6 +646,10 @@ describe("render service recovery", () => {
     expect(firstWorker.terminated).toBe(true);
     expect(restartStreamingCohort).toHaveBeenCalledOnce();
     expect(canvas.replacement).not.toBeNull();
+    expect(observedCanvases).toEqual([
+      canvas as unknown as HTMLCanvasElement,
+      canvas.replacement as unknown as HTMLCanvasElement,
+    ]);
     expect(firstStart.canvas).toBe(canvas.transferredCanvas);
     expect(secondStart.canvas).toBe(canvas.replacement?.transferredCanvas);
     expect(firstStart.streamingPort).toBe(firstStreamingPort);

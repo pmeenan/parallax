@@ -1,6 +1,7 @@
 import {
   APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS,
   APP_OWNED_LLM_WLLAMA_MODEL_INSTALL_BYTES,
+  GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION,
   INSTALLED_MODEL_SOURCE_TELEMETRY_SCHEMA_VERSION,
   OFFLINE_SHELL_TELEMETRY_SCHEMA_VERSION,
   type ParallaxTelemetryExport,
@@ -22,6 +23,7 @@ export async function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapsh
   validateInstalledModelSourceTelemetry(snapshot.installedModelSource);
   validateOfflineShellTelemetry(snapshot.offlineShell);
   validateSimulationTelemetry(snapshot.simulation);
+  validateGameplayInputTelemetry(snapshot.gameplayInput);
   validatePsoWarmupRenderTelemetryRelationship(snapshot.render);
   validateInstallerTelemetrySelection(snapshot);
   return snapshot;
@@ -35,6 +37,8 @@ export function validateSimulationTelemetry(
     "droppedCatchUpTickCount",
     "emittedEventCount",
     "failureMessage",
+    "gameCounters",
+    "highestAcceptedCommandSequence",
     "latestStateHash",
     "loadCount",
     "queuedCommandCount",
@@ -88,6 +92,8 @@ export function validateSimulationTelemetry(
     telemetry.schedulerLagHighWaterMs < 0 ||
     !Number.isFinite(telemetry.stepDurationHighWaterMs) ||
     telemetry.stepDurationHighWaterMs < 0 ||
+    !Number.isSafeInteger(telemetry.highestAcceptedCommandSequence) ||
+    telemetry.highestAcceptedCommandSequence < -1 ||
     telemetry.queuedCommandCount > telemetry.queuedCommandCountHighWater ||
     (telemetry.snapshotEntityCapacity > 0 &&
       telemetry.snapshotSharedBytes !==
@@ -104,6 +110,56 @@ export function validateSimulationTelemetry(
         telemetry.latestStateHash === null))
   ) {
     throw new Error("simulation telemetry values are inconsistent");
+  }
+  if (
+    typeof telemetry.gameCounters !== "object" ||
+    telemetry.gameCounters === null ||
+    Array.isArray(telemetry.gameCounters)
+  ) {
+    throw new Error("simulation telemetry has invalid game counters");
+  }
+  for (const [key, value] of Object.entries(telemetry.gameCounters)) {
+    if (!/^[a-z][a-zA-Z0-9]*$/u.test(key) || !Number.isFinite(value) || value < 0) {
+      throw new Error("simulation telemetry has invalid game counters");
+    }
+  }
+}
+
+export function validateGameplayInputTelemetry(
+  input: unknown,
+): asserts input is ParallaxTelemetrySnapshot["gameplayInput"] {
+  const keys = [
+    "emittedFrameCount",
+    "failureMessage",
+    "interactionPressCount",
+    "pointerLockAcquisitionCount",
+    "pointerLockFailureCount",
+    "pointerLocked",
+    "schemaVersion",
+    "state",
+  ].sort();
+  if (typeof input !== "object" || input === null || Array.isArray(input)) {
+    throw new Error("gameplay input telemetry has an unsupported identity");
+  }
+  const telemetry = input as ParallaxTelemetrySnapshot["gameplayInput"];
+  if (
+    JSON.stringify(Object.keys(telemetry).sort()) !== JSON.stringify(keys) ||
+    telemetry.schemaVersion !== GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION ||
+    !["disposed", "failed", "idle", "running"].includes(telemetry.state) ||
+    (telemetry.state === "failed") !== (telemetry.failureMessage !== null) ||
+    typeof telemetry.pointerLocked !== "boolean"
+  ) {
+    throw new Error("gameplay input telemetry has an unsupported identity");
+  }
+  for (const counter of [
+    telemetry.emittedFrameCount,
+    telemetry.interactionPressCount,
+    telemetry.pointerLockAcquisitionCount,
+    telemetry.pointerLockFailureCount,
+  ]) {
+    if (!Number.isSafeInteger(counter) || counter < 0) {
+      throw new Error("gameplay input telemetry has an invalid counter");
+    }
   }
 }
 

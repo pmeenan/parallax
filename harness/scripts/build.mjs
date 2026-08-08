@@ -82,6 +82,17 @@ runPnpm(["--filter", "@parallax/engine", "build"]);
 runPnpm(["--filter", "@parallax/game", "build"]);
 runPnpm(["--filter", "@parallax/app", "build"]);
 
+const gameRuntimeArtifacts = (await collectArtifacts(join(repositoryRoot, "game/dist")))
+  .map((artifact) => artifact.path)
+  .filter((path) => path !== "types.tsbuildinfo" && !path.startsWith("types/"))
+  .sort(compareCodepoints);
+const expectedGameRuntimeArtifacts = ["game-simulation.js", "game.js"];
+if (JSON.stringify(gameRuntimeArtifacts) !== JSON.stringify(expectedGameRuntimeArtifacts)) {
+  throw new Error(
+    `Game build must contain only TypeScript outputs and two self-contained entrypoints; received ${gameRuntimeArtifacts.join(", ")}`,
+  );
+}
+
 const engineInput = join(repositoryRoot, "engine/dist/engine.js");
 const engineBuildModule = await import(pathToFileURL(engineInput).href);
 if (

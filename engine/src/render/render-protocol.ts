@@ -59,6 +59,14 @@ export interface RenderResizeMessage {
   readonly width: number;
 }
 
+export interface RenderGameplayPresentationMessage {
+  readonly cameraPitchRadians: number;
+  readonly kind: "gameplay-presentation";
+  readonly playerPosition: readonly [number, number, number];
+  readonly playerYawRadians: number;
+  readonly sequence: number;
+}
+
 export interface RenderFlythroughResetMessage {
   readonly kind: "reset-flythrough";
   readonly nextFlythroughGeneration: number;
@@ -111,6 +119,7 @@ export type RenderWorkerRequest =
   | RenderFlythroughStartMessage
   | RenderRecoveryBoundaryProbeRequest
   | RenderRecoveryProbeRequest
+  | RenderGameplayPresentationMessage
   | RenderResizeMessage
   | RenderStartMessage;
 

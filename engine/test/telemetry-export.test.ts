@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-service";
 import { createInstalledModelSource } from "../src/ai/installed-model-source";
+import { createGameplayInputService } from "../src/input/gameplay-input-service";
 import { idleInstallerTransferTelemetrySnapshot } from "../src/install/installer-protocol";
 import {
   idlePsoWarmupTelemetrySnapshot,
@@ -31,6 +32,7 @@ describe("combined telemetry export", () => {
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
       createSimulationService(),
+      createGameplayInputService({} as Document, {} as Window),
       createWorldStreamingService(),
       {
         abort: () => Promise.resolve(),
@@ -121,6 +123,7 @@ describe("combined telemetry export", () => {
       appOwnedLlmSpike: { state: "idle" },
       benchmark: { state: "idle" },
       identity: { engineVersion: "test", gameVersion: "test" },
+      gameplayInput: { state: "idle" },
       installedModelSource: { state: "unavailable" },
       installStore: { schemaVersion: 3, state: "unavailable" },
       installerTransfer: {

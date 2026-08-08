@@ -11,7 +11,9 @@ import {
 } from "../render/lite-device-loss";
 import {
   applyFlythroughSample,
+  applyGameplayPresentation,
   captureFlythroughCheckpoint,
+  clearFlythroughPresentation,
   createLiteGreyboxWorld,
   evictStreamingGreyboxCell,
   type GreyboxLightingSample,
@@ -110,6 +112,9 @@ function startRenderWorker(): void {
     | null = null;
   let workerGeneration: number | null = null;
   let activePsoWarmup: PsoWarmupRegistry | null = null;
+  let updateGameplayPresentation:
+    | ((message: Extract<RenderWorkerRequest, { kind: "gameplay-presentation" }>) => void)
+    | null = null;
 
   const postError = (error: unknown): void => {
     const psoWarmup =
@@ -225,6 +230,21 @@ function startRenderWorker(): void {
       let flythroughLastEnvironmentId: string | null = null;
       let flythroughCompleted = false;
       let flythroughObserverQuiesced = false;
+      let flythroughPresentationOwned = false;
+      let latestGameplayPresentation: Extract<
+        RenderWorkerRequest,
+        { kind: "gameplay-presentation" }
+      > | null = null;
+      updateGameplayPresentation = (message): void => {
+        if (
+          latestGameplayPresentation !== null &&
+          message.sequence <= latestGameplayPresentation.sequence
+        ) {
+          return;
+        }
+        latestGameplayPresentation = message;
+        if (!flythroughPresentationOwned) applyGameplayPresentation(renderer, message);
+      };
       let activeFlythroughGeneration = initialFlythroughGeneration;
       let flythroughTransportSequence = initialFlythroughTransportSequence;
       let lastCompletedRunSequence: number | null = null;
@@ -255,6 +275,7 @@ function startRenderWorker(): void {
           throw new Error("Flythrough preflight render request is invalid");
         }
         applyFlythroughSample(renderer, message.sample, message.camera);
+        flythroughPresentationOwned = true;
         pendingPreflightRendered = Object.freeze({
           elapsedMs: message.sample.elapsedMs,
           environmentPhaseId: message.sample.environment.id,
@@ -274,6 +295,7 @@ function startRenderWorker(): void {
         const initial = sampleFlythroughScenario(scenario, 0);
         const pose = flythroughCameraPose(initial, scenario.camera);
         flythroughScenario = scenario;
+        flythroughPresentationOwned = true;
         flythroughAccumulator = {
           callbackIntervalsMs: [],
           cameraPositionMaximum: [...pose.position],
@@ -302,7 +324,9 @@ function startRenderWorker(): void {
         flythroughLastEnvironmentId = null;
         flythroughCompleted = false;
         flythroughObserverQuiesced = false;
+        flythroughPresentationOwned = false;
         pendingPreflightRendered = null;
+        clearFlythroughPresentation(renderer);
       };
       const checkpointQueue = createRenderedCheckpointQueue(
         (checkpointId) => captureFlythroughCheckpoint(renderer, checkpointId),
@@ -513,6 +537,8 @@ function startRenderWorker(): void {
               flythroughLastEnvironmentId = flythroughSample.environment.id;
             }
             flythroughCompleted = elapsedMs === flythroughScenario.durationMs;
+          } else if (!flythroughPresentationOwned && latestGameplayPresentation !== null) {
+            applyGameplayPresentation(renderer, latestGameplayPresentation);
           }
           lighting = renderLiteGreyboxWorld(renderer, timestamp);
         } catch (error: unknown) {
@@ -667,6 +693,18 @@ function startRenderWorker(): void {
         pendingSize = message;
       } else {
         resizeScene(message.width, message.height);
+      }
+      return;
+    }
+    if (message.kind === "gameplay-presentation") {
+      if (updateGameplayPresentation === null) {
+        postError("Render worker received gameplay presentation before initialization");
+        return;
+      }
+      try {
+        updateGameplayPresentation(message);
+      } catch (error: unknown) {
+        postError(error);
       }
       return;
     }

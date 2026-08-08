@@ -28,6 +28,71 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-158: Bind the first playable controller to the deterministic sim and scenario-owned presentation (2026-08-08, accepted)
+
+**Decision:** The D1 character loop runs entirely through D-156's authority. The game
+adapter receives a boot-time immutable simulation-world projection containing district
+bounds, collision heightfields/AABBs, and authored markers; it does not receive or infer
+collision from render LODs. A fixed-step capsule controller consumes versioned
+`player.input-axes@2` commands, samples ground height, resolves horizontal obstacles,
+and emits transition activation as a semantic event. Movement speed, capsule shape,
+and interaction range remain game-owned balance data.
+
+`engine/input` owns keyboard/pointer capture and coalesces changes to at most one frame
+per animation callback. `game/` owns conversion to commands, player identity, event
+decoding, and the binding from interpolated snapshots to renderer/streaming interfaces;
+`app/` only composes those public services. The render worker owns the placeholder
+player mesh and third-person camera. Benchmark/flythrough preflight and measurement
+take explicit presentation/observer ownership and suppress gameplay application until
+reset, while retaining the latest gameplay pose for resumption. Reset also clears the
+flythrough environment sample. Render recovery publishes its replacement canvas through
+the engine interface so input rebinds to the visible surface. Save/load publishes the
+restored command-sequence anchor; the game bridge rebases sequence/tick scheduling and
+emits current physical input after a rewind. The engine service suppresses commands
+behind a load barrier: a successful rewind discards them before the bridge emits current
+input against restored anchors, while a rejected load rebases them beyond the latest
+published tick plus snapshot-cadence lag and applies them to the unchanged timeline.
+
+Advance the sim worker protocol to v2 and nested telemetry to v3, public telemetry to
+v41, `smoke@1` to schema v67 / mandatory metric set v31, flythrough to schema v33, and
+render recovery to schema v29. The replay result and live sim telemetry expose movement
+distance, collision-resolution count, interaction attempt/activation count, and the
+accepted command-sequence anchor. `smoke@1`'s 120-tick moving-controller replay must
+show positive movement and gates the maximum measured step-duration high water across
+both deterministic executions at a provisional ≤2.00 ms on both tiers. This is
+controller-subsystem capacity evidence, not the combined
+character-plus-NPC envelope; NPC navigation/crowds must recalibrate that later workload.
+
+**Context:** D-156 intentionally stopped at an empty authoritative loop. Implementing
+movement on the main thread or inside the render worker would split authority and make
+save/replay/P2P constraints fictional. Sending the complete render district to the sim
+would also duplicate irrelevant LOD/material payloads and couple gameplay collision to
+presentation.
+
+**Consequences:** The first playable greybox loop uses keyboard/pointer input, a visible
+placeholder capsule, terrain/obstacle collision, third-person camera control, streamed
+observer movement, and authored transition interaction without selecting the future UI
+substrate. Save schema v1's envelope remains compatible because the binary envelope is
+unchanged; the game payload advances to state schema v2. A physical `smoke@1` is required
+under D-157 because this changes sim replay, render-worker content/camera, streaming
+observer wiring, public telemetry, and the smoke validator.
+
+The accepted physical-console evidence is schema-v67 / mandatory-metric-set-v31 report
+`smoke-1-ea19e3ab0e9b-dev-01-showcase-2026-08-08T16-49-59-763Z.{json,md}`
+(JSON SHA-256 `0b533a01771d621553ff91e6c2c4dfef00ea7c9e35fd814c0b146379d86cf195`;
+Markdown SHA-256 `d22ba583a7f2903b0d7960b07a1ad2f319be4ee543220225b76d0490b846bf69`).
+All six launches and all three facets passed with 36/36 checks. The two-execution
+moving-controller step-duration high water measured 0.365–0.430 ms across launches
+(maximum 0.430 ms versus the 2.00 ms budget), and every replay moved exactly
+14.875040054321289 m.
+
+**Reopen if:** representative controller work makes the boot-time collision projection
+material, streamed collision needs cell-level admission/eviction, a non-capsule body is
+required, or measured input/control traffic needs a SAB path rather than coalesced
+commands.
+
+---
+
 ## D-157: Match physical qualification to the scenario's exercised surface (2026-08-08, accepted)
 
 **Decision:** Supersede D-097's artifact-wide physical-smoke trigger with an

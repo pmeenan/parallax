@@ -1,5 +1,6 @@
 import {
   idleInstallerTransferTelemetrySnapshot,
+  SIMULATION_TELEMETRY_SCHEMA_VERSION,
   unavailableInstallStoreTelemetrySnapshot,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
@@ -10,6 +11,8 @@ import {
 import {
   RENDER_RECOVERY_ATTEMPTS,
   RENDER_RECOVERY_MANDATORY_METRICS,
+  RENDER_RECOVERY_REPORT_SCHEMA_VERSION,
+  RENDER_RECOVERY_TELEMETRY_SCHEMA_VERSION,
 } from "./runs/render-recovery.js";
 
 describe("render-recovery result schema", () => {
@@ -1122,7 +1125,7 @@ function invalidReport() {
     releaseDigest: "b".repeat(64),
     runFailure: null,
     scenario: "render-recovery@1",
-    schemaVersion: 27,
+    schemaVersion: RENDER_RECOVERY_REPORT_SCHEMA_VERSION,
     source: { commit: "b".repeat(40), dirtyTreeDigest: null },
   };
 }
@@ -1272,7 +1275,7 @@ function initialLatestTelemetry() {
       workerInitToFirstFrameMs: null,
       workerStartupToFirstFrameMs: null,
     },
-    schemaVersion: 39,
+    schemaVersion: RENDER_RECOVERY_TELEMETRY_SCHEMA_VERSION,
     simulation: idleSimulation(),
     streaming: initialStreaming(),
     wasmThreadSpike: {},
@@ -1310,6 +1313,8 @@ function idleSimulation() {
     droppedCatchUpTickCount: 0,
     emittedEventCount: 0,
     failureMessage: null,
+    gameCounters: {},
+    highestAcceptedCommandSequence: -1,
     latestStateHash: null,
     loadCount: 0,
     queuedCommandCount: 0,
@@ -1317,7 +1322,7 @@ function idleSimulation() {
     rejectedCommandCount: 0,
     saveCount: 0,
     schedulerLagHighWaterMs: 0,
-    schemaVersion: 1,
+    schemaVersion: SIMULATION_TELEMETRY_SCHEMA_VERSION,
     snapshotCount: 0,
     snapshotEntityCapacity: 0,
     snapshotSharedBytes: 0,

@@ -226,6 +226,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       passed: true,
     },
     { actual: 0, limit: 0, metric: "shaderCompilationsOverlappingMeasurement", passed: true },
+    { actual: 0.25, limit: 2, metric: "simulationControllerStepHighWaterMs", passed: true },
     { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
   ];
   const runs = [
@@ -235,6 +236,10 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       profile: "fresh" as const,
       psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,
+      simulationController: {
+        state: "measured" as const,
+        value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+      },
       streaming: { state: "measured" as const, value: validStreaming },
     })),
     ...[8, 9, 10].map((actual, index) => ({
@@ -243,6 +248,10 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
       profile: "warm" as const,
       psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,
+      simulationController: {
+        state: "measured" as const,
+        value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+      },
       streaming: { state: "measured" as const, value: validStreaming },
     })),
   ];
@@ -896,6 +905,52 @@ describe("baseline result store", () => {
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),
+        runs: report().runs.map((run, index) => {
+          if (index !== 0) return run;
+          const { simulationController: _omitted, ...withoutController } = run;
+          return withoutController;
+        }),
+      }),
+    ).toThrow(/simulationController/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    stepDurationHighWaterMs: Number.NaN,
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/stepDurationHighWaterMs must be a finite nonnegative number/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                budgetChecks: run.budgetChecks.map((check) =>
+                  check.metric === "simulationControllerStepHighWaterMs"
+                    ? { ...check, actual: 0.5 }
+                    : check,
+                ),
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/controller budget check must agree/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
         runs: report().runs.map((run, index) =>
           index === 0
             ? {
@@ -1046,7 +1101,7 @@ describe("baseline result store", () => {
     });
     expect(parseBaselineEligibleReport(diagnosticBounded)).toMatchObject({
       facets: {
-        budgetEvaluation: { evaluatedChecks: 30, status: "passed" },
+        budgetEvaluation: { evaluatedChecks: 36, status: "passed" },
         environment: { status: "passed" },
         evidenceCompleteness: { status: "passed" },
       },
@@ -1109,7 +1164,7 @@ describe("baseline result store", () => {
           },
         },
       }),
-    ).toThrow(/evaluatedChecks must equal 30/);
+    ).toThrow(/evaluatedChecks must equal 36/);
 
     const paths = await fixture();
     const failedCheckReport = report({

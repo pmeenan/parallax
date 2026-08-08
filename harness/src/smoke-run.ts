@@ -29,6 +29,7 @@ import {
   evaluateJsHeapBudget,
   evaluateMainThreadBudgets,
   evaluatePipelineBudgets,
+  evaluateSimulationControllerBudget,
   evaluateStreamingBudgets,
   evaluateV8CodeCacheDiagnostics,
   evaluateV8CodeCacheReproductionDiagnostics,
@@ -268,6 +269,9 @@ interface RunMeasurement {
   readonly renderSurfaceBefore: Readonly<{ height: number; width: number }>;
   readonly renderSurfaceChanges: readonly Readonly<{ height: number; width: number }>[];
   readonly sabRingBuffer: SabRingBufferMetric;
+  readonly simulationController: MeasuredMetric<
+    Readonly<{ movementDistanceMeters: number; stepDurationHighWaterMs: number }>
+  >;
   readonly streaming: MeasuredMetric<StreamingEvidence>;
   readonly wasmThreads: WasmThreadSpikeMetric;
   readonly traceDrain: SmokeTraceDrainMetric;
@@ -1122,7 +1126,7 @@ async function measureRunWithBrowser(
     if ((await readTelemetry(page)).streaming.state !== "streaming") {
       throw new Error("World streaming failed before the measurement boundary");
     }
-    await verifySimulationFoundation(page);
+    const simulationController = await verifySimulationFoundation(page);
     const warmupStartedAt = performance.now();
     await page.evaluate((globalName) => {
       const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
@@ -1314,6 +1318,7 @@ async function measureRunWithBrowser(
           : []),
         ...evaluateMainThreadBudgets(mainThreadLongTasks),
         ...pipelineBudgetChecks,
+        ...evaluateSimulationControllerBudget(simulationController.stepDurationHighWaterMs),
         ...evaluateStreamingBudgets(streaming.cellLoadP95Ms),
       ]),
       browserDisplayAfter,
@@ -1337,6 +1342,7 @@ async function measureRunWithBrowser(
       renderSurfaceBefore,
       renderSurfaceChanges: endSurfaceState.changes,
       sabRingBuffer,
+      simulationController: measured(simulationController),
       streaming: measured(streaming),
       wasmThreads,
       traceDrain,
@@ -2040,7 +2046,9 @@ function telemetryReady(contract: { expectedSchemaVersion: number; globalName: s
   );
 }
 
-async function verifySimulationFoundation(page: Page): Promise<void> {
+async function verifySimulationFoundation(
+  page: Page,
+): Promise<Readonly<{ movementDistanceMeters: number; stepDurationHighWaterMs: number }>> {
   const evidence = await page.evaluate(async (globalName) => {
     const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
     const command = (
@@ -2050,12 +2058,13 @@ async function verifySimulationFoundation(page: Page): Promise<void> {
       right: number,
       yawRadians: number,
     ) => {
-      const payload = new Uint8Array(12);
+      const payload = new Uint8Array(16);
       const view = new DataView(payload.buffer);
       view.setFloat32(0, forward, true);
       view.setFloat32(4, right, true);
       view.setFloat32(8, yawRadians, true);
-      return { kind: "player.input-axes@1", payload, sequence, targetTick };
+      view.setUint32(12, 0, true);
+      return { kind: "player.input-axes@2", payload, sequence, targetTick };
     };
     const commands = [command(0, 2, 1, 0, 0.25), command(1, 8, 0, 1, -0.5)];
     const first = await telemetry.replaySimulation(commands, 120, 8_675_309);
@@ -2067,10 +2076,15 @@ async function verifySimulationFoundation(page: Page): Promise<void> {
         first.finalSave.length === second.finalSave.length &&
         first.finalSave.every((value, index) => second.finalSave[index] === value),
       finalStateHash: first.finalStateHash,
+      gameCounters: first.gameCounters,
       hashMatch: first.finalStateHash === second.finalStateHash,
       liveSaveBytes: liveSave.byteLength,
       loadedStateHash: loaded.stateHash,
       tick: first.tick,
+      stepDurationHighWaterMs: Math.max(
+        first.stepDurationHighWaterMs,
+        second.stepDurationHighWaterMs,
+      ),
     };
   }, SMOKE_TELEMETRY_GLOBAL_NAME);
   if (
@@ -2079,12 +2093,20 @@ async function verifySimulationFoundation(page: Page): Promise<void> {
     evidence.loadedStateHash !== evidence.finalStateHash ||
     evidence.tick !== 120 ||
     evidence.liveSaveBytes <= 64 ||
+    evidence.gameCounters.movementDistanceMeters === undefined ||
+    evidence.gameCounters.movementDistanceMeters <= 0 ||
+    !Number.isFinite(evidence.stepDurationHighWaterMs) ||
+    evidence.stepDurationHighWaterMs < 0 ||
     !/^[a-f0-9]{64}$/.test(evidence.finalStateHash)
   ) {
     throw new Error(
       `Simulation determinism/save-load verification failed: ${JSON.stringify(evidence)}`,
     );
   }
+  return Object.freeze({
+    movementDistanceMeters: evidence.gameCounters.movementDistanceMeters,
+    stepDurationHighWaterMs: evidence.stepDurationHighWaterMs,
+  });
 }
 
 async function installLongTaskObserver(page: Page): Promise<void> {

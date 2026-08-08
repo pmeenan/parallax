@@ -8,6 +8,8 @@ export {
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
 } from "./benchmark/m1-benchmark-mode";
+export type { M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
+export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";
 export type {
   StreamingDashboardMetric,
   StreamingDashboardMetricState,

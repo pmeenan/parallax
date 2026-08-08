@@ -271,6 +271,7 @@ export function completePsoQualificationSmokeReport(input: {
       metric: "shaderCompilationsOverlappingMeasurement",
       passed: true,
     },
+    { actual: 0.25, limit: 2, metric: "simulationControllerStepHighWaterMs", passed: true },
     { actual: 20, limit: 250, metric: "streamingCellLoadP95Ms", passed: true },
   ];
   const runs: Record<string, unknown>[] = [];
@@ -326,6 +327,10 @@ export function completePsoQualificationSmokeReport(input: {
         renderSurfaceAfter: { height: 2160, width: 3840 },
         renderSurfaceBefore: { height: 2160, width: 3840 },
         renderSurfaceChanges: [],
+        simulationController: {
+          state: "measured",
+          value: { movementDistanceMeters: 10, stepDurationHighWaterMs: 0.25 },
+        },
         streaming: { state: "measured", value: streaming },
       });
     }
@@ -383,7 +388,7 @@ export function completePsoQualificationSmokeReport(input: {
       targetPreflight: { identity: target, state: "verified" },
     },
     facets: {
-      budgetEvaluation: { evaluatedChecks: 30, reasons: [], status: "passed" },
+      budgetEvaluation: { evaluatedChecks: 36, reasons: [], status: "passed" },
       environment: { reasons: [], status: "passed" },
       evidenceCompleteness: { reasons: [], status: "passed" },
     },

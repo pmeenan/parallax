@@ -222,7 +222,19 @@ The current platform synthesis and asks are in
       registered dev-01/Showcase schema-v65 / mandatory-metric-set-v30 qualification
       `smoke-1-97de6eac2741-dev-01-showcase-2026-08-08T15-02-01-915Z.{json,md}`: all
       three facets passed, 30/30 checks were evaluated, and no core-run failure occurred.
-- [ ] Character controller, camera, basic interaction loop in greybox D1.
+- [x] Character controller, camera, and basic interaction loop in greybox D1 (D-158):
+      deterministic fixed-step capsule movement/collision, authored transition events,
+      keyboard/pointer capture, interpolated player presentation, third-person camera,
+      streaming-observer movement, save/load resynchronization, render-recovery canvas
+      rebinding, and moving-controller capacity instrumentation. After skeptic and
+      adversarial review convergence, the registered dev-01/Showcase schema-v67 /
+      mandatory-metric-set-v31 qualification
+      `smoke-1-ea19e3ab0e9b-dev-01-showcase-2026-08-08T16-49-59-763Z.{json,md}`
+      passed all six launches, all three facets, and 36/36 checks; controller step high
+      water was 0.365–0.430 ms (maximum 0.430 ms versus 2.00 ms). JSON SHA-256 is
+      `0b533a01771d621553ff91e6c2c4dfef00ea7c9e35fd814c0b146379d86cf195`;
+      Markdown SHA-256 is
+      `d22ba583a7f2903b0d7960b07a1ad2f319be4ee543220225b76d0490b846bf69`.
 - [ ] NPC navigation and crowds (D-140): navmesh generation over streamed district
       geometry, pathfinding, and avoidance movement adequate for village NPC schedules
       (game-design.md); runs in/beside the sim worker under the same determinism

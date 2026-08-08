@@ -46,6 +46,13 @@ interface BaselineReportRun {
     | Readonly<{ readonly state: "measured"; readonly value: PsoWarmupTelemetrySnapshot }>
     | Readonly<{ readonly reason: string; readonly state: "invalid" | "unsupported" }>;
   readonly repeat: number;
+  readonly simulationController: Readonly<{
+    readonly state: "measured";
+    readonly value: Readonly<{
+      readonly movementDistanceMeters: number;
+      readonly stepDurationHighWaterMs: number;
+    }>;
+  }>;
   readonly streaming: Readonly<{
     readonly state: "measured";
     readonly value: StreamingEvidence;
@@ -635,6 +642,24 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
       const reason = error instanceof Error ? error.message : String(error);
       invalidReport(`runs[${runIndex}].greyboxWorld.value is invalid: ${reason}`);
     }
+    requireRecord(run.simulationController, `runs[${runIndex}].simulationController`);
+    if (run.simulationController.state !== "measured") {
+      invalidReport(`runs[${runIndex}].simulationController.state must be measured`);
+    }
+    requireRecord(run.simulationController.value, `runs[${runIndex}].simulationController.value`);
+    requireFiniteNonnegative(
+      run.simulationController.value.movementDistanceMeters,
+      `runs[${runIndex}].simulationController.value.movementDistanceMeters`,
+    );
+    if (run.simulationController.value.movementDistanceMeters <= 0) {
+      invalidReport(
+        `runs[${runIndex}].simulationController.value.movementDistanceMeters must be positive`,
+      );
+    }
+    requireFiniteNonnegative(
+      run.simulationController.value.stepDurationHighWaterMs,
+      `runs[${runIndex}].simulationController.value.stepDurationHighWaterMs`,
+    );
     requireRecord(run.streaming, `runs[${runIndex}].streaming`);
     if (run.streaming.state !== "measured") {
       invalidReport(`runs[${runIndex}].streaming.state must be measured`);
@@ -682,6 +707,14 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     if (p95Check?.actual !== streaming.cellLoadP95Ms) {
       invalidReport(
         `runs[${runIndex}] streaming budget checks must agree with measured streaming evidence`,
+      );
+    }
+    const controllerCheck = run.budgetChecks.find(
+      (check) => check.metric === SMOKE_BUDGET_METRICS.simulationControllerStepHighWaterMs,
+    );
+    if (controllerCheck?.actual !== run.simulationController.value.stepDurationHighWaterMs) {
+      invalidReport(
+        `runs[${runIndex}] controller budget check must agree with measured controller evidence`,
       );
     }
   }

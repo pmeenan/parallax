@@ -131,6 +131,32 @@ lagged consumers drop overwritten transform publications without discarding thei
 events or telemetry. Consumers interpolate the two latest successfully read views over
 their actual tick interval and never mutate sim state.
 
+D-158's first gameplay consumer keeps browser capture in `engine/input` and game rules
+in the dynamically loaded adapter. Keyboard and pointer changes are coalesced to at
+most one input frame per main-thread animation callback before `game/` turns them into
+ordered commands. The adapter receives only an immutable simulation-world projection
+(bounds, collision heightfields/AABBs, and authored markers), not render LODs or GPU
+content. Its fixed-step capsule controller samples the collision heightfield, resolves
+horizontal AABBs, and emits transition interaction as a semantic event. Controller
+distance, collision resolutions, and interaction attempts/activations are public sim
+counters.
+
+The interpolated player transform drives a placeholder capsule and third-person orbit
+camera in the render worker. Interactive player position also drives streaming
+observers. Flythrough/benchmark preflight and measurement explicitly own camera and
+observer presentation while active; gameplay updates remain cached and resume only
+after that ownership is released, with the scenario environment sample cleared at the
+reset boundary. Render-worker recovery publishes the replacement visible canvas so the
+input service rebinds focus/pointer-lock listeners. A save/load boundary publishes the
+restored accepted-command sequence; the game bridge rebases scheduling and re-emits
+current physical input instead of inheriting a future target tick. Commands are
+held behind a load barrier so old-timeline input cannot race into the restored queue;
+success discards the held batch before the bridge emits current input against restored
+anchors, while failure rebases the batch beyond snapshot-publication lag and applies it
+to the unchanged timeline. The app shell wires these public engine/game
+services and renders debug status, but contains no command kind, player entity ID, or
+interaction-event decoding.
+
 D-096 selects D-074's app-owned backend. It keeps heavy inference off the main thread,
 but wllama's small
 controller is window-owned because the library resolves resources through

@@ -1,6 +1,13 @@
-export const SIMULATION_PROTOCOL_VERSION = 1;
+import type {
+  GreyboxCollisionPayload,
+  GreyboxDistrict,
+  GreyboxWorldMarker,
+  WorldBounds,
+} from "../world/world-contract";
+
+export const SIMULATION_PROTOCOL_VERSION = 2;
 export const SIMULATION_SAVE_SCHEMA_VERSION = 1;
-export const SIMULATION_TELEMETRY_SCHEMA_VERSION = 1;
+export const SIMULATION_TELEMETRY_SCHEMA_VERSION = 3;
 export const MAXIMUM_SIMULATION_REPLAY_TICKS = 10_000;
 export const MAXIMUM_SIMULATION_REPLAY_COMMANDS = 65_536;
 export const MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES = 16 * 1_024 * 1_024;
@@ -38,6 +45,8 @@ export interface SimulationTelemetrySnapshot {
   readonly droppedCatchUpTickCount: number;
   readonly emittedEventCount: number;
   readonly failureMessage: string | null;
+  readonly gameCounters: Readonly<Record<string, number>>;
+  readonly highestAcceptedCommandSequence: number;
   readonly latestStateHash: string | null;
   readonly loadCount: number;
   readonly queuedCommandCount: number;
@@ -68,10 +77,41 @@ export interface GameSimulationAdapter<State = unknown> {
   presentationSnapshot(state: State): readonly SimulationPresentationEntity[];
   serializeState(state: State): Uint8Array;
   step(state: State, tick: number): SimulationStepResult<State>;
+  telemetryCounters(state: State): Readonly<Record<string, number>>;
 }
 
 export interface GameSimulationModule {
-  createGameSimulationAdapter(): GameSimulationAdapter;
+  createGameSimulationAdapter(context: GameSimulationContext): GameSimulationAdapter;
+}
+
+export interface GameSimulationContext {
+  readonly timestepHz: number;
+  readonly world: SimulationWorldDefinition;
+}
+
+export interface SimulationWorldCell {
+  readonly collision: GreyboxCollisionPayload;
+  readonly coordinate: readonly [number, number];
+}
+
+export interface SimulationWorldDefinition {
+  readonly bounds: WorldBounds;
+  readonly cellSizeMeters: number;
+  readonly cells: readonly SimulationWorldCell[];
+  readonly markers: readonly GreyboxWorldMarker[];
+}
+
+export function simulationWorldDefinition(district: GreyboxDistrict): SimulationWorldDefinition {
+  return Object.freeze({
+    bounds: district.bounds,
+    cellSizeMeters: district.cellSizeMeters,
+    cells: Object.freeze(
+      district.cells.map((cell) =>
+        Object.freeze({ collision: cell.collision, coordinate: cell.coordinate }),
+      ),
+    ),
+    markers: district.markers,
+  });
 }
 
 export interface SimulationStartOptions {
@@ -80,11 +120,14 @@ export interface SimulationStartOptions {
   readonly seed: number;
   readonly snapshotCadenceTicks: number;
   readonly timestepHz: number;
+  readonly world: SimulationWorldDefinition;
 }
 
 export interface SimulationReplayResult {
   readonly finalSave: Uint8Array;
   readonly finalStateHash: string;
+  readonly gameCounters: Readonly<Record<string, number>>;
+  readonly stepDurationHighWaterMs: number;
   readonly tick: number;
 }
 

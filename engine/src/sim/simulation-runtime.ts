@@ -29,6 +29,8 @@ export interface SimulationRuntimeSnapshot {
 }
 
 export interface SimulationRuntime {
+  readonly gameCounters: Readonly<Record<string, number>>;
+  readonly highestAcceptedCommandSequence: number;
   readonly queuedCommandCount: number;
   readonly tick: number;
   enqueue(command: SimulationCommand): boolean;
@@ -84,6 +86,12 @@ export function createSimulationRuntime(
   };
 
   return Object.freeze({
+    get gameCounters(): Readonly<Record<string, number>> {
+      return canonicalGameCounters(adapter.telemetryCounters(state));
+    },
+    get highestAcceptedCommandSequence(): number {
+      return highestAcceptedSequence;
+    },
     get queuedCommandCount(): number {
       return commands.length;
     },
@@ -173,29 +181,59 @@ export function runSimulationReplay(
       throw new Error(`Simulation replay rejected command sequence ${command.sequence}`);
     }
   }
-  while (runtime.tick < ticks) runtime.step();
+  let stepDurationHighWaterMs = 0;
+  while (runtime.tick < ticks) {
+    const startedAt = performance.now();
+    runtime.step();
+    stepDurationHighWaterMs = Math.max(stepDurationHighWaterMs, performance.now() - startedAt);
+  }
   const final = runtime.save();
   return Object.freeze({
     finalSave: final.saveBytes,
     finalStateHash: final.presentation.stateHash,
+    gameCounters: canonicalGameCounters(runtime.gameCounters),
+    stepDurationHighWaterMs,
     tick: runtime.tick,
   });
 }
 
 export function runSimulationModuleReplay(
   module: GameSimulationModule,
+  context: Parameters<GameSimulationModule["createGameSimulationAdapter"]>[0],
   seed: number,
   timestepHz: number,
   commands: readonly SimulationCommand[],
   ticks: number,
 ): SimulationReplayResult {
   return runSimulationReplay(
-    module.createGameSimulationAdapter(),
+    module.createGameSimulationAdapter(context),
     seed,
     timestepHz,
     commands,
     ticks,
   );
+}
+
+export function canonicalGameCounters(
+  counters: Readonly<Record<string, number>>,
+): Readonly<Record<string, number>> {
+  if (typeof counters !== "object" || counters === null || Array.isArray(counters)) {
+    throw new Error("Simulation game counters must be a record");
+  }
+  const canonical: Record<string, number> = {};
+  for (const key of Object.keys(counters).sort()) {
+    const value = counters[key];
+    if (
+      !/^[a-z][a-zA-Z0-9]*$/u.test(key) ||
+      value === undefined ||
+      !Number.isFinite(value) ||
+      value < 0
+    ) {
+      throw new Error(`Simulation game counter ${key} is invalid`);
+    }
+    canonical[key] = value;
+  }
+  return Object.freeze(canonical);
 }
 
 export function assertSimulationReplayWorkload(

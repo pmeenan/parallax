@@ -18,7 +18,7 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 30;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 31;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS = 1;
 export const SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT = 0.1;
@@ -27,6 +27,7 @@ export const SMOKE_BUDGET_METRICS = Object.freeze({
   mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
   pipelineCreationActivityOverlappingMeasurement: "pipelineCreationActivityOverlappingMeasurement",
   shaderCompilationsOverlappingMeasurement: "shaderCompilationsOverlappingMeasurement",
+  simulationControllerStepHighWaterMs: "simulationControllerStepHighWaterMs",
   streamingCellLoadP95Ms: "streamingCellLoadP95Ms",
 } as const);
 export const SMOKE_BUDGET_METRIC_NAMES = Object.freeze(Object.values(SMOKE_BUDGET_METRICS));
@@ -54,10 +55,9 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 39;
-// v65 carries public telemetry v39 and advances mandatory metric set v30 because core
-// run completion now includes deterministic simulation replay plus worker save/load.
-export const SMOKE_REPORT_SCHEMA_VERSION = 65;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 41;
+// v67 carries public telemetry v41 and gates the moving-controller step high water.
+export const SMOKE_REPORT_SCHEMA_VERSION = 67;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -74,6 +74,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("streaming cell-load p95 variance", false, "implemented"),
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
+  metric("moving character controller step duration", true, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),
   metric("attributable GPU memory", false, "implemented"),

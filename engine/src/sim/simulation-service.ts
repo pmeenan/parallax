@@ -73,11 +73,14 @@ export function createSimulationService(
   let worker: Worker | null = null;
   let nextRequestId = 1;
   let timestepMs = 0;
+  let snapshotCadenceTicks = 0;
   let previousSnapshot: SimulationPresentationSnapshot | null = null;
   let currentSnapshot: SimulationPresentationSnapshot | null = null;
   let currentSnapshotReceivedAt = 0;
   let snapshotBuffer: SharedArrayBuffer | null = null;
   let disposal: Promise<void> | null = null;
+  let loadPending = false;
+  let commandsBlockedByLoad: SimulationCommand[] = [];
   const pending = new Map<number, PendingRequest>();
   const listeners = new Set<(snapshot: SimulationTelemetrySnapshot) => void>();
   const eventListeners = new Set<(events: readonly SimulationSemanticEvent[]) => void>();
@@ -162,15 +165,41 @@ export function createSimulationService(
     enqueue(command: SimulationCommand): void {
       if (worker === null || telemetry.state !== "running")
         throw new Error("Simulation is not running");
+      const canonical = canonicalSimulationCommand(command);
+      // Commands posted after a load request would execute against the restored
+      // timeline before the main thread receives its new sequence/tick anchors. The
+      // gameplay bridge emits current physical input again once load telemetry lands.
+      // Preserve commands behind the barrier so a rejected load can resume the live
+      // timeline without losing input releases or other ordered commands.
+      if (loadPending) {
+        commandsBlockedByLoad.push(canonical);
+        return;
+      }
       worker.postMessage({
-        command: canonicalSimulationCommand(command),
+        command: canonical,
         kind: "command",
       } satisfies SimulationWorkerRequest);
     },
     load(bytes: Uint8Array): Promise<SimulationPresentationSnapshot> {
+      if (loadPending) return Promise.reject(new Error("Simulation load is already pending"));
       const copied = new Uint8Array(bytes.byteLength);
       copied.set(bytes);
-      return request({ bytes: copied, kind: "load" });
+      loadPending = true;
+      try {
+        return request<SimulationPresentationSnapshot>({ bytes: copied, kind: "load" }).then(
+          (snapshot) => {
+            releaseLoadBarrier(true);
+            return snapshot;
+          },
+          (error: unknown) => {
+            releaseLoadBarrier(false);
+            throw error;
+          },
+        );
+      } catch (error: unknown) {
+        releaseLoadBarrier(false);
+        throw error;
+      }
     },
     replay(
       commands: readonly SimulationCommand[],
@@ -210,6 +239,7 @@ export function createSimulationService(
         throw new Error("Simulation service can only be started once");
       }
       timestepMs = 1_000 / options.timestepHz;
+      snapshotCadenceTicks = options.snapshotCadenceTicks;
       snapshotBuffer = createSimulationSnapshotBuffer(options.entityCapacity);
       const active = new Worker(workerUrl(), { name: "parallax-sim", type: "module" });
       worker = active;
@@ -290,6 +320,33 @@ export function createSimulationService(
     }
     pending.clear();
   }
+
+  function releaseLoadBarrier(restored: boolean): void {
+    loadPending = false;
+    const blocked = commandsBlockedByLoad;
+    commandsBlockedByLoad = [];
+    if (restored || worker === null || telemetry.state !== "running") return;
+    const earliestTargetTick = blocked.reduce(
+      (earliest, command) => Math.min(earliest, command.targetTick),
+      Number.POSITIVE_INFINITY,
+    );
+    // The latest published telemetry can trail the worker by at most one snapshot
+    // cadence. Shift the entire batch far enough forward to preserve its relative
+    // schedule while guaranteeing that every target is still in the worker's future.
+    const targetTickOffset = Math.max(
+      0,
+      telemetry.tick + snapshotCadenceTicks + 1 - earliestTargetTick,
+    );
+    for (const command of blocked) {
+      worker.postMessage({
+        command: Object.freeze({
+          ...command,
+          targetTick: command.targetTick + targetTickOffset,
+        }),
+        kind: "command",
+      } satisfies SimulationWorkerRequest);
+    }
+  }
 }
 
 export function simulationSnapshotInterpolationAlpha(
@@ -308,6 +365,8 @@ function initialTelemetry(): SimulationTelemetrySnapshot {
     droppedCatchUpTickCount: 0,
     emittedEventCount: 0,
     failureMessage: null,
+    gameCounters: Object.freeze({}),
+    highestAcceptedCommandSequence: -1,
     latestStateHash: null,
     loadCount: 0,
     queuedCommandCount: 0,

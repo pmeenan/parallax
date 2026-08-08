@@ -10,6 +10,10 @@ import type {
   FlythroughService,
   FlythroughTelemetrySnapshot,
 } from "../flythrough/flythrough-service";
+import type {
+  GameplayInputService,
+  GameplayInputTelemetrySnapshot,
+} from "../input/gameplay-input-service";
 import type { InstallerTransferTelemetrySnapshot } from "../install/installer-protocol";
 import type { InstallerService } from "../install/installer-service";
 import type { OfflineShellService } from "../offline-shell/offline-shell-service";
@@ -38,9 +42,9 @@ import type { WorldStreamingService } from "../streaming/world-streaming-service
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v39 adds the M3 fixed-timestep simulation worker and its observable
-// command/snapshot/save/replay state.
-export const TELEMETRY_SCHEMA_VERSION = 39;
+// Public telemetry v41 adds the restored accepted-command sequence used to rebase
+// gameplay input after save/load; v40 introduced input and controller counters.
+export const TELEMETRY_SCHEMA_VERSION = 41;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -58,6 +62,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot;
   readonly benchmark: BenchmarkTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
+  readonly gameplayInput: GameplayInputTelemetrySnapshot;
   readonly flythrough: FlythroughTelemetrySnapshot;
   readonly installedModelSource: InstalledModelSourceTelemetrySnapshot;
   readonly installStore: InstallStoreTelemetrySnapshot;
@@ -100,6 +105,7 @@ export function installTelemetryExport(
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
   simulationService: SimulationService,
+  gameplayInputService: GameplayInputService,
   streamingService: WorldStreamingService,
   flythroughService: FlythroughService,
   benchmarkService: BenchmarkService,
@@ -150,6 +156,7 @@ export function installTelemetryExport(
         appOwnedLlmSpikeService.snapshot(),
         wasmThreadSpikeService.snapshot(),
         simulationService.snapshot(),
+        gameplayInputService.snapshot(),
         streamingService.snapshot(),
         flythroughService.snapshot(),
         benchmarkService.snapshot(),
@@ -198,6 +205,7 @@ export function installTelemetryExport(
               appOwnedLlmSpikeService.snapshot(),
               wasmThreadSpikeService.snapshot(),
               simulationService.snapshot(),
+              gameplayInputService.snapshot(),
               streamingService.snapshot(),
               flythroughService.snapshot(),
               benchmarkService.snapshot(),
@@ -221,6 +229,7 @@ export function installTelemetryExport(
       const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe(publishAfterWiring);
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
       const unsubscribeSimulation = simulationService.subscribe(publishAfterWiring);
+      const unsubscribeGameplayInput = gameplayInputService.subscribe(publishAfterWiring);
       const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
       const unsubscribeFlythrough = flythroughService.subscribe(publishAfterWiring);
       const unsubscribeBenchmark = benchmarkService.subscribe(publishAfterWiring);
@@ -235,6 +244,7 @@ export function installTelemetryExport(
         unsubscribeAppOwnedLlm();
         unsubscribeWasmThread();
         unsubscribeSimulation();
+        unsubscribeGameplayInput();
         unsubscribeStreaming();
         unsubscribeFlythrough();
         unsubscribeBenchmark();
@@ -258,6 +268,7 @@ function snapshot(
   appOwnedLlmSpike: AppOwnedLlmSpikeTelemetrySnapshot,
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   simulation: SimulationTelemetrySnapshot,
+  gameplayInput: GameplayInputTelemetrySnapshot,
   streaming: WorldStreamingTelemetrySnapshot,
   flythrough: FlythroughTelemetrySnapshot,
   benchmark: BenchmarkTelemetrySnapshot,
@@ -270,6 +281,7 @@ function snapshot(
     appOwnedLlmSpike,
     benchmark,
     flythrough,
+    gameplayInput,
     identity,
     installedModelSource,
     installStore: installer.installStore,

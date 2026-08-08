@@ -62,7 +62,12 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
     const moduleUrl = validateGameModuleUrl(request.options.gameModuleUrl);
     const imported = (await import(/* @vite-ignore */ moduleUrl)) as unknown;
     gameModule = validateGameModule(imported);
-    const liveAdapter = gameModule.createGameSimulationAdapter();
+    simulationWorld = request.options.world;
+    const gameContext = Object.freeze({
+      timestepHz: request.options.timestepHz,
+      world: request.options.world,
+    });
+    const liveAdapter = gameModule.createGameSimulationAdapter(gameContext);
     runtime = createSimulationRuntime(
       liveAdapter,
       request.options.seed,
@@ -76,6 +81,8 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
       ...telemetry,
       snapshotEntityCapacity: request.options.entityCapacity,
       snapshotSharedBytes: request.snapshotBuffer.byteLength,
+      gameCounters: activeGameCounters(),
+      highestAcceptedCommandSequence: activeRuntimeHighestAcceptedCommandSequence(),
       state: "running",
     });
     publishSnapshot();
@@ -95,6 +102,7 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
     telemetry = Object.freeze({
       ...telemetry,
       queuedCommandCount: telemetry.queuedCommandCount + (accepted ? 1 : 0),
+      highestAcceptedCommandSequence: activeRuntime.highestAcceptedCommandSequence,
       queuedCommandCountHighWater: Math.max(
         telemetry.queuedCommandCountHighWater,
         telemetry.queuedCommandCount + (accepted ? 1 : 0),
@@ -122,6 +130,8 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
       lastSchedulerAt = performance.now();
       telemetry = Object.freeze({
         ...telemetry,
+        gameCounters: activeRuntime.gameCounters,
+        highestAcceptedCommandSequence: activeRuntime.highestAcceptedCommandSequence,
         latestStateHash: loaded.presentation.stateHash,
         loadCount: telemetry.loadCount + 1,
         queuedCommandCount: activeRuntime.queuedCommandCount,
@@ -148,6 +158,7 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
     if (activeGameModule === null) throw new Error("Simulation game module is unavailable");
     const result = runSimulationModuleReplay(
       activeGameModule,
+      Object.freeze({ timestepHz: telemetry.timestepHz, world: requireWorld() }),
       request.seed,
       telemetry.timestepHz,
       request.commands,
@@ -177,6 +188,7 @@ function schedule(): void {
       appliedCommandCount: telemetry.appliedCommandCount + result.appliedCommandCount,
       emittedEventCount: telemetry.emittedEventCount + result.events.length,
       queuedCommandCount: activeRuntime.queuedCommandCount,
+      gameCounters: activeRuntime.gameCounters,
       stepDurationHighWaterMs: Math.max(telemetry.stepDurationHighWaterMs, duration),
       tick: activeRuntime.tick,
     });
@@ -226,6 +238,8 @@ function initialTelemetry(workerGeneration: number): SimulationTelemetrySnapshot
     droppedCatchUpTickCount: 0,
     emittedEventCount: 0,
     failureMessage: null,
+    gameCounters: Object.freeze({}),
+    highestAcceptedCommandSequence: -1,
     latestStateHash: null,
     loadCount: 0,
     queuedCommandCount: 0,
@@ -274,7 +288,7 @@ function validateGameModuleUrl(value: string): string {
 
 function validateStart(timestepHz: number, cadence: number): void {
   if (
-    SIMULATION_PROTOCOL_VERSION !== 1 ||
+    SIMULATION_PROTOCOL_VERSION !== 2 ||
     !Number.isSafeInteger(timestepHz) ||
     timestepHz <= 0 ||
     !Number.isSafeInteger(cadence) ||
@@ -282,6 +296,21 @@ function validateStart(timestepHz: number, cadence: number): void {
   ) {
     throw new Error("Simulation start options are invalid");
   }
+}
+
+let simulationWorld: import("../sim/simulation-protocol").SimulationWorldDefinition | null = null;
+
+function requireWorld(): import("../sim/simulation-protocol").SimulationWorldDefinition {
+  if (simulationWorld === null) throw new Error("Simulation world is unavailable");
+  return simulationWorld;
+}
+
+function activeGameCounters(): Readonly<Record<string, number>> {
+  return runtime?.gameCounters ?? Object.freeze({});
+}
+
+function activeRuntimeHighestAcceptedCommandSequence(): number {
+  return runtime?.highestAcceptedCommandSequence ?? -1;
 }
 
 function requireRuntime(): SimulationRuntime {

@@ -1,4 +1,5 @@
 import {
+  authorizeAutomationRuntimeLaunch,
   bindActiveInstalledRelease,
   createAppOwnedLlmSpikeService,
   createBenchmarkService,
@@ -6,6 +7,7 @@ import {
   createBrowserInstallStorePlatform,
   createEmbeddedPsoWarmupTrace,
   createFlythroughService,
+  createGameplayInputService,
   createInstalledModelSource,
   createOpfsReleaseStore,
   createRenderService,
@@ -21,11 +23,13 @@ import {
   type PsoWarmupTraceBundle,
   resolveInstalledStreamingRelease,
   type StreamingContentSource,
+  simulationWorldDefinition,
 } from "@parallax/engine";
 import {
   APP_OWNED_LLM_CONTEXT_FIRST_FIXTURE_SET,
   APP_OWNED_LLM_SPIKE_FIXTURE_SET,
   createGreyboxScene,
+  createM3GameplayRuntime,
   DISTRICT_1_FLYTHROUGH,
   formatM1BenchmarkPreset,
   formatM1BenchmarkReport,
@@ -137,10 +141,19 @@ async function bootRuntimeAttempt(
   const wasmThreadSpikeService = createWasmThreadSpikeService();
   const streamingService = createWorldStreamingService();
   const simulationService = createSimulationService();
+  const gameplayInputService = createGameplayInputService();
   const previewDistrict = GREYBOX_DISTRICT_SPECS[0];
   if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
   const worldGenerationStartedAt = performance.now();
   const previewScene = createGreyboxScene(previewDistrict);
+  const simulationWorld = simulationWorldDefinition(previewScene.world);
+  const gameplayRuntime = createM3GameplayRuntime(
+    gameplayInputService,
+    renderService,
+    simulationService,
+    streamingService,
+    simulationWorld,
+  );
   const flythroughService = createFlythroughService(
     renderService,
     streamingService,
@@ -198,6 +211,7 @@ async function bootRuntimeAttempt(
     appOwnedLlmSpikeService,
     wasmThreadSpikeService,
     simulationService,
+    gameplayInputService,
     streamingService,
     flythroughService,
     benchmarkService,
@@ -483,7 +497,8 @@ async function bootRuntimeAttempt(
             : wasmThreads.state === "running"
               ? " · WASM threads running"
               : "";
-      status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${wasmStatus}`;
+      const interactionStatus = status.dataset.lastInteraction;
+      status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${wasmStatus} · WASD / mouse · E interact${interactionStatus === undefined || interactionStatus === "" ? "" : ` · activated ${interactionStatus}`}`;
     } else if (render.state === "failed") {
       status.textContent = `${buildIdentity} · Render worker failed: ${render.failureMessage ?? "unknown error"}`;
     } else {
@@ -512,6 +527,10 @@ async function bootRuntimeAttempt(
         new Error(simulation.failureMessage ?? "Simulation failed before interactive gameplay"),
       );
     }
+  });
+  gameplayRuntime.subscribeInteractions((markerId) => {
+    status.dataset.lastInteraction = markerId;
+    updateStatus();
   });
   let wasmThreadSpikeStarted = false;
   renderService.subscribe((telemetry) => {
@@ -595,5 +614,32 @@ async function bootRuntimeAttempt(
     seed: 0x5041_5258,
     snapshotCadenceTicks: 2,
     timestepHz: 60,
+    world: simulationWorld,
   });
+
+  const interactiveGameplayEnabled = !authorizeAutomationRuntimeLaunch(location.href);
+  const maybeStartGameplayInput = (): void => {
+    gameplayRuntime.maybeStartInput(interactiveGameplayEnabled);
+  };
+  renderService.subscribe(maybeStartGameplayInput);
+  simulationService.subscribe(maybeStartGameplayInput);
+
+  const presentGameplay = (timestamp: number): void => {
+    const benchmarkState = benchmarkService.snapshot().state;
+    const benchmarkOwned =
+      benchmarkState !== "idle" &&
+      benchmarkState !== "completed" &&
+      benchmarkState !== "failed" &&
+      benchmarkState !== "disposed";
+    const flythroughState = flythroughService.snapshot().state;
+    const flythroughOwned =
+      flythroughState !== "idle" &&
+      flythroughState !== "completed" &&
+      flythroughState !== "failed" &&
+      flythroughState !== "disposed";
+    const scenarioOwned = benchmarkOwned || flythroughOwned;
+    gameplayRuntime.update(timestamp, scenarioOwned, interactiveGameplayEnabled);
+    requestAnimationFrame(presentGameplay);
+  };
+  requestAnimationFrame(presentGameplay);
 }

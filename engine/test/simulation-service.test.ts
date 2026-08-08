@@ -11,6 +11,8 @@ import {
 } from "../src/sim/simulation-service";
 import { createSimulationSnapshotBufferWriter } from "../src/sim/simulation-snapshot-buffer";
 
+const testWorld = {} as SimulationStartOptions["world"];
+
 class FakeWorker {
   static latest: FakeWorker | null = null;
   onerror: ((event: ErrorEvent) => void) | null = null;
@@ -79,6 +81,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     service.start(options);
     const worker = FakeWorker.latest;
@@ -139,6 +142,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     const worker = FakeWorker.latest;
     if (worker === null) throw new Error("Fake worker was not created");
@@ -163,6 +167,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     const worker = FakeWorker.latest;
     if (worker === null) throw new Error("Fake worker was not created");
@@ -188,6 +193,108 @@ describe("simulation presentation service", () => {
     expect(Reflect.has(posted.command, "unsafeExtra")).toBe(false);
   });
 
+  it("suppresses commands while load is pending and resumes from restored anchors", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createSimulationService();
+    service.start({
+      entityCapacity: 1,
+      gameModuleUrl: "https://example.test/game/src/sim/m3-simulation.ts",
+      seed: 1,
+      snapshotCadenceTicks: 1,
+      timestepHz: 60,
+      world: testWorld,
+    });
+    const worker = FakeWorker.latest;
+    if (worker === null) throw new Error("Fake worker was not created");
+    worker.emit({
+      kind: "telemetry",
+      telemetry: Object.freeze({ ...service.snapshot(), state: "running" }),
+    });
+    const loading = service.load(new Uint8Array([1]));
+    const loadRequest = worker.posted.at(-1);
+    if (loadRequest?.kind !== "load") throw new Error("Load request was not posted");
+    service.enqueue({
+      kind: "test",
+      payload: new Uint8Array(),
+      sequence: 900,
+      targetTick: 900,
+    });
+    expect(worker.posted.filter(({ kind }) => kind === "command")).toEqual([]);
+    await expect(service.load(new Uint8Array([2]))).rejects.toThrow(/already pending/);
+
+    const restored = Object.freeze({ entities: [], stateHash: "a".repeat(64), tick: 4 });
+    worker.emit({
+      kind: "loaded",
+      requestId: loadRequest.requestId,
+      snapshot: restored,
+      telemetry: Object.freeze({
+        ...service.snapshot(),
+        highestAcceptedCommandSequence: 41,
+        loadCount: 1,
+        latestStateHash: restored.stateHash,
+        state: "running",
+        tick: restored.tick,
+      }),
+    });
+    await expect(loading).resolves.toEqual(restored);
+    await Promise.resolve();
+    service.enqueue({
+      kind: "test",
+      payload: new Uint8Array(),
+      sequence: 42,
+      targetTick: 7,
+    });
+    expect(worker.posted.at(-1)).toMatchObject({
+      command: { sequence: 42, targetTick: 7 },
+      kind: "command",
+    });
+  });
+
+  it("replays commands blocked behind a rejected load onto the unchanged timeline", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createSimulationService();
+    service.start({
+      entityCapacity: 1,
+      gameModuleUrl: "https://example.test/game/src/sim/m3-simulation.ts",
+      seed: 1,
+      snapshotCadenceTicks: 1,
+      timestepHz: 60,
+      world: testWorld,
+    });
+    const worker = FakeWorker.latest;
+    if (worker === null) throw new Error("Fake worker was not created");
+    worker.emit({
+      kind: "telemetry",
+      telemetry: Object.freeze({ ...service.snapshot(), state: "running" }),
+    });
+    const loading = service.load(new Uint8Array([1]));
+    const loadRequest = worker.posted.at(-1);
+    if (loadRequest?.kind !== "load") throw new Error("Load request was not posted");
+    service.enqueue({
+      kind: "player.input-axes@2",
+      payload: new Uint8Array([0]),
+      sequence: 7,
+      targetTick: 9,
+    });
+    expect(worker.posted.filter(({ kind }) => kind === "command")).toEqual([]);
+    worker.emit({
+      kind: "telemetry",
+      telemetry: Object.freeze({ ...service.snapshot(), state: "running", tick: 12 }),
+    });
+
+    worker.emit({
+      kind: "failure",
+      message: "Saved simulation state digest is invalid",
+      requestId: loadRequest.requestId,
+      telemetry: service.snapshot(),
+    });
+    await expect(loading).rejects.toThrow(/digest is invalid/);
+    expect(worker.posted.at(-1)).toMatchObject({
+      command: { kind: "player.input-axes@2", sequence: 7, targetTick: 14 },
+      kind: "command",
+    });
+  });
+
   it("clears request bookkeeping when postMessage throws synchronously", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("Worker", FakeWorker);
@@ -198,6 +305,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     const worker = FakeWorker.latest;
     if (worker === null) throw new Error("Fake worker was not created");
@@ -222,6 +330,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     const worker = FakeWorker.latest;
     if (worker === null) throw new Error("Fake worker was not created");
@@ -253,6 +362,7 @@ describe("simulation presentation service", () => {
       seed: 1,
       snapshotCadenceTicks: 1,
       timestepHz: 60,
+      world: testWorld,
     });
     const worker = FakeWorker.latest;
     if (worker === null) throw new Error("Fake worker was not created");

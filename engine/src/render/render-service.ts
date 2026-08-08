@@ -75,6 +75,7 @@ export interface RenderTelemetrySnapshot {
 }
 
 export type RenderServiceListener = (snapshot: RenderTelemetrySnapshot) => void;
+export type RenderCanvasListener = (canvas: HTMLCanvasElement) => void;
 
 export interface RenderService {
   applyFlythroughPreflight(
@@ -88,6 +89,7 @@ export interface RenderService {
   exerciseRecoveryAtBoundary(probe: RenderRecoveryProbeKind): Promise<StreamingRecoveryCheckpoint>;
   failAfterStreamingFailure(message: string): void;
   resetFlythrough(): Promise<void>;
+  setGameplayPresentation(presentation: RenderGameplayPresentation): void;
   setRenderPixelSizeOverride(size: RenderPixelSize | null): void;
   snapshot(): RenderTelemetrySnapshot;
   start(
@@ -97,6 +99,14 @@ export interface RenderService {
   ): void;
   startFlythrough(scenario: FlythroughScenario): void;
   subscribe(listener: RenderServiceListener): () => void;
+  subscribeCanvas(listener: RenderCanvasListener): () => void;
+}
+
+export interface RenderGameplayPresentation {
+  readonly cameraPitchRadians: number;
+  readonly playerPosition: readonly [number, number, number];
+  readonly playerYawRadians: number;
+  readonly sequence: number;
 }
 
 export interface RenderStartupTelemetry {
@@ -223,6 +233,7 @@ export function createRenderService(): RenderService {
     workerInitToFirstFrameMs: null,
     workerStartupToFirstFrameMs: null,
   });
+  let latestGameplayPresentation: RenderGameplayPresentation | null = null;
   let worker: Worker | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let heartbeatMonitor: ReturnType<typeof setInterval> | null = null;
@@ -279,6 +290,7 @@ export function createRenderService(): RenderService {
     }>
   >();
   const listeners = new Set<RenderServiceListener>();
+  const canvasListeners = new Set<RenderCanvasListener>();
 
   const publish = (next: RenderTelemetrySnapshot): void => {
     telemetry = Object.freeze(next);
@@ -289,6 +301,15 @@ export function createRenderService(): RenderService {
         listener(telemetry);
       } catch (error: unknown) {
         console.error("Render telemetry listener failed", error);
+      }
+    }
+  };
+  const publishCanvas = (canvas: HTMLCanvasElement): void => {
+    for (const listener of canvasListeners) {
+      try {
+        listener(canvas);
+      } catch (error: unknown) {
+        console.error("Render canvas listener failed", error);
       }
     }
   };
@@ -377,6 +398,7 @@ export function createRenderService(): RenderService {
     }
     currentCanvas.replaceWith(replacement);
     currentCanvas = replacement;
+    publishCanvas(replacement);
     return replacement;
   };
 
@@ -458,6 +480,12 @@ export function createRenderService(): RenderService {
         workerStartupToFirstFrameMs: performance.now() - workerStartupStartedAt,
       });
       sabRingBufferSpike.start();
+      if (latestGameplayPresentation !== null) {
+        renderWorker.postMessage({
+          ...latestGameplayPresentation,
+          kind: "gameplay-presentation",
+        } satisfies RenderWorkerRequest);
+      }
     };
     const completeRecoveryIfReady = (): void => {
       if (pendingReady !== null && replacementStreamingSettled) {
@@ -939,6 +967,38 @@ export function createRenderService(): RenderService {
       }
     },
 
+    setGameplayPresentation(presentation: RenderGameplayPresentation): void {
+      if (
+        !Number.isSafeInteger(presentation.sequence) ||
+        presentation.sequence < 0 ||
+        !Number.isFinite(presentation.cameraPitchRadians) ||
+        !Number.isFinite(presentation.playerYawRadians) ||
+        presentation.playerPosition.some((value) => !Number.isFinite(value))
+      ) {
+        throw new Error("Gameplay presentation is invalid");
+      }
+      if (
+        latestGameplayPresentation !== null &&
+        presentation.sequence <= latestGameplayPresentation.sequence
+      ) {
+        return;
+      }
+      latestGameplayPresentation = Object.freeze({
+        ...presentation,
+        playerPosition: Object.freeze([...presentation.playerPosition]) as readonly [
+          number,
+          number,
+          number,
+        ],
+      });
+      if (worker !== null && telemetry.state === "ready") {
+        worker.postMessage({
+          ...latestGameplayPresentation,
+          kind: "gameplay-presentation",
+        } satisfies RenderWorkerRequest);
+      }
+    },
+
     snapshot(): RenderTelemetrySnapshot {
       return telemetry;
     },
@@ -964,6 +1024,7 @@ export function createRenderService(): RenderService {
           throw new Error("OffscreenCanvas transfer is unavailable in this Chrome build");
         }
         currentCanvas = canvas;
+        publishCanvas(canvas);
         startupConfig = Object.freeze({ scene, startup });
         publish({
           ...telemetry,
@@ -999,6 +1060,17 @@ export function createRenderService(): RenderService {
         console.error("Render telemetry listener failed", error);
       }
       return () => listeners.delete(listener);
+    },
+    subscribeCanvas(listener: RenderCanvasListener): () => void {
+      canvasListeners.add(listener);
+      if (currentCanvas !== null) {
+        try {
+          listener(currentCanvas);
+        } catch (error: unknown) {
+          console.error("Render canvas listener failed", error);
+        }
+      }
+      return () => canvasListeners.delete(listener);
     },
   });
 }
