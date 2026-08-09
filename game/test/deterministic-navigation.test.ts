@@ -9,6 +9,7 @@ function thinObstacleWorld(): SimulationWorldDefinition {
       minimum: Object.freeze([-16, -8, -16] as const),
     }),
     cellSizeMeters: 64,
+    id: "test-district",
     cells: Object.freeze([
       Object.freeze({
         collision: Object.freeze({

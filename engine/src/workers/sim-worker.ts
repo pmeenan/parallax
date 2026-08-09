@@ -153,6 +153,21 @@ async function handleRequest(request: SimulationWorkerRequest): Promise<void> {
     }
     return;
   }
+  if (request.kind === "query-game-state") {
+    try {
+      post({
+        kind: "game-state-query-result",
+        requestId: request.requestId,
+        result: Object.freeze({
+          payload: activeRuntime.queryGameState(request.query),
+          tick: activeRuntime.tick,
+        }),
+      });
+    } catch (error: unknown) {
+      failRequest(request.requestId, error);
+    }
+    return;
+  }
   try {
     const activeGameModule = gameModule;
     if (activeGameModule === null) throw new Error("Simulation game module is unavailable");
@@ -288,7 +303,7 @@ function validateGameModuleUrl(value: string): string {
 
 function validateStart(timestepHz: number, cadence: number): void {
   if (
-    SIMULATION_PROTOCOL_VERSION !== 3 ||
+    SIMULATION_PROTOCOL_VERSION !== 4 ||
     !Number.isSafeInteger(timestepHz) ||
     timestepHz <= 0 ||
     !Number.isSafeInteger(cadence) ||

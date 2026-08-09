@@ -5,12 +5,13 @@ import type {
   WorldBounds,
 } from "../world/world-contract";
 
-export const SIMULATION_PROTOCOL_VERSION = 3;
+export const SIMULATION_PROTOCOL_VERSION = 4;
 export const SIMULATION_SAVE_SCHEMA_VERSION = 1;
 export const SIMULATION_TELEMETRY_SCHEMA_VERSION = 3;
 export const MAXIMUM_SIMULATION_REPLAY_TICKS = 10_000;
 export const MAXIMUM_SIMULATION_REPLAY_COMMANDS = 65_536;
 export const MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES = 16 * 1_024 * 1_024;
+export const MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES = 64 * 1_024;
 
 export type SimulationState = "disposed" | "failed" | "idle" | "running" | "starting";
 
@@ -19,6 +20,16 @@ export interface SimulationCommand {
   readonly payload: Uint8Array;
   readonly sequence: number;
   readonly targetTick: number;
+}
+
+export interface SimulationGameStateQuery {
+  readonly kind: string;
+  readonly payload: Uint8Array;
+}
+
+export interface SimulationGameStateQueryResult {
+  readonly payload: Uint8Array;
+  readonly tick: number;
 }
 
 export interface SimulationPresentationEntity {
@@ -75,6 +86,7 @@ export interface GameSimulationAdapter<State = unknown> {
   createInitialState(seed: number): State;
   deserializeState(bytes: Uint8Array): State;
   presentationSnapshot(state: State): readonly SimulationPresentationEntity[];
+  queryState?(state: State, query: SimulationGameStateQuery): Uint8Array;
   serializeState(state: State): Uint8Array;
   step(state: State, tick: number): SimulationStepResult<State>;
   telemetryCounters(state: State): Readonly<Record<string, number>>;
@@ -98,6 +110,7 @@ export interface SimulationWorldDefinition {
   readonly bounds: WorldBounds;
   readonly cellSizeMeters: number;
   readonly cells: readonly SimulationWorldCell[];
+  readonly id: string;
   readonly markers: readonly GreyboxWorldMarker[];
 }
 
@@ -110,6 +123,7 @@ export function simulationWorldDefinition(district: GreyboxDistrict): Simulation
         Object.freeze({ collision: cell.collision, coordinate: cell.coordinate }),
       ),
     ),
+    id: district.id,
     markers: district.markers,
   });
 }
@@ -136,6 +150,11 @@ export type SimulationWorkerRequest =
   | Readonly<{ readonly kind: "command"; readonly command: SimulationCommand }>
   | Readonly<{ readonly kind: "dispose" }>
   | Readonly<{ readonly bytes: Uint8Array; readonly kind: "load"; readonly requestId: number }>
+  | Readonly<{
+      readonly kind: "query-game-state";
+      readonly query: SimulationGameStateQuery;
+      readonly requestId: number;
+    }>
   | Readonly<{
       readonly commands: readonly SimulationCommand[];
       readonly kind: "replay";
@@ -181,6 +200,11 @@ export type SimulationWorkerResponse =
       readonly requestId: number;
       readonly snapshot: SimulationPresentationSnapshot;
       readonly telemetry: SimulationTelemetrySnapshot;
+    }>
+  | Readonly<{
+      readonly kind: "game-state-query-result";
+      readonly requestId: number;
+      readonly result: SimulationGameStateQueryResult;
     }>
   | Readonly<{
       readonly kind: "replayed";

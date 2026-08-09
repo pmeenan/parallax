@@ -3,6 +3,7 @@ import type {
   GameSimulationContext,
   GreyboxAabbCollider,
   SimulationCommand,
+  SimulationGameStateQuery,
   SimulationPresentationEntity,
   SimulationStepResult,
   SimulationWorldDefinition,
@@ -10,6 +11,8 @@ import type {
 import { CHARACTER_CONTROLLER_BALANCE } from "../balance/character-controller";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
 import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
+import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
+import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
 import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
@@ -228,6 +231,30 @@ export function createGameSimulationAdapter(
           }),
         ),
       ]);
+    },
+    queryState(state: M3SimulationState, query: SimulationGameStateQuery): Uint8Array {
+      assertState(state, world.district.markers.length, navigation, schedules);
+      return executeM3NpcKnowledgeQuery(
+        query,
+        context.world.id,
+        M3_NPC_KNOWLEDGE_PROFILES.map((profile) => {
+          const agent = state.npcAgents.find(
+            ({ entityId }: NpcAgentState) => entityId === profile.entityId,
+          );
+          if (agent === undefined) {
+            throw new Error(`NPC knowledge agent ${profile.npcId} is absent from simulation state`);
+          }
+          const route = schedules.routes[agent.routeIndex];
+          if (route === undefined) throw new Error("NPC knowledge agent route is invalid");
+          return Object.freeze({
+            npcId: profile.npcId,
+            pathCursor: agent.pathCursor,
+            position: agent.position,
+            routeId: route.id,
+            targetStopIndex: agent.targetStopIndex,
+          });
+        }),
+      );
     },
     serializeState(state: M3SimulationState): Uint8Array {
       assertState(state, world.district.markers.length, navigation, schedules);

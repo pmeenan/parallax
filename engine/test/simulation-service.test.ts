@@ -150,12 +150,15 @@ describe("simulation presentation service", () => {
       kind: "telemetry",
       telemetry: Object.freeze({ ...service.snapshot(), state: "running" }),
     });
+    const authorityChanged = vi.fn();
+    service.subscribeAuthorityChanges(authorityChanged);
     const saving = service.save();
     const rejection = expect(saving).rejects.toThrow(/timed out/);
     await vi.advanceTimersByTimeAsync(10_000);
     await rejection;
     expect(worker.terminated).toBe(true);
     expect(service.snapshot()).toMatchObject({ state: "failed" });
+    expect(authorityChanged).toHaveBeenCalledOnce();
   });
 
   it("canonicalizes shared command payloads and strips non-cloneable extra properties", () => {
@@ -248,6 +251,99 @@ describe("simulation presentation service", () => {
       command: { sequence: 42, targetTick: 7 },
       kind: "command",
     });
+  });
+
+  it("round-trips a copied game-state query and rejects queries during load", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createSimulationService();
+    service.start({
+      entityCapacity: 1,
+      gameModuleUrl: "https://example.test/game/src/sim/m3-simulation.ts",
+      seed: 1,
+      snapshotCadenceTicks: 1,
+      timestepHz: 60,
+      world: testWorld,
+    });
+    const worker = FakeWorker.latest;
+    if (worker === null) throw new Error("Fake worker was not created");
+    worker.emit({
+      kind: "telemetry",
+      telemetry: Object.freeze({ ...service.snapshot(), state: "running" }),
+    });
+    const source = new Uint8Array([3]);
+    const pending = service.queryGameState({ kind: "npc.query", payload: source });
+    source[0] = 8;
+    const request = worker.posted.at(-1);
+    if (request?.kind !== "query-game-state") throw new Error("Query request was not posted");
+    expect(request.query.payload).toEqual(new Uint8Array([3]));
+    const responsePayload = new Uint8Array([5]);
+    worker.emit({
+      kind: "game-state-query-result",
+      requestId: request.requestId,
+      result: { payload: responsePayload, tick: 4 },
+    });
+    const result = await pending;
+    responsePayload[0] = 9;
+    expect(result).toEqual({ payload: new Uint8Array([5]), tick: 4 });
+
+    const loading = service.load(new Uint8Array([1]));
+    await expect(
+      service.queryGameState({ kind: "npc.query", payload: new Uint8Array() }),
+    ).rejects.toThrow(/during load/);
+    const loadRequest = worker.posted.at(-1);
+    if (loadRequest?.kind !== "load") throw new Error("Load request was not posted");
+    worker.emit({
+      kind: "failure",
+      message: "test load rejected",
+      requestId: loadRequest.requestId,
+      telemetry: service.snapshot(),
+    });
+    await expect(loading).rejects.toThrow(/test load rejected/);
+  });
+
+  it("invalidates an in-flight game-state query when load authority begins", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createSimulationService();
+    service.start({
+      entityCapacity: 1,
+      gameModuleUrl: "https://example.test/game/src/sim/m3-simulation.ts",
+      seed: 1,
+      snapshotCadenceTicks: 1,
+      timestepHz: 60,
+      world: testWorld,
+    });
+    const worker = FakeWorker.latest;
+    if (worker === null) throw new Error("Fake worker was not created");
+    worker.emit({
+      kind: "telemetry",
+      telemetry: Object.freeze({ ...service.snapshot(), state: "running" }),
+    });
+    const authorityChanged = vi.fn();
+    service.subscribeAuthorityChanges(authorityChanged);
+    const query = service.queryGameState({
+      kind: "npc.query",
+      payload: new Uint8Array([1]),
+    });
+    const queryRequest = worker.posted.at(-1);
+    if (queryRequest?.kind !== "query-game-state") throw new Error("Query was not posted");
+
+    const loading = service.load(new Uint8Array([2]));
+    expect(authorityChanged).toHaveBeenCalledOnce();
+    const loadRequest = worker.posted.at(-1);
+    if (loadRequest?.kind !== "load") throw new Error("Load was not posted");
+    worker.emit({
+      kind: "game-state-query-result",
+      requestId: queryRequest.requestId,
+      result: { payload: new Uint8Array([3]), tick: 4 },
+    });
+    await expect(query).rejects.toThrow(/authority changed/);
+    worker.emit({
+      kind: "failure",
+      message: "test load rejected",
+      requestId: loadRequest.requestId,
+      telemetry: service.snapshot(),
+    });
+    await expect(loading).rejects.toThrow(/test load rejected/);
   });
 
   it("replays commands blocked behind a rejected load onto the unchanged timeline", async () => {

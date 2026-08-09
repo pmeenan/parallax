@@ -3,11 +3,13 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 import {
   type GameSimulationAdapter,
   type GameSimulationModule,
+  MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES,
   MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES,
   MAXIMUM_SIMULATION_REPLAY_COMMANDS,
   MAXIMUM_SIMULATION_REPLAY_TICKS,
   SIMULATION_SAVE_SCHEMA_VERSION,
   type SimulationCommand,
+  type SimulationGameStateQuery,
   type SimulationPresentationEntity,
   type SimulationPresentationSnapshot,
   type SimulationReplayResult,
@@ -36,6 +38,7 @@ export interface SimulationRuntime {
   enqueue(command: SimulationCommand): boolean;
   load(bytes: Uint8Array): SimulationRuntimeSnapshot;
   presentation(): SimulationPresentationSnapshot;
+  queryGameState(query: SimulationGameStateQuery): Uint8Array;
   save(): SimulationRuntimeSnapshot;
   step(): Readonly<{
     readonly appliedCommandCount: number;
@@ -140,6 +143,19 @@ export function createSimulationRuntime(
     presentation(): SimulationPresentationSnapshot {
       const stateBytes = serializeState(adapter, state);
       return capturePresentation(state, tick, stateBytes);
+    },
+    queryGameState(query: SimulationGameStateQuery): Uint8Array {
+      const handler = adapter.queryState;
+      if (handler === undefined) throw new Error("Game simulation state queries are unavailable");
+      assertSimulationGameStateQuery(query);
+      const result = handler(state, canonicalSimulationGameStateQuery(query));
+      if (!(result instanceof Uint8Array)) {
+        throw new Error("Game simulation state query result is not bytes");
+      }
+      if (result.byteLength > MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES) {
+        throw new Error("Game simulation state query result exceeds byte capacity");
+      }
+      return result.slice();
     },
     save: snapshot,
     step(): Readonly<{
@@ -272,6 +288,25 @@ export function canonicalSimulationCommand(command: SimulationCommand): Simulati
     sequence: command.sequence,
     targetTick: command.targetTick,
   });
+}
+
+export function canonicalSimulationGameStateQuery(
+  query: SimulationGameStateQuery,
+): SimulationGameStateQuery {
+  assertSimulationGameStateQuery(query);
+  return Object.freeze({ kind: query.kind, payload: query.payload.slice() });
+}
+
+function assertSimulationGameStateQuery(query: SimulationGameStateQuery): void {
+  if (!/^[a-z0-9](?:[a-z0-9._:@-]{0,127})$/u.test(query.kind)) {
+    throw new Error("Simulation game-state query kind is invalid");
+  }
+  if (
+    !(query.payload instanceof Uint8Array) ||
+    query.payload.byteLength > MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES
+  ) {
+    throw new Error("Simulation game-state query payload is invalid or too large");
+  }
 }
 
 export function interpolateSimulationSnapshots(

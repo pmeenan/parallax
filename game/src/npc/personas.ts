@@ -3,6 +3,7 @@ import { NPC_ENTITY_ID_START } from "./identity";
 
 export interface NpcFallbackReply {
   readonly keywords: readonly string[];
+  readonly knowledgeTag: string;
   readonly speech: string;
 }
 
@@ -16,7 +17,10 @@ export interface NpcPersonaCard {
   readonly entityId: number;
   readonly id: string;
   readonly intentDefinitions: readonly NpcDialogIntentDefinition[];
-  readonly retrievedContext: readonly string[];
+  readonly retrievedContext: Readonly<{
+    readonly maximumTokens: number;
+    readonly tags: readonly string[];
+  }>;
   readonly systemPrompt: string;
 }
 
@@ -25,20 +29,22 @@ export const NPC_PERSONA_CARDS: readonly NpcPersonaCard[] = Object.freeze([
     authoredFallback: Object.freeze({
       defaultReply:
         "I should keep my eyes on the gate, but I can spare a moment. Ask me about the road, the inn, or work in the village.",
-      opening: "Mara Venn, east-gate watch. The road is quiet for now. What do you need?",
+      opening: "Mara Venn, east-gate watch. What do you need?",
       replies: Object.freeze([
         Object.freeze({
           keywords: Object.freeze(["road", "travel", "gate", "safe"]),
-          speech:
-            "The east road is open and the gate watch has seen no trouble today. Stay on the marked path after dusk.",
+          knowledgeTag: "road",
+          speech: "The east road leaves through this gate. Stay on the marked path after dusk.",
         }),
         Object.freeze({
           keywords: Object.freeze(["inn", "sleep", "bed", "room"]),
+          knowledgeTag: "inn",
           speech:
             "Try the shoreward alehouse. If its rooms are full, the hearth keeper sometimes rents the loft.",
         }),
         Object.freeze({
           keywords: Object.freeze(["work", "job", "help", "quest"]),
+          knowledgeTag: "work",
           speech:
             "The field crews always need hands, and the forge posts commissions by the village well. Neither depends on my gift for conversation.",
         }),
@@ -55,10 +61,10 @@ export const NPC_PERSONA_CARDS: readonly NpcPersonaCard[] = Object.freeze([
         subjects: Object.freeze(["east-road", "shoreward-alehouse", "village-well"]),
       }),
     ]),
-    retrievedContext: Object.freeze([
-      "The east road is open and the watch has observed no hazard today.",
-      "The shoreward alehouse and village-well commission board are available authored destinations.",
-    ]),
+    retrievedContext: Object.freeze({
+      maximumTokens: 192,
+      tags: Object.freeze(["east-gate", "road", "inn", "work", "npc-location"]),
+    }),
     systemPrompt:
       "You are Mara Venn, a practical watch officer at a bright shore village's east gate. Speak concisely, warmly, and as a person rather than a quest dispenser. Never invent world facts outside retrieved context or memory. Never claim that an action happened; select only an allowed structured intent, and use no_action/none for flavor-only speech.",
   }),

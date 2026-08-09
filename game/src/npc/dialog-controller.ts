@@ -4,6 +4,8 @@ import type {
   NpcDialogIntent,
   NpcDialogMessage,
   NpcDialogService,
+  NpcKnowledgeContext,
+  NpcKnowledgeService,
 } from "@parallax/engine";
 import { NPC_DIALOG_NO_ACTION, NPC_DIALOG_NO_SUBJECT } from "@parallax/engine";
 import type { M3HybridUiModel } from "../ui/m3-hybrid-ui";
@@ -18,6 +20,7 @@ export interface NpcDialogIntentEvent {
 export interface NpcDialogController {
   dispose(): void;
   handleAction(action: HybridUiAction): void;
+  invalidateAuthority(): void;
   open(entityId: number): HybridUiPresentation;
   subscribeIntents(listener: (event: NpcDialogIntentEvent) => void): () => void;
   subscribePresentations(listener: (presentation: HybridUiPresentation) => void): () => void;
@@ -29,6 +32,7 @@ const MAXIMUM_PLAYER_INPUT_CHARACTERS = 512;
 
 export function createNpcDialogController(
   dialogService: NpcDialogService,
+  knowledgeService: NpcKnowledgeService,
   ui: M3HybridUiModel,
 ): NpcDialogController {
   const memories = new Map<string, NpcDialogMemory>();
@@ -120,12 +124,34 @@ export function createNpcDialogController(
         ) {
           return;
         }
+        let retrievedContext: NpcKnowledgeContext | null = null;
         try {
+          retrievedContext = await knowledgeService.assemble(
+            {
+              maximumTokens: persona.retrievedContext.maximumTokens,
+              npcId: persona.id,
+              playerText: normalized,
+              tags: persona.retrievedContext.tags,
+            },
+            abort.signal,
+          );
+          if (
+            !isCurrentConversation(
+              disposed,
+              abort.signal,
+              epoch,
+              conversationEpoch,
+              persona,
+              activePersona,
+            )
+          ) {
+            return;
+          }
           const response = await dialogService.generate(
             {
               intentDefinitions: persona.intentDefinitions,
               maxOutputTokens: 128,
-              messages: promptMessages(persona, memory, normalized),
+              messages: promptMessages(persona, memory, normalized, retrievedContext),
               npcId: persona.id,
             },
             abort.signal,
@@ -170,7 +196,7 @@ export function createNpcDialogController(
           ) {
             return;
           }
-          const speech = fallbackReply(persona, normalized);
+          const speech = fallbackReply(persona, normalized, retrievedContext);
           memory.record({ npcSpeech: speech, playerSpeech: normalized });
           present(showReady(persona, speech));
         }
@@ -218,6 +244,14 @@ export function createNpcDialogController(
         submit(action.payload);
       }
     },
+    invalidateAuthority(): void {
+      if (disposed) return;
+      pendingGeneration?.abort.abort();
+      conversationEpoch += 1;
+      activePersona = null;
+      memories.clear();
+      if (ui.snapshot().dialog.visible) present(ui.closeDialog());
+    },
     open(entityId: number): HybridUiPresentation {
       if (disposed) throw new Error("NPC dialog controller is disposed");
       const persona = requireNpcPersonaByEntityId(entityId);
@@ -241,6 +275,7 @@ function promptMessages(
   persona: NpcPersonaCard,
   memory: NpcDialogMemory,
   playerSpeech: string,
+  retrievedContext: NpcKnowledgeContext,
 ): readonly NpcDialogMessage[] {
   const snapshot = memory.snapshot();
   const intentText = [
@@ -252,7 +287,7 @@ function promptMessages(
   ].join("\n");
   const messages: NpcDialogMessage[] = [
     Object.freeze({
-      content: `${persona.systemPrompt}\n\nRetrieved context slot:\n${persona.retrievedContext.join("\n")}\n\nStructured intent contract:\n${intentText}\nReturn speech, intent, and subject through the constrained response.`,
+      content: `${persona.systemPrompt}\n\nRetrieved context slot:\n${retrievedContext.formattedText || "(No current facts retrieved.)"}\n\nStructured intent contract:\n${intentText}\nReturn speech, intent, and subject through the constrained response.`,
       role: "system" as const,
     }),
   ];
@@ -276,12 +311,19 @@ function promptMessages(
   return Object.freeze(messages);
 }
 
-function fallbackReply(persona: NpcPersonaCard, playerSpeech: string): string {
+function fallbackReply(
+  persona: NpcPersonaCard,
+  playerSpeech: string,
+  retrievedContext: NpcKnowledgeContext | null,
+): string {
   const normalized = playerSpeech.toLocaleLowerCase("en-US");
+  const reply = persona.authoredFallback.replies.find((candidate) =>
+    candidate.keywords.some((keyword) => normalized.includes(keyword)),
+  );
+  if (reply === undefined) return persona.authoredFallback.defaultReply;
   return (
-    persona.authoredFallback.replies.find((reply) =>
-      reply.keywords.some((keyword) => normalized.includes(keyword)),
-    )?.speech ?? persona.authoredFallback.defaultReply
+    retrievedContext?.entries.find((entry) => entry.tags.includes(reply.knowledgeTag))?.text ??
+    reply.speech
   );
 }
 

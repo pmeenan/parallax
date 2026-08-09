@@ -15,6 +15,9 @@ export type {
 export { createNpcDialogController } from "./npc/dialog-controller";
 export type { NpcDialogMemory, NpcDialogMemorySnapshot } from "./npc/dialog-memory";
 export { createNpcDialogMemory } from "./npc/dialog-memory";
+export { createM3StructuredKnowledgeProvider } from "./npc/knowledge";
+export type { NpcLoreChunk } from "./npc/lore";
+export { NPC_LORE_CHUNKS } from "./npc/lore";
 export { NPC_PERSONA_CARDS } from "./npc/personas";
 export type { M3GameplayInteraction, M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
 export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";

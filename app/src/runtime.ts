@@ -11,6 +11,7 @@ import {
   createHybridUiService,
   createInstalledModelSource,
   createNpcDialogService,
+  createNpcKnowledgeService,
   createOpfsReleaseStore,
   createRenderService,
   createSimulationService,
@@ -33,6 +34,7 @@ import {
   createGreyboxScene,
   createM3GameplayRuntime,
   createM3HybridUiModel,
+  createM3StructuredKnowledgeProvider,
   createNpcDialogController,
   DISTRICT_1_FLYTHROUGH,
   formatM1BenchmarkPreset,
@@ -177,6 +179,10 @@ async function bootRuntimeAttempt(
   if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
   const worldGenerationStartedAt = performance.now();
   const previewScene = createGreyboxScene(previewDistrict);
+  const npcKnowledgeService = createNpcKnowledgeService([
+    createM3StructuredKnowledgeProvider(simulationService),
+  ]);
+  registerFailureCleanup(() => npcKnowledgeService.dispose());
   const simulationWorld = simulationWorldDefinition(previewScene.world);
   const gameplayRuntime = createM3GameplayRuntime(
     gameplayInputService,
@@ -198,8 +204,16 @@ async function bootRuntimeAttempt(
   );
   registerFailureCleanup(() => gameUiService.dispose());
   gameUiService.present(gameUiModel.snapshot());
-  const npcDialogController = createNpcDialogController(npcDialogService, gameUiModel);
+  const npcDialogController = createNpcDialogController(
+    npcDialogService,
+    npcKnowledgeService,
+    gameUiModel,
+  );
   registerFailureCleanup(() => npcDialogController.dispose());
+  const unsubscribeDialogAuthority = simulationService.subscribeAuthorityChanges(() =>
+    npcDialogController.invalidateAuthority(),
+  );
+  registerFailureCleanup(unsubscribeDialogAuthority);
   const unsubscribeDialogPresentations = npcDialogController.subscribePresentations(
     (presentation) => gameUiService.present(presentation),
   );
@@ -269,6 +283,7 @@ async function bootRuntimeAttempt(
     renderService,
     appOwnedLlmSpikeService,
     npcDialogService,
+    npcKnowledgeService,
     wasmThreadSpikeService,
     simulationService,
     gameplayInputService,

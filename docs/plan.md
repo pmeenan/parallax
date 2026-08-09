@@ -279,11 +279,24 @@ The current platform synthesis and asks are in
       schema-70 smoke passed all three facets and 36/36 checks at
       `harness/results/smoke-1-fadede8ba3ae-dev-01-showcase-2026-08-09T16-46-18-033Z.json`
       (SHA-256 `74bed174cb0be2db34b9fdb451d743744bff26041cb41c21b33547cd94a138d0`).
-- [ ] NPC knowledge service (D-033): generic retrieval/assembly contract in `engine/ai`
-      with `game/`-supplied providers; structured game-state tier implemented;
-      prompt/persona schema carries the retrieved-context slot; lore authored
-      chunked + tagged in `game/`. Semantic tiers (lore embeddings, episodic memory)
-      stay build-later.
+- [x] NPC knowledge service (D-033): `engine/ai` now owns the bounded, cancellable,
+      provider-neutral retrieval/ranking/assembly contract, stable citations, token
+      budgeting, and public telemetry. A bounded generic sim-worker query returns a
+      fresh game-owned, NPC-scoped view of authoritative schedule/location state plus
+      district-keyed world facts per turn; model-unavailable fallback consumes that
+      same retrieved state. Load or sim-authority loss cancels active dialog, rejects
+      stale queries, and clears unsaved conversation memory before another timeline can
+      use it. Persona cards carry query scope and context budget instead of embedded
+      facts, and authored lore starts as independently tagged chunks without enabling a
+      tier-2 mechanism prematurely. Semantic lore retrieval and episodic memory stay
+      build-later. The converged `pnpm check` passed 192 files / 2,474 tests (one
+      skipped); skeptic and adversarial final re-reviews found no remaining P0-P2 issue.
+      The required registered dev-01/Showcase schema-v70 / mandatory-metric-set-v33
+      physical smoke passed all six launches, all three facets, and 36/36 checks at
+      `harness/results/smoke-1-32c14535bf96-dev-01-showcase-2026-08-09T18-11-21-919Z.{json,md}`;
+      JSON/Markdown SHA-256 are
+      `e2de1e81a1f851165abdc6e5ceb73147ae45e59f1adab8bd0fdf2e93049ba555` /
+      `3b48f34c1787075bfde54dfd3a4fb7e8e32531d321385a38ab1b5378c3db5478`.
 - [ ] Exit: playable greybox loop with conversing NPCs (incl. authored-fallback path
       with the model unavailable, D-096); save/reload round-trip; sim determinism check
       (same input log → same state hash) by repeated same-host replay on pinned dev-01.

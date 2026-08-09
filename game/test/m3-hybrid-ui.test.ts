@@ -41,6 +41,7 @@ function world(): SimulationWorldDefinition {
     bounds: { maximum: [10, 10, 10], minimum: [-10, -10, -10] },
     cells: [],
     cellSizeMeters: 64,
+    id: "test-district",
     markers: [
       { id: "gate", kind: "transition", position: [4, 3, 6], tags: [] },
       { id: "vista", kind: "vista", position: [1, 2, 3], tags: [] },

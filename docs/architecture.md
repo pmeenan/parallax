@@ -1454,14 +1454,26 @@ in `engine/ai` — persona card + context retrieved through an explicit interfac
 all-lore-in-prompt (on-device prefill cost and small-model
 context-following all punish long prompts). Tier 1 is structured game-state queries
 against the sim's typed state and world graph — deterministic, no embeddings, lands
-with M3. Tier 2 (authored-lore retrieval; mechanism open — tag/graph lookup vs.
+with M3. The implemented service validates bounded provider output, ranks it
+deterministically, admits whole cited entries under the persona's token budget, cancels
+with the conversation, and exposes request/candidate/selection/failure/duration telemetry.
+The game-owned M3 provider issues a bounded generic query to the sim worker for each
+turn. The game adapter answers from authoritative NPC schedule/location state plus
+district-keyed, NPC-scoped world-fact data; save/load therefore changes the same state
+retrieval reads. Load initiation, terminal sim-authority loss, and service disposal
+invalidate in-flight queries and dialog generation; the app closes the conversation and
+clears its unsaved rolling memory so a restored timeline cannot inherit future turns.
+Persona cards define only query scope and budget, and authored fallback uses the
+successfully retrieved structured fact when model inference is unavailable.
+Tier 2 (authored-lore retrieval; mechanism open — tag/graph lookup vs.
 precomputed embeddings with a brute-force wasm scan) and tier 3 (episodic memory;
 needs an app-owned embedder — Chrome ships no built-in Embedding API, checked
 2026-07-13) are build-later. Ownership follows the layer rules: `engine/ai` owns the
 generic contract (provider registration, context assembly/budgeting, telemetry) and
 contains no game knowledge; `game/` supplies the providers, query schemas, and content.
-The prompt schema reserves a retrieved-context slot from day one, and the service is
-independent of the selected model placement.
+Authored lore already lives as independently addressable tagged game chunks, but no
+tier-2 provider is registered. The prompt schema's retrieved-context slot is now filled
+by the assembled context, and the service is independent of the selected model placement.
 
 **Model lifecycle (D-074/D-096):** the five exact GGUF shards are ordinary
 hash-verified OPFS install artifacts with the same resume, update, repair, and uninstall

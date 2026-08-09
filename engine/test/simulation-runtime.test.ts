@@ -3,6 +3,7 @@ import type {
   GameSimulationAdapter,
   GameSimulationModule,
   SimulationCommand,
+  SimulationGameStateQuery,
   SimulationPresentationEntity,
   SimulationStepResult,
 } from "../src/sim/simulation-protocol";
@@ -50,6 +51,10 @@ const adapter: GameSimulationAdapter<TestState> = Object.freeze({
       }),
     ]);
   },
+  queryState(state: TestState, query: SimulationGameStateQuery): Uint8Array {
+    if (query.kind !== "test.query") throw new Error("Unsupported test query");
+    return new Uint8Array([state.value, ...query.payload]);
+  },
   serializeState(state: TestState): Uint8Array {
     const bytes = new Uint8Array(4);
     new DataView(bytes.buffer).setInt32(0, state.value, true);
@@ -95,6 +100,20 @@ describe("simulation runtime", () => {
     const finalIndex = corrupt.length - 1;
     corrupt[finalIndex] = (corrupt[finalIndex] ?? 0) ^ 1;
     expect(() => restored.load(corrupt)).toThrow(/digest/);
+  });
+
+  it("queries the current authoritative state through bounded copied bytes", () => {
+    const runtime = createSimulationRuntime(adapter, 7, 60);
+    const payload = new Uint8Array([9]);
+    const first = runtime.queryGameState({ kind: "test.query", payload });
+    payload[0] = 2;
+    first[0] = 0;
+    expect(runtime.queryGameState({ kind: "test.query", payload: new Uint8Array([9]) })).toEqual(
+      new Uint8Array([7, 9]),
+    );
+    runtime.enqueue(command(0, 1, 5));
+    runtime.step();
+    expect(runtime.queryGameState({ kind: "test.query", payload: new Uint8Array() })[0]).toBe(12);
   });
 
   it("binds every semantic save-header field under the envelope digest", () => {

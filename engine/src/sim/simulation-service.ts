@@ -1,6 +1,9 @@
 import {
+  MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES,
   SIMULATION_TELEMETRY_SCHEMA_VERSION,
   type SimulationCommand,
+  type SimulationGameStateQuery,
+  type SimulationGameStateQueryResult,
   type SimulationPresentationSnapshot,
   type SimulationReplayResult,
   type SimulationSemanticEvent,
@@ -12,6 +15,7 @@ import {
 import {
   assertSimulationReplayWorkload,
   canonicalSimulationCommand,
+  canonicalSimulationGameStateQuery,
   interpolateSimulationSnapshots,
 } from "./simulation-runtime";
 import {
@@ -31,6 +35,7 @@ export interface SimulationService {
   dispose(): Promise<void>;
   enqueue(command: SimulationCommand): void;
   load(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
+  queryGameState(query: SimulationGameStateQuery): Promise<SimulationGameStateQueryResult>;
   replay(
     commands: readonly SimulationCommand[],
     ticks: number,
@@ -41,6 +46,7 @@ export interface SimulationService {
   snapshot(): SimulationTelemetrySnapshot;
   start(options: SimulationStartOptions): void;
   subscribe(listener: (snapshot: SimulationTelemetrySnapshot) => void): () => void;
+  subscribeAuthorityChanges(listener: () => void): () => void;
   subscribeEvents(listener: (events: readonly SimulationSemanticEvent[]) => void): () => void;
 }
 
@@ -58,6 +64,7 @@ type SimulationRequestInput =
       readonly seed: number;
       readonly ticks: number;
     }>
+  | Readonly<{ readonly kind: "query-game-state"; readonly query: SimulationGameStateQuery }>
   | Readonly<{ readonly kind: "save" }>;
 
 function workerUrl(): URL {
@@ -80,16 +87,31 @@ export function createSimulationService(
   let snapshotBuffer: SharedArrayBuffer | null = null;
   let disposal: Promise<void> | null = null;
   let loadPending = false;
+  let authorityGeneration = 0;
   let commandsBlockedByLoad: SimulationCommand[] = [];
   const pending = new Map<number, PendingRequest>();
   const listeners = new Set<(snapshot: SimulationTelemetrySnapshot) => void>();
   const eventListeners = new Set<(events: readonly SimulationSemanticEvent[]) => void>();
+  const authorityListeners = new Set<() => void>();
 
+  const invalidateAuthority = (): void => {
+    authorityGeneration += 1;
+    for (const listener of authorityListeners) {
+      try {
+        listener();
+      } catch (error: unknown) {
+        console.error("Simulation authority-change listener failed", error);
+      }
+    }
+  };
   const publish = (next: SimulationTelemetrySnapshot): void => {
     telemetry = Object.freeze({ ...next });
     for (const listener of listeners) listener(telemetry);
   };
   const fail = (message: string): void => {
+    if (telemetry.state === "running" || telemetry.state === "starting") {
+      invalidateAuthority();
+    }
     worker?.terminate();
     worker = null;
     rejectAll(message);
@@ -138,6 +160,7 @@ export function createSimulationService(
       if (disposal !== null) return disposal;
       if (worker === null) return Promise.resolve();
       const active = worker;
+      invalidateAuthority();
       rejectAll("Simulation service is disposing");
       publish({ ...telemetry, state: "disposed" });
       disposal = new Promise<void>((resolve, reject) => {
@@ -185,6 +208,7 @@ export function createSimulationService(
       const copied = new Uint8Array(bytes.byteLength);
       copied.set(bytes);
       loadPending = true;
+      invalidateAuthority();
       try {
         return request<SimulationPresentationSnapshot>({ bytes: copied, kind: "load" }).then(
           (snapshot) => {
@@ -200,6 +224,21 @@ export function createSimulationService(
         releaseLoadBarrier(false);
         throw error;
       }
+    },
+    queryGameState(query: SimulationGameStateQuery): Promise<SimulationGameStateQueryResult> {
+      if (loadPending) {
+        return Promise.reject(new Error("Simulation game-state query is unavailable during load"));
+      }
+      const queryAuthorityGeneration = authorityGeneration;
+      return request<SimulationGameStateQueryResult>({
+        kind: "query-game-state",
+        query: canonicalSimulationGameStateQuery(query),
+      }).then((result) => {
+        if (queryAuthorityGeneration !== authorityGeneration) {
+          throw new Error("Simulation game-state query authority changed during retrieval");
+        }
+        return result;
+      });
     },
     replay(
       commands: readonly SimulationCommand[],
@@ -288,6 +327,24 @@ export function createSimulationService(
           }
           if (response.kind === "replayed") {
             settle(response.requestId, response.result);
+            return;
+          }
+          if (response.kind === "game-state-query-result") {
+            if (
+              !(response.result.payload instanceof Uint8Array) ||
+              response.result.payload.byteLength > MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES ||
+              !Number.isSafeInteger(response.result.tick) ||
+              response.result.tick < 0
+            ) {
+              throw new Error("Simulation game-state query response is invalid");
+            }
+            settle(
+              response.requestId,
+              Object.freeze({
+                payload: response.result.payload.slice(),
+                tick: response.result.tick,
+              }),
+            );
           }
         } catch (error: unknown) {
           fail(error instanceof Error ? error.message : "Simulation worker response was invalid");
@@ -306,6 +363,10 @@ export function createSimulationService(
       listeners.add(listener);
       listener(telemetry);
       return () => listeners.delete(listener);
+    },
+    subscribeAuthorityChanges(listener: () => void): () => void {
+      authorityListeners.add(listener);
+      return () => authorityListeners.delete(listener);
     },
     subscribeEvents(listener: (events: readonly SimulationSemanticEvent[]) => void): () => void {
       eventListeners.add(listener);

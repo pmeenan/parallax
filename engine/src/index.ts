@@ -62,6 +62,28 @@ export {
   NpcDialogUnavailableError,
 } from "./ai/npc-dialog-service";
 export type {
+  NpcKnowledgeCandidate,
+  NpcKnowledgeContext,
+  NpcKnowledgeEntry,
+  NpcKnowledgeProvider,
+  NpcKnowledgeRequest,
+  NpcKnowledgeTelemetrySnapshot,
+  NpcKnowledgeTier,
+} from "./ai/npc-knowledge-contract";
+export {
+  NPC_KNOWLEDGE_TELEMETRY_SCHEMA_VERSION,
+  validateNpcKnowledgeCandidate,
+  validateNpcKnowledgeRequest,
+} from "./ai/npc-knowledge-contract";
+export type {
+  NpcKnowledgeService,
+  NpcKnowledgeServiceOptions,
+} from "./ai/npc-knowledge-service";
+export {
+  createNpcKnowledgeService,
+  estimateNpcKnowledgeTokens,
+} from "./ai/npc-knowledge-service";
+export type {
   MeshoptBufferView,
   MeshoptCompressionExtension,
   MeshoptDocumentLayout,
@@ -389,6 +411,8 @@ export type {
   GameSimulationContext,
   GameSimulationModule,
   SimulationCommand,
+  SimulationGameStateQuery,
+  SimulationGameStateQueryResult,
   SimulationPresentationEntity,
   SimulationPresentationSnapshot,
   SimulationReplayResult,
@@ -401,6 +425,7 @@ export type {
   SimulationWorldDefinition,
 } from "./sim/simulation-protocol";
 export {
+  MAXIMUM_SIMULATION_GAME_STATE_QUERY_BYTES,
   MAXIMUM_SIMULATION_REPLAY_COMMAND_BYTES,
   MAXIMUM_SIMULATION_REPLAY_COMMANDS,
   MAXIMUM_SIMULATION_REPLAY_TICKS,
@@ -413,6 +438,7 @@ export type { SimulationRuntime, SimulationRuntimeSnapshot } from "./sim/simulat
 export {
   assertSimulationReplayWorkload,
   canonicalSimulationCommand,
+  canonicalSimulationGameStateQuery,
   createSimulationRuntime,
   interpolateSimulationSnapshots,
   runSimulationModuleReplay,

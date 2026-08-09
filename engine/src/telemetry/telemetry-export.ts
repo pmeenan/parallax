@@ -6,6 +6,8 @@ import type {
 } from "../ai/installed-model-source";
 import type { NpcDialogTelemetrySnapshot } from "../ai/npc-dialog-contract";
 import type { NpcDialogService } from "../ai/npc-dialog-service";
+import type { NpcKnowledgeTelemetrySnapshot } from "../ai/npc-knowledge-contract";
+import type { NpcKnowledgeService } from "../ai/npc-knowledge-service";
 import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
 import type { BenchmarkService } from "../benchmark/benchmark-service";
 import type {
@@ -94,6 +96,7 @@ export interface ParallaxTelemetryExport {
   resetBenchmark(): Promise<void>;
   loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
   npcDialogSnapshot(): NpcDialogTelemetrySnapshot;
+  npcKnowledgeSnapshot(): NpcKnowledgeTelemetrySnapshot;
   replaySimulation(
     commands: readonly SimulationCommand[],
     ticks: number,
@@ -111,6 +114,7 @@ export function installTelemetryExport(
   renderService: RenderService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
   npcDialogService: NpcDialogService,
+  npcKnowledgeService: NpcKnowledgeService,
   wasmThreadSpikeService: WasmThreadSpikeService,
   simulationService: SimulationService,
   gameplayInputService: GameplayInputService,
@@ -193,6 +197,9 @@ export function installTelemetryExport(
     },
     npcDialogSnapshot(): NpcDialogTelemetrySnapshot {
       return npcDialogService.snapshot();
+    },
+    npcKnowledgeSnapshot(): NpcKnowledgeTelemetrySnapshot {
+      return npcKnowledgeService.snapshot();
     },
     replaySimulation(
       commands: readonly SimulationCommand[],
