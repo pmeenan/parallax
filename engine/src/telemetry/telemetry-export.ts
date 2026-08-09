@@ -4,6 +4,8 @@ import type {
   InstalledModelSource,
   InstalledModelSourceTelemetrySnapshot,
 } from "../ai/installed-model-source";
+import type { NpcDialogTelemetrySnapshot } from "../ai/npc-dialog-contract";
+import type { NpcDialogService } from "../ai/npc-dialog-service";
 import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
 import type { BenchmarkService } from "../benchmark/benchmark-service";
 import type {
@@ -91,6 +93,7 @@ export interface ParallaxTelemetryExport {
   prepareFlythrough(): void;
   resetBenchmark(): Promise<void>;
   loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
+  npcDialogSnapshot(): NpcDialogTelemetrySnapshot;
   replaySimulation(
     commands: readonly SimulationCommand[],
     ticks: number,
@@ -107,6 +110,7 @@ export interface ParallaxTelemetryExport {
 export function installTelemetryExport(
   renderService: RenderService,
   appOwnedLlmSpikeService: AppOwnedLlmSpikeService,
+  npcDialogService: NpcDialogService,
   wasmThreadSpikeService: WasmThreadSpikeService,
   simulationService: SimulationService,
   gameplayInputService: GameplayInputService,
@@ -186,6 +190,9 @@ export function installTelemetryExport(
     },
     loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot> {
       return simulationService.load(bytes);
+    },
+    npcDialogSnapshot(): NpcDialogTelemetrySnapshot {
+      return npcDialogService.snapshot();
     },
     replaySimulation(
       commands: readonly SimulationCommand[],

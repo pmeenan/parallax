@@ -10,6 +10,7 @@ import {
   createGameplayInputService,
   createHybridUiService,
   createInstalledModelSource,
+  createNpcDialogService,
   createOpfsReleaseStore,
   createRenderService,
   createSimulationService,
@@ -32,6 +33,7 @@ import {
   createGreyboxScene,
   createM3GameplayRuntime,
   createM3HybridUiModel,
+  createNpcDialogController,
   DISTRICT_1_FLYTHROUGH,
   formatM1BenchmarkPreset,
   formatM1BenchmarkReport,
@@ -161,6 +163,8 @@ async function bootRuntimeAttempt(
   registerFailureCleanup(() => renderService.dispose());
   const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
   registerFailureCleanup(() => appOwnedLlmSpikeService.dispose());
+  const npcDialogService = createNpcDialogService(installedModelSource, renderService);
+  registerFailureCleanup(() => npcDialogService.dispose());
   const wasmThreadSpikeService = createWasmThreadSpikeService();
   registerFailureCleanup(() => wasmThreadSpikeService.dispose());
   const streamingService = createWorldStreamingService();
@@ -194,6 +198,16 @@ async function bootRuntimeAttempt(
   );
   registerFailureCleanup(() => gameUiService.dispose());
   gameUiService.present(gameUiModel.snapshot());
+  const npcDialogController = createNpcDialogController(npcDialogService, gameUiModel);
+  registerFailureCleanup(() => npcDialogController.dispose());
+  const unsubscribeDialogPresentations = npcDialogController.subscribePresentations(
+    (presentation) => gameUiService.present(presentation),
+  );
+  registerFailureCleanup(unsubscribeDialogPresentations);
+  const unsubscribeDialogActions = gameUiService.subscribeActions((action) =>
+    npcDialogController.handleAction(action),
+  );
+  registerFailureCleanup(unsubscribeDialogActions);
   const flythroughService = createFlythroughService(
     renderService,
     streamingService,
@@ -254,6 +268,7 @@ async function bootRuntimeAttempt(
   const telemetryExport = installTelemetryExport(
     renderService,
     appOwnedLlmSpikeService,
+    npcDialogService,
     wasmThreadSpikeService,
     simulationService,
     gameplayInputService,
@@ -580,11 +595,17 @@ async function bootRuntimeAttempt(
       );
     }
   });
-  gameplayRuntime.subscribeInteractions((markerId) => {
-    status.dataset.lastInteraction = markerId;
-    gameUiService.present(gameUiModel.recordInteraction(markerId));
+  const unsubscribeGameplayInteractions = gameplayRuntime.subscribeInteractions((interaction) => {
+    if (interaction.kind === "npc") {
+      status.dataset.lastInteraction = `npc-${interaction.entityId}`;
+      npcDialogController.open(interaction.entityId);
+    } else {
+      status.dataset.lastInteraction = interaction.markerId;
+      gameUiService.present(gameUiModel.recordInteraction(interaction.markerId));
+    }
     updateStatus();
   });
+  registerFailureCleanup(unsubscribeGameplayInteractions);
   let wasmThreadSpikeStarted = false;
   renderService.subscribe((telemetry) => {
     if (

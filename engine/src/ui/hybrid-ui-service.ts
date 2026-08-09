@@ -242,7 +242,7 @@ export function createHybridUiService(
       unsubscribeCanvas();
       unsubscribeRender();
       unsubscribeWorkerActions();
-      if (presentation?.heavyScreen?.visible === true) {
+      if (presentationOwnsGameplayInput(presentation)) {
         gameplayInputService.setUiSuppressed(false);
       }
       actionListeners.clear();
@@ -258,9 +258,9 @@ export function createHybridUiService(
       renderDom(frozen);
       const domMutationDurationMs = performance.now() - startedAt;
       renderService.setHybridUiPresentation(frozen);
-      const wasHeavy = presentation?.heavyScreen?.visible === true;
-      const isHeavy = frozen.heavyScreen?.visible === true;
-      if (wasHeavy !== isHeavy) gameplayInputService.setUiSuppressed(isHeavy);
+      const wasUiOwned = presentationOwnsGameplayInput(presentation);
+      const isUiOwned = presentationOwnsGameplayInput(frozen);
+      if (wasUiOwned !== isUiOwned) gameplayInputService.setUiSuppressed(isUiOwned);
       presentation = frozen;
       const semanticNodeCount =
         (frozen.heavyScreen?.visible === true ? frozen.heavyScreen.semanticActions.length : 0) +
@@ -301,6 +301,10 @@ export function createHybridUiService(
       return () => actionListeners.delete(listener);
     },
   });
+}
+
+function presentationOwnsGameplayInput(presentation: HybridUiPresentation | null): boolean {
+  return presentation?.dialog.visible === true || presentation?.heavyScreen?.visible === true;
 }
 
 function createDom(root: HTMLElement, labels: HybridUiDomLabels) {

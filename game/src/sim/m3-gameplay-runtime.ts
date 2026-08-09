@@ -10,9 +10,13 @@ import { createPlayerInputCommand, PLAYER_ENTITY_ID } from "./m3-simulation";
 export interface M3GameplayRuntime {
   dispose(): void;
   maybeStartInput(interactiveEnabled: boolean): void;
-  subscribeInteractions(listener: (markerId: string) => void): () => void;
+  subscribeInteractions(listener: (interaction: M3GameplayInteraction) => void): () => void;
   update(timestamp: number, scenarioOwned: boolean, interactiveEnabled: boolean): void;
 }
+
+export type M3GameplayInteraction =
+  | Readonly<{ readonly kind: "npc"; readonly entityId: number }>
+  | Readonly<{ readonly kind: "transition"; readonly markerId: string }>;
 
 export function createM3GameplayRuntime(
   inputService: GameplayInputService,
@@ -42,24 +46,31 @@ export function createM3GameplayRuntime(
     Number.NaN,
   ];
   let lastStreamingObserverAt = 0;
-  const interactionListeners = new Set<(markerId: string) => void>();
+  const interactionListeners = new Set<(interaction: M3GameplayInteraction) => void>();
   const unsubscribeEvents = simulationService.subscribeEvents((events) => {
     for (const event of events) {
-      if (event.kind !== "interaction.activated") continue;
-      if (event.payload.byteLength !== Uint32Array.BYTES_PER_ELEMENT) {
-        throw new Error("Interaction event marker payload is invalid");
+      if (event.kind !== "interaction.activated" && event.kind !== "npc.interaction-activated") {
+        continue;
       }
-      const markerIndex = new DataView(
+      if (event.payload.byteLength !== Uint32Array.BYTES_PER_ELEMENT) {
+        throw new Error("Interaction event payload is invalid");
+      }
+      const value = new DataView(
         event.payload.buffer,
         event.payload.byteOffset,
         event.payload.byteLength,
       ).getUint32(0, true);
-      const marker = world.markers[markerIndex];
-      if (marker === undefined || marker.kind !== "transition") {
-        throw new Error("Interaction event references an invalid transition marker");
+      let interaction: M3GameplayInteraction;
+      if (event.kind === "npc.interaction-activated") {
+        interaction = Object.freeze({ entityId: value, kind: "npc" });
+      } else {
+        const marker = world.markers[value];
+        if (marker === undefined || marker.kind !== "transition") {
+          throw new Error("Interaction event references an invalid transition marker");
+        }
+        interaction = Object.freeze({ kind: "transition", markerId: marker.id });
       }
-      const markerId = marker.id;
-      for (const listener of interactionListeners) listener(markerId);
+      for (const listener of interactionListeners) listener(interaction);
     }
   });
   const unsubscribeCanvas = renderService.subscribeCanvas((canvas) => {
@@ -120,7 +131,7 @@ export function createM3GameplayRuntime(
         );
       });
     },
-    subscribeInteractions(listener: (markerId: string) => void): () => void {
+    subscribeInteractions(listener: (interaction: M3GameplayInteraction) => void): () => void {
       interactionListeners.add(listener);
       return () => interactionListeners.delete(listener);
     },

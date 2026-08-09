@@ -16,9 +16,7 @@ import {
   type AppOwnedLlmSpikeTelemetrySnapshot,
   createInitialAppOwnedLlmTelemetry,
 } from "./app-owned-llm-spike-protocol";
-
-const WLLAMA_WASM_ARTIFACT_TOKEN = "./__WLLAMA_WASM_ARTIFACT__";
-const WLLAMA_WASM_ARTIFACT = new URL(WLLAMA_WASM_ARTIFACT_TOKEN, import.meta.url).href;
+import { WLLAMA_WASM_ARTIFACT } from "./wllama-runtime-artifact";
 
 export async function runWllamaSpike(
   request: AppOwnedLlmRunRequest,

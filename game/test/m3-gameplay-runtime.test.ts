@@ -10,7 +10,10 @@ import type {
   WorldStreamingService,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
-import { createM3GameplayRuntime } from "../src/sim/m3-gameplay-runtime";
+import {
+  createM3GameplayRuntime,
+  type M3GameplayInteraction,
+} from "../src/sim/m3-gameplay-runtime";
 
 describe("M3 gameplay runtime", () => {
   it("keeps app orchestration generic and yields presentation/observer ownership to scenarios", () => {
@@ -157,8 +160,8 @@ describe("M3 gameplay runtime", () => {
     publishSimulation({ ...simulationSnapshot, rejectedCommandCount: 1 });
     expect(emitCurrentFrameCount).toBe(2);
 
-    const interactions: string[] = [];
-    runtime.subscribeInteractions((markerId) => interactions.push(markerId));
+    const interactions: M3GameplayInteraction[] = [];
+    runtime.subscribeInteractions((interaction) => interactions.push(interaction));
     const activeEvents = eventListener as
       | ((events: readonly SimulationSemanticEvent[]) => void)
       | null;
@@ -166,6 +169,6 @@ describe("M3 gameplay runtime", () => {
     const payload = new Uint8Array(4);
     new DataView(payload.buffer).setUint32(0, 0, true);
     activeEvents([{ kind: "interaction.activated", payload, sequence: 0, tick: 1 }]);
-    expect(interactions).toEqual(["nearby-transition"]);
+    expect(interactions).toEqual([{ kind: "transition", markerId: "nearby-transition" }]);
   });
 });

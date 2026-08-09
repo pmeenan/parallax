@@ -1,0 +1,3 @@
+const WLLAMA_WASM_ARTIFACT_TOKEN = "./__WLLAMA_WASM_ARTIFACT__";
+
+export const WLLAMA_WASM_ARTIFACT = new URL(WLLAMA_WASM_ARTIFACT_TOKEN, import.meta.url).href;

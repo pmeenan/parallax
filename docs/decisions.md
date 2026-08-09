@@ -28,6 +28,94 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-162: Bind ordinary NPC dialog to the installed app-owned model (2026-08-09, accepted)
+
+**Decision:** Implement one lazy, window-owned ordinary dialog service over D-074/D-096's
+exact wllama 3.5.1 backend. Installed launch supplies D-137's release-bound five-shard
+source; the service opens those immutable OPFS objects as `File` blobs and uses wllama's
+direct blob load API. It does not mint browser-readable URLs, duplicate the model into
+wllama's URL cache, fetch missing content, or fall back automatically from WebGPU to
+CPU/WASM. The selected placement is explicit for the service lifetime. Model
+unavailability, load failure, generation failure, or rejected output returns control to
+game-owned authored fallback dialog; a failed load is terminal until the next launch so
+one interaction cannot trigger repeated multi-gigabyte initialization attempts.
+
+Every generated turn uses native strict JSON-schema decoding for exactly three strings:
+`speech`, `intent`, and `subject`. `no_action` must pair with `none`; every other pair
+must occur in the active persona card's finite intent/subject allowlist. The engine
+publishes only that validated type. Game code may observe the intent and later serialize
+it as an ordinary sim command, but neither freeform speech nor the dialog controller can
+mutate sim state. The first authored persona is stable entity 1000, Mara Venn. Her card
+includes a functional opening plus road, lodging, work, and default fallback replies.
+Her bounded rolling memory retains four full turns and folds older turns into a
+1,024-character extractive summary. The prompt has an explicit retrieved-context slot
+that D-033's generic knowledge service will fill next.
+
+Conversation presentation consumes D-161's DOM dialog surface and owns gameplay input
+while visible. The sim selects the nearest authored conversational entity and emits only
+its stable entity ID as a semantic event. The ordinary service exposes load, TTFT, token,
+failure, rejected-output, and render-impact telemetry through the public export. Render
+samples conservatively retain the worker's full 60-frame batch on each generation edge;
+this avoids claiming that a sub-second generation had zero frame impact merely because
+it began and ended between batched telemetry publications. Frame-impact samples reset at
+each generation, while request, generation, token, rejection, and failure counters remain
+cumulative for the service lifetime.
+
+**Context:** D-137 intentionally stopped after release-bound model-source resolution
+because its URL-driven spike could not consume ordinary OPFS objects without inventing a
+second storage path. wllama 3.5.1 already exposes `loadModel(Blob[])`; using the admitted
+files directly preserves the install/launch/run lifecycle and keeps the five exact
+shards as the only model copy. The controller remains window-owned under D-096, while
+llama.cpp, WebGPU execution, and pthread work stay in wllama-created workers. wllama's
+window-side proxy still services worker file-read requests with `Blob.slice()` /
+`arrayBuffer()` calls against the OPFS-backed `File`; D-162 therefore does not claim that
+all model I/O is off the window thread. D-074's rendering evidence used the same
+window-owned wllama broker, while the ordinary service records its own load and padded
+render-impact telemetry so regressions in the direct-file path remain observable.
+
+D-074's retained physical artifacts already measure both selected placements during
+concurrent rendering. The qualifying WebGPU artifact
+`app-owned-llm-spike-1-fd85032d3831-dev-01-2026-07-17T18-57-21-704Z.json` retained
+4,980 generation-window frames across cold and warm runs; its qualifying 2,580-frame
+warm-restart measurement had callback interval p95 16.790 ms (maximum 33.430 ms) and
+render duration p95 0.535 ms (maximum 1.715 ms). The CPU/WASM topology artifact
+`app-owned-llm-spike-1-4e24f4809c68-dev-01-2026-07-17T18-39-34-316Z.json` retained
+59,940 frames across cold and warm runs; its 28,920-frame warm-restart measurement had
+callback interval p95 16.770 ms (maximum 17.150 ms) and render duration p95 0.270 ms
+(maximum 7.140 ms). That CPU artifact remains non-qualifying for structured output
+because it predates the JSON-schema constraint; its raw frame timing is retained only as
+placement-impact evidence. D-162 changes the caller and storage source, not the measured
+inference kernels or placement.
+
+**Consequences:** The greybox has a real conversational seam and a fully playable
+unavailable-model path. Privileged legacy harness launches intentionally see the
+release-bound source as unavailable and therefore do not silently fetch a model; the
+dedicated D-074 harness remains the bounded inference qualifier. The public snapshot
+schema stays v43 because D-162 adds a direct `npcDialogSnapshot()` instrumentation
+method rather than changing the combined snapshot envelope. The current persona's
+small structured game-state context is authored inline only until the immediately next
+D-033 plan item supplies the generic provider/assembly service. Rolling dialog memory is
+session state in this item; the M3 exit's save/reload work must bind its serialized form
+to the save lifecycle before claiming conversation-memory persistence.
+
+**Closure evidence:** Final `pnpm check` passed the repeatable production build, lint,
+and 190 test files / 2,461 tests (one skipped). The required dev-01 physical smoke
+retained schema-70 artifact
+`harness/results/smoke-1-fadede8ba3ae-dev-01-showcase-2026-08-09T16-46-18-033Z.json`
+(SHA-256 `74bed174cb0be2db34b9fdb451d743744bff26041cb41c21b33547cd94a138d0`,
+build `fadede8ba3aed2f22f0c7417c56372c04b2ec59f513af26dcca4c6d6a7d9bfbc`):
+all environment/evidence/budget facets passed, mandatory metric set v33 was complete,
+and 36/36 budget checks passed across all six launches. Per D-119 this exact
+evidence-only closure does not require another physical run.
+
+**Reopen if:** wllama removes its window/controller restriction; direct OPFS `File`
+loading regresses or makes the 120-second bounded load fail; a measured gameplay
+workload requires a different explicit placement; strict schema decoding cannot
+reliably produce useful allowed intents; or saved dialog memory requires a different
+privacy/lifecycle boundary.
+
+---
+
 ## D-161: Implement the hybrid UI stack without a page framework (2026-08-08, accepted)
 
 **Decision:** Implement D-160's shared substrate as a framework-free, typed engine

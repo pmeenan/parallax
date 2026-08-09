@@ -9,6 +9,7 @@ import type {
 } from "@parallax/engine";
 import { CHARACTER_CONTROLLER_BALANCE } from "../balance/character-controller";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
+import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
 import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
@@ -17,7 +18,7 @@ import { buildNpcScheduleSet, type NpcScheduleSet } from "./npc-schedules";
 
 export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 4;
 export const PLAYER_ENTITY_ID = 1;
-export const NPC_ENTITY_ID_START = 1_000;
+export { NPC_ENTITY_ID_START } from "../npc/identity";
 
 interface NpcAgentState {
   readonly dwellTicks: number;
@@ -62,6 +63,10 @@ interface CrowdStep {
   readonly movingAgentCount: number;
   readonly scheduleTransitionCount: number;
 }
+
+type InteractionTarget =
+  | Readonly<{ readonly kind: "npc"; readonly value: number }>
+  | Readonly<{ readonly kind: "transition"; readonly value: number }>;
 
 const EMPTY_EVENTS = Object.freeze([]);
 const INPUT_COMMAND_KIND = "player.input-axes@2";
@@ -264,16 +269,17 @@ export function createGameSimulationAdapter(
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
       const movement = movePlayer(world, navigation, state, tickSeconds);
       const crowd = stepNpcCrowd(navigation, schedules, state, movement.position, tickSeconds);
-      const markerIndex = state.interactionRequested
-        ? nearestTransitionMarker(world, movement.position)
-        : -1;
-      const activated = markerIndex >= 0;
+      const interaction = state.interactionRequested
+        ? nearestInteraction(world, crowd.agents, movement.position)
+        : null;
+      const activated = interaction !== null;
       const next = Object.freeze({
         ...state,
         collisionResolutionCount: state.collisionResolutionCount + movement.collisionCount,
         interactionActivationCount: state.interactionActivationCount + Number(activated),
         interactionRequested: false,
-        lastInteractionMarkerIndex: activated ? markerIndex : state.lastInteractionMarkerIndex,
+        lastInteractionMarkerIndex:
+          interaction?.kind === "transition" ? interaction.value : state.lastInteractionMarkerIndex,
         movementDistanceMeters: Math.fround(state.movementDistanceMeters + movement.distanceMeters),
         npcAgents: crowd.agents,
         npcAvoidanceAdjustmentCount:
@@ -286,17 +292,8 @@ export function createGameSimulationAdapter(
           state.npcScheduleTransitionCount + crowd.scheduleTransitionCount,
         playerPosition: movement.position,
       });
-      const marker = activated ? world.district.markers[markerIndex] : undefined;
       return Object.freeze({
-        events:
-          marker === undefined
-            ? EMPTY_EVENTS
-            : Object.freeze([
-                Object.freeze({
-                  kind: "interaction.activated",
-                  payload: markerIndexPayload(markerIndex),
-                }),
-              ]),
+        events: interactionEvents(interaction),
         state: next,
       });
     },
@@ -619,11 +616,12 @@ function movePlayer(
   });
 }
 
-function nearestTransitionMarker(
+function nearestInteraction(
   world: ControllerWorld,
+  agents: readonly NpcAgentState[],
   position: readonly [number, number, number],
-): number {
-  let nearest = -1;
+): InteractionTarget | null {
+  let nearest: InteractionTarget | null = null;
   let nearestDistanceSquared = CHARACTER_CONTROLLER_BALANCE.interactionRangeMeters ** 2;
   for (const index of world.transitionMarkerIndexes) {
     const marker = world.district.markers[index];
@@ -631,7 +629,21 @@ function nearestTransitionMarker(
     const distanceSquared =
       (marker.position[0] - position[0]) ** 2 + (marker.position[2] - position[2]) ** 2;
     if (distanceSquared <= nearestDistanceSquared) {
-      nearest = index;
+      nearest = Object.freeze({ kind: "transition", value: index });
+      nearestDistanceSquared = distanceSquared;
+    }
+  }
+  for (const agent of agents) {
+    if (!isConversationalNpcEntityId(agent.entityId)) continue;
+    const distanceSquared =
+      (agent.position[0] - position[0]) ** 2 + (agent.position[2] - position[2]) ** 2;
+    // Transition markers win exact ties, while an NPC exactly on the range boundary
+    // remains interactable when there is no marker at that distance.
+    if (
+      distanceSquared < nearestDistanceSquared ||
+      (nearest === null && distanceSquared === nearestDistanceSquared)
+    ) {
+      nearest = Object.freeze({ kind: "npc", value: agent.entityId });
       nearestDistanceSquared = distanceSquared;
     }
   }
@@ -774,4 +786,14 @@ function markerIndexPayload(markerIndex: number): Uint8Array {
   const payload = new Uint8Array(Uint32Array.BYTES_PER_ELEMENT);
   new DataView(payload.buffer).setUint32(0, markerIndex, true);
   return payload;
+}
+
+function interactionEvents(target: InteractionTarget | null) {
+  if (target === null) return EMPTY_EVENTS;
+  return Object.freeze([
+    Object.freeze({
+      kind: target.kind === "npc" ? "npc.interaction-activated" : "interaction.activated",
+      payload: markerIndexPayload(target.value),
+    }),
+  ]);
 }

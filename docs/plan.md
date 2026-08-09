@@ -270,9 +270,15 @@ The current platform synthesis and asks are in
       launches, all three facets, and 36/36 evaluated checks; D-161 retains exact hashes
       and source identity. Real inventory, journal, settings/remap, and dialog screens
       consume this substrate in their own plan items.
-- [ ] App-owned NPC dialog (D-074/D-096): persona cards, rolling memory, strict
-      structured output for state-affecting intents, authored unavailable-model
-      fallback, and frame-impact measurement during WebGPU/CPU-WASM inference.
+- [x] App-owned NPC dialog (D-074/D-096/D-162): the first authored NPC now binds a
+      release-owned OPFS-`File` wllama caller to persona-owned context, role-preserving
+      bounded rolling memory, strict finite intent/subject output, functional authored
+      fallback, cancellable dialog/input ownership, and public padded frame-impact
+      telemetry. D-074 retains the WebGPU and CPU/WASM placement measurements. Final
+      `pnpm check` passed 190 files / 2,461 tests (one skipped); the required dev-01
+      schema-70 smoke passed all three facets and 36/36 checks at
+      `harness/results/smoke-1-fadede8ba3ae-dev-01-showcase-2026-08-09T16-46-18-033Z.json`
+      (SHA-256 `74bed174cb0be2db34b9fdb451d743744bff26041cb41c21b33547cd94a138d0`).
 - [ ] NPC knowledge service (D-033): generic retrieval/assembly contract in `engine/ai`
       with `game/`-supplied providers; structured game-state tier implemented;
       prompt/persona schema carries the retrieved-context slot; lore authored

@@ -204,6 +204,40 @@ describe("M3 game simulation adapter", () => {
     });
   });
 
+  it("emits a stable entity ID when the authored conversational NPC is nearest", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const initial = adapter.createInitialState(1);
+    const npc = adapter.presentationSnapshot(initial).find(({ id }) => id === NPC_ENTITY_ID_START);
+    if (npc === undefined) throw new Error("Conversational NPC is missing");
+    const bytes = adapter.serializeState(initial);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    view.setFloat32(20, npc.position[0], true);
+    view.setFloat32(24, npc.position[1], true);
+    view.setFloat32(28, npc.position[2], true);
+    const moved = adapter.deserializeState(bytes);
+    const applied = adapter.applyCommand(
+      moved,
+      createPlayerInputCommand(0, 1, {
+        forward: 0,
+        interactPressed: true,
+        right: 0,
+        yawRadians: 0,
+      }),
+    ).state;
+    const result = adapter.step(applied, 1);
+    expect(result.events).toHaveLength(1);
+    const event = result.events[0];
+    if (event === undefined) throw new Error("NPC interaction event is missing");
+    expect(event.kind).toBe("npc.interaction-activated");
+    expect(
+      new DataView(
+        event.payload.buffer,
+        event.payload.byteOffset,
+        event.payload.byteLength,
+      ).getUint32(0, true),
+    ).toBe(NPC_ENTITY_ID_START);
+  });
+
   it("generates tiled navigation and advances deterministic schedule crowds with avoidance", () => {
     const adapter = createGameSimulationAdapter(context);
     const initial = adapter.createInitialState(123);

@@ -92,6 +92,25 @@ describe("installed model source", () => {
     });
     expect(() => source.artifacts()).toThrow(/not ready/);
   });
+
+  it("keeps the NPC dialog model load on exact installed OPFS blobs", async () => {
+    const source = await readFile(
+      new URL("../src/ai/npc-dialog-service.ts", import.meta.url),
+      "utf8",
+    );
+    const factoryStart = source.indexOf("function browserNpcDialogRuntimeFactory()");
+    const generationStart = source.indexOf("async function generateWithWllama", factoryStart);
+    const installedLoad = source.slice(factoryStart, generationStart);
+
+    expect(factoryStart).toBeGreaterThan(0);
+    expect(generationStart).toBeGreaterThan(factoryStart);
+    expect(installedLoad).toContain("APP_OWNED_LLM_WLLAMA_MODEL_ARTIFACTS");
+    expect(installedLoad).toContain("openBrowserInstallStoreFile(installed.path)");
+    expect(installedLoad).toContain("wllama.loadModel(");
+    expect(installedLoad).not.toContain("fetch(");
+    expect(installedLoad).not.toContain("loadModelFromUrl");
+    expect(installedLoad).not.toContain("createOpfsModelCache");
+  });
 });
 
 describe("installed streaming release", () => {

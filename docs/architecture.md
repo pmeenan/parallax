@@ -187,6 +187,16 @@ shared-device scheduling: a true shared-device branch requires render-worker
 colocation and an explicit render-to-inference-engine device handoff, and remains a
 measured future variable rather than an assumed capability.
 
+D-162 turns that selected backend into the ordinary dialog service. Installed launch
+passes the exact D-137 release-bound source to a lazy window-owned controller, which
+opens each immutable OPFS shard as a `File` and calls wllama's blob-based load path;
+ordinary inference never converts the installed model back into an HTTP URL or creates
+a second model cache. The service rechecks each file size, relies on the admitted
+verified-object/hash records for integrity, fails terminally for that launch on model
+load failure, and never changes WebGPU to CPU/WASM automatically. The game receives a
+typed response only after the exact speech/intent/subject object passes the current
+persona's finite allowlist. Dialog memory and authored fallback text remain game-owned.
+
 D-084 rejects restart-persistent KV snapshots for the pinned Gemma 4 E2B runtime after
 restore recovered just 409 of 914-916 exact reusable tokens. The experiment's store,
 runtime patch, and harness were removed after measurement; production has no persistent
@@ -813,12 +823,14 @@ token, generator cell ID, content-hashed immutable filename, and install resourc
 generation/classification, independent manifest/benchmark validation, and the runtime
 consumer use that helper so a same-length swap cannot preserve semantic identity.
 
-The installed model source resolves and reports the exact shard set during Launch but
-does not add an ordinary inference caller. D-096's URL-driven wllama spike stays
-privileged automation. Authored non-AI behavior remains the game-design fallback for an
-optional AI feature; it never substitutes network or stale cache content for a failed
-installed model contract. Public telemetry v31 exposes model-source v1 alongside the
-streaming source identity.
+The installed model source resolves and reports the exact shard set during Launch.
+D-162's ordinary lazy dialog caller consumes that release-bound source through wllama's
+blob API; D-096's URL-driven runner remains privileged measurement apparatus and is not
+the game path. Authored non-AI behavior remains the game-design fallback for an optional
+AI feature; it never substitutes network or stale cache content for a failed installed
+model contract. The model-source snapshot remains public alongside the streaming source
+identity, and D-162 adds a direct ordinary-dialog snapshot without changing the combined
+public envelope.
 
 **Quota reality (checked 2026-07-11, web.dev/articles/storage-for-the-web + MDN):** a
 Chromium origin may use up to ~60% of **total** disk size (not free space), and
@@ -1417,6 +1429,19 @@ rolling summarized memory per NPC use strict JSON-schema output for anything tha
 touches game state and freeform text only for flavor dialog. Inference contends with
 rendering for on-device resources, so the harness measures frame impact during
 generation.
+
+D-162 implements the first ordinary caller and conversational greybox seam. One
+authored crowd member exposes a persona card, bounded extractive rolling summary plus
+four recent turns, deterministic keyword fallback, and a finite intent/subject
+allowlist. Interact selects the nearest authored conversational entity in sim authority
+and emits only its stable entity ID; the main-thread game controller owns conversation
+presentation and publishes validated intents without applying them directly to state.
+The engine request reserves an explicit retrieved-context slot ahead of D-033. Dialog
+owns gameplay input while visible. Generation telemetry records load, TTFT, token
+counts, rejected output, and conservative render-frame batches padded at both edges so
+short generations do not disappear between the render worker's 60-frame telemetry
+publications. Frame-impact percentiles and maxima describe the latest generation window;
+lifetime request/generation/token/failure counters remain cumulative.
 
 The completed D-075 optimization spike measured live exact-prefix reuse and
 restart-persistent per-character KV snapshots separately from D-074's uncached

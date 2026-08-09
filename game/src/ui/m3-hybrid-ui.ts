@@ -1,11 +1,14 @@
 import type {
+  HybridUiDialogView,
   HybridUiDomLabels,
   HybridUiPresentation,
   SimulationWorldDefinition,
 } from "@parallax/engine";
 
 export interface M3HybridUiModel {
+  closeDialog(): HybridUiPresentation;
   recordInteraction(markerId: string): HybridUiPresentation;
+  showDialog(dialog: HybridUiDialogView): HybridUiPresentation;
   snapshot(): HybridUiPresentation;
 }
 
@@ -21,16 +24,11 @@ export const M3_HYBRID_UI_DOM_LABELS = Object.freeze({
 export function createM3HybridUiModel(world: SimulationWorldDefinition): M3HybridUiModel {
   let revision = 0;
   let lastInteraction: string | null = null;
+  let dialog: HybridUiDialogView = hiddenDialog();
 
   const snapshot = (): HybridUiPresentation =>
     Object.freeze({
-      dialog: Object.freeze({
-        body: "No active conversation.",
-        choices: Object.freeze([]),
-        speaker: "Conversation",
-        textEntry: null,
-        visible: false,
-      }),
+      dialog,
       heavyScreen: null,
       hud: Object.freeze({
         meters: Object.freeze([]),
@@ -62,11 +60,35 @@ export function createM3HybridUiModel(world: SimulationWorldDefinition): M3Hybri
     });
 
   return Object.freeze({
+    closeDialog(): HybridUiPresentation {
+      dialog = hiddenDialog();
+      revision += 1;
+      return snapshot();
+    },
     recordInteraction(markerId: string): HybridUiPresentation {
       lastInteraction = markerId;
       revision += 1;
       return snapshot();
     },
+    showDialog(next: HybridUiDialogView): HybridUiPresentation {
+      dialog = Object.freeze({
+        ...next,
+        choices: Object.freeze(next.choices.map((choice) => Object.freeze({ ...choice }))),
+        textEntry: next.textEntry === null ? null : Object.freeze({ ...next.textEntry }),
+      });
+      revision += 1;
+      return snapshot();
+    },
     snapshot,
+  });
+}
+
+function hiddenDialog(): HybridUiDialogView {
+  return Object.freeze({
+    body: "No active conversation.",
+    choices: Object.freeze([]),
+    speaker: "Conversation",
+    textEntry: null,
+    visible: false,
   });
 }

@@ -25,7 +25,7 @@ game/
   sim/         ✅ gameplay adapter/state plus runtime binding; D1 movement,
                collision, transition interaction, and deterministic NPC navigation,
                schedules, avoidance, and presentation are live
-  npc/         persona cards, dialog schemas, memory policies
+  npc/         ✅ persona cards, dialog schemas, rolling memory + fallback policy
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)
   balance/     tunable-numbers data (never inline constants in sim code)

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-service";
 import { createInstalledModelSource } from "../src/ai/installed-model-source";
+import { createNpcDialogService } from "../src/ai/npc-dialog-service";
 import { createGameplayInputService } from "../src/input/gameplay-input-service";
 import { idleInstallerTransferTelemetrySnapshot } from "../src/install/installer-protocol";
 import {
@@ -35,6 +36,7 @@ describe("combined telemetry export", () => {
     const telemetry = installTelemetryExport(
       renderService,
       createAppOwnedLlmSpikeService(),
+      createNpcDialogService(createInstalledModelSource(null), renderService),
       createWasmThreadSpikeService(),
       createSimulationService(),
       createGameplayInputService({} as Document, {} as Window),
@@ -203,6 +205,7 @@ describe("combined telemetry export", () => {
     expect(() => telemetry.startStreamingTraversal()).toThrow(/benchmark owns the scenario/);
     unsubscribe();
     expect(Reflect.get(target, "__PARALLAX_TELEMETRY__")).toBe(telemetry);
+    expect(telemetry.npcDialogSnapshot()).toMatchObject({ state: "unavailable" });
     telemetry.dispose();
     expect(Object.hasOwn(target, "__PARALLAX_TELEMETRY__")).toBe(false);
     consoleError.mockRestore();

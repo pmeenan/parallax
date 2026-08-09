@@ -8,7 +8,15 @@ export {
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
 } from "./benchmark/m1-benchmark-mode";
-export type { M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
+export type {
+  NpcDialogController,
+  NpcDialogIntentEvent,
+} from "./npc/dialog-controller";
+export { createNpcDialogController } from "./npc/dialog-controller";
+export type { NpcDialogMemory, NpcDialogMemorySnapshot } from "./npc/dialog-memory";
+export { createNpcDialogMemory } from "./npc/dialog-memory";
+export { NPC_PERSONA_CARDS } from "./npc/personas";
+export type { M3GameplayInteraction, M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
 export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";
 export type { M3HybridUiModel } from "./ui/m3-hybrid-ui";
 export { createM3HybridUiModel, M3_HYBRID_UI_DOM_LABELS } from "./ui/m3-hybrid-ui";

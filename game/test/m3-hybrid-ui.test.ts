@@ -23,6 +23,16 @@ describe("M3 hybrid UI model", () => {
       hud: { messages: [expect.any(String), "Activated gate"] },
       revision: 1,
     });
+    expect(
+      model.showDialog({
+        body: "The road is quiet.",
+        choices: [],
+        speaker: "Mara Venn",
+        textEntry: null,
+        visible: true,
+      }),
+    ).toMatchObject({ dialog: { speaker: "Mara Venn", visible: true }, revision: 2 });
+    expect(model.closeDialog()).toMatchObject({ dialog: { visible: false }, revision: 3 });
   });
 });
 

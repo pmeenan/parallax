@@ -35,6 +35,33 @@ export {
   unavailableInstalledModelSourceSnapshot,
 } from "./ai/installed-model-source";
 export type {
+  NpcDialogFrameImpactTelemetry,
+  NpcDialogInferenceDevice,
+  NpcDialogIntent,
+  NpcDialogIntentDefinition,
+  NpcDialogMessage,
+  NpcDialogRequest,
+  NpcDialogResponse,
+  NpcDialogTelemetrySnapshot,
+} from "./ai/npc-dialog-contract";
+export {
+  NPC_DIALOG_NO_ACTION,
+  NPC_DIALOG_NO_SUBJECT,
+  NPC_DIALOG_TELEMETRY_SCHEMA_VERSION,
+  parseNpcDialogOutput,
+  validateNpcDialogRequest,
+} from "./ai/npc-dialog-contract";
+export type {
+  NpcDialogModelRuntime,
+  NpcDialogRuntimeFactory,
+  NpcDialogService,
+} from "./ai/npc-dialog-service";
+export {
+  createNpcDialogService,
+  NpcDialogRejectedOutputError,
+  NpcDialogUnavailableError,
+} from "./ai/npc-dialog-service";
+export type {
   MeshoptBufferView,
   MeshoptCompressionExtension,
   MeshoptDocumentLayout,
