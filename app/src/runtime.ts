@@ -8,6 +8,7 @@ import {
   createEmbeddedPsoWarmupTrace,
   createFlythroughService,
   createGameplayInputService,
+  createHybridUiService,
   createInstalledModelSource,
   createOpfsReleaseStore,
   createRenderService,
@@ -30,6 +31,7 @@ import {
   APP_OWNED_LLM_SPIKE_FIXTURE_SET,
   createGreyboxScene,
   createM3GameplayRuntime,
+  createM3HybridUiModel,
   DISTRICT_1_FLYTHROUGH,
   formatM1BenchmarkPreset,
   formatM1BenchmarkReport,
@@ -39,11 +41,13 @@ import {
   identifyGame,
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
+  M3_HYBRID_UI_DOM_LABELS,
 } from "@parallax/game";
 import { runBenchmarkUiAction } from "./benchmark-ui-action";
 import { preflightInstalledRuntime } from "./installed-runtime-preflight";
 import type { LaunchLifecycleTracker } from "./launch-lifecycle";
 import { createRetryableSuccessLatch } from "./retryable-success-latch";
+import { captureRuntimeSurfaceRollback, RUNTIME_SURFACE_IDS } from "./runtime-surface-rollback";
 import {
   completeInstalledRuntimeShellAdmission,
   type ShellLaunchAuthority,
@@ -60,16 +64,31 @@ export async function bootRuntime(
   shellAuthority: ShellLaunchAuthority | null = null,
   launchLifecycle: LaunchLifecycleTracker | null = null,
 ): Promise<void> {
-  await runtimeStart.run(() =>
-    bootRuntimeAttempt(
-      installerService,
-      offlineShellService,
-      contentSource,
-      expectedShell,
-      shellAuthority,
-      launchLifecycle,
-    ),
-  );
+  await runtimeStart.run(async () => {
+    const failedAttemptCleanups: Array<() => void | Promise<void>> = [];
+    try {
+      await bootRuntimeAttempt(
+        installerService,
+        offlineShellService,
+        contentSource,
+        expectedShell,
+        shellAuthority,
+        launchLifecycle,
+        (cleanup) => {
+          failedAttemptCleanups.push(cleanup);
+        },
+      );
+    } catch (error: unknown) {
+      for (let index = failedAttemptCleanups.length - 1; index >= 0; index -= 1) {
+        try {
+          await failedAttemptCleanups[index]?.();
+        } catch (cleanupError: unknown) {
+          console.error("Runtime failed-attempt cleanup failed", cleanupError);
+        }
+      }
+      throw error;
+    }
+  });
 }
 
 async function bootRuntimeAttempt(
@@ -79,6 +98,7 @@ async function bootRuntimeAttempt(
   expectedShell: OfflineShellAdmission | null,
   shellAuthority: ShellLaunchAuthority | null,
   launchLifecycle: LaunchLifecycleTracker | null,
+  registerFailureCleanup: (cleanup: () => void | Promise<void>) => void,
 ): Promise<void> {
   let installedModelSource = createInstalledModelSource(null);
   let psoWarmupTrace: PsoWarmupTraceBundle = createEmbeddedPsoWarmupTrace();
@@ -123,7 +143,9 @@ async function bootRuntimeAttempt(
   } else if (expectedShell !== null || shellAuthority !== null) {
     throw new Error("Privileged legacy runtime cannot bind an offline-shell admission");
   }
-  for (const id of ["render-canvas", "runtime-status", "streaming-dashboard", "benchmark-mode"]) {
+  registerFailureCleanup(captureRuntimeSurfaceRollback(document));
+  for (const id of RUNTIME_SURFACE_IDS) {
+    if (id === "app-owned-llm-spike") continue;
     const element = document.querySelector(`#${id}`);
     if (element instanceof HTMLElement) element.hidden = false;
   }
@@ -135,13 +157,18 @@ async function bootRuntimeAttempt(
   if (!(status instanceof HTMLElement) || !(canvas instanceof HTMLCanvasElement)) {
     throw new Error("App shell render elements are missing");
   }
-
   const renderService = createRenderService();
+  registerFailureCleanup(() => renderService.dispose());
   const appOwnedLlmSpikeService = createAppOwnedLlmSpikeService();
+  registerFailureCleanup(() => appOwnedLlmSpikeService.dispose());
   const wasmThreadSpikeService = createWasmThreadSpikeService();
+  registerFailureCleanup(() => wasmThreadSpikeService.dispose());
   const streamingService = createWorldStreamingService();
+  registerFailureCleanup(() => streamingService.dispose());
   const simulationService = createSimulationService();
+  registerFailureCleanup(() => simulationService.dispose());
   const gameplayInputService = createGameplayInputService();
+  registerFailureCleanup(() => gameplayInputService.dispose());
   const previewDistrict = GREYBOX_DISTRICT_SPECS[0];
   if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
   const worldGenerationStartedAt = performance.now();
@@ -154,21 +181,39 @@ async function bootRuntimeAttempt(
     streamingService,
     simulationWorld,
   );
+  registerFailureCleanup(() => gameplayRuntime.dispose());
+  const gameUiRoot = document.querySelector("#game-ui");
+  if (!(gameUiRoot instanceof HTMLElement)) throw new Error("Game UI root is missing");
+  const gameUiModel = createM3HybridUiModel(simulationWorld);
+  const gameUiService = createHybridUiService(
+    gameUiRoot,
+    canvas,
+    renderService,
+    gameplayInputService,
+    M3_HYBRID_UI_DOM_LABELS,
+  );
+  registerFailureCleanup(() => gameUiService.dispose());
+  gameUiService.present(gameUiModel.snapshot());
   const flythroughService = createFlythroughService(
     renderService,
     streamingService,
     DISTRICT_1_FLYTHROUGH,
     previewScene.world.bounds,
   );
+  registerFailureCleanup(() => flythroughService.dispose());
   const benchmarkService = createBenchmarkService(
     renderService,
     flythroughService,
     M1_BENCHMARK_DEFINITION,
     createBrowserBenchmarkPlatform(),
   );
+  registerFailureCleanup(() => benchmarkService.dispose());
   const mainThreadWorldGenerationMs = performance.now() - worldGenerationStartedAt;
   let streamingMovementStartedAt: number | null = null;
   let streamingMovementTimer: number | null = null;
+  registerFailureCleanup(() => {
+    if (streamingMovementTimer !== null) window.clearInterval(streamingMovementTimer);
+  });
   const startStreamingTraversal = (): void => {
     const benchmarkState = benchmarkService.snapshot().state;
     if (
@@ -212,6 +257,7 @@ async function bootRuntimeAttempt(
     wasmThreadSpikeService,
     simulationService,
     gameplayInputService,
+    gameUiService,
     streamingService,
     flythroughService,
     benchmarkService,
@@ -225,11 +271,13 @@ async function bootRuntimeAttempt(
       gameVersion: identity.version,
     },
   );
+  registerFailureCleanup(() => telemetryExport.dispose());
   const streamingDashboard = document.querySelector("#streaming-dashboard");
   if (!(streamingDashboard instanceof HTMLElement)) {
     throw new Error("Streaming dashboard panel is missing");
   }
-  mountStreamingDashboard(streamingDashboard, streamingService);
+  const unmountStreamingDashboard = mountStreamingDashboard(streamingDashboard, streamingService);
+  registerFailureCleanup(unmountStreamingDashboard);
   mountBenchmarkUi();
 
   function mountBenchmarkUi(): void {
@@ -278,6 +326,7 @@ async function bootRuntimeAttempt(
     resultSummary.textContent = M1_BENCHMARK_UI_COPY.resultDetails;
     const resultBody = document.createElement("pre");
     result.append(resultSummary, resultBody);
+    registerFailureCleanup(() => panel.replaceChildren());
     panel.append(
       title,
       summary,
@@ -455,7 +504,7 @@ async function bootRuntimeAttempt(
       throw new Error("App-owned LLM spike controls are missing");
     }
     appOwnedLlmPanel.hidden = false;
-    appOwnedLlmStart.addEventListener("click", () => {
+    const startAppOwnedLlm = (): void => {
       appOwnedLlmSpikeService.start(
         appOwnedLlmMode === "context-first"
           ? APP_OWNED_LLM_CONTEXT_FIRST_FIXTURE_SET
@@ -463,13 +512,16 @@ async function bootRuntimeAttempt(
         appOwnedLlmDevice,
         appOwnedLlmModelUrl,
       );
-    });
-    appOwnedLlmSpikeService.subscribe((llm) => {
+    };
+    appOwnedLlmStart.addEventListener("click", startAppOwnedLlm);
+    registerFailureCleanup(() => appOwnedLlmStart.removeEventListener("click", startAppOwnedLlm));
+    const unsubscribeAppOwnedLlm = appOwnedLlmSpikeService.subscribe((llm) => {
       appOwnedLlmStart.disabled = llm.state !== "idle";
       const load = llm.loadElapsedMs === null ? "" : ` · load ${llm.loadElapsedMs.toFixed(0)} ms`;
       const active = llm.activeFixtureId === null ? "" : ` · ${llm.activeFixtureId}`;
       appOwnedLlmStatus.textContent = `${llm.state} · ${(llm.progress * 100).toFixed(1)}% · ${llm.generations.length} samples${load}${active}`;
     });
+    registerFailureCleanup(unsubscribeAppOwnedLlm);
   }
   const updateStatus = (): void => {
     const render = renderService.snapshot();
@@ -530,6 +582,7 @@ async function bootRuntimeAttempt(
   });
   gameplayRuntime.subscribeInteractions((markerId) => {
     status.dataset.lastInteraction = markerId;
+    gameUiService.present(gameUiModel.recordInteraction(markerId));
     updateStatus();
   });
   let wasmThreadSpikeStarted = false;

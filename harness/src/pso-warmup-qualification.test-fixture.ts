@@ -313,6 +313,22 @@ export function completePsoQualificationSmokeReport(input: {
           },
         },
         greyboxWorld: { state: "measured", value: greyboxWorld },
+        hybridUi: {
+          state: "measured",
+          value: {
+            domNodeCountHighWater: 8,
+            presentationCount: 1,
+            presentationRevision: 0,
+            schemaVersion: 1,
+            state: "ready",
+            worker: {
+              presentationCount: 1,
+              presentationRevision: 0,
+              schemaVersion: 1,
+              worldAnchorCount: 1,
+            },
+          },
+        },
         browserDisplayAfter: structuredClone(browserDisplay),
         browserDisplayBefore: structuredClone(browserDisplay),
         launchOrdinal: runs.length + 1,

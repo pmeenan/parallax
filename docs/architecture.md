@@ -1379,6 +1379,32 @@ worker owns frame-coherent world anchors and heavy-screen visuals/interactions; 
 thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,
 focus, and IME bridge, but never a duplicate visual tree. Sim events and commands remain
 the shared authority boundary, so neither UI substrate mutates game state directly.
+D-161 implements that split as one typed presentation model: the engine's main-thread UI
+service performs keyed DOM reconciliation and owns native form/focus events, while the
+render service replays the latest revision to fixed-capacity, tone-partitioned Babylon
+Lite mesh pools after initial Ready and recovery. Pointer hit testing and directional
+focus for heavy screens stay in render-worker authority; the main thread mirrors the
+bounded focus/hit-test state and admits only the exact topmost action expected for the
+oldest outstanding input, presentation revision, and monotonically ordered worker
+response. The topmost primitive always occludes lower layers, including decorative and
+disabled primitives, while only an enabled primitive with an action ID can activate.
+Retained presentations are queued to a fresh worker before the main-thread service
+publishes Ready, so synchronous Ready listeners cannot overtake recovery replay.
+Heavy-screen visibility switches gameplay input into an explicit suppressed
+context even before interactive input starts and releases pointer lock; canvas controls
+are inert while the render worker is recovering. The sparse DOM bridge reconciles stable
+semantic actions, live-region messages, and text-entry forms in place, preserving focus,
+selection, unpublished text, and IME composition without creating canvas visual
+duplicates. Closing a focused DOM surface returns keyboard focus to the active canvas,
+and non-composing Escape remains a worker-owned cancel input from inside the heavy-screen
+semantic bridge without intercepting main-thread dialog controls. A failed retryable boot
+attempt disposes every created runtime service in reverse order, removes mounted/global
+handlers and the telemetry export, restores pristine hidden runtime surfaces (including a
+fresh canvas after transfer), and permits a new measured launch attempt before releasing
+the latch. UI telemetry
+records DOM mutation/node high water, forwarded and completed actions, worker pool counts,
+presentation revisions, and update/hit-test duration high water through the public
+harness export.
 D-143 identified no application-facing frame transaction or attributed presentation
 primitive between the DOM overlay and worker-owned WebGPU canvas; RE-047 keeps the
 request open without claiming an exhaustive Chrome capability audit.

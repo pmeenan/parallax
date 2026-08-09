@@ -22,6 +22,7 @@ import type {
   WorldStreamingListener,
   WorldStreamingService,
 } from "../src/streaming/world-streaming-service";
+import { idleHybridUiWorkerTelemetry } from "../src/ui/hybrid-ui-contract";
 
 describe("flythrough service", () => {
   it("waits for the exact final direct-port sequence and corresponding total settlement", async () => {
@@ -669,6 +670,7 @@ function renderSnapshot(flythrough: RenderFlythroughTelemetry | null): RenderTel
     flythrough,
     frameCount: 1,
     greyboxWorld: null,
+    hybridUi: idleHybridUiWorkerTelemetry(),
     recentFrames: [],
     psoWarmup: idlePsoWarmupTelemetrySnapshot(),
     retainedPsoWarmupFailure: null,

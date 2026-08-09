@@ -16,6 +16,10 @@ import { createSimulationService } from "../src/sim/simulation-service";
 import { unavailableInstallStoreTelemetrySnapshot } from "../src/storage/opfs-release-store";
 import { createWorldStreamingService } from "../src/streaming/world-streaming-service";
 import { installTelemetryExport } from "../src/telemetry/telemetry-export";
+import {
+  HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
+  idleHybridUiWorkerTelemetry,
+} from "../src/ui/hybrid-ui-contract";
 import { createWasmThreadSpikeService } from "../src/wasm/wasm-thread-spike-service";
 
 describe("combined telemetry export", () => {
@@ -27,12 +31,33 @@ describe("combined telemetry export", () => {
       ...baseRenderService,
       snapshot: () => renderOverride ?? baseRenderService.snapshot(),
     };
+    const target = {};
     const telemetry = installTelemetryExport(
       renderService,
       createAppOwnedLlmSpikeService(),
       createWasmThreadSpikeService(),
       createSimulationService(),
       createGameplayInputService({} as Document, {} as Window),
+      {
+        dispose: () => undefined,
+        present: () => undefined,
+        snapshot: () => ({
+          dialogDomActionCount: 0,
+          domMutationDurationHighWaterMs: 0,
+          domNodeCountHighWater: 0,
+          forwardedInputCount: 0,
+          imeDomActionCount: 0,
+          presentationCount: 0,
+          presentationRevision: null,
+          schemaVersion: HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
+          semanticNodeCountHighWater: 0,
+          state: "idle" as const,
+          worker: idleHybridUiWorkerTelemetry(),
+          workerActionCount: 0,
+        }),
+        subscribe: () => () => undefined,
+        subscribeActions: () => () => undefined,
+      },
       createWorldStreamingService(),
       {
         abort: () => Promise.resolve(),
@@ -114,7 +139,7 @@ describe("combined telemetry export", () => {
         engineVersion: "test",
         gameVersion: "test",
       },
-      {},
+      target,
     );
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     let deliveries = 0;
@@ -124,6 +149,7 @@ describe("combined telemetry export", () => {
       benchmark: { state: "idle" },
       identity: { engineVersion: "test", gameVersion: "test" },
       gameplayInput: { state: "idle" },
+      hybridUi: { state: "idle" },
       installedModelSource: { state: "unavailable" },
       installStore: { schemaVersion: 3, state: "unavailable" },
       installerTransfer: {
@@ -176,6 +202,9 @@ describe("combined telemetry export", () => {
     benchmarkState = "running";
     expect(() => telemetry.startStreamingTraversal()).toThrow(/benchmark owns the scenario/);
     unsubscribe();
+    expect(Reflect.get(target, "__PARALLAX_TELEMETRY__")).toBe(telemetry);
+    telemetry.dispose();
+    expect(Object.hasOwn(target, "__PARALLAX_TELEMETRY__")).toBe(false);
     consoleError.mockRestore();
   });
 });

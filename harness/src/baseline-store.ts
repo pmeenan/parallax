@@ -16,6 +16,7 @@ import { validateExactPsoWarmupTelemetrySnapshot } from "./pso-warmup-telemetry.
 import {
   SMOKE_BUDGET_METRIC_NAMES,
   SMOKE_BUDGET_METRICS,
+  SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
   SMOKE_REPEATS,
@@ -64,6 +65,7 @@ interface BaselineReportRun {
     readonly state: "measured";
     readonly value: GreyboxWorldEvidence;
   }>;
+  readonly hybridUi: Readonly<{ readonly state: "measured"; readonly value: unknown }>;
   readonly profile: "fresh" | "warm";
   readonly psoWarmup:
     | Readonly<{ readonly state: "measured"; readonly value: PsoWarmupTelemetrySnapshot }>
@@ -662,6 +664,7 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
       const reason = error instanceof Error ? error.message : String(error);
       invalidReport(`runs[${runIndex}].greyboxWorld.value is invalid: ${reason}`);
     }
+    requireHybridUiEvidence(run.hybridUi, `runs[${runIndex}].hybridUi`);
     requireRecord(run.simulationController, `runs[${runIndex}].simulationController`);
     if (run.simulationController.state !== "measured") {
       invalidReport(`runs[${runIndex}].simulationController.state must be measured`);
@@ -768,6 +771,37 @@ export function parseBaselineEligibleReport(value: unknown): BaselineEligibleRep
     invalidReport(`facets.budgetEvaluation.evaluatedChecks must equal ${evaluatedChecks}`);
   }
   return value as unknown as BaselineEligibleReport;
+}
+
+function requireHybridUiEvidence(value: unknown, path: string): void {
+  requireRecord(value, path);
+  if (value.state !== "measured") invalidReport(`${path}.state must be measured`);
+  const snapshot = value.value;
+  requireRecord(snapshot, `${path}.value`);
+  const worker = snapshot.worker;
+  requireRecord(worker, `${path}.value.worker`);
+  if (
+    snapshot.schemaVersion !== SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION ||
+    snapshot.state !== "ready" ||
+    typeof snapshot.presentationRevision !== "number" ||
+    !Number.isSafeInteger(snapshot.presentationRevision) ||
+    typeof snapshot.presentationCount !== "number" ||
+    !Number.isSafeInteger(snapshot.presentationCount) ||
+    snapshot.presentationCount < 1 ||
+    typeof snapshot.domNodeCountHighWater !== "number" ||
+    !Number.isSafeInteger(snapshot.domNodeCountHighWater) ||
+    snapshot.domNodeCountHighWater < 1 ||
+    worker.schemaVersion !== SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION ||
+    typeof worker.presentationCount !== "number" ||
+    !Number.isSafeInteger(worker.presentationCount) ||
+    worker.presentationCount < 1 ||
+    worker.presentationRevision !== snapshot.presentationRevision ||
+    typeof worker.worldAnchorCount !== "number" ||
+    !Number.isSafeInteger(worker.worldAnchorCount) ||
+    worker.worldAnchorCount < 1
+  ) {
+    invalidReport(`${path}.value must contain complete hybrid UI evidence`);
+  }
 }
 
 export function parseFinalizedSmokeReport(value: unknown): BaselineEligibleReport {

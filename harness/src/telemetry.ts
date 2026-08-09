@@ -137,6 +137,7 @@ export function validateGameplayInputTelemetry(
     "pointerLocked",
     "schemaVersion",
     "state",
+    "uiSuppressed",
   ].sort();
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     throw new Error("gameplay input telemetry has an unsupported identity");
@@ -147,7 +148,8 @@ export function validateGameplayInputTelemetry(
     telemetry.schemaVersion !== GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION ||
     !["disposed", "failed", "idle", "running"].includes(telemetry.state) ||
     (telemetry.state === "failed") !== (telemetry.failureMessage !== null) ||
-    typeof telemetry.pointerLocked !== "boolean"
+    typeof telemetry.pointerLocked !== "boolean" ||
+    typeof telemetry.uiSuppressed !== "boolean"
   ) {
     throw new Error("gameplay input telemetry has an unsupported identity");
   }

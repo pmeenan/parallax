@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  type HybridUiTelemetrySnapshot,
   type ParallaxTelemetryExport,
   type PsoWarmupTelemetrySnapshot,
   TELEMETRY_FRAME_BATCH_FRAMES,
@@ -106,6 +107,7 @@ import {
   parseQualityTier,
   parseSmokeRunOptions,
   renderSurfaceMismatch,
+  SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
@@ -255,6 +257,7 @@ interface RunMeasurement {
         readonly state: "not-applicable";
       }>;
   readonly jsHeap: JsHeapMetric;
+  readonly hybridUi: MeasuredMetric<HybridUiTelemetrySnapshot>;
   readonly launchOrdinal: number;
   readonly launchStartedAfterSequenceMs: number;
   readonly mainThreadLongTasksOver50Ms: MeasuredMetric<number>;
@@ -1079,6 +1082,7 @@ async function measureRunWithBrowser(
       {
         expectedSchemaVersion: SMOKE_TELEMETRY_SCHEMA_VERSION,
         globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+        hybridUiSchemaVersion: SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
       },
       { timeout: 30_000 },
     );
@@ -1326,6 +1330,7 @@ async function measureRunWithBrowser(
       dawnPipeline,
       gpuMemory,
       greyboxWorld: measured(requireGreyboxWorld(greyboxTelemetry, frames, renderedOutput)),
+      hybridUi: measured(requireHybridUiEvidence(snapshot.hybridUi)),
       jsHeap,
       launchOrdinal: launchPosition.launchOrdinal,
       launchStartedAfterSequenceMs: launchPosition.launchStartedAfterSequenceMs,
@@ -1546,6 +1551,7 @@ async function measureV8CodeCacheDiagnosticRunOnce(
       {
         expectedSchemaVersion: SMOKE_TELEMETRY_SCHEMA_VERSION,
         globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+        hybridUiSchemaVersion: SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
       },
       { timeout: 30_000 },
     );
@@ -2027,7 +2033,11 @@ function jsonEquals(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function telemetryReady(contract: { expectedSchemaVersion: number; globalName: string }): boolean {
+function telemetryReady(contract: {
+  expectedSchemaVersion: number;
+  globalName: string;
+  hybridUiSchemaVersion: number;
+}): boolean {
   const telemetry = Reflect.get(globalThis, contract.globalName) as
     | ParallaxTelemetryExport
     | undefined;
@@ -2040,9 +2050,32 @@ function telemetryReady(contract: { expectedSchemaVersion: number; globalName: s
   return (
     snapshot.schemaVersion === contract.expectedSchemaVersion &&
     snapshot.render.state === "ready" &&
+    snapshot.hybridUi.state === "ready" &&
+    snapshot.hybridUi.schemaVersion === contract.hybridUiSchemaVersion &&
+    snapshot.hybridUi.presentationCount > 0 &&
+    snapshot.hybridUi.worker.presentationCount > 0 &&
+    snapshot.hybridUi.worker.presentationRevision === snapshot.hybridUi.presentationRevision &&
+    snapshot.hybridUi.worker.worldAnchorCount > 0 &&
     snapshot.simulation.state === "running" &&
     snapshot.simulation.tick > 0
   );
+}
+
+function requireHybridUiEvidence(snapshot: HybridUiTelemetrySnapshot): HybridUiTelemetrySnapshot {
+  if (
+    snapshot.schemaVersion !== SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION ||
+    snapshot.state !== "ready" ||
+    snapshot.presentationRevision === null ||
+    snapshot.presentationCount < 1 ||
+    snapshot.domNodeCountHighWater < 1 ||
+    snapshot.worker.schemaVersion !== SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION ||
+    snapshot.worker.presentationCount < 1 ||
+    snapshot.worker.presentationRevision !== snapshot.presentationRevision ||
+    snapshot.worker.worldAnchorCount < 1
+  ) {
+    throw new Error("Hybrid game UI substrate evidence is incomplete");
+  }
+  return Object.freeze({ ...snapshot, worker: Object.freeze({ ...snapshot.worker }) });
 }
 
 async function verifySimulationFoundation(page: Page): Promise<SimulationGameplayEvidence> {

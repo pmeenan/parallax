@@ -144,7 +144,7 @@ export function createLaunchLifecycleTracker(
       if (!/^[a-f0-9]{64}$/.test(nextReleaseDigest)) {
         throw new Error("Launch-to-interactive requires an exact release digest");
       }
-      if (state !== "idle") {
+      if (state !== "idle" && state !== "failed") {
         throw new Error("Launch-to-interactive attempt has already started on this page");
       }
       const observed = now();

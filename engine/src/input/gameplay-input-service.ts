@@ -1,4 +1,4 @@
-export const GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION = 1;
+export const GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION = 2;
 
 export interface GameplayInputFrame {
   readonly cameraPitchRadians: number;
@@ -18,12 +18,14 @@ export interface GameplayInputTelemetrySnapshot {
   readonly pointerLocked: boolean;
   readonly schemaVersion: typeof GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION;
   readonly state: "idle" | "running" | "disposed" | "failed";
+  readonly uiSuppressed: boolean;
 }
 
 export interface GameplayInputService {
   dispose(): void;
   emitCurrentFrame(): void;
   rebindCanvas(canvas: HTMLCanvasElement): void;
+  setUiSuppressed(suppressed: boolean): void;
   snapshot(): GameplayInputTelemetrySnapshot;
   start(canvas: HTMLCanvasElement, listener: (frame: GameplayInputFrame) => void): void;
   subscribe(listener: (snapshot: GameplayInputTelemetrySnapshot) => void): () => void;
@@ -48,6 +50,8 @@ export function createGameplayInputService(
   let pendingAnimationFrame: number | null = null;
   let pendingInteractPressed = false;
   let disposed = false;
+  let uiSuppressed = false;
+  let restorePointerLockAfterUi = false;
   const pressed = new Set<string>();
   const listeners = new Set<(snapshot: GameplayInputTelemetrySnapshot) => void>();
 
@@ -67,7 +71,7 @@ export function createGameplayInputService(
     const interactPressed = pendingInteractPressed;
     pendingInteractPressed = false;
     const active = frameListener;
-    if (active === null || telemetry.state !== "running") return;
+    if (active === null || telemetry.state !== "running" || uiSuppressed) return;
     const forward =
       Number(pressed.has("KeyW") || pressed.has("ArrowUp")) -
       Number(pressed.has("KeyS") || pressed.has("ArrowDown"));
@@ -93,12 +97,13 @@ export function createGameplayInputService(
   };
   const scheduleEmit = (interactPressed = false): void => {
     pendingInteractPressed ||= interactPressed;
-    if (pendingAnimationFrame !== null || telemetry.state !== "running") return;
+    if (pendingAnimationFrame !== null || telemetry.state !== "running" || uiSuppressed) return;
     pendingAnimationFrame = windowTarget.requestAnimationFrame(emit);
   };
   const onKeyDown = (event: KeyboardEvent): void => {
     if (
       event.repeat ||
+      uiSuppressed ||
       telemetry.state !== "running" ||
       (documentTarget.pointerLockElement !== canvas && documentTarget.activeElement !== canvas)
     ) {
@@ -120,10 +125,16 @@ export function createGameplayInputService(
     }
   };
   const onKeyUp = (event: KeyboardEvent): void => {
+    if (uiSuppressed) return;
     if (pressed.delete(event.code)) scheduleEmit();
   };
   const onMouseMove = (event: MouseEvent): void => {
-    if (documentTarget.pointerLockElement !== canvas || telemetry.state !== "running") return;
+    if (
+      uiSuppressed ||
+      documentTarget.pointerLockElement !== canvas ||
+      telemetry.state !== "running"
+    )
+      return;
     yawRadians = normalizeAngle(yawRadians + event.movementX * YAW_RADIANS_PER_PIXEL);
     cameraPitchRadians = clamp(
       cameraPitchRadians - event.movementY * PITCH_RADIANS_PER_PIXEL,
@@ -143,14 +154,16 @@ export function createGameplayInputService(
   };
   const onPointerDown = (): void => {
     canvas?.focus();
-    if (documentTarget.pointerLockElement !== canvas) {
-      void canvas?.requestPointerLock().catch(() => {
-        publish({
-          ...telemetry,
-          pointerLockFailureCount: telemetry.pointerLockFailureCount + 1,
-        });
+    if (!uiSuppressed) requestPointerLock();
+  };
+  const requestPointerLock = (): void => {
+    if (canvas === null || documentTarget.pointerLockElement === canvas) return;
+    void canvas.requestPointerLock().catch(() => {
+      publish({
+        ...telemetry,
+        pointerLockFailureCount: telemetry.pointerLockFailureCount + 1,
       });
-    }
+    });
   };
   const onBlur = (): void => {
     if (pressed.size === 0) return;
@@ -184,12 +197,15 @@ export function createGameplayInputService(
       if (pendingAnimationFrame !== null) windowTarget.cancelAnimationFrame(pendingAnimationFrame);
       pendingAnimationFrame = null;
       pendingInteractPressed = false;
+      uiSuppressed = false;
+      restorePointerLockAfterUi = false;
       canvas = null;
       frameListener = null;
       publish({
         ...telemetry,
         pointerLocked: false,
         state: telemetry.state === "failed" ? "failed" : "disposed",
+        uiSuppressed: false,
       });
     },
     emitCurrentFrame(): void {
@@ -206,6 +222,34 @@ export function createGameplayInputService(
       pressed.clear();
       pendingInteractPressed = false;
       attachCanvas(targetCanvas);
+      scheduleEmit();
+    },
+    setUiSuppressed(suppressed: boolean): void {
+      if (telemetry.state === "disposed" || telemetry.state === "failed") return;
+      if (uiSuppressed === suppressed) return;
+      if (telemetry.state === "idle") {
+        uiSuppressed = suppressed;
+        publish({ ...telemetry, uiSuppressed: suppressed });
+        return;
+      }
+      if (suppressed) {
+        if (pendingAnimationFrame !== null) {
+          windowTarget.cancelAnimationFrame(pendingAnimationFrame);
+          pendingAnimationFrame = null;
+        }
+        pressed.clear();
+        pendingInteractPressed = false;
+        emit();
+        restorePointerLockAfterUi = documentTarget.pointerLockElement === canvas;
+        uiSuppressed = true;
+        publish({ ...telemetry, uiSuppressed: true });
+        if (restorePointerLockAfterUi) documentTarget.exitPointerLock();
+        return;
+      }
+      uiSuppressed = false;
+      publish({ ...telemetry, uiSuppressed: false });
+      if (restorePointerLockAfterUi) requestPointerLock();
+      restorePointerLockAfterUi = false;
       scheduleEmit();
     },
     snapshot(): GameplayInputTelemetrySnapshot {
@@ -241,6 +285,7 @@ function initialTelemetry(): GameplayInputTelemetrySnapshot {
     pointerLocked: false,
     schemaVersion: GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION,
     state: "idle",
+    uiSuppressed: false,
   });
 }
 

@@ -16,6 +16,7 @@
     "app/src/launch-lifecycle.ts",
     "app/src/retryable-success-latch.ts",
     "app/src/runtime-launch-route.ts",
+    "app/src/runtime-surface-rollback.ts",
     "app/src/runtime.ts",
     "app/src/shell-launch-authority.ts",
     "app/src/uninstall-ui.ts",

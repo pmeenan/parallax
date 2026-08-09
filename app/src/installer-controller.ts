@@ -505,6 +505,7 @@ export function createInstallerController(input: InstallerControllerInput): Inst
       const expectedReleaseDigest = releaseDigest;
       const expectedShell = shellAdmission;
       const generation = ++installGeneration;
+      failure = null;
       immutableShellBoundary = false;
       const authorityController = new AbortController();
       launchAuthorityController = authorityController;
@@ -550,21 +551,35 @@ export function createInstallerController(input: InstallerControllerInput): Inst
         if (launchAuthorityController === authorityController) {
           launchAuthorityController = null;
         }
-        failure =
-          error instanceof OfflineShellServiceError || error instanceof InstallerServiceError
-            ? installerFailure(error)
-            : Object.freeze({
-                code: "launch" as const,
-                failureClass: "ui" as const,
-                failureEvidence: "ui" as const,
-                message: errorMessage(error),
-                operation: "session" as const,
-                recovery: "reload" as const,
-                resourceId: null,
-              });
-        releaseDigest = null;
-        shellAdmission = null;
-        setState("failed");
+        if (error instanceof OfflineShellServiceError || error instanceof InstallerServiceError) {
+          failure = installerFailure(error);
+          releaseDigest = null;
+          shellAdmission = null;
+          setState("failed");
+        } else {
+          try {
+            requireCurrentShellSelection(expectedShell);
+          } catch (shellError: unknown) {
+            if (!(shellError instanceof OfflineShellServiceError)) throw shellError;
+            failure = offlineShellFailure(shellError.code, shellError.message);
+            releaseDigest = null;
+            shellAdmission = null;
+            immutableShellBoundary = false;
+            setState("failed");
+            return;
+          }
+          failure = Object.freeze({
+            code: "launch" as const,
+            failureClass: "ui" as const,
+            failureEvidence: "ui" as const,
+            message: errorMessage(error),
+            operation: "session" as const,
+            recovery: "retry" as const,
+            resourceId: null,
+          });
+          immutableShellBoundary = false;
+          setState("ready");
+        }
       }
     },
     reload(): void {

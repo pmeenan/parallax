@@ -10,6 +10,8 @@ export {
 } from "./benchmark/m1-benchmark-mode";
 export type { M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
 export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";
+export type { M3HybridUiModel } from "./ui/m3-hybrid-ui";
+export { createM3HybridUiModel, M3_HYBRID_UI_DOM_LABELS } from "./ui/m3-hybrid-ui";
 export type {
   StreamingDashboardMetric,
   StreamingDashboardMetricState,

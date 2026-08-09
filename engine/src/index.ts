@@ -346,6 +346,7 @@ export type {
   RenderFrameSample,
   RenderGameplayEntity,
   RenderGameplayPresentation,
+  RenderHybridUiActionListener,
   RenderPixelSize,
   RenderRecoveryCause,
   RenderRecoveryProbeKind,
@@ -596,6 +597,40 @@ export {
   TELEMETRY_GLOBAL_NAME,
   TELEMETRY_SCHEMA_VERSION,
 } from "./telemetry/telemetry-export";
+export type {
+  HybridUiAction,
+  HybridUiDialogChoice,
+  HybridUiDialogView,
+  HybridUiHeavyPrimitive,
+  HybridUiHeavyScreen,
+  HybridUiHudMeter,
+  HybridUiHudView,
+  HybridUiPresentation,
+  HybridUiRect,
+  HybridUiSemanticAction,
+  HybridUiTelemetrySnapshot,
+  HybridUiTextEntry,
+  HybridUiTone,
+  HybridUiWorkerInput,
+  HybridUiWorkerTelemetrySnapshot,
+  HybridUiWorldAnchor,
+} from "./ui/hybrid-ui-contract";
+export {
+  HYBRID_UI_DIALOG_CHOICE_CAPACITY,
+  HYBRID_UI_HEAVY_PRIMITIVE_CAPACITY,
+  HYBRID_UI_HUD_MESSAGE_CAPACITY,
+  HYBRID_UI_HUD_METER_CAPACITY,
+  HYBRID_UI_SEMANTIC_ACTION_CAPACITY,
+  HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
+  HYBRID_UI_WORLD_ANCHOR_CAPACITY,
+} from "./ui/hybrid-ui-contract";
+export type {
+  HybridUiActionListener,
+  HybridUiDomLabels,
+  HybridUiListener,
+  HybridUiService,
+} from "./ui/hybrid-ui-service";
+export { createHybridUiService } from "./ui/hybrid-ui-service";
 export type { WasmThreadSpikeTelemetrySnapshot } from "./wasm/wasm-thread-spike-protocol";
 export {
   WASM_THREAD_SPIKE_MEMORY_PAGES,

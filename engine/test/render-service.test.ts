@@ -12,6 +12,8 @@ import {
   type GreyboxSceneConfig,
 } from "../src/render/render-service";
 import { createFlythroughObserverProtocol } from "../src/streaming/flythrough-observer-protocol";
+import type { HybridUiPresentation } from "../src/ui/hybrid-ui-contract";
+import { idleHybridUiWorkerTelemetry } from "../src/ui/hybrid-ui-contract";
 
 class FakeCanvas {
   readonly clientHeight = 720;
@@ -101,6 +103,205 @@ afterEach(() => {
 });
 
 describe("render service recovery", () => {
+  it("replays hybrid UI state and admits only worker-authorized actions", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    const presentation = hybridUiPresentation();
+    service.setHybridUiPresentation(presentation);
+    let retainedPresentationWasQueuedAtReady = false;
+    service.subscribe((snapshot) => {
+      if (snapshot.state !== "ready") return;
+      retainedPresentationWasQueuedAtReady =
+        requireWorker(0).requests.at(-1)?.message.kind === "hybrid-ui-presentation";
+    });
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("Unexpected recovery");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const worker = requireWorker(0);
+    worker.emit(readyMessage());
+    expect(retainedPresentationWasQueuedAtReady).toBe(true);
+    expect(worker.requests.at(-1)?.message).toEqual({
+      kind: "hybrid-ui-presentation",
+      presentation,
+    });
+
+    const actions: string[] = [];
+    service.subscribeHybridUiActions((action) => actions.push(action.actionId));
+    service.sendHybridUiInput({ kind: "activate", sequence: 1 });
+    expect(worker.requests.at(-1)?.message).toEqual({
+      input: { kind: "activate", sequence: 1 },
+      kind: "hybrid-ui-input",
+    });
+    worker.emit({
+      action: {
+        actionId: "inventory:use",
+        inputSequence: 1,
+        payload: null,
+        presentationRevision: presentation.revision,
+        source: "heavy-screen-worker",
+      },
+      kind: "hybrid-ui-action",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        actionCount: 1,
+        heavyPrimitiveCount: 1,
+        inputCount: 1,
+        presentationCount: 1,
+        presentationRevision: presentation.revision,
+      },
+    });
+    expect(actions).toEqual(["inventory:use"]);
+    expect(service.snapshot().hybridUi).toMatchObject({ actionCount: 1, presentationRevision: 2 });
+
+    service.setHybridUiPresentation({ ...presentation, revision: 1 });
+    expect(worker.requests.at(-1)?.message.kind).toBe("hybrid-ui-input");
+    expect(() => service.sendHybridUiInput({ kind: "activate", sequence: 1 })).toThrow(
+      /strictly increasing/,
+    );
+    worker.emit({
+      action: {
+        actionId: "inventory:use",
+        inputSequence: 99,
+        payload: null,
+        presentationRevision: presentation.revision,
+        source: "heavy-screen-worker",
+      },
+      kind: "hybrid-ui-action",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        actionCount: 2,
+        heavyPrimitiveCount: 1,
+        inputCount: 2,
+        presentationCount: 1,
+        presentationRevision: presentation.revision,
+      },
+    });
+    expect(service.snapshot().state).toBe("failed");
+  });
+
+  it("routes invalid standalone hybrid UI telemetry through recovery", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("injected recovery stop");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const worker = requireWorker(0);
+    worker.emit(readyMessage());
+    worker.emit({
+      inputSequence: null,
+      kind: "hybrid-ui-telemetry",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        worldAnchorCount: 65,
+      },
+    });
+    expect(service.snapshot()).toMatchObject({
+      failureMessage: expect.stringContaining("invalid hybrid UI telemetry"),
+      state: "failed",
+    });
+  });
+
+  it("requires exact pointer hits and in-order worker acknowledgements", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    const presentation = hybridUiPresentation();
+    service.setHybridUiPresentation(presentation);
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("injected recovery stop");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const worker = requireWorker(0);
+    worker.emit(readyMessage());
+    service.sendHybridUiInput({ kind: "pointer-activate", sequence: 1, x: 0.9, y: 0.9 });
+    service.sendHybridUiInput({ kind: "activate", sequence: 2 });
+    worker.emit({
+      inputSequence: 2,
+      kind: "hybrid-ui-telemetry",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        inputCount: 1,
+        presentationCount: 1,
+        presentationRevision: presentation.revision,
+      },
+    });
+    expect(service.snapshot()).toMatchObject({
+      failureMessage: expect.stringContaining("oldest pending input"),
+      state: "failed",
+    });
+
+    const screen = presentation.heavyScreen;
+    if (screen === null) throw new Error("Test presentation lacks a heavy screen");
+    const basePrimitive = screen.primitives[0];
+    if (basePrimitive === undefined) throw new Error("Test presentation lacks a primitive");
+    const occludedPresentation = Object.freeze({
+      ...presentation,
+      heavyScreen: Object.freeze({
+        ...screen,
+        primitives: Object.freeze([
+          ...screen.primitives,
+          Object.freeze({
+            ...basePrimitive,
+            actionId: null,
+            id: "inventory:overlay",
+            layer: 1,
+          }),
+        ]),
+      }),
+    });
+    const exactService = createRenderService();
+    exactService.setHybridUiPresentation(occludedPresentation);
+    exactService.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("injected recovery stop");
+      },
+      streamingPort: new FakeMessagePort(101) as unknown as MessagePort,
+    });
+    const exactWorker = requireWorker(1);
+    exactWorker.emit(readyMessage());
+    exactService.sendHybridUiInput({ kind: "pointer-activate", sequence: 1, x: 0.3, y: 0.3 });
+    exactWorker.emit({
+      action: {
+        actionId: "inventory:use",
+        inputSequence: 1,
+        payload: null,
+        presentationRevision: occludedPresentation.revision,
+        source: "heavy-screen-worker",
+      },
+      kind: "hybrid-ui-action",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        actionCount: 1,
+        inputCount: 1,
+        presentationCount: 1,
+        presentationRevision: occludedPresentation.revision,
+      },
+    });
+    expect(exactService.snapshot()).toMatchObject({
+      failureMessage: expect.stringContaining("exact input result"),
+      state: "failed",
+    });
+  });
+
   it("replays the latest monotonic gameplay presentation after worker readiness", () => {
     installBrowserFakes();
     const service = createRenderService();
@@ -1259,4 +1460,39 @@ function deferredStreamingSettlement() {
     resolve = complete;
   });
   return { promise, resolve };
+}
+
+function hybridUiPresentation(): HybridUiPresentation {
+  return Object.freeze({
+    dialog: Object.freeze({
+      body: "No conversation",
+      choices: Object.freeze([]),
+      speaker: "Conversation",
+      textEntry: null,
+      visible: false,
+    }),
+    heavyScreen: Object.freeze({
+      cancelActionId: "inventory:close",
+      focusActionId: "inventory:use",
+      id: "inventory",
+      primitives: Object.freeze([
+        Object.freeze({
+          actionId: "inventory:use",
+          disabled: false,
+          id: "inventory:use:primitive",
+          layer: 0,
+          rect: Object.freeze({ height: 0.2, width: 0.3, x: 0.2, y: 0.2 }),
+          tone: "neutral" as const,
+        }),
+      ]),
+      semanticActions: Object.freeze([
+        Object.freeze({ actionId: "inventory:use", disabled: false, label: "Use" }),
+      ]),
+      textEntry: null,
+      visible: true,
+    }),
+    hud: Object.freeze({ meters: Object.freeze([]), messages: Object.freeze([]), visible: true }),
+    revision: 2,
+    worldAnchors: Object.freeze([]),
+  });
 }

@@ -74,6 +74,30 @@ describe("Launch-to-interactive lifecycle", () => {
     });
   });
 
+  it("starts a clean second attempt after a failed launch", () => {
+    const nextReleaseDigest = "b".repeat(64);
+    const times = [10, 20];
+    const tracker = createLaunchLifecycleTracker(() => times.shift() ?? 20);
+    tracker.begin(releaseDigest);
+    tracker.fail(new Error("first launch failed"));
+
+    expect(() => tracker.begin(nextReleaseDigest)).not.toThrow();
+    expect(tracker.snapshot()).toMatchObject({
+      attempt: 2,
+      failureMessage: null,
+      preflightTiming: {
+        finalReleaseAdmissionAtMs: null,
+        initialReleaseAdmissionAtMs: null,
+        modelSourceReadyAtMs: null,
+        psoTraceReadyAtMs: null,
+        streamingReferencesReadyAtMs: null,
+      },
+      releaseDigest: nextReleaseDigest,
+      startedAtMs: 20,
+      state: "launching",
+    });
+  });
+
   it("ignores late subsystem milestones after a terminal failure", () => {
     const tracker = createLaunchLifecycleTracker(() => 10);
     tracker.begin(releaseDigest);

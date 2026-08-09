@@ -221,6 +221,33 @@ const validStreaming = Object.freeze({
   workerGeneration: 1,
 });
 
+const validHybridUi = Object.freeze({
+  dialogDomActionCount: 0,
+  domMutationDurationHighWaterMs: 1,
+  domNodeCountHighWater: 8,
+  forwardedInputCount: 0,
+  imeDomActionCount: 0,
+  presentationCount: 1,
+  presentationRevision: 0,
+  schemaVersion: 1,
+  semanticNodeCountHighWater: 0,
+  state: "ready" as const,
+  worker: Object.freeze({
+    actionCount: 0,
+    heavyPrimitiveCapacity: 256,
+    heavyPrimitiveCount: 0,
+    hitTestDurationHighWaterMs: 0,
+    inputCount: 0,
+    presentationCount: 1,
+    presentationRevision: 0,
+    presentationUpdateDurationHighWaterMs: 1,
+    schemaVersion: 1,
+    worldAnchorCapacity: 64,
+    worldAnchorCount: 1,
+  }),
+  workerActionCount: 0,
+});
+
 const mandatoryMetricNames = Object.freeze(
   SMOKE_METRICS.filter((metric) => metric.mandatoryForHarnessV1).map((metric) => metric.name),
 );
@@ -253,6 +280,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     ...[10, 11, 12].map((actual, index) => ({
       budgetChecks: budgetChecks(actual),
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
+      hybridUi: { state: "measured" as const, value: validHybridUi },
       profile: "fresh" as const,
       psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,
@@ -265,6 +293,7 @@ function report(overrides: Partial<BaselineEligibleReport> = {}): BaselineEligib
     ...[8, 9, 10].map((actual, index) => ({
       budgetChecks: budgetChecks(actual),
       greyboxWorld: { state: "measured" as const, value: validGreyboxWorld },
+      hybridUi: { state: "measured" as const, value: validHybridUi },
       profile: "warm" as const,
       psoWarmup: { state: "measured" as const, value: validPsoWarmup },
       repeat: index + 1,

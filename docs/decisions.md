@@ -28,6 +28,86 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-161: Implement the hybrid UI stack without a page framework (2026-08-08, accepted)
+
+**Decision:** Implement D-160's shared substrate as a framework-free, typed engine
+service. The main thread owns a keyed DOM/CSS HUD and dialog tree plus a bounded sparse
+semantic/focus/IME bridge. The render worker owns world anchors, heavy-screen geometry,
+focus navigation, and hit testing through versioned presentation/input/action messages.
+It retains the newest presentation across render recovery and admits worker actions only
+when they are the exact result expected for the oldest outstanding input, topmost pointer
+hit or mirrored focus state, monotonically ordered response, revision, source, and enabled
+game-owned action ID. Opening a heavy screen explicitly suppresses gameplay input even
+before interactive input starts and releases pointer lock; closing it attempts restoration
+and records any denied request.
+
+Worker visuals use fixed boot-time Babylon Lite geometry pools: 64 world anchors and
+256 normalized heavy-screen primitives, split across four tones. The eight combined
+meshes use the already-warmed Standard opaque pipeline family; this change creates no
+new runtime PSO family and does not allocate one mesh or listener per primitive. The
+game layer supplies layouts and player-facing text through the engine contract and
+never touches DOM, worker, or WebGPU APIs.
+
+**Context:** D-160 settled surface ownership but intentionally did not select an
+implementation library. The immediate M3 need is a substrate before real inventory,
+journal, settings, and dialog layouts exist. The required behavior is small and
+contract-heavy: keyed DOM reconciliation, fixed worker pools, a sparse semantic bridge,
+recovery replay, and telemetry. Adding a general page UI framework at this boundary
+would add a second lifecycle and dependency without evidence that it solves a current
+screen-composition problem. Framework-free does not mean one-off page code: the shared
+service and versioned presentation model are the reusable stack.
+
+**Consequences:** HUD meters and dialog choices preserve native focus, selection,
+accessibility, and IME. Canvas-heavy screens expose only their bounded semantic controls
+to the DOM and keep their visual tree worker-owned. Stable semantic/form identities
+preserve live focus, selection, unpublished typed input, and IME composition across
+unrelated presentation revisions; stable live-region nodes avoid stale re-announcements,
+closing surfaces return focus to the canvas, and non-composing Escape remains available
+from the heavy-screen sparse bridge without intercepting dialog controls. Accessible
+labels and submit copy remain game-owned. The current
+worker primitive format is a strictly layered colored-rectangle substrate; real screens
+must add game-owned layout, icon, and glyph assets without bypassing the fixed-pool/pipeline
+contract. The highest-layer rectangle occludes pointer hits regardless of whether it is
+decorative, disabled, or actionable; only enabled primitives with action IDs emit actions.
+Retained presentations are posted before Ready listeners run, keyed meter nodes are not
+reinserted when their order is unchanged, and failed boot attempts dispose all created
+runtime services in reverse order, remove mounted/global handlers and the telemetry export,
+restore pristine hidden runtime surfaces with a fresh canvas, and permit a new measured
+launch attempt before the retry latch reopens. Public telemetry
+advances to v43. `smoke@1` advances to report schema v70 / mandatory metric set v33 and
+requires each core launch to retain a ready DOM tree and the matching worker presentation
+revision with at least one visible world-anchor record ingested by the worker. That is
+logical cross-thread evidence, not attributable draw/pixel proof. Flythrough and
+render-recovery report schemas advance to v35 and v31 because their embedded public telemetry envelope changed;
+their mandatory metric sets and numeric budgets do not.
+
+**Closure evidence:** After external, skeptic, and adversarial review corrections for
+pointer occlusion, Ready ordering, keyed meter stability, complete failed-boot teardown,
+surface rollback, relaunch, and shell-authority races, the final registered dev-01/Showcase
+physical `smoke@1` report
+`smoke-1-50a6674402e5-dev-01-showcase-2026-08-09T15-04-36-814Z.json` (JSON SHA-256
+`371296488ac0f3c2a276bd933f79cec96f676274d26d192bf78ee7df3373b244`; Markdown
+SHA-256 `63e42417ca3b8bb40d038747c23b75a1e3a2a0b2fef1477ab8b4b75f66701969`)
+passed all six launches, all three facets, and 36/36 evaluated checks under schema v70 /
+mandatory metric set v33, pinned Chrome 151.0.7922.71, artifact
+`50a6674402e501110c31710785d0f356d179d8eb039a66a82149eae8977cf3da`, install release
+`f9f3b0febfd0e73a462c12f9a1b3ffd8fc58eb64c79e875427e949de629318e5`, source commit
+`4e28a86f09d1c0df8ddd8523a5c6ad9ca1900a97`, and dirty-tree digest
+`149175e958c2d8fc37eec24ce584d8a02252c183222c98ef1eaab5a59f313df4`.
+An earlier immutable report
+`smoke-1-f1f4444d58ab-dev-01-showcase-2026-08-09T01-03-47-932Z.json` (SHA-256
+`08b657796eef5640c57c479434f5c6c4d2e0593fd1228806522b875525555efa`)
+failed before measurement because the new page-realm readiness predicate captured a
+module constant. The final candidate passes that schema identity explicitly as serialized
+predicate input and carries source-audit regression coverage. `pnpm check` passed 2,439
+tests with one intentional skip after all skeptic/adversarial corrections converged.
+
+**Reopen if:** real-screen implementation shows, with profiles or repeated correctness
+failures, that keyed DOM reconciliation is a material maintenance/performance bottleneck;
+the heavy-screen primitive contract cannot express required visuals without runtime
+allocation or a new pipeline family; or Chrome exposes an attributed cross-thread
+presentation transaction that changes D-160's ownership split.
+
 ## D-160: Resolve P-008 with a per-surface hybrid UI substrate (2026-08-08, accepted)
 
 **Decision:** Use a hybrid game-UI substrate. Render **world-anchored UI** and the

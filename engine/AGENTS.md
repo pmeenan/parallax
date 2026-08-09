@@ -36,6 +36,7 @@ engine/src/
   audio/       WebAudio graph + worklets
   input/       ✅ keyboard/mouse capture → coalesced gameplay input frames
   sim/         ✅ fixed-timestep runtime, command/save contracts, snapshot SAB + interpolation
+  ui/          ✅ typed hybrid DOM/render-worker presentation service (D-160/D-161)
   save/        future higher-level save slots/deltas (binary sim envelope lives in sim/)
   telemetry/   counters, timings, harness export surface                   ✅ (export surface)
 ```

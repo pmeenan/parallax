@@ -7,6 +7,11 @@ import {
 class FakeDocument extends EventTarget {
   activeElement: Element | null = null;
   pointerLockElement: Element | null = null;
+
+  exitPointerLock(): void {
+    this.pointerLockElement = null;
+    this.dispatchEvent(new Event("pointerlockchange"));
+  }
 }
 
 class FakeWindow extends EventTarget {
@@ -47,6 +52,28 @@ class FakeCanvas extends EventTarget {
 }
 
 describe("gameplay input service", () => {
+  it("carries UI suppression from idle through startup and ignores terminal teardown", () => {
+    const documentTarget = new FakeDocument();
+    const windowTarget = new FakeWindow();
+    const canvas = new FakeCanvas(documentTarget);
+    const frames: GameplayInputFrame[] = [];
+    const service = createGameplayInputService(
+      documentTarget as unknown as Document,
+      windowTarget as unknown as Window,
+    );
+
+    service.setUiSuppressed(true);
+    expect(service.snapshot()).toMatchObject({ state: "idle", uiSuppressed: true });
+    service.start(canvas as unknown as HTMLCanvasElement, (frame) => frames.push(frame));
+    windowTarget.flush();
+    expect(frames).toHaveLength(0);
+    service.setUiSuppressed(false);
+    windowTarget.flush();
+    expect(frames).toMatchObject([{ forward: 0, interactPressed: false, right: 0 }]);
+    service.dispose();
+    expect(() => service.setUiSuppressed(false)).not.toThrow();
+  });
+
   it("focus-gates keys, coalesces high-rate motion, and preserves interaction edges", async () => {
     const documentTarget = new FakeDocument();
     const windowTarget = new FakeWindow();
@@ -84,7 +111,17 @@ describe("gameplay input service", () => {
       interactionPressCount: 1,
       pointerLockAcquisitionCount: 1,
       pointerLocked: true,
+      uiSuppressed: false,
     });
+
+    service.setUiSuppressed(true);
+    expect(service.snapshot()).toMatchObject({ pointerLocked: false, uiSuppressed: true });
+    windowTarget.dispatchEvent(keyEvent("keydown", "KeyW"));
+    windowTarget.flush();
+    expect(frames.at(-1)).toMatchObject({ forward: 0 });
+    service.setUiSuppressed(false);
+    await Promise.resolve();
+    expect(service.snapshot()).toMatchObject({ uiSuppressed: false });
 
     windowTarget.dispatchEvent(keyEvent("keyup", "KeyW"));
     windowTarget.flush();
@@ -95,7 +132,7 @@ describe("gameplay input service", () => {
     expect(service.snapshot().pointerLocked).toBe(false);
     replacementCanvas.dispatchEvent(new Event("pointerdown"));
     await Promise.resolve();
-    expect(service.snapshot().pointerLockFailureCount).toBe(2);
+    expect(service.snapshot().pointerLockFailureCount).toBe(3);
     documentTarget.pointerLockElement = replacementCanvas as unknown as Element;
     documentTarget.dispatchEvent(new Event("pointerlockchange"));
     windowTarget.dispatchEvent(keyEvent("keydown", "KeyD"));

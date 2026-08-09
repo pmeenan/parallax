@@ -535,7 +535,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v32, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v33, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
@@ -557,8 +557,13 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-   corresponding current `smoke@1` report schema is v68
-   and public telemetry is v41. D-139 additionally requires exact
+  corresponding current `smoke@1` report schema is v70
+  and public telemetry is v43. D-161 additionally requires each core run to retain
+  measured hybrid-UI evidence: a ready DOM HUD tree plus the matching presentation
+  revision and at least one visible world-anchor record ingested by the render worker's
+  fixed UI pools. This is logical cross-thread ingestion evidence, not attributable
+   draw/pixel proof. Missing or mismatched evidence fails closed; this adds no
+   duration threshold or budget check. D-139 additionally requires exact
    trace/build-compatibility identity, one progressive registry miss, one deduplicated
    replay hit, complete entry coverage, and zero failures before product Ready. Its
    separately triggered `pso-warmup-launch-pair@1` qualification consumes the same six
@@ -623,7 +628,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   count for stored-evidence revalidation; invalid smoke attempts preserve the raw
   start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-  `flythrough-d1@1` report schema v33/mandatory metric set v11 consumes flythrough
+  `flythrough-d1@1` report schema v35/mandatory metric set v11 consumes flythrough
   telemetry v3 and separately requires exact
   route and ordered environment completion, streamed presentation ownership with the
   preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,

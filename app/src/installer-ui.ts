@@ -259,6 +259,8 @@ function failureCopy(
     return `Stored or downloaded data did not match the release manifest.${resource} Choose Repair installation to start one new bounded repair operation. ${message}`;
   }
   switch (code) {
+    case "launch":
+      return `Parallax could not finish starting. Choose Launch Parallax to try again. ${message}`;
     case "quota":
       return `There is not enough writable storage for this installation.${resource} Free disk space, then retry. ${message}`;
     case "integrity":

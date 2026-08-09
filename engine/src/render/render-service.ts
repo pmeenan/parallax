@@ -4,6 +4,20 @@ import type {
 } from "../flythrough/flythrough-contract";
 import type { StreamingRecoveryCheckpoint } from "../streaming/streaming-protocol";
 import { STREAMING_RESIDENT_CELL_LIMIT } from "../streaming/streaming-protocol";
+import {
+  freezeHybridUiPresentation,
+  type HybridUiAction,
+  type HybridUiPresentation,
+  type HybridUiWorkerInput,
+  type HybridUiWorkerTelemetrySnapshot,
+  hybridUiHeavyScreenGeometryEqual,
+  hybridUiWorkerActionAllowed,
+  idleHybridUiWorkerTelemetry,
+  requireHybridUiWorkerInput,
+  validateHybridUiWorkerAction,
+  validateHybridUiWorkerTelemetry,
+} from "../ui/hybrid-ui-contract";
+import { topmostHybridUiPrimitiveAt } from "../ui/hybrid-ui-hit-test";
 import { createSabRingBufferSpike } from "../workers/sab-ring-buffer-spike";
 import type { SabRingBufferSpikeTelemetrySnapshot } from "../workers/sab-ring-buffer-spike-protocol";
 import type { DecoderBootstrapTelemetry, DecoderFixtureTelemetry } from "./decoder-bootstrap";
@@ -41,6 +55,11 @@ export type RenderRecoveryCause =
   | "worker-error"
   | "worker-message";
 
+interface PendingHybridUiInput {
+  readonly expectedActionId: string | null;
+  readonly presentationRevision: number | null;
+}
+
 export interface RenderRecoveryTelemetry {
   readonly lastCause: RenderRecoveryCause | null;
   readonly lastFailureMessage: string | null;
@@ -63,6 +82,7 @@ export interface RenderTelemetrySnapshot {
   readonly frameCount: number;
   readonly flythrough: RenderFlythroughTelemetry | null;
   readonly greyboxWorld: GreyboxRenderTelemetry | null;
+  readonly hybridUi: HybridUiWorkerTelemetrySnapshot;
   readonly recentFrames: readonly RenderFrameSample[];
   readonly psoWarmup: PsoWarmupTelemetrySnapshot;
   readonly retainedPsoWarmupFailure: RetainedPsoWarmupFailureTelemetry | null;
@@ -77,6 +97,7 @@ export interface RenderTelemetrySnapshot {
 
 export type RenderServiceListener = (snapshot: RenderTelemetrySnapshot) => void;
 export type RenderCanvasListener = (canvas: HTMLCanvasElement) => void;
+export type RenderHybridUiActionListener = (action: HybridUiAction) => void;
 
 export interface RenderService {
   applyFlythroughPreflight(
@@ -90,7 +111,9 @@ export interface RenderService {
   exerciseRecoveryAtBoundary(probe: RenderRecoveryProbeKind): Promise<StreamingRecoveryCheckpoint>;
   failAfterStreamingFailure(message: string): void;
   resetFlythrough(): Promise<void>;
+  sendHybridUiInput(input: HybridUiWorkerInput): void;
   setGameplayPresentation(presentation: RenderGameplayPresentation): void;
+  setHybridUiPresentation(presentation: HybridUiPresentation): void;
   setRenderPixelSizeOverride(size: RenderPixelSize | null): void;
   snapshot(): RenderTelemetrySnapshot;
   start(
@@ -101,6 +124,7 @@ export interface RenderService {
   startFlythrough(scenario: FlythroughScenario): void;
   subscribe(listener: RenderServiceListener): () => void;
   subscribeCanvas(listener: RenderCanvasListener): () => void;
+  subscribeHybridUiActions(listener: RenderHybridUiActionListener): () => void;
 }
 
 export interface RenderGameplayPresentation {
@@ -224,6 +248,7 @@ export function createRenderService(): RenderService {
     frameCount: 0,
     flythrough: null,
     greyboxWorld: null,
+    hybridUi: idleHybridUiWorkerTelemetry(),
     recentFrames: Object.freeze([]),
     psoWarmup: idlePsoWarmupTelemetrySnapshot(),
     retainedPsoWarmupFailure: null,
@@ -244,6 +269,7 @@ export function createRenderService(): RenderService {
     workerStartupToFirstFrameMs: null,
   });
   let latestGameplayPresentation: RenderGameplayPresentation | null = null;
+  let latestHybridUiPresentation: HybridUiPresentation | null = null;
   let worker: Worker | null = null;
   let resizeObserver: ResizeObserver | null = null;
   let heartbeatMonitor: ReturnType<typeof setInterval> | null = null;
@@ -301,6 +327,11 @@ export function createRenderService(): RenderService {
   >();
   const listeners = new Set<RenderServiceListener>();
   const canvasListeners = new Set<RenderCanvasListener>();
+  const hybridUiActionListeners = new Set<RenderHybridUiActionListener>();
+  let lastHybridUiWorkerResponseSequence = -1;
+  let lastHybridUiInputSequence = -1;
+  let expectedHybridUiFocusActionId: string | null = null;
+  const pendingHybridUiInputs = new Map<number, PendingHybridUiInput>();
 
   const publish = (next: RenderTelemetrySnapshot): void => {
     telemetry = Object.freeze(next);
@@ -313,6 +344,20 @@ export function createRenderService(): RenderService {
         console.error("Render telemetry listener failed", error);
       }
     }
+  };
+  const acknowledgeHybridUiInput = (sequence: number): PendingHybridUiInput => {
+    if (!Number.isSafeInteger(sequence) || sequence <= lastHybridUiWorkerResponseSequence) {
+      throw new Error("Hybrid UI worker response sequence is not strictly increasing");
+    }
+    const firstPending = pendingHybridUiInputs.entries().next().value as
+      | [number, PendingHybridUiInput]
+      | undefined;
+    if (firstPending === undefined || firstPending[0] !== sequence) {
+      throw new Error("Hybrid UI worker response did not acknowledge the oldest pending input");
+    }
+    pendingHybridUiInputs.delete(sequence);
+    lastHybridUiWorkerResponseSequence = sequence;
+    return firstPending[1];
   };
   const publishCanvas = (canvas: HTMLCanvasElement): void => {
     for (const listener of canvasListeners) {
@@ -464,6 +509,18 @@ export function createRenderService(): RenderService {
         activeAttemptRenderSize?.worker === renderWorker
           ? activeAttemptRenderSize.size
           : initialSize;
+      if (latestGameplayPresentation !== null) {
+        renderWorker.postMessage({
+          ...latestGameplayPresentation,
+          kind: "gameplay-presentation",
+        } satisfies RenderWorkerRequest);
+      }
+      if (latestHybridUiPresentation !== null) {
+        renderWorker.postMessage({
+          kind: "hybrid-ui-presentation",
+          presentation: latestHybridUiPresentation,
+        } satisfies RenderWorkerRequest);
+      }
       publish({
         ...telemetry,
         decoderBootstrap: Object.freeze(message.decoderBootstrap),
@@ -490,12 +547,6 @@ export function createRenderService(): RenderService {
         workerStartupToFirstFrameMs: performance.now() - workerStartupStartedAt,
       });
       sabRingBufferSpike.start();
-      if (latestGameplayPresentation !== null) {
-        renderWorker.postMessage({
-          ...latestGameplayPresentation,
-          kind: "gameplay-presentation",
-        } satisfies RenderWorkerRequest);
-      }
     };
     const completeRecoveryIfReady = (): void => {
       if (pendingReady !== null && replacementStreamingSettled) {
@@ -676,6 +727,97 @@ export function createRenderService(): RenderService {
             `WebGPU device lost (${message.reason}): ${message.message || "no detail"}`,
           );
           break;
+        case "hybrid-ui-action": {
+          let action: HybridUiAction;
+          let workerUi: HybridUiWorkerTelemetrySnapshot;
+          try {
+            action = validateHybridUiWorkerAction(message.action);
+            workerUi = validateHybridUiWorkerTelemetry(message.telemetry);
+          } catch (error: unknown) {
+            recoverOrFail(
+              "worker-message",
+              `Render worker returned invalid hybrid UI data: ${errorMessage(error)}`,
+            );
+            return;
+          }
+          let pending: PendingHybridUiInput;
+          try {
+            pending = acknowledgeHybridUiInput(action.inputSequence);
+          } catch (error: unknown) {
+            recoverOrFail("worker-message", errorMessage(error));
+            return;
+          }
+          if (
+            pending.presentationRevision === null ||
+            action.presentationRevision !== pending.presentationRevision
+          ) {
+            recoverOrFail(
+              "worker-message",
+              "Render worker returned a hybrid UI action for the wrong presentation",
+            );
+            return;
+          }
+          if (pending.expectedActionId !== action.actionId) {
+            recoverOrFail(
+              "worker-message",
+              "Render worker returned a hybrid UI action that does not match its exact input result",
+            );
+            return;
+          }
+          if (workerUi.presentationRevision !== action.presentationRevision) {
+            recoverOrFail(
+              "worker-message",
+              "Render worker returned hybrid UI action telemetry for the wrong presentation",
+            );
+            return;
+          }
+          if (latestHybridUiPresentation === null) return;
+          if (action.presentationRevision < latestHybridUiPresentation.revision) return;
+          if (!hybridUiWorkerActionAllowed(action, latestHybridUiPresentation)) {
+            recoverOrFail("worker-message", "Render worker returned a disallowed hybrid UI action");
+            return;
+          }
+          publish({ ...telemetry, hybridUi: workerUi });
+          for (const listener of hybridUiActionListeners) {
+            try {
+              listener(action);
+            } catch (error: unknown) {
+              console.error("Hybrid UI action listener failed", error);
+            }
+          }
+          break;
+        }
+        case "hybrid-ui-telemetry": {
+          try {
+            const workerUi = validateHybridUiWorkerTelemetry(message.telemetry);
+            if (message.inputSequence !== null) {
+              const pending = acknowledgeHybridUiInput(message.inputSequence);
+              if (pending.expectedActionId !== null) {
+                throw new Error("Hybrid UI telemetry omitted the action expected for its input");
+              }
+            }
+            if (
+              latestHybridUiPresentation !== null &&
+              workerUi.presentationRevision !== null &&
+              workerUi.presentationRevision > latestHybridUiPresentation.revision
+            ) {
+              throw new Error("Hybrid UI telemetry references an unknown presentation");
+            }
+            if (
+              latestHybridUiPresentation === null ||
+              workerUi.presentationRevision === null ||
+              workerUi.presentationRevision >= latestHybridUiPresentation.revision
+            ) {
+              publish({ ...telemetry, hybridUi: workerUi });
+            }
+          } catch (error: unknown) {
+            recoverOrFail(
+              "worker-message",
+              `Render worker returned invalid hybrid UI telemetry: ${errorMessage(error)}`,
+            );
+          }
+          break;
+        }
         case "error":
           recoverOrFail(
             message.cause,
@@ -767,6 +909,8 @@ export function createRenderService(): RenderService {
           })
         : null);
     teardownAttempt("Render worker restarted before checkpoint capture completed");
+    pendingHybridUiInputs.clear();
+    expectedHybridUiFocusActionId = latestHybridUiPresentation?.heavyScreen?.focusActionId ?? null;
     publish({
       ...telemetry,
       decoderBootstrap: null,
@@ -775,6 +919,7 @@ export function createRenderService(): RenderService {
       flythrough: null,
       frameCount: 0,
       greyboxWorld: null,
+      hybridUi: idleHybridUiWorkerTelemetry(),
       recentFrames: Object.freeze([]),
       psoWarmup: idlePsoWarmupTelemetrySnapshot(),
       retainedPsoWarmupFailure,
@@ -878,6 +1023,8 @@ export function createRenderService(): RenderService {
       if (telemetry.state === "disposed") return;
       teardownAttempt("Render service disposed before checkpoint capture completed");
       publish({ ...telemetry, state: "disposed" });
+      pendingHybridUiInputs.clear();
+      hybridUiActionListeners.clear();
     },
 
     exerciseRecovery(probe: RenderRecoveryProbeKind): void {
@@ -962,6 +1109,43 @@ export function createRenderService(): RenderService {
       return promise;
     },
 
+    sendHybridUiInput(input: HybridUiWorkerInput): void {
+      requireHybridUiWorkerInput(input);
+      if (worker === null || telemetry.state !== "ready") {
+        throw new Error("Hybrid UI input requires a ready render service");
+      }
+      if (input.sequence <= lastHybridUiInputSequence) {
+        throw new Error("Hybrid UI input sequence must be strictly increasing");
+      }
+      if (pendingHybridUiInputs.size >= 64) {
+        recoverOrFail(
+          "worker-message",
+          "Hybrid UI input acknowledgement capacity was exhausted without worker progress",
+        );
+        return;
+      }
+      const expected = expectedHybridUiInputResult(
+        input,
+        latestHybridUiPresentation,
+        expectedHybridUiFocusActionId,
+      );
+      lastHybridUiInputSequence = input.sequence;
+      pendingHybridUiInputs.set(input.sequence, {
+        expectedActionId: expected.actionId,
+        presentationRevision: latestHybridUiPresentation?.revision ?? null,
+      });
+      try {
+        worker.postMessage({
+          input: Object.freeze({ ...input }),
+          kind: "hybrid-ui-input",
+        } satisfies RenderWorkerRequest);
+        expectedHybridUiFocusActionId = expected.focusActionId;
+      } catch (error: unknown) {
+        pendingHybridUiInputs.delete(input.sequence);
+        recoverOrFail("worker-error", `Hybrid UI input dispatch failed: ${errorMessage(error)}`);
+      }
+    },
+
     setRenderPixelSizeOverride(size: RenderPixelSize | null): void {
       if (telemetry.state === "disposed" || telemetry.state === "failed") {
         throw new Error("Render pixel size cannot change after terminal render state");
@@ -1023,6 +1207,32 @@ export function createRenderService(): RenderService {
         worker.postMessage({
           ...latestGameplayPresentation,
           kind: "gameplay-presentation",
+        } satisfies RenderWorkerRequest);
+      }
+    },
+
+    setHybridUiPresentation(presentation: HybridUiPresentation): void {
+      const frozen = freezeHybridUiPresentation(presentation);
+      if (
+        latestHybridUiPresentation !== null &&
+        frozen.revision <= latestHybridUiPresentation.revision
+      ) {
+        return;
+      }
+      if (
+        latestHybridUiPresentation === null ||
+        !hybridUiHeavyScreenGeometryEqual(
+          latestHybridUiPresentation.heavyScreen,
+          frozen.heavyScreen,
+        )
+      ) {
+        expectedHybridUiFocusActionId = frozen.heavyScreen?.focusActionId ?? null;
+      }
+      latestHybridUiPresentation = frozen;
+      if (worker !== null && telemetry.state === "ready") {
+        worker.postMessage({
+          kind: "hybrid-ui-presentation",
+          presentation: frozen,
         } satisfies RenderWorkerRequest);
       }
     },
@@ -1100,6 +1310,10 @@ export function createRenderService(): RenderService {
       }
       return () => canvasListeners.delete(listener);
     },
+    subscribeHybridUiActions(listener: RenderHybridUiActionListener): () => void {
+      hybridUiActionListeners.add(listener);
+      return () => hybridUiActionListeners.delete(listener);
+    },
   });
 }
 
@@ -1113,6 +1327,76 @@ function freezePixelSize(size: RenderPixelSize): RenderPixelSize {
     throw new Error("Render pixel size must contain positive safe integers");
   }
   return Object.freeze({ height: size.height, width: size.width });
+}
+
+function expectedHybridUiInputResult(
+  input: HybridUiWorkerInput,
+  presentation: HybridUiPresentation | null,
+  focusedActionId: string | null,
+): Readonly<{ actionId: string | null; focusActionId: string | null }> {
+  const screen = presentation?.heavyScreen;
+  if (screen?.visible !== true) {
+    return Object.freeze({ actionId: null, focusActionId: focusedActionId });
+  }
+  if (input.kind === "pointer-activate") {
+    const primitive = topmostHybridUiPrimitiveAt(screen.primitives, input.x, input.y);
+    const actionId = primitive !== null && !primitive.disabled ? primitive.actionId : null;
+    return Object.freeze({
+      actionId,
+      focusActionId: actionId ?? focusedActionId,
+    });
+  }
+  if (input.kind === "semantic-activate") {
+    const semantic = screen.semanticActions.find(
+      (candidate) => candidate.actionId === input.actionId && !candidate.disabled,
+    );
+    const primitive = screen.primitives.find(
+      (candidate) => candidate.actionId === input.actionId && !candidate.disabled,
+    );
+    const actionId = semantic !== undefined && primitive !== undefined ? input.actionId : null;
+    return Object.freeze({
+      actionId,
+      focusActionId: actionId ?? focusedActionId,
+    });
+  }
+  if (input.kind === "cancel") {
+    return Object.freeze({ actionId: screen.cancelActionId, focusActionId: focusedActionId });
+  }
+  if (input.kind === "activate") {
+    const primitive = screen.primitives.find(
+      (candidate) => candidate.actionId === focusedActionId && !candidate.disabled,
+    );
+    return Object.freeze({
+      actionId: primitive?.actionId ?? null,
+      focusActionId: focusedActionId,
+    });
+  }
+  return Object.freeze({
+    actionId: null,
+    focusActionId: nextHybridUiFocusActionId(
+      screen.primitives,
+      focusedActionId,
+      input.kind === "focus-next" ? 1 : -1,
+    ),
+  });
+}
+
+function nextHybridUiFocusActionId(
+  primitives: NonNullable<HybridUiPresentation["heavyScreen"]>["primitives"],
+  current: string | null,
+  direction: 1 | -1,
+): string | null {
+  const enabled = primitives.filter(
+    (primitive): primitive is typeof primitive & { readonly actionId: string } =>
+      primitive.actionId !== null && !primitive.disabled,
+  );
+  if (enabled.length === 0) return null;
+  const currentIndex = enabled.findIndex((primitive) => primitive.actionId === current);
+  if (currentIndex < 0) {
+    return direction === 1 ? (enabled[0]?.actionId ?? null) : (enabled.at(-1)?.actionId ?? null);
+  }
+  const nextIndex = (currentIndex + direction + enabled.length) % enabled.length;
+  return enabled[nextIndex]?.actionId ?? null;
 }
 
 function freezeFlythroughCheckpointEvidence(

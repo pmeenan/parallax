@@ -258,12 +258,18 @@ The current platform synthesis and asks are in
       `harness/results/`; RE-047 records that the bounded apparatus identified no
       page-visible DOM/worker-canvas presentation synchronization or attribution
       primitive. Temporary apparatus was removed.
-- [ ] UI technology stack (D-141): build the shared UI substrate the spike verdict
-      selects, before the first real screens exist. The DOM bet's payoff — free
-      accessibility, IME, subtitles, and the translation surface infinite
-      localization needs — applies wherever DOM wins the per-surface verdict. HUD,
-      dialog presentation, journal, inventory, and settings/remap all consume the
-      outcome.
+- [x] UI technology stack (D-141/D-161): implemented the framework-free typed hybrid
+      substrate selected by D-160 — keyed DOM/CSS HUD/dialog, stable sparse semantic/IME
+      controls, fixed render-worker world-anchor/heavy-screen pools, exact ordered input
+      validation, recovery replay, gameplay-input suppression, and public/harness
+      telemetry. Skeptic, adversarial, and external review/fix rounds closed focus, IME,
+      pointer-hit/occlusion, visibility-cache, layering, recovery/Ready ordering,
+      listener-cleanup, keyed-reconciliation, and evidence-integrity gaps. Registered
+      dev-01/Showcase `smoke@1` schema-v70 / metric-set-v33 report
+      `smoke-1-50a6674402e5-dev-01-showcase-2026-08-09T15-04-36-814Z.json` passed six
+      launches, all three facets, and 36/36 evaluated checks; D-161 retains exact hashes
+      and source identity. Real inventory, journal, settings/remap, and dialog screens
+      consume this substrate in their own plan items.
 - [ ] App-owned NPC dialog (D-074/D-096): persona cards, rolling memory, strict
       structured output for state-affecting intents, authored unavailable-model
       fallback, and frame-impact measurement during WebGPU/CPU-WASM inference.

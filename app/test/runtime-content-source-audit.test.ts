@@ -70,9 +70,7 @@ describe("runtime content-source boundary", () => {
     const preflightCall = source.indexOf("preflightInstalledRuntime(", admissionBoundary);
     const shellAdmission = shellAuthoritySource.indexOf("await offlineShell.admit(expectedShell)");
     const markAdmitted = shellAuthoritySource.indexOf("authority.markAdmitted()");
-    const runtimeServices = source.indexOf(
-      'for (const id of ["render-canvas", "runtime-status", "streaming-dashboard", "benchmark-mode"])',
-    );
+    const runtimeServices = source.indexOf("const renderService = createRenderService()");
 
     expect(modelPreflight).toBeGreaterThan(0);
     expect(streamingPreflight).toBeGreaterThan(0);
@@ -106,6 +104,35 @@ describe("runtime content-source boundary", () => {
     expect(preflightSource).not.toContain("Promise.all");
     expect(source).toContain(
       'appOwnedLlmMode !== null && contentSource.kind !== "privileged-legacy-network"',
+    );
+    const uiServiceCreation = source.indexOf("const gameUiService = createHybridUiService(");
+    const cleanupRegistrations = [
+      "renderService.dispose()",
+      "appOwnedLlmSpikeService.dispose()",
+      "wasmThreadSpikeService.dispose()",
+      "streamingService.dispose()",
+      "simulationService.dispose()",
+      "gameplayInputService.dispose()",
+      "gameplayRuntime.dispose()",
+      "gameUiService.dispose()",
+      "flythroughService.dispose()",
+      "benchmarkService.dispose()",
+      "telemetryExport.dispose()",
+    ];
+    for (const cleanup of cleanupRegistrations) {
+      expect(source).toContain(`registerFailureCleanup(() => ${cleanup})`);
+    }
+    const uiFailureCleanup = source.indexOf(
+      "registerFailureCleanup(() => gameUiService.dispose())",
+    );
+    const failedAttemptCleanup = source.indexOf("await failedAttemptCleanups[index]?.()");
+    expect(uiFailureCleanup).toBeGreaterThan(uiServiceCreation);
+    expect(failedAttemptCleanup).toBeGreaterThan(0);
+    expect(source).toContain("registerFailureCleanup(captureRuntimeSurfaceRollback(document))");
+    expect(source).toContain("appOwnedLlmStart.removeEventListener");
+    expect(source).toContain("registerFailureCleanup(unmountStreamingDashboard)");
+    expect(source.indexOf("throw error", failedAttemptCleanup)).toBeGreaterThan(
+      failedAttemptCleanup,
     );
   });
 });

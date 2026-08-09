@@ -1514,29 +1514,68 @@ describe("installer controller", () => {
     await expect(test.controller.launch()).rejects.toThrow(/requires the target release/);
   });
 
-  it("requires a page reload after a terminal runtime launch failure", async () => {
+  it("retries a runtime boot failure without reinstalling or reloading", async () => {
+    const launch = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("render boot failed"))
+      .mockResolvedValueOnce(undefined);
     const test = fixture({
-      launch: () => Promise.reject(new Error("render boot failed")),
+      launch,
     });
 
     await test.controller.installOrResume();
+    const admittedRelease = test.controller.snapshot().releaseDigest;
     await test.controller.launch();
 
     expect(test.controller.snapshot()).toMatchObject({
-      failure: { code: "launch", recovery: "reload" },
-      state: "failed",
+      failure: { code: "launch", recovery: "retry" },
+      releaseDigest: admittedRelease,
+      state: "ready",
     });
     const view = createInstallerViewModel(test.controller.snapshot());
     expect(view).toMatchObject({
       canInstall: false,
-      canLaunch: false,
-      canReload: true,
-      installLabel: "Installation unavailable",
+      canLaunch: true,
+      canReload: false,
     });
-    expect(view.error).toMatch(/Reload the page/);
+    expect(view.error).toMatch(/Launch Parallax to try again/);
     await expect(test.controller.installOrResume()).rejects.toThrow(/unavailable/);
-    test.controller.reload();
-    expect(test.reload).toHaveBeenCalledOnce();
+    await test.controller.launch();
+    expect(launch).toHaveBeenCalledTimes(2);
+    expect(test.controller.snapshot()).toMatchObject({ state: "launched" });
+    expect(test.reload).not.toHaveBeenCalled();
+  });
+
+  it("rejects retry when the offline shell rotates after admission but before boot fails", async () => {
+    const digest = "8".repeat(64);
+    const initial = shellGeneration(digest, "1");
+    const replacement = shellGeneration(digest, "2");
+    let test!: ReturnType<typeof fixture>;
+    test = fixture({
+      launch: vi.fn(async (_releaseDigest, _expected, shellAuthority) => {
+        shellAuthority.markAdmitted();
+        test.emitShell(replacement);
+        throw new Error("render boot failed after admission");
+      }),
+      prepareShell: vi.fn(() => Promise.resolve(initial)),
+      targetStatus: vi.fn(() =>
+        Promise.resolve({
+          active: true,
+          activeReleaseDigest: digest,
+          releaseDigest: digest,
+        }),
+      ),
+    });
+
+    await test.controller.refreshTarget();
+    await test.controller.launch();
+
+    expect(test.controller.snapshot()).toMatchObject({
+      failure: { code: "shell-release-mismatch", recovery: "reload" },
+      releaseDigest: null,
+      state: "failed",
+    });
+    expect(createInstallerViewModel(test.controller.snapshot()).canLaunch).toBe(false);
   });
 
   it("preserves terminal installer-service failures instead of relabeling them persistence", async () => {

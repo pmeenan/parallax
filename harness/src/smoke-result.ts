@@ -21,6 +21,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   coreRunCompletion: "core measurement run completion",
   dawnPipeline: "Dawn pipeline compile/cache evidence",
   greyboxWorld: "greybox world content",
+  hybridUi: "hybrid game UI substrate",
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
@@ -123,6 +124,7 @@ export interface SmokeEvidenceInput {
       | Readonly<{ readonly state: "measured"; readonly value: LocalServerMetrics }>
       | Readonly<{ readonly reason: string; readonly state: "not-applicable" }>;
     readonly jsHeap: EvidenceState;
+    readonly hybridUi: EvidenceState;
     readonly profile: "fresh" | "warm";
     readonly psoWarmup: EvidenceState;
     readonly repeat: number;
@@ -263,6 +265,13 @@ export function collectSmokeEvidenceChecks(
         `${run.profile} repeat ${run.repeat}: greybox world content ${run.greyboxWorld.state} (${evidenceReason(run.greyboxWorld)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.greyboxWorld),
         run.greyboxWorld,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: hybrid game UI substrate ${run.hybridUi.state} (${evidenceReason(run.hybridUi)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.hybridUi),
+        run.hybridUi,
       ),
     ),
     ...input.runs.map((run) =>

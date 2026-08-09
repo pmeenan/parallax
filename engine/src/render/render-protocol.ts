@@ -4,6 +4,12 @@ import type {
 } from "../flythrough/flythrough-contract";
 import type { StreamingRecoveryCheckpoint } from "../streaming/streaming-protocol";
 import type {
+  HybridUiAction,
+  HybridUiPresentation,
+  HybridUiWorkerInput,
+  HybridUiWorkerTelemetrySnapshot,
+} from "../ui/hybrid-ui-contract";
+import type {
   SabRingBufferSpikeConfig,
   SabRingBufferSpikeWorkerResponse,
 } from "../workers/sab-ring-buffer-spike-protocol";
@@ -74,6 +80,16 @@ export interface RenderGameplayPresentationMessage {
   readonly sequence: number;
 }
 
+export interface RenderHybridUiPresentationMessage {
+  readonly kind: "hybrid-ui-presentation";
+  readonly presentation: HybridUiPresentation;
+}
+
+export interface RenderHybridUiInputMessage {
+  readonly input: HybridUiWorkerInput;
+  readonly kind: "hybrid-ui-input";
+}
+
 export interface RenderFlythroughResetMessage {
   readonly kind: "reset-flythrough";
   readonly nextFlythroughGeneration: number;
@@ -127,6 +143,8 @@ export type RenderWorkerRequest =
   | RenderRecoveryBoundaryProbeRequest
   | RenderRecoveryProbeRequest
   | RenderGameplayPresentationMessage
+  | RenderHybridUiInputMessage
+  | RenderHybridUiPresentationMessage
   | RenderResizeMessage
   | RenderStartMessage;
 
@@ -169,6 +187,18 @@ export interface RenderDeviceLostMessage {
 export interface RenderHeartbeatMessage {
   readonly kind: "heartbeat";
   readonly workerGeneration: number;
+}
+
+export interface RenderHybridUiActionMessage {
+  readonly action: HybridUiAction;
+  readonly kind: "hybrid-ui-action";
+  readonly telemetry: HybridUiWorkerTelemetrySnapshot;
+}
+
+export interface RenderHybridUiTelemetryMessage {
+  readonly inputSequence: number | null;
+  readonly kind: "hybrid-ui-telemetry";
+  readonly telemetry: HybridUiWorkerTelemetrySnapshot;
 }
 
 export interface RenderDistributionTelemetry {
@@ -265,6 +295,8 @@ export type RenderWorkerResponse =
   | RenderFlythroughResetCompleteMessage
   | RenderFrameMessage
   | RenderHeartbeatMessage
+  | RenderHybridUiActionMessage
+  | RenderHybridUiTelemetryMessage
   | RenderReadyMessage
   | RenderRecoveryBoundaryMessage
   | SabRingBufferSpikeWorkerResponse;

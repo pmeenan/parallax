@@ -51,6 +51,11 @@ import type {
 } from "../streaming/streaming-protocol";
 import { TELEMETRY_FRAME_BATCH_FRAMES } from "../telemetry/telemetry-export";
 import {
+  freezeHybridUiPresentation,
+  type HybridUiWorkerInput,
+  requireHybridUiWorkerInput,
+} from "../ui/hybrid-ui-contract";
+import {
   SAB_SPIKE_TIMEOUT_MS,
   type SabRingBufferSpikeConfig,
   type SabRingBufferSpikeWorkerResult,
@@ -115,6 +120,15 @@ function startRenderWorker(): void {
   let updateGameplayPresentation:
     | ((message: Extract<RenderWorkerRequest, { kind: "gameplay-presentation" }>) => void)
     | null = null;
+  let updateHybridUiPresentation:
+    | ((
+        presentation: Extract<
+          RenderWorkerRequest,
+          { kind: "hybrid-ui-presentation" }
+        >["presentation"],
+      ) => void)
+    | null = null;
+  let handleHybridUiInput: ((input: HybridUiWorkerInput) => void) | null = null;
 
   const postError = (error: unknown): void => {
     const psoWarmup =
@@ -209,6 +223,27 @@ function startRenderWorker(): void {
         postError("Streaming render request was unreadable");
       streamingPort.start();
       const renderer = await createLiteGreyboxWorld(canvas, width, height, config, psoWarmup);
+      updateHybridUiPresentation = (presentation): void => {
+        renderer.hybridUi.apply(freezeHybridUiPresentation(presentation));
+        workerScope.postMessage({
+          inputSequence: null,
+          kind: "hybrid-ui-telemetry",
+          telemetry: renderer.hybridUi.snapshot(),
+        });
+      };
+      handleHybridUiInput = (input): void => {
+        requireHybridUiWorkerInput(input);
+        const action = renderer.hybridUi.handleInput(input);
+        workerScope.postMessage(
+          action === null
+            ? {
+                inputSequence: input.sequence,
+                kind: "hybrid-ui-telemetry",
+                telemetry: renderer.hybridUi.snapshot(),
+              }
+            : { action, kind: "hybrid-ui-action", telemetry: renderer.hybridUi.snapshot() },
+        );
+      };
       observeLiteWebGpuDeviceLoss(renderer.engine, (loss) => {
         workerScope.postMessage({
           kind: "device-lost",
@@ -706,6 +741,30 @@ function startRenderWorker(): void {
       }
       try {
         updateGameplayPresentation(message);
+      } catch (error: unknown) {
+        postError(error);
+      }
+      return;
+    }
+    if (message.kind === "hybrid-ui-presentation") {
+      if (updateHybridUiPresentation === null) {
+        postError("Render worker received hybrid UI presentation before initialization");
+        return;
+      }
+      try {
+        updateHybridUiPresentation(message.presentation);
+      } catch (error: unknown) {
+        postError(error);
+      }
+      return;
+    }
+    if (message.kind === "hybrid-ui-input") {
+      if (handleHybridUiInput === null) {
+        postError("Render worker received hybrid UI input before initialization");
+        return;
+      }
+      try {
+        handleHybridUiInput(message.input);
       } catch (error: unknown) {
         postError(error);
       }

@@ -40,7 +40,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(68);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(70);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {
@@ -124,7 +124,7 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(32);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(33);
     expect(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS).toBe(1);
     expect(SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toBe(0.1);
     expect(SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS).toBe(10_000);
@@ -193,5 +193,18 @@ describe("smoke@1 contract", () => {
     expect(renderSurfaceMismatch("showcase", { height: 2_163, width: 3_840 }, 2)).toContain(
       "3840x2160±2",
     );
+  });
+
+  it("passes every telemetry readiness identity into the browser predicate", async () => {
+    const source = await readFile(resolve(import.meta.dirname, "../smoke-run.ts"), "utf8");
+    const start = source.indexOf("function telemetryReady(");
+    const end = source.indexOf("function requireHybridUiEvidence(", start);
+    const predicate = source.slice(start, end);
+    expect(predicate).toContain("contract.expectedSchemaVersion");
+    expect(predicate).toContain("contract.hybridUiSchemaVersion");
+    expect(predicate).not.toContain("SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION");
+    expect(
+      source.match(/hybridUiSchemaVersion: SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION/g),
+    ).toHaveLength(2);
   });
 });

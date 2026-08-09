@@ -39,12 +39,14 @@ import type {
   WorldStreamingTelemetrySnapshot,
 } from "../streaming/streaming-protocol";
 import type { WorldStreamingService } from "../streaming/world-streaming-service";
+import type { HybridUiTelemetrySnapshot } from "../ui/hybrid-ui-contract";
+import type { HybridUiService } from "../ui/hybrid-ui-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v41 adds the restored accepted-command sequence used to rebase
-// gameplay input after save/load; v40 introduced input and controller counters.
-export const TELEMETRY_SCHEMA_VERSION = 41;
+// Public telemetry v43 adds explicit gameplay-input suppression while a heavy UI screen
+// owns input. v42 added the D-160 hybrid UI substrate and DOM/worker observability.
+export const TELEMETRY_SCHEMA_VERSION = 43;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -63,6 +65,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly benchmark: BenchmarkTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
   readonly gameplayInput: GameplayInputTelemetrySnapshot;
+  readonly hybridUi: HybridUiTelemetrySnapshot;
   readonly flythrough: FlythroughTelemetrySnapshot;
   readonly installedModelSource: InstalledModelSourceTelemetrySnapshot;
   readonly installStore: InstallStoreTelemetrySnapshot;
@@ -80,6 +83,7 @@ export interface ParallaxTelemetryExport {
   benchmarkResultJson(): string | null;
   benchmarkResultText(): string | null;
   configureBenchmark(presetId: string): void;
+  dispose(): void;
   exerciseRenderRecovery(probe: RenderRecoveryProbeKind): void;
   exerciseRenderRecoveryAtBoundary(
     probe: RenderRecoveryProbeKind,
@@ -106,6 +110,7 @@ export function installTelemetryExport(
   wasmThreadSpikeService: WasmThreadSpikeService,
   simulationService: SimulationService,
   gameplayInputService: GameplayInputService,
+  hybridUiService: HybridUiService,
   streamingService: WorldStreamingService,
   flythroughService: FlythroughService,
   benchmarkService: BenchmarkService,
@@ -142,6 +147,12 @@ export function installTelemetryExport(
     configureBenchmark(presetId: string): void {
       benchmarkService.configure(presetId);
     },
+    dispose(): void {
+      if (Reflect.get(target, TELEMETRY_GLOBAL_NAME) !== telemetryExport) return;
+      if (!Reflect.deleteProperty(target, TELEMETRY_GLOBAL_NAME)) {
+        throw new Error(`${TELEMETRY_GLOBAL_NAME} could not be removed from this realm`);
+      }
+    },
     exerciseRenderRecovery(probe: RenderRecoveryProbeKind): void {
       renderService.exerciseRecovery(probe);
     },
@@ -157,6 +168,7 @@ export function installTelemetryExport(
         wasmThreadSpikeService.snapshot(),
         simulationService.snapshot(),
         gameplayInputService.snapshot(),
+        hybridUiService.snapshot(),
         streamingService.snapshot(),
         flythroughService.snapshot(),
         benchmarkService.snapshot(),
@@ -206,6 +218,7 @@ export function installTelemetryExport(
               wasmThreadSpikeService.snapshot(),
               simulationService.snapshot(),
               gameplayInputService.snapshot(),
+              hybridUiService.snapshot(),
               streamingService.snapshot(),
               flythroughService.snapshot(),
               benchmarkService.snapshot(),
@@ -230,6 +243,7 @@ export function installTelemetryExport(
       const unsubscribeWasmThread = wasmThreadSpikeService.subscribe(publishAfterWiring);
       const unsubscribeSimulation = simulationService.subscribe(publishAfterWiring);
       const unsubscribeGameplayInput = gameplayInputService.subscribe(publishAfterWiring);
+      const unsubscribeHybridUi = hybridUiService.subscribe(publishAfterWiring);
       const unsubscribeStreaming = streamingService.subscribe(publishAfterWiring);
       const unsubscribeFlythrough = flythroughService.subscribe(publishAfterWiring);
       const unsubscribeBenchmark = benchmarkService.subscribe(publishAfterWiring);
@@ -245,6 +259,7 @@ export function installTelemetryExport(
         unsubscribeWasmThread();
         unsubscribeSimulation();
         unsubscribeGameplayInput();
+        unsubscribeHybridUi();
         unsubscribeStreaming();
         unsubscribeFlythrough();
         unsubscribeBenchmark();
@@ -255,7 +270,7 @@ export function installTelemetryExport(
     },
   });
   Object.defineProperty(target, TELEMETRY_GLOBAL_NAME, {
-    configurable: false,
+    configurable: true,
     enumerable: false,
     value: telemetryExport,
     writable: false,
@@ -269,6 +284,7 @@ function snapshot(
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   simulation: SimulationTelemetrySnapshot,
   gameplayInput: GameplayInputTelemetrySnapshot,
+  hybridUi: HybridUiTelemetrySnapshot,
   streaming: WorldStreamingTelemetrySnapshot,
   flythrough: FlythroughTelemetrySnapshot,
   benchmark: BenchmarkTelemetrySnapshot,
@@ -282,6 +298,7 @@ function snapshot(
     benchmark,
     flythrough,
     gameplayInput,
+    hybridUi,
     identity,
     installedModelSource,
     installStore: installer.installStore,

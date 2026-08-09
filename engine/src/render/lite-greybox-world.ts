@@ -38,6 +38,7 @@ import type {
   GreyboxSceneConfig,
 } from "../world/world-contract";
 import { selectGreyboxCellLod, validateGreyboxDistrict } from "../world/world-contract";
+import { createHybridUiRenderer } from "./hybrid-ui-renderer";
 import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
 import {
   PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
@@ -479,9 +480,11 @@ export async function createLiteGreyboxWorld(
         addGeometry(createHeightfieldGeometryBatch(heightfields), "heightfields");
       }
     }
+    const hybridUi = createHybridUiRenderer(engine, scene, camera);
     await psoWarmup.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, () =>
-      psoObservation.register([...previewMeshes, playerMesh, ...crowdMeshes, ...markerMeshes], () =>
-        registerScene(scene),
+      psoObservation.register(
+        [...previewMeshes, playerMesh, ...crowdMeshes, ...markerMeshes, ...hybridUi.meshes],
+        () => registerScene(scene),
       ),
     );
     // A second authoritative request proves that the registry deduplicates a repeated
@@ -539,6 +542,7 @@ export async function createLiteGreyboxWorld(
       streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
       streamingDependencyGpuBytes: 0,
       flythroughSample: null as FlythroughScenarioSample | null,
+      hybridUi,
       playerMesh,
       telemetry,
     };
@@ -1157,6 +1161,7 @@ export function renderLiteGreyboxWorld(
   renderer: LiteGreyboxWorld,
   timestamp: number,
 ): GreyboxLightingSample {
+  renderer.hybridUi.updateCamera();
   renderer.animationStartedAt ??= timestamp;
   const animationSeconds = (timestamp - renderer.animationStartedAt) / 1_000;
   const phase =
