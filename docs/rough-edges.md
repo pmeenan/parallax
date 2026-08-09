@@ -85,6 +85,36 @@ COS APIs exist):
 
 ## Findings
 
+## RE-048: CDP attributes Chrome-owned omnibox targets to the app browser context
+
+- **Date / Chrome version:** 2026-08-09; Chrome for Testing Stable 151.0.7922.108,
+  revision `@4744b886309d987d292e43232776d2206cccb13d`, Windows 11 dev-01 / RTX 4080
+  SUPER / physical 3840x2160@60 console.
+- **Layer:** CDP target topology / V8 heap attribution.
+- **Status:** open; bounded in Parallax's all-realm heap collector.
+- **What we expected / What happened:** `Target.getTargets` previously exposed exactly
+  the app page plus its eight long-lived dedicated workers under the page's
+  `browserContextId`. Chrome 151.0.7922.108 additionally exposed two Chrome-owned
+  `browser_ui` targets under that same ID:
+  `chrome://omnibox-popup.top-chrome/` and
+  `chrome://omnibox-popup.top-chrome/omnibox_popup_aim.html`. The exact app-realm
+  topology gate therefore invalidated all six heap measurements even though the M3
+  core and every other mandatory surface completed.
+- **Repro:** run the registered physical `smoke@1` with the .108 pin and inspect the
+  `Target.getTargets` identities captured by the all-realm sampler. Failed report
+  `smoke-1-1100d5e4e754-dev-01-showcase-2026-08-09T19-12-39-211Z.{json,md}` has
+  JSON/Markdown SHA-256
+  `3d52c3b35f4ae9171b0bf5a44982f56d039e772722f216b0d376dd8a7d032ef9` /
+  `8039daa4e46e670d5908f5137f1f879a4b37b2d698bbf7225c688d5148522423`.
+- **Impact on Parallax:** browser-owned UI is not an application realm and cannot be
+  charged to page-attributed heap. The collector now excludes only targets whose type
+  is exactly `browser_ui` and whose URL uses `chrome://`; the app page, every expected
+  dedicated worker, and the absence of any other same-context target remain exact and
+  fail closed. Positive and negative topology fixtures cover that boundary.
+- **Proposed improvement:** CDP should either keep browser-owned UI out of a web page's
+  browser-context target set or expose an explicit ownership/attribution field so
+  collectors do not infer ownership from target type and privileged URL scheme.
+
 ## RE-047: D-143 found no page-visible frame lock or presentation attribution across DOM and worker WebGPU
 
 - **Date / Chrome version:** 2026-08-08; pinned Chrome for Testing 151.0.7922.71 on
@@ -624,9 +654,9 @@ driver defect, thermal cause, timestamp-quantization cause, or general WebGPU li
 - **Date / Chrome version:** 2026-07-19 through 2026-07-25 UTC; pinned Chrome for Testing
   150.0.7871.115 and candidate Stable 151.0.7922.34 on the dev-01 physical console.
 - **Layer:** Rust/wasm-bindgen threaded-runtime transform / allocator layout.
-- **Status:** resolved for the pinned artifact by D-093; retained as an upstream
-  wasm-bindgen/Rust compatibility finding. No timeout was raised and no retry or
-  Chrome-side workaround was added.
+- **Status:** fixed upstream in wasm-bindgen 0.2.127 by PR #5225. Parallax removed
+  D-093's local binary relocation and retained exact generated-layout guards. No
+  timeout was raised and no retry or Chrome-side workaround was added.
 - **What we expected / What happened:** the first three six-launch memory64 attempts each had
   one app launch fail before memory64 began. After the runner exposed terminal telemetry, one
   retained failure was the already-qualified D-085 Rust/WASM synthetic worker exceeding its
@@ -726,14 +756,13 @@ driver defect, thermal cause, timestamp-quantization cause, or general WebGPU li
   `smoke-1-1e01757c4726-dev-01-showcase-2026-07-21T00-49-36-294Z.json` retain the
   coarse and exact-phase gate failures; schema v26 includes terminal subsystem and worker
   phase evidence.
-- **Impact on Parallax:** D-085 remains valid and the pinned runtime is now deterministic
-  under its registered gate. Toolchain upgrades remain blocked on the exact layout guard
-  until upstream owns the reservation contract.
-- **Proposed improvement:** wasm-bindgen should reserve thread-transform scratch state
-  outside Rust's allocator-visible range, or Rust and wasm-bindgen should share a linker
-  contract that advances the allocator's effective base. UP-004 records the minimal
-  two-instance regression and upstream patch direction. The retained evidence does not
-  support a Chrome/V8 change for this failure.
+- **Upstream retirement:** wasm-bindgen 0.2.127 places its thread counter, lock, and
+  temporary stack at 2,097,152 / 2,097,156 / 2,162,688, outside the original
+  allocator-visible range. Parallax's build verifies exact reference counts and rejects
+  the legacy overlapping operations without rewriting the generated module. UP-004 is
+  closed as shipped upstream.
+- **Impact on Parallax:** D-085 remains valid. The local workaround is gone; exact
+  layout guards and the ordinary six-cohort smoke remain the regression boundary.
 
 ## RE-035: Rust browser threads still require a nightly rebuilt standard library
 

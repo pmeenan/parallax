@@ -13,7 +13,7 @@ const threadSpikeProtocolPath = join(
 const defaultOutputDirectory = join(crateRoot, "pkg");
 const defaultTargetDirectory = join(crateRoot, "target");
 const rustArtifactName = "parallax_wasm_thread_spike.wasm";
-const wasmBindgenVersion = "0.2.126";
+const wasmBindgenVersion = "0.2.127";
 const binaryenVersion = "131.0.0";
 const rustcCommit = "d0babd8b6b05ef9bb65d42f928cef4129d64cf65";
 const cargoCommit = "59800466c5c41c444d264b1010b4d57e85a7117f";
@@ -22,14 +22,13 @@ const cargoCommit = "59800466c5c41c444d264b1010b4d57e85a7117f";
 const memoryBytes = 2 * 1024 * 1024;
 const wasmPageBytes = 64 * 1024;
 const linkerHeapBase = 1_050_048;
-const wasmBindgenOriginalScratchBase = linkerHeapBase;
-const wasmBindgenOriginalScratchLock = wasmBindgenOriginalScratchBase + 4;
-const wasmBindgenOriginalTempStack = wasmBindgenOriginalScratchBase + wasmPageBytes;
-// Rust nightly-2026-07-16's dlmalloc treats [__heap_base, __heap_end) as a
-// pre-existing allocator chunk. wasm-bindgen 0.2.126 places its thread counter,
-// temporary-stack lock, and scratch stack at __heap_base, so allocator metadata can
-// overwrite the lock. Relocate that generated scratch page to the page wasm-bindgen
-// appended after the linker's __heap_end while preserving the 33-page memory contract.
+const legacyThreadRuntimeScratchBase = linkerHeapBase;
+const legacyThreadRuntimeScratchLock = legacyThreadRuntimeScratchBase + 4;
+const legacyThreadRuntimeTempStack = legacyThreadRuntimeScratchBase + wasmPageBytes;
+// wasm-bindgen 0.2.127 reserves its thread counter, temporary-stack lock, and scratch
+// stack in the page it appends after the linker's original initial memory. The runtime
+// diagnostics below retain the exact offsets that proved the upstream fix replaced
+// D-093's local relocation without changing the 33-page memory contract.
 const threadRuntimeScratchBase = memoryBytes;
 const threadRuntimeScratchLock = threadRuntimeScratchBase + 4;
 const threadRuntimeTempStack = threadRuntimeScratchBase + wasmPageBytes;
@@ -128,7 +127,6 @@ export async function buildRustWasm({
     ["--target", "web", "--out-dir", outputDirectory, "--out-name", "thread_spike", rustArtifact],
     env,
   );
-  await relocateThreadRuntimeScratchPage(outputDirectory, env);
   await instrumentThreadSpikeBindings(outputDirectory);
 
   const generatedWasm = join(outputDirectory, "thread_spike_bg.wasm");
@@ -192,68 +190,6 @@ export async function buildRustWasm({
     );
   }
   return Object.freeze({ outputDirectory, targetDirectory });
-}
-
-async function relocateThreadRuntimeScratchPage(outputDirectory, env) {
-  const wasmPath = join(outputDirectory, "thread_spike_bg.wasm");
-  const watPath = join(outputDirectory, "thread_spike.thread-runtime-relocation.wat");
-  const relocatedWasmPath = join(outputDirectory, "thread_spike.thread-runtime-relocated.wasm");
-  const wasmDis = join(repositoryRoot, "node_modules/binaryen/bin/wasm-dis");
-  const wasmAs = join(repositoryRoot, "node_modules/binaryen/bin/wasm-as");
-  const featureFlags = [
-    "--enable-threads",
-    "--enable-simd",
-    "--enable-relaxed-simd",
-    "--enable-bulk-memory",
-    "--enable-reference-types",
-  ];
-  try {
-    run(process.execPath, [wasmDis, wasmPath, "-o", watPath, ...featureFlags], env);
-    let wat = await readFile(watPath, "utf8");
-    wat = replaceRegexExactlyOnce(
-      wat,
-      new RegExp(
-        `(\\(i32\\.atomic\\.rmw\\.add\\s+)\\(i32\\.const ${String(
-          wasmBindgenOriginalScratchBase,
-        )}\\)`,
-        "g",
-      ),
-      `$1(i32.const ${String(threadRuntimeScratchBase)})`,
-      "thread counter",
-    );
-    wat = replaceExactlyCount(
-      wat,
-      `(i32.const ${String(wasmBindgenOriginalScratchLock)})`,
-      `(i32.const ${String(threadRuntimeScratchLock)})`,
-      8,
-      "temporary-stack lock",
-    );
-    wat = replaceExactlyCount(
-      wat,
-      `(i32.const ${String(wasmBindgenOriginalTempStack)})`,
-      `(i32.const ${String(threadRuntimeTempStack)})`,
-      2,
-      "temporary stack",
-    );
-    const remainingHeapBaseReferences = countOccurrences(
-      wat,
-      `(i32.const ${String(linkerHeapBase)})`,
-    );
-    if (remainingHeapBaseReferences !== 4) {
-      throw new Error(
-        `Expected four pinned dlmalloc linker-heap references after thread-runtime relocation; found ${String(
-          remainingHeapBaseReferences,
-        )}`,
-      );
-    }
-    await writeFile(watPath, wat);
-    run(process.execPath, [wasmAs, watPath, "-o", relocatedWasmPath, ...featureFlags], env);
-    await rm(wasmPath, { force: true });
-    await rename(relocatedWasmPath, wasmPath);
-  } finally {
-    await rm(watPath, { force: true });
-    await rm(relocatedWasmPath, { force: true });
-  }
 }
 
 async function instrumentThreadSpikeBindings(outputDirectory) {
@@ -403,6 +339,37 @@ async function verifyThreadRuntimeStateOffsets(wasmPath, outputDirectory, env) {
         );
       }
     }
+    for (const [address, expectedCount, label] of [
+      [threadRuntimeScratchBase, 6, "thread counter/scratch base"],
+      [threadRuntimeScratchLock, 8, "temporary-stack lock"],
+      [threadRuntimeTempStack, 2, "temporary stack"],
+      [linkerHeapBase, 1, "allocator linker-heap base"],
+    ]) {
+      const reference = `(i32.const ${String(address)})`;
+      const actualCount = countOccurrences(compactWat, reference);
+      if (actualCount !== expectedCount) {
+        throw new Error(
+          `Threaded WASM ${label} layout drifted: expected ${String(expectedCount)} ${reference} references; found ${String(
+            actualCount,
+          )}`,
+        );
+      }
+    }
+    const forbiddenLegacyOperations = [
+      `(i32.atomic.rmw.add (i32.const ${legacyThreadRuntimeScratchBase})`,
+      `(i32.atomic.rmw.cmpxchg (i32.const ${legacyThreadRuntimeScratchLock})`,
+      `(i32.atomic.store (i32.const ${legacyThreadRuntimeScratchLock})`,
+      `(memory.atomic.wait32 (i32.const ${legacyThreadRuntimeScratchLock})`,
+      `(memory.atomic.notify (i32.const ${legacyThreadRuntimeScratchLock})`,
+      `(i32.const ${legacyThreadRuntimeTempStack})`,
+    ];
+    for (const operation of forbiddenLegacyOperations) {
+      if (compactWat.includes(operation)) {
+        throw new Error(
+          `Threaded WASM runtime scratch state overlaps the allocator-visible linker heap: ${operation}`,
+        );
+      }
+    }
   } finally {
     await rm(watPath, { force: true });
   }
@@ -460,28 +427,6 @@ function replaceExactlyOnce(source, search, replacement, label) {
     );
   }
   return source.slice(0, first) + replacement + source.slice(first + search.length);
-}
-
-function replaceRegexExactlyOnce(source, pattern, replacement, label) {
-  const matches = [...source.matchAll(pattern)];
-  if (matches.length !== 1) {
-    throw new Error(
-      `Expected exactly one pinned wasm-bindgen ${label} fragment; found ${String(matches.length)}`,
-    );
-  }
-  return source.replace(pattern, replacement);
-}
-
-function replaceExactlyCount(source, search, replacement, expectedCount, label) {
-  const count = countOccurrences(source, search);
-  if (count !== expectedCount) {
-    throw new Error(
-      `Expected ${String(expectedCount)} pinned wasm-bindgen ${label} fragments; found ${String(
-        count,
-      )}`,
-    );
-  }
-  return source.replaceAll(search, replacement);
 }
 
 function countOccurrences(source, search) {

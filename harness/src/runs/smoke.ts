@@ -18,7 +18,7 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 33;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 34;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_SIMULATION_GAMEPLAY_WORKLOAD = Object.freeze({
   navigationPathQueryCount: 8,
@@ -62,8 +62,9 @@ export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 export const SMOKE_TELEMETRY_SCHEMA_VERSION = 43;
 export const SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION = 1;
-// v70 carries explicit heavy-screen gameplay-input suppression in public telemetry.
-export const SMOKE_REPORT_SCHEMA_VERSION = 70;
+// v71 adds browser-driven M3 exit evidence for the playable NPC interaction,
+// model-unavailable authored fallback, save/load, and repeated replay contract.
+export const SMOKE_REPORT_SCHEMA_VERSION = 71;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(
@@ -81,6 +82,7 @@ export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric("SAB ring-buffer transport", true, "implemented"),
   metric("Rust/WASM threads", true, "implemented"),
   metric("character and NPC navigation/crowd step duration", true, "implemented"),
+  metric("M3 playable NPC fallback/save/replay loop", true, "implemented"),
   metric("hybrid game UI substrate", true, "implemented"),
   metric("render-worker callback-pacing variance", true, "implemented"),
   metric("all-worker JS heap", true, "implemented"),

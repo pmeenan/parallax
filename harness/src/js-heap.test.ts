@@ -148,6 +148,38 @@ describe("all-realm JS heap sampler", () => {
     expect(browser.detached).toBe(true);
   });
 
+  it("ignores Chrome-owned browser UI targets attributed to the app browser context", async () => {
+    const browser = new FakeBrowserSession(workerUrl, [], {
+      extraWorkerTargets: [
+        { type: "browser_ui", url: "chrome://omnibox-popup.top-chrome/" },
+        {
+          type: "browser_ui",
+          url: "chrome://omnibox-popup.top-chrome/omnibox_popup_aim.html",
+        },
+      ],
+    });
+    const sampler = await prepareJsHeapSampler(
+      asCdp(browser),
+      asCdp(new FakePageSession([])),
+      "page",
+      workerUrl,
+      100,
+    );
+
+    await sampler.discard();
+    expect(browser.attachments).toEqual([{ flatten: false, targetId: "worker-0" }]);
+  });
+
+  it("does not ignore a browser_ui target outside the Chrome-owned scheme", async () => {
+    const browser = new FakeBrowserSession(workerUrl, [], {
+      extraWorkerTargets: [{ type: "browser_ui", url: "https://example.test/unexpected" }],
+    });
+
+    await expect(
+      prepareJsHeapSampler(asCdp(browser), asCdp(new FakePageSession([])), "page", workerUrl, 100),
+    ).rejects.toThrow("browser_ui:https://example.test/unexpected");
+  });
+
   it("uses fixed deadlines and labels its forced end-boundary sample", async () => {
     vi.useFakeTimers();
     const values = Array.from({ length: 5 }, () => heapUsage(10, 20));

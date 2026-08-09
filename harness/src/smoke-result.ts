@@ -25,6 +25,7 @@ const EVIDENCE_METRIC_NAMES = Object.freeze({
   gpuMemory: "attributable GPU memory",
   httpServing: "HTTP serving evidence",
   jsHeap: "all-worker JS heap",
+  m3PlayableLoop: "M3 playable NPC fallback/save/replay loop",
   psoWarmup: "PSO warmup trace replay",
   reportFinalization: "report finalization",
   sabRingBuffer: "SAB ring-buffer transport",
@@ -285,6 +286,13 @@ export function collectSmokeEvidenceChecks(
       evidenceCheck(
         `${run.profile} repeat ${run.repeat}: character and NPC navigation/crowd step duration ${run.simulationController.state} (${evidenceReason(run.simulationController)})`,
         registryMandatory(EVIDENCE_METRIC_NAMES.simulationController),
+        run.simulationController,
+      ),
+    ),
+    ...input.runs.map((run) =>
+      evidenceCheck(
+        `${run.profile} repeat ${run.repeat}: M3 playable NPC fallback/save/replay loop ${run.simulationController.state} (${evidenceReason(run.simulationController)})`,
+        registryMandatory(EVIDENCE_METRIC_NAMES.m3PlayableLoop),
         run.simulationController,
       ),
     ),

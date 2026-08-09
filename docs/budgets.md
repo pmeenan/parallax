@@ -535,7 +535,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-  the current `smoke@1` mandatory metric-set (v33, which retains measured D-090 greybox-world content,
+  the current `smoke@1` mandatory metric-set (v34, which retains measured D-090 greybox-world content,
   observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
@@ -557,13 +557,27 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-  corresponding current `smoke@1` report schema is v70
+  corresponding current `smoke@1` report schema is v71
   and public telemetry is v43. D-161 additionally requires each core run to retain
   measured hybrid-UI evidence: a ready DOM HUD tree plus the matching presentation
   revision and at least one visible world-anchor record ingested by the render worker's
   fixed UI pools. This is logical cross-thread ingestion evidence, not attributable
-   draw/pixel proof. Missing or mismatched evidence fails closed; this adds no
-   duration threshold or budget check. D-139 additionally requires exact
+  draw/pixel proof. Missing or mismatched evidence fails closed; this adds no
+  duration threshold or budget check. The M3 exit extension additionally requires
+  each core run to hash-match a repeated 120-tick replay, round-trip its save through
+  the live sim worker, use a fixed 4,497-tick replay/save to place the player beside
+  the authored conversational NPC, activate that NPC through ordinary keyboard input,
+  and submit ordinary DOM dialog while the privileged harness model source is
+  unavailable. The resulting authored fallback must consume a freshly retrieved
+  structured-state entry. The probe then closes dialog, restores gameplay input, and
+  reloads the pre-probe save before ordinary measurements. This is correctness evidence,
+  adds no numeric budget, and leaves the 120-tick character/crowd step-duration sample
+  as the performance gate. D-163 permits the real input service only through an exact
+  WebDriver + automation-runtime + smoke opt-in; gameplay-owned streaming observation
+  remains disabled. RE-048's Chrome-owned `browser_ui` targets are excluded from
+  all-realm heap only when their URL is `chrome://`; every app page/worker and any other
+  same-context target remain under the exact fail-closed topology check. D-139
+  additionally requires exact
    trace/build-compatibility identity, one progressive registry miss, one deduplicated
    replay hit, complete entry coverage, and zero failures before product Ready. Its
    separately triggered `pso-warmup-launch-pair@1` qualification consumes the same six

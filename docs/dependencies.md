@@ -79,13 +79,13 @@ affected component family and does not reset the full-checkpoint clock.
 
 | Component | Local workaround and upstream status | Review cadence and retirement gate |
 | --- | --- | --- |
-| wasm-bindgen threaded-memory layout (RE-036, D-093, UP-004) | Pinned 0.2.126 still reserves its bookkeeping page at allocator-visible `__heap_base`, so `build-wasm.mjs` relocates that page after the module's original initial memory and fails on transform drift. Upstream [issue #5223](https://github.com/wasm-bindgen/wasm-bindgen/issues/5223) records the same Rust dlmalloc 0.2.13 interaction; [PR #5225](https://github.com/wasm-bindgen/wasm-bindgen/pull/5225) merged the equivalent placement fix on 2026-07-08, after the 0.2.126 release. | Check every full currency checkpoint and every wasm-bindgen release. When a release contains PR #5225, review and exact-pin the matching wasm-bindgen crate and CLI together, remove the relocation rewrite, retain the layout/drift assertions for the transition, and require `pnpm check`, byte repeatability, the repeated RE-036 physical-console cohort, and the full physical `smoke@1` gate before retiring the workaround or closing the upstream watch. A Rust-only upgrade is not a retirement trigger unless upstream evidence changes the allocator/layout contract. |
 | Babylon Lite device-loss seam (D-104) | Pinned 1.12.0 uses the bounded `lite-device-loss.ts` seam to observe and force loss through Lite's private `_device`, while Parallax restarts the complete render/stream/decode cohort. Lite 1.14.0 added public device-loss recovery controls, but its in-place resource rebuild is not equivalent to that product recovery contract and its force-loss test hook is not public. | Review with Lite 1.14.0 or newer as a renderer-family change. Retire or narrow the seam only after public API/source inspection proves equivalent observe/force-loss coverage, render-recovery fixtures pass, and the required same-scenario physical renderer gate passes. The existence of a public in-place recovery API alone is not a retirement trigger. |
 
 ## Review ledger
 
 | Review date | Scope and outcome | Next checkpoint |
 | --- | --- | --- |
+| 2026-08-09 | **Accepted full repository checkpoint for M3 exit and M3.5 entry (D-164):** exact wasm-bindgen crate/CLI 0.2.127 removed D-093's relocation after upstream PR #5225 shipped, and exact transitive nanoid 3.3.18 clears GHSA-2v37-7h3g-55p8 with zero audit advisories across 211 dependencies. CfT Stable 151.0.7922.108 is adopted. Exact local schema-v71 / metric-set-v34 report `smoke-1-1100d5e4e754-dev-01-showcase-2026-08-09T19-26-30-249Z.{json,md}` passed all six launches, all three facets, and 36/36 checks, including the M3 exit loop and upstream Wasm layout; JSON/Markdown SHA-256 are `843fb1237d668580232aa3e84ae732fd44fa61825eeaf64e7c41c83140c95b00` / `83724096791a4b2f871120c7da6ba0cf6c441b308f1cd396f624568457ee2822`. After exact deployment, installed branded Chrome 151.0.7922.72 passed the same six-launch core against that production artifact in `branded-parity-v2-2026-08-09T20-45-12-228Z/result.{json,md}` with all three facets and 36/36 checks; JSON/Markdown SHA-256 are `7220e4ef1ddaefdf11b8974c11a7013c973e847b533fa569e9b4c95ee300c7be` / `72483ba44e1b0c846ef1d99c07274d4ae309e7346a9a17cedcc01e3300e0a2a4`. | This checkpoint satisfies M3.5 entry. Next full checkpoint: M3.5 exit or 2026-09-06, whichever comes first; relevant security notices and row-specific triggers remain immediate. |
 | 2026-08-01 | **Accepted full repository checkpoint for M2 exit and M3 entry (D-149):** adopted Node 24.18.1, CfT Stable 151.0.7922.71 at unchanged revision 1654411, harness-only `sharp` 0.35.3, and transitive PostCSS 8.5.25. The graph clears both prior high advisories; `pnpm audit` reports zero advisories across 211 dependencies. The exact dev-01 `.34`/`.71` transition passed both schema-v62 / metric-set-v28 halves with six launches, three facets, and 30/30 checks. D-152's installed branded-Stable schema-v2 parity result passed the same core while remaining baseline-ineligible, nonpromotable, and not budget-authoritative. The final exact-current `.71` production smoke `smoke-1-e4532dcec4d6-dev-01-showcase-2026-08-02T00-30-12-454Z.{json,md}` passed exact pre/post serving identity, rendered output, all six launches, all three facets, and 30/30 checks; JSON/Markdown SHA-256 are `6028aa225b14e6c32398ead849dc00784f075c4b410e61a336376b970e105a8e` / `1b00d8746308e0297d93f7e68c1c14cb8f0437d2832249efe7029a2328e02a20`. | This checkpoint satisfies M3 entry. Next full checkpoint: M3 exit or 2026-08-29, whichever comes first; relevant security notices and row-specific triggers remain immediate. |
 | 2026-07-29 | **D-133 targeted `@noble/hashes` integrity review:** adopted exact 2.2.0 from 2.0.1 after the overdue installer/integrity trigger fired. The signed immutable upstream 2.2.0 release points at commit `81983c2` (2026-04-11); repository and GitHub advisory checks found zero matches. The candidate remains zero-dependency ESM with Node `>=20.19`, `sideEffects: false`, and the consumed `./sha2.js` and `./utils.js` exports unchanged. Isolated npm tarball SHA-256 identities are `638ffb3053a7e7478c9e54a6e297f3601299ee570a41112e501af7050d086a0a` for 2.0.1 and `018b38bd7af36645fa0ece8f89eba21c828f3e4d219da5aacadd78bd0e654606` for 2.2.0. All 480 boundary/chunk comparisons and the 64 MiB comparison were byte-exact; isolated TypeScript compilation, `pnpm check`, and explicit engine/WASM repeatability passed. Only unminified `engine.js` and `installer-worker.js` changed, each by +6,596 bytes; no performance claim is made. The pre-pin and post-pin pinned-Chrome real-OPFS adapter results both passed the same unchanged five lifecycle/lock verdicts and are retained in D-133. | 2026-08-26, M2 exit, a noble-hashes release/advisory, a consumed-export change, or an integrity/OPFS regression. |
 | 2026-07-29 | **D-130 targeted GGUF provisioning correction:** retained model revision `66a399f68ddd113b06dff02fca9523e55465d11d` and the exact five generated split hashes/2,620,371,552-byte total. Read-only HEAD/range/If-Range checks proved the five previously constructed Hugging Face split URLs are 404 because that revision contains only the unsplit upstream GGUF. The exact local split outputs remain valid and are now provisioned as fixed same-origin `immutable/model-<sha256>.gguf` install-only resources. No model, runtime, or dependency pin changed. | Run the bounded production source verifier after upload; otherwise 2026-08-23, M2 exit, a selected-model change, or a production transport failure. |
@@ -110,6 +110,58 @@ packages only when they share the same source, outcome, and gate; runtime-critic
 components always get individual rows. A targeted review records the same fields for its
 affected inputs in a ledger row or dated subsection, explicitly labeled as targeted so it
 cannot be mistaken for a full checkpoint.
+
+## Full checkpoint — 2026-08-09 (M3 exit + M3.5 entry)
+
+This review re-enumerated every direct package and versioned external input for M3 exit.
+Official release, registry, advisory, Chrome, model, fixture, and local machine sources
+were checked on 2026-08-09. The checkpoint selects three bounded changes: current
+security-patched CfT 151.0.7922.108, wasm-bindgen crate/CLI 0.2.127 containing the
+tracked PR #5225 fix, and transitive nanoid 3.3.18 for GHSA-2v37-7h3g-55p8.
+Wasm-bindgen and nanoid passed their converged deterministic and physical gates. CfT
+and the full checkpoint were accepted after exact production deployment and the standing
+branded-Stable parity gate passed; all other candidates retain their component-family
+boundaries.
+
+### Runtime and platform-critical inputs
+
+| Selected input | Candidate checked | Outcome and evidence | Next recheck / required gate |
+| --- | --- | --- | --- |
+| CfT Stable 151.0.7922.71, revision 1654411 | 151.0.7922.108, same base revision | **Adopted and current after D-164.** The official archive reports `Chrome/151.0.7922.108`, CDP revision `@4744b886309d987d292e43232776d2206cccb13d`, win64 archive SHA-256 `de8e7a19d864bd9973fa0cd9056a7b95548b7a59970d01d567900942b4db0aa0`, and executable SHA-256 `9df270f0a9fec0fd112db53ac824ff497e1c2d9bbcefd64b48c2d5eb8661736a`. The `.71` descriptor and binary remain a reconstruction anchor. The `.108` local smoke passed all six launches and budgets; installed branded Chrome 151.0.7922.72 then passed D-150's same-production-artifact parity gate. Chrome's new app-context `browser_ui` targets are retained as RE-048. | 2026-09-06, the next Stable advance, an advisory, the next full checkpoint, or a release relevant to an open Chrome finding. |
+| `@babylonjs/lite` 1.12.0 | 1.18.0 | **Deferred.** The skipped range changes renderer recovery, cascaded shadows, and screen-space lighting. It remains an isolated renderer-family transition, not an M3-exit correctness fix. | M4 renderer/content work or 2026-09-06: source/API review, recovery fixtures, repeatability, and physical renderer gate. |
+| `@babylonjs/ktx2decoder` 9.17.0 and package-owned WASM | 9.20.0 | **Deferred.** Decoder binaries and Babylon peer behavior move as one runtime-critical family. | Before representative KTX2 content, Babylon-family adoption, or 2026-09-06. |
+| `draco3dgltf` 1.5.7; `meshoptimizer` 1.2.0 | Same releases | **Current.** | A release/advisory or representative content change. |
+| `@noble/hashes` 2.2.0 | 2.3.0 | **Deferred.** The release changes performance and tightens types on an integrity-critical path; D-133's isolated hash/OPFS gate must be repeated separately. | 2026-09-06, an advisory, or integrity work. |
+| `@wllama/wllama` 3.5.1 and pinned llama.cpp commit | Same release/commit | **Current.** | A release/advisory or approved model-runtime work. |
+| Gemma 4 E2B QAT GGUF revision `66a399f68ddd113b06dff02fca9523e55465d11d` and five exact shards | Same upstream revision and artifacts | **Current.** | A model/runtime change, advisory, or next full checkpoint. |
+| Node 24.18.1 | 24.19.0 LTS | **Deferred.** No M3 fix requires a runtime patch transition; isolate the Node change because it can alter every emitted artifact and harness process. | 2026-09-06, a Node security notice, or Node 26 LTS transition work. |
+| Rust `nightly-2026-07-16` | Current dated nightly | **Deferred.** The pinned nightly still supplies the threaded `build-std` baseline; changing compiler/allocator and wasm-bindgen together would obscure the tracked workaround retirement. | A Rust security/toolchain trigger or separate generated-layout comparison. |
+| wasm-bindgen crate + CLI 0.2.126 | 0.2.127 | **Adopted.** Release 0.2.127 contains PR #5225, places threaded scratch state outside Rust dlmalloc's original heap, and permits removal of D-093's binary rewrite. Exact counter/lock/temp-stack/reference-count guards, `pnpm check`, repeatability, and the six-cohort physical smoke passed. | A release/advisory or layout failure. |
+| Binaryen/npm 131.0.0 | 131.0.0 | **Current.** | A release/advisory or WASM pipeline change. |
+| Khronos glTF Sample Assets commit `2bac6f8c57bf471df0d2a1e8a8ec023c7801dddf` | Upstream `main` remains the selected commit | **Current.** | Fixture regeneration or next full checkpoint. |
+| dev-01 Windows 26200.8875 / NVIDIA 32.0.16.1074 | Same observed state | **Current.** | Before every registered physical result and on machine-state change. |
+
+### Build, measurement, and supporting inputs
+
+| Selected input | Candidate checked | Outcome and evidence | Next recheck / required gate |
+| --- | --- | --- | --- |
+| pnpm 11.12.0 | 11.21.0 | **Deferred.** The same-day release and skipped policy/lock changes require an isolated package-manager comparison. | 2026-09-06 or before the next dependency update. |
+| Vite 8.1.4 | 8.2.1 | **Deferred.** No M3 correctness or security fix requires a build-tool transition, so Vite remains exact at 8.1.4 rather than expanding this checkpoint's emitted-artifact surface. | 2026-09-06 or an isolated build-tool investigation before M4 work. |
+| Transitive nanoid 3.3.16 through PostCSS/Vite | 3.3.18 | **Adopted.** GHSA-2v37-7h3g-55p8 affects versions before 3.3.17. A root pnpm override selects exact 3.3.18 inside PostCSS's compatible range; no Vite/Vitest manifest moves. `pnpm audit --json` reports zero advisories across 211 dependencies; frozen install, `pnpm check`, repeatability, and physical smoke passed. | A nanoid/PostCSS/Vite advisory or next full checkpoint. |
+| Playwright Core 1.61.1 | 1.62.1 | **Deferred.** Launch, tracing, screenshot, and mandatory-metric collection remain one automation-family change. | 2026-09-06 or a collector/browser trigger. |
+| `sharp` 0.35.3 | 0.35.3 | **Current.** | A release/advisory or screenshot-format change. |
+| `@biomejs/biome` 2.5.3 | 2.5.7 | **Deferred.** Parser, formatter, and diagnostics changes remain a supporting-tool transition. | 2026-09-06 or before a formatting migration. |
+| `@types/node` 24.13.3 | 26.2.0 | **Not applicable to the selected Node 24 runtime.** | Node-major transition. |
+| Rollup 4.62.2 | 4.62.4 | **Deferred.** The skipped fixes do not affect the current Windows/non-`preserveModules` build. | 2026-09-06 or relevant build work. |
+| esbuild 0.28.1 | 0.28.2 | **Deferred.** Codegen/tree-shaking changes require an isolated artifact comparison. | 2026-09-06 or relevant build work. |
+| TypeScript 7.0.2; Vitest 4.1.10; `@rollup/plugin-node-resolve` 16.0.3 | Same releases | **Current.** | A release/advisory or next full checkpoint. |
+
+Official sources checked include the Chrome Stable release/archive and Chromium Dash
+version identity, npm registry/advisory metadata, the
+[wasm-bindgen 0.2.127 release](https://github.com/wasm-bindgen/wasm-bindgen/releases/tag/0.2.127)
+and [PR #5225](https://github.com/wasm-bindgen/wasm-bindgen/pull/5225), upstream package
+release notes, the selected model repository, Khronos fixture repository, and local
+registered machine inspection.
 
 ## Full checkpoint — 2026-08-01 (M2 exit + M3 entry)
 

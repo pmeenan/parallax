@@ -28,7 +28,7 @@ and binding CLI:
 
 ```powershell
 rustup toolchain install nightly-2026-07-16 --profile minimal --component rust-src,rustfmt --target wasm32-unknown-unknown
-cargo +nightly-2026-07-16 install --locked wasm-bindgen-cli --version 0.2.126
+cargo +nightly-2026-07-16 install --locked wasm-bindgen-cli --version 0.2.127
 ```
 
 `pnpm start` builds the separated engine, game, and app artifacts and
@@ -64,7 +64,7 @@ The versioned harness drives the committed `smoke@1` scenario with the exact Chr
 for Testing version and platform download URLs in `harness/chrome/stable.json`. Download
 the matching archive and extract the platform directory's contents to
 `harness/chrome/cft/<version>/` (gitignored) — the harness resolves the executable there
-by default, e.g. `harness/chrome/cft/151.0.7922.71/chrome.exe` on win64. Setting
+by default, e.g. `harness/chrome/cft/151.0.7922.108/chrome.exe` on win64. Setting
 `PARALLAX_CHROME_PATH` overrides the conventional location. The version check is exact; installed branded Chrome is not accepted for a
 gating run because the current platform's executable SHA-256 must also match. The current
 pin contains a verified win64 digest for dev-01; another platform remains ineligible

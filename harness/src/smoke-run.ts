@@ -154,6 +154,7 @@ import {
   captureTargetPostflight,
   failedTargetEvidence,
   formatTargetVerificationEvidence,
+  gameplayInputHarnessRuntimeUrl,
   type HarnessTargetVerificationEvidence,
   harnessRuntimeUrl,
   parseHarnessTargetArguments,
@@ -407,6 +408,14 @@ const repositoryRoot = resolve(import.meta.dirname, "../../..");
 const buildRoot = join(repositoryRoot, "dist");
 const machineRoot = join(repositoryRoot, "harness/machines");
 const outputRoot = join(repositoryRoot, "harness/results");
+const M3_EXIT_POSITIONING_TICKS = 4_497;
+const M3_EXIT_POSITIONING_YAW_RADIANS = 1.456;
+const M3_EXIT_INTERACTION_RANGE_METERS = 5;
+const M3_EXIT_NPC_ENTITY_ID = 1_000;
+const M3_EXIT_NPC_NAME = "Mara Venn";
+const M3_EXIT_PLAYER_QUESTION = "Is the road safe?";
+const M3_EXIT_RETRIEVED_FALLBACK =
+  "The east road leaves the village through the east gate and follows the marked landward path.";
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await main();
@@ -1074,7 +1083,7 @@ async function measureRunWithBrowser(
     } else {
       smokeTraceFailure = traceStartResult.reason;
     }
-    const runtimeUrl = harnessRuntimeUrl(baseUrl);
+    const runtimeUrl = gameplayInputHarnessRuntimeUrl(baseUrl);
     await page.goto(runtimeUrl, { waitUntil: "load" });
     assertHarnessNavigationUrl(page.url(), runtimeUrl, `smoke ${profile} repeat ${repeat}`);
     await page.waitForFunction(
@@ -2101,6 +2110,8 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
     const second = await telemetry.replaySimulation(commands, 120, 8_675_309);
     const loaded = await telemetry.loadSimulation(first.finalSave);
     const liveSave = await telemetry.saveSimulation();
+    const liveLoaded = await telemetry.loadSimulation(liveSave);
+    const liveReloaded = await telemetry.loadSimulation(liveSave);
     return {
       adapterInitializationHighWaterMs: Math.max(
         first.adapterInitializationDurationMs,
@@ -2112,8 +2123,12 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
       finalStateHash: first.finalStateHash,
       gameCounters: first.gameCounters,
       hashMatch: first.finalStateHash === second.finalStateHash,
+      liveSave,
       liveSaveBytes: liveSave.byteLength,
+      liveLoadedStateHash: liveLoaded.stateHash,
+      liveReloadedStateHash: liveReloaded.stateHash,
       loadedStateHash: loaded.stateHash,
+      secondStateHash: second.finalStateHash,
       tick: first.tick,
       stepDurationHighWaterMs: Math.max(
         first.stepDurationHighWaterMs,
@@ -2125,6 +2140,9 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
     !evidence.hashMatch ||
     !evidence.bytesMatch ||
     evidence.loadedStateHash !== evidence.finalStateHash ||
+    evidence.liveLoadedStateHash !== evidence.loadedStateHash ||
+    evidence.liveReloadedStateHash !== evidence.liveLoadedStateHash ||
+    !/^[a-f0-9]{64}$/.test(evidence.liveLoadedStateHash) ||
     evidence.tick !== 120 ||
     evidence.liveSaveBytes <= 64 ||
     evidence.gameCounters.movementDistanceMeters === undefined ||
@@ -2163,6 +2181,7 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
       `Simulation determinism/save-load verification failed: ${JSON.stringify(evidence)}`,
     );
   }
+  const m3Exit = await verifyM3PlayableLoop(page, evidence.liveSave, evidence.liveLoadedStateHash);
   return Object.freeze({
     adapterInitializationHighWaterMs: evidence.adapterInitializationHighWaterMs,
     movementDistanceMeters: evidence.gameCounters.movementDistanceMeters,
@@ -2178,7 +2197,249 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
     npcMovementDistanceMeters: evidence.gameCounters.npcMovementDistanceMeters,
     npcMovingAgentCount: evidence.gameCounters.npcMovingAgentCount,
     npcScheduleTransitionCount: evidence.gameCounters.npcScheduleTransitionCount,
+    replayFinalStateHash: evidence.finalStateHash,
+    replayHashMatch: true,
+    replayLoadedStateHash: evidence.loadedStateHash,
+    replaySecondStateHash: evidence.secondStateHash,
+    replayTick: evidence.tick,
+    saveLoadHashMatch: true,
+    saveLoadReloadedStateHash: evidence.liveReloadedStateHash,
+    saveLoadStateHash: evidence.liveLoadedStateHash,
     stepDurationHighWaterMs: evidence.stepDurationHighWaterMs,
+    m3Exit,
+  });
+}
+
+async function verifyM3PlayableLoop(
+  page: Page,
+  restoreSave: Uint8Array,
+  expectedRestoreStateHash: string,
+): Promise<M3PlayableLoopEvidence> {
+  await page.waitForFunction(
+    (globalName) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport | undefined;
+      return telemetry?.snapshot().gameplayInput.state === "running";
+    },
+    SMOKE_TELEMETRY_GLOBAL_NAME,
+    { timeout: 5_000 },
+  );
+  const positioning = await page.evaluate(
+    async ({ globalName, ticks, yawRadians }) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      const command = (sequence: number, targetTick: number, forward: number, yaw: number) => {
+        const payload = new Uint8Array(16);
+        const view = new DataView(payload.buffer);
+        view.setFloat32(0, forward, true);
+        view.setFloat32(4, 0, true);
+        view.setFloat32(8, yaw, true);
+        view.setUint32(12, 0, true);
+        return { kind: "player.input-axes@2", payload, sequence, targetTick };
+      };
+      const replay = await telemetry.replaySimulation(
+        [command(0, 1, 1, yawRadians), command(1, ticks, 0, yawRadians)],
+        ticks,
+        8_675_309,
+      );
+      const loaded = await telemetry.loadSimulation(replay.finalSave);
+      const player = loaded.entities.find(({ id }) => id === 1);
+      const npc = loaded.entities.find(({ id }) => id === 1_000);
+      if (player === undefined || npc === undefined) {
+        throw new Error("M3 exit positioning replay is missing the player or NPC");
+      }
+      const snapshot = telemetry.snapshot();
+      return {
+        dialogRequestCountBefore: telemetry.npcDialogSnapshot().requestCount,
+        gameplayInteractionPressCountBefore: snapshot.gameplayInput.interactionPressCount,
+        installedModelState: snapshot.installedModelSource.state,
+        interactionActivationCountBefore:
+          snapshot.simulation.gameCounters.interactionActivationCount ?? 0,
+        knowledgeEntryCountBefore: telemetry.npcKnowledgeSnapshot().assembledEntryCount,
+        knowledgeRequestCountBefore: telemetry.npcKnowledgeSnapshot().requestCount,
+        loadedStateHash: loaded.stateHash,
+        npcPosition: npc.position,
+        playerNpcDistanceMeters: Math.hypot(
+          player.position[0] - npc.position[0],
+          player.position[2] - npc.position[2],
+        ),
+        playerPosition: player.position,
+        replayStateHash: replay.finalStateHash,
+        replayTick: replay.tick,
+      };
+    },
+    {
+      globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+      ticks: M3_EXIT_POSITIONING_TICKS,
+      yawRadians: M3_EXIT_POSITIONING_YAW_RADIANS,
+    },
+  );
+  if (
+    positioning.replayTick !== M3_EXIT_POSITIONING_TICKS ||
+    positioning.loadedStateHash !== positioning.replayStateHash ||
+    !/^[a-f0-9]{64}$/.test(positioning.replayStateHash) ||
+    positioning.installedModelState !== "unavailable" ||
+    !Number.isFinite(positioning.playerNpcDistanceMeters) ||
+    positioning.playerNpcDistanceMeters > M3_EXIT_INTERACTION_RANGE_METERS
+  ) {
+    throw new Error(`M3 exit positioning replay failed: ${JSON.stringify(positioning)}`);
+  }
+
+  await page.locator("#render-canvas").focus();
+  const canvasOwnsInput = await page.evaluate(() => {
+    const canvas = document.querySelector("#render-canvas");
+    return document.activeElement === canvas || document.pointerLockElement === canvas;
+  });
+  if (!canvasOwnsInput) throw new Error("M3 exit probe could not activate the gameplay canvas");
+  await page.keyboard.press("KeyE");
+  try {
+    await page.waitForFunction(
+      ({ expectedInteraction, expectedPressCount, expectedSpeaker, globalName }) => {
+        const telemetry = Reflect.get(globalThis, globalName) as
+          | ParallaxTelemetryExport
+          | undefined;
+        const status = document.querySelector("#status");
+        const dialog = document.querySelector(".hybrid-ui-dialog");
+        return (
+          telemetry?.snapshot().gameplayInput.interactionPressCount === expectedPressCount &&
+          status instanceof HTMLElement &&
+          status.dataset.lastInteraction === expectedInteraction &&
+          dialog instanceof HTMLElement &&
+          !dialog.hidden &&
+          dialog.querySelector("h2")?.textContent === expectedSpeaker
+        );
+      },
+      {
+        expectedInteraction: `npc-${M3_EXIT_NPC_ENTITY_ID}`,
+        expectedPressCount: positioning.gameplayInteractionPressCountBefore + 1,
+        expectedSpeaker: M3_EXIT_NPC_NAME,
+        globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+      },
+      { timeout: 5_000 },
+    );
+  } catch (error: unknown) {
+    const diagnostic = await page.evaluate((globalName) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport | undefined;
+      const status = document.querySelector("#status");
+      const dialog = document.querySelector(".hybrid-ui-dialog");
+      return {
+        activeElementId: document.activeElement?.id ?? null,
+        dialogHidden: dialog instanceof HTMLElement ? dialog.hidden : null,
+        dialogSpeaker: dialog?.querySelector("h2")?.textContent ?? null,
+        gameplayInput: telemetry?.snapshot().gameplayInput ?? null,
+        lastInteraction:
+          status instanceof HTMLElement ? (status.dataset.lastInteraction ?? null) : null,
+        simulation: telemetry?.snapshot().simulation ?? null,
+      };
+    }, SMOKE_TELEMETRY_GLOBAL_NAME);
+    throw new Error(
+      `M3 gameplay interaction did not open the expected NPC dialog: ${JSON.stringify(diagnostic)}`,
+      { cause: error },
+    );
+  }
+  await page.getByLabel(`Speak to ${M3_EXIT_NPC_NAME}`).fill(M3_EXIT_PLAYER_QUESTION);
+  await page.getByRole("button", { name: "Submit", exact: true }).click();
+  await page.waitForFunction(
+    ({ expectedFallback, globalName }) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport | undefined;
+      const body = document.querySelector(".hybrid-ui-dialog p");
+      return (
+        telemetry !== undefined &&
+        body?.textContent === expectedFallback &&
+        telemetry.npcDialogSnapshot().state === "unavailable"
+      );
+    },
+    { expectedFallback: M3_EXIT_RETRIEVED_FALLBACK, globalName: SMOKE_TELEMETRY_GLOBAL_NAME },
+    { timeout: 5_000 },
+  );
+  const completed = await page.evaluate(
+    ({ expectedFallback, globalName, npcEntityId }) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      const snapshot = telemetry.snapshot();
+      const dialog = telemetry.npcDialogSnapshot();
+      const knowledge = telemetry.npcKnowledgeSnapshot();
+      return {
+        dialogRequestCount: dialog.requestCount,
+        dialogState: dialog.state,
+        interactionActivationCount:
+          snapshot.simulation.gameCounters.interactionActivationCount ?? 0,
+        gameplayInteractionPressCount: snapshot.gameplayInput.interactionPressCount,
+        knowledgeEntryCount: knowledge.assembledEntryCount,
+        knowledgeRequestCount: knowledge.requestCount,
+        npcEntityId,
+        response: document.querySelector(".hybrid-ui-dialog p")?.textContent ?? "",
+        responseUsedRetrievedState:
+          document.querySelector(".hybrid-ui-dialog p")?.textContent === expectedFallback,
+        speaker: document.querySelector(".hybrid-ui-dialog h2")?.textContent ?? "",
+      };
+    },
+    {
+      expectedFallback: M3_EXIT_RETRIEVED_FALLBACK,
+      globalName: SMOKE_TELEMETRY_GLOBAL_NAME,
+      npcEntityId: M3_EXIT_NPC_ENTITY_ID,
+    },
+  );
+  if (
+    completed.dialogRequestCount !== positioning.dialogRequestCountBefore + 1 ||
+    completed.dialogState !== "unavailable" ||
+    completed.interactionActivationCount !== positioning.interactionActivationCountBefore + 1 ||
+    completed.gameplayInteractionPressCount !==
+      positioning.gameplayInteractionPressCountBefore + 1 ||
+    completed.knowledgeEntryCount < 1 ||
+    completed.knowledgeEntryCount <= positioning.knowledgeEntryCountBefore ||
+    completed.knowledgeRequestCount !== positioning.knowledgeRequestCountBefore + 1 ||
+    completed.npcEntityId !== M3_EXIT_NPC_ENTITY_ID ||
+    !completed.responseUsedRetrievedState ||
+    completed.speaker !== M3_EXIT_NPC_NAME
+  ) {
+    throw new Error(`M3 playable fallback loop failed: ${JSON.stringify(completed)}`);
+  }
+  await page.getByRole("button", { name: "End conversation", exact: true }).click();
+  await page.waitForFunction(
+    (globalName) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport | undefined;
+      const dialog = document.querySelector(".hybrid-ui-dialog");
+      return (
+        telemetry !== undefined &&
+        dialog instanceof HTMLElement &&
+        dialog.hidden &&
+        !telemetry.snapshot().gameplayInput.uiSuppressed
+      );
+    },
+    SMOKE_TELEMETRY_GLOBAL_NAME,
+    { timeout: 5_000 },
+  );
+  const restoredStateHash = await page.evaluate(
+    async ({ globalName, save }) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      return (await telemetry.loadSimulation(save)).stateHash;
+    },
+    { globalName: SMOKE_TELEMETRY_GLOBAL_NAME, save: restoreSave },
+  );
+  if (restoredStateHash !== expectedRestoreStateHash) {
+    throw new Error(
+      `M3 playable-loop cleanup failed to restore the pre-probe simulation: expected ${expectedRestoreStateHash}, received ${restoredStateHash}`,
+    );
+  }
+  return Object.freeze({
+    dialogRequestCountBefore: positioning.dialogRequestCountBefore,
+    dialogRequestCount: completed.dialogRequestCount,
+    dialogState: completed.dialogState,
+    gameplayInteractionPressCountBefore: positioning.gameplayInteractionPressCountBefore,
+    gameplayInteractionPressCount: completed.gameplayInteractionPressCount,
+    installedModelState: positioning.installedModelState,
+    interactionActivationCountBefore: positioning.interactionActivationCountBefore,
+    knowledgeEntryCountBefore: positioning.knowledgeEntryCountBefore,
+    interactionActivationCount: completed.interactionActivationCount,
+    knowledgeEntryCount: completed.knowledgeEntryCount,
+    knowledgeRequestCountBefore: positioning.knowledgeRequestCountBefore,
+    knowledgeRequestCount: completed.knowledgeRequestCount,
+    loadedStateHash: positioning.loadedStateHash,
+    npcEntityId: completed.npcEntityId,
+    positioningReplayStateHash: positioning.replayStateHash,
+    positioningReplayTick: positioning.replayTick,
+    playerQuestion: M3_EXIT_PLAYER_QUESTION,
+    response: completed.response,
+    responseUsedRetrievedState: true,
+    speaker: completed.speaker,
   });
 }
 
@@ -2197,7 +2458,39 @@ interface SimulationGameplayEvidence {
   readonly npcMovementDistanceMeters: number;
   readonly npcMovingAgentCount: number;
   readonly npcScheduleTransitionCount: number;
+  readonly replayFinalStateHash: string;
+  readonly replayHashMatch: true;
+  readonly replayLoadedStateHash: string;
+  readonly replaySecondStateHash: string;
+  readonly replayTick: number;
+  readonly saveLoadHashMatch: true;
+  readonly saveLoadReloadedStateHash: string;
+  readonly saveLoadStateHash: string;
   readonly stepDurationHighWaterMs: number;
+  readonly m3Exit: M3PlayableLoopEvidence;
+}
+
+interface M3PlayableLoopEvidence {
+  readonly dialogRequestCountBefore: number;
+  readonly dialogRequestCount: number;
+  readonly dialogState: "unavailable";
+  readonly gameplayInteractionPressCountBefore: number;
+  readonly gameplayInteractionPressCount: number;
+  readonly installedModelState: "unavailable";
+  readonly interactionActivationCountBefore: number;
+  readonly knowledgeEntryCountBefore: number;
+  readonly interactionActivationCount: number;
+  readonly knowledgeEntryCount: number;
+  readonly knowledgeRequestCountBefore: number;
+  readonly knowledgeRequestCount: number;
+  readonly loadedStateHash: string;
+  readonly npcEntityId: number;
+  readonly positioningReplayStateHash: string;
+  readonly positioningReplayTick: number;
+  readonly playerQuestion: string;
+  readonly response: string;
+  readonly responseUsedRetrievedState: true;
+  readonly speaker: string;
 }
 
 async function installLongTaskObserver(page: Page): Promise<void> {
@@ -2535,6 +2828,11 @@ function formatReport(report: SmokeReport): string {
       ? `- ${variance.profile}: measured absolute p95 range ${formatMilliseconds(variance.absoluteP95RangeMs)} (allowed ${formatMilliseconds(variance.allowedAbsoluteP95RangeMs)} = max(${(100 * SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toFixed(0)}% of the minimum, ${formatMilliseconds(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS)} floor)); relative range ${variance.relativeP95Range === null ? "unbounded at zero" : `${(100 * variance.relativeP95Range).toFixed(3)}%`}`
       : `- ${variance.profile}: diagnostic invalid (non-blocking) — ${variance.reason}`,
   );
+  const simulationEvidence = report.runs.map((run) => {
+    const evidence = run.simulationController.value;
+    const exit = evidence.m3Exit;
+    return `- ${run.profile} repeat ${run.repeat}: 120-tick replay hashes \`${evidence.replayFinalStateHash}\` / \`${evidence.replaySecondStateHash}\`, loaded \`${evidence.replayLoadedStateHash}\` (match ${evidence.replayHashMatch}); live save/load hashes \`${evidence.saveLoadStateHash}\` / \`${evidence.saveLoadReloadedStateHash}\` (match ${evidence.saveLoadHashMatch}); ${exit.positioningReplayTick}-tick positioning replay/load SHA-256 \`${exit.positioningReplayStateHash}\`; ordinary input presses ${exit.gameplayInteractionPressCountBefore}→${exit.gameplayInteractionPressCount}; interacted with NPC ${exit.npcEntityId} (${exit.speaker}); installed model state ${exit.installedModelState}; question \`${exit.playerQuestion}\`; response \`${exit.response}\`; dialog requests ${exit.dialogRequestCountBefore}→${exit.dialogRequestCount}; knowledge requests ${exit.knowledgeRequestCountBefore}→${exit.knowledgeRequestCount}; retrieved entries ${exit.knowledgeEntryCountBefore}→${exit.knowledgeEntryCount}; retrieved-state authored fallback ${exit.responseUsedRetrievedState ? "verified" : "failed"}; character+crowd step high water ${formatMilliseconds(evidence.stepDurationHighWaterMs)}`;
+  });
   const lines = [
     `# Parallax ${report.scenario}`,
     "",
@@ -2582,6 +2880,10 @@ function formatReport(report: SmokeReport): string {
     "## D1 streaming repeatability diagnostic (informational)",
     "",
     ...streamingVarianceEvidence,
+    "",
+    "## M3 simulation and playable-loop evidence",
+    "",
+    ...simulationEvidence,
     "",
     "## Dawn pipeline/cache evidence",
     "",

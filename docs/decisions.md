@@ -28,6 +28,110 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-164: Accept M3 exit and the M3.5-entry dependency checkpoint (2026-08-09, accepted)
+
+**Decision:** Accept M3 as complete, adopt CfT Stable 151.0.7922.108 as the current
+harness browser, accept the 2026-08-09 full dependency checkpoint, and begin M3.5.
+D-163's local schema-v71 / mandatory-metric-set-v34 dev-01 proof remains the
+budget-authoritative M3 exit result. The exact reviewed candidate was subsequently
+deployed to `https://parallax-web.com` with frozen 286-file deployment fingerprint
+`f7cae777800de45f046ff5fb11364e99e821b2a1340c91549708d6e2b7431c44`.
+
+D-150's separately required `branded-parity@1` gate then passed under installed branded
+Chrome 151.0.7922.72, CDP revision
+`@2903d8558c752b5a554a1a47b4ea7219ba1a31ef`, against the CfT 151.0.7922.108
+comparison reference. It verified the production artifact
+`1100d5e4e75490ceb9b12c7ead060643c82406560c046e7bdcb83826a8ab0e73`
+and release `17326acbe80f97e82ccc040805ecb369248d9ba9e5cef7fd0c52ca533c485259`
+before and after the run, passed all three facets and all 36 checks across the same six
+schema-v71 / metric-set-v34 launches, and remained baseline-ineligible,
+nonpromotable, and non-budget-authoritative. The exact report is
+`harness/results/branded-parity/branded-parity-v2-2026-08-09T20-45-12-228Z/result.{json,md}`;
+JSON/Markdown SHA-256 are
+`7220e4ef1ddaefdf11b8974c11a7013c973e847b533fa569e9b4c95ee300c7be` /
+`72483ba44e1b0c846ef1d99c07274d4ae309e7346a9a17cedcc01e3300e0a2a4`.
+
+**Context:** D-163 intentionally left M3 open because its dependency checkpoint moved
+the CfT pin and D-150 requires installed branded-Stable parity against the exact
+deployed production candidate. Explicit deployment authorization was granted, the
+preview and fixed-destination apply both verified the frozen inventory and preserved
+all five exact model objects, and the resulting production parity run satisfied that
+last external exit condition without changing any budget.
+
+**Consequences:** M3's playable NPC fallback, save/reload, and deterministic replay loop
+is closed on registered dev-01 Showcase. CfT 151.0.7922.108, wasm-bindgen 0.2.127, and
+transitive nanoid 3.3.18 are the accepted M3.5-entry checkpoint. Installed branded
+Chrome evidence remains a parity result only; CfT remains the authoritative pinned
+browser for budgets and baselines. M3.5 is now the active milestone.
+
+**Reopen if:** the retained local or parity result fails reconstruction; production no
+longer serves the recorded artifact/release identity; a relevant Chrome regression
+invalidates the same-major/build parity assumption; or an M3 contract changes rather
+than being extended by M3.5.
+
+## D-163: Make the M3 exit loop an adjudicable mandatory smoke proof (2026-08-09, accepted)
+
+**Decision:** Advance `smoke@1` to report schema v71 and mandatory metric set v34. Every
+core launch must now retain raw, independently cross-checkable M3 exit evidence rather
+than completion booleans alone:
+
+- run the same 120-tick command log twice on fresh adapters and require both state
+  hashes, the loaded-save hash, and the save bytes to match;
+- load that state into the live sim, save it through the ordinary service, load the
+  exact saved bytes twice, and require both loads to equal the pre-save state hash;
+- use a fixed 4,497-tick replay to place the player within the authored five-metre
+  interaction range of stable NPC entity 1000, Mara Venn;
+- activate her through the real canvas-focused `KeyE` gameplay-input path, enter
+  `Is the road safe?` through the ordinary DOM dialog, and require the exact retrieved
+  authored fallback while both installed and dialog model states are `unavailable`;
+- require exact +1 gameplay-input, sim-interaction, dialog-request, knowledge-request,
+  and freshly assembled-entry deltas; then use the ordinary End conversation control,
+  prove input suppression is cleared, and reload the pre-probe save before warmup and
+  measurement.
+
+The harness may enable gameplay input on an automation runtime only through the exact
+WebDriver-gated `parallaxAutomationGameplayInput=smoke` opt-in layered on the existing
+`parallaxAutomation=runtime` authorization. That opt-in starts the ordinary input
+service; it does not enable gameplay-owned streaming observers, replace the keyboard or
+DOM seams, or remain in the V8-only diagnostic route. Baseline eligibility revalidates
+the raw hashes, exact question/response, unavailable model states, stable NPC identity,
+and every before/after delta.
+
+Chrome 151.0.7922.108 also began returning Chrome-owned `browser_ui` omnibox targets
+with the app page's `browserContextId` (RE-048). The all-realm heap topology therefore
+excludes only `browser_ui` targets whose URL starts with `chrome://`. It continues to
+require the exact app page and eight expected dedicated workers and rejects every other
+same-context target, including a non-Chrome URL mislabeled as `browser_ui`.
+
+**Context:** M3's systems already had unit fixtures and separate physical gates, but
+the milestone exit text required one playable conversing-NPC loop, direct save/reload,
+and same-input determinism on pinned dev-01. A literal `true` in a report could not
+prove hash equality, cumulative counters could not prove that the observed dialog turn
+produced retrieval, and leaving the dialog or 4,497-tick positioning state active would
+have contaminated the unrelated steady-state measurements. Automation launches also
+intentionally kept gameplay input idle, so testing `KeyE` required a narrow authorized
+route rather than a harness-only simulation command.
+
+The converged local dev-01/Showcase six-launch run passed all three facets, 36/36 budget
+checks, and the new proof with replay/save hash
+`3d46af17a59b8872309bdf533e63401b33a59e1087eb7e867ce07c6e844dd381`
+and positioning hash
+`c2cfd94dc90e394e226ba3771e73ac9c1f9cebb0aab200d3cf3f6a6ad01f7d94`.
+Exact final report identity is recorded with the M3 exit item in `plan.md`.
+
+**Consequences:** The implemented M3 exit behavior now has one mandatory physical proof
+that is both player-path-realistic and independently adjudicable. It adds correctness
+evidence, not a new numeric performance budget. The milestone itself remains open:
+the same dependency checkpoint selects CfT 151.0.7922.108, and D-150 still requires
+installed branded-Stable parity against the exact deployed production candidate before
+that browser pin, the full checkpoint, or the M3→M3.5 transition can be accepted.
+
+**Reopen if:** the authored NPC identity/question/fallback changes; the interaction
+range or deterministic route makes the fixed positioning replay invalid; save format or
+simulation timing changes; the automation authorization can bypass WebDriver/runtime
+gating; Chrome exposes a supported ownership field for browser UI targets; or the M3.5
+loop requires additional exit evidence rather than extending the same sim contract.
+
 ## D-162: Bind ordinary NPC dialog to the installed app-owned model (2026-08-09, accepted)
 
 **Decision:** Implement one lazy, window-owned ordinary dialog service over D-074/D-096's

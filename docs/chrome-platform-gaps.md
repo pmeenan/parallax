@@ -1,8 +1,8 @@
 # Chrome platform gaps exposed by Parallax
 
 Chrome-facing synthesis of the platform changes that would most improve AAA-scale web games and
-their measurement. Updated 2026-08-08 through the M3 UI-substrate decision from registered physical-console Chrome
-for Testing experiments and explicitly labeled CfT/branded-Chrome diagnostics on Parallax's
+their measurement. Updated 2026-08-09 through accepted M3 exit evidence from registered physical-console Chrome
+for Testing experiments and explicitly labeled CfT/branded-Chrome production diagnostics on Parallax's
 Windows/D3D12 dev-01 reference machine; each evidence entry states its provenance. D-150 makes
 dev-01 the sole required gate, so this synthesis makes no Standard, Metal, or other-hardware
 claim.
@@ -16,6 +16,12 @@ passed schema v62 / mandatory metric set v28 with all six launches, all three fa
 30/30 checks, and rendered output on dev-01. D-151 separately accepted the measured
 install/launch/update lifecycle. Those outcomes establish the project budgets at that exact
 scope; they do not resolve the mechanism-observability requests below.
+
+M3 closed under D-164 after the local CfT 151.0.7922.108 schema-v71 / mandatory-
+metric-set-v34 exit proof and an exact-artifact production `branded-parity@1` run under
+installed Chrome 151.0.7922.72 each passed all six launches, all three facets, and 36/36
+checks. The branded result is explicitly non-budget-authoritative and baseline-ineligible;
+it establishes the required adoption parity, not a second baseline platform.
 
 ## Priority model
 
@@ -143,6 +149,22 @@ and Chromium's
 [graphics-memory metrics guidance](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/memory/graphics_metrics.md).
 
 ## P1 requests
+
+### Expose explicit ownership for browser-UI targets in CDP topology
+
+**Missing today:** On CfT 151.0.7922.108, `Target.getTargets` assigns two
+`chrome://omnibox-popup.top-chrome/` `browser_ui` targets the inspected app page's
+`browserContextId`. That ID alone therefore no longer identifies application-owned
+realms for an all-realm V8 heap collector (RE-048).
+
+**Why it helps:** Exact page-plus-worker topology is a useful fail-closed boundary for
+memory attribution. Browser-owned UI in the same context forces tooling to infer
+ownership from a privileged URL and target-type allowlist, which can drift with Chrome.
+
+**Useful minimum change:** Exclude browser-owned top-chrome surfaces from web-page
+browser contexts, or add a stable ownership/attribution enum to `TargetInfo`. Parallax
+currently excludes only exact `browser_ui` + `chrome://` targets and still rejects every
+other unexpected same-context target.
 
 ### Expose origin-scoped browser-cache inventory and eviction completion
 

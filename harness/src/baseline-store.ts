@@ -56,7 +56,37 @@ interface SimulationGameplayEvidence {
   readonly npcMovementDistanceMeters: number;
   readonly npcMovingAgentCount: number;
   readonly npcScheduleTransitionCount: number;
+  readonly replayFinalStateHash: string;
+  readonly replayHashMatch: true;
+  readonly replayLoadedStateHash: string;
+  readonly replaySecondStateHash: string;
+  readonly replayTick: number;
+  readonly saveLoadHashMatch: true;
+  readonly saveLoadReloadedStateHash: string;
+  readonly saveLoadStateHash: string;
   readonly stepDurationHighWaterMs: number;
+  readonly m3Exit: Readonly<{
+    readonly dialogRequestCountBefore: number;
+    readonly dialogRequestCount: number;
+    readonly dialogState: "unavailable";
+    readonly gameplayInteractionPressCountBefore: number;
+    readonly gameplayInteractionPressCount: number;
+    readonly installedModelState: "unavailable";
+    readonly interactionActivationCountBefore: number;
+    readonly interactionActivationCount: number;
+    readonly knowledgeEntryCountBefore: number;
+    readonly knowledgeEntryCount: number;
+    readonly knowledgeRequestCountBefore: number;
+    readonly knowledgeRequestCount: number;
+    readonly loadedStateHash: string;
+    readonly npcEntityId: number;
+    readonly positioningReplayStateHash: string;
+    readonly positioningReplayTick: number;
+    readonly playerQuestion: string;
+    readonly response: string;
+    readonly responseUsedRetrievedState: true;
+    readonly speaker: string;
+  }>;
 }
 
 interface BaselineReportRun {
@@ -1331,6 +1361,68 @@ function requireSimulationGameplayEvidence(
     evidence.npcScheduleTransitionCount <= 0
   ) {
     invalidReport(`${path} has invalid gameplay crowd evidence`);
+  }
+  requireSha256(evidence.replayFinalStateHash, `${path}.replayFinalStateHash`);
+  requireSha256(evidence.replayLoadedStateHash, `${path}.replayLoadedStateHash`);
+  requireSha256(evidence.replaySecondStateHash, `${path}.replaySecondStateHash`);
+  requireSha256(evidence.saveLoadReloadedStateHash, `${path}.saveLoadReloadedStateHash`);
+  requireSha256(evidence.saveLoadStateHash, `${path}.saveLoadStateHash`);
+  if (
+    evidence.replayHashMatch !== true ||
+    evidence.replayFinalStateHash !== evidence.replaySecondStateHash ||
+    evidence.replayFinalStateHash !== evidence.replayLoadedStateHash ||
+    evidence.saveLoadHashMatch !== true ||
+    evidence.saveLoadStateHash !== evidence.replayLoadedStateHash ||
+    evidence.saveLoadStateHash !== evidence.saveLoadReloadedStateHash ||
+    evidence.replayTick !== 120
+  ) {
+    invalidReport(`${path} has invalid replay/save-load evidence`);
+  }
+  requireRecord(evidence.m3Exit, `${path}.m3Exit`);
+  for (const field of [
+    "dialogRequestCountBefore",
+    "dialogRequestCount",
+    "gameplayInteractionPressCountBefore",
+    "gameplayInteractionPressCount",
+    "interactionActivationCountBefore",
+    "interactionActivationCount",
+    "knowledgeEntryCountBefore",
+    "knowledgeEntryCount",
+    "knowledgeRequestCountBefore",
+    "knowledgeRequestCount",
+    "npcEntityId",
+    "positioningReplayTick",
+  ] as const) {
+    requireFiniteNonnegative(evidence.m3Exit[field], `${path}.m3Exit.${field}`);
+    if (!Number.isSafeInteger(evidence.m3Exit[field])) {
+      invalidReport(`${path}.m3Exit.${field} must be a safe integer`);
+    }
+  }
+  requireSha256(evidence.m3Exit.loadedStateHash, `${path}.m3Exit.loadedStateHash`);
+  requireSha256(
+    evidence.m3Exit.positioningReplayStateHash,
+    `${path}.m3Exit.positioningReplayStateHash`,
+  );
+  if (
+    evidence.m3Exit.dialogState !== "unavailable" ||
+    evidence.m3Exit.installedModelState !== "unavailable" ||
+    evidence.m3Exit.dialogRequestCount !== evidence.m3Exit.dialogRequestCountBefore + 1 ||
+    evidence.m3Exit.gameplayInteractionPressCount !==
+      evidence.m3Exit.gameplayInteractionPressCountBefore + 1 ||
+    evidence.m3Exit.interactionActivationCount !==
+      evidence.m3Exit.interactionActivationCountBefore + 1 ||
+    evidence.m3Exit.knowledgeEntryCount <= evidence.m3Exit.knowledgeEntryCountBefore ||
+    evidence.m3Exit.knowledgeRequestCount !== evidence.m3Exit.knowledgeRequestCountBefore + 1 ||
+    evidence.m3Exit.loadedStateHash !== evidence.m3Exit.positioningReplayStateHash ||
+    evidence.m3Exit.npcEntityId !== 1_000 ||
+    evidence.m3Exit.positioningReplayTick !== 4_497 ||
+    evidence.m3Exit.playerQuestion !== "Is the road safe?" ||
+    evidence.m3Exit.response !==
+      "The east road leaves the village through the east gate and follows the marked landward path." ||
+    evidence.m3Exit.responseUsedRetrievedState !== true ||
+    evidence.m3Exit.speaker !== "Mara Venn"
+  ) {
+    invalidReport(`${path}.m3Exit has invalid playable fallback evidence`);
   }
   for (const field of [
     "navigationEdgeCount",

@@ -152,7 +152,14 @@ async function requireExpectedWorkerTopology(
   const contextTargets = targets.targetInfos.filter(
     (target) => target.browserContextId === pageTarget.browserContextId,
   );
-  const expectedPageTargets = contextTargets.filter(
+  // Chrome 151.0.7922.108 exposes browser-owned top-chrome surfaces with the
+  // inspected page's browserContextId. They are not application realms and cannot
+  // be attributed to the page heap, but every non-Chrome-UI target remains subject
+  // to the exact page + dedicated-worker topology check below.
+  const applicationTargets = contextTargets.filter(
+    (target) => !(target.type === "browser_ui" && target.url.startsWith("chrome://")),
+  );
+  const expectedPageTargets = applicationTargets.filter(
     (target) =>
       target.targetId === pageTarget.targetId &&
       target.type === pageTarget.type &&
@@ -162,7 +169,7 @@ async function requireExpectedWorkerTopology(
   for (const url of expectedWorkerUrls) {
     expectedCounts.set(url, (expectedCounts.get(url) ?? 0) + 1);
   }
-  const expectedWorkerTargets = contextTargets.filter(
+  const expectedWorkerTargets = applicationTargets.filter(
     (target) =>
       target.type === "worker" &&
       expectedCounts.has(target.url) &&
@@ -174,10 +181,10 @@ async function requireExpectedWorkerTopology(
       ([url, count]) =>
         expectedWorkerTargets.filter((target) => target.url === url).length !== count,
     ) ||
-    contextTargets.length !== expectedWorkerUrls.length + 1
+    applicationTargets.length !== expectedWorkerUrls.length + 1
   ) {
     throw new Error(
-      `Expected the app context to contain only page ${pageTarget.url} and dedicated worker(s) ${expectedWorkerUrls.join(", ")}; received ${contextTargets.length} target(s): ${contextTargets.map((target) => `${target.type}:${target.url}`).join(", ") || "none"}`,
+      `Expected the app context to contain only page ${pageTarget.url} and dedicated worker(s) ${expectedWorkerUrls.join(", ")}; received ${applicationTargets.length} application target(s): ${applicationTargets.map((target) => `${target.type}:${target.url}`).join(", ") || "none"}`,
     );
   }
   const urlOrder = new Map([...expectedCounts.keys()].map((url, index) => [url, index]));

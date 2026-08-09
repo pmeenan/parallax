@@ -11,6 +11,7 @@ import {
   captureTargetPostflightOnce,
   failedTargetEvidence,
   formatTargetVerificationEvidence,
+  gameplayInputHarnessRuntimeUrl,
   harnessRuntimeUrl,
   PRODUCTION_ORIGIN,
   parseHarnessTargetArguments,
@@ -55,6 +56,9 @@ describe("harness target selection and identity", () => {
     );
     expect(harnessRuntimeUrl("http://127.0.0.1:8080/?scenario=smoke")).toBe(
       "http://127.0.0.1:8080/?scenario=smoke&parallaxAutomation=runtime",
+    );
+    expect(gameplayInputHarnessRuntimeUrl("http://127.0.0.1:8080/?scenario=smoke")).toBe(
+      "http://127.0.0.1:8080/?scenario=smoke&parallaxAutomation=runtime&parallaxAutomationGameplayInput=smoke",
     );
   });
 

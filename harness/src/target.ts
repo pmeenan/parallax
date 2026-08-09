@@ -20,6 +20,8 @@ import {
 export const PRODUCTION_ORIGIN = "https://parallax-web.com";
 export const AUTOMATION_RUNTIME_QUERY = "parallaxAutomation";
 export const AUTOMATION_RUNTIME_VALUE = "runtime";
+export const AUTOMATION_GAMEPLAY_INPUT_QUERY = "parallaxAutomationGameplayInput";
+export const AUTOMATION_GAMEPLAY_INPUT_VALUE = "smoke";
 export const TARGET_HEADER_TIMEOUT_MS = 10_000;
 export const TARGET_BODY_TIMEOUT_MS = 30_000;
 export const TARGET_MANIFEST_MAX_BYTES = 1_048_576;
@@ -114,6 +116,12 @@ interface BoundedResponse {
 export function harnessRuntimeUrl(baseUrl: string): string {
   const url = new URL(baseUrl);
   url.searchParams.set(AUTOMATION_RUNTIME_QUERY, AUTOMATION_RUNTIME_VALUE);
+  return url.href;
+}
+
+export function gameplayInputHarnessRuntimeUrl(baseUrl: string): string {
+  const url = new URL(harnessRuntimeUrl(baseUrl));
+  url.searchParams.set(AUTOMATION_GAMEPLAY_INPUT_QUERY, AUTOMATION_GAMEPLAY_INPUT_VALUE);
   return url.href;
 }
 

@@ -1,4 +1,5 @@
 import {
+  authorizeAutomationGameplayInputLaunch,
   authorizeAutomationRuntimeLaunch,
   bindActiveInstalledRelease,
   createAppOwnedLlmSpikeService,
@@ -707,8 +708,10 @@ async function bootRuntimeAttempt(
   });
 
   const interactiveGameplayEnabled = !authorizeAutomationRuntimeLaunch(location.href);
+  const gameplayInputEnabled =
+    interactiveGameplayEnabled || authorizeAutomationGameplayInputLaunch(location.href);
   const maybeStartGameplayInput = (): void => {
-    gameplayRuntime.maybeStartInput(interactiveGameplayEnabled);
+    gameplayRuntime.maybeStartInput(gameplayInputEnabled);
   };
   renderService.subscribe(maybeStartGameplayInput);
   simulationService.subscribe(maybeStartGameplayInput);

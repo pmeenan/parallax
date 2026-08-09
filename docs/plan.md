@@ -212,98 +212,40 @@ inventory/eviction (RE-046); dedicated workers still cannot request persistence
 The current platform synthesis and asks are in
 [chrome-platform-gaps.md](chrome-platform-gaps.md).
 
-## M3 — Gameplay core + NPC AI  `in progress`
+## M3 — Gameplay core + NPC AI  `done`
 
-- [x] Sim worker: engine-owned 60 Hz fixed timestep, ordered tick-stamped commands,
-      fixed-capacity triple-buffered SAB presentation snapshots with interpolation,
-      versioned binary save/load including queued commands, semantic events, and
-      same-host replay/save-load verification in `smoke@1` (D-156). Fresh-adapter
-      replay and terminal-lifecycle review fixes are included in the passing replacement
-      registered dev-01/Showcase schema-v65 / mandatory-metric-set-v30 qualification
-      `smoke-1-97de6eac2741-dev-01-showcase-2026-08-08T15-02-01-915Z.{json,md}`: all
-      three facets passed, 30/30 checks were evaluated, and no core-run failure occurred.
-- [x] Character controller, camera, and basic interaction loop in greybox D1 (D-158):
-      deterministic fixed-step capsule movement/collision, authored transition events,
-      keyboard/pointer capture, interpolated player presentation, third-person camera,
-      streaming-observer movement, save/load resynchronization, render-recovery canvas
-      rebinding, and moving-controller capacity instrumentation. After skeptic and
-      adversarial review convergence, the registered dev-01/Showcase schema-v67 /
-      mandatory-metric-set-v31 qualification
-      `smoke-1-ea19e3ab0e9b-dev-01-showcase-2026-08-08T16-49-59-763Z.{json,md}`
-      passed all six launches, all three facets, and 36/36 checks; controller step high
-      water was 0.365–0.430 ms (maximum 0.430 ms versus 2.00 ms). JSON SHA-256 is
-      `0b533a01771d621553ff91e6c2c4dfef00ea7c9e35fd814c0b146379d86cf195`;
-      Markdown SHA-256 is
-      `d22ba583a7f2903b0d7960b07a1ad2f319be4ee543220225b76d0490b846bf69`.
-- [x] NPC navigation and crowds (D-140/D-159): deterministic tiled navigation over
-      streamed-district collision data, stable pathfinding, authored cyclic village
-      schedules, and 48-agent avoidance run inside sim authority with versioned save
-      state and fixed-pool render presentation. After skeptic/adversarial review and
-      external-review fixes, the registered dev-01/Showcase schema-v68 / mandatory-
-      metric-set-v32 qualification
-      `smoke-1-e93e5d805b97-dev-01-showcase-2026-08-08T21-36-03-455Z.{json,md}`
-      passed all six launches, all three facets, and 36/36 checks. Combined character+
-      crowd step high water was 0.445–0.755 ms (maximum 0.755 ms versus 2.00 ms);
-      adapter/nav initialization was 93.545–94.740 ms. JSON SHA-256 is
-      `b866a30b9cf9e5047613a14d521f2878c3bc9b389d7c3ff6c92a7188a5e5b0a3`;
-      Markdown SHA-256 is
-      `6ac396f89c703cf508065208f4c2c1d8acfde4b176cd4df8916e379883531989`.
-- [x] UI substrate spike (D-143/D-160; resolves P-008): the registered dev-01 physical
-      run selected a hybrid split without relaxing the predeclared criteria. DOM/CSS
-      passed for the HUD (32.410 ms event-to-visible p95, no attributable Long Task)
-      and carries dialog; world anchors move in-canvas after 2-frame p95 DOM staleness
-      plus 5.028–10.616 px captured detach; heavy screens move in-canvas after
-      17.800 ms input-to-enqueue p95 exceeded the 16.7 ms limit with zero drops. The
-      report and exact D-099 dirty-source reconstruction are retained under ignored
-      `harness/results/`; RE-047 records that the bounded apparatus identified no
-      page-visible DOM/worker-canvas presentation synchronization or attribution
-      primitive. Temporary apparatus was removed.
-- [x] UI technology stack (D-141/D-161): implemented the framework-free typed hybrid
-      substrate selected by D-160 — keyed DOM/CSS HUD/dialog, stable sparse semantic/IME
-      controls, fixed render-worker world-anchor/heavy-screen pools, exact ordered input
-      validation, recovery replay, gameplay-input suppression, and public/harness
-      telemetry. Skeptic, adversarial, and external review/fix rounds closed focus, IME,
-      pointer-hit/occlusion, visibility-cache, layering, recovery/Ready ordering,
-      listener-cleanup, keyed-reconciliation, and evidence-integrity gaps. Registered
-      dev-01/Showcase `smoke@1` schema-v70 / metric-set-v33 report
-      `smoke-1-50a6674402e5-dev-01-showcase-2026-08-09T15-04-36-814Z.json` passed six
-      launches, all three facets, and 36/36 evaluated checks; D-161 retains exact hashes
-      and source identity. Real inventory, journal, settings/remap, and dialog screens
-      consume this substrate in their own plan items.
-- [x] App-owned NPC dialog (D-074/D-096/D-162): the first authored NPC now binds a
-      release-owned OPFS-`File` wllama caller to persona-owned context, role-preserving
-      bounded rolling memory, strict finite intent/subject output, functional authored
-      fallback, cancellable dialog/input ownership, and public padded frame-impact
-      telemetry. D-074 retains the WebGPU and CPU/WASM placement measurements. Final
-      `pnpm check` passed 190 files / 2,461 tests (one skipped); the required dev-01
-      schema-70 smoke passed all three facets and 36/36 checks at
-      `harness/results/smoke-1-fadede8ba3ae-dev-01-showcase-2026-08-09T16-46-18-033Z.json`
-      (SHA-256 `74bed174cb0be2db34b9fdb451d743744bff26041cb41c21b33547cd94a138d0`).
-- [x] NPC knowledge service (D-033): `engine/ai` now owns the bounded, cancellable,
-      provider-neutral retrieval/ranking/assembly contract, stable citations, token
-      budgeting, and public telemetry. A bounded generic sim-worker query returns a
-      fresh game-owned, NPC-scoped view of authoritative schedule/location state plus
-      district-keyed world facts per turn; model-unavailable fallback consumes that
-      same retrieved state. Load or sim-authority loss cancels active dialog, rejects
-      stale queries, and clears unsaved conversation memory before another timeline can
-      use it. Persona cards carry query scope and context budget instead of embedded
-      facts, and authored lore starts as independently tagged chunks without enabling a
-      tier-2 mechanism prematurely. Semantic lore retrieval and episodic memory stay
-      build-later. The converged `pnpm check` passed 192 files / 2,474 tests (one
-      skipped); skeptic and adversarial final re-reviews found no remaining P0-P2 issue.
-      The required registered dev-01/Showcase schema-v70 / mandatory-metric-set-v33
-      physical smoke passed all six launches, all three facets, and 36/36 checks at
-      `harness/results/smoke-1-32c14535bf96-dev-01-showcase-2026-08-09T18-11-21-919Z.{json,md}`;
-      JSON/Markdown SHA-256 are
-      `e2de1e81a1f851165abdc6e5ceb73147ae45e59f1adab8bd0fdf2e93049ba555` /
-      `3b48f34c1787075bfde54dfd3a4fb7e8e32531d321385a38ab1b5378c3db5478`.
-- [ ] Exit: playable greybox loop with conversing NPCs (incl. authored-fallback path
-      with the model unavailable, D-096); save/reload round-trip; sim determinism check
-      (same input log → same state hash) by repeated same-host replay on pinned dev-01.
-      Cross-machine replay remains advisory research for future P2P and cannot block
-      exit (D-150).
+- [x] Deterministic 60 Hz sim worker, SAB presentation snapshots, semantic events, and
+      versioned replay/save/load (D-156).
+- [x] Deterministic character controller, third-person camera, interaction input, and
+      streaming/recovery integration in greybox D1 (D-158).
+- [x] Sim-authoritative tiled navigation, authored schedules, and 48-agent crowd
+      avoidance with fixed-pool presentation (D-140/D-159).
+- [x] Measured UI substrate spike selected the hybrid DOM/CSS plus render-worker split
+      and closed P-008; RE-047 retains the platform gap (D-143/D-160).
+- [x] Framework-free typed hybrid UI substrate with semantic/IME controls, recovery,
+      input ownership, and harness telemetry (D-141/D-161).
+- [x] App-owned wllama/GGUF NPC dialog with bounded memory, strict authored output,
+      cancellation, and functional model-unavailable fallback (D-074/D-096/D-162).
+- [x] Bounded NPC knowledge retrieval over authoritative sim and authored world state,
+      with stable citations, token budgets, cancellation, and telemetry (D-033).
+- [x] Exit: the playable Mara Venn fallback conversation, direct save/reload, and
+      repeated same-host deterministic replay passed on registered dev-01 (D-150/D-163).
 
-## M3.5 — Gameplay systems  `pending`
+**Closure evidence:** D-164 accepted M3 after the schema-v71 / mandatory-metric-set-v34
+local report
+`smoke-1-1100d5e4e754-dev-01-showcase-2026-08-09T19-26-30-249Z.{json,md}`
+passed six launches, all three facets, and 36/36 checks, followed by exact deployment
+and passing production
+`branded-parity-v2-2026-08-09T20-45-12-228Z/result.{json,md}`. Local JSON/Markdown
+SHA-256 are `843fb1237d668580232aa3e84ae732fd44fa61825eeaf64e7c41c83140c95b00` /
+`83724096791a4b2f871120c7da6ba0cf6c441b308f1cd396f624568457ee2822`;
+parity JSON/Markdown SHA-256 are
+`7220e4ef1ddaefdf11b8974c11a7013c973e847b533fa569e9b4c95ee300c7be` /
+`72483ba44e1b0c846ef1d99c07274d4ae309e7346a9a17cedcc01e3300e0a2a4`.
+Real inventory/journal/settings screens remain consumer work; semantic lore retrieval,
+episodic memory, and cross-machine replay remain build-later.
+
+## M3.5 — Gameplay systems  `in progress`
 
 The mechanics that make the slice a game (D-141): game-design.md promises D&D-tradition
 combat, magic, monsters, progression, crafting, and quests, and vision.md's bar is "no

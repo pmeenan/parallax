@@ -166,9 +166,13 @@ export {
   GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION,
 } from "./input/gameplay-input-service";
 export {
+  AUTOMATION_GAMEPLAY_INPUT_QUERY,
+  AUTOMATION_GAMEPLAY_INPUT_VALUE,
   AUTOMATION_RUNTIME_QUERY,
   AUTOMATION_RUNTIME_VALUE,
+  authorizeAutomationGameplayInputLaunch,
   authorizeAutomationRuntimeLaunch,
+  isAutomationGameplayInputLaunch,
   isAutomationRuntimeLaunch,
 } from "./install/installer-automation";
 export type {

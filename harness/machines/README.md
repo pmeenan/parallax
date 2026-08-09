@@ -12,17 +12,14 @@ reproducible baseline; a periodic parity smoke run on it guards against divergen
 "Same version" across platforms = same milestone + V8 revision. Canary is permitted
 only when testing Chrome-side changes and is always labeled as such (D-019).
 
-The current automation pin is Chrome for Testing **151.0.7922.71**, revision
-**1654411** (`harness/chrome/stable.json`, selected 2026-08-01 from the official CfT
-known-good feed at the M2-exit/M3-entry dependency checkpoint). Its archived win64
+The current automation pin is Chrome for Testing **151.0.7922.108**, revision
+**1654411** (`harness/chrome/stable.json`, selected 2026-08-09 at the M3-exit
+dependency checkpoint). Its archived win64
 executable SHA-256 is
-`112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc`.
-The pin is adopted: D-149 accepted the dev-01 same-source `.34`/`.71` transition,
-D-152 accepted installed branded-Stable parity, and D-153 accepted the final physical
-production smoke with rendered-output review. The preceding 151.0.7922.34 binary remains
-the retained transition and reconstruction anchor. No follow-up adoption gate or other
-machine gate is pending. Archived binaries are machine-local and are not checked into
-this repository.
+`9df270f0a9fec0fd112db53ac824ff497e1c2d9bbcefd64b48c2d5eb8661736a`.
+The preceding 151.0.7922.71 and transition 151.0.7922.34 binaries remain reconstruction
+anchors with checked-in descriptors. Archived binaries are machine-local and are not
+checked into this repository.
 
 ## dev-01 — primary dev machine; Showcase-tier gate and calibration reference
 

@@ -109,7 +109,38 @@ function simulationGameplayEvidence() {
     npcMovementDistanceMeters: 20,
     npcMovingAgentCount: 40,
     npcScheduleTransitionCount: 8,
+    replayFinalStateHash: "d".repeat(64),
+    replayHashMatch: true,
+    replayLoadedStateHash: "d".repeat(64),
+    replaySecondStateHash: "d".repeat(64),
+    replayTick: 120,
+    saveLoadHashMatch: true,
+    saveLoadReloadedStateHash: "d".repeat(64),
+    saveLoadStateHash: "d".repeat(64),
     stepDurationHighWaterMs: 0.25,
+    m3Exit: Object.freeze({
+      dialogRequestCountBefore: 0,
+      dialogRequestCount: 1,
+      dialogState: "unavailable" as const,
+      gameplayInteractionPressCountBefore: 0,
+      gameplayInteractionPressCount: 1,
+      installedModelState: "unavailable" as const,
+      interactionActivationCountBefore: 0,
+      interactionActivationCount: 1,
+      knowledgeEntryCountBefore: 0,
+      knowledgeEntryCount: 1,
+      knowledgeRequestCountBefore: 0,
+      knowledgeRequestCount: 1,
+      loadedStateHash: "e".repeat(64),
+      npcEntityId: 1_000,
+      positioningReplayStateHash: "e".repeat(64),
+      positioningReplayTick: 4_497,
+      playerQuestion: "Is the road safe?",
+      response:
+        "The east road leaves the village through the east gate and follows the marked landward path.",
+      responseUsedRetrievedState: true as const,
+      speaker: "Mara Venn",
+    }),
   });
 }
 
@@ -980,6 +1011,89 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/stepDurationHighWaterMs must be a finite nonnegative number/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    m3Exit: {
+                      ...run.simulationController.value.m3Exit,
+                      loadedStateHash: "f".repeat(64),
+                    },
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/invalid playable fallback evidence/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    replaySecondStateHash: "a".repeat(64),
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/invalid replay\/save-load evidence/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    saveLoadReloadedStateHash: "f".repeat(64),
+                    saveLoadStateHash: "f".repeat(64),
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/invalid replay\/save-load evidence/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    m3Exit: {
+                      ...run.simulationController.value.m3Exit,
+                      response: "The road is probably fine.",
+                    },
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/invalid playable fallback evidence/);
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),

@@ -75,7 +75,7 @@ describe("smoke Chrome pin selection", () => {
       join(repositoryRoot, "harness/chrome/stable.json"),
     );
     await expect(loadSmokeChromePin(repositoryRoot, {})).resolves.toMatchObject({
-      version: "151.0.7922.71",
+      version: "151.0.7922.108",
     });
   });
 
@@ -90,6 +90,17 @@ describe("smoke Chrome pin selection", () => {
         win64: "409805a16d6416087e6b2f778df1cf8f7bbb267d6b99f6b5bb0a618eace234f2",
       },
       version: "151.0.7922.34",
+    });
+  });
+
+  it("retains the preceding stable pin as a reconstruction anchor", async () => {
+    const environment = { PARALLAX_CHROME_PIN_ANCHOR: "151.0.7922.71" };
+    await expect(loadSmokeChromePin(repositoryRoot, environment)).resolves.toMatchObject({
+      browserRevision: "@ef35003457e93c278f911a334b06e4a5f8967e06",
+      executableSha256: {
+        win64: "112b7b761c1b6cfa898c56e725f87f7a999a16a0d367d5345824d53336f52acc",
+      },
+      version: "151.0.7922.71",
     });
   });
 
@@ -153,9 +164,12 @@ describe("smoke Chrome pin selection", () => {
 });
 
 describe("Chrome pin descriptor validation", () => {
-  it("accepts both checked-in descriptors", async () => {
+  it("accepts the stable descriptor and both checked-in anchors", async () => {
     await expect(
       loadChromePin(join(repositoryRoot, "harness/chrome/stable.json")),
+    ).resolves.toMatchObject({ version: "151.0.7922.108" });
+    await expect(
+      loadChromePin(join(repositoryRoot, "harness/chrome/anchors/151.0.7922.71.json")),
     ).resolves.toMatchObject({ version: "151.0.7922.71" });
     await expect(
       loadChromePin(join(repositoryRoot, "harness/chrome/anchors/151.0.7922.34.json")),
