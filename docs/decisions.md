@@ -28,6 +28,76 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-165: Adopt ruleset v2 and the headless balancer as M3.5's balance instrument (2026-08-09, accepted)
+
+**Decision:** The M3.5 ruleset design pass concretizes D-142's structural v1 into
+**ruleset v2** in game-design.md, under three human-chosen directions from the
+2026-08-09 design session: (1) **full v2 scope** — resolution math, tick timings, the
+complete 14-ability pool, bestiary stat blocks, XP curve, 24 recipes, the affix list,
+prices, and the main-arc/side-quest content outline land now, so the remaining M3.5
+system items are implementation against a coherent spec rather than per-system design;
+(2) **deliberate-but-forgiving combat feel** — committed attacks and readable
+telegraphs with survivable mistakes (bands: commons die in 4–8 hits, chaff in 2–3,
+and the player survives common hits within per-loadout envelopes, both bounds
+asserted; telegraph wind-up floors of exactly 30 ticks, or 24 for attacks tagged
+*fast* in kit data; enrages accelerate recoveries, never wind-ups); (3) **the headless balancer is the balance
+instrument** — a deterministic Node-side sweep of reference loadouts × levels ×
+bestiary over seeded streams with asserted TTK/win-rate/pacing bands, built with the
+combat foundation and run in the ordinary unit gate, with the M3.5-exit harness
+gameplay scenario as the physical outer proof. Bands assert at each archetype's
+declared at-level matchup; overlevel matchups assert win rate only, underlevel
+matchups are report-only. Monster ratings (accuracy, guard, resist, raw damage,
+channel, and inline potency for spell-type attacks) are authored flat per kit, not
+derived from attributes; check type is per-attack (weapon-type: accuracy vs. guard;
+spell-type: potency vs. resist), and Exposed lowers guard only.
+
+A same-day engagement revision (external design review, same session) is folded in:
+**asymmetric hit reliability** — player *baseline* offensive checks (unmodified by
+conditions, affix triggers, or ability/stance modifiers) band at 70–85% at-level
+against chaff/commons while monster baseline checks band at 45–65%; elites/boss sit
+below baseline by design (Exposed openings are the lane), modified checks are meant
+to exceed the band and are proxy-tracked rather than asserted, and a failed check
+always presents as a deflection or resist flash, never an empty whiff; **caster
+continuity** — every equipped catalyst grants the zero-cost Aetherspark bolt outside
+the 14-ability pool, and keen spell successes refund ⌊cost/2⌋; **exactly two
+condition interactions** (thermal-shock pair: ember consumes Chilled → Staggered,
+frost consumes Burning → Exposed); **two conditional affixes** (Bracing, Nimble)
+gated to Exceptional+, with fixed slot eligibility and single-active-copy
+aggregation for every affix; **deterministic quest-preparation hooks** feeding
+encounter data — never LLM output, with the boss-vent quench an *optional* stage-4
+objective (mandatory draught work only mitigates the vents) so the authored vent
+mechanic stays reachable in ordinary playthroughs; **per-loadout
+survivability envelopes** (martial 6–10, hybrid 5–9, caster 4–7 common hits) with
+shared win-rate/duration bands; and **report-only engagement proxies** in the
+balancer (resource starvation, action distribution, damage share, rotation
+dominance, opening exploitation), promotable to asserted bands only by decision.
+
+Two structural additions beyond D-142: **rules math is integer-only** (design
+implication #8 — floor-division rationals, no floats in rules state; protects replay
+hashing and future cross-machine determinism), and the **check model is fixed** as a
+uniform R ∈ [−8, +8] plus rating difference, with score ≥ 8 keen (×3/2) and
+always-fail/always-succeed edges so no rating gap is deterministic.
+
+**Context:** plan.md's M3.5 first track. D-142 bound the forks (deliberate real-time,
+aether + crafted catalysts, classless loadout, waystone/satchel death) but left every
+number and content list open; the combat-foundation item needs the math and timings,
+and the human opted to fix the full content surface at the same time. All names
+original; *(working name)* markers remain for the M5 creative pass; no D&D-protected
+material.
+
+**Consequences:** game-design.md's mechanics section is now v2 and remains the spec
+home for formulas, shapes, and bands; authoritative tunable values move into
+`game/balance/` versioned data as each system lands (implication #6). Specific values
+in v2 are starting points — tuning changes freely within the balancer bands and needs
+no decision entry; band *structure* changes, new pools, new conditions, or a new
+resolution model do. The plan's ruleset checkbox stays unchecked until the balancer
+exists and has consumed the spec (first balanced combat build).
+
+**Reopen if:** the balancer cannot satisfy the deliberate-but-forgiving bands without
+structural change; integer-only math proves unworkable for a needed mechanic; the
+17-outcome check's ≈6%-per-point granularity is too coarse for meaningful gear/level
+steps; or M4/M5 content scale invalidates the fixed 14-ability/24-recipe surface.
+
 ## D-164: Accept M3 exit and the M3.5-entry dependency checkpoint (2026-08-09, accepted)
 
 **Decision:** Accept M3 as complete, adopt CfT Stable 151.0.7922.108 as the current

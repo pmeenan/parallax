@@ -262,8 +262,12 @@ game-design.md — not invented ad hoc inside each system.
       progression scope, crafting depth, loot/economy scale, quest structure — with
       original names and mechanics text throughout (no D&D-protected material).
       *Note: ruleset v1 was drafted 2026-07-29 ahead of M3 (D-142) because the M3 sim
-      data model depends on it; the box stays unchecked until M3.5's iterative
-      balancing has actually consumed and validated it.*
+      data model depends on it. Ruleset v2 (D-165, 2026-08-09) concretized the full
+      spec — resolution math, timings, abilities, bestiary, XP, recipes, affixes,
+      quest outline — under the chosen deliberate-but-forgiving feel target, and made
+      the headless balancer (built with the combat foundation, run in the unit gate)
+      the balance instrument. The box stays unchecked until that balancer exists and
+      has consumed the spec.*
 - [ ] Combat foundation: melee/ranged/magic resolution, hit detection, damage/status
       model — all sim-worker state under the M3 determinism constraints, with player
       intent flowing through the input-command pattern like everything else.

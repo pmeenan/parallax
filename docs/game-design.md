@@ -52,50 +52,121 @@ implementations throughout.
 
 Structure: the normal AAA quest scaffolding — **high-level objectives** (a main arc)
 plus **side quests**, tracked in a journal (which also feeds the Summarizer-recap
-feature). The slice-scale ruleset below (v1, D-142) makes this concrete.
+feature). The slice-scale ruleset below (v2, D-142/D-165) makes this concrete.
 
-## Mechanics — slice-scale ruleset v1 (D-142)
+## Mechanics — slice-scale ruleset v2 (D-142/D-165)
 
-The concrete ruleset behind the genre paragraph above. **Slice-scale** means deep
-enough that no system is toy-grade, small enough to build and balance for a
-two-district demo. Every number here is a starting point for M3.5's iterative
-balancing — replays are the balance instrument — not a sacred constant; tuning changes
-freely, structural changes (new pools, new resolution model) go through decisions. All
-names are original; anything marked *(working name)* is a placeholder until the M5
-art/creative pass. Nothing here may reproduce D&D-protected names, creatures, or
-mechanics text.
+The concrete ruleset behind the genre paragraph above. v1 (D-142) fixed the structural
+forks — deliberate real-time combat, aether + crafted catalysts, classless loadout
+progression, waystone/satchel death. v2 (D-165, M3.5 entry) concretizes them into
+buildable numbers: resolution math, tick timings, the authored ability list, bestiary
+stat blocks, the XP curve, recipes, affixes, and quest content, under the chosen feel
+target — **deliberate but forgiving**: committed attacks and readable telegraphs
+matter, but ordinary enemies take several mistakes to kill you.
+
+**Slice-scale** means deep enough that no system is toy-grade, small enough to build
+and balance for a two-district demo. This doc is the spec home for formulas, shapes,
+and target bands; the authoritative tunable *values* live as versioned data tables in
+`game/balance/` as each system lands (design implication #6). Every number here is a
+starting point for M3.5's balancing — the headless balancer below is the instrument —
+not a sacred constant; tuning changes freely, structural changes (new pools, new
+resolution model) go through decisions. All names are original; anything marked
+*(working name)* is a placeholder until the M5 art/creative pass. Nothing here may
+reproduce D&D-protected names, creatures, or mechanics text.
 
 ### Resolution core
 
-- Everything resolves inside the deterministic sim as contested **checks** — a seeded
-  roll plus an attacker rating against a defender rating — with all randomness drawn
-  from named, sim-owned seeded RNG streams (`combat`, `loot`, `ambient`, …). One
-  stream per system, so adding a system never perturbs another system's replay
-  sequence.
-- Four attributes: **Might** (melee power, carry, force checks), **Finesse**
-  (accuracy, evasion, ranged, subtle actions), **Vitality** (health, resistances,
-  stamina depth), **Attunement** (aether pool, spell potency, catalyst efficiency).
-- Three pools: **Health**, **Stamina** (dodges, sprints, power attacks, blocking),
-  **Aether** (spellcasting; regenerates slowly in combat, quickly at rest).
+- Everything resolves inside the deterministic sim as contested **checks**, with all
+  randomness drawn from named, sim-owned seeded RNG streams (`combat`, `loot`,
+  `behavior`, `ambient`, …). One stream per system, so adding a system never perturbs
+  another system's replay sequence.
+- **Rules math is integer-only** (design implication #8). Ratings, pools, damage, and
+  ticks are integers; multipliers are small rationals applied with floor division
+  (×3/2, ×3/4, ×1/4). Floats never enter rules resolution — same-host replay hashing
+  stays trivially stable and future cross-machine replay (features.md M7) isn't
+  hostage to floating-point divergence.
+- **The check:** draw `R`, a uniform integer in **[−8, +8]**, from the owning stream;
+  `score = R + attacker rating − defender rating`. `score < 0` fails, `0–7` succeeds,
+  `≥ 8` is a **keen** success (effect ×3/2, floor). Edge rule: `R = −8` always fails
+  and `R = +8` always at least succeeds, so no rating gap makes an outcome certain.
+  Equal ratings succeed ≈53% of the time; each rating point shifts ≈6%.
+- Four attributes on a **1–10** scale: **Might** (melee power, carry, force checks),
+  **Finesse** (accuracy, evasion, ranged, subtle actions), **Vitality** (health,
+  resistances, stamina depth), **Attunement** (aether pool, spell potency, catalyst
+  efficiency). Creation: 3 base in each, plus 2 free points, plus folk modifiers
+  (below); one more point per level.
+- Three derived pools: **Health** `50 + 10×Vitality` (regenerates only via rest,
+  tonics, food, or Mendweave), **Stamina** `70 + 10×Vitality` (dodges, sprints, power
+  attacks, blocking; regenerates 35/s after a 30-tick delay out of actions, 10/s while
+  blocking), **Aether** `20 + 10×Attunement` (spellcasting; 2/s in combat, 12/s at
+  rest). Per-second regeneration accrues through integer per-tick accumulators.
+- **Ratings:** accuracy = Finesse + weapon accuracy + stance/ability modifiers; guard
+  = ⌊Finesse/2⌋ + armor guard (+6 while blocking); spell potency = Attunement +
+  catalyst potency; resist = ⌊Vitality/2⌋ + gear ward.
+- **Damage:** each weapon/spell names its scaling attribute; `raw = base + attribute`
+  (heavy attacks ×3/2 floor), `dealt = max(1, raw − soak[channel])`. Armor gives
+  physical soak; wards and tonics give elemental soak. Keen multiplies `raw` before
+  soak.
 - Damage channels (slice): **physical**, **ember**, **frost**, **venom**, **aether** —
   chosen deliberately to double as rendering/VFX showcases (fire lighting, frost/snow
   and wet-surface response).
-- Status conditions (slice, bounded): Burning (damage over time, fire-lit), Chilled
-  (slowed recovery), Envenomed (damage over time, healing suppressed), Staggered
-  (action interrupted), Exposed (guard broken). A new condition is a design change,
-  not a content add.
+- Status conditions (slice, bounded — durations in sim ticks at 60 Hz): **Burning**
+  (4 ember damage/s for 300t, fire-lit, refresh not stack), **Chilled** (recoveries
+  ×3/2, stamina regen ×1/2, 360t), **Envenomed** (2 venom damage/s for 600t, healing
+  suppressed), **Staggered** (current action canceled, 30t action lockout),
+  **Exposed** (guard −6 for 240t). A new condition is a design change, not a content
+  add.
+- Exactly two **condition interactions** exist in the slice — the thermal-shock
+  pair: an ember hit on a Chilled target consumes Chilled and applies Staggered; a
+  frost hit on a Burning target consumes Burning and applies Exposed. Deterministic,
+  non-stacking, and deliberately readable — combo play for caster and hybrid builds
+  without growing the condition pool. A new interaction is a design change, not a
+  content add.
 
 ### Combat — deliberate real-time
 
 - Attacks are committed actions with wind-up → active → recovery phases measured in
   sim ticks. Player intent arrives as input commands (features.md M7 constraint 2) and
   monsters use the same action model — one resolution path for everyone.
-- Contact during the active phase triggers the check: accuracy (Finesse + weapon +
-  stance) against guard (Finesse + armor + state). Blocking and dodging spend Stamina
-  to raise guard or grant avoidance frames. No twitch aiming: targeting is soft-lock;
-  skill expression is positioning, stamina management, and reading telegraphs.
-- Every monster attack has a readable telegraph with a minimum wind-up. "Fast" enemies
-  get shorter recoveries, never unreadable wind-ups.
+- Contact during the active phase triggers the check: accuracy against guard. Blocking
+  and dodging spend Stamina to raise guard or grant avoidance frames. No twitch
+  aiming: targeting is soft-lock; skill expression is positioning, stamina management,
+  and reading telegraphs.
+- **Player action timings** (ticks at 60 Hz; starting values):
+
+  | Action | Wind-up | Active | Recovery | Stamina |
+  | --- | --- | --- | --- | --- |
+  | Light attack | 18 | 6 | 14 | 0 |
+  | Heavy attack (raw ×3/2) | 34 | 8 | 26 | 25 |
+  | Ranged loose (draw is holdable) | 24 | — | 16 | 10 |
+  | Dodge (avoidance frames 5–16) | — | 24 total | — | 20 |
+  | Sprint | — | held | — | 10/s |
+
+- **Blocking** is held, not timed: +6 guard while up; a blocked physical hit deals
+  ×1/4 damage (floor) and drains stamina equal to ⌊raw/2⌋. Running out of stamina
+  while blocking breaks the block and applies Exposed. A block raised within 12 ticks
+  of impact is a **caught block** — no stamina drain — and is the trigger for the
+  Answering Strike ability.
+- **Stagger:** taking a keen hit mid-wind-up, or any hit while Exposed, applies
+  Staggered (action canceled, 30t lockout).
+- **Hits are reliable; misses are legible.** Baseline (unmodified) player offensive
+  checks are tuned to land 70–85% at-level against chaff and commons, while monster
+  baseline checks stay at 45–65% — a correctly positioned, committed attack rarely
+  whiffs, exploiting openings pushes above the band by design, and the
+  player's real defense is dodging and blocking, not the roll. Elites and the boss
+  sit below that baseline by design: their Exposed openings are the intended lane.
+  A failed check is never an empty whiff — a failed weapon check presents as a
+  visible deflection off guard, a failed spell check as a resist flash (presentation
+  only, no damage).
+- Every monster attack has a readable telegraph. There are exactly two wind-up
+  floors: **30 ticks** normally, **24 ticks** for attacks explicitly tagged *fast*
+  in their kit data — nothing goes lower. Fast attacks get shorter recoveries too,
+  never sub-floor wind-ups. Boss enrage phases accelerate recoveries only.
+- **Feel bands (deliberate but forgiving):** an at-level player kills a common enemy
+  in 4–8 landed hits and survives common hits within per-loadout envelopes (martial
+  reference 6–10; caster and hybrid below); chaff (gnawers, skitterlings) dies in
+  2–3 hits but arrives in packs; elites take 30–90 s; the slice boss is a 3–7 minute
+  fight. These are the headless balancer's assertion bands (below).
 
 ### Magic — aetherwork
 
@@ -104,38 +175,115 @@ science/alchemy vein is load-bearing, not flavor:
 
 - Spells are abilities (see loadout below) that spend Aether and require an equipped
   catalyst; the catalyst determines potency and specialization.
+- An empty pool never means standing idle: every equipped catalyst grants
+  **Aetherspark** *(working name)*, outside the 14-ability pool — a zero-cost
+  spell-type bolt (base 4, aether channel, light-attack timings).
+- Skill refunds aether: a **keen** spell success refunds ⌊cost/2⌋. Reading openings
+  is the caster's version of stamina management.
+- Catalyst tiers (slice, all alembic-crafted above the base; *(working names)*):
+  **Ashwood Focus** (potency +2, buyable — magic is accessible early), **Glazed
+  Focus** (potency +4), **Resonant Focus** (potency +6, attuned at crafting to ember,
+  frost, or aether: that channel's spell raw ×5/4). Better catalysts are the crafting
+  endgame of the slice; crafting is what makes magic yours.
 - Catalysts and **tonics** are crafted at the alembic from **reagents** harvested in
-  the world; better catalysts are the crafting endgame of the slice.
-- Base catalysts are bought or found so magic is accessible early; crafting is what
-  makes it yours.
+  the world (gathering table below).
 
 ### Progression — classless, loadout-driven
 
 - XP from quests, combat, and discovery. Level cap **10** for the slice. Each level
-  grants one attribute point plus one **ability pick** from a single shared pool.
-- Ability pool (slice): **12–16 authored abilities** across martial techniques,
-  aetherwork spells, and **knacks** (passives/utility).
+  grants one attribute point plus one **ability pick** from the single shared pool —
+  nine picks by cap, from **14 authored abilities**, so no two builds need overlap
+  much. Reshaping (respec) at any waystone costs 25 marks.
 - Loadout: **4 active slots + 2 knack slots**. Build identity comes from the loadout
   limit, not class walls.
-- Three playable folk at character creation *(working names)*: **Human**, **Skarn**
-  (stone-blooded, sturdy), and **Wickfolk** (small, quick, catacomb-canny) — minor
-  attribute modifiers plus cosmetic identity. Full visual distinctiveness is an M5
-  character-pipeline deliverable (design implication #5).
+- **The ability pool** (slice; costs are starting values):
+
+  | Ability | Type | Cost | Effect |
+  | --- | --- | --- | --- |
+  | Cleaving Arc | Martial | 35 stamina | Heavy arc hitting every target in a 2.5 m, 120° front; raw ×3/4 per target |
+  | Answering Strike | Martial | — | After a caught block, next light attack within 60t is auto-keen and costs no stamina |
+  | Piercing Lunge | Martial | 25 stamina | 4 m gap-closing thrust; ignores half of physical soak |
+  | Ironset Stance | Martial | 20 + 5/s stamina | Plant: +4 guard, immune to Staggered, movement ×1/2, up to 240t |
+  | Steady Loose | Martial | 15 stamina | Chargeable shot: full 45t draw gives +3 accuracy and raw ×3/2 |
+  | Emberlash | Aetherwork | 12 aether | Ember bolt, base 10; applies Burning on keen |
+  | Frostbind | Aetherwork | 15 aether | 3 m frost burst, base 8; applies Chilled on success |
+  | Aetherpulse | Aetherwork | 18 aether | 3 m force wave, aether channel, base 6; Staggers non-elites |
+  | Mendweave | Aetherwork | 25 aether | Restore 30 Health over 360t (5/s); suppressed by Envenomed |
+  | Wardlight | Aetherwork | 20 aether | Ward absorbing 25 damage for up to 1200t; emits lantern-strength light (night/catacomb showcase) |
+  | Forager's Eye | Knack | — | Gathering nodes yield +1 and shimmer within 30 m |
+  | Wellspring | Knack | — | Stamina regeneration +10/s |
+  | Quiet Tread | Knack | — | Monster perception radius against you ×3/4 |
+  | Tinker's Thrift | Knack | — | Recipes need one fewer common material (min 1); salvage yields +1 |
+
+- Three playable folk at character creation *(working names)*: **Human** (+1 to any
+  one attribute), **Skarn** (stone-blooded, sturdy: +1 Might, +1 Vitality,
+  −1 Finesse), and **Wickfolk** (small, quick, catacomb-canny: +1 Finesse,
+  +1 Attunement, −1 Might) — minor modifiers plus cosmetic identity. Full visual
+  distinctiveness is an M5 character-pipeline deliverable (design implication #5).
+- **XP curve:** reaching level `n+1` from `n` costs `100×n` XP (4,500 total to cap).
+  Sources (starting values): common kills 4–20 by archetype (bestiary table), elites
+  60, boss 400, main-arc stages 100–200, side quests 75–150, first visit to a named
+  landmark 25. Target pacing: completing the slice content lands level 9–10 in a
+  6–8 hour playthrough.
 
 ### Crafting, gathering, economy — slice depth
 
 - Three stations, each an NPC-owned world landmark (feeding schedules and the
   living-village showcase): **forge** (weapons/armor and upgrades), **alembic**
   (catalysts and tonics), **hearth** (food buffs).
-- Gathering is district content: crops and herbs in the fields, timber and game in the
-  forest, fish and salvage on the shore, ores and relics in the catacombs. Materials
-  are cell content and stream like everything else.
-- **20–30 recipes** total for the slice. Single currency: **marks** *(working name)*.
-  Vendor NPCs hold stock and buy back; prices are static data for the slice — a
-  dynamic economy is explicitly out of scope (below).
-- Loot: containers and monster drops from seeded deterministic tables; rarity tiers
-  Common / Fine / Exceptional / Mythic; found and crafted gear carries **0–2
-  modifiers** from a bounded affix list.
+- **Base gear** (starting values; base damage scales by the named attribute):
+
+  | Item | Numbers | Notes |
+  | --- | --- | --- |
+  | Sword | base 10, accuracy +1, Might | The reference weapon |
+  | Axe | base 12, accuracy 0, Might | Recoveries +4t |
+  | Spear | base 9, accuracy +1, Might | +0.5 m reach |
+  | Bow | base 8, accuracy +2, Finesse | Ranged; draw is holdable |
+  | Cloth garb | guard +1, soak 1 | — |
+  | Leather jack | guard +2, soak 2 | — |
+  | Scale coat | guard +3, soak 4 | Stamina regen −5/s |
+
+- Gathering is district content, and every reagent exists to feed a recipe: **fields**
+  — grain, bittergreen, emberpetal *(working names)*; **forest** — timber, game meat,
+  greymaw pelts; **shore** — fish, sea salt, salvage iron; **catacombs** — dimstone
+  ore, relic fragments, skitterling venom. Materials are cell content and stream like
+  everything else.
+- **24 recipes** for the slice (counts fix v1's 20–30 range): **forge (8)** —
+  Tempered Sword / Axe / Spear, Laminated Bow, Scale Coat, Reinforced Buckler, Weapon
+  Whetting (+2 base damage, once per weapon), Armor Fitting (+1 guard, once per
+  armor); **alembic (9)** — Ashwood / Glazed / Resonant Focus, Vigor Tonic (40 Health
+  over 8 s), Stone Tonic (+2 physical soak, 60 s), Clearing Draught (cures Burning /
+  Chilled / Envenomed), Emberdust Oil and Frostglass Oil (weapon +3 of that channel,
+  120 s), Aether Salts (restore 30 Aether); **hearth (7)** — Hearthloaf (+10 max
+  Stamina), Fisher's Stew (+10 max Health), Orchard Preserve (+1 Finesse), Hunter's
+  Roast (+1 Might), Tidebroth (+1 Attunement), Waybread (1 Health/s out of combat,
+  5 min), Mulled Cordial (stamina regen +5/s). Hearth buffs last 10 minutes; one food
+  buff active at a time.
+- Single currency: **marks** *(working name)*; starting purse 25. Price bands
+  (static data for the slice — a dynamic economy is explicitly out of scope):
+  reagents 1–4, tonics/food 8–15, base weapons and armor 30–60, Fine gear 80–150;
+  vendors buy back at half price (floor). The station NPCs plus one general trader at
+  the docks hold stock.
+- Loot: containers and monster drops from seeded deterministic tables on the `loot`
+  stream; rarity tiers **Common / Fine / Exceptional / Mythic**. Found and crafted
+  gear carries **0–2 affixes** gated by rarity (Common 0, Fine 1, Exceptional 2,
+  Mythic 2 plus an authored unique property — boss/quest loot only) from the bounded
+  list: **Keen** (+1 accuracy), **Weighted** (+2 damage), **Bulwark** (+1 guard),
+  **Attuned** (+1 spell potency), **Emberbound** / **Frostbound** (+3 of that channel
+  on hit), **Venombound** (+2 venom; Envenomed on keen), **Light** (the item's
+  stamina costs ×3/4) — plus a bounded **conditional** pair, on Exceptional and
+  Mythic gear only, that changes decisions rather than numbers: **Bracing** (a
+  caught block restores 10 Stamina) and **Nimble** (a dodge whose avoidance frames
+  beat an attack grants +2 accuracy for 120t). Affix scope and aggregation are
+  fixed: each affix names its eligible slots — Keen, Weighted, Emberbound,
+  Frostbound, and Venombound roll on weapons and apply only to attacks made with
+  that weapon; Light rolls on weapons and shields (that item's stamina costs);
+  Attuned rolls on catalysts; Bulwark and Bracing roll on armor and shields; Nimble
+  rolls on armor. Affixes never stack across equipped items: at most one equipped
+  copy of a given affix is active (duplicates are inert), a caught block triggers
+  Bracing once, and re-triggering Nimble resets its 120t window rather than
+  extending or stacking it. A new flat affix is a content add; a new affix
+  *mechanic*, trigger, or aggregation rule is a design change.
 
 ### Death — respawn with a recoverable cost
 
@@ -149,12 +297,31 @@ science/alchemy vein is load-bearing, not flavor:
 
 ### Bestiary (slice)
 
-Six to eight archetypes chosen for AI/animation variety, not volume *(all working
-names)*: **burrow-gnawers** (field vermin, swarm behavior), **greymaws** (forest pack
-predator), **wayland brigands** (humanoid — they fight *and* talk, exercising the
-dialog/combat seam), **skitterlings** (catacomb swarm), **hollow wardens** (armored
-catacomb sentinels, elite), and one slice boss beneath the catacombs *(working title:
-the Warden Below)*. Monster kits use the same action and resolution model as players.
+Six archetypes chosen for AI/animation variety, not volume *(all working names)*.
+Monster kits use the same action and resolution model as players, but their ratings
+are **authored flat**, not derived from attributes: the table gives each archetype's
+accuracy, guard, and resist ratings directly, and attack damage is the final raw
+value (no scaling attribute) in the **physical** channel unless another channel is
+named. Check type is per-attack: weapon-type attacks check accuracy vs. guard
+whatever their damage channel (the skitterling's venom bite is still accuracy vs.
+guard); spell-type attacks — marked with an inline potency rating — check potency
+vs. resist. Exposed lowers guard only, so an armored kit can still be authored
+spell-soft (the hollow warden is). Attacks tagged *fast* use the 24-tick wind-up
+floor. Soak is physical/elemental. **At-level** is the sweep level the balancer
+treats this archetype as tuned for.
+
+| Archetype | HP | Acc/Guard/Res | Soak | Attacks (raw, wind-up/active/recovery) | At-level | XP | Behavior |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| **Burrow-gnawer** (field vermin, chaff) | 24 | 3/2/1 | 0/0 | bite 6 (24/4/16, *fast*) | 2 | 5 | Swarms of 3–6; pack flees below 2 |
+| **Greymaw** (forest pack predator) | 70 | 4/3/2 | 1/0 | lunge 12 (30/6/24), pounce 16 (40/6/30) | 5 | 15 | Packs of 2–4 circle and flank |
+| **Wayland brigand** (humanoid) | 90 | 5/3/3 | 2/1 | sword 12 (30/6/20) | 5 | 20 | Blocks (+6 guard while up) and dodges on the player action model; fights *and* talks — parleyable before aggro, may yield below 25% HP (the dialog/combat seam) |
+| **Skitterling** (catacomb swarm, chaff) | 14 | 4/3/4 | 0/1 | bite 4 venom + Envenomed on keen (24/4/12, *fast*) | 8 | 4 | Clutches of 4–8 from nests; drops skitterling venom (alembic reagent) |
+| **Hollow warden** (elite catacomb sentinel) | 240 | 6/8/5 | 6/4 | maul 20 (44/8/34), slam 26 + Stagger (54/10/40) | 8 | 60 | Immune to Staggered; a dodged slam or 40+ damage within 120t applies Exposed for 240t — the intended opening; guard-heavy but spell-soft (resist 5) |
+| **The Warden Below** (slice boss) | 700 | 7/7/7 | 6/6 | warden kit + aether lance 18 aether, spell-type, potency 7, ranged (60/–/40) | 10 | 400 | Three phases: warden kit → at 66% summons skitterling clutches, pillars give lance cover → at 33% enrage (recoveries ×3/4, never shorter wind-ups) plus arena-edge ember vents (Burning zones) |
+
+Drop tables per archetype live in `game/balance/` loot data: hides, pelts, sinew,
+venom sacs, relic fragments, marks, and rarity-gated gear; the boss drops a Mythic
+catalyst core plus the main-arc quest item.
 
 ### Quests and journal
 
@@ -163,15 +330,83 @@ the Warden Below)*. Monster kits use the same action and resolution model as pla
   D-141 event stream). LLM dialog can surface, flavor, and hand out quests, but a
   state transition happens only through a validated structured intent (D-074) —
   free-form model text never mutates quest state.
-- Slice content: one main arc *(working title: "The Undercroft Stirs")* — signs of
-  disturbance beneath the village lead from fields/village investigation down into the
-  catacombs and the slice boss, deliberately driving repeated D1↔D2 transitions
-  through different entrances (M4's exercise). Plus **6–10 side quests**, at least one
-  exercising each system: a bounty (combat), a commission (crafting), a
-  harvest/delivery (gathering/economy), a persuasion errand (LLM dialog), and a
-  vista/exploration hunt (streaming world).
+- Main arc *(working title: "The Undercroft Stirs")*, six stages engineered so the
+  middle stages each use a **different** catacomb entrance, driving repeated D1↔D2
+  transitions (M4's exercise): **1. Signs in the Fields** — gnawed crop cellars and a
+  collapsed tunnel (reach / collect / talk); **2. The Sealed Door** — the village
+  entrance stands opened from below; first descent (defeat); **3. Words with the
+  Wardens** — recover a relic fragment from the newly hostile hollow wardens and
+  surface via the castle entrance (defeat / collect); **4. The Apothecary's Ask** —
+  craft a Clearing Draught and a Resonant Focus to withstand the deep vents,
+  gathering across fields, shore, and forest (craft / collect), with an *optional*
+  objective: brew spare Clearing Draughts and douse the arena vents with them on an
+  early descent — the existing recipe put to a second use, not a new item; **5. The Forest
+  Throat** — brigands are looting the disturbed vaults under the forest entrance
+  (defeat, or parley via validated dialog intent); **6. The Warden Below** — the boss,
+  and a sealing choice epilogue at the castle (defeat / talk).
+- **Eight side quests**, each tagged to the system it exercises: A Bounty of Teeth
+  (gnawer cull — combat), The Greymaw Alpha (elite hunt — pack AI), The Smith's
+  Commission (craft a tempered weapon — forge), Cold Larder (fisher's stew chain —
+  hearth/shore), First Fruits (harvest and deliver — gathering/economy), The
+  Reluctant Witness (persuade a dock salvager — LLM dialog with validated intent),
+  Relics for the Reliquary (fragment collection — catacomb loop), The Painter of the
+  Vista (reach three viewpoints — streaming world/exploration).
+- **Preparation changes encounters** — deterministically, through quest flags
+  consumed as encounter data (never LLM output): stage 4's *optional* vent-dousing
+  with spare Clearing Draughts quenches the boss's phase-3 ember vents (the
+  mandatory draught work only
+  makes them survivable, so the authored vent mechanic stays reachable in every
+  playthrough that skips the option); a successful stage-5 parley clears the forest
+  entrance of brigand ambushes; completing Relics for the Reliquary records the
+  hollow wardens' Exposed opening and spell-softness in the journal. Bounded to
+  authored hooks: a new hook is a content add, a new consequence *type* is a design
+  change.
 - The journal is the append-only, save-schema-versioned play-history log — the same
   stream that feeds Summarizer recaps and localization.
+
+### Balance validation — the headless balancer (D-165)
+
+M3.5's "iterative balancing" is a measured check, not vibes. Because the sim is
+deterministic, worker-pure TypeScript, combat can run **headless in Node at far
+faster than real time** — no browser, no renderer. The combat-foundation item builds
+this alongside the combat systems; it is the fast inner loop, and the separate
+harness gameplay scenario (M3.5 exit) is the physical outer proof in the real
+runtime.
+
+- **Sweep:** three reference loadouts (a martial, a caster, a hybrid — defined in
+  `game/balance/` data) × levels {2, 5, 8, 10} with level-appropriate reference gear
+  × every bestiary archetype (boss at level 10 only), driven by simple scripted
+  rotation policies (no LLM anywhere near it). A fixed root seed deterministically
+  derives ~32 seeds per matchup. A matchup is **at-level** when the sweep level
+  equals the archetype's bestiary *At-level* value; higher is overlevel, lower is
+  underlevel.
+- **Asserted bands** (tuning moves the numbers *within* bands freely; band changes
+  are ordinary tuning unless structural). At each archetype's at-level matchup:
+  player **baseline** offensive hit chance 70–85% against chaff and commons, where
+  baseline means the unmodified check — no conditions on either side, no affix
+  triggers, no ability/stance modifiers (elite/boss baseline hit chance is
+  unasserted — their Exposed openings are the intended lane); monster baseline
+  offensive hit chance 45–65%; modified checks (Exposed targets, Nimble windows,
+  stance bonuses) are *supposed* to exceed the band — that reward is tracked by the
+  opening-exploitation proxy, never asserted against the baseline bands; TTK 4–8 landed hits for commons (greymaws, brigands)
+  and 2–3 for chaff (gnawers, skitterlings); survivability per reference loadout
+  with **both bounds asserted each** so overtanky builds fail too — martial 6–10
+  common hits, hybrid 5–9, caster 4–7 (build identity comes from different
+  envelopes, not one shared band); win rate vs. commons and chaff ≥95%; elite
+  duration 30–90 s. Boss (level 10): duration 180–420 s, win rate 40–80% across the
+  reference builds. Overlevel matchups assert only the ≥95% win rate; underlevel
+  matchups run as report-only diagnostics. The XP ledger for the scripted slice
+  completion lands level 9–10.
+- **Output:** a diffable per-matchup report (win rate, TTK distribution, damage by
+  channel, resource pressure) so a tuning change shows its blast radius; band
+  violations fail the ordinary unit gate. Balance regressions become visible the same
+  way replay-hash regressions do. The report also carries **engagement proxies**,
+  report-only: time spent resource-starved, action-use distribution, damage share by
+  ability, rotation dominance across seeds, and measured benefit from condition
+  interactions and Exposed openings. TTK and win rate can pass while the optimal
+  rotation is degenerate — these are the instruments that catch it. Promoting a
+  proxy to an asserted band takes a decision entry, after real runs show where it
+  sits.
 
 ### Explicitly out of scope for the slice
 
@@ -240,3 +475,8 @@ brings actual humans in; until then the bar is "NPCs don't feel like vending mac
 7. **LLM output never mutates state directly** (D-074/D-142). Quest, trade, and any
    other state-affecting outcome of dialog crosses into the sim only as a validated
    structured intent; free-form text is presentation.
+8. **Rules math is integer-only** (D-165). All rules resolution — ratings, damage,
+   pools, durations, regeneration accumulators — uses integer arithmetic with
+   floor-division rational multipliers; floats never enter rules state. This keeps
+   same-host replay hashing trivially stable and removes floating-point divergence as
+   a risk for future cross-machine replay (features.md M7 constraint 3).
