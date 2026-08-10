@@ -23,12 +23,15 @@ extend the engine interface (in `engine/`, following its rules) — don't tunnel
 game/
   world/       district/cell definitions, world graph, spawn tables (data-first)
   sim/         ✅ gameplay adapter/state plus runtime binding; D1 movement,
-               collision, transition interaction, and deterministic NPC navigation,
-               schedules, avoidance, and presentation are live
+               collision, transition interaction, deterministic NPC navigation/
+               schedules/avoidance, and the M3.5 combat core + combat system
+               (checks, conditions, monsters, respawn) are live
   npc/         ✅ persona cards, dialog schemas, rolling memory + fallback policy
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)
-  balance/     tunable-numbers data (never inline constants in sim code)
+  balance/     ✅ tunable-numbers data (never inline constants in sim code); ruleset
+               v2 combat tables and the headless balancer (the D-165 balance
+               instrument, asserted in the unit gate) live here
 ```
 
 ## Rules

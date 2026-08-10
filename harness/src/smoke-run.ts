@@ -2097,13 +2097,15 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
       right: number,
       yawRadians: number,
     ) => {
-      const payload = new Uint8Array(16);
+      const payload = new Uint8Array(24);
       const view = new DataView(payload.buffer);
       view.setFloat32(0, forward, true);
       view.setFloat32(4, right, true);
       view.setFloat32(8, yawRadians, true);
       view.setUint32(12, 0, true);
-      return { kind: "player.input-axes@2", payload, sequence, targetTick };
+      view.setUint32(16, 0, true);
+      view.setUint32(20, 0, true);
+      return { kind: "player.input-axes@3", payload, sequence, targetTick };
     };
     const commands = [command(0, 2, 1, 0, 0.25), command(1, 8, 0, 1, -0.5)];
     const first = await telemetry.replaySimulation(commands, 120, 8_675_309);
@@ -2227,13 +2229,15 @@ async function verifyM3PlayableLoop(
     async ({ globalName, ticks, yawRadians }) => {
       const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
       const command = (sequence: number, targetTick: number, forward: number, yaw: number) => {
-        const payload = new Uint8Array(16);
+        const payload = new Uint8Array(24);
         const view = new DataView(payload.buffer);
         view.setFloat32(0, forward, true);
         view.setFloat32(4, 0, true);
         view.setFloat32(8, yaw, true);
         view.setUint32(12, 0, true);
-        return { kind: "player.input-axes@2", payload, sequence, targetTick };
+        view.setUint32(16, 0, true);
+        view.setUint32(20, 0, true);
+        return { kind: "player.input-axes@3", payload, sequence, targetTick };
       };
       const replay = await telemetry.replaySimulation(
         [command(0, 1, 1, yawRadians), command(1, ticks, 0, yawRadians)],

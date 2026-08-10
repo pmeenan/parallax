@@ -144,9 +144,12 @@ reproduce D&D-protected names, creatures, or mechanics text.
 
 - **Blocking** is held, not timed: +6 guard while up; a blocked physical hit deals
   ×1/4 damage (floor) and drains stamina equal to ⌊raw/2⌋. Running out of stamina
-  while blocking breaks the block and applies Exposed. A block raised within 12 ticks
-  of impact is a **caught block** — no stamina drain — and is the trigger for the
-  Answering Strike ability.
+  while blocking breaks the block, applies Exposed, and locks re-raising for 30
+  ticks. A block raised within 12 ticks of impact is a **caught block** — no stamina
+  drain — and is the trigger for the Answering Strike ability.
+- **Spell casts** share the committed-action model: bolts wind up 24/2/18, rites
+  (heals, wards) 30/2/20 — casting is a commitment you fit into openings, exactly
+  like a heavy swing.
 - **Stagger:** taking a keen hit mid-wind-up, or any hit while Exposed, applies
   Staggered (action canceled, 30t lockout).
 - **Hits are reliable; misses are legible.** Baseline (unmodified) player offensive
@@ -181,10 +184,12 @@ science/alchemy vein is load-bearing, not flavor:
 - Skill refunds aether: a **keen** spell success refunds ⌊cost/2⌋. Reading openings
   is the caster's version of stamina management.
 - Catalyst tiers (slice, all alembic-crafted above the base; *(working names)*):
-  **Ashwood Focus** (potency +2, buyable — magic is accessible early), **Glazed
-  Focus** (potency +4), **Resonant Focus** (potency +6, attuned at crafting to ember,
-  frost, or aether: that channel's spell raw ×5/4). Better catalysts are the crafting
-  endgame of the slice; crafting is what makes magic yours.
+  **Ashwood Focus** (potency +1, buyable — magic is accessible early), **Glazed
+  Focus** (potency +2), **Resonant Focus** (potency +3, attuned at crafting to ember,
+  frost, or aether: that channel's spell raw ×5/4). Potencies were retuned down from
+  +2/+4/+6 by the balancer so spell checks track weapon-accuracy growth and stay
+  inside the baseline hit band. Better catalysts are the crafting endgame of the
+  slice; crafting is what makes magic yours.
 - Catalysts and **tonics** are crafted at the alembic from **reagents** harvested in
   the world (gathering table below).
 
@@ -312,12 +317,12 @@ treats this archetype as tuned for.
 
 | Archetype | HP | Acc/Guard/Res | Soak | Attacks (raw, wind-up/active/recovery) | At-level | XP | Behavior |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Burrow-gnawer** (field vermin, chaff) | 24 | 3/2/1 | 0/0 | bite 6 (24/4/16, *fast*) | 2 | 5 | Swarms of 3–6; pack flees below 2 |
-| **Greymaw** (forest pack predator) | 70 | 4/3/2 | 1/0 | lunge 12 (30/6/24), pounce 16 (40/6/30) | 5 | 15 | Packs of 2–4 circle and flank |
-| **Wayland brigand** (humanoid) | 90 | 5/3/3 | 2/1 | sword 12 (30/6/20) | 5 | 20 | Blocks (+6 guard while up) and dodges on the player action model; fights *and* talks — parleyable before aggro, may yield below 25% HP (the dialog/combat seam) |
-| **Skitterling** (catacomb swarm, chaff) | 14 | 4/3/4 | 0/1 | bite 4 venom + Envenomed on keen (24/4/12, *fast*) | 8 | 4 | Clutches of 4–8 from nests; drops skitterling venom (alembic reagent) |
-| **Hollow warden** (elite catacomb sentinel) | 240 | 6/8/5 | 6/4 | maul 20 (44/8/34), slam 26 + Stagger (54/10/40) | 8 | 60 | Immune to Staggered; a dodged slam or 40+ damage within 120t applies Exposed for 240t — the intended opening; guard-heavy but spell-soft (resist 5) |
-| **The Warden Below** (slice boss) | 700 | 7/7/7 | 6/6 | warden kit + aether lance 18 aether, spell-type, potency 7, ranged (60/–/40) | 10 | 400 | Three phases: warden kit → at 66% summons skitterling clutches, pillars give lance cover → at 33% enrage (recoveries ×3/4, never shorter wind-ups) plus arena-edge ember vents (Burning zones) |
+| **Burrow-gnawer** (field vermin, chaff) | 24 | 3/2/3 | 0/0 | bite 6 (24/4/16, *fast*) | 2 | 5 | Swarms of 3–6; pack flees below 2 |
+| **Greymaw** (forest pack predator) | 70 | 4/3/6 | 1/0 | lunge 12 (30/6/24), pounce 16 (40/6/30) | 5 | 15 | Packs of 2–4 circle and flank |
+| **Wayland brigand** (humanoid) | 90 | 5/3/6 | 2/1 | sword 12 (30/6/20) | 5 | 20 | Blocks (+6 guard while up) and dodges on the player action model; fights *and* talks — parleyable before aggro, may yield below 25% HP (the dialog/combat seam) |
+| **Skitterling** (catacomb swarm, chaff) | 40 | 5/4/8 | 0/1 | bite 4 venom + Envenomed on keen (24/4/12, *fast*) | 8 | 4 | Clutches of 4–8 from nests; drops skitterling venom (alembic reagent) |
+| **Hollow warden** (elite catacomb sentinel) | 800 | 6/8/7 | 6/4 | maul 20 (44/8/60), slam 26 + Stagger (54/10/70) | 8 | 60 | Immune to Staggered; a dodged slam or 40+ damage within 120t applies Exposed for 240t — the intended opening; guard-heavy but spell-softer (resist 7 under guard 8); long recoveries are the attack windows |
+| **The Warden Below** (slice boss) | 3000 | 7/7/9 | 6/6 | maul 18 (44/8/70), slam 22 + Stagger (54/10/80), aether lance 14 aether, spell-type, potency 7, ranged 12 m on a ≥5 s cooldown (60/2/70) | 10 | 400 | Three phases: warden kit → at 66% summons skitterling clutches, pillars give lance cover → at 33% enrage (recoveries ×3/4, never shorter wind-ups) plus arena-edge ember vents (Burning zones); shares the warden's break opening |
 
 Drop tables per archetype live in `game/balance/` loot data: hides, pelts, sinew,
 venom sacs, relic fragments, marks, and rarity-gated gear; the boss drops a Mythic
@@ -367,11 +372,13 @@ catalyst core plus the main-arc quest item.
 ### Balance validation — the headless balancer (D-165)
 
 M3.5's "iterative balancing" is a measured check, not vibes. Because the sim is
-deterministic, worker-pure TypeScript, combat can run **headless in Node at far
-faster than real time** — no browser, no renderer. The combat-foundation item builds
-this alongside the combat systems; it is the fast inner loop, and the separate
-harness gameplay scenario (M3.5 exit) is the physical outer proof in the real
-runtime.
+deterministic, worker-pure TypeScript, combat runs **headless in Node at far faster
+than real time** — no browser, no renderer. The balancer is built
+(`game/src/balance/headless-balancer.ts`) and runs in the ordinary unit gate; it is
+the fast inner loop, and the separate harness gameplay scenario (M3.5 exit) is the
+physical outer proof in the real runtime. The values in this section reflect its
+first converged tuning pass: skitterling, warden, and boss stat blocks, catalyst
+potencies, and elite/boss recovery windows were all retuned by band violations.
 
 - **Sweep:** three reference loadouts (a martial, a caster, a hybrid — defined in
   `game/balance/` data) × levels {2, 5, 8, 10} with level-appropriate reference gear

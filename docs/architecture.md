@@ -1386,6 +1386,17 @@ save/load, replay-driven harness tests, and the future multiplayer model.
 D-141 makes semantic, serializable sim events the shared boundary for gameplay, UI,
 audio, journal, and recap consumers. D-142 binds rules to versioned game-owned data,
 randomness to named seeded streams, and state-changing LLM output to validated intents.
+The M3.5 combat foundation (D-165) adds a pure integer-math combat core plus a
+world-binding combat system inside the game simulation adapter: contested checks on
+the named `combat` RNG stream, committed wind-up/active/recovery actions, conditions
+and the thermal-shock interactions, monster entities from authored kit data, soft-lock
+hit detection, and waystone respawn. The game save schema is v5 and the player input
+command is `player.input-axes@3` (movement plus block-held and combat press-edge
+bits); monsters publish through the same presentation SAB inside the existing 64-entry
+crowd capacity. The same core drives the headless balancer
+(`game/src/balance/headless-balancer.ts`), which sweeps reference loadouts × levels ×
+bestiary kits over seeded duels in the ordinary unit gate and asserts the
+game-design.md balance bands.
 D-160 resolves D-143's measured UI-substrate spike with a per-surface hybrid. The render
 worker owns frame-coherent world anchors and heavy-screen visuals/interactions; the main
 thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,

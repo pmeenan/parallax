@@ -123,6 +123,8 @@ export function createM3GameplayRuntime(
         );
         simulationService.enqueue(
           createPlayerInputCommand(nextInputCommandSequence++, snapshot.tick + 3, {
+            blockHeld: frame.combatBlockHeld,
+            combatPressed: frame.combatPressed,
             forward: frame.forward,
             interactPressed: frame.interactPressed,
             right: frame.right,

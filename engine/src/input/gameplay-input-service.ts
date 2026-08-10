@@ -2,12 +2,30 @@ export const GAMEPLAY_INPUT_TELEMETRY_SCHEMA_VERSION = 2;
 
 export interface GameplayInputFrame {
   readonly cameraPitchRadians: number;
+  // Bitfield of combat action press edges since the last frame; the bit vocabulary is
+  // game-owned (the engine captures buttons, the game assigns meaning).
+  readonly combatBlockHeld: boolean;
+  readonly combatPressed: number;
   readonly forward: number;
   readonly interactPressed: boolean;
   readonly right: number;
   readonly sequence: number;
   readonly yawRadians: number;
 }
+
+// Combat button bit assignments captured by this service. The game maps these to its
+// input command; keep in sync with game/src/sim/m3-combat-system.ts.
+export const GAMEPLAY_COMBAT_BUTTON_BITS = Object.freeze({
+  aetherspark: 128,
+  debugSpawn: 256,
+  dodge: 4,
+  heavy: 2,
+  light: 1,
+  slot1: 8,
+  slot2: 16,
+  slot3: 32,
+  slot4: 64,
+});
 
 export interface GameplayInputTelemetrySnapshot {
   readonly emittedFrameCount: number;
@@ -31,6 +49,18 @@ export interface GameplayInputService {
   subscribe(listener: (snapshot: GameplayInputTelemetrySnapshot) => void): () => void;
 }
 
+const COMBAT_KEY_BITS: Readonly<Record<string, number>> = Object.freeze({
+  Digit1: GAMEPLAY_COMBAT_BUTTON_BITS.slot1,
+  Digit2: GAMEPLAY_COMBAT_BUTTON_BITS.slot2,
+  Digit3: GAMEPLAY_COMBAT_BUTTON_BITS.slot3,
+  Digit4: GAMEPLAY_COMBAT_BUTTON_BITS.slot4,
+  KeyF: GAMEPLAY_COMBAT_BUTTON_BITS.aetherspark,
+  KeyG: GAMEPLAY_COMBAT_BUTTON_BITS.debugSpawn,
+  KeyQ: GAMEPLAY_COMBAT_BUTTON_BITS.heavy,
+  ShiftLeft: GAMEPLAY_COMBAT_BUTTON_BITS.dodge,
+  ShiftRight: GAMEPLAY_COMBAT_BUTTON_BITS.dodge,
+});
+
 const YAW_RADIANS_PER_PIXEL = 0.0024;
 const PITCH_RADIANS_PER_PIXEL = 0.0018;
 const KEYBOARD_YAW_STEP_RADIANS = 0.08;
@@ -49,6 +79,8 @@ export function createGameplayInputService(
   let cameraPitchRadians = 0;
   let pendingAnimationFrame: number | null = null;
   let pendingInteractPressed = false;
+  let pendingCombatPressed = 0;
+  let blockButtonHeld = false;
   let disposed = false;
   let uiSuppressed = false;
   let restorePointerLockAfterUi = false;
@@ -70,6 +102,8 @@ export function createGameplayInputService(
     pendingAnimationFrame = null;
     const interactPressed = pendingInteractPressed;
     pendingInteractPressed = false;
+    const combatPressed = pendingCombatPressed;
+    pendingCombatPressed = 0;
     const active = frameListener;
     if (active === null || telemetry.state !== "running" || uiSuppressed) return;
     const forward =
@@ -78,6 +112,8 @@ export function createGameplayInputService(
     const right = Number(pressed.has("KeyD")) - Number(pressed.has("KeyA"));
     const frame = Object.freeze({
       cameraPitchRadians,
+      combatBlockHeld: blockButtonHeld,
+      combatPressed,
       forward,
       interactPressed,
       right,
@@ -100,6 +136,10 @@ export function createGameplayInputService(
     if (pendingAnimationFrame !== null || telemetry.state !== "running" || uiSuppressed) return;
     pendingAnimationFrame = windowTarget.requestAnimationFrame(emit);
   };
+  const scheduleCombat = (bits: number): void => {
+    pendingCombatPressed |= bits;
+    scheduleEmit();
+  };
   const onKeyDown = (event: KeyboardEvent): void => {
     if (
       event.repeat ||
@@ -119,6 +159,11 @@ export function createGameplayInputService(
       scheduleEmit(true);
       return;
     }
+    const combatBit = COMBAT_KEY_BITS[event.code];
+    if (combatBit !== undefined) {
+      scheduleCombat(combatBit);
+      return;
+    }
     if (["KeyW", "KeyA", "KeyS", "KeyD", "ArrowUp", "ArrowDown"].includes(event.code)) {
       pressed.add(event.code);
       scheduleEmit();
@@ -127,6 +172,28 @@ export function createGameplayInputService(
   const onKeyUp = (event: KeyboardEvent): void => {
     if (uiSuppressed) return;
     if (pressed.delete(event.code)) scheduleEmit();
+  };
+  const onMouseDown = (event: MouseEvent): void => {
+    if (
+      uiSuppressed ||
+      telemetry.state !== "running" ||
+      documentTarget.pointerLockElement !== canvas
+    ) {
+      return;
+    }
+    if (event.button === 0) scheduleCombat(GAMEPLAY_COMBAT_BUTTON_BITS.light);
+    if (event.button === 2) {
+      blockButtonHeld = true;
+      scheduleEmit();
+    }
+  };
+  const onMouseUp = (event: MouseEvent): void => {
+    if (event.button !== 2 || !blockButtonHeld) return;
+    blockButtonHeld = false;
+    if (!uiSuppressed && telemetry.state === "running") scheduleEmit();
+  };
+  const onContextMenu = (event: Event): void => {
+    if (documentTarget.pointerLockElement === canvas) event.preventDefault();
   };
   const onMouseMove = (event: MouseEvent): void => {
     if (
@@ -166,8 +233,10 @@ export function createGameplayInputService(
     });
   };
   const onBlur = (): void => {
-    if (pressed.size === 0) return;
+    if (pressed.size === 0 && !blockButtonHeld && pendingCombatPressed === 0) return;
     pressed.clear();
+    blockButtonHeld = false;
+    pendingCombatPressed = 0;
     scheduleEmit();
   };
   const detachCanvas = (): void => {
@@ -188,7 +257,10 @@ export function createGameplayInputService(
       if (disposed) return;
       disposed = true;
       detachCanvas();
+      documentTarget.removeEventListener("contextmenu", onContextMenu);
+      documentTarget.removeEventListener("mousedown", onMouseDown);
       documentTarget.removeEventListener("mousemove", onMouseMove);
+      documentTarget.removeEventListener("mouseup", onMouseUp);
       documentTarget.removeEventListener("pointerlockchange", onPointerLockChange);
       windowTarget.removeEventListener("blur", onBlur);
       windowTarget.removeEventListener("keydown", onKeyDown);
@@ -197,6 +269,8 @@ export function createGameplayInputService(
       if (pendingAnimationFrame !== null) windowTarget.cancelAnimationFrame(pendingAnimationFrame);
       pendingAnimationFrame = null;
       pendingInteractPressed = false;
+      pendingCombatPressed = 0;
+      blockButtonHeld = false;
       uiSuppressed = false;
       restorePointerLockAfterUi = false;
       canvas = null;
@@ -221,6 +295,8 @@ export function createGameplayInputService(
       if (canvas === targetCanvas) return;
       pressed.clear();
       pendingInteractPressed = false;
+      pendingCombatPressed = 0;
+      blockButtonHeld = false;
       attachCanvas(targetCanvas);
       scheduleEmit();
     },
@@ -239,6 +315,8 @@ export function createGameplayInputService(
         }
         pressed.clear();
         pendingInteractPressed = false;
+        pendingCombatPressed = 0;
+        blockButtonHeld = false;
         emit();
         restorePointerLockAfterUi = documentTarget.pointerLockElement === canvas;
         uiSuppressed = true;
@@ -259,7 +337,10 @@ export function createGameplayInputService(
       if (telemetry.state !== "idle") throw new Error("Gameplay input can only be started once");
       frameListener = listener;
       attachCanvas(targetCanvas);
+      documentTarget.addEventListener("contextmenu", onContextMenu);
+      documentTarget.addEventListener("mousedown", onMouseDown);
       documentTarget.addEventListener("mousemove", onMouseMove);
+      documentTarget.addEventListener("mouseup", onMouseUp);
       documentTarget.addEventListener("pointerlockchange", onPointerLockChange);
       windowTarget.addEventListener("blur", onBlur);
       windowTarget.addEventListener("keydown", onKeyDown);

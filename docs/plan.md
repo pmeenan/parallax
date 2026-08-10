@@ -257,20 +257,40 @@ is slice-scale: deep enough that each system is real, small enough for a two-dis
 demo. The detailed ruleset is designed as this milestone's first track and recorded in
 game-design.md — not invented ad hoc inside each system.
 
-- [ ] Ruleset design pass: expand game-design.md from one genre paragraph into the
+- [x] Ruleset design pass: expand game-design.md from one genre paragraph into the
       slice-scale mechanics spec — combat loop shape, magic model, stat/ability/
       progression scope, crafting depth, loot/economy scale, quest structure — with
       original names and mechanics text throughout (no D&D-protected material).
-      *Note: ruleset v1 was drafted 2026-07-29 ahead of M3 (D-142) because the M3 sim
-      data model depends on it. Ruleset v2 (D-165, 2026-08-09) concretized the full
-      spec — resolution math, timings, abilities, bestiary, XP, recipes, affixes,
-      quest outline — under the chosen deliberate-but-forgiving feel target, and made
-      the headless balancer (built with the combat foundation, run in the unit gate)
-      the balance instrument. The box stays unchecked until that balancer exists and
-      has consumed the spec.*
-- [ ] Combat foundation: melee/ranged/magic resolution, hit detection, damage/status
+      *Ruleset v1 drafted 2026-07-29 ahead of M3 (D-142); v2 (D-165, 2026-08-09)
+      concretized the full spec under the deliberate-but-forgiving feel target. The
+      headless balancer now exists, consumed the spec, and validated every combat
+      band (its first tuning pass retuned skitterling/warden/boss stat blocks,
+      catalyst potencies, and elite recovery windows into game-design.md). The XP
+      pacing band is the one balancer assertion still pending — it lands with the
+      progression item.*
+- [x] Combat foundation: melee/ranged/magic resolution, hit detection, damage/status
       model — all sim-worker state under the M3 determinism constraints, with player
       intent flowing through the input-command pattern like everything else.
+      *Delivered 2026-08-09: pure integer combat core (checks, damage/soak, five
+      conditions + thermal-shock pair, block/dodge/caught-block, Answering Strike,
+      Aetherspark, keen refunds, elite break openings), monster entities with kit
+      data and minimal retaliation behavior (perception/aggro/flee stay with the
+      creature-AI item), soft-lock hit detection, waystone respawn, save schema v5,
+      input command v3 with combat buttons (LMB light / Q heavy / RMB block / Shift
+      dodge / 1–4 slots / F spark; G is a greybox dev spawn), combat semantic
+      events + telemetry counters, and the headless balancer in the unit gate.
+      Player-side bow content arrives with items/loadout work; the resolution model
+      already covers ranged (Steady Loose, monster lance, spell bolts). Qualifying
+      physical-console smoke (D-157: required — sim replay/save-load surface), run on
+      the review-corrected candidate:
+      `smoke-1-fe2a386a5569-dev-01-showcase-2026-08-10T12-54-54-713Z.{json,md}`
+      passed all three facets and 36/36 checks against exact artifact
+      `fe2a386a55690b6c126e3c93f0b4bad592ecccab85e7e66d66cef4a32df04717`; JSON/MD
+      SHA-256
+      `82e8b04b7bfb3c4bafec31046ed296a12904d0daa54469e1464d903259e53da5` /
+      `7c86f2dae75df7661a00a2fad9eb5e52059f8436f2885de9ea17426d84d41128`. An earlier
+      pre-correction candidate's smoke also passed and remains retained
+      machine-local evidence.*
 - [ ] Creature/monster AI: perception, aggro, combat and flee behaviors layered on the
       M3 navigation work — the behavior tier, distinct from LLM dialog. Monster body
       types also feed requirements to the M5 character pipeline (game-design.md

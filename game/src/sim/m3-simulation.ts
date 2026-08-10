@@ -9,6 +9,7 @@ import type {
   SimulationWorldDefinition,
 } from "@parallax/engine";
 import { CHARACTER_CONTROLLER_BALANCE } from "../balance/character-controller";
+import { monsterKitIndex } from "../balance/combat";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
 import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
 import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
@@ -17,11 +18,28 @@ import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
 } from "./deterministic-navigation";
+import {
+  applyCombatInput,
+  assertCombatState,
+  COMBAT_PRESSED_DEBUG_SPAWN,
+  COMBAT_PRESSED_MASK,
+  COMBAT_STATE_BYTES,
+  type CombatWorldView,
+  combatTelemetryCounters,
+  createInitialM3CombatState,
+  deserializeCombatState,
+  type M3CombatState,
+  playerMovementProfile,
+  serializeCombatState,
+  spawnMonster,
+  stepM3Combat,
+} from "./m3-combat-system";
 import { buildNpcScheduleSet, type NpcScheduleSet } from "./npc-schedules";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 4;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 5;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
+export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
 
 interface NpcAgentState {
   readonly dwellTicks: number;
@@ -35,6 +53,7 @@ interface NpcAgentState {
 
 interface M3SimulationState {
   readonly collisionResolutionCount: number;
+  readonly combat: M3CombatState;
   readonly inputForward: number;
   readonly inputRight: number;
   readonly interactionActivationCount: number;
@@ -72,12 +91,17 @@ type InteractionTarget =
   | Readonly<{ readonly kind: "transition"; readonly value: number }>;
 
 const EMPTY_EVENTS = Object.freeze([]);
-const INPUT_COMMAND_KIND = "player.input-axes@2";
-const INPUT_PAYLOAD_BYTES = 16;
+const INPUT_COMMAND_KIND = "player.input-axes@3";
+const INPUT_PAYLOAD_BYTES = 24;
 const INPUT_INTERACT_PRESSED = 1;
+const INPUT_BLOCK_HELD = 2;
+const INPUT_FLAGS_MASK = INPUT_INTERACT_PRESSED | INPUT_BLOCK_HELD;
+const SPAWN_COMMAND_KIND = "combat.spawn-monster@1";
+const SPAWN_PAYLOAD_BYTES = 16;
 const STATE_HEADER_BYTES = 96;
 const NPC_STATE_BYTES = 32;
-const STATE_BYTES = STATE_HEADER_BYTES + NPC_CROWD_BALANCE.agentCount * NPC_STATE_BYTES;
+const NPC_BLOCK_BYTES = NPC_CROWD_BALANCE.agentCount * NPC_STATE_BYTES;
+const STATE_BYTES = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
 
 export function createGameSimulationAdapter(
   context: GameSimulationContext,
@@ -93,11 +117,52 @@ export function createGameSimulationAdapter(
   });
   const schedules = buildNpcScheduleSet(context.world, navigation);
   const tickSeconds = 1 / context.timestepHz;
+  const combatWorld: CombatWorldView = Object.freeze({
+    groundHeight: (x: number, z: number) => navigation.groundHeight(x, z),
+    maximumX: context.world.bounds.maximum[0],
+    maximumZ: context.world.bounds.maximum[2],
+    minimumX: context.world.bounds.minimum[0],
+    minimumZ: context.world.bounds.minimum[2],
+    obstacles: world.obstacles,
+  });
+  const spawnPointPosition = (): readonly [number, number, number] =>
+    Object.freeze([
+      0,
+      Math.fround(navigation.groundHeight(0, 0) + CHARACTER_CONTROLLER_BALANCE.halfHeightMeters),
+      0,
+    ]) as readonly [number, number, number];
   return Object.freeze({
     applyCommand(
       state: M3SimulationState,
       command: SimulationCommand,
     ): SimulationStepResult<M3SimulationState> {
+      if (command.kind === SPAWN_COMMAND_KIND) {
+        if (command.payload.byteLength !== SPAWN_PAYLOAD_BYTES) {
+          throw new Error("Monster spawn command payload is invalid");
+        }
+        const view = new DataView(
+          command.payload.buffer,
+          command.payload.byteOffset,
+          command.payload.byteLength,
+        );
+        const kitIndex = view.getUint32(0, true);
+        const x = view.getFloat32(4, true);
+        const z = view.getFloat32(8, true);
+        if (view.getUint32(12, true) !== 0 || !Number.isFinite(x) || !Number.isFinite(z)) {
+          throw new Error("Monster spawn command payload is invalid");
+        }
+        const spawned = spawnMonster(state.combat, kitIndex, x, z, combatWorld);
+        if (spawned === null) return Object.freeze({ events: EMPTY_EVENTS, state });
+        return Object.freeze({
+          events: Object.freeze([
+            Object.freeze({
+              kind: "combat.spawned",
+              payload: combatEventPayload([spawned.entityId, kitIndex, 0, 0]),
+            }),
+          ]),
+          state: Object.freeze({ ...state, combat: spawned.state }),
+        });
+      }
       if (command.kind !== INPUT_COMMAND_KIND) {
         throw new Error(`Unsupported game simulation command ${command.kind}`);
       }
@@ -113,14 +178,39 @@ export function createGameSimulationAdapter(
       const inputRight = view.getFloat32(4, true);
       const playerYawRadians = view.getFloat32(8, true);
       const flags = view.getUint32(12, true);
-      assertInputState(inputForward, inputRight, playerYawRadians, flags);
+      const combatPressed = view.getUint32(16, true);
+      const reserved = view.getUint32(20, true);
+      assertInputState(inputForward, inputRight, playerYawRadians, flags, combatPressed, reserved);
       const interactionPressed = (flags & INPUT_INTERACT_PRESSED) !== 0;
+      const blockHeld = (flags & INPUT_BLOCK_HELD) !== 0;
+      let combat = applyCombatInput(state.combat, combatPressed, blockHeld);
+      const events: Readonly<{ readonly kind: string; readonly payload: Uint8Array }>[] = [
+        Object.freeze({ kind: "input.command-applied", payload: command.payload.slice() }),
+      ];
+      if ((combatPressed & COMBAT_PRESSED_DEBUG_SPAWN) !== 0) {
+        const spawnDistance = 8;
+        const spawned = spawnMonster(
+          combat,
+          monsterKitIndex("greymaw"),
+          state.playerPosition[0] + Math.sin(playerYawRadians) * spawnDistance,
+          state.playerPosition[2] + Math.cos(playerYawRadians) * spawnDistance,
+          combatWorld,
+        );
+        if (spawned !== null) {
+          combat = spawned.state;
+          events.push(
+            Object.freeze({
+              kind: "combat.spawned",
+              payload: combatEventPayload([spawned.entityId, monsterKitIndex("greymaw"), 0, 0]),
+            }),
+          );
+        }
+      }
       return Object.freeze({
-        events: Object.freeze([
-          Object.freeze({ kind: "input.command-applied", payload: command.payload.slice() }),
-        ]),
+        events: Object.freeze(events),
         state: Object.freeze({
           ...state,
+          combat,
           inputForward,
           inputRight,
           interactionAttemptCount: state.interactionAttemptCount + Number(interactionPressed),
@@ -134,6 +224,7 @@ export function createGameSimulationAdapter(
       const spawnZ = 0;
       return Object.freeze({
         collisionResolutionCount: 0,
+        combat: createInitialM3CombatState(seed),
         inputForward: 0,
         inputRight: 0,
         interactionActivationCount: 0,
@@ -192,6 +283,7 @@ export function createGameSimulationAdapter(
       );
       const state = Object.freeze({
         collisionResolutionCount: view.getUint32(44, true),
+        combat: deserializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES),
         inputForward: view.getFloat32(8, true),
         inputRight: view.getFloat32(12, true),
         interactionActivationCount: view.getUint32(52, true),
@@ -228,6 +320,13 @@ export function createGameSimulationAdapter(
             id: agent.entityId,
             position: agent.position,
             yawRadians: agent.yawRadians,
+          }),
+        ),
+        ...state.combat.monsters.map((monster) =>
+          Object.freeze({
+            id: monster.entityId,
+            position: monster.position,
+            yawRadians: monster.yawRadians,
           }),
         ),
       ]);
@@ -291,18 +390,31 @@ export function createGameSimulationAdapter(
         view.setFloat32(offset + 20, agent.position[2], true);
         view.setFloat32(offset + 24, agent.yawRadians, true);
       }
+      serializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES, state.combat);
       return bytes;
     },
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
-      const movement = movePlayer(world, navigation, state, tickSeconds);
+      const movementProfile = playerMovementProfile(state.combat);
+      const movement = movePlayer(world, navigation, state, tickSeconds, movementProfile);
       const crowd = stepNpcCrowd(navigation, schedules, state, movement.position, tickSeconds);
+      const combatStep = stepM3Combat(
+        state.combat,
+        combatWorld,
+        movement.position,
+        state.playerYawRadians,
+        tickSeconds,
+      );
+      const playerPosition = combatStep.respawnPlayer
+        ? spawnPointPosition()
+        : combatStep.playerPosition;
       const interaction = state.interactionRequested
-        ? nearestInteraction(world, crowd.agents, movement.position)
+        ? nearestInteraction(world, crowd.agents, playerPosition)
         : null;
       const activated = interaction !== null;
       const next = Object.freeze({
         ...state,
         collisionResolutionCount: state.collisionResolutionCount + movement.collisionCount,
+        combat: combatStep.state,
         interactionActivationCount: state.interactionActivationCount + Number(activated),
         interactionRequested: false,
         lastInteractionMarkerIndex:
@@ -317,15 +429,21 @@ export function createGameSimulationAdapter(
         npcMovingAgentCount: crowd.movingAgentCount,
         npcScheduleTransitionCount:
           state.npcScheduleTransitionCount + crowd.scheduleTransitionCount,
-        playerPosition: movement.position,
+        playerPosition,
       });
       return Object.freeze({
-        events: interactionEvents(interaction),
+        events: Object.freeze([
+          ...interactionEvents(interaction),
+          ...combatStep.events.map((event) =>
+            Object.freeze({ kind: event.kind, payload: combatEventPayload(event.values) }),
+          ),
+        ]),
         state: next,
       });
     },
     telemetryCounters(state: M3SimulationState): Readonly<Record<string, number>> {
       return Object.freeze({
+        ...combatTelemetryCounters(state.combat),
         collisionResolutionCount: state.collisionResolutionCount,
         interactionActivationCount: state.interactionActivationCount,
         interactionAttemptCount: state.interactionAttemptCount,
@@ -588,6 +706,7 @@ function movePlayer(
   navigation: DeterministicNavigationMesh,
   state: M3SimulationState,
   tickSeconds: number,
+  movementProfile: Readonly<{ readonly denominator: number; readonly numerator: number }>,
 ): Readonly<{
   readonly collisionCount: number;
   readonly distanceMeters: number;
@@ -599,7 +718,11 @@ function movePlayer(
   const right = state.inputRight * scale;
   const sine = Math.sin(state.playerYawRadians);
   const cosine = Math.cos(state.playerYawRadians);
-  const distance = CHARACTER_CONTROLLER_BALANCE.movementMetersPerSecond * tickSeconds;
+  const distance =
+    (CHARACTER_CONTROLLER_BALANCE.movementMetersPerSecond *
+      tickSeconds *
+      movementProfile.numerator) /
+    movementProfile.denominator;
   const deltaX = (sine * forward + cosine * right) * distance;
   const deltaZ = (cosine * forward - sine * right) * distance;
   const oldX = state.playerPosition[0];
@@ -717,7 +840,8 @@ function assertState(
   ) {
     throw new Error("Game simulation state contains invalid controller or crowd values");
   }
-  assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0);
+  assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0, 0, 0);
+  assertCombatState(state.combat);
   for (const [index, agent] of state.npcAgents.entries()) {
     const route = schedules.routes[agent.routeIndex];
     const segment = route?.segments[agent.targetStopIndex];
@@ -771,6 +895,8 @@ function assertInputState(
   inputRight: number,
   yawRadians: number,
   flags: number,
+  combatPressed: number,
+  reserved: number,
 ): void {
   if (
     !Number.isFinite(inputForward) ||
@@ -780,7 +906,11 @@ function assertInputState(
     Math.abs(inputRight) > 1 ||
     !Number.isSafeInteger(flags) ||
     flags < 0 ||
-    (flags & ~INPUT_INTERACT_PRESSED) !== 0
+    (flags & ~INPUT_FLAGS_MASK) !== 0 ||
+    !Number.isSafeInteger(combatPressed) ||
+    combatPressed < 0 ||
+    (combatPressed & ~COMBAT_PRESSED_MASK) !== 0 ||
+    reserved !== 0
   ) {
     throw new Error("Player input state values are invalid");
   }
@@ -790,6 +920,8 @@ export function createPlayerInputCommand(
   sequence: number,
   targetTick: number,
   input: Readonly<{
+    readonly blockHeld?: boolean;
+    readonly combatPressed?: number;
     readonly forward: number;
     readonly interactPressed?: boolean;
     readonly right: number;
@@ -801,8 +933,40 @@ export function createPlayerInputCommand(
   view.setFloat32(0, input.forward, true);
   view.setFloat32(4, input.right, true);
   view.setFloat32(8, input.yawRadians, true);
-  view.setUint32(12, input.interactPressed === true ? INPUT_INTERACT_PRESSED : 0, true);
+  view.setUint32(
+    12,
+    (input.interactPressed === true ? INPUT_INTERACT_PRESSED : 0) |
+      (input.blockHeld === true ? INPUT_BLOCK_HELD : 0),
+    true,
+  );
+  view.setUint32(16, (input.combatPressed ?? 0) & COMBAT_PRESSED_MASK, true);
+  view.setUint32(20, 0, true);
   return Object.freeze({ kind: INPUT_COMMAND_KIND, payload, sequence, targetTick });
+}
+
+export function createSpawnMonsterCommand(
+  sequence: number,
+  targetTick: number,
+  kitId: string,
+  x: number,
+  z: number,
+): SimulationCommand {
+  const payload = new Uint8Array(SPAWN_PAYLOAD_BYTES);
+  const view = new DataView(payload.buffer);
+  view.setUint32(0, monsterKitIndex(kitId), true);
+  view.setFloat32(4, x, true);
+  view.setFloat32(8, z, true);
+  view.setUint32(12, 0, true);
+  return Object.freeze({ kind: SPAWN_COMMAND_KIND, payload, sequence, targetTick });
+}
+
+function combatEventPayload(values: readonly [number, number, number, number]): Uint8Array {
+  const payload = new Uint8Array(16);
+  const view = new DataView(payload.buffer);
+  for (const [index, value] of values.entries()) {
+    view.setUint32(index * 4, value >>> 0, true);
+  }
+  return payload;
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

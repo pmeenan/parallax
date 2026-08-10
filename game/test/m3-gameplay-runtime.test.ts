@@ -97,13 +97,15 @@ describe("M3 gameplay runtime", () => {
     if (activeInput === null) throw new Error("Gameplay input did not start");
     activeInput({
       cameraPitchRadians: 0.2,
+      combatBlockHeld: false,
+      combatPressed: 0,
       forward: 1,
       interactPressed: true,
       right: 0,
       sequence: 0,
       yawRadians: 0.5,
     });
-    expect(commands).toMatchObject([{ kind: "player.input-axes@2", sequence: 0, targetTick: 13 }]);
+    expect(commands).toMatchObject([{ kind: "player.input-axes@3", sequence: 0, targetTick: 13 }]);
 
     publishCanvas(replacementCanvas);
     expect(reboundCanvases).toEqual([replacementCanvas]);
@@ -122,6 +124,8 @@ describe("M3 gameplay runtime", () => {
     expect(emitCurrentFrameCount).toBe(1);
     activeInput({
       cameraPitchRadians: 0.2,
+      combatBlockHeld: false,
+      combatPressed: 0,
       forward: 0,
       interactPressed: false,
       right: 0,
