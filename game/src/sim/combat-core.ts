@@ -122,6 +122,20 @@ export type CombatCoreEvent =
 
 export type ConditionId = "burning" | "chilled" | "envenomed" | "exposed";
 
+export function applyCombatCondition(
+  state: CombatantCombatState,
+  condition: ConditionId,
+): CombatantCombatState {
+  const conditions = { ...state.conditions };
+  if (condition === "burning") conditions.burningTicks = COMBAT_CONDITION.burning.durationTicks;
+  if (condition === "chilled") conditions.chilledTicks = COMBAT_CONDITION.chilled.durationTicks;
+  if (condition === "envenomed") {
+    conditions.envenomedTicks = COMBAT_CONDITION.envenomed.durationTicks;
+  }
+  if (condition === "exposed") conditions.exposedTicks = COMBAT_CONDITION.exposed.durationTicks;
+  return Object.freeze({ ...state, conditions: Object.freeze(conditions) });
+}
+
 export interface AttackSpec {
   readonly answeringEligible: boolean;
   readonly appliesCondition: ConditionId | null;
@@ -183,7 +197,7 @@ export function deriveMonsterSheet(kitIndex: number): CombatantSheet {
     hasCatalyst: false,
     maxAether: 0,
     maxHealth: kit.healthMax,
-    maxStamina: 0,
+    maxStamina: kit.staminaMax,
     might: 0,
     monsterAttacks: kit.attacks,
     monsterClass: kit.monsterClass,

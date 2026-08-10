@@ -315,6 +315,21 @@ spell-soft (the hollow warden is). Attacks tagged *fast* use the 24-tick wind-up
 floor. Soak is physical/elemental. **At-level** is the sweep level the balancer
 treats this archetype as tuned for.
 
+D-166 makes the Behavior column executable through `game/balance/creature-ai.ts`; the
+authoritative perception/leash/tactic values live there and district pack placement
+lives in `game/world/creature-spawns.ts`. Wayland brigands have 70 Stamina for their
+player-model block/dodge defense. Those are tunables within the behaviors below, not a
+second ruleset. Monster body and locomotion requirements remain inputs to M5's
+character/animation pipeline even while M3.5 uses capsules.
+
+Encounter readability is also profile-driven: creatures turn at authored rates and
+must face the player before committing an attack; each deterministic encounter group
+caps concurrent wind-up/active attackers; and authored spawn rank gives flanking
+members stable, opposite-first angles that do not reshuffle when a packmate falls.
+The boss and its bounded clutch share one encounter group even though the summons are
+spawned later. Phase-3 vents publish a one-second warning before applying Burning, and
+a depleted fleeing pack cannot re-aggro merely because the player camps its home.
+
 | Archetype | HP | Acc/Guard/Res | Soak | Attacks (raw, wind-up/active/recovery) | At-level | XP | Behavior |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Burrow-gnawer** (field vermin, chaff) | 24 | 3/2/3 | 0/0 | bite 6 (24/4/16, *fast*) | 2 | 5 | Swarms of 3–6; pack flees below 2 |
@@ -414,6 +429,13 @@ potencies, and elite/boss recovery windows were all retuned by band violations.
   rotation is degenerate — these are the instruments that catch it. Promoting a
   proxy to an asserted band takes a decision entry, after real runs show where it
   sits.
+
+The seeded-duel sweep cannot validate group-only behavior. The recurring deterministic
+`creature-engagement-fixture.ts` therefore drives four concurrent gnawers in the
+ordinary unit gate and records attack starts, slot-wait ticks, an active-attacker
+histogram, overlap ticks, and the concurrent-attacker high-water. It asserts both
+readable pressure (real overlap) and the authored two-attacker ceiling; it complements
+the duel bands rather than pretending they measure pack coordination.
 
 ### Explicitly out of scope for the slice
 

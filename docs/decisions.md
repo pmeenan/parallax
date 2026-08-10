@@ -28,6 +28,75 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-166: Bind authored creature packs to deterministic navigation-aware combat AI (2026-08-10, accepted)
+
+**Decision:** Replace the combat foundation's retaliation dummy with one generic
+sim-worker creature-AI interpreter driven by versioned per-kit behavior profiles and
+district-owned spawn/pack data. Perception is a bounded radius plus an exact clear
+segment through D-159's immutable navigation projection; a sighting or received hit
+propagates aggro only through the authored pack within 16 m. Aggro, pursue/flank,
+flee, return, idle, and yield are explicit serialized modes. Creatures use synchronous
+previous-tick separation and deterministic fixed-angle fallback steering, and every
+accepted step must be walkable and swept-clear in the same navigation projection.
+Loss-of-interest and home leashes return a creature to its authored spawn instead of
+making render residency or player distance permanent authority.
+
+The slice behaviors consume game-design.md rather than inventing a parallel ruleset:
+greymaws alternate authored encirclement points with closing passes; the last member
+of a burrow-gnawer pack flees; Wayland brigands use a 70-stamina player-model block/
+dodge defense and yield below one-quarter health; wardens retain their existing break
+opening; and the Warden Below summons a bounded four-skitterling clutch at two-thirds,
+then at one-third shortens recovery only and, while actively aggroed, pulses the
+authored arena-edge Burning vent annulus. Wind-up floors never change. D1 starts with
+six stable authored greybox creatures across two packs and one solitary brigand. The
+existing cap of 12 live / 16
+serialized monsters keeps player + 48 villagers + monsters within the render worker's
+64-placeholder presentation pool.
+
+Advance the game payload save schema from v5 to v6. Each monster now saves home, pack,
+mode, decision serial/cooldown, boss phase, and vent cooldown; reserved bytes remain
+canonical zero and saved creature poses are validated against navigation on load.
+Stable semantic events expose aggro start/clear, behavior changes, boss phases, spawns,
+and hazards. Public game counters expose perception, aggro/deaggro, behavior/flee/boss
+transitions, summons, and cumulative movement. These fields remain inside D-156's
+existing engine save envelope and command protocol.
+
+**Context:** The M3.5 combat item deliberately shipped only minimal face/approach/swing
+retaliation and left perception, aggro, flee, navigation tactics, and authored world
+spawns to this plan item. D-141 also requires semantic danger transitions before the
+later adaptive-audio consumer, while D-159 forbids gameplay authority from following
+streamed render LODs.
+
+**Consequences:** Same-host replay and save/load now cover creature decisions and
+authored spawns. The final candidate required one D-157 physical `smoke@1` because it
+changed the smoke-exercised simulation replay/save-load workload and combined sim-step
+cost.
+Parley content for the yielded brigand remains a dialog/quest consumer, not free-form
+AI authority. Catacomb spawn placement lands with D2 world content; its warden,
+skitterling, and boss behavior profiles are already executable and directly tested.
+
+**Closure evidence:** Final `pnpm check` passed the repeatable production build, lint,
+and 196 test files / 2,507 passing tests (one skipped). The required physical-console
+dev-01/Showcase smoke retained schema-v71 / mandatory-metric-set-v34 artifact
+`harness/results/smoke-1-2c9f23fff5d7-dev-01-showcase-2026-08-10T15-05-44-099Z.{json,md}`
+for build `2c9f23fff5d7505fc01e03ab7b8030b793e4418c8df36c9443277e3401a91bd1`.
+JSON/Markdown SHA-256 are
+`7cd994ab1c754406706a56f3c807cb02bf1dd2a9cc139c9b173e48a45513aaa6` /
+`f72f843d3778f55fdd7d218116844061426d391f320604261a262408f86ae1e9`.
+All six launches, all three facets, and 36/36 budget checks passed; every 120-tick
+replay and live save/load converged on
+`13eb6f64b9528d887cc3f1c256734f7d744d2b670ff50d24f9de5e3cb3b74433`,
+the 4,497-tick positioning replay/load digest was stable, and the combined
+character/crowd/creature step high-water was 0.8 ms. Per D-119, recording these exact
+report facts and status pointers requires no additional physical run.
+
+**Reopen if:** representative combat density exceeds the 12-live/64-presentation
+envelope; local steering cannot traverse authored encounter geometry; pack tactics
+need squad-level planning; sight needs a distinct visibility projection; or later
+multiplayer adopts rollback/state sync that changes the serialized decision boundary.
+
+---
+
 ## D-165: Adopt ruleset v2 and the headless balancer as M3.5's balance instrument (2026-08-09, accepted)
 
 **Decision:** The M3.5 ruleset design pass concretizes D-142's structural v1 into

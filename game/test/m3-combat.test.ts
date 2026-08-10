@@ -6,23 +6,39 @@ import {
 import { describe, expect, it } from "vitest";
 import { monsterKitIndex } from "../src/balance/combat";
 import {
+  COMBAT_ACTION_DODGE,
   COMBAT_ACTION_DOWNED,
+  COMBAT_ACTION_IDLE,
+  COMBAT_ACTION_WINDUP,
   createCombatantState,
   deriveMonsterSheet,
+  PLAYER_ACTION_LIGHT,
 } from "../src/sim/combat-core";
 import {
+  COMBAT_HEADER_BYTES,
   COMBAT_PRESSED_DEBUG_SPAWN,
   COMBAT_PRESSED_LIGHT,
   COMBAT_PRESSED_SLOT_3,
   COMBAT_PRESSED_SLOT_4,
   COMBAT_STATE_BYTES,
+  COMBATANT_STATE_BYTES,
   type CombatWorldView,
+  CREATURE_BEHAVIOR_FLEE,
+  CREATURE_BEHAVIOR_IDLE,
+  CREATURE_BEHAVIOR_PURSUE,
+  CREATURE_BEHAVIOR_RETURN,
+  CREATURE_BEHAVIOR_YIELD,
   createInitialM3CombatState,
+  creatureEncounterGroupId,
+  creatureFlankAngleRadians,
   MAXIMUM_ALIVE_MONSTERS,
   MAXIMUM_MONSTER_ENTRIES,
   MONSTER_ENTITY_ID_START,
+  PLAYER_COMBAT_SHEET,
+  PLAYER_RESPAWN_TICKS,
   serializeCombatState,
   spawnMonster,
+  stepM3Combat,
 } from "../src/sim/m3-combat-system";
 import {
   createGameSimulationAdapter,
@@ -34,6 +50,28 @@ import { createGreyboxScene } from "../src/world/greybox-generator";
 
 const world = createGreyboxScene(DISTRICT_1_GREYBOX_SPEC).world;
 const context = Object.freeze({ timestepHz: 60, world: simulationWorldDefinition(world) });
+const AI_WORLD: CombatWorldView = Object.freeze({
+  canTraverseSegment: () => true,
+  groundHeight: () => 0,
+  isWalkablePosition: () => true,
+  maximumX: 100,
+  maximumZ: 100,
+  minimumX: -100,
+  minimumZ: -100,
+  obstacles: Object.freeze([]),
+});
+
+function spawnForAi(
+  state: ReturnType<typeof createInitialM3CombatState>,
+  kitId: string,
+  x: number,
+  z: number,
+  packId = 0,
+): ReturnType<typeof createInitialM3CombatState> {
+  const spawned = spawnMonster(state, monsterKitIndex(kitId), x, z, AI_WORLD, packId);
+  if (spawned === null) throw new Error("AI test monster spawn failed");
+  return spawned.state;
+}
 
 // Spawned 1.5 m ahead on both axes: inside melee reach and the frontal arc when the
 // player faces along +X/+Z (yaw = π/4).
@@ -131,7 +169,7 @@ describe("M3 combat integration", () => {
     );
     const events = runtime.step().events.map((event) => event.kind);
     expect(events).toContain("combat.spawned");
-    expect(runtime.gameCounters.combatMonstersAlive).toBe(1);
+    expect(runtime.gameCounters.combatMonstersAlive).toBe(7);
   });
 
   it("treats presses on unbound ability slots as inert input", () => {
@@ -159,15 +197,313 @@ describe("M3 combat integration", () => {
     expect(() => runtime.save()).not.toThrow();
   });
 
-  it("caps the serialized roster by releasing the oldest corpse for replacements", () => {
-    const flatWorld: CombatWorldView = Object.freeze({
-      groundHeight: () => 0,
-      maximumX: 100,
-      maximumZ: 100,
-      minimumX: -100,
-      minimumZ: -100,
-      obstacles: Object.freeze([]),
+  it("perceives the player through navigation sight, propagates pack aggro, and returns on leash", () => {
+    let state = createInitialM3CombatState(11);
+    state = spawnForAi(state, "greymaw", 5, 0, MONSTER_ENTITY_ID_START);
+    state = spawnForAi(state, "greymaw", 8, 0, MONSTER_ENTITY_ID_START);
+    const entered = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    expect(entered.state.monsters.every((monster) => monster.aggro)).toBe(true);
+    expect(entered.state.monsters.every((monster) => monster.behaviorMode > 0)).toBe(true);
+    expect(entered.events.filter((event) => event.kind === "combat.aggro-started")).toHaveLength(2);
+    expect(entered.state.counters.monsterMovementDistanceMeters).toBeGreaterThan(0);
+
+    let far = entered.state;
+    const clearedKinds = new Set<string>();
+    for (let tick = 0; tick < 10; tick += 1) {
+      const step = stepM3Combat(far, AI_WORLD, [80, 0.9, 0], 0, 1 / 60);
+      far = step.state;
+      for (const event of step.events) clearedKinds.add(event.kind);
+    }
+    expect(far.monsters.every((monster) => !monster.aggro)).toBe(true);
+    expect(clearedKinds.has("combat.aggro-cleared")).toBe(true);
+  });
+
+  it("turns at the authored rate and requires facing before attack commitment", () => {
+    let state = spawnForAi(createInitialM3CombatState(18), "greymaw", 1.5, 0);
+    const monster = state.monsters[0];
+    if (monster === undefined) throw new Error("Turn-rate monster is missing");
+    state = Object.freeze({
+      ...state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...monster,
+          aggro: true,
+          behaviorMode: CREATURE_BEHAVIOR_PURSUE,
+          decisionTicks: 1,
+          yawRadians: 0,
+        }),
+      ]),
     });
+    const first = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    expect(first.events.some((event) => event.kind === "combat.attack-started")).toBe(false);
+    expect(Math.abs(first.state.monsters[0]?.yawRadians ?? 0)).toBeCloseTo(4 / 60, 6);
+
+    let turning = first.state;
+    let attackStarted = false;
+    for (let tick = 0; tick < 30; tick += 1) {
+      const stepped = stepM3Combat(turning, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+      turning = stepped.state;
+      attackStarted ||= stepped.events.some((event) => event.kind === "combat.attack-started");
+    }
+    expect(attackStarted).toBe(true);
+  });
+
+  it("keeps authored flank ranks stable and gives the first pair opposite sides", () => {
+    let state = createInitialM3CombatState(19);
+    state = spawnForAi(state, "greymaw", 5, 0, MONSTER_ENTITY_ID_START);
+    state = spawnForAi(state, "greymaw", 6, 0, MONSTER_ENTITY_ID_START);
+    const first = state.monsters[0];
+    const second = state.monsters[1];
+    if (first === undefined || second === undefined) throw new Error("Flank pair is missing");
+    const secondAngle = creatureFlankAngleRadians(second);
+    expect(creatureFlankAngleRadians(first)).toBe(0);
+    expect(secondAngle).toBe(Math.PI);
+    expect(
+      creatureFlankAngleRadians(
+        Object.freeze({ ...second, combat: { ...second.combat, health: 1 } }),
+      ),
+    ).toBe(secondAngle);
+  });
+
+  it("makes the last surviving gnawer flee and keeps the transition serializable", () => {
+    let state = createInitialM3CombatState(12);
+    state = spawnForAi(state, "burrow-gnawer", 4, 0, MONSTER_ENTITY_ID_START);
+    state = spawnForAi(state, "burrow-gnawer", 5, 0, MONSTER_ENTITY_ID_START);
+    state = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60).state;
+    const first = state.monsters[0];
+    if (first === undefined) throw new Error("AI test pack is missing");
+    state = Object.freeze({
+      ...state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...first,
+          combat: Object.freeze({ ...first.combat, actionKind: COMBAT_ACTION_DOWNED, health: 0 }),
+        }),
+        ...state.monsters.slice(1),
+      ]),
+    });
+    const fled = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    const survivor = fled.state.monsters[1];
+    expect(survivor?.aggro).toBe(false);
+    expect(survivor?.behaviorMode).toBe(CREATURE_BEHAVIOR_FLEE);
+    expect(fled.events.some((event) => event.kind === "creature.behavior-changed")).toBe(true);
+    const view = new DataView(new ArrayBuffer(COMBAT_STATE_BYTES));
+    expect(() => serializeCombatState(view, 0, fled.state)).not.toThrow();
+
+    const downedPackmate = fled.state.monsters[0];
+    const returningSurvivor = fled.state.monsters[1];
+    if (downedPackmate === undefined || returningSurvivor === undefined) {
+      throw new Error("Fleeing pack state disappeared");
+    }
+    const camped = stepM3Combat(
+      Object.freeze({
+        ...fled.state,
+        monsters: Object.freeze([
+          downedPackmate,
+          Object.freeze({
+            ...returningSurvivor,
+            aggro: false,
+            behaviorMode: CREATURE_BEHAVIOR_RETURN,
+            decisionTicks: 0,
+            position: returningSurvivor.homePosition,
+          }),
+        ]),
+      }),
+      AI_WORLD,
+      [0, 0.9, 0],
+      0,
+      1 / 60,
+    );
+    expect(camped.state.monsters[1]?.aggro).toBe(false);
+    expect(camped.events.some((event) => event.kind === "combat.aggro-started")).toBe(false);
+  });
+
+  it("lets brigands block, deterministically dodge, and yield below one-quarter health", () => {
+    let state = spawnForAi(createInitialM3CombatState(13), "wayland-brigand", 1.5, 0);
+    const brigand = state.monsters[0];
+    if (brigand === undefined) throw new Error("AI test brigand is missing");
+    const attackingPlayer = Object.freeze({
+      ...state.player,
+      actionId: PLAYER_ACTION_LIGHT,
+      actionKind: COMBAT_ACTION_WINDUP,
+      actionTicksRemaining: 10,
+    });
+    state = Object.freeze({
+      ...state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...brigand,
+          aggro: true,
+          behaviorMode: CREATURE_BEHAVIOR_PURSUE,
+          decisionTicks: 1,
+        }),
+      ]),
+      player: attackingPlayer,
+    });
+    const blocked = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60).state;
+    expect(blocked.monsters[0]?.combat.blockHeldTicks).toBeGreaterThan(0);
+    expect(blocked.monsters[0]?.combat.actionKind).toBe(COMBAT_ACTION_IDLE);
+
+    const blockingBrigand = blocked.monsters[0];
+    if (blockingBrigand === undefined) throw new Error("AI test brigand disappeared");
+    const dodgeReady = Object.freeze({
+      ...blocked,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...blockingBrigand,
+          combat: Object.freeze({ ...blockingBrigand.combat, blockHeldTicks: 0 }),
+          decisionSerial: 2,
+          decisionTicks: 0,
+        }),
+      ]),
+    });
+    const dodged = stepM3Combat(dodgeReady, AI_WORLD, [0, 0.9, 0], 0, 1 / 60).state;
+    expect(dodged.monsters[0]?.combat.actionKind).toBe(COMBAT_ACTION_DODGE);
+
+    const dodgingBrigand = dodged.monsters[0];
+    if (dodgingBrigand === undefined) throw new Error("AI test brigand disappeared");
+    const yielded = stepM3Combat(
+      Object.freeze({
+        ...dodged,
+        monsters: Object.freeze([
+          Object.freeze({
+            ...dodgingBrigand,
+            combat: Object.freeze({ ...dodgingBrigand.combat, health: 20 }),
+          }),
+        ]),
+        player: createCombatantState(PLAYER_COMBAT_SHEET),
+      }),
+      AI_WORLD,
+      [0, 0.9, 0],
+      0,
+      1 / 60,
+    ).state;
+    expect(yielded.monsters[0]?.behaviorMode).toBe(CREATURE_BEHAVIOR_YIELD);
+    expect(yielded.monsters[0]?.aggro).toBe(false);
+    expect(yielded.counters.fleeTransitions).toBe(0);
+  });
+
+  it("advances both boss thresholds, summons a bounded clutch, and preserves wind-up floors", () => {
+    let state = spawnForAi(createInitialM3CombatState(14), "warden-below", 10, 0);
+    const boss = state.monsters[0];
+    if (boss === undefined) throw new Error("AI test boss is missing");
+    state = Object.freeze({
+      ...state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...boss,
+          aggro: true,
+          behaviorMode: CREATURE_BEHAVIOR_PURSUE,
+          combat: Object.freeze({ ...boss.combat, health: 900 }),
+          yawRadians: -Math.PI / 2,
+        }),
+      ]),
+    });
+    const phased = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    expect(phased.state.monsters[0]?.bossPhase).toBe(2);
+    expect(phased.state.monsters).toHaveLength(5);
+    expect(phased.state.counters.summons).toBe(4);
+    expect(phased.events.filter((event) => event.kind === "combat.boss-phase")).toHaveLength(2);
+    expect(phased.events.some((event) => event.kind === "combat.hazard-warned")).toBe(true);
+    expect(phased.events.some((event) => event.kind === "combat.hazard-activated")).toBe(false);
+    expect(phased.state.player.conditions.burningTicks).toBe(0);
+    expect(phased.events.filter((event) => event.kind === "combat.hazard-warned")).toHaveLength(1);
+    expect(
+      phased.state.monsters.every((entry) => creatureEncounterGroupId(entry) === boss.entityId),
+    ).toBe(true);
+    const bossAttack = phased.events.find(
+      (event) => event.kind === "combat.attack-started" && event.values[0] === boss.entityId,
+    );
+    if (bossAttack === undefined) throw new Error("Boss did not start its expected attack");
+    expect(bossAttack.values[2]).toBeGreaterThanOrEqual(44);
+
+    let ventState = phased.state;
+    const ventEvents: Array<{ readonly kind: string }> = [];
+    for (let tick = 0; tick < 60; tick += 1) {
+      const stepped = stepM3Combat(ventState, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+      ventState = stepped.state;
+      ventEvents.push(...stepped.events);
+    }
+    expect(ventEvents.some((event) => event.kind === "combat.hazard-activated")).toBe(true);
+    expect(ventState.player.conditions.burningTicks).toBeGreaterThan(0);
+  });
+
+  it("keeps phase-two boss vents dormant outside active combat", () => {
+    let state = spawnForAi(createInitialM3CombatState(15), "warden-below", 10, 0);
+    const boss = state.monsters[0];
+    if (boss === undefined) throw new Error("AI test boss is missing");
+    state = Object.freeze({
+      ...state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...boss,
+          aggro: false,
+          bossPhase: 2,
+          decisionTicks: 2,
+          hazardCooldownTicks: 0,
+        }),
+      ]),
+    });
+    const dormant = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    expect(dormant.events.some((event) => event.kind === "combat.hazard-warned")).toBe(false);
+    expect(dormant.events.some((event) => event.kind === "combat.hazard-activated")).toBe(false);
+    expect(dormant.state.player.conditions.burningTicks).toBe(0);
+  });
+
+  it("does not emit idle-home behavior churn when the player respawns", () => {
+    let state = spawnForAi(createInitialM3CombatState(16), "burrow-gnawer", 4, 0);
+    state = Object.freeze({
+      ...state,
+      player: Object.freeze({
+        ...state.player,
+        actionKind: COMBAT_ACTION_DOWNED,
+        health: 0,
+      }),
+      playerDownTicks: PLAYER_RESPAWN_TICKS - 1,
+    });
+    const respawned = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60);
+    expect(respawned.respawnPlayer).toBe(true);
+    expect(respawned.state.monsters[0]?.behaviorMode).toBe(CREATURE_BEHAVIOR_IDLE);
+    expect(respawned.events.some((event) => event.kind === "creature.behavior-changed")).toBe(
+      false,
+    );
+    expect(respawned.state.counters.behaviorTransitions).toBe(0);
+  });
+
+  it("tries fallback steering when bounds collapse the direct movement candidate", () => {
+    const edgeWorld: CombatWorldView = Object.freeze({
+      ...AI_WORLD,
+      maximumX: 2,
+    });
+    const spawned = spawnMonster(
+      createInitialM3CombatState(17),
+      monsterKitIndex("greymaw"),
+      1,
+      0,
+      edgeWorld,
+    );
+    if (spawned === null) throw new Error("Edge-steering monster spawn failed");
+    const monster = spawned.state.monsters[0];
+    if (monster === undefined) throw new Error("Edge-steering monster is missing");
+    const pursuing = Object.freeze({
+      ...spawned.state,
+      monsters: Object.freeze([
+        Object.freeze({
+          ...monster,
+          aggro: true,
+          behaviorMode: CREATURE_BEHAVIOR_PURSUE,
+          decisionTicks: 1,
+          yawRadians: Math.PI / 2,
+        }),
+      ]),
+    });
+    const moved = stepM3Combat(pursuing, edgeWorld, [10, 0.9, 0], 0, 1 / 60).state.monsters[0];
+    expect(moved?.position[0]).toBe(1);
+    expect(Math.abs(moved?.position[2] ?? 0)).toBeGreaterThan(0);
+  });
+
+  it("caps the serialized roster by releasing the oldest corpse for replacements", () => {
+    const flatWorld = AI_WORLD;
     const kitIndex = monsterKitIndex("burrow-gnawer");
     const downedCombat = Object.freeze({
       ...createCombatantState(deriveMonsterSheet(kitIndex)),
@@ -213,5 +549,26 @@ describe("M3 combat integration", () => {
       true,
     );
     expect(() => adapter.deserializeState(bytes)).toThrow(/too many monsters/);
+  });
+
+  it("rejects noncanonical reserved bytes in serialized creature AI state", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const bytes = adapter.serializeState(adapter.createInitialState(1));
+    const combatOffset = 96 + 48 * 32;
+    new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(
+      combatOffset + 112,
+      1,
+      true,
+    );
+    expect(() => adapter.deserializeState(bytes)).toThrow(/noncanonical header bytes/);
+
+    const creatureBytes = adapter.serializeState(adapter.createInitialState(1));
+    const firstCreatureOffset = combatOffset + COMBAT_HEADER_BYTES + COMBATANT_STATE_BYTES;
+    new DataView(
+      creatureBytes.buffer,
+      creatureBytes.byteOffset,
+      creatureBytes.byteLength,
+    ).setUint32(firstCreatureOffset + 180, 1, true);
+    expect(() => adapter.deserializeState(creatureBytes)).toThrow(/noncanonical reserved bytes/);
   });
 });

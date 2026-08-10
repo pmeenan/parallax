@@ -5,7 +5,7 @@
 // SIXTIETHS_PER_SECOND, and multipliers are numerator/denominator pairs applied with
 // floor division.
 
-export const COMBAT_RULES_VERSION = 1;
+export const COMBAT_RULES_VERSION = 2;
 export const SIM_TICKS_PER_SECOND = 60;
 
 export type DamageChannel = "aether" | "ember" | "frost" | "physical" | "venom";
@@ -270,6 +270,7 @@ export interface MonsterKitDefinition {
   readonly resist: number;
   readonly soakElemental: number;
   readonly soakPhysical: number;
+  readonly staminaMax: number;
   readonly staggerImmune: boolean;
   readonly xp: number;
 }
@@ -315,6 +316,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 3,
     soakElemental: 0,
     soakPhysical: 0,
+    staminaMax: 0,
     staggerImmune: false,
     xp: 5,
   }),
@@ -335,6 +337,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 6,
     soakElemental: 0,
     soakPhysical: 1,
+    staminaMax: 0,
     staggerImmune: false,
     xp: 15,
   }),
@@ -352,6 +355,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 6,
     soakElemental: 1,
     soakPhysical: 2,
+    staminaMax: 70,
     staggerImmune: false,
     xp: 20,
   }),
@@ -375,6 +379,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 8,
     soakElemental: 1,
     soakPhysical: 0,
+    staminaMax: 0,
     staggerImmune: false,
     xp: 4,
   }),
@@ -399,6 +404,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 7,
     soakElemental: 4,
     soakPhysical: 6,
+    staminaMax: 0,
     staggerImmune: true,
     xp: 60,
   }),
@@ -429,6 +435,7 @@ export const MONSTER_KITS: readonly MonsterKitDefinition[] = Object.freeze([
     resist: 9,
     soakElemental: 6,
     soakPhysical: 6,
+    staminaMax: 0,
     staggerImmune: true,
     xp: 400,
   }),

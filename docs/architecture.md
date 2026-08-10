@@ -1396,7 +1396,22 @@ bits); monsters publish through the same presentation SAB inside the existing 64
 crowd capacity. The same core drives the headless balancer
 (`game/src/balance/headless-balancer.ts`), which sweeps reference loadouts × levels ×
 bestiary kits over seeded duels in the ordinary unit gate and asserts the
-game-design.md balance bands.
+game-design.md balance bands. D-166 advances the game save schema to v6 and replaces
+the combat dummy with navigation-aware deterministic creature AI. Versioned kit
+profiles and district spawn/pack data drive sight, pack aggro, leashes, synchronous
+avoidance/steering, flank/flee/return/yield modes, defender reactions, and boss phases;
+all modes, home/pack identity, decision clocks, and boss state serialize with the
+combat roster. Existing serialized yaw and vent-cooldown fields also supply bounded
+turn/facing commitment and warned vent pulses without a schema change. An encounter
+group derived from stable entity/pack identity unifies the boss with its summons,
+limits concurrent wind-up/active attackers, and supplies stable authored-rank flank
+angles without new per-creature state. The same semantic event stream publishes aggro,
+behavior, boss, spawn, hazard-warning, and hazard transitions, while public counters
+expose decisions and movement. Slot contention and hazard warnings are explicit
+semantic events; a recurring four-creature pressure fixture turns them into slot-wait,
+overlap, histogram, and concurrent-attacker measurements for the group dynamics that
+the seeded-duel balancer cannot observe. Authored D1 spawns plus the 12-live cap keeps
+player + 48 scheduled NPCs + monsters within the existing 64-entry presentation pool.
 D-160 resolves D-143's measured UI-substrate spike with a per-surface hybrid. The render
 worker owns frame-coherent world anchors and heavy-screen visuals/interactions; the main
 thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,

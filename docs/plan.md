@@ -291,10 +291,30 @@ game-design.md — not invented ad hoc inside each system.
       `7c86f2dae75df7661a00a2fad9eb5e52059f8436f2885de9ea17426d84d41128`. An earlier
       pre-correction candidate's smoke also passed and remains retained
       machine-local evidence.*
-- [ ] Creature/monster AI: perception, aggro, combat and flee behaviors layered on the
+- [x] Creature/monster AI: perception, aggro, combat and flee behaviors layered on the
       M3 navigation work — the behavior tier, distinct from LLM dialog. Monster body
       types also feed requirements to the M5 character pipeline (game-design.md
       implication #5).
+      *Complete under accepted D-166: authored D1 packs and per-kit
+      profiles now drive navigation-sight perception, semantic pack aggro, leashes,
+      deterministic steering/avoidance, greymaw flanking, gnawer flight, brigand
+      block/dodge/yield, warden openings, and both boss thresholds (bounded clutch,
+      recovery-only enrage, warned ember-vent Burning annulus). A bounded readability
+      refinement adds authored turn/facing gates, encounter-group attack slots that
+      include boss summons, stable opposite-first flank ranks, and a flee re-aggro
+      guard without changing save schema v6. Direct replay/save tests, public counters,
+      and a recurring multi-creature pressure fixture cover it. Final `pnpm check`
+      passed 196 test files / 2,507 passing tests (one skipped).
+      The required dev-01/Showcase physical smoke
+      `smoke-1-2c9f23fff5d7-dev-01-showcase-2026-08-10T15-05-44-099Z.{json,md}`
+      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
+      and 36/36 checks for build
+      `2c9f23fff5d7505fc01e03ab7b8030b793e4418c8df36c9443277e3401a91bd1`;
+      JSON/Markdown SHA-256 are
+      `7cd994ab1c754406706a56f3c807cb02bf1dd2a9cc139c9b173e48a45513aaa6` /
+      `f72f843d3778f55fdd7d218116844061426d391f320604261a262408f86ae1e9`.
+      All replay/save-load hashes matched and the combined sim-step high-water was
+      0.8 ms. D-119 makes this exact evidence-only closure non-triggering.*
 - [ ] Progression: stats, abilities, leveling on the sim data model — save-schema
       versioned like all sim state.
 - [ ] Items, crafting, economy, loot: the systems on top of the M3 item/economy data

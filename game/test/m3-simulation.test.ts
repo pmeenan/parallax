@@ -34,7 +34,7 @@ describe("M3 game simulation adapter", () => {
     expect(saved.presentation.entities[0]).toEqual(
       expect.objectContaining({ id: PLAYER_ENTITY_ID, yawRadians: 1 }),
     );
-    expect(saved.presentation.entities).toHaveLength(49);
+    expect(saved.presentation.entities).toHaveLength(55);
     expect(saved.presentation.entities[1]?.id).toBe(NPC_ENTITY_ID_START);
     expect(createSimulationRuntime(adapter, 0, 60).load(saved.saveBytes).presentation).toEqual(
       saved.presentation,
@@ -246,13 +246,13 @@ describe("M3 game simulation adapter", () => {
       new Set(
         adapter
           .presentationSnapshot(initial)
-          .filter(({ id }) => id !== PLAYER_ENTITY_ID)
+          .filter(({ id }) => id >= NPC_ENTITY_ID_START && id < NPC_ENTITY_ID_START + 48)
           .map(({ position }) => position.join(",")),
       ).size,
     ).toBe(48);
     const initialCrowd = adapter
       .presentationSnapshot(initial)
-      .filter(({ id }) => id !== PLAYER_ENTITY_ID);
+      .filter(({ id }) => id >= NPC_ENTITY_ID_START && id < NPC_ENTITY_ID_START + 48);
     for (const [index, agent] of initialCrowd.entries()) {
       for (const other of initialCrowd.slice(index + 1)) {
         expect(

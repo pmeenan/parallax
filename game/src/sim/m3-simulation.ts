@@ -14,6 +14,7 @@ import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
 import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
 import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
 import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
+import { creatureSpawnsForDistrict } from "../world/creature-spawns";
 import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
@@ -29,6 +30,8 @@ import {
   createInitialM3CombatState,
   deserializeCombatState,
   type M3CombatState,
+  MONSTER_ENTITY_ID_START,
+  MONSTER_HALF_HEIGHT_METERS,
   playerMovementProfile,
   serializeCombatState,
   spawnMonster,
@@ -36,7 +39,7 @@ import {
 } from "./m3-combat-system";
 import { buildNpcScheduleSet, type NpcScheduleSet } from "./npc-schedules";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 5;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 6;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
 export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
@@ -118,7 +121,12 @@ export function createGameSimulationAdapter(
   const schedules = buildNpcScheduleSet(context.world, navigation);
   const tickSeconds = 1 / context.timestepHz;
   const combatWorld: CombatWorldView = Object.freeze({
+    canTraverseSegment: (
+      start: readonly [number, number, number],
+      target: readonly [number, number, number],
+    ) => navigation.canTraverseSegment(start, target),
     groundHeight: (x: number, z: number) => navigation.groundHeight(x, z),
+    isWalkablePosition: (x: number, z: number) => navigation.isWalkablePosition(x, z),
     maximumX: context.world.bounds.maximum[0],
     maximumZ: context.world.bounds.maximum[2],
     minimumX: context.world.bounds.minimum[0],
@@ -222,9 +230,35 @@ export function createGameSimulationAdapter(
     createInitialState(seed: number): M3SimulationState {
       const spawnX = 0;
       const spawnZ = 0;
+      let combat = createInitialM3CombatState(seed);
+      const encounterGroupByAuthoredPack = new Map<number, number>();
+      for (const authored of creatureSpawnsForDistrict(context.world.id)) {
+        if (!navigation.isWalkablePosition(authored.position[0], authored.position[1])) {
+          throw new Error(`Creature spawn ${authored.id} is outside the navigation projection`);
+        }
+        const encounterGroupId =
+          authored.packId === 0
+            ? 0
+            : (encounterGroupByAuthoredPack.get(authored.packId) ??
+              MONSTER_ENTITY_ID_START + combat.spawnCounter);
+        const spawned = spawnMonster(
+          combat,
+          monsterKitIndex(authored.kitId),
+          authored.position[0],
+          authored.position[1],
+          combatWorld,
+          encounterGroupId,
+        );
+        if (spawned === null)
+          throw new Error(`Creature spawn ${authored.id} exceeds combat capacity`);
+        if (authored.packId > 0 && !encounterGroupByAuthoredPack.has(authored.packId)) {
+          encounterGroupByAuthoredPack.set(authored.packId, spawned.entityId);
+        }
+        combat = spawned.state;
+      }
       return Object.freeze({
         collisionResolutionCount: 0,
-        combat: createInitialM3CombatState(seed),
+        combat,
         inputForward: 0,
         inputRight: 0,
         interactionActivationCount: 0,
@@ -842,6 +876,28 @@ function assertState(
   }
   assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0, 0, 0);
   assertCombatState(state.combat);
+  for (const monster of state.combat.monsters) {
+    if (
+      !navigation.isWalkablePosition(monster.position[0], monster.position[2]) ||
+      !navigation.isWalkablePosition(monster.homePosition[0], monster.homePosition[2]) ||
+      Math.abs(
+        monster.position[1] -
+          Math.fround(
+            navigation.groundHeight(monster.position[0], monster.position[2]) +
+              MONSTER_HALF_HEIGHT_METERS,
+          ),
+      ) > 0.000_1 ||
+      Math.abs(
+        monster.homePosition[1] -
+          Math.fround(
+            navigation.groundHeight(monster.homePosition[0], monster.homePosition[2]) +
+              MONSTER_HALF_HEIGHT_METERS,
+          ),
+      ) > 0.000_1
+    ) {
+      throw new Error("Game simulation state contains an off-mesh creature pose");
+    }
+  }
   for (const [index, agent] of state.npcAgents.entries()) {
     const route = schedules.routes[agent.routeIndex];
     const segment = route?.segments[agent.targetStopIndex];
