@@ -6,6 +6,7 @@ import {
   COMBAT_ABILITIES,
   type CombatantProfile,
   type CombatSpellDefinition,
+  IRONSET_STANCE,
   MONSTER_KITS,
   PLAYER_STARTING_PROFILE,
 } from "../balance/combat";
@@ -18,6 +19,7 @@ import {
   CREATURE_AI_RESPAWN_AGGRO_GRACE_TICKS,
   type CreatureAiProfile,
 } from "../balance/creature-ai";
+import { QUIET_TREAD_PERCEPTION } from "../balance/progression";
 import {
   applyCombatCondition,
   applyExposedOpening,
@@ -215,7 +217,10 @@ const CONDITION_CODES = Object.freeze({
 });
 const CHANNEL_CODES = Object.freeze({ aether: 4, ember: 1, frost: 2, physical: 0, venom: 3 });
 
-export function createInitialM3CombatState(seed: number): M3CombatState {
+export function createInitialM3CombatState(
+  seed: number,
+  playerSheet: CombatantSheet = PLAYER_COMBAT_SHEET,
+): M3CombatState {
   return Object.freeze({
     blockHeld: false,
     combatRngState: (seed ^ 0x6d2b_79f5) >>> 0 || 0x6d2b_79f5,
@@ -240,7 +245,7 @@ export function createInitialM3CombatState(seed: number): M3CombatState {
     }),
     lootRngState: (seed ^ 0x1656_67b1) >>> 0 || 0x1656_67b1,
     monsters: Object.freeze([]),
-    player: createCombatantState(PLAYER_COMBAT_SHEET),
+    player: createCombatantState(playerSheet),
     playerDownTicks: 0,
     queuedActionId: -1,
     queuedTicks: 0,
@@ -366,6 +371,12 @@ export function playerMovementProfile(
   }
   if (kind === COMBAT_ACTION_DODGE) return Object.freeze({ denominator: 1, numerator: 2 });
   if (state.player.blockHeldTicks > 0) return Object.freeze({ denominator: 2, numerator: 1 });
+  if (state.player.ironsetTicks > 0) {
+    return Object.freeze({
+      denominator: IRONSET_STANCE.movementDenominator,
+      numerator: IRONSET_STANCE.movementNumerator,
+    });
+  }
   return Object.freeze({ denominator: 1, numerator: 1 });
 }
 
@@ -375,6 +386,7 @@ export function stepM3Combat(
   playerPosition: readonly [number, number, number],
   playerYawRadians: number,
   tickSeconds: number,
+  playerSheet: CombatantSheet = PLAYER_COMBAT_SHEET,
 ): CombatStepResult {
   const events: CombatEventRecord[] = [];
   let combatRngState = state.combatRngState;
@@ -397,10 +409,10 @@ export function stepM3Combat(
   // Player: queued action attempts, then the tick advance and contact resolution.
   if (player.actionKind !== COMBAT_ACTION_DOWNED) {
     if (queuedActionId !== -1) {
-      const attempt = startPlayerAction(player, PLAYER_COMBAT_SHEET, queuedActionId);
+      const attempt = startPlayerAction(player, playerSheet, queuedActionId);
       if (attempt.started) {
         player = attempt.state;
-        const timing = playerActionTiming(PLAYER_COMBAT_SHEET, queuedActionId);
+        const timing = playerActionTiming(playerSheet, queuedActionId);
         events.push(record("combat.attack-started", 1, queuedActionId, timing.windupTicks, 0));
         queuedActionId = -1;
         queuedTicks = 0;
@@ -414,9 +426,9 @@ export function stepM3Combat(
     }
     const timing =
       player.actionKind === COMBAT_ACTION_WINDUP || player.actionKind === COMBAT_ACTION_ACTIVE
-        ? playerActionTiming(PLAYER_COMBAT_SHEET, player.actionId)
+        ? playerActionTiming(playerSheet, player.actionId)
         : null;
-    const ticked = tickCombatant(player, PLAYER_COMBAT_SHEET, timing, {
+    const ticked = tickCombatant(player, playerSheet, timing, {
       blockHeld: state.blockHeld,
       inCombat,
     });
@@ -436,6 +448,7 @@ export function stepM3Combat(
         combatRngState,
         counters,
         events,
+        playerSheet,
       );
       player = resolved.player;
       combatRngState = resolved.rngState;
@@ -444,7 +457,7 @@ export function stepM3Combat(
   } else {
     playerDownTicks += 1;
     if (playerDownTicks >= PLAYER_RESPAWN_TICKS) {
-      player = createCombatantState(PLAYER_COMBAT_SHEET);
+      player = createCombatantState(playerSheet);
       playerDownTicks = 0;
       respawnPlayer = true;
       events.push(record("combat.respawned", 1, 0, 0, 0));
@@ -584,7 +597,11 @@ export function stepM3Combat(
       const seesPlayer =
         !respawnPlayer &&
         player.actionKind !== COMBAT_ACTION_DOWNED &&
-        playerDistance <= profile.perceptionRadiusMeters &&
+        playerDistance <=
+          (playerSheet.quietTread
+            ? (profile.perceptionRadiusMeters * QUIET_TREAD_PERCEPTION.numerator) /
+              QUIET_TREAD_PERCEPTION.denominator
+            : profile.perceptionRadiusMeters) &&
         homeDistance <= profile.leashRadiusMeters &&
         world.canTraverseSegment(entry.position, position);
       if (!entry.aggro && seesPlayer && !packWantsFlee) {
@@ -651,7 +668,7 @@ export function stepM3Combat(
               spellPotencyOverride: contactAttack.spellPotency,
               state: entry.combat,
             }),
-            Object.freeze({ sheet: PLAYER_COMBAT_SHEET, state: player }),
+            Object.freeze({ sheet: playerSheet, state: player }),
             spec,
           );
           combatRngState = resolution.rngState;
@@ -1221,6 +1238,7 @@ function resolvePlayerContact(
   rngState: number,
   counters: { -readonly [Key in keyof M3CombatCounters]: number },
   events: CombatEventRecord[],
+  playerSheet: CombatantSheet,
 ): PlayerContactResult {
   let player = playerState;
   let nextRngState = rngState;
@@ -1228,14 +1246,14 @@ function resolvePlayerContact(
   if (actionId === PLAYER_ACTION_DODGE) {
     return Object.freeze({ player, playerPosition: position, rngState: nextRngState });
   }
-  player = applySelfSpellEffects(player, actionId, PLAYER_COMBAT_SHEET);
-  const spec = playerAttackSpec(PLAYER_COMBAT_SHEET, actionId);
+  player = applySelfSpellEffects(player, actionId, playerSheet);
+  const spec = playerAttackSpec(playerSheet, actionId);
   if (spec === null) {
     return Object.freeze({ player, playerPosition: position, rngState: nextRngState });
   }
   const ability =
     actionId >= PLAYER_ACTION_SLOT_BASE && actionId !== PLAYER_ACTION_AETHERSPARK
-      ? playerAbility(PLAYER_COMBAT_SHEET, actionId - PLAYER_ACTION_SLOT_BASE)
+      ? playerAbility(playerSheet, actionId - PLAYER_ACTION_SLOT_BASE)
       : null;
   const lungeMeters = ability !== null && ability.kind === "martial" ? ability.lungeMeters : 0;
   const arcAll = ability !== null && ability.kind === "martial" && ability.arcAllTargets;
@@ -1315,7 +1333,7 @@ function resolvePlayerContact(
     if (sheet === undefined) continue;
     const resolution = resolveAttack(
       nextRngState,
-      Object.freeze({ sheet: PLAYER_COMBAT_SHEET, spellPotencyOverride: null, state: player }),
+      Object.freeze({ sheet: playerSheet, spellPotencyOverride: null, state: player }),
       Object.freeze({ sheet, state: target.entry.combat }),
       spec,
     );
@@ -1324,7 +1342,7 @@ function resolvePlayerContact(
     target.entry.combat = resolution.defender;
     const wasKeen = resolution.outcome === "keen";
     if (wasKeen && isSpell) {
-      player = applyKeenSpellRefund(player, actionId, PLAYER_COMBAT_SHEET);
+      player = applyKeenSpellRefund(player, actionId, playerSheet);
     }
     accumulateEvents(
       counters,
@@ -1668,6 +1686,7 @@ function serializeCombatant(view: DataView, offset: number, state: CombatantComb
   view.setUint32(offset + 80, state.staminaDelayTicks, true);
   view.setUint32(offset + 84, state.wardAmount, true);
   view.setUint32(offset + 88, state.wardTicks, true);
+  view.setUint32(offset + 92, state.ironsetTicks, true);
 }
 
 function deserializeCombatant(view: DataView, offset: number): CombatantCombatState {
@@ -1691,6 +1710,7 @@ function deserializeCombatant(view: DataView, offset: number): CombatantCombatSt
     healAccumulator: view.getUint32(offset + 56, true),
     healRemainingTicks: view.getUint32(offset + 60, true),
     health: view.getInt32(offset + 64, true),
+    ironsetTicks: view.getUint32(offset + 92, true),
     nimbleTicks: view.getUint32(offset + 68, true),
     stamina: view.getInt32(offset + 72, true),
     staminaAccumulator: view.getUint32(offset + 76, true),
@@ -1700,7 +1720,10 @@ function deserializeCombatant(view: DataView, offset: number): CombatantCombatSt
   });
 }
 
-export function assertCombatState(state: M3CombatState): void {
+export function assertCombatState(
+  state: M3CombatState,
+  playerSheet: CombatantSheet = PLAYER_COMBAT_SHEET,
+): void {
   const validCombatant = (combatant: CombatantCombatState, sheet: CombatantSheet): boolean =>
     Number.isSafeInteger(combatant.health) &&
     combatant.health >= 0 &&
@@ -1713,8 +1736,11 @@ export function assertCombatState(state: M3CombatState): void {
     combatant.aether <= sheet.maxAether &&
     combatant.actionKind >= COMBAT_ACTION_IDLE &&
     combatant.actionKind <= COMBAT_ACTION_DOWNED &&
+    Number.isSafeInteger(combatant.ironsetTicks) &&
+    combatant.ironsetTicks >= 0 &&
+    combatant.ironsetTicks <= IRONSET_STANCE.durationTicks &&
     (combatant.actionKind !== COMBAT_ACTION_DOWNED || combatant.health === 0);
-  if (!validCombatant(state.player, PLAYER_COMBAT_SHEET)) {
+  if (!validCombatant(state.player, playerSheet)) {
     throw new Error("Game simulation combat state contains invalid player values");
   }
   if (

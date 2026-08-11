@@ -28,6 +28,76 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-167: Make classless progression canonical deterministic simulation state (2026-08-11, accepted)
+
+**Decision:** Implement D-165's progression rules as one versioned sim-worker system.
+The cumulative XP curve is `100×n` to advance from level `n`, capped at level 10;
+each gained level grants exactly one attribute point and one ability pick. The existing
+level-2 martial starter becomes canonical state with its first point already reflected
+in the starter attributes and Piercing Lunge learned and equipped. The ordered
+14-ability vocabulary is a stable save/command identity: append future identities,
+never reorder existing ones. State records learned abilities, four active slots, two
+knack slots, unspent picks/points, and cumulative observability counters.
+
+Spend-attribute, learn-ability, equip-active, and equip-knack operations are fixed-size
+serializable commands. They apply only while the player is action-idle, emit stable
+changed/rejected semantic events, and reconcile the current combat pools against a
+new progression-derived player sheet without refilling them. Learned passives apply
+without consuming a slot. The combat consumer now honors Answering Strike, Ironset
+Stance, Wellspring, and Quiet Tread; Forager's Eye and Tinker's Thrift are canonical
+learned/loadout identities whose gathering and crafting effects land with the next
+M3.5 system. Monster XP is awarded from authoritative `combat.defeated` semantic
+events. Later quest and discovery systems call the same pure XP award boundary rather
+than mutating level state independently.
+
+Advance the game payload save schema from v6 to v7 by appending one canonical 96-byte
+progression block after all prior fields. It stores the ability set as the stable
+ordered bit mask, stores loadout slots as ordered ability indices, rejects unknown or
+ill-typed combinations, and requires the final 16 reserved bytes to remain zero.
+Public counters expose progression XP, awards, level gains, points/picks, learns, and
+loadout changes. D-165's headless balancer now asserts the scripted-slice pacing ledger:
+3,963 XP reaches level 9, within the authored level 9–10 completion band.
+
+**Context:** The combat foundation still sourced one fixed level-2 player profile and
+loadout. That made ruleset-v2 stats, leveling, ability choice, and their save/replay
+authority aspirational, and left the balancer's XP pacing band unasserted. Quest,
+discovery, marks, gathering, and crafting authority do not exist yet, so this item
+establishes their stable progression seams without inventing parallel placeholder
+economies. The waystone reshape transaction remains consumer work for the item/economy
+system that owns the 25-mark payment; character-creation folk selection remains with
+its later presentation/content delivery.
+
+**Consequences:** Same-host replay and save/load now cover every progression choice and
+combat-derived XP award. A later UI can query state and submit commands without gaining
+gameplay authority. New abilities can append to the vocabulary while the current
+32-bit mask has room; changing existing order, level economics, point cadence, slot
+counts, or the persistence layout requires an explicit migration. This candidate
+required one D-157 physical `smoke@1` because it changed the smoke-exercised simulation
+replay/save-load workload and combined sim-step cost.
+
+**Closure evidence:** Final `pnpm check` passed the repeatable production build, lint,
+and 197 test files / 2,514 passing tests (one skipped). The required physical-console
+dev-01/Showcase smoke retained schema-v71 / mandatory-metric-set-v34 artifact
+`harness/results/smoke-1-c4a409e1d19b-dev-01-showcase-2026-08-11T16-24-09-800Z.{json,md}`
+for build `c4a409e1d19bf70858215f26afa121fb5d9327b44514f694e796b398db616437`.
+JSON/Markdown SHA-256 are
+`b9762cd9fef585258e109aa01db9df197ac1c6516b17a2bfb694631c67e32e0b` /
+`fe27d7caf1d4d9cd5fe45fd70511c321dc7156955273abe57703e4ff0c0f3f7c`.
+All six launches, all three facets, and 36/36 budget checks passed; every 120-tick
+replay and live save/load converged on
+`b13fb8309b4042f95da2e848f782c31f7bd87bc8781c585deb1a4f850fa8ec25`,
+the 4,497-tick positioning replay/load digest was stable, and the combined
+character/crowd/creature step high-water was 0.731 ms. Per D-119, recording these exact
+report facts and status pointers requires no additional physical run.
+
+**Reopen if:** progression must support more than 32 stable ability identities; the
+slice changes its level cap, point cadence, shared-pool model, or slot counts; respec or
+folk selection needs new persistent authority rather than consuming these fields; a
+multiplayer state-sync decision changes command/replay ownership; or a save migration
+must preserve pre-v7 game payloads.
+
+---
+
 ## D-166: Bind authored creature packs to deterministic navigation-aware combat AI (2026-08-10, accepted)
 
 **Decision:** Replace the combat foundation's retaliation dummy with one generic

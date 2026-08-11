@@ -18,12 +18,14 @@ import {
   type CombatAbilityId,
   type CombatantProfile,
   type DamageChannel,
+  IRONSET_STANCE,
   MONSTER_KITS,
   type MonsterAttackDefinition,
   type MonsterClass,
   NIMBLE_AFFIX,
   SIM_TICKS_PER_SECOND,
 } from "../balance/combat";
+import { WELLSPRING_STAMINA_REGEN_PER_SECOND } from "../balance/progression";
 
 const MENDWEAVE_HEAL_PER_SECOND =
   COMBAT_ABILITIES.mendweave.kind === "spell" ? COMBAT_ABILITIES.mendweave.healPerSecond : 0;
@@ -45,7 +47,7 @@ export const PLAYER_ACTION_SLOT_BASE = 3;
 export const PLAYER_ACTION_AETHERSPARK = 100;
 
 export interface CombatantSheet {
-  readonly abilities: readonly CombatAbilityId[];
+  readonly abilities: readonly (CombatAbilityId | null)[];
   readonly accuracy: number;
   readonly affixBracing: boolean;
   readonly affixDamage: number;
@@ -61,10 +63,12 @@ export interface CombatantSheet {
   readonly monsterAttacks: readonly MonsterAttackDefinition[];
   readonly monsterClass: MonsterClass | null;
   readonly potency: number;
+  readonly quietTread: boolean;
   readonly resist: number;
   readonly soakElemental: number;
   readonly soakPhysical: number;
   readonly staggerImmune: boolean;
+  readonly wellspring: boolean;
   readonly weaponBase: number;
 }
 
@@ -90,6 +94,7 @@ export interface CombatantCombatState {
   readonly healAccumulator: number;
   readonly healRemainingTicks: number;
   readonly health: number;
+  readonly ironsetTicks: number;
   readonly nimbleTicks: number;
   readonly stamina: number;
   readonly staminaAccumulator: number;
@@ -174,11 +179,13 @@ export function derivePlayerSheet(profile: CombatantProfile): CombatantSheet {
     monsterAttacks: Object.freeze([]),
     monsterClass: null,
     potency: profile.attunement + profile.catalystPotency + profile.affixPotency,
+    quietTread: profile.quietTread,
     resist: Math.floor(profile.vitality / 2),
     soakElemental: profile.armorSoakElemental,
     soakPhysical: profile.armorSoakPhysical,
     staggerImmune: false,
     weaponBase: profile.weaponBase,
+    wellspring: profile.wellspring,
   });
 }
 
@@ -202,11 +209,13 @@ export function deriveMonsterSheet(kitIndex: number): CombatantSheet {
     monsterAttacks: kit.attacks,
     monsterClass: kit.monsterClass,
     potency: 0,
+    quietTread: false,
     resist: kit.resist,
     soakElemental: kit.soakElemental,
     soakPhysical: kit.soakPhysical,
     staggerImmune: kit.staggerImmune,
     weaponBase: 0,
+    wellspring: false,
   });
 }
 
@@ -231,6 +240,7 @@ export function createCombatantState(sheet: CombatantSheet): CombatantCombatStat
     healAccumulator: 0,
     healRemainingTicks: 0,
     health: sheet.maxHealth,
+    ironsetTicks: 0,
     nimbleTicks: 0,
     stamina: sheet.maxStamina,
     staminaAccumulator: 0,
@@ -290,7 +300,7 @@ export function exactSuccessSeventeenths(attackRating: number, defendRating: num
 
 export function playerAbility(sheet: CombatantSheet, slot: number): CombatAbilityDefinition {
   const id = sheet.abilities[slot];
-  if (id === undefined) throw new Error(`Player loadout slot ${slot} is empty`);
+  if (id === undefined || id === null) throw new Error(`Player loadout slot ${slot} is empty`);
   return COMBAT_ABILITIES[id];
 }
 
@@ -353,12 +363,12 @@ export function startPlayerAction(
     // fault: input can legitimately press keys the current loadout leaves empty.
     if (
       actionId < PLAYER_ACTION_SLOT_BASE ||
-      sheet.abilities[actionId - PLAYER_ACTION_SLOT_BASE] === undefined
+      sheet.abilities[actionId - PLAYER_ACTION_SLOT_BASE] == null
     ) {
       return Object.freeze({ started: false, state });
     }
     const ability = playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE);
-    if (ability.kind === "martial") {
+    if (ability.kind === "martial" || ability.kind === "stance") {
       staminaCost = ability.staminaCost;
     } else {
       if (!sheet.hasCatalyst) return Object.freeze({ started: false, state });
@@ -482,6 +492,24 @@ export function tickCombatant(
   if (next.answeringTicks > 0) next.answeringTicks -= 1;
   if (next.nimbleTicks > 0) next.nimbleTicks -= 1;
 
+  // Ironset is a bounded planted stance. Five stamina/second is exactly one point
+  // every 12 ticks, avoiding a second serialized accumulator.
+  if (next.ironsetTicks > 0) {
+    next.ironsetTicks -= 1;
+    next.staminaDelayTicks = Math.max(next.staminaDelayTicks, 1);
+    const drainIntervalTicks = Math.floor(
+      SIM_TICKS_PER_SECOND / IRONSET_STANCE.staminaDrainPerSecond,
+    );
+    if (next.ironsetTicks % drainIntervalTicks === 0) {
+      if (next.stamina === 0) {
+        next.stamina = 0;
+        next.ironsetTicks = 0;
+      } else {
+        next.stamina -= 1;
+      }
+    }
+  }
+
   // Stamina regeneration.
   if (next.staminaDelayTicks > 0) {
     next.staminaDelayTicks -= 1;
@@ -490,6 +518,7 @@ export function tickCombatant(
       next.blockHeldTicks > 0
         ? COMBAT_POOLS.staminaRegenBlockingPerSecond
         : COMBAT_POOLS.staminaRegenPerSecond;
+    if (sheet.wellspring) rate += WELLSPRING_STAMINA_REGEN_PER_SECOND;
     if (chilled) {
       rate = Math.floor(
         (rate * COMBAT_CONDITION.chilled.staminaRegenNumerator) /
@@ -608,6 +637,7 @@ export function playerAttackSpec(sheet: CombatantSheet, actionId: number): Attac
     actionId === PLAYER_ACTION_AETHERSPARK
       ? COMBAT_ABILITIES.aetherspark
       : playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE);
+  if (ability.kind === "stance") return null;
   if (ability.kind === "martial") {
     const weaponRaw = sheet.weaponBase + sheet.might + sheet.affixDamage;
     return Object.freeze({
@@ -704,7 +734,8 @@ export function resolveAttack(
   let defendRating: number;
   if (spec.checkType === "weapon") {
     attackRating = attacker.sheet.accuracy + (nimbleActive ? NIMBLE_AFFIX.accuracyBonus : 0);
-    defendRating = defender.sheet.guard;
+    defendRating =
+      defender.sheet.guard + (defender.state.ironsetTicks > 0 ? IRONSET_STANCE.guardBonus : 0);
     if (blocking) defendRating += COMBAT_BLOCK.guardBonus;
     if (exposed) defendRating -= COMBAT_CONDITION.exposed.guardPenalty;
   } else {
@@ -867,6 +898,7 @@ export function resolveAttack(
   // ember-consumes-Chilled interaction — elites and the boss are immune.
   const shouldStagger =
     !defender.sheet.staggerImmune &&
+    defenderState.ironsetTicks === 0 &&
     ((keen && defenderWasWindingUp) ||
       exposed ||
       interactionStagger ||
@@ -943,6 +975,12 @@ export function applySelfSpellEffects(
 ): CombatantCombatState {
   if (actionId < PLAYER_ACTION_SLOT_BASE || actionId === PLAYER_ACTION_AETHERSPARK) return state;
   const ability = playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE);
+  if (ability.kind === "stance") {
+    return Object.freeze({
+      ...state,
+      ironsetTicks: IRONSET_STANCE.durationTicks,
+    });
+  }
   if (ability.kind !== "spell") return state;
   let next = state;
   if (ability.healPerSecond > 0) {

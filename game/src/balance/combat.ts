@@ -103,6 +103,7 @@ export type CombatAbilityId =
   | "cleaving-arc"
   | "emberlash"
   | "frostbind"
+  | "ironset-stance"
   | "mendweave"
   | "piercing-lunge"
   | "steady-loose"
@@ -136,7 +137,16 @@ export interface CombatMartialDefinition {
   readonly timing: CombatActionTiming;
 }
 
-export type CombatAbilityDefinition = CombatMartialDefinition | CombatSpellDefinition;
+export interface CombatStanceDefinition {
+  readonly kind: "stance";
+  readonly staminaCost: number;
+  readonly timing: CombatActionTiming;
+}
+
+export type CombatAbilityDefinition =
+  | CombatMartialDefinition
+  | CombatSpellDefinition
+  | CombatStanceDefinition;
 
 const BOLT_TIMING = Object.freeze({ activeTicks: 2, recoveryTicks: 18, windupTicks: 24 });
 const RITE_TIMING = Object.freeze({ activeTicks: 2, recoveryTicks: 20, windupTicks: 30 });
@@ -195,6 +205,11 @@ export const COMBAT_ABILITIES: Readonly<Record<CombatAbilityId, CombatAbilityDef
       radiusMeters: 3,
       rangeMeters: 12,
     }),
+    "ironset-stance": Object.freeze({
+      kind: "stance" as const,
+      staminaCost: 20,
+      timing: Object.freeze({ activeTicks: 1, recoveryTicks: 0, windupTicks: 1 }),
+    }),
     mendweave: spell({
       aetherCost: 25,
       healDurationTicks: 360,
@@ -230,6 +245,13 @@ export const COMBAT_ABILITIES: Readonly<Record<CombatAbilityId, CombatAbilityDef
   });
 
 export const COMBAT_KEEN_SPELL_REFUND_DENOMINATOR = 2;
+export const IRONSET_STANCE = Object.freeze({
+  durationTicks: 240,
+  guardBonus: 4,
+  movementDenominator: 2,
+  movementNumerator: 1,
+  staminaDrainPerSecond: 5,
+});
 
 export interface MonsterAttackDefinition {
   readonly appliesConditionOnKeen: "envenomed" | null;
@@ -473,7 +495,9 @@ export interface CombatantProfile extends CombatAttributeProfile, CombatGearProf
   readonly answeringStrike: boolean;
   readonly folk: CombatFolk;
   readonly level: number;
-  readonly loadout: readonly CombatAbilityId[];
+  readonly loadout: readonly (CombatAbilityId | null)[];
+  readonly quietTread: boolean;
+  readonly wellspring: boolean;
 }
 
 const PROFILE_DEFAULTS = Object.freeze({
@@ -484,11 +508,13 @@ const PROFILE_DEFAULTS = Object.freeze({
   affixPotency: 0,
   answeringStrike: false,
   catalystPotency: 0,
+  quietTread: false,
+  wellspring: false,
 });
 
-// The playable starter profile: level-2 human with the martial starter kit plus an
-// Ashwood focus so aetherwork is reachable from the first fight. Progression (M3.5)
-// will replace this fixed profile with real leveling and loadout picks.
+// The starter gear/attribute reference: level-2 human with an Ashwood focus so
+// aetherwork is reachable from the first fight. The simulation's progression state
+// now owns the learned abilities and four-slot runtime loadout.
 export const PLAYER_STARTING_PROFILE: CombatantProfile = Object.freeze({
   ...PROFILE_DEFAULTS,
   armorGuard: 2,

@@ -7,6 +7,7 @@ describe("headless balancer", () => {
   it("passes every ruleset v2 band across the reference sweep", () => {
     const report = runHeadlessBalanceSweep();
     expect(report.matchups.length).toBeGreaterThan(0);
+    expect(report.xpPacing).toEqual({ completionExperience: 3_963, completionLevel: 9 });
     expect(report.violations).toEqual([]);
   }, 180_000);
 

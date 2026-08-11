@@ -265,9 +265,10 @@ game-design.md — not invented ad hoc inside each system.
       concretized the full spec under the deliberate-but-forgiving feel target. The
       headless balancer now exists, consumed the spec, and validated every combat
       band (its first tuning pass retuned skitterling/warden/boss stat blocks,
-      catalyst potencies, and elite recovery windows into game-design.md). The XP
-      pacing band is the one balancer assertion still pending — it lands with the
-      progression item.*
+      catalyst potencies, and elite recovery windows into game-design.md). D-167's
+      progression delivery closed the remaining pacing assertion: its ordinary
+      scripted-slice ledger awards 3,963 XP and lands at level 9, inside the authored
+      level 9–10 band.*
 - [x] Combat foundation: melee/ranged/magic resolution, hit detection, damage/status
       model — all sim-worker state under the M3 determinism constraints, with player
       intent flowing through the input-command pattern like everything else.
@@ -315,13 +316,51 @@ game-design.md — not invented ad hoc inside each system.
       `f72f843d3778f55fdd7d218116844061426d391f320604261a262408f86ae1e9`.
       All replay/save-load hashes matched and the combined sim-step high-water was
       0.8 ms. D-119 makes this exact evidence-only closure non-triggering.*
-- [ ] Progression: stats, abilities, leveling on the sim data model — save-schema
+- [x] Progression: stats, abilities, leveling on the sim data model — save-schema
       versioned like all sim state.
+      *Complete under accepted D-167: the deterministic sim now owns the level-2
+      starter, the cumulative `100×n` XP curve through cap 10, one attribute point and
+      one ability pick per gained level, the stable 14-ability learned set, four active
+      slots, two knack slots, and serializable spend/learn/equip commands with semantic
+      success/rejection events. Combat defeat events award authored monster XP; the
+      progression-built player sheet drives attribute/pool changes, Answering Strike,
+      Ironset Stance, Wellspring, and Quiet Tread, while Forager's Eye and Tinker's
+      Thrift remain stable selections for the next gathering/crafting consumer. The
+      canonical 96-byte progression block advances the game payload from save schema
+      v6 to v7 without moving prior fields, and public counters expose XP, levels,
+      spends, learns, and loadout changes. Direct tests cover curve/cap, command
+      rejection, loadout rules, combat consumers, XP-on-defeat, over-cap/reserved-byte
+      validation, save/load, and replay. Final `pnpm check` passed the repeatable
+      production build, lint, and 197 test files / 2,514 passing tests (one skipped).
+      The required dev-01/Showcase physical smoke
+      `smoke-1-c4a409e1d19b-dev-01-showcase-2026-08-11T16-24-09-800Z.{json,md}`
+      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
+      and 36/36 checks for build
+      `c4a409e1d19bf70858215f26afa121fb5d9327b44514f694e796b398db616437`;
+      JSON/Markdown SHA-256 are
+      `b9762cd9fef585258e109aa01db9df197ac1c6516b17a2bfb694631c67e32e0b` /
+      `fe27d7caf1d4d9cd5fe45fd70511c321dc7156955273abe57703e4ff0c0f3f7c`.
+      Every replay and live save/load converged on
+      `b13fb8309b4042f95da2e848f782c31f7bd87bc8781c585deb1a4f850fa8ec25`;
+      the 4,497-tick positioning replay/load digest was stable, and the combined
+      character/crowd/creature step high-water was 0.731 ms. D-119 makes this exact
+      evidence-only closure non-triggering.*
 - [ ] Items, crafting, economy, loot: the systems on top of the M3 item/economy data
       model (game-design.md implication #4).
 - [ ] Quests and journal: quest state machine (main arc + side quests) and the journal
       as a queryable play-history log — the same log that feeds the Summarizer-recap
-      feature and subtitles/localization.
+      feature and subtitles/localization. Land landmark-discovery XP first: award each
+      named landmark once through D-167's progression boundary, persist the discovered
+      set, and expose the award semantically before quest XP uses the same path.
+- [ ] Gameplay-system presentation and progression feel: build the real inventory/
+      crafting, progression/loadout, and journal consumers on D-161's hybrid UI. The
+      HUD shows current-level XP progress and makes unspent attribute points/ability
+      picks conspicuous. Author and playtest a deterministic level-up payoff (candidate:
+      refill stamina/aether but not health), with tunables in `balance/` and a semantic
+      event for presentation. Add an Ironset lifecycle event plus basic HUD telegraph so
+      its planted trade-off is legible before M6 VFX polish. Explicitly playtest and
+      record whether all 4 active + 2 knack slots stay available from level 2 or slot
+      access stages by level; any staged rule is derived from level, not new saved state.
 - [ ] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
       multi-step quest end-to-end; all new state survives save/reload and hash-matches
       under the deterministic same-host dev-01 replay check; the harness gains

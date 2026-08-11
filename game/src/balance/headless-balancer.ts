@@ -45,6 +45,7 @@ import {
   type ReferenceLoadoutId,
   SIM_TICKS_PER_SECOND,
 } from "./combat";
+import { levelForExperience, SCRIPTED_SLICE_XP_LEDGER } from "./progression";
 
 export const BALANCER_SEEDS_PER_MATCHUP = 32;
 export const BALANCER_TIMEOUT_TICKS = 600 * SIM_TICKS_PER_SECOND;
@@ -120,6 +121,10 @@ export interface BalanceReport {
   readonly matchups: readonly MatchupReport[];
   readonly seedsPerMatchup: number;
   readonly violations: readonly string[];
+  readonly xpPacing: Readonly<{
+    readonly completionExperience: number;
+    readonly completionLevel: number;
+  }>;
 }
 
 interface DuelistState {
@@ -255,7 +260,7 @@ export function runDuel(
         ) {
           const desiredAbilityId = profile.loadout[desired - PLAYER_ACTION_SLOT_BASE];
           const desiredAbility =
-            desiredAbilityId === undefined ? undefined : COMBAT_ABILITIES[desiredAbilityId];
+            desiredAbilityId == null ? undefined : COMBAT_ABILITIES[desiredAbilityId];
           if (
             desiredAbility !== undefined &&
             desiredAbility.kind === "spell" &&
@@ -551,10 +556,22 @@ export function runHeadlessBalanceSweep(
       }
     }
   }
+  const completionExperience = Object.values(SCRIPTED_SLICE_XP_LEDGER).reduce(
+    (sum, amount) => sum + amount,
+    0,
+  );
+  const completionLevel = levelForExperience(completionExperience);
+  const violations = assertBalanceBands(matchups);
+  if (completionLevel < 9 || completionLevel > 10) {
+    violations.push(
+      `scripted slice XP pacing: level ${completionLevel} at ${completionExperience} XP`,
+    );
+  }
   return Object.freeze({
     matchups: Object.freeze(matchups),
     seedsPerMatchup,
-    violations: Object.freeze(assertBalanceBands(matchups)),
+    violations: Object.freeze(violations),
+    xpPacing: Object.freeze({ completionExperience, completionLevel }),
   });
 }
 

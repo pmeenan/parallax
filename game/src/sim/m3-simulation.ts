@@ -9,12 +9,19 @@ import type {
   SimulationWorldDefinition,
 } from "@parallax/engine";
 import { CHARACTER_CONTROLLER_BALANCE } from "../balance/character-controller";
-import { monsterKitIndex } from "../balance/combat";
+import { MONSTER_KITS, monsterKitIndex } from "../balance/combat";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
+import {
+  PROGRESSION_ABILITIES,
+  PROGRESSION_ATTRIBUTES,
+  type ProgressionAbilityId,
+  type ProgressionAttributeId,
+} from "../balance/progression";
 import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
 import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
 import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
 import { creatureSpawnsForDistrict } from "../world/creature-spawns";
+import { COMBAT_ACTION_IDLE, type CombatantSheet, derivePlayerSheet } from "./combat-core";
 import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
@@ -38,8 +45,21 @@ import {
   stepM3Combat,
 } from "./m3-combat-system";
 import { buildNpcScheduleSet, type NpcScheduleSet } from "./npc-schedules";
+import {
+  assertProgressionState,
+  awardExperience,
+  createInitialProgressionState,
+  deserializeProgressionState,
+  equipAbility,
+  learnAbility,
+  PROGRESSION_STATE_BYTES,
+  type ProgressionState,
+  progressionCombatProfile,
+  serializeProgressionState,
+  spendAttributePoint,
+} from "./progression";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 6;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 7;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
 export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
@@ -71,6 +91,7 @@ interface M3SimulationState {
   readonly npcScheduleTransitionCount: number;
   readonly playerPosition: readonly [number, number, number];
   readonly playerYawRadians: number;
+  readonly progression: ProgressionState;
   readonly rngState: number;
   readonly schemaVersion: typeof GAME_SIMULATION_STATE_SCHEMA_VERSION;
 }
@@ -105,6 +126,15 @@ const STATE_HEADER_BYTES = 96;
 const NPC_STATE_BYTES = 32;
 const NPC_BLOCK_BYTES = NPC_CROWD_BALANCE.agentCount * NPC_STATE_BYTES;
 const STATE_BYTES = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
+const PROGRESSION_COMMAND_KIND = "progression.command@1";
+const PROGRESSION_PAYLOAD_BYTES = 16;
+const PROGRESSION_OP_SPEND_ATTRIBUTE = 1;
+const PROGRESSION_OP_LEARN_ABILITY = 2;
+const PROGRESSION_OP_EQUIP_ACTIVE = 3;
+const PROGRESSION_OP_EQUIP_KNACK = 4;
+const PROGRESSION_EMPTY_ABILITY = 0xffff_ffff;
+const PROGRESSION_OFFSET = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
+const VERSIONED_STATE_BYTES = STATE_BYTES + PROGRESSION_STATE_BYTES;
 
 export function createGameSimulationAdapter(
   context: GameSimulationContext,
@@ -144,6 +174,74 @@ export function createGameSimulationAdapter(
       state: M3SimulationState,
       command: SimulationCommand,
     ): SimulationStepResult<M3SimulationState> {
+      if (command.kind === PROGRESSION_COMMAND_KIND) {
+        if (command.payload.byteLength !== PROGRESSION_PAYLOAD_BYTES) {
+          throw new Error("Progression command payload is invalid");
+        }
+        const view = new DataView(
+          command.payload.buffer,
+          command.payload.byteOffset,
+          command.payload.byteLength,
+        );
+        const operation = view.getUint32(0, true);
+        const value = view.getUint32(4, true);
+        const slot = view.getUint32(8, true);
+        if (view.getUint32(12, true) !== 0) {
+          throw new Error("Progression command payload is invalid");
+        }
+        if (
+          state.combat.player.actionKind !== COMBAT_ACTION_IDLE ||
+          state.combat.queuedActionId !== -1
+        ) {
+          return progressionCommandResult(state, false, operation, value, slot);
+        }
+        let progression = state.progression;
+        if (operation === PROGRESSION_OP_SPEND_ATTRIBUTE) {
+          const attribute = PROGRESSION_ATTRIBUTES[value];
+          if (attribute === undefined || slot !== 0) {
+            throw new Error("Progression attribute command is invalid");
+          }
+          progression = spendAttributePoint(progression, attribute);
+        } else if (operation === PROGRESSION_OP_LEARN_ABILITY) {
+          const ability = PROGRESSION_ABILITIES[value];
+          if (ability === undefined || slot !== 0) {
+            throw new Error("Progression learn command is invalid");
+          }
+          progression = learnAbility(progression, ability.id);
+        } else if (
+          operation === PROGRESSION_OP_EQUIP_ACTIVE ||
+          operation === PROGRESSION_OP_EQUIP_KNACK
+        ) {
+          const ability = value === PROGRESSION_EMPTY_ABILITY ? null : PROGRESSION_ABILITIES[value];
+          if (value !== PROGRESSION_EMPTY_ABILITY && ability === undefined) {
+            throw new Error("Progression loadout command is invalid");
+          }
+          progression = equipAbility(
+            progression,
+            operation === PROGRESSION_OP_EQUIP_ACTIVE ? "active" : "knack",
+            slot,
+            ability?.id ?? null,
+          );
+        } else {
+          throw new Error("Progression command operation is invalid");
+        }
+        if (progression === state.progression) {
+          return progressionCommandResult(state, false, operation, value, slot);
+        }
+        const priorSheet = derivePlayerSheet(progressionCombatProfile(state.progression));
+        const nextSheet = derivePlayerSheet(progressionCombatProfile(progression));
+        return progressionCommandResult(
+          Object.freeze({
+            ...state,
+            combat: reconcilePlayerCombatSheet(state.combat, priorSheet, nextSheet),
+            progression,
+          }),
+          true,
+          operation,
+          value,
+          slot,
+        );
+      }
       if (command.kind === SPAWN_COMMAND_KIND) {
         if (command.payload.byteLength !== SPAWN_PAYLOAD_BYTES) {
           throw new Error("Monster spawn command payload is invalid");
@@ -230,7 +328,9 @@ export function createGameSimulationAdapter(
     createInitialState(seed: number): M3SimulationState {
       const spawnX = 0;
       const spawnZ = 0;
-      let combat = createInitialM3CombatState(seed);
+      const progression = createInitialProgressionState();
+      const playerSheet = derivePlayerSheet(progressionCombatProfile(progression));
+      let combat = createInitialM3CombatState(seed, playerSheet);
       const encounterGroupByAuthoredPack = new Map<number, number>();
       for (const authored of creatureSpawnsForDistrict(context.world.id)) {
         if (!navigation.isWalkablePosition(authored.position[0], authored.position[1])) {
@@ -277,12 +377,15 @@ export function createGameSimulationAdapter(
           spawnZ,
         ]) as readonly [number, number, number],
         playerYawRadians: 0,
+        progression,
         rngState: seed >>> 0,
         schemaVersion: GAME_SIMULATION_STATE_SCHEMA_VERSION,
       });
     },
     deserializeState(bytes: Uint8Array): M3SimulationState {
-      if (bytes.byteLength !== STATE_BYTES) throw new Error("Game simulation state is truncated");
+      if (bytes.byteLength !== VERSIONED_STATE_BYTES) {
+        throw new Error("Game simulation state is truncated");
+      }
       const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
       if (view.getUint32(0, true) !== GAME_SIMULATION_STATE_SCHEMA_VERSION) {
         throw new Error("Game simulation state schema is incompatible");
@@ -315,6 +418,7 @@ export function createGameSimulationAdapter(
           });
         }),
       );
+      const progression = deserializeProgressionState(view, PROGRESSION_OFFSET);
       const state = Object.freeze({
         collisionResolutionCount: view.getUint32(44, true),
         combat: deserializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES),
@@ -336,6 +440,7 @@ export function createGameSimulationAdapter(
           view.getFloat32(28, true),
         ]) as readonly [number, number, number],
         playerYawRadians: view.getFloat32(16, true),
+        progression,
         rngState: view.getUint32(4, true),
         schemaVersion: GAME_SIMULATION_STATE_SCHEMA_VERSION,
       });
@@ -391,7 +496,7 @@ export function createGameSimulationAdapter(
     },
     serializeState(state: M3SimulationState): Uint8Array {
       assertState(state, world.district.markers.length, navigation, schedules);
-      const bytes = new Uint8Array(STATE_BYTES);
+      const bytes = new Uint8Array(VERSIONED_STATE_BYTES);
       const view = new DataView(bytes.buffer);
       view.setUint32(0, state.schemaVersion, true);
       view.setUint32(4, state.rngState, true);
@@ -425,19 +530,25 @@ export function createGameSimulationAdapter(
         view.setFloat32(offset + 24, agent.yawRadians, true);
       }
       serializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES, state.combat);
+      serializeProgressionState(view, PROGRESSION_OFFSET, state.progression);
       return bytes;
     },
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
       const movementProfile = playerMovementProfile(state.combat);
       const movement = movePlayer(world, navigation, state, tickSeconds, movementProfile);
       const crowd = stepNpcCrowd(navigation, schedules, state, movement.position, tickSeconds);
+      const playerSheet = derivePlayerSheet(progressionCombatProfile(state.progression));
       const combatStep = stepM3Combat(
         state.combat,
         combatWorld,
         movement.position,
         state.playerYawRadians,
         tickSeconds,
+        playerSheet,
       );
+      const experience = combatExperienceAward(state.combat, combatStep.state, combatStep.events);
+      const progressionAward =
+        experience === 0 ? null : awardExperience(state.progression, experience);
       const playerPosition = combatStep.respawnPlayer
         ? spawnPointPosition()
         : combatStep.playerPosition;
@@ -464,6 +575,7 @@ export function createGameSimulationAdapter(
         npcScheduleTransitionCount:
           state.npcScheduleTransitionCount + crowd.scheduleTransitionCount,
         playerPosition,
+        progression: progressionAward?.state ?? state.progression,
       });
       return Object.freeze({
         events: Object.freeze([
@@ -471,6 +583,19 @@ export function createGameSimulationAdapter(
           ...combatStep.events.map((event) =>
             Object.freeze({ kind: event.kind, payload: combatEventPayload(event.values) }),
           ),
+          ...(progressionAward === null
+            ? []
+            : [
+                Object.freeze({
+                  kind: "progression.experience-gained",
+                  payload: combatEventPayload([
+                    experience,
+                    progressionAward.state.experience,
+                    progressionAward.state.level,
+                    progressionAward.levelsGained,
+                  ]),
+                }),
+              ]),
         ]),
         state: next,
       });
@@ -494,6 +619,15 @@ export function createGameSimulationAdapter(
         npcMovementDistanceMeters: state.npcMovementDistanceMeters,
         npcMovingAgentCount: state.npcMovingAgentCount,
         npcScheduleTransitionCount: state.npcScheduleTransitionCount,
+        progressionAbilityLearnCount: state.progression.abilityLearnCount,
+        progressionAttributeSpendCount: state.progression.attributeSpendCount,
+        progressionExperience: state.progression.experience,
+        progressionExperienceAwardCount: state.progression.experienceAwardCount,
+        progressionLevel: state.progression.level,
+        progressionLevelsGained: state.progression.levelsGained,
+        progressionLoadoutChangeCount: state.progression.loadoutChangeCount,
+        progressionUnspentAbilityPicks: state.progression.unspentAbilityPicks,
+        progressionUnspentAttributePoints: state.progression.unspentAttributePoints,
       });
     },
   });
@@ -875,7 +1009,8 @@ function assertState(
     throw new Error("Game simulation state contains invalid controller or crowd values");
   }
   assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0, 0, 0);
-  assertCombatState(state.combat);
+  assertProgressionState(state.progression);
+  assertCombatState(state.combat, derivePlayerSheet(progressionCombatProfile(state.progression)));
   for (const monster of state.combat.monsters) {
     if (
       !navigation.isWalkablePosition(monster.position[0], monster.position[2]) ||
@@ -1014,6 +1149,145 @@ export function createSpawnMonsterCommand(
   view.setFloat32(8, z, true);
   view.setUint32(12, 0, true);
   return Object.freeze({ kind: SPAWN_COMMAND_KIND, payload, sequence, targetTick });
+}
+
+export function createSpendAttributeCommand(
+  sequence: number,
+  targetTick: number,
+  attribute: ProgressionAttributeId,
+): SimulationCommand {
+  const attributeIndex = PROGRESSION_ATTRIBUTES.indexOf(attribute);
+  if (attributeIndex < 0) throw new Error(`Unknown progression attribute ${attribute}`);
+  return createProgressionCommand(
+    sequence,
+    targetTick,
+    PROGRESSION_OP_SPEND_ATTRIBUTE,
+    attributeIndex,
+    0,
+  );
+}
+
+export function createLearnAbilityCommand(
+  sequence: number,
+  targetTick: number,
+  abilityId: ProgressionAbilityId,
+): SimulationCommand {
+  return createProgressionCommand(
+    sequence,
+    targetTick,
+    PROGRESSION_OP_LEARN_ABILITY,
+    progressionAbilityCommandIndex(abilityId),
+    0,
+  );
+}
+
+export function createEquipAbilityCommand(
+  sequence: number,
+  targetTick: number,
+  kind: "active" | "knack",
+  slot: number,
+  abilityId: ProgressionAbilityId | null,
+): SimulationCommand {
+  return createProgressionCommand(
+    sequence,
+    targetTick,
+    kind === "active" ? PROGRESSION_OP_EQUIP_ACTIVE : PROGRESSION_OP_EQUIP_KNACK,
+    abilityId === null ? PROGRESSION_EMPTY_ABILITY : progressionAbilityCommandIndex(abilityId),
+    slot,
+  );
+}
+
+function createProgressionCommand(
+  sequence: number,
+  targetTick: number,
+  operation: number,
+  value: number,
+  slot: number,
+): SimulationCommand {
+  const payload = new Uint8Array(PROGRESSION_PAYLOAD_BYTES);
+  const view = new DataView(payload.buffer);
+  view.setUint32(0, operation, true);
+  view.setUint32(4, value, true);
+  view.setUint32(8, slot, true);
+  view.setUint32(12, 0, true);
+  return Object.freeze({ kind: PROGRESSION_COMMAND_KIND, payload, sequence, targetTick });
+}
+
+function progressionAbilityCommandIndex(abilityId: ProgressionAbilityId): number {
+  const index = PROGRESSION_ABILITIES.findIndex((ability) => ability.id === abilityId);
+  if (index < 0) throw new Error(`Unknown progression ability ${abilityId}`);
+  return index;
+}
+
+function progressionCommandResult(
+  state: M3SimulationState,
+  applied: boolean,
+  operation: number,
+  value: number,
+  slot: number,
+): SimulationStepResult<M3SimulationState> {
+  return Object.freeze({
+    events: Object.freeze([
+      Object.freeze({
+        kind: applied ? "progression.changed" : "progression.rejected",
+        payload: combatEventPayload([operation, value, slot, Number(applied)]),
+      }),
+    ]),
+    state,
+  });
+}
+
+function reconcilePlayerCombatSheet(
+  combat: M3CombatState,
+  prior: CombatantSheet,
+  next: CombatantSheet,
+): M3CombatState {
+  const player = combat.player;
+  return Object.freeze({
+    ...combat,
+    player: Object.freeze({
+      ...player,
+      aether: Math.min(
+        next.maxAether,
+        player.aether + Math.max(0, next.maxAether - prior.maxAether),
+      ),
+      health: Math.min(
+        next.maxHealth,
+        player.health + Math.max(0, next.maxHealth - prior.maxHealth),
+      ),
+      stamina: Math.min(
+        next.maxStamina,
+        player.stamina + Math.max(0, next.maxStamina - prior.maxStamina),
+      ),
+    }),
+  });
+}
+
+function combatExperienceAward(
+  prior: M3CombatState,
+  next: M3CombatState,
+  events: readonly Readonly<{ readonly kind: string; readonly values: readonly number[] }>[],
+): number {
+  const defeated = new Set(
+    events
+      .filter((event) => event.kind === "combat.defeated" && event.values[0] !== PLAYER_ENTITY_ID)
+      .map((event) => event.values[0]),
+  );
+  let experience = 0;
+  for (const entityId of defeated) {
+    const before = prior.monsters.find((monster) => monster.entityId === entityId);
+    const after = next.monsters.find((monster) => monster.entityId === entityId);
+    if (
+      before === undefined ||
+      after === undefined ||
+      before.combat.health === 0 ||
+      after.combat.health !== 0
+    ) {
+      continue;
+    }
+    experience += MONSTER_KITS[after.kitIndex]?.xp ?? 0;
+  }
+  return experience;
 }
 
 function combatEventPayload(values: readonly [number, number, number, number]): Uint8Array {

@@ -123,6 +123,7 @@ describe("M3 combat integration", () => {
     expect(
       (first.gameCounters.combatDamageDealt ?? 0) + (first.gameCounters.combatDeflections ?? 0),
     ).toBeGreaterThan(0);
+    expect(first.gameCounters.progressionExperience).toBeGreaterThan(100);
   });
 
   it("emits telegraph and outcome events for the fight", () => {
