@@ -7,6 +7,10 @@
 
 export const COMBAT_RULES_VERSION = 2;
 export const SIM_TICKS_PER_SECOND = 60;
+export const COMBAT_EQUIPMENT_DEFAULTS = Object.freeze({
+  staminaCostNumerator: 4,
+  weaponRangeMeters: 2.2,
+});
 
 export type DamageChannel = "aether" | "ember" | "frost" | "physical" | "venom";
 export type CombatFolk = "human" | "skarn" | "wickfolk";
@@ -41,6 +45,7 @@ export const COMBAT_BLOCK = Object.freeze({
   breakLockoutTicks: 30,
   caughtWindowTicks: 12,
   guardBonus: 6,
+  staminaCostDenominator: 4,
   staminaDrainDenominator: 2,
 });
 
@@ -473,9 +478,23 @@ export interface CombatGearProfile {
   readonly armorGuard: number;
   readonly armorSoakElemental: number;
   readonly armorSoakPhysical: number;
+  readonly blockStaminaCostNumerator: number;
+  readonly catalystOmniResonance: boolean;
   readonly catalystPotency: number;
+  readonly catalystResonance: DamageChannel | null;
+  readonly healthRegenOutOfCombat: number;
+  readonly maxHealthBonus: number;
+  readonly maxStaminaBonus: number;
+  readonly staminaRegenBonus: number;
   readonly weaponAccuracy: number;
   readonly weaponBase: number;
+  readonly weaponEmberDamage: number;
+  readonly weaponFrostDamage: number;
+  readonly weaponKeenCondition: "envenomed" | null;
+  readonly weaponRangeMeters: number;
+  readonly weaponRecoveryTicksBonus: number;
+  readonly weaponStaminaCostNumerator: number;
+  readonly weaponVenomDamage: number;
 }
 
 export interface CombatAttributeProfile {
@@ -507,8 +526,22 @@ const PROFILE_DEFAULTS = Object.freeze({
   affixNimble: false,
   affixPotency: 0,
   answeringStrike: false,
+  blockStaminaCostNumerator: COMBAT_EQUIPMENT_DEFAULTS.staminaCostNumerator,
+  catalystOmniResonance: false,
   catalystPotency: 0,
+  catalystResonance: null,
+  healthRegenOutOfCombat: 0,
+  maxHealthBonus: 0,
+  maxStaminaBonus: 0,
   quietTread: false,
+  staminaRegenBonus: 0,
+  weaponEmberDamage: 0,
+  weaponFrostDamage: 0,
+  weaponKeenCondition: null,
+  weaponRangeMeters: COMBAT_EQUIPMENT_DEFAULTS.weaponRangeMeters,
+  weaponRecoveryTicksBonus: 0,
+  weaponStaminaCostNumerator: COMBAT_EQUIPMENT_DEFAULTS.staminaCostNumerator,
+  weaponVenomDamage: 0,
   wellspring: false,
 });
 

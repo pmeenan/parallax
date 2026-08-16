@@ -1269,7 +1269,9 @@ function resolvePlayerContact(
         : null;
   const range = isSpell
     ? (spellDefinition?.rangeMeters ?? PLAYER_MELEE_REACH_METERS)
-    : PLAYER_MELEE_REACH_METERS + lungeMeters;
+    : ability?.kind === "martial"
+      ? PLAYER_MELEE_REACH_METERS + lungeMeters
+      : playerSheet.weaponRangeMeters;
   const facingX = Math.sin(playerYawRadians);
   const facingZ = Math.cos(playerYawRadians);
   const alive = monsters.filter((entry) => entry.combat.actionKind !== COMBAT_ACTION_DOWNED);
@@ -1489,7 +1491,7 @@ function record(kind: string, a: number, b: number, c: number, d: number): Comba
   });
 }
 
-function horizontalDistance(
+export function horizontalDistance(
   left: readonly [number, number, number],
   right: readonly [number, number, number],
 ): number {

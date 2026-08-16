@@ -10,10 +10,24 @@ import type {
 } from "@parallax/engine";
 import { CHARACTER_CONTROLLER_BALANCE } from "../balance/character-controller";
 import { MONSTER_KITS, monsterKitIndex } from "../balance/combat";
+import {
+  GEAR_AFFIXES,
+  type GearSlot,
+  ITEM_DEFINITIONS,
+  ITEM_INTERACTION_RADII_METERS,
+  type ItemId,
+  itemIndex,
+  RECIPES,
+  type Resonance,
+  recipeIndex,
+  VENDOR_OFFERS,
+  vendorOfferIndex,
+} from "../balance/items";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
 import {
   PROGRESSION_ABILITIES,
   PROGRESSION_ATTRIBUTES,
+  PROGRESSION_RESHAPE_MARK_COST,
   type ProgressionAbilityId,
   type ProgressionAttributeId,
 } from "../balance/progression";
@@ -21,11 +35,45 @@ import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identit
 import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
 import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
 import { creatureSpawnsForDistrict } from "../world/creature-spawns";
-import { COMBAT_ACTION_IDLE, type CombatantSheet, derivePlayerSheet } from "./combat-core";
+import { GATHERING_NODES, gatheringNodeIndex } from "../world/gathering-nodes";
+import {
+  COMBAT_ACTION_DOWNED,
+  COMBAT_ACTION_IDLE,
+  type CombatantSheet,
+  derivePlayerSheet,
+} from "./combat-core";
 import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
 } from "./deterministic-navigation";
+import {
+  applyGearUpgrade,
+  assertItemState,
+  awardMonsterLoot,
+  buyVendorItem,
+  clearVigorHealing,
+  consumeVigorHealing,
+  craftRecipe,
+  createInitialItemState,
+  deserializeItemState,
+  dropMaterialSatchel,
+  equipGear,
+  equippedSerials,
+  gatherItemNode,
+  ITEM_STATE_BYTES,
+  type ItemState,
+  itemCombatBonuses,
+  recoverMaterialSatchel,
+  resonanceCode,
+  resonanceFromCode,
+  sellGear,
+  sellItemStack,
+  serializeItemState,
+  spendMarks,
+  stepItemEffects,
+  unequipGear,
+  useConsumable,
+} from "./items";
 import {
   applyCombatInput,
   assertCombatState,
@@ -36,6 +84,7 @@ import {
   combatTelemetryCounters,
   createInitialM3CombatState,
   deserializeCombatState,
+  horizontalDistance,
   type M3CombatState,
   MONSTER_ENTITY_ID_START,
   MONSTER_HALF_HEIGHT_METERS,
@@ -55,11 +104,12 @@ import {
   PROGRESSION_STATE_BYTES,
   type ProgressionState,
   progressionCombatProfile,
+  reshapeProgression,
   serializeProgressionState,
   spendAttributePoint,
 } from "./progression";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 7;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 8;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
 export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
@@ -82,6 +132,7 @@ interface M3SimulationState {
   readonly interactionActivationCount: number;
   readonly interactionAttemptCount: number;
   readonly interactionRequested: boolean;
+  readonly items: ItemState;
   readonly lastInteractionMarkerIndex: number;
   readonly movementDistanceMeters: number;
   readonly npcAgents: readonly NpcAgentState[];
@@ -134,7 +185,30 @@ const PROGRESSION_OP_EQUIP_ACTIVE = 3;
 const PROGRESSION_OP_EQUIP_KNACK = 4;
 const PROGRESSION_EMPTY_ABILITY = 0xffff_ffff;
 const PROGRESSION_OFFSET = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
-const VERSIONED_STATE_BYTES = STATE_BYTES + PROGRESSION_STATE_BYTES;
+const ITEM_OFFSET = PROGRESSION_OFFSET + PROGRESSION_STATE_BYTES;
+const VERSIONED_STATE_BYTES = STATE_BYTES + PROGRESSION_STATE_BYTES + ITEM_STATE_BYTES;
+const ITEM_COMMAND_KIND = "items.command@1";
+const ITEM_PAYLOAD_BYTES = 24;
+const ITEM_OPERATIONS = Object.freeze({
+  buy: Object.freeze({ code: 3, eventKind: "items.purchased" }),
+  craft: Object.freeze({ code: 2, eventKind: "items.crafted" }),
+  equip: Object.freeze({ code: 6, eventKind: "items.equipped" }),
+  gather: Object.freeze({ code: 1, eventKind: "items.gathered" }),
+  recoverSatchel: Object.freeze({ code: 9, eventKind: "items.satchel-recovered" }),
+  reshape: Object.freeze({ code: 10, eventKind: "progression.reshaped" }),
+  sellGear: Object.freeze({ code: 5, eventKind: "items.sold" }),
+  sellStack: Object.freeze({ code: 4, eventKind: "items.sold" }),
+  upgrade: Object.freeze({ code: 8, eventKind: "items.upgraded" }),
+  use: Object.freeze({ code: 7, eventKind: "items.consumed" }),
+});
+const ITEM_OPERATION_BY_CODE: ReadonlyMap<
+  number,
+  Readonly<{ readonly code: number; readonly eventKind: string }>
+> = new Map(
+  Object.values(ITEM_OPERATIONS).map((operation) => [operation.code, operation] as const),
+);
+const INVENTORY_QUERY_KIND = "inventory.snapshot@1";
+const INVENTORY_TEXT_ENCODER = new TextEncoder();
 
 export function createGameSimulationAdapter(
   context: GameSimulationContext,
@@ -148,7 +222,16 @@ export function createGameSimulationAdapter(
     maximumGroundStepMeters: NPC_CROWD_BALANCE.maximumGroundStepMeters,
     sampleSpacingMeters: NPC_CROWD_BALANCE.navigationSampleSpacingMeters,
   });
+  for (const node of GATHERING_NODES.filter(({ districtId }) => districtId === context.world.id)) {
+    if (!navigation.isWalkablePosition(node.position[0], node.position[1])) {
+      throw new Error(`Gathering node ${node.id} is outside the navigation projection`);
+    }
+  }
   const schedules = buildNpcScheduleSet(context.world, navigation);
+  const spawnMarker = context.world.markers.find(({ tags }) => tags.includes("player-spawn"));
+  if (spawnMarker === undefined) throw new Error("World has no authored player spawn marker");
+  const spawnX = spawnMarker.position[0];
+  const spawnZ = spawnMarker.position[2];
   const tickSeconds = 1 / context.timestepHz;
   const combatWorld: CombatWorldView = Object.freeze({
     canTraverseSegment: (
@@ -165,15 +248,222 @@ export function createGameSimulationAdapter(
   });
   const spawnPointPosition = (): readonly [number, number, number] =>
     Object.freeze([
-      0,
-      Math.fround(navigation.groundHeight(0, 0) + CHARACTER_CONTROLLER_BALANCE.halfHeightMeters),
-      0,
+      spawnX,
+      Math.fround(
+        navigation.groundHeight(spawnX, spawnZ) + CHARACTER_CONTROLLER_BALANCE.halfHeightMeters,
+      ),
+      spawnZ,
     ]) as readonly [number, number, number];
   return Object.freeze({
     applyCommand(
       state: M3SimulationState,
       command: SimulationCommand,
     ): SimulationStepResult<M3SimulationState> {
+      if (command.kind === ITEM_COMMAND_KIND) {
+        if (command.payload.byteLength !== ITEM_PAYLOAD_BYTES) {
+          throw new Error("Item command payload is invalid");
+        }
+        const view = new DataView(
+          command.payload.buffer,
+          command.payload.byteOffset,
+          command.payload.byteLength,
+        );
+        const operation = view.getUint32(0, true);
+        const primary = view.getUint32(4, true);
+        const secondary = view.getUint32(8, true);
+        const tertiary = view.getUint32(12, true);
+        if (view.getUint32(16, true) !== 0 || view.getUint32(20, true) !== 0) {
+          throw new Error("Item command payload is invalid");
+        }
+        if (tertiary !== 0) throw new Error("Item command payload is invalid");
+        if (
+          state.combat.player.actionKind !== COMBAT_ACTION_IDLE ||
+          state.combat.queuedActionId !== -1
+        ) {
+          return itemCommandResult(state, false, operation, primary, secondary);
+        }
+        const priorSheet = derivePlayerSheet(
+          progressionCombatProfile(state.progression, itemCombatBonuses(state.items)),
+        );
+        let items = state.items;
+        let progression = state.progression;
+        let combat = state.combat;
+        let applied = false;
+        if (operation === ITEM_OPERATIONS.gather.code) {
+          const node = GATHERING_NODES[primary];
+          if (node === undefined || secondary !== 0) {
+            throw new Error("Gather command is invalid");
+          }
+          if (
+            node.districtId === context.world.id &&
+            horizontalDistance(state.playerPosition, [node.position[0], 0, node.position[1]]) <=
+              ITEM_INTERACTION_RADII_METERS.gathering
+          ) {
+            const result = gatherItemNode(
+              items,
+              primary,
+              node.itemId,
+              node.quantity,
+              progression.knackSlots.includes("foragers-eye"),
+            );
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.craft.code) {
+          const recipe = RECIPES[primary];
+          const resonance = resonanceFromCode(secondary);
+          if (recipe === undefined || resonance === undefined) {
+            throw new Error("Craft command is invalid");
+          }
+          if (
+            nearMarkerTag(
+              context.world,
+              state.playerPosition,
+              recipe.station,
+              ITEM_INTERACTION_RADII_METERS.station,
+            )
+          ) {
+            const result = craftRecipe(
+              items,
+              primary,
+              resonance,
+              progression.knackSlots.includes("tinkers-thrift"),
+            );
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.buy.code) {
+          const offer = VENDOR_OFFERS[primary];
+          if (offer === undefined || secondary !== 0) {
+            throw new Error("Buy command is invalid");
+          }
+          if (
+            nearMarkerTag(
+              context.world,
+              state.playerPosition,
+              offer.markerTag,
+              ITEM_INTERACTION_RADII_METERS.station,
+            )
+          ) {
+            const result = buyVendorItem(items, primary);
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.sellStack.code) {
+          const item = ITEM_DEFINITIONS[primary];
+          if (item === undefined || secondary !== 0) {
+            throw new Error("Sell-stack command is invalid");
+          }
+          if (nearTradeMarker(context.world, state.playerPosition)) {
+            const result = sellItemStack(items, item.id);
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.sellGear.code) {
+          if (secondary !== 0) throw new Error("Sell-gear command is invalid");
+          if (nearTradeMarker(context.world, state.playerPosition)) {
+            const result = sellGear(items, primary);
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.equip.code) {
+          const slot = gearSlotFromCode(secondary);
+          if (secondary === 0) {
+            const result = equipGear(items, primary);
+            items = result.state;
+            applied = result.applied;
+          } else {
+            if (primary !== 0 || slot === undefined) throw new Error("Equip command is invalid");
+            const result = unequipGear(items, slot);
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.use.code) {
+          const item = ITEM_DEFINITIONS[primary];
+          if (item === undefined || secondary !== 0) {
+            throw new Error("Use command is invalid");
+          }
+          const result = useConsumable(items, item.id);
+          items = result.state;
+          applied = result.applied;
+          if (result.effect?.kind === "aether") {
+            combat = Object.freeze({
+              ...combat,
+              player: Object.freeze({
+                ...combat.player,
+                aether: Math.min(priorSheet.maxAether, combat.player.aether + result.effect.aether),
+              }),
+            });
+          }
+          if (result.effect?.kind === "clearing") {
+            combat = Object.freeze({
+              ...combat,
+              player: Object.freeze({
+                ...combat.player,
+                conditions: Object.freeze({
+                  ...combat.player.conditions,
+                  burningTicks: 0,
+                  chilledTicks: 0,
+                  envenomedTicks: 0,
+                }),
+              }),
+            });
+          }
+        } else if (operation === ITEM_OPERATIONS.upgrade.code) {
+          if (secondary !== 1 && secondary !== 2) {
+            throw new Error("Upgrade command is invalid");
+          }
+          const result = applyGearUpgrade(
+            items,
+            primary,
+            secondary === 1 ? "weapon-whetting" : "armor-fitting",
+          );
+          items = result.state;
+          applied = result.applied;
+        } else if (operation === ITEM_OPERATIONS.recoverSatchel.code) {
+          if (primary !== 0 || secondary !== 0) {
+            throw new Error("Satchel recovery command is invalid");
+          }
+          if (
+            items.satchelActive &&
+            horizontalDistance(state.playerPosition, items.satchelPosition) <=
+              ITEM_INTERACTION_RADII_METERS.satchel
+          ) {
+            const result = recoverMaterialSatchel(items);
+            items = result.state;
+            applied = result.applied;
+          }
+        } else if (operation === ITEM_OPERATIONS.reshape.code) {
+          if (primary !== 0 || secondary !== 0) {
+            throw new Error("Reshape command is invalid");
+          }
+          if (
+            items.marks >= PROGRESSION_RESHAPE_MARK_COST &&
+            nearWaystone(context.world, state.playerPosition)
+          ) {
+            const reshaped = reshapeProgression(progression);
+            if (!sameProgressionBuild(progression, reshaped)) {
+              progression = reshaped;
+              const payment = spendMarks(items, PROGRESSION_RESHAPE_MARK_COST);
+              items = payment.state;
+              applied = payment.applied;
+            }
+          }
+        } else {
+          throw new Error("Item command operation is invalid");
+        }
+        if (!applied) return itemCommandResult(state, false, operation, primary, secondary);
+        const nextSheet = derivePlayerSheet(
+          progressionCombatProfile(progression, itemCombatBonuses(items)),
+        );
+        const next = Object.freeze({
+          ...state,
+          combat: reconcilePlayerCombatSheet(combat, priorSheet, nextSheet),
+          items,
+          progression,
+        });
+        return itemCommandResult(next, true, operation, primary, secondary);
+      }
       if (command.kind === PROGRESSION_COMMAND_KIND) {
         if (command.payload.byteLength !== PROGRESSION_PAYLOAD_BYTES) {
           throw new Error("Progression command payload is invalid");
@@ -228,8 +518,9 @@ export function createGameSimulationAdapter(
         if (progression === state.progression) {
           return progressionCommandResult(state, false, operation, value, slot);
         }
-        const priorSheet = derivePlayerSheet(progressionCombatProfile(state.progression));
-        const nextSheet = derivePlayerSheet(progressionCombatProfile(progression));
+        const bonuses = itemCombatBonuses(state.items);
+        const priorSheet = derivePlayerSheet(progressionCombatProfile(state.progression, bonuses));
+        const nextSheet = derivePlayerSheet(progressionCombatProfile(progression, bonuses));
         return progressionCommandResult(
           Object.freeze({
             ...state,
@@ -326,10 +617,11 @@ export function createGameSimulationAdapter(
       });
     },
     createInitialState(seed: number): M3SimulationState {
-      const spawnX = 0;
-      const spawnZ = 0;
       const progression = createInitialProgressionState();
-      const playerSheet = derivePlayerSheet(progressionCombatProfile(progression));
+      const items = createInitialItemState(seed);
+      const playerSheet = derivePlayerSheet(
+        progressionCombatProfile(progression, itemCombatBonuses(items)),
+      );
       let combat = createInitialM3CombatState(seed, playerSheet);
       const encounterGroupByAuthoredPack = new Map<number, number>();
       for (const authored of creatureSpawnsForDistrict(context.world.id)) {
@@ -364,6 +656,7 @@ export function createGameSimulationAdapter(
         interactionActivationCount: 0,
         interactionAttemptCount: 0,
         interactionRequested: false,
+        items,
         lastInteractionMarkerIndex: -1,
         movementDistanceMeters: 0,
         npcAgents: createInitialNpcAgents(navigation, schedules),
@@ -419,6 +712,7 @@ export function createGameSimulationAdapter(
         }),
       );
       const progression = deserializeProgressionState(view, PROGRESSION_OFFSET);
+      const items = deserializeItemState(view, ITEM_OFFSET);
       const state = Object.freeze({
         collisionResolutionCount: view.getUint32(44, true),
         combat: deserializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES),
@@ -427,6 +721,7 @@ export function createGameSimulationAdapter(
         interactionActivationCount: view.getUint32(52, true),
         interactionAttemptCount: view.getUint32(48, true),
         interactionRequested: interactionRequestedValue === 1,
+        items,
         lastInteractionMarkerIndex: view.getInt32(60, true),
         movementDistanceMeters: view.getFloat64(32, true),
         npcAgents,
@@ -472,6 +767,10 @@ export function createGameSimulationAdapter(
     },
     queryState(state: M3SimulationState, query: SimulationGameStateQuery): Uint8Array {
       assertState(state, world.district.markers.length, navigation, schedules);
+      if (query.kind === INVENTORY_QUERY_KIND) {
+        if (query.payload.byteLength !== 0) throw new Error("Inventory query payload is invalid");
+        return inventoryQueryPayload(state.items);
+      }
       return executeM3NpcKnowledgeQuery(
         query,
         context.world.id,
@@ -531,24 +830,86 @@ export function createGameSimulationAdapter(
       }
       serializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES, state.combat);
       serializeProgressionState(view, PROGRESSION_OFFSET, state.progression);
+      serializeItemState(view, ITEM_OFFSET, state.items);
       return bytes;
     },
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
       const movementProfile = playerMovementProfile(state.combat);
       const movement = movePlayer(world, navigation, state, tickSeconds, movementProfile);
       const crowd = stepNpcCrowd(navigation, schedules, state, movement.position, tickSeconds);
-      const playerSheet = derivePlayerSheet(progressionCombatProfile(state.progression));
-      const combatStep = stepM3Combat(
+      const vigor =
+        state.combat.player.actionKind === COMBAT_ACTION_DOWNED
+          ? Object.freeze({ amount: 0, state: clearVigorHealing(state.items) })
+          : consumeVigorHealing(state.items, state.combat.player.conditions.envenomedTicks > 0);
+      let items = stepItemEffects(vigor.state);
+      const priorSheet = derivePlayerSheet(
+        progressionCombatProfile(state.progression, itemCombatBonuses(state.items)),
+      );
+      const playerSheet = derivePlayerSheet(
+        progressionCombatProfile(state.progression, itemCombatBonuses(items)),
+      );
+      const combatAfterEffectExpiry = reconcilePlayerCombatSheet(
         state.combat,
+        priorSheet,
+        playerSheet,
+      );
+      const combatBeforeStep =
+        vigor.amount === 0
+          ? combatAfterEffectExpiry
+          : Object.freeze({
+              ...combatAfterEffectExpiry,
+              player: Object.freeze({
+                ...combatAfterEffectExpiry.player,
+                health: Math.min(
+                  playerSheet.maxHealth,
+                  combatAfterEffectExpiry.player.health + vigor.amount,
+                ),
+              }),
+            });
+      const combatStep = stepM3Combat(
+        combatBeforeStep,
         combatWorld,
         movement.position,
         state.playerYawRadians,
         tickSeconds,
         playerSheet,
       );
-      const experience = combatExperienceAward(state.combat, combatStep.state, combatStep.events);
+      if (combatStep.state.player.actionKind === COMBAT_ACTION_DOWNED) {
+        items = clearVigorHealing(items);
+      }
+      const defeatAwards = combatDefeatAwards(state.combat, combatStep.state, combatStep.events);
       const progressionAward =
-        experience === 0 ? null : awardExperience(state.progression, experience);
+        defeatAwards.experience === 0
+          ? null
+          : awardExperience(state.progression, defeatAwards.experience);
+      const lootEvents: Readonly<{ readonly kind: string; readonly payload: Uint8Array }>[] = [];
+      for (const { entityId, kit } of defeatAwards.defeated) {
+        const award = awardMonsterLoot(items, kit.id);
+        if (!award.applied) continue;
+        items = award.state;
+        lootEvents.push(
+          Object.freeze({
+            kind: "loot.awarded",
+            payload: combatEventPayload([entityId, award.marks, award.gearSerial, kit.xp]),
+          }),
+        );
+        if (award.displacedGearSerial !== 0) {
+          lootEvents.push(
+            Object.freeze({
+              kind: "loot.gear-displaced",
+              payload: combatEventPayload([
+                award.displacedGearSerial,
+                award.marks,
+                award.gearSerial,
+                entityId,
+              ]),
+            }),
+          );
+        }
+      }
+      if (combatStep.respawnPlayer) {
+        items = dropMaterialSatchel(items, combatStep.playerPosition);
+      }
       const playerPosition = combatStep.respawnPlayer
         ? spawnPointPosition()
         : combatStep.playerPosition;
@@ -562,6 +923,7 @@ export function createGameSimulationAdapter(
         combat: combatStep.state,
         interactionActivationCount: state.interactionActivationCount + Number(activated),
         interactionRequested: false,
+        items,
         lastInteractionMarkerIndex:
           interaction?.kind === "transition" ? interaction.value : state.lastInteractionMarkerIndex,
         movementDistanceMeters: Math.fround(state.movementDistanceMeters + movement.distanceMeters),
@@ -583,13 +945,14 @@ export function createGameSimulationAdapter(
           ...combatStep.events.map((event) =>
             Object.freeze({ kind: event.kind, payload: combatEventPayload(event.values) }),
           ),
+          ...lootEvents,
           ...(progressionAward === null
             ? []
             : [
                 Object.freeze({
                   kind: "progression.experience-gained",
                   payload: combatEventPayload([
-                    experience,
+                    defeatAwards.experience,
                     progressionAward.state.experience,
                     progressionAward.state.level,
                     progressionAward.levelsGained,
@@ -607,6 +970,23 @@ export function createGameSimulationAdapter(
         interactionActivationCount: state.interactionActivationCount,
         interactionAttemptCount: state.interactionAttemptCount,
         movementDistanceMeters: state.movementDistanceMeters,
+        itemBuyCount: state.items.counters.buyCount,
+        itemConsumableUseCount: state.items.counters.consumableUseCount,
+        itemCraftCount: state.items.counters.craftCount,
+        itemEquipmentChangeCount: state.items.counters.equipmentChangeCount,
+        itemGatherCount: state.items.counters.gatherCount,
+        itemGearCount: state.items.gear.length,
+        itemGearCreatedCount: state.items.counters.gearCreatedCount,
+        itemLootAwardCount: state.items.counters.lootAwardCount,
+        itemMarks: state.items.marks,
+        itemMarksEarned: state.items.counters.marksEarned,
+        itemMarksSpent: state.items.counters.marksSpent,
+        itemSatchelActive: Number(state.items.satchelActive),
+        itemSatchelDropCount: state.items.counters.satchelDropCount,
+        itemSatchelRecoveryCount: state.items.counters.satchelRecoveryCount,
+        itemSellCount: state.items.counters.sellCount,
+        itemStackCount: state.items.stackCounts.reduce((sum, count) => sum + count, 0),
+        itemUpgradeCount: state.items.counters.upgradeCount,
         navigationEdgeCount: navigation.telemetry.edgeCount,
         navigationExpandedNodeCount: schedules.expandedNodeCount,
         navigationGridBytes: navigation.telemetry.gridBytes,
@@ -1010,7 +1390,21 @@ function assertState(
   }
   assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0, 0, 0);
   assertProgressionState(state.progression);
-  assertCombatState(state.combat, derivePlayerSheet(progressionCombatProfile(state.progression)));
+  assertItemState(state.items);
+  const gatheringMask =
+    GATHERING_NODES.length === 32 ? 0xffff_ffff : (1 << GATHERING_NODES.length) - 1;
+  if (
+    (state.items.gatheredNodeMask & ~gatheringMask) !== 0 ||
+    state.items.nodeCooldownTicks.some(
+      (ticks, index) => index >= GATHERING_NODES.length && ticks !== 0,
+    )
+  ) {
+    throw new Error("Game item state has unknown gathering-node identities");
+  }
+  assertCombatState(
+    state.combat,
+    derivePlayerSheet(progressionCombatProfile(state.progression, itemCombatBonuses(state.items))),
+  );
   for (const monster of state.combat.monsters) {
     if (
       !navigation.isWalkablePosition(monster.position[0], monster.position[2]) ||
@@ -1197,6 +1591,127 @@ export function createEquipAbilityCommand(
   );
 }
 
+export function createGatherItemCommand(
+  sequence: number,
+  targetTick: number,
+  nodeId: string,
+): SimulationCommand {
+  const nodeIndex = gatheringNodeIndex(nodeId);
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.gather.code, nodeIndex, 0);
+}
+
+export function createCraftItemCommand(
+  sequence: number,
+  targetTick: number,
+  recipeId: string,
+  resonance: Resonance | null = null,
+): SimulationCommand {
+  const index = recipeIndex(recipeId);
+  return createItemCommand(
+    sequence,
+    targetTick,
+    ITEM_OPERATIONS.craft.code,
+    index,
+    resonanceCode(resonance),
+  );
+}
+
+export function createBuyItemCommand(
+  sequence: number,
+  targetTick: number,
+  itemId: ItemId,
+): SimulationCommand {
+  const offerIndex = vendorOfferIndex(itemId);
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.buy.code, offerIndex, 0);
+}
+
+export function createSellItemStackCommand(
+  sequence: number,
+  targetTick: number,
+  itemId: ItemId,
+): SimulationCommand {
+  return createItemCommand(
+    sequence,
+    targetTick,
+    ITEM_OPERATIONS.sellStack.code,
+    itemIndex(itemId),
+    0,
+  );
+}
+
+export function createSellGearCommand(
+  sequence: number,
+  targetTick: number,
+  serial: number,
+): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.sellGear.code, serial, 0);
+}
+
+export function createEquipGearCommand(
+  sequence: number,
+  targetTick: number,
+  serial: number,
+): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.equip.code, serial, 0);
+}
+
+export function createUnequipGearCommand(
+  sequence: number,
+  targetTick: number,
+  slot: GearSlot,
+): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.equip.code, 0, gearSlotCode(slot));
+}
+
+export function createUseItemCommand(
+  sequence: number,
+  targetTick: number,
+  itemId: ItemId,
+): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.use.code, itemIndex(itemId), 0);
+}
+
+export function createUpgradeGearCommand(
+  sequence: number,
+  targetTick: number,
+  serial: number,
+  upgrade: "armor-fitting" | "weapon-whetting",
+): SimulationCommand {
+  return createItemCommand(
+    sequence,
+    targetTick,
+    ITEM_OPERATIONS.upgrade.code,
+    serial,
+    upgrade === "weapon-whetting" ? 1 : 2,
+  );
+}
+
+export function createRecoverSatchelCommand(
+  sequence: number,
+  targetTick: number,
+): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.recoverSatchel.code, 0, 0);
+}
+
+export function createReshapeCommand(sequence: number, targetTick: number): SimulationCommand {
+  return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.reshape.code, 0, 0);
+}
+
+function createItemCommand(
+  sequence: number,
+  targetTick: number,
+  operation: number,
+  primary: number,
+  secondary: number,
+): SimulationCommand {
+  const payload = new Uint8Array(ITEM_PAYLOAD_BYTES);
+  const view = new DataView(payload.buffer);
+  view.setUint32(0, operation, true);
+  view.setUint32(4, primary, true);
+  view.setUint32(8, secondary, true);
+  return Object.freeze({ kind: ITEM_COMMAND_KIND, payload, sequence, targetTick });
+}
+
 function createProgressionCommand(
   sequence: number,
   targetTick: number,
@@ -1217,6 +1732,117 @@ function progressionAbilityCommandIndex(abilityId: ProgressionAbilityId): number
   const index = PROGRESSION_ABILITIES.findIndex((ability) => ability.id === abilityId);
   if (index < 0) throw new Error(`Unknown progression ability ${abilityId}`);
   return index;
+}
+
+function itemCommandResult(
+  state: M3SimulationState,
+  applied: boolean,
+  operation: number,
+  primary: number,
+  secondary: number,
+): SimulationStepResult<M3SimulationState> {
+  const definition = ITEM_OPERATION_BY_CODE.get(operation);
+  if (definition === undefined) throw new Error("Item command operation is invalid");
+  return Object.freeze({
+    events: Object.freeze([
+      Object.freeze({
+        kind: applied ? definition.eventKind : "items.rejected",
+        payload: combatEventPayload([operation, primary, secondary, Number(applied)]),
+      }),
+    ]),
+    state,
+  });
+}
+
+function sameProgressionBuild(left: ProgressionState, right: ProgressionState): boolean {
+  return (
+    left.might === right.might &&
+    left.finesse === right.finesse &&
+    left.vitality === right.vitality &&
+    left.attunement === right.attunement &&
+    left.unspentAttributePoints === right.unspentAttributePoints &&
+    left.unspentAbilityPicks === right.unspentAbilityPicks &&
+    left.learnedAbilities.join("\0") === right.learnedAbilities.join("\0") &&
+    left.activeSlots.join("\0") === right.activeSlots.join("\0") &&
+    left.knackSlots.join("\0") === right.knackSlots.join("\0")
+  );
+}
+
+function gearSlotCode(slot: GearSlot): number {
+  return (["weapon", "armor", "shield", "catalyst"] as const).indexOf(slot) + 1;
+}
+
+function gearSlotFromCode(code: number): GearSlot | undefined {
+  if (code === 0) return undefined;
+  return (["weapon", "armor", "shield", "catalyst"] as const)[code - 1];
+}
+
+function nearMarkerTag(
+  world: SimulationWorldDefinition,
+  position: readonly [number, number, number],
+  tag: string,
+  radius: number,
+): boolean {
+  return world.markers.some(
+    (marker) =>
+      marker.tags.includes(tag) &&
+      horizontalDistance(position, [marker.position[0], 0, marker.position[2]]) <= radius,
+  );
+}
+
+function nearTradeMarker(
+  world: SimulationWorldDefinition,
+  position: readonly [number, number, number],
+): boolean {
+  return ["market", "forge", "alembic", "hearth"].some((tag) =>
+    nearMarkerTag(world, position, tag, ITEM_INTERACTION_RADII_METERS.station),
+  );
+}
+
+function nearWaystone(
+  world: SimulationWorldDefinition,
+  position: readonly [number, number, number],
+): boolean {
+  return world.markers.some(
+    (marker) =>
+      marker.tags.includes("waystone") &&
+      horizontalDistance(position, [marker.position[0], 0, marker.position[2]]) <=
+        ITEM_INTERACTION_RADII_METERS.waystone,
+  );
+}
+
+function inventoryQueryPayload(state: ItemState): Uint8Array {
+  const stacks = ITEM_DEFINITIONS.flatMap((definition, index) => {
+    const quantity = state.stackCounts[index] ?? 0;
+    return quantity === 0 ? [] : [Object.freeze({ itemId: definition.id, quantity })];
+  });
+  const gear = state.gear.map((instance) =>
+    Object.freeze({
+      affixes: GEAR_AFFIXES.flatMap((affix, index) =>
+        (instance.affixMask & (1 << index)) === 0 ? [] : [affix.id],
+      ),
+      equipped: equippedSerials(state).includes(instance.serial),
+      itemId: ITEM_DEFINITIONS[instance.itemIndex]?.id,
+      rarity: instance.rarity,
+      resonance: instance.resonance,
+      serial: instance.serial,
+      uniqueProperty: instance.uniqueProperty === 1 ? "warden-echo" : null,
+      upgrades: instance.upgrades,
+    }),
+  );
+  return INVENTORY_TEXT_ENCODER.encode(
+    JSON.stringify({
+      activeFoodItemId:
+        state.activeFoodItemIndex < 0
+          ? null
+          : (ITEM_DEFINITIONS[state.activeFoodItemIndex]?.id ?? null),
+      gear,
+      marks: state.marks,
+      satchelActive: state.satchelActive,
+      stacks,
+      version: state.version,
+    }),
+  );
 }
 
 function progressionCommandResult(
@@ -1263,17 +1889,32 @@ function reconcilePlayerCombatSheet(
   });
 }
 
-function combatExperienceAward(
+function combatDefeatAwards(
   prior: M3CombatState,
   next: M3CombatState,
   events: readonly Readonly<{ readonly kind: string; readonly values: readonly number[] }>[],
-): number {
+): Readonly<{
+  readonly defeated: readonly Readonly<{
+    readonly entityId: number;
+    readonly kit: (typeof MONSTER_KITS)[number];
+  }>[];
+  readonly experience: number;
+}> {
   const defeated = new Set(
-    events
-      .filter((event) => event.kind === "combat.defeated" && event.values[0] !== PLAYER_ENTITY_ID)
-      .map((event) => event.values[0]),
+    events.flatMap((event) => {
+      const entityId = event.values[0];
+      return event.kind === "combat.defeated" &&
+        entityId !== undefined &&
+        entityId !== PLAYER_ENTITY_ID
+        ? [entityId]
+        : [];
+    }),
   );
   let experience = 0;
+  const awards: {
+    readonly entityId: number;
+    readonly kit: (typeof MONSTER_KITS)[number];
+  }[] = [];
   for (const entityId of defeated) {
     const before = prior.monsters.find((monster) => monster.entityId === entityId);
     const after = next.monsters.find((monster) => monster.entityId === entityId);
@@ -1285,9 +1926,12 @@ function combatExperienceAward(
     ) {
       continue;
     }
-    experience += MONSTER_KITS[after.kitIndex]?.xp ?? 0;
+    const kit = MONSTER_KITS[after.kitIndex];
+    if (kit === undefined) continue;
+    experience += kit.xp;
+    awards.push(Object.freeze({ entityId, kit }));
   }
-  return experience;
+  return Object.freeze({ defeated: Object.freeze(awards), experience });
 }
 
 function combatEventPayload(values: readonly [number, number, number, number]): Uint8Array {

@@ -11,6 +11,7 @@ import {
   COMBAT_CHECK,
   COMBAT_CONDITION,
   COMBAT_DODGE,
+  COMBAT_EQUIPMENT_DEFAULTS,
   COMBAT_KEEN_SPELL_REFUND_DENOMINATOR,
   COMBAT_PLAYER_ATTACKS,
   COMBAT_POOLS,
@@ -54,8 +55,12 @@ export interface CombatantSheet {
   readonly affixNimble: boolean;
   readonly answeringStrike: boolean;
   readonly attunement: number;
+  readonly blockStaminaCostNumerator: number;
+  readonly catalystOmniResonance: boolean;
+  readonly catalystResonance: DamageChannel | null;
   readonly guard: number;
   readonly hasCatalyst: boolean;
+  readonly healthRegenOutOfCombat: number;
   readonly maxAether: number;
   readonly maxHealth: number;
   readonly maxStamina: number;
@@ -68,8 +73,16 @@ export interface CombatantSheet {
   readonly soakElemental: number;
   readonly soakPhysical: number;
   readonly staggerImmune: boolean;
+  readonly staminaRegenBonus: number;
   readonly wellspring: boolean;
   readonly weaponBase: number;
+  readonly weaponEmberDamage: number;
+  readonly weaponFrostDamage: number;
+  readonly weaponKeenCondition: ConditionId | null;
+  readonly weaponRangeMeters: number;
+  readonly weaponRecoveryTicksBonus: number;
+  readonly weaponStaminaCostNumerator: number;
+  readonly weaponVenomDamage: number;
 }
 
 export interface CombatConditionsState {
@@ -145,6 +158,10 @@ export interface AttackSpec {
   readonly answeringEligible: boolean;
   readonly appliesCondition: ConditionId | null;
   readonly appliesConditionOnKeen: ConditionId | null;
+  readonly bonusDamage: readonly Readonly<{
+    readonly channel: DamageChannel;
+    readonly raw: number;
+  }>[];
   readonly channel: DamageChannel;
   readonly checkType: "spell" | "weapon";
   readonly ignoresHalfSoak: boolean;
@@ -161,6 +178,22 @@ export interface AttackResolution {
   readonly rngState: number;
 }
 
+const EMPTY_BONUS_DAMAGE: AttackSpec["bonusDamage"] = Object.freeze([]);
+
+function weaponBonusDamage(sheet: CombatantSheet): AttackSpec["bonusDamage"] {
+  const damage: Readonly<{ readonly channel: DamageChannel; readonly raw: number }>[] = [];
+  if (sheet.weaponEmberDamage > 0) {
+    damage.push(Object.freeze({ channel: "ember", raw: sheet.weaponEmberDamage }));
+  }
+  if (sheet.weaponFrostDamage > 0) {
+    damage.push(Object.freeze({ channel: "frost", raw: sheet.weaponFrostDamage }));
+  }
+  if (sheet.weaponVenomDamage > 0) {
+    damage.push(Object.freeze({ channel: "venom", raw: sheet.weaponVenomDamage }));
+  }
+  return Object.freeze(damage);
+}
+
 export function derivePlayerSheet(profile: CombatantProfile): CombatantSheet {
   return Object.freeze({
     abilities: profile.loadout,
@@ -170,11 +203,21 @@ export function derivePlayerSheet(profile: CombatantProfile): CombatantSheet {
     affixNimble: profile.affixNimble,
     answeringStrike: profile.answeringStrike,
     attunement: profile.attunement,
+    blockStaminaCostNumerator: profile.blockStaminaCostNumerator,
+    catalystOmniResonance: profile.catalystOmniResonance,
+    catalystResonance: profile.catalystResonance,
     guard: Math.floor(profile.finesse / 2) + profile.armorGuard,
     hasCatalyst: profile.catalystPotency > 0,
+    healthRegenOutOfCombat: profile.healthRegenOutOfCombat,
     maxAether: COMBAT_POOLS.aetherBase + COMBAT_POOLS.aetherPerAttunement * profile.attunement,
-    maxHealth: COMBAT_POOLS.healthBase + COMBAT_POOLS.healthPerVitality * profile.vitality,
-    maxStamina: COMBAT_POOLS.staminaBase + COMBAT_POOLS.staminaPerVitality * profile.vitality,
+    maxHealth:
+      COMBAT_POOLS.healthBase +
+      COMBAT_POOLS.healthPerVitality * profile.vitality +
+      profile.maxHealthBonus,
+    maxStamina:
+      COMBAT_POOLS.staminaBase +
+      COMBAT_POOLS.staminaPerVitality * profile.vitality +
+      profile.maxStaminaBonus,
     might: profile.might,
     monsterAttacks: Object.freeze([]),
     monsterClass: null,
@@ -184,7 +227,15 @@ export function derivePlayerSheet(profile: CombatantProfile): CombatantSheet {
     soakElemental: profile.armorSoakElemental,
     soakPhysical: profile.armorSoakPhysical,
     staggerImmune: false,
+    staminaRegenBonus: profile.staminaRegenBonus,
     weaponBase: profile.weaponBase,
+    weaponEmberDamage: profile.weaponEmberDamage,
+    weaponFrostDamage: profile.weaponFrostDamage,
+    weaponKeenCondition: profile.weaponKeenCondition,
+    weaponRangeMeters: profile.weaponRangeMeters,
+    weaponRecoveryTicksBonus: profile.weaponRecoveryTicksBonus,
+    weaponStaminaCostNumerator: profile.weaponStaminaCostNumerator,
+    weaponVenomDamage: profile.weaponVenomDamage,
     wellspring: profile.wellspring,
   });
 }
@@ -200,8 +251,12 @@ export function deriveMonsterSheet(kitIndex: number): CombatantSheet {
     affixNimble: false,
     answeringStrike: false,
     attunement: 0,
+    blockStaminaCostNumerator: COMBAT_EQUIPMENT_DEFAULTS.staminaCostNumerator,
+    catalystOmniResonance: false,
+    catalystResonance: null,
     guard: kit.guard,
     hasCatalyst: false,
+    healthRegenOutOfCombat: 0,
     maxAether: 0,
     maxHealth: kit.healthMax,
     maxStamina: kit.staminaMax,
@@ -214,7 +269,15 @@ export function deriveMonsterSheet(kitIndex: number): CombatantSheet {
     soakElemental: kit.soakElemental,
     soakPhysical: kit.soakPhysical,
     staggerImmune: kit.staggerImmune,
+    staminaRegenBonus: 0,
     weaponBase: 0,
+    weaponEmberDamage: 0,
+    weaponFrostDamage: 0,
+    weaponKeenCondition: null,
+    weaponRangeMeters: 0,
+    weaponRecoveryTicksBonus: 0,
+    weaponStaminaCostNumerator: 4,
+    weaponVenomDamage: 0,
     wellspring: false,
   });
 }
@@ -317,8 +380,15 @@ export function playerActionTiming(
   sheet: CombatantSheet,
   actionId: number,
 ): Readonly<{ activeTicks: number; recoveryTicks: number; windupTicks: number }> {
-  if (actionId === PLAYER_ACTION_LIGHT) return COMBAT_PLAYER_ATTACKS.light;
-  if (actionId === PLAYER_ACTION_HEAVY) return COMBAT_PLAYER_ATTACKS.heavy;
+  if (actionId === PLAYER_ACTION_LIGHT || actionId === PLAYER_ACTION_HEAVY) {
+    const timing =
+      actionId === PLAYER_ACTION_LIGHT ? COMBAT_PLAYER_ATTACKS.light : COMBAT_PLAYER_ATTACKS.heavy;
+    if (sheet.weaponRecoveryTicksBonus === 0) return timing;
+    return Object.freeze({
+      ...timing,
+      recoveryTicks: timing.recoveryTicks + sheet.weaponRecoveryTicksBonus,
+    });
+  }
   if (actionId === PLAYER_ACTION_DODGE) {
     return Object.freeze({
       activeTicks: COMBAT_DODGE.totalTicks,
@@ -327,7 +397,13 @@ export function playerActionTiming(
     });
   }
   if (actionId === PLAYER_ACTION_AETHERSPARK) return COMBAT_ABILITIES.aetherspark.timing;
-  return playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE).timing;
+  const ability = playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE);
+  return ability.kind === "martial" && sheet.weaponRecoveryTicksBonus !== 0
+    ? Object.freeze({
+        ...ability.timing,
+        recoveryTicks: ability.timing.recoveryTicks + sheet.weaponRecoveryTicksBonus,
+      })
+    : ability.timing;
 }
 
 export function startPlayerAction(
@@ -352,10 +428,13 @@ export function startPlayerAction(
   }
   let staminaCost = 0;
   let aetherCost = 0;
+  let usesWeaponStamina = false;
   if (actionId === PLAYER_ACTION_LIGHT) {
     staminaCost = COMBAT_PLAYER_ATTACKS.light.staminaCost;
+    usesWeaponStamina = true;
   } else if (actionId === PLAYER_ACTION_HEAVY) {
     staminaCost = COMBAT_PLAYER_ATTACKS.heavy.staminaCost;
+    usesWeaponStamina = true;
   } else if (actionId === PLAYER_ACTION_AETHERSPARK) {
     if (!sheet.hasCatalyst) return Object.freeze({ started: false, state });
   } else {
@@ -368,12 +447,18 @@ export function startPlayerAction(
       return Object.freeze({ started: false, state });
     }
     const ability = playerAbility(sheet, actionId - PLAYER_ACTION_SLOT_BASE);
-    if (ability.kind === "martial" || ability.kind === "stance") {
+    if (ability.kind === "martial") {
+      staminaCost = ability.staminaCost;
+      usesWeaponStamina = true;
+    } else if (ability.kind === "stance") {
       staminaCost = ability.staminaCost;
     } else {
       if (!sheet.hasCatalyst) return Object.freeze({ started: false, state });
       aetherCost = ability.aetherCost;
     }
+  }
+  if (staminaCost > 0 && usesWeaponStamina && sheet.weaponStaminaCostNumerator !== 4) {
+    staminaCost = Math.floor((staminaCost * sheet.weaponStaminaCostNumerator) / 4);
   }
   // The Answering Strike window makes the next light attack free.
   if (actionId === PLAYER_ACTION_LIGHT && state.answeringTicks > 0) staminaCost = 0;
@@ -519,6 +604,7 @@ export function tickCombatant(
         ? COMBAT_POOLS.staminaRegenBlockingPerSecond
         : COMBAT_POOLS.staminaRegenPerSecond;
     if (sheet.wellspring) rate += WELLSPRING_STAMINA_REGEN_PER_SECOND;
+    rate += sheet.staminaRegenBonus;
     if (chilled) {
       rate = Math.floor(
         (rate * COMBAT_CONDITION.chilled.staminaRegenNumerator) /
@@ -545,17 +631,24 @@ export function tickCombatant(
     }
   }
 
-  // Heal over time (suppressed while Envenomed).
-  if (next.healRemainingTicks > 0) {
-    next.healRemainingTicks -= 1;
-    if (state.conditions.envenomedTicks === 0) {
-      next.healAccumulator += MENDWEAVE_HEAL_PER_SECOND;
-      const healed = Math.floor(next.healAccumulator / SIM_TICKS_PER_SECOND);
-      if (healed > 0) {
-        next.healAccumulator -= healed * SIM_TICKS_PER_SECOND;
-        next.health = Math.min(sheet.maxHealth, next.health + healed);
-      }
+  // Heal over time and Waybread's out-of-combat trickle (both suppressed while
+  // Envenomed and sharing the canonical healing accumulator).
+  const mendweaveActive = next.healRemainingTicks > 0;
+  if (mendweaveActive) next.healRemainingTicks -= 1;
+  const passiveHealRate = context.inCombat ? 0 : sheet.healthRegenOutOfCombat;
+  if (
+    next.health < sheet.maxHealth &&
+    (mendweaveActive || passiveHealRate > 0) &&
+    state.conditions.envenomedTicks === 0
+  ) {
+    next.healAccumulator += (mendweaveActive ? MENDWEAVE_HEAL_PER_SECOND : 0) + passiveHealRate;
+    const healed = Math.floor(next.healAccumulator / SIM_TICKS_PER_SECOND);
+    if (healed > 0) {
+      next.healAccumulator -= healed * SIM_TICKS_PER_SECOND;
+      next.health = Math.min(sheet.maxHealth, next.health + healed);
     }
+  } else if (next.health >= sheet.maxHealth) {
+    next.healAccumulator = 0;
   }
 
   // Ward expiry.
@@ -625,7 +718,8 @@ export function playerAttackSpec(sheet: CombatantSheet, actionId: number): Attac
     return Object.freeze({
       answeringEligible: actionId === PLAYER_ACTION_LIGHT,
       appliesCondition: null,
-      appliesConditionOnKeen: null,
+      appliesConditionOnKeen: sheet.weaponKeenCondition,
+      bonusDamage: weaponBonusDamage(sheet),
       channel: "physical" as const,
       checkType: "weapon" as const,
       ignoresHalfSoak: false,
@@ -643,7 +737,8 @@ export function playerAttackSpec(sheet: CombatantSheet, actionId: number): Attac
     return Object.freeze({
       answeringEligible: false,
       appliesCondition: null,
-      appliesConditionOnKeen: null,
+      appliesConditionOnKeen: sheet.weaponKeenCondition,
+      bonusDamage: weaponBonusDamage(sheet),
       channel: "physical" as const,
       checkType: "weapon" as const,
       ignoresHalfSoak: ability.ignoresHalfSoak,
@@ -652,14 +747,19 @@ export function playerAttackSpec(sheet: CombatantSheet, actionId: number): Attac
     });
   }
   if (ability.baseDamage === 0) return null;
+  let raw = ability.baseDamage + sheet.attunement;
+  if (sheet.catalystOmniResonance || sheet.catalystResonance === ability.channel) {
+    raw = Math.floor((raw * 5) / 4);
+  }
   return Object.freeze({
     answeringEligible: false,
     appliesCondition: ability.appliesCondition,
     appliesConditionOnKeen: ability.appliesConditionOnKeen,
+    bonusDamage: EMPTY_BONUS_DAMAGE,
     channel: ability.channel,
     checkType: "spell" as const,
     ignoresHalfSoak: false,
-    raw: ability.baseDamage + sheet.attunement,
+    raw,
     staggersNonElite: ability.staggersNonElite,
   });
 }
@@ -671,6 +771,7 @@ export function monsterAttackSpec(sheet: CombatantSheet, attackIndex: number): A
     answeringEligible: false,
     appliesCondition: null,
     appliesConditionOnKeen: attack.appliesConditionOnKeen,
+    bonusDamage: EMPTY_BONUS_DAMAGE,
     channel: attack.channel,
     checkType: attack.spellPotency === null ? ("weapon" as const) : ("spell" as const),
     ignoresHalfSoak: false,
@@ -759,7 +860,10 @@ export function resolveAttack(
     if (blocking) {
       // A held block turns a failed weapon check into the block interaction: the
       // deflection costs stamina unless the block was caught.
-      const drain = caughtBlock ? 0 : Math.floor(spec.raw / COMBAT_BLOCK.staminaDrainDenominator);
+      const totalRaw = spec.raw + spec.bonusDamage.reduce((sum, bonus) => sum + bonus.raw, 0);
+      const drain = caughtBlock
+        ? 0
+        : blockStaminaDrain(totalRaw, defender.sheet.blockStaminaCostNumerator);
       defenderState = applyBlockDrain(defenderState, drain, events);
       events.push(Object.freeze({ amount: 0, caught: caughtBlock, kind: "blocked" as const }));
       if (caughtBlock && defender.sheet.answeringStrike) {
@@ -804,6 +908,11 @@ export function resolveAttack(
     spec.channel === "physical" ? defender.sheet.soakPhysical : defender.sheet.soakElemental;
   if (spec.ignoresHalfSoak) soak = Math.floor(soak / 2);
   let dealt = Math.max(1, raw - soak);
+  for (const bonus of spec.bonusDamage) {
+    const bonusSoak =
+      bonus.channel === "physical" ? defender.sheet.soakPhysical : defender.sheet.soakElemental;
+    dealt += Math.max(0, bonus.raw - bonusSoak);
+  }
   if (blocking) {
     dealt = Math.max(
       1,
@@ -811,7 +920,10 @@ export function resolveAttack(
         (dealt * COMBAT_BLOCK.blockedDamageNumerator) / COMBAT_BLOCK.blockedDamageDenominator,
       ),
     );
-    const drain = caughtBlock ? 0 : Math.floor(raw / COMBAT_BLOCK.staminaDrainDenominator);
+    const totalRaw = raw + spec.bonusDamage.reduce((sum, bonus) => sum + bonus.raw, 0);
+    const drain = caughtBlock
+      ? 0
+      : blockStaminaDrain(totalRaw, defender.sheet.blockStaminaCostNumerator);
     defenderState = applyBlockDrain(defenderState, drain, events);
     events.push(Object.freeze({ amount: dealt, caught: caughtBlock, kind: "blocked" as const }));
     if (caughtBlock && defender.sheet.answeringStrike) {
@@ -934,6 +1046,13 @@ export function resolveAttack(
     outcome: keen ? "keen" : "hit",
     rngState: nextRngState,
   });
+}
+
+function blockStaminaDrain(totalRaw: number, staminaCostNumerator: number): number {
+  return Math.floor(
+    (Math.floor(totalRaw / COMBAT_BLOCK.staminaDrainDenominator) * staminaCostNumerator) /
+      COMBAT_BLOCK.staminaCostDenominator,
+  );
 }
 
 function applyBlockDrain(

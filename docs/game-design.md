@@ -262,13 +262,45 @@ science/alchemy vein is load-bearing, not flavor:
   120 s), Aether Salts (restore 30 Aether); **hearth (7)** — Hearthloaf (+10 max
   Stamina), Fisher's Stew (+10 max Health), Orchard Preserve (+1 Finesse), Hunter's
   Roast (+1 Might), Tidebroth (+1 Attunement), Waybread (1 Health/s out of combat,
-  5 min), Mulled Cordial (stamina regen +5/s). Hearth buffs last 10 minutes; one food
-  buff active at a time.
+  5 min), Mulled Cordial (stamina regen +5/s). Other hearth buffs last 10 minutes;
+  one food buff is active at a time.
+- The recipe language is intentionally learnable without a wiki: each recipe has
+  only two or three ingredients, its station states its purpose, and ingredient
+  families point back to a place (fields feed hearth/alembic, forest feeds
+  wood/leather cooking and forge work, shore feeds salt/fish/salvage). There are no
+  hidden intermediate-component trees. The crafting screen previews exact costs and
+  the result before confirmation. Tinker's Thrift visibly reduces each common
+  ingredient by one (minimum one), rather than hiding the saving in an end-of-craft
+  roll.
+- Surface gathering nodes regrow after five minutes of simulation time. A harvested
+  node's cooldown and first-harvest bit are deterministic saved state; Forager's Eye
+  adds one item at the node and supplies the presentation shimmer, so its value is
+  immediate and legible. Catacomb nodes append to the same stable vocabulary in M4.
+- Crafted gear is **Fine** and receives exactly one seeded, slot-eligible affix;
+  Exceptional gear remains a loot chase and Mythic gear remains boss/quest-only. The
+  slice's Mythic **Warden's Echo** focus has one immediately legible unique property:
+  ember, frost, and aether spells all receive its resonance bonus, so the boss reward
+  invites mixed-channel loadouts without adding another meter or proc rule.
+  Resonant Focus crafting asks for one plain-language choice — ember, frost, or
+  aether — and shows the affected spell channel. Weapons, armor, shield, and catalyst
+  each have one equipped slot that may be empty, while materials and consumables stack. This keeps the
+  loadout readable even when the affix combinations become interesting.
 - Single currency: **marks** *(working name)*; starting purse 25. Price bands
   (static data for the slice — a dynamic economy is explicitly out of scope):
   reagents 1–4, tonics/food 8–15, base weapons and armor 30–60, Fine gear 80–150;
   vendors buy back at half price (floor). The station NPCs plus one general trader at
   the docks hold stock.
+- The starter satchel includes one Hearthloaf. It makes food preparation discoverable
+  through use instead of tutorial prose, while the 25-mark purse still forces an
+  early choice rather than funding a full loadout.
+- Vendor offers are static and do not secretly deplete or reprice. Every offer shows
+  buy price and the universal half-price (floored) sell value; materials and
+  consumables sell singly, while equipped and Mythic gear cannot be sold. Scarcity
+  comes from authored gathering/loot access and recipe choices, not from an opaque
+  market simulation. No recipe whose complete input is vendor-stocked may sell for
+  more than those inputs cost, including after Tinker's Thrift. In particular, salvage
+  iron is gathered or looted rather than vendor-sold, so buying inputs cannot fund a
+  repeatable forge-profit loop.
 - Loot: containers and monster drops from seeded deterministic tables on the `loot`
   stream; rarity tiers **Common / Fine / Exceptional / Mythic**. Found and crafted
   gear carries **0–2 affixes** gated by rarity (Common 0, Fine 1, Exceptional 2,
@@ -289,10 +321,17 @@ science/alchemy vein is load-bearing, not flavor:
   Bracing once, and re-triggering Nimble resets its 120t window rather than
   extending or stacking it. A new flat affix is a content add; a new affix
   *mechanic*, trigger, or aggregation rule is a design change.
+- Loot never silently disappears at inventory limits. Material overflow auto-salvages
+  into its half-price marks value (minimum one mark per excess item), ordinary gear
+  overflow auto-salvages at half price, and guaranteed Mythic loot replaces the
+  lowest-preservation-priority unequipped item while paying its sell value and naming
+  the displacement. The order is non-unique before unique, Common before Fine before
+  Exceptional before Mythic, fewer upgrades before more, lower base price, then newest
+  serial as the deterministic tie-breaker.
 
 ### Death — respawn with a recoverable cost
 
-- **Waystones** *(working name)* at landmarks (village square, castle gate, forest
+- **Waystones** *(working name)* are explicitly tagged world landmarks (village square, castle gate, forest
   edge, each catacomb entrance) are rest and respawn anchors; resting restores pools
   and sets the respawn point.
 - On defeat the player wakes at the last waystone; a **satchel** holding carried loose

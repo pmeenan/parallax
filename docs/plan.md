@@ -345,8 +345,37 @@ game-design.md — not invented ad hoc inside each system.
       the 4,497-tick positioning replay/load digest was stable, and the combined
       character/crowd/creature step high-water was 0.731 ms. D-119 makes this exact
       evidence-only closure non-triggering.*
-- [ ] Items, crafting, economy, loot: the systems on top of the M3 item/economy data
+- [x] Items, crafting, economy, loot: the systems on top of the M3 item/economy data
       model (game-design.md implication #4).
+      *Complete under accepted D-168. Final `pnpm check` passed the repeatable
+      production build, lint, and 198 test files / 2,540 passing tests (one skipped).
+      After D-169 accepted Windows `26200.9168` as dev-01's servicing baseline, the
+      required physical-console dev-01/Showcase smoke retained schema-v71 /
+      mandatory-metric-set-v34 artifact
+      `harness/results/smoke-1-b0d26cc3f3f5-dev-01-showcase-2026-08-16T20-28-25-602Z.{json,md}`
+      for build
+      `b0d26cc3f3f52448e2ca75a958bb70d8667cbb1968d2869381dc097a36d1c29b`
+      and install release
+      `5c356a3b07e0234cd74b66f9697aefdff98066b0ed7252ae6d12626a1c1a4240`.
+      JSON/Markdown SHA-256 are
+      `570812938b6d67c7d4158403f8607080a46751fec52952c56c5faae348040e8d` /
+      `47e7811b8d56a853fade1f66f358173334e9303fd7becbc5c7285e89349e5dbf`.
+      All six launches, all three facets, and 36/36 budget checks passed; every
+      120-tick replay and live save/load converged on
+      `ab4e013c5f298c9b796ca4855ad2c1435f5884c3aafa125eeee7f84ec6312dda`,
+      the 4,497-tick positioning replay/load digest was
+      `31e9fd4dcc1318605fb9e84ec94875791357adec89967c6f0502ab9831208880`,
+      and the combined character/crowd/creature step high-water was 0.7 ms. D-119
+      makes this exact evidence-only closure non-triggering. A post-closure review
+      correction raised Hearthloaf's grain cost so Tinker's Thrift cannot fund a
+      craft-sell profit and made Mythic overflow preserve unique, rarer, and upgraded
+      gear before comparing price. The current artifact is
+      `4e8725a0361c44f2a1fd5fb68110f6982b7bec11dc55ed96bf2a2228d87bf4c6`
+      with install digest
+      `70a039e899f9e0ad38915b8f2dbf2319fe8aeecd7c35afbd6f1959bd3fdf8b60`;
+      `pnpm check` passed 198 test files / 2,542 tests (one skipped). D-157 requires no
+      new physical smoke because the smoke workload executes neither crafting/trade
+      nor boss-loot inventory overflow.*
 - [ ] Quests and journal: quest state machine (main arc + side quests) and the journal
       as a queryable play-history log — the same log that feeds the Summarizer-recap
       feature and subtitles/localization. Land landmark-discovery XP first: award each

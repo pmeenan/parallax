@@ -15,6 +15,7 @@ import {
   type ProgressionAttributeId,
   progressionAbilityIndex,
 } from "../balance/progression";
+import type { ItemCombatBonuses } from "./items";
 
 export const PROGRESSION_STATE_BYTES = 96;
 export const PROGRESSION_STARTING_LEVEL = 2;
@@ -151,7 +152,29 @@ export function equipAbility(
   });
 }
 
-export function progressionCombatProfile(state: ProgressionState): CombatantProfile {
+export function reshapeProgression(state: ProgressionState): ProgressionState {
+  const starter = createInitialProgressionState();
+  const earnedAfterStarter = state.level - PROGRESSION_STARTING_LEVEL;
+  return Object.freeze({
+    ...state,
+    abilityLearnCount: starter.abilityLearnCount,
+    activeSlots: starter.activeSlots,
+    attunement: starter.attunement,
+    attributeSpendCount: starter.attributeSpendCount,
+    finesse: starter.finesse,
+    knackSlots: starter.knackSlots,
+    learnedAbilities: starter.learnedAbilities,
+    might: starter.might,
+    unspentAbilityPicks: earnedAfterStarter,
+    unspentAttributePoints: earnedAfterStarter,
+    vitality: starter.vitality,
+  });
+}
+
+export function progressionCombatProfile(
+  state: ProgressionState,
+  items: ItemCombatBonuses,
+): CombatantProfile {
   const active = state.activeSlots.map((ability): CombatAbilityId | null => {
     if (ability === null) return null;
     const definition = PROGRESSION_ABILITIES[progressionAbilityIndex(ability)];
@@ -162,14 +185,39 @@ export function progressionCombatProfile(state: ProgressionState): CombatantProf
   const equippedKnacks = new Set(state.knackSlots);
   return Object.freeze({
     ...PLAYER_STARTING_PROFILE,
+    affixAccuracy: items.affixAccuracy,
+    affixBracing: items.affixBracing,
+    affixDamage: items.affixDamage,
+    affixNimble: items.affixNimble,
+    affixPotency: items.affixPotency,
+    armorGuard: items.armorGuard,
+    armorSoakElemental: items.armorSoakElemental,
+    armorSoakPhysical: items.armorSoakPhysical,
+    blockStaminaCostNumerator: items.blockStaminaCostNumerator,
     answeringStrike: learned.has("answering-strike"),
-    attunement: state.attunement,
-    finesse: state.finesse,
+    attunement: state.attunement + items.attunementBonus,
+    catalystOmniResonance: items.catalystOmniResonance,
+    catalystPotency: items.catalystPotency,
+    catalystResonance: items.catalystResonance,
+    finesse: state.finesse + items.finesseBonus,
+    healthRegenOutOfCombat: items.healthRegenOutOfCombat,
     level: state.level,
     loadout: Object.freeze(active),
-    might: state.might,
+    maxHealthBonus: items.maxHealthBonus,
+    maxStaminaBonus: items.maxStaminaBonus,
+    might: state.might + items.mightBonus,
     quietTread: equippedKnacks.has("quiet-tread"),
+    staminaRegenBonus: items.staminaRegenBonus,
     vitality: state.vitality,
+    weaponAccuracy: items.weaponAccuracy,
+    weaponBase: items.weaponBase,
+    weaponEmberDamage: items.weaponEmberDamage,
+    weaponFrostDamage: items.weaponFrostDamage,
+    weaponKeenCondition: items.weaponKeenCondition,
+    weaponRangeMeters: items.weaponRangeMeters,
+    weaponRecoveryTicksBonus: items.weaponRecoveryTicksBonus,
+    weaponStaminaCostNumerator: items.weaponStaminaCostNumerator,
+    weaponVenomDamage: items.weaponVenomDamage,
     wellspring: equippedKnacks.has("wellspring"),
   });
 }

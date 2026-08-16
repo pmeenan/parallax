@@ -28,7 +28,9 @@ game/
                (checks, conditions, monsters, respawn, deterministic creature AI)
                are live; classless level/XP, attributes, learned abilities, active/
                knack loadouts, combat consumers, and save-schema-v7 progression
-               state are live under D-167
+               state are live under D-167; D-168 adds save-schema-v8 inventory,
+               gathering/regrowth, 24 recipes, vendors, equipment, consumables,
+               seeded loot/affixes, and the recoverable material satchel
   npc/         ✅ persona cards, dialog schemas, rolling memory + fallback policy
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)

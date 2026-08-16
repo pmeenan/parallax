@@ -16,6 +16,7 @@ import {
   startPlayerAction,
   tickCombatant,
 } from "../src/sim/combat-core";
+import { createInitialItemState, itemCombatBonuses } from "../src/sim/items";
 import {
   createEquipAbilityCommand,
   createGameSimulationAdapter,
@@ -39,6 +40,7 @@ import { createGreyboxScene } from "../src/world/greybox-generator";
 
 const world = createGreyboxScene(DISTRICT_1_GREYBOX_SPEC).world;
 const context = Object.freeze({ timestepHz: 60, world: simulationWorldDefinition(world) });
+const STARTER_ITEM_BONUSES = itemCombatBonuses(createInitialItemState(0));
 
 describe("M3.5 progression", () => {
   it("uses the authored cumulative XP curve through the level-10 cap", () => {
@@ -65,14 +67,16 @@ describe("M3.5 progression", () => {
     const attributed = spendAttributePoint(award.state, "attunement");
     const learned = learnAbility(attributed, "emberlash");
     const equipped = equipAbility(learned, "active", 1, "emberlash");
-    expect(progressionCombatProfile(equipped).loadout).toEqual([
+    expect(progressionCombatProfile(equipped, STARTER_ITEM_BONUSES).loadout).toEqual([
       "piercing-lunge",
       "emberlash",
       null,
       null,
     ]);
-    expect(derivePlayerSheet(progressionCombatProfile(equipped)).maxAether).toBeGreaterThan(
-      derivePlayerSheet(progressionCombatProfile(initial)).maxAether,
+    expect(
+      derivePlayerSheet(progressionCombatProfile(equipped, STARTER_ITEM_BONUSES)).maxAether,
+    ).toBeGreaterThan(
+      derivePlayerSheet(progressionCombatProfile(initial, STARTER_ITEM_BONUSES)).maxAether,
     );
     expect(() => assertProgressionState(equipped)).not.toThrow();
   });
@@ -82,7 +86,7 @@ describe("M3.5 progression", () => {
     state = learnAbility(state, "answering-strike");
     state = learnAbility(state, "wellspring");
     state = equipAbility(state, "knack", 0, "wellspring");
-    const sheet = derivePlayerSheet(progressionCombatProfile(state));
+    const sheet = derivePlayerSheet(progressionCombatProfile(state, STARTER_ITEM_BONUSES));
     expect(sheet.answeringStrike).toBe(true);
     expect(sheet.wellspring).toBe(true);
   });
@@ -91,7 +95,7 @@ describe("M3.5 progression", () => {
     let state = awardExperience(createInitialProgressionState(), 500).state;
     state = learnAbility(state, "ironset-stance");
     state = equipAbility(state, "active", 1, "ironset-stance");
-    const sheet = derivePlayerSheet(progressionCombatProfile(state));
+    const sheet = derivePlayerSheet(progressionCombatProfile(state, STARTER_ITEM_BONUSES));
     const actionId = PLAYER_ACTION_SLOT_BASE + 1;
     const started = startPlayerAction(createCombatantState(sheet), sheet, actionId);
     expect(started.started).toBe(true);

@@ -28,6 +28,145 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-169: Refresh dev-01's registered Windows servicing baseline (2026-08-16, accepted)
+
+**Decision:** Update the registered dev-01 OS build from Windows `26200.8875` to
+`26200.9168`. This is a servicing-baseline refresh only: the registered machine,
+physical-console requirement, Showcase tier, CPU/RAM, RTX 4080 Super, D3D12 backend,
+driver `32.0.16.1074`, display envelope, power scheme, pinned Chrome, and all budgets
+remain unchanged.
+
+**Context:** The D-168 physical smoke observed `26200.9168` consistently after the
+host's August Windows servicing updates while the descriptor still required
+`26200.8875`. The pre-review six-launch attempt passed gameplay evidence, all three
+facets other than exact registered-environment identity, and 36/36 budget checks; its
+sole terminal failure was the stale OS-build pin. Local registry and hotfix inspection
+confirmed this was the real dev-01 host rather than a substituted machine or remote
+display identity. The developer delegated the explicit baseline decision after review.
+
+**Consequences:** New dev-01 reference evidence must bind `26200.9168` exactly and is
+invalid on the prior build. The converged D-168 candidate required a fresh six-launch
+physical-console smoke because the registered-machine descriptor is an evaluated smoke
+input; the earlier failed report cannot be relabeled or promoted.
+
+**Closure evidence:** The fresh dev-01/Showcase physical-console smoke passed the exact
+updated environment identity, all three facets, and 36/36 budget checks for artifact
+`b0d26cc3f3f52448e2ca75a958bb70d8667cbb1968d2869381dc097a36d1c29b`; D-168 records
+the retained report and immutable hashes.
+
+**Reopen if:** Windows advances again; another registered identity field changes; the
+refresh coincides with a measurable regression that needs OS attribution; or the host
+cannot reproduce the registered physical-console, driver, display, and power identity.
+
+---
+
+## D-168: Make the item loop canonical deterministic simulation state (2026-08-16, accepted)
+
+**Decision:** Implement ruleset-v2 items as one sim-worker-owned, command-driven
+system. The stable item vocabulary covers the slice's regional materials, base and
+crafted gear, upgrades, catalysts, tonics, oils, and food; stable order is save and
+command identity and future entries append. The complete 24-recipe table is versioned
+balance data. Recipes use two or three ingredients, crafted gear is Fine with one
+seeded slot-eligible affix, and Resonant Focus records an explicit ember/frost/aether
+attunement. Static vendor offers use the authored price and universal half-price
+(floored) buyback rule; there is no dynamic price or hidden stock mutation. Vendor
+stock deliberately omits salvage iron so the forge's valuable Fine outputs cannot be
+funded wholly by a repeatable buy-craft-sell marks loop. More generally, every recipe
+whose full input is vendor-stocked remains break-even or worse even with Tinker's
+Thrift.
+
+Gathering nodes are world data with stable identities, four-meter authority checks,
+five-minute deterministic regrowth, saved cooldowns, and first-harvest bits. Forager's
+Eye adds one yield; Tinker's Thrift reduces each common recipe ingredient by one to a
+minimum of one. Monster defeat events consume the named loot RNG stream exactly once
+per death transition, awarding authored materials/marks and bounded rarity/affix gear.
+Common/Fine/Exceptional/Mythic carry 0/1/2/2 affixes; conditional Bracing/Nimble remain
+Exceptional+, every affix is validated against its slot, and duplicate equipped affix
+identities aggregate once except Light's distinct per-weapon and per-shield costs.
+Weapon, armor, shield, and catalyst slots may each be empty. Equipped gear, food, tonic, oil,
+upgrade, and Resonant Focus effects all feed the combat sheet. The authored weapon
+distinctions are real rules: axe recovery, spear reach, bow range, scale-coat stamina
+penalty, and Light stamina cost reduction are not presentation labels. The boss's
+Mythic Resonant Focus exposes the named **Warden's Echo** unique property and applies
+the normal resonance bonus to ember, frost, and aether spells; it adds no new proc or
+resource rule.
+
+Advance the game payload from save schema v7 to v8 by appending a canonical fixed item
+block after progression. It stores stacks, at most 32 gear instances, equipment,
+marks, active preparation effects, the 32-node gathering mask/cooldowns, cumulative
+counters, and one recoverable loose-material satchel. Gear entries are packed and use
+stable serials; unknown identities, illegal affix/upgrade-slot combinations, nonzero
+reserved bytes, and noncanonical flags fail closed. On defeat the satchel replaces any
+prior satchel and excludes consumables, gear, and the boss catalyst core. Inventory is
+available through a bounded `inventory.snapshot@1` query; mutations remain fixed-size
+serializable commands with semantic success/rejection events. Waystone reshape is the
+same item transaction: it charges 25 marks only when the build would actually change.
+At a full material stack, loot overflow becomes marks at its half-price value with a
+one-mark minimum instead of disappearing. Ordinary gear overflow becomes its
+half-price value; guaranteed Mythic loot deterministically replaces the unequipped item
+with the lowest preservation priority, pays that item's half-price value, and emits the
+displaced serial. Preservation compares unique property, rarity, installed-upgrade
+count, and base price in that order; a tied newest serial is displaced first.
+
+**Context:** D-165 fixed the content surface and D-167 deliberately left Forager's
+Eye, Tinker's Thrift, marks, and reshape awaiting their owning system. The implementation
+needed enough combination depth to make loot and crafting exciting without turning
+play into recipe-reference work. The chosen depth lives in gear rolls and preparation;
+the basic loop remains place → gather/fight → choose a station → see exact costs → make
+or trade one result.
+
+**Consequences:** Same-host replay/save-load now covers item acquisition and spending,
+gathering cooldowns, crafted/looted gear identity, preparation effects, and satchel
+state. Public counters expose gathering, craft, trade, loot, gear, equipment,
+consumable, upgrade, marks, and satchel activity from day one. The later hybrid-UI item
+consumes the query/events and has no gameplay authority. Adding content within the
+stable shapes is routine balance data; reordering identities, changing the save layout,
+adding a new affix mechanic/aggregation rule, introducing dynamic prices, or changing
+craft rarity is a design/save migration.
+
+**Closure evidence:** Final `pnpm check` passed the repeatable production build, lint,
+and 198 test files / 2,540 passing tests (one skipped). After D-169 accepted Windows
+`26200.9168` as dev-01's servicing baseline, the required physical-console
+dev-01/Showcase smoke retained schema-v71 / mandatory-metric-set-v34 artifact
+`harness/results/smoke-1-b0d26cc3f3f5-dev-01-showcase-2026-08-16T20-28-25-602Z.{json,md}`
+for build `b0d26cc3f3f52448e2ca75a958bb70d8667cbb1968d2869381dc097a36d1c29b`
+and install release
+`5c356a3b07e0234cd74b66f9697aefdff98066b0ed7252ae6d12626a1c1a4240`.
+JSON/Markdown SHA-256 are
+`570812938b6d67c7d4158403f8607080a46751fec52952c56c5faae348040e8d` /
+`47e7811b8d56a853fade1f66f358173334e9303fd7becbc5c7285e89349e5dbf`.
+All six launches, all three facets, and 36/36 budget checks passed; every 120-tick
+replay and live save/load converged on
+`ab4e013c5f298c9b796ca4855ad2c1435f5884c3aafa125eeee7f84ec6312dda`,
+the 4,497-tick positioning replay/load digest was
+`31e9fd4dcc1318605fb9e84ec94875791357adec89967c6f0502ab9831208880`,
+and the combined character/crowd/creature step high-water was 0.7 ms. Per D-119,
+recording these exact report facts and status pointers requires no additional physical
+run.
+
+**Post-closure correction evidence:** Review found that Tinker's Thrift made the
+vendor-funded Hearthloaf recipe one mark profitable per craft and that guaranteed
+Mythic overflow compared only unique property, base price, and serial. Hearthloaf now
+costs four grain plus one sea salt, making its Thrift-adjusted vendor-funded cost equal
+its four-mark buyback. An invariant test covers every fully vendor-funded recipe with
+and without Thrift. Mythic overflow now applies the preservation order recorded above;
+focused item tests cover rarity, upgrades, unique gear, price, and the newest-serial
+tie-breaker. Final `pnpm check` passed the repeatable production build, lint, and 198
+test files / 2,542 passing tests (one skipped) for artifact
+`4e8725a0361c44f2a1fd5fb68110f6982b7bec11dc55ed96bf2a2228d87bf4c6`
+and install release
+`70a039e899f9e0ad38915b8f2dbf2319fe8aeecd7c35afbd6f1959bd3fdf8b60`.
+D-157 requires no new physical smoke: the current smoke workload sends movement/input
+commands and executes neither crafting/trade nor boss-loot inventory overflow.
+
+**Reopen if:** 32 carried gear instances or 32 stable gathering identities are too
+small for the two-district slice; playtesting shows five-minute node regrowth or the
+two-to-three-ingredient grammar harms the loop; the fixed affix mask cannot express an
+adopted mechanic; multiplayer state sync changes item-command ownership; or a save
+migration must preserve pre-v8 payloads.
+
+---
+
 ## D-167: Make classless progression canonical deterministic simulation state (2026-08-11, accepted)
 
 **Decision:** Implement D-165's progression rules as one versioned sim-worker system.

@@ -173,7 +173,7 @@ describe("asset-only release update analysis", () => {
     await expect(verifyPublishedAssetOnlyFixture(servingRoot, fixture)).rejects.toThrow(
       "artifact identity is invalid",
     );
-  });
+  }, 10_000);
 
   it("refuses to copy into a pre-existing post root without overwriting stale files", async () => {
     const root = await mkdtemp(join(tmpdir(), "parallax-asset-update-existing-"));

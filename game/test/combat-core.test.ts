@@ -16,6 +16,7 @@ import {
   derivePlayerSheet,
   exactSuccessSeventeenths,
   monsterAttackSpec,
+  PLAYER_ACTION_DODGE,
   PLAYER_ACTION_LIGHT,
   PLAYER_ACTION_SLOT_BASE,
   playerAttackSpec,
@@ -96,6 +97,7 @@ describe("combat core rules", () => {
       answeringEligible: false,
       appliesCondition: null,
       appliesConditionOnKeen: null,
+      bonusDamage: Object.freeze([]),
       channel: "ember" as const,
       checkType: "spell" as const,
       ignoresHalfSoak: false,
@@ -126,6 +128,84 @@ describe("combat core rules", () => {
       }
     }
     throw new Error("Ember spell never landed in 64 attempts");
+  });
+
+  it("resolves weapon-bound damage against its elemental channel", () => {
+    const elementalSheet = Object.freeze({ ...playerSheet, weaponEmberDamage: 5 });
+    const plainSpec = playerAttackSpec(playerSheet, PLAYER_ACTION_LIGHT);
+    const elementalSpec = playerAttackSpec(elementalSheet, PLAYER_ACTION_LIGHT);
+    if (plainSpec === null || elementalSpec === null)
+      throw new Error("Light attack spec is missing");
+    const armoredDefender = Object.freeze({
+      ...gnawerSheet,
+      soakElemental: 3,
+      soakPhysical: 8,
+    });
+    for (let rngState = 1; rngState < 128; rngState += 1) {
+      const defender = Object.freeze({
+        sheet: armoredDefender,
+        state: createCombatantState(armoredDefender),
+      });
+      const plain = resolveAttack(rngState, attackContext(), defender, plainSpec);
+      if (plain.outcome !== "hit") continue;
+      const elemental = resolveAttack(
+        rngState,
+        Object.freeze({ sheet: elementalSheet, spellPotencyOverride: null, state: freshPlayer() }),
+        defender,
+        elementalSpec,
+      );
+      const plainHit = plain.events.find((event) => event.kind === "hit");
+      const elementalHit = elemental.events.find((event) => event.kind === "hit");
+      expect(elementalHit?.kind === "hit" ? elementalHit.amount : 0).toBe(
+        (plainHit?.kind === "hit" ? plainHit.amount : 0) + 2,
+      );
+      return;
+    }
+    throw new Error("Physical comparison attack never landed");
+  });
+
+  it("scopes Light to weapon actions instead of reducing dodge costs", () => {
+    const lightWeaponSheet = Object.freeze({ ...playerSheet, weaponStaminaCostNumerator: 3 });
+    const heavy = startPlayerAction(freshPlayer(), lightWeaponSheet, 1);
+    const dodge = startPlayerAction(freshPlayer(), lightWeaponSheet, PLAYER_ACTION_DODGE);
+    expect(heavy.state.stamina).toBe(lightWeaponSheet.maxStamina - 18);
+    expect(dodge.state.stamina).toBe(lightWeaponSheet.maxStamina - COMBAT_DODGE.staminaCost);
+  });
+
+  it("makes the Warden's Echo resonate with every authored spell channel", () => {
+    const echoSheet = Object.freeze({
+      ...playerSheet,
+      abilities: Object.freeze(["emberlash", "frostbind"] as const),
+      catalystOmniResonance: true,
+    });
+    const ember = playerAttackSpec(echoSheet, PLAYER_ACTION_SLOT_BASE);
+    const frost = playerAttackSpec(echoSheet, PLAYER_ACTION_SLOT_BASE + 1);
+    expect(ember?.raw).toBe(Math.floor((10 + echoSheet.attunement) * 1.25));
+    expect(frost?.raw).toBe(Math.floor((8 + echoSheet.attunement) * 1.25));
+  });
+
+  it("scopes shield Light to the shield's block drain", () => {
+    const spec = monsterAttackSpec(gnawerSheet, 0);
+    const blocking = Object.freeze({
+      ...freshPlayer(),
+      blockHeldTicks: COMBAT_BLOCK.caughtWindowTicks + 5,
+    });
+    const resolve = (sheet: typeof playerSheet) =>
+      resolveAttack(
+        99,
+        Object.freeze({
+          sheet: gnawerSheet,
+          spellPotencyOverride: null,
+          state: createCombatantState(gnawerSheet),
+        }),
+        Object.freeze({ sheet, state: blocking }),
+        spec,
+      );
+    const normal = resolve(playerSheet);
+    const light = resolve(Object.freeze({ ...playerSheet, blockStaminaCostNumerator: 3 }));
+    const normalDrain = blocking.stamina - normal.defender.stamina;
+    const lightDrain = blocking.stamina - light.defender.stamina;
+    expect(lightDrain).toBe(Math.floor((normalDrain * 3) / 4));
   });
 
   it("turns a caught block into a free deflection and breaks an empty-stamina block", () => {

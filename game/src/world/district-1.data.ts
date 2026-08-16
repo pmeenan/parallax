@@ -126,6 +126,12 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
   ],
   markers: [
     {
+      id: "d1-player-spawn-waystone",
+      kind: "path",
+      position: [0, 0],
+      tags: ["castle", "player-spawn", "waystone"],
+    },
+    {
       id: "d1-path-castle-to-shore",
       kind: "path",
       position: [0, -1_024],
