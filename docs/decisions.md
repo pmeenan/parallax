@@ -28,6 +28,87 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-170: Make named-landmark discovery canonical progression state (2026-08-16, accepted)
+
+**Decision:** Land the exploration foundation before quest XP. A stable, append-only
+`NAMED_LANDMARKS` table identifies named places by game ID, district ID, authored world
+marker ID, player-facing name, discovery radius, and XP award. D1 begins with six:
+Castle Gate Waystone, Village Square Waystone, Forest Edge Waystone, Castle Undercroft,
+Village Well, and Forest Throat. Each awards the ruleset-v2 value of 25 XP once when the
+authoritative player position enters its 24 m radius. Adapter initialization resolves
+and validates the current district's authored marker references, requires exact parity
+between the table and authored `landmark` tags, and rejects markers outside the navigation
+projection; fixed simulation steps then use only that immutable resolved data. Module
+load rejects more than 31 entries, duplicate game or marker IDs, unregistered districts,
+and nonpositive/nonfinite radius or reward values.
+
+Advance the game payload from save schema v8 to v9 by appending a canonical 16-byte
+exploration block after items. It stores the stable discovery bitset, its exact
+population count, cumulative nominal landmark XP, and landmark rules version; load
+rejects unknown bits, inconsistent derived totals, or unsupported reward rules. Discovery
+awards call D-167's existing progression boundary in stable table order and publish a
+`landmark.discovered` event followed by the ordinary
+`progression.experience-gained` event. Public counters expose discovered count and
+nominal XP awarded (which can exceed net XP credited at the level cap), while
+`landmarks.snapshot@1` returns every known identity, district, name, nominal value, and
+saved discovery state for future journal/recap/localization consumers.
+
+**Context:** The quest/journal plan item explicitly requires discovery to prove the
+shared XP and semantic-event path before quest completion uses it. Keeping identity and
+presentation text in game-owned data preserves deterministic replay, N-district data
+ownership, and a localization-ready query boundary. A fixed bitset is sufficient for
+the bounded two-district slice and extends the existing compact save approach without
+introducing quest-specific state prematurely.
+
+**Consequences:** The first authoritative step at the Castle Gate spawn produces one
+discovery and one progression award; existing replay event sequences intentionally gain
+those two semantic events. Landmark order is save identity and may only be appended.
+The Village Square and Forest Edge rows intentionally carry the existing `waystone` tag,
+so both are 12 m reshape sites as well as 24 m discovery sites; regression coverage binds
+that economy behavior.
+The six quest state machines, eight side quests, typed objective reducer, preparation
+flags, and append-only journal remain the next work inside the still-open plan item.
+Changing landmark order, the save layout, or the event payload is a migration/contract
+change; changing an existing reward bumps the persisted landmark rules version. Adding
+landmarks within the remaining bit capacity is content work only when the registered
+district, unique identity, exact tagged-marker binding, and walkability checks remain met.
+
+**Implementation evidence:** Direct coverage proves stable-order one-time discovery,
+31-bit capacity enforcement, definition and exact tagged-marker validation, walkability,
+explicit reward-rules rejection, nominal level-cap semantics, progression award/event
+emission, no repeat award, save/load, query output, marker count, and reshape at both new
+waystones. `pnpm check` passed the repeatable production build, Biome over 499 files, and
+199 test files / 2,551 passing tests (one skipped). The exact installer-repair replay
+contract binds build artifact
+`5a87bce7a9199c9b1119500e4e0216334149f27b7f0b46b9e31bd0140fa6baf4`, install release
+`3c025b458de5cbbcd061b56be8e76b2dc3d50214624fd3783df0335d2441a2d1`, unchanged OPFS
+resource identity `70cfaf8dee37bedd834413b079c602223ad1724300dd5d41788237c732a06742`,
+and semantic-contract digest
+`5e461230a7cdbf0a7b648c594af452192ebe6a56a773f10deec49679e4fe0a92`.
+The required D-157 physical-console `smoke@1` passed on `dev-01` / showcase with Chrome
+151.0.7922.108: environment, evidence-completeness, and budget-evaluation facets passed,
+with 36 checks across six launches under report schema 71 / mandatory metric set 34.
+Every launch produced matching replay/save/load hash
+`ccab5b4122ab513cb42f9acb76d417bf75f1adb8e9d6b2de7e40671e32ce7eba`
+and positioning replay/load hash
+`a7a33d75dce027b0d99c654f6b673dea2cf57f1b7f85694d926d611b4566faf3`;
+the worst character+crowd simulation-step high-water was 0.8 ms. The measured source
+tuple is commit `6384b6978010d7ca3d2dd364e630a00f871a7177` plus dirty-tree digest
+`943725c50ebf6dce301c9d7662a44d2fbf4942ce96373edbedc7638f46bacce5`.
+The immutable report is
+`harness/results/smoke-1-5a87bce7a919-dev-01-showcase-2026-08-16T23-45-06-840Z.json`
+(SHA-256 `0e00728f7718509d1adbcd2a164cdc793e2f045a6040d60a65a6428262d0343e`),
+with Markdown summary of the same stem (SHA-256
+`456a7722ec6fdf9e5c4dc4b9eff1522bd7e56ddf657be759280f8d1f750dadd5`). This is the
+mechanical D-119 evidence-only closure of the already measured runtime candidate.
+
+**Reopen if:** the two-district landmark set outgrows the 31-bit canonical mask; M4
+requires discovery identity outside the game-owned world graph; playtesting shows the
+24 m radius causes accidental or missed awards; recap/localization consumers need a
+different stable query vocabulary; or a save migration must preserve pre-v9 payloads.
+
+---
+
 ## D-169: Refresh dev-01's registered Windows servicing baseline (2026-08-16, accepted)
 
 **Decision:** Update the registered dev-01 OS build from Windows `26200.8875` to

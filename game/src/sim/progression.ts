@@ -15,6 +15,7 @@ import {
   type ProgressionAttributeId,
   progressionAbilityIndex,
 } from "../balance/progression";
+import { lowBitsMask } from "./bitmask";
 import type { ItemCombatBonuses } from "./items";
 
 export const PROGRESSION_STATE_BYTES = 96;
@@ -268,7 +269,7 @@ export function deserializeProgressionState(view: DataView, offset: number): Pro
     }
   }
   const learnedMask = view.getUint32(offset + 32, true);
-  const knownMask = (1 << PROGRESSION_ABILITIES.length) - 1;
+  const knownMask = lowBitsMask(PROGRESSION_ABILITIES.length);
   if ((learnedMask & ~knownMask) !== 0) {
     throw new Error("Game progression state has unknown learned abilities");
   }

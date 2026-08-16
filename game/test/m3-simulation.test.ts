@@ -28,7 +28,11 @@ describe("M3 game simulation adapter", () => {
     ).toBe(true);
     expect(runtime.step()).toMatchObject({
       appliedCommandCount: 1,
-      events: [{ kind: "input.command-applied", sequence: 0, tick: 1 }],
+      events: [
+        { kind: "input.command-applied", sequence: 0, tick: 1 },
+        { kind: "landmark.discovered", sequence: 1, tick: 1 },
+        { kind: "progression.experience-gained", sequence: 2, tick: 1 },
+      ],
     });
     const saved = runtime.save();
     expect(saved.presentation.entities[0]).toEqual(
@@ -196,6 +200,8 @@ describe("M3 game simulation adapter", () => {
     expect(runtime.step().events).toEqual([
       expect.objectContaining({ kind: "input.command-applied" }),
       expect.objectContaining({ kind: "interaction.activated" }),
+      expect.objectContaining({ kind: "landmark.discovered" }),
+      expect.objectContaining({ kind: "progression.experience-gained" }),
     ]);
     expect(runtime.step().events).toEqual([]);
     expect(runtime.gameCounters).toMatchObject({

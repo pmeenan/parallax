@@ -381,6 +381,22 @@ game-design.md — not invented ad hoc inside each system.
       feature and subtitles/localization. Land landmark-discovery XP first: award each
       named landmark once through D-167's progression boundary, persist the discovered
       set, and expose the award semantically before quest XP uses the same path.
+      *Foundation delivered under D-170: six stable D1 landmarks resolve from authored
+      world markers, award 25 XP once inside a 24 m discovery radius, persist in the
+      appended save-schema-v9 exploration block with an explicit landmark-rules version,
+      publish semantic discovery plus shared progression events, expose nominal-award
+      counters, and answer `landmarks.snapshot@1`. The vocabulary and authored-marker
+      graph fail closed on capacity, identity, district, value, tag-parity, or walkability
+      drift; the two added tagged waystones are also covered reshape sites. The quest state
+      machines and append-only journal remain open in this item. `pnpm check` passed 199
+      test files / 2,551 tests (one skipped) with exact build artifact
+      `5a87bce7a9199c9b1119500e4e0216334149f27b7f0b46b9e31bd0140fa6baf4`
+      and install release
+      `3c025b458de5cbbcd061b56be8e76b2dc3d50214624fd3783df0335d2441a2d1`;
+      the required D-157 physical `smoke@1` passed all three facets and 36 checks across
+      six launches under schema 71 / mandatory metric set 34, with identical replay/save/
+      load hashes and a 0.8 ms worst simulation-step high-water. Exact report and digests
+      are recorded in D-170.*
 - [ ] Gameplay-system presentation and progression feel: build the real inventory/
       crafting, progression/loadout, and journal consumers on D-161's hybrid UI. The
       HUD shows current-level XP progress and makes unspent attribute points/ability

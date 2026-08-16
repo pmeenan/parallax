@@ -1412,6 +1412,18 @@ semantic events; a recurring four-creature pressure fixture turns them into slot
 overlap, histogram, and concurrent-attacker measurements for the group dynamics that
 the seeded-duel balancer cannot observe. Authored D1 spawns plus the 12-live cap keeps
 player + 48 scheduled NPCs + monsters within the existing 64-entry presentation pool.
+D-167 advances the game save schema to v7 with classless progression, and D-168 appends
+the v8 inventory/crafting/economy block. D-170 advances that payload to v9 with a
+canonical named-landmark discovery block. Stable game-owned landmark data resolves to
+authored world markers once at adapter creation. Module-load vocabulary checks enforce
+the 31-bit capacity, unique IDs/marker bindings, registered districts, and positive
+radius/reward values; adapter creation requires exact `landmark` tag parity and a
+walkable navigation projection. The fixed step performs squared-distance proximity
+discovery, awards each identity once through the shared progression boundary, and emits
+both `landmark.discovered` and `progression.experience-gained`. The saved bitset, rules
+version, nominal-award counter, `landmarks.snapshot@1` query, and public telemetry are
+the exploration foundation that the later quest state machines and append-only journal
+consume.
 D-160 resolves D-143's measured UI-substrate spike with a per-surface hybrid. The render
 worker owns frame-coherent world anchors and heavy-screen visuals/interactions; the main
 thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,

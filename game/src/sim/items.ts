@@ -22,6 +22,7 @@ import {
   type Resonance,
   VENDOR_OFFERS,
 } from "../balance/items";
+import { countSetBits, lowBitsMask } from "./bitmask";
 import { nextRandomU32 } from "./combat-core";
 
 export const ITEM_STATE_HEADER_BYTES = 192;
@@ -1068,7 +1069,7 @@ function compareMythicEvictionPriority(left: GearInstance, right: GearInstance):
   }
   const rarityDifference = RARITIES.indexOf(left.rarity) - RARITIES.indexOf(right.rarity);
   if (rarityDifference !== 0) return rarityDifference;
-  const upgradeDifference = countBits(left.upgrades) - countBits(right.upgrades);
+  const upgradeDifference = countSetBits(left.upgrades) - countSetBits(right.upgrades);
   if (upgradeDifference !== 0) return upgradeDifference;
   const leftPrice = ITEM_DEFINITIONS[left.itemIndex]?.buyPrice ?? 0;
   const rightPrice = ITEM_DEFINITIONS[right.itemIndex]?.buyPrice ?? 0;
@@ -1173,7 +1174,7 @@ function validEquippedSlot(state: ItemState, slot: GearSlot, serial: number): bo
 function validGear(instance: GearInstance): boolean {
   const definition = ITEM_DEFINITIONS[instance.itemIndex];
   const rarityIndex = RARITIES.indexOf(instance.rarity);
-  const affixCount = countBits(instance.affixMask);
+  const affixCount = countSetBits(instance.affixMask);
   const maximumAffixes = rarityIndex === 0 ? 0 : rarityIndex === 1 ? 1 : 2;
   const affixesEligible = GEAR_AFFIXES.every((affix, index) => {
     if ((instance.affixMask & (1 << index)) === 0) return true;
@@ -1198,7 +1199,7 @@ function validGear(instance: GearInstance): boolean {
     affixesEligible &&
     Number.isSafeInteger(instance.affixMask) &&
     instance.affixMask >= 0 &&
-    (instance.affixMask & ~((1 << GEAR_AFFIXES.length) - 1)) === 0 &&
+    (instance.affixMask & ~lowBitsMask(GEAR_AFFIXES.length)) === 0 &&
     Number.isSafeInteger(instance.upgrades) &&
     instance.upgrades >= 0 &&
     (instance.upgrades & ~3) === 0 &&
@@ -1208,16 +1209,6 @@ function validGear(instance: GearInstance): boolean {
       (instance.rarity === "mythic" && definition.id === "resonant-focus" ? 1 : 0) &&
     (definition.id === "resonant-focus" ? instance.resonance !== null : instance.resonance === null)
   );
-}
-
-function countBits(value: number): number {
-  let count = 0;
-  let remaining = value >>> 0;
-  while (remaining !== 0) {
-    count += remaining & 1;
-    remaining >>>= 1;
-  }
-  return count;
 }
 
 function writeGear(view: DataView, offset: number, instance: GearInstance): void {

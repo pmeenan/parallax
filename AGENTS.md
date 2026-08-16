@@ -72,6 +72,7 @@ Everything else is on demand. Each doc, and the questions it answers:
 
 | Doc | Read when the task needs |
 | --- | --- |
+| [docs/review.md](docs/review.md) | How to run a code review: the ordered procedure and per-function checklist. Read when the human asks for a review |
 | [docs/plan.md](docs/plan.md) | What to work on, milestone scope, exit criteria — what "done" means |
 | [docs/architecture.md](docs/architecture.md) | System structure: layers, worker topology, rendering/streaming/storage, lifecycle contracts. Read before building or changing any system that touches another system |
 | [docs/vision.md](docs/vision.md) | Why the project exists, success criteria, non-goals. Read when weighing scope or priority trade-offs |

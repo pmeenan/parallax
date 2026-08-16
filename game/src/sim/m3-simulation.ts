@@ -36,6 +36,8 @@ import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
 import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
 import { creatureSpawnsForDistrict } from "../world/creature-spawns";
 import { GATHERING_NODES, gatheringNodeIndex } from "../world/gathering-nodes";
+import { NAMED_LANDMARKS } from "../world/landmarks";
+import { lowBitsMask } from "./bitmask";
 import {
   COMBAT_ACTION_DOWNED,
   COMBAT_ACTION_IDLE,
@@ -46,6 +48,16 @@ import {
   buildDeterministicNavigationMesh,
   type DeterministicNavigationMesh,
 } from "./deterministic-navigation";
+import {
+  assertExplorationState,
+  createInitialExplorationState,
+  deserializeExplorationState,
+  discoverNearbyLandmarks,
+  EXPLORATION_STATE_BYTES,
+  type ExplorationState,
+  resolveNamedLandmarks,
+  serializeExplorationState,
+} from "./exploration";
 import {
   applyGearUpgrade,
   assertItemState,
@@ -99,6 +111,7 @@ import {
   awardExperience,
   createInitialProgressionState,
   deserializeProgressionState,
+  type ExperienceAwardResult,
   equipAbility,
   learnAbility,
   PROGRESSION_STATE_BYTES,
@@ -109,7 +122,7 @@ import {
   spendAttributePoint,
 } from "./progression";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 8;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 9;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
 export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
@@ -127,6 +140,7 @@ interface NpcAgentState {
 interface M3SimulationState {
   readonly collisionResolutionCount: number;
   readonly combat: M3CombatState;
+  readonly exploration: ExplorationState;
   readonly inputForward: number;
   readonly inputRight: number;
   readonly interactionActivationCount: number;
@@ -186,7 +200,9 @@ const PROGRESSION_OP_EQUIP_KNACK = 4;
 const PROGRESSION_EMPTY_ABILITY = 0xffff_ffff;
 const PROGRESSION_OFFSET = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
 const ITEM_OFFSET = PROGRESSION_OFFSET + PROGRESSION_STATE_BYTES;
-const VERSIONED_STATE_BYTES = STATE_BYTES + PROGRESSION_STATE_BYTES + ITEM_STATE_BYTES;
+const EXPLORATION_OFFSET = ITEM_OFFSET + ITEM_STATE_BYTES;
+const VERSIONED_STATE_BYTES =
+  STATE_BYTES + PROGRESSION_STATE_BYTES + ITEM_STATE_BYTES + EXPLORATION_STATE_BYTES;
 const ITEM_COMMAND_KIND = "items.command@1";
 const ITEM_PAYLOAD_BYTES = 24;
 const ITEM_OPERATIONS = Object.freeze({
@@ -208,6 +224,7 @@ const ITEM_OPERATION_BY_CODE: ReadonlyMap<
   Object.values(ITEM_OPERATIONS).map((operation) => [operation.code, operation] as const),
 );
 const INVENTORY_QUERY_KIND = "inventory.snapshot@1";
+const LANDMARK_QUERY_KIND = "landmarks.snapshot@1";
 const INVENTORY_TEXT_ENCODER = new TextEncoder();
 
 export function createGameSimulationAdapter(
@@ -228,6 +245,12 @@ export function createGameSimulationAdapter(
     }
   }
   const schedules = buildNpcScheduleSet(context.world, navigation);
+  const landmarks = resolveNamedLandmarks(context.world);
+  for (const { landmark, position } of landmarks) {
+    if (!navigation.isWalkablePosition(position[0], position[2])) {
+      throw new Error(`Named landmark ${landmark.id} is outside the navigation projection`);
+    }
+  }
   const spawnMarker = context.world.markers.find(({ tags }) => tags.includes("player-spawn"));
   if (spawnMarker === undefined) throw new Error("World has no authored player spawn marker");
   const spawnX = spawnMarker.position[0];
@@ -651,6 +674,7 @@ export function createGameSimulationAdapter(
       return Object.freeze({
         collisionResolutionCount: 0,
         combat,
+        exploration: createInitialExplorationState(),
         inputForward: 0,
         inputRight: 0,
         interactionActivationCount: 0,
@@ -716,6 +740,7 @@ export function createGameSimulationAdapter(
       const state = Object.freeze({
         collisionResolutionCount: view.getUint32(44, true),
         combat: deserializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES),
+        exploration: deserializeExplorationState(view, EXPLORATION_OFFSET),
         inputForward: view.getFloat32(8, true),
         inputRight: view.getFloat32(12, true),
         interactionActivationCount: view.getUint32(52, true),
@@ -770,6 +795,10 @@ export function createGameSimulationAdapter(
       if (query.kind === INVENTORY_QUERY_KIND) {
         if (query.payload.byteLength !== 0) throw new Error("Inventory query payload is invalid");
         return inventoryQueryPayload(state.items);
+      }
+      if (query.kind === LANDMARK_QUERY_KIND) {
+        if (query.payload.byteLength !== 0) throw new Error("Landmark query payload is invalid");
+        return landmarkQueryPayload(state.exploration);
       }
       return executeM3NpcKnowledgeQuery(
         query,
@@ -831,6 +860,7 @@ export function createGameSimulationAdapter(
       serializeCombatState(view, STATE_HEADER_BYTES + NPC_BLOCK_BYTES, state.combat);
       serializeProgressionState(view, PROGRESSION_OFFSET, state.progression);
       serializeItemState(view, ITEM_OFFSET, state.items);
+      serializeExplorationState(view, EXPLORATION_OFFSET, state.exploration);
       return bytes;
     },
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
@@ -913,6 +943,28 @@ export function createGameSimulationAdapter(
       const playerPosition = combatStep.respawnPlayer
         ? spawnPointPosition()
         : combatStep.playerPosition;
+      const exploration = discoverNearbyLandmarks(state.exploration, landmarks, playerPosition);
+      let progression = progressionAward?.state ?? state.progression;
+      const discoveryEvents: Readonly<{
+        readonly kind: string;
+        readonly payload: Uint8Array;
+      }>[] = [];
+      for (const discovery of exploration.discoveries) {
+        const award = awardExperience(progression, discovery.landmark.experience);
+        progression = award.state;
+        discoveryEvents.push(
+          Object.freeze({
+            kind: "landmark.discovered",
+            payload: combatEventPayload([
+              discovery.index,
+              discovery.landmark.experience,
+              award.state.experience,
+              award.state.level,
+            ]),
+          }),
+          progressionExperienceEvent(discovery.landmark.experience, award),
+        );
+      }
       const interaction = state.interactionRequested
         ? nearestInteraction(world, crowd.agents, playerPosition)
         : null;
@@ -921,6 +973,7 @@ export function createGameSimulationAdapter(
         ...state,
         collisionResolutionCount: state.collisionResolutionCount + movement.collisionCount,
         combat: combatStep.state,
+        exploration: exploration.state,
         interactionActivationCount: state.interactionActivationCount + Number(activated),
         interactionRequested: false,
         items,
@@ -937,7 +990,7 @@ export function createGameSimulationAdapter(
         npcScheduleTransitionCount:
           state.npcScheduleTransitionCount + crowd.scheduleTransitionCount,
         playerPosition,
-        progression: progressionAward?.state ?? state.progression,
+        progression,
       });
       return Object.freeze({
         events: Object.freeze([
@@ -948,17 +1001,8 @@ export function createGameSimulationAdapter(
           ...lootEvents,
           ...(progressionAward === null
             ? []
-            : [
-                Object.freeze({
-                  kind: "progression.experience-gained",
-                  payload: combatEventPayload([
-                    defeatAwards.experience,
-                    progressionAward.state.experience,
-                    progressionAward.state.level,
-                    progressionAward.levelsGained,
-                  ]),
-                }),
-              ]),
+            : [progressionExperienceEvent(defeatAwards.experience, progressionAward)]),
+          ...discoveryEvents,
         ]),
         state: next,
       });
@@ -969,6 +1013,8 @@ export function createGameSimulationAdapter(
         collisionResolutionCount: state.collisionResolutionCount,
         interactionActivationCount: state.interactionActivationCount,
         interactionAttemptCount: state.interactionAttemptCount,
+        landmarkDiscoveredCount: state.exploration.discoveredLandmarkCount,
+        landmarkNominalExperienceAwarded: state.exploration.landmarkNominalExperienceAwarded,
         movementDistanceMeters: state.movementDistanceMeters,
         itemBuyCount: state.items.counters.buyCount,
         itemConsumableUseCount: state.items.counters.consumableUseCount,
@@ -1390,9 +1436,9 @@ function assertState(
   }
   assertInputState(state.inputForward, state.inputRight, state.playerYawRadians, 0, 0, 0);
   assertProgressionState(state.progression);
+  assertExplorationState(state.exploration);
   assertItemState(state.items);
-  const gatheringMask =
-    GATHERING_NODES.length === 32 ? 0xffff_ffff : (1 << GATHERING_NODES.length) - 1;
+  const gatheringMask = lowBitsMask(GATHERING_NODES.length);
   if (
     (state.items.gatheredNodeMask & ~gatheringMask) !== 0 ||
     state.items.nodeCooldownTicks.some(
@@ -1845,6 +1891,25 @@ function inventoryQueryPayload(state: ItemState): Uint8Array {
   );
 }
 
+function landmarkQueryPayload(state: ExplorationState): Uint8Array {
+  return INVENTORY_TEXT_ENCODER.encode(
+    JSON.stringify({
+      discoveredCount: state.discoveredLandmarkCount,
+      nominalExperienceAwarded: state.landmarkNominalExperienceAwarded,
+      landmarks: NAMED_LANDMARKS.map((landmark, index) =>
+        Object.freeze({
+          discovered: (state.discoveredLandmarkMask & (1 << index)) !== 0,
+          districtId: landmark.districtId,
+          nominalExperience: landmark.experience,
+          id: landmark.id,
+          name: landmark.name,
+        }),
+      ),
+      version: 1,
+    }),
+  );
+}
+
 function progressionCommandResult(
   state: M3SimulationState,
   applied: boolean,
@@ -1860,6 +1925,21 @@ function progressionCommandResult(
       }),
     ]),
     state,
+  });
+}
+
+function progressionExperienceEvent(
+  amount: number,
+  award: ExperienceAwardResult,
+): Readonly<{ readonly kind: string; readonly payload: Uint8Array }> {
+  return Object.freeze({
+    kind: "progression.experience-gained",
+    payload: combatEventPayload([
+      amount,
+      award.state.experience,
+      award.state.level,
+      award.levelsGained,
+    ]),
   });
 }
 

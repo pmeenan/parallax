@@ -36,11 +36,32 @@ structure, and no verification-of-the-verification.
 
 The human asks for a review when a change warrants one. When asked:
 
-- One agent, one pass, over the whole uncommitted diff.
-- Hunt real defects — data loss or corruption, security, broken behavior — not style,
-  ceremony, or missing log entries.
-- Findings are file:line claims ranked by severity. A clean review is a valid result.
-- Fix what you find directly unless the human asked for a report only.
+- Read [review.md](review.md) completely before inspecting the change. It is the required
+  procedure, not optional advice. The review covers the whole uncommitted unit: tracked,
+  staged, deleted, renamed, and untracked files, including unchanged consumers whose
+  assumptions the diff may invalidate.
+- One agent performs one complete pass by default. “One pass” means one end-to-end
+  inventory → contract trace → adversarial analysis → finding verification → corrected-
+  diff recheck. It does not mean one visual scan of the hunks.
+- Start from intent and contracts: the request, active plan item, applicable decisions,
+  architecture, budgets, and directory instructions. Then trace every changed identity,
+  schema, tag, event, command, counter, state field, artifact, and public boundary to all
+  producers and consumers. A green `pnpm check` is supporting evidence, never a substitute
+  for that analysis.
+- Hunt concrete defects: data loss/corruption, security or trust-boundary failures,
+  wrong behavior, nondeterminism, lifecycle/concurrency faults, invalid evidence, budget
+  regressions, leaks, and contract drift. Style, preference, ceremony, speculative
+  refactors, and missing decision entries without a present correctness consequence are
+  not findings.
+- Verify each candidate before reporting it. A finding names the tightest `file:line`,
+  precondition or input, execution path, wrong outcome, violated contract, and severity.
+  Unproved suspicions go under residual risk/open questions, not into the findings list.
+- Findings come first, ordered by severity. A clean review is valid only after the guide's
+  completion checklist is satisfied; say “no findings” explicitly and record meaningful
+  residual risks or unrun validation. Do not pad a clean result with style comments.
+- Fix confirmed findings directly unless the human asked for a report-only review. Add a
+  regression test that fails for the identified mechanism, re-read the resulting complete
+  diff, and follow the focused/full/physical validation cadence below.
 
 ## When to go heavy
 

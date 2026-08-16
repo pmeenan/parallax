@@ -1,3 +1,4 @@
+import { DISTRICT_1_ID } from "./district-identity";
 import type { GreyboxDistrictSpec } from "./greybox-spec";
 import { freezeGreyboxData } from "./greybox-spec";
 
@@ -129,7 +130,19 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
       id: "d1-player-spawn-waystone",
       kind: "path",
       position: [0, 0],
-      tags: ["castle", "player-spawn", "waystone"],
+      tags: ["castle", "landmark", "player-spawn", "waystone"],
+    },
+    {
+      id: "d1-landmark-village-square",
+      kind: "path",
+      position: [-640, -96],
+      tags: ["landmark", "village", "waystone"],
+    },
+    {
+      id: "d1-landmark-forest-edge",
+      kind: "path",
+      position: [0, 768],
+      tags: ["forest", "landmark", "waystone"],
     },
     {
       id: "d1-path-castle-to-shore",
@@ -201,19 +214,19 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
       id: "d1-transition-castle-catacomb",
       kind: "transition",
       position: [32, 32],
-      tags: ["d2", "entrance", "castle"],
+      tags: ["d2", "entrance", "castle", "landmark"],
     },
     {
       id: "d1-transition-village-well",
       kind: "transition",
       position: [-512, -128],
-      tags: ["d2", "entrance", "village"],
+      tags: ["d2", "entrance", "village", "landmark"],
     },
     {
       id: "d1-transition-forest-ruin",
       kind: "transition",
       position: [640, 1_280],
-      tags: ["d2", "entrance", "forest"],
+      tags: ["d2", "entrance", "forest", "landmark"],
     },
     {
       fixedY: 120,
@@ -278,7 +291,7 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
     cellSizeMeters: 256,
     collisionSampleSpacingMeters: 16,
     fallbackTag: "grassland",
-    id: "district-1-surface",
+    id: DISTRICT_1_ID,
     lodHysteresisMeters: 64,
     standardTraversalMetersPerSecond: 12,
     zones: [

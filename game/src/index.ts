@@ -37,6 +37,8 @@ export { DISTRICT_1_GREYBOX_SPEC, GREYBOX_DISTRICT_SPECS } from "./world/distric
 export { DISTRICT_1_FLYTHROUGH } from "./world/district-1.flythrough";
 export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-generator";
 export type { GreyboxDistrictSpec } from "./world/greybox-spec";
+export type { NamedLandmarkDefinition } from "./world/landmarks";
+export { NAMED_LANDMARKS } from "./world/landmarks";
 
 interface DevelopmentImportMeta extends ImportMeta {
   readonly env?: { readonly DEV?: boolean };
