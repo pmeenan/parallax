@@ -32,7 +32,9 @@ game/
                gathering/regrowth, 24 recipes, vendors, equipment, consumables,
                seeded loot/affixes, and the recoverable material satchel; D-170 adds
                validated save-schema-v9 one-time named-landmark discovery, versioned
-               nominal XP awards, and shared progression XP
+               nominal XP awards, and shared progression XP; D-171 adds the six-stage
+               main arc, eight side quests, validated quest intents, preparation hooks,
+               and the append-only save-schema-v10 journal
   npc/         ✅ persona cards, dialog schemas, rolling memory + fallback policy
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)

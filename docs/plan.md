@@ -388,7 +388,20 @@ game-design.md — not invented ad hoc inside each system.
       counters, and answer `landmarks.snapshot@1`. The vocabulary and authored-marker
       graph fail closed on capacity, identity, district, value, tag-parity, or walkability
       drift; the two added tagged waystones are also covered reshape sites. The quest state
-      machines and append-only journal remain open in this item. `pnpm check` passed 199
+      machines and append-only journal are complete under D-171: stable data defines the
+      six-stage main arc and eight system-tagged side quests; typed objectives advance
+      only from semantic sim events or validated intents; quest stage XP uses D-167; and
+      bounded preparation flags suppress boss vents, clear the forest brigand ambush, or
+      record reliquary insight. Save schema v10 appends a fail-closed fixed quest block and
+      256-entry journal, with `quests.snapshot@1` and paginated `journal.snapshot@1`
+      queries ready for the next hybrid-UI/recap consumers. The Resonant Focus recipe now
+      uses the pre-boss-accessible emberpetal instead of the boss-only Mythic core.
+      Post-review `pnpm check` passed the repeatable production build, Biome over 502
+      files, and 200 test files / 2,561 passing tests (one skipped) for candidate artifact
+      `06bdd2412d794c200ffa72ecb2d1dd93adaa1807e77a1e992c381b0f7e77ccee` and install
+      release `81bf0074da8a928f16b7feb6619b9bc072cb7bb3fb0bcd13a08b0c97d03cdb0d`.
+      The required D-157 physical-console smoke remains before this item closes.
+      The D-170 foundation's `pnpm check` passed 199
       test files / 2,551 tests (one skipped) with exact build artifact
       `5a87bce7a9199c9b1119500e4e0216334149f27b7f0b46b9e31bd0140fa6baf4`
       and install release

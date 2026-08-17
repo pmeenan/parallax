@@ -244,6 +244,16 @@ export function addItemStack(state: ItemState, id: ItemId, quantity: number): It
   return Object.freeze({ ...state, stackCounts: Object.freeze(counts) });
 }
 
+export function removeItemStack(state: ItemState, id: ItemId, quantity: number): ItemState {
+  const definition = ITEM_DEFINITIONS[itemIndex(id)];
+  if (definition?.kind === "gear" || !Number.isSafeInteger(quantity) || quantity <= 0) return state;
+  const index = itemIndex(id);
+  if ((state.stackCounts[index] ?? 0) < quantity) return state;
+  const counts = [...state.stackCounts];
+  counts[index] = (counts[index] ?? 0) - quantity;
+  return Object.freeze({ ...state, stackCounts: Object.freeze(counts) });
+}
+
 export function gatherItemNode(
   state: ItemState,
   nodeIndex: number,

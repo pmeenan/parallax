@@ -418,6 +418,27 @@ describe("M3 combat integration", () => {
     if (bossAttack === undefined) throw new Error("Boss did not start its expected attack");
     expect(bossAttack.values[2]).toBeGreaterThanOrEqual(44);
 
+    let quenchedState = stepM3Combat(state, AI_WORLD, [0, 0.9, 0], 0, 1 / 60, PLAYER_COMBAT_SHEET, {
+      bossVentsDoused: true,
+    }).state;
+    const quenchedEvents: Array<{ readonly kind: string }> = [];
+    for (let tick = 0; tick < 60; tick += 1) {
+      const stepped = stepM3Combat(
+        quenchedState,
+        AI_WORLD,
+        [0, 0.9, 0],
+        0,
+        1 / 60,
+        PLAYER_COMBAT_SHEET,
+        { bossVentsDoused: true },
+      );
+      quenchedState = stepped.state;
+      quenchedEvents.push(...stepped.events);
+    }
+    expect(quenchedEvents.some((event) => event.kind === "combat.hazard-warned")).toBe(false);
+    expect(quenchedEvents.some((event) => event.kind === "combat.hazard-activated")).toBe(false);
+    expect(quenchedState.player.conditions.burningTicks).toBe(0);
+
     let ventState = phased.state;
     const ventEvents: Array<{ readonly kind: string }> = [];
     for (let tick = 0; tick < 60; tick += 1) {

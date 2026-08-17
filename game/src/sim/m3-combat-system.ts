@@ -166,6 +166,10 @@ export interface CombatStepResult {
   readonly state: M3CombatState;
 }
 
+export interface CombatQuestPreparation {
+  readonly bossVentsDoused: boolean;
+}
+
 export const PLAYER_COMBAT_PROFILE: CombatantProfile = PLAYER_STARTING_PROFILE;
 export const PLAYER_COMBAT_SHEET: CombatantSheet = derivePlayerSheet(PLAYER_COMBAT_PROFILE);
 
@@ -387,6 +391,7 @@ export function stepM3Combat(
   playerYawRadians: number,
   tickSeconds: number,
   playerSheet: CombatantSheet = PLAYER_COMBAT_SHEET,
+  questPreparation: CombatQuestPreparation = Object.freeze({ bossVentsDoused: false }),
 ): CombatStepResult {
   const events: CombatEventRecord[] = [];
   let combatRngState = state.combatRngState;
@@ -556,7 +561,7 @@ export function stepM3Combat(
       entry.aggro &&
       player.actionKind !== COMBAT_ACTION_DOWNED &&
       horizontalDistance(entry.position, position) <= profile.loseInterestRadiusMeters;
-    if (entry.bossPhase >= 2 && bossCombatActive) {
+    if (entry.bossPhase >= 2 && bossCombatActive && !questPreparation.bossVentsDoused) {
       if (entry.hazardCooldownTicks === 0) {
         entry.hazardCooldownTicks = CREATURE_AI_BOSS.ventWarningTicks;
         events.push(
@@ -841,6 +846,40 @@ export function stepM3Combat(
       queuedActionId,
       queuedTicks,
       spawnCounter,
+    }),
+  });
+}
+
+export function applyForestParleyPreparation(state: M3CombatState): Readonly<{
+  readonly events: readonly CombatEventRecord[];
+  readonly state: M3CombatState;
+}> {
+  const counters = { ...state.counters };
+  const events: CombatEventRecord[] = [];
+  let changed = false;
+  const monsters = state.monsters.map((monster) => {
+    const kit = MONSTER_KITS[monster.kitIndex];
+    if (
+      kit?.id !== "wayland-brigand" ||
+      monster.combat.actionKind === COMBAT_ACTION_DOWNED ||
+      monster.behaviorMode === CREATURE_BEHAVIOR_YIELD
+    ) {
+      return monster;
+    }
+    const mutable: MutableMonster = { ...monster };
+    if (mutable.aggro) setAggro(mutable, false, counters, events);
+    mutable.combat = cancelCreatureAction(mutable.combat);
+    setBehavior(mutable, CREATURE_BEHAVIOR_YIELD, counters, events);
+    changed = true;
+    return Object.freeze({ ...mutable });
+  });
+  if (!changed) return Object.freeze({ events: Object.freeze(events), state });
+  return Object.freeze({
+    events: Object.freeze(events),
+    state: Object.freeze({
+      ...state,
+      counters: Object.freeze(counters),
+      monsters: Object.freeze(monsters),
     }),
   });
 }

@@ -28,6 +28,76 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-171: Make quests and the journal canonical deterministic simulation state (2026-08-16, accepted)
+
+**Decision:** Implement ruleset-v2 quests as stable, game-owned data interpreted by a
+single deterministic reducer. The ordered vocabulary contains the six-stage main arc
+and eight system-tagged side quests. Quest, stage, objective, and intent order is saved
+or commanded identity and may only be appended. Typed objectives cover reach, collect,
+defeat, talk, craft, and deliver. They advance only from canonical semantic sim events;
+acceptance and dialog outcomes cross the fixed 16-byte `quests.command@1` boundary as
+validated intents. Persistent reach/collect facts reconcile from canonical exploration
+and inventory when a quest is accepted or a later stage begins, so prior discovery or
+acquisition cannot strand the state machine. Deliveries validate every cost before
+removing any stack.
+
+Advance the game payload from save schema v9 to v10 by appending an 8,400-byte quest
+block after exploration. It reserves 31 quest identities (one stage-index byte each plus
+one reserved byte), 64 objectives, and 256 fixed-size append-only journal entries. State stores active/completed masks, stage
+indexes, monotonic objective progress, three bounded preparation flags, nominal quest
+XP, cumulative counters, and the journal sequence. Load reconstructs masks, stage
+indexes, objective progress, preparation flags, and counters from the journal; unknown
+rules, identities, flags, reserved bytes, noncanonical event semantics, or disagreement
+with the exploration landmark bitset fail closed. `quests.snapshot@1` exposes quest and
+objective state, while paginated `journal.snapshot@1` exposes stable localization keys
+and subjects for recap/localization consumers.
+
+Every completed stage awards its authored XP through D-167's shared progression
+boundary and emits ordinary semantic quest/progression events. Preparation is bounded
+to three authored hooks: a consumed spare Clearing Draught suppresses the Warden Below's
+phase-3 vents, a validated forest parley idempotently clears aggro and yields living
+Wayland brigands, and Reliquary completion records the warden insight. New consequence
+types require a new design decision. Amend D-168's Resonant Focus recipe to use
+emberpetal instead of the boss-only Mythic catalyst core: stage 4 requires that craft
+before the boss, so requiring the boss drop was an impossible prerequisite loop.
+
+**Context:** D-170 deliberately established one-time discovery, semantic awards, and
+the shared XP path before quest progression. The journal must be canonical saved state,
+not a UI-derived transcript, because replay, recap, localization, and future multiplayer
+need the same ordered history. Fixed capacities and compact entries match the existing
+bounded two-district save design while leaving presentation to D-161's consumer layer.
+
+**Consequences:** Same-host replay/save-load covers quest acceptance, all objective
+shapes, delivery costs, stage XP, preparation consequences, and ordered history. UI and
+Summarizer code query the sim and never infer authority from free-form dialog or rendered
+text. Adding content within the fixed capacities is routine only when stable order and
+the existing semantic shapes are preserved; changing order, layout, journal meaning,
+objective/consequence types, or an existing XP schedule is a migration or rules change.
+
+**Implementation evidence:** Direct coverage binds the complete authored vocabulary and
+XP ledger, semantic-only progression, prior-fact reconciliation (including satchel
+recovery), atomic delivery, rejected repeat preparation intents, no-op steady-state
+ticks, the one-stage-index-byte-per-reserved-quest layout, preparation consequences,
+paginated queries, fixed-block round trip, journal/exploration parity, corruption
+rejection, save/load, and replay. Final build and physical-console evidence are recorded
+below after the D-157 gate. The converged post-review pre-smoke candidate's `pnpm check`
+passed the repeatable production build, Biome over 502 files, and 200 test files / 2,561
+passing tests (one skipped) for build artifact
+`06bdd2412d794c200ffa72ecb2d1dd93adaa1807e77a1e992c381b0f7e77ccee`, install release
+`81bf0074da8a928f16b7feb6619b9bc072cb7bb3fb0bcd13a08b0c97d03cdb0d`, unchanged OPFS
+resource identity `70cfaf8dee37bedd834413b079c602223ad1724300dd5d41788237c732a06742`,
+and installer-repair semantic-contract digest
+`50b5c8d9ffb503b197977a62fd21355c7b3617d236eaacb1be05828af17d52c3`.
+Because smoke executes and hashes the changed save/replay/simulation surface, D-157
+requires one physical-console run before plan closure.
+
+**Reopen if:** the two-district slice outgrows 31 quests, 64 objectives, or 256 journal
+entries; recap/localization needs a different canonical history vocabulary; M4 content
+requires a new objective or preparation-consequence type; multiplayer changes command
+ownership; or a save migration must preserve pre-v10 payloads.
+
+---
+
 ## D-170: Make named-landmark discovery canonical progression state (2026-08-16, accepted)
 
 **Decision:** Land the exploration foundation before quest XP. A stable, append-only

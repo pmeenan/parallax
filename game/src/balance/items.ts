@@ -379,7 +379,7 @@ export const RECIPES: readonly RecipeDefinition[] = Object.freeze([
   recipe("resonant-focus", "alembic", "resonant-focus", [
     ingredient("dimstone-ore", 3),
     ingredient("relic-fragment", 2),
-    ingredient("mythic-catalyst-core", 1),
+    ingredient("emberpetal", 2),
   ]),
   recipe("vigor-tonic", "alembic", "vigor-tonic", [
     ingredient("bittergreen", 2),

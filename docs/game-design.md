@@ -282,7 +282,9 @@ science/alchemy vein is load-bearing, not flavor:
   ember, frost, and aether spells all receive its resonance bonus, so the boss reward
   invites mixed-channel loadouts without adding another meter or proc rule.
   Resonant Focus crafting asks for one plain-language choice — ember, frost, or
-  aether — and shows the affected spell channel. Weapons, armor, shield, and catalyst
+  aether — and shows the affected spell channel. Its pre-boss recipe uses dimstone ore,
+  relic fragments, and emberpetal; the Mythic catalyst core remains a boss reward and is
+  not a prerequisite for the stage-4 craft. Weapons, armor, shield, and catalyst
   each have one equipped slot that may be empty, while materials and consumables stack. This keeps the
   loadout readable even when the affix combinations become interesting.
 - Single currency: **marks** *(working name)*; starting purse 25. Price bands
@@ -421,7 +423,9 @@ catalyst core plus the main-arc quest item.
   authored hooks: a new hook is a content add, a new consequence *type* is a design
   change.
 - The journal is the append-only, save-schema-versioned play-history log — the same
-  stream that feeds Summarizer recaps and localization.
+  stream that feeds Summarizer recaps and localization. D-171 implements the canonical
+  quest-beat and landmark-discovery history, with stable localization keys and bounded
+  pagination; presentation and Summarizer consumption remain separate consumers.
 
 ### Balance validation — the headless balancer (D-165)
 

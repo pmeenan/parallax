@@ -31,6 +31,13 @@ import {
   type ProgressionAbilityId,
   type ProgressionAttributeId,
 } from "../balance/progression";
+import {
+  QUEST_DEFINITIONS,
+  QUEST_INTENTS,
+  questIndex,
+  questIntentIndex,
+  questObjectiveOffset,
+} from "../balance/quests";
 import { isConversationalNpcEntityId, NPC_ENTITY_ID_START } from "../npc/identity";
 import { executeM3NpcKnowledgeQuery } from "../npc/knowledge";
 import { M3_NPC_KNOWLEDGE_PROFILES } from "../npc/knowledge-data";
@@ -76,6 +83,7 @@ import {
   type ItemState,
   itemCombatBonuses,
   recoverMaterialSatchel,
+  removeItemStack,
   resonanceCode,
   resonanceFromCode,
   sellGear,
@@ -88,6 +96,7 @@ import {
 } from "./items";
 import {
   applyCombatInput,
+  applyForestParleyPreparation,
   assertCombatState,
   COMBAT_PRESSED_DEBUG_SPAWN,
   COMBAT_PRESSED_MASK,
@@ -121,8 +130,23 @@ import {
   serializeProgressionState,
   spendAttributePoint,
 } from "./progression";
+import {
+  applyQuestSemanticEvents,
+  assertQuestExplorationConsistency,
+  assertQuestState,
+  createInitialQuestState,
+  deserializeQuestState,
+  isLandmarkJournalKind,
+  journalLocalizationKey,
+  QUEST_JOURNAL_QUERY_MAXIMUM_ENTRIES,
+  QUEST_STATE_BYTES,
+  type QuestState,
+  questPreparationRecorded,
+  questPreparationSnapshot,
+  serializeQuestState,
+} from "./quests";
 
-export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 9;
+export const GAME_SIMULATION_STATE_SCHEMA_VERSION = 10;
 export const PLAYER_ENTITY_ID = 1;
 export { NPC_ENTITY_ID_START } from "../npc/identity";
 export { MONSTER_ENTITY_ID_START } from "./m3-combat-system";
@@ -157,6 +181,7 @@ interface M3SimulationState {
   readonly playerPosition: readonly [number, number, number];
   readonly playerYawRadians: number;
   readonly progression: ProgressionState;
+  readonly quests: QuestState;
   readonly rngState: number;
   readonly schemaVersion: typeof GAME_SIMULATION_STATE_SCHEMA_VERSION;
 }
@@ -201,8 +226,13 @@ const PROGRESSION_EMPTY_ABILITY = 0xffff_ffff;
 const PROGRESSION_OFFSET = STATE_HEADER_BYTES + NPC_BLOCK_BYTES + COMBAT_STATE_BYTES;
 const ITEM_OFFSET = PROGRESSION_OFFSET + PROGRESSION_STATE_BYTES;
 const EXPLORATION_OFFSET = ITEM_OFFSET + ITEM_STATE_BYTES;
+const QUEST_OFFSET = EXPLORATION_OFFSET + EXPLORATION_STATE_BYTES;
 const VERSIONED_STATE_BYTES =
-  STATE_BYTES + PROGRESSION_STATE_BYTES + ITEM_STATE_BYTES + EXPLORATION_STATE_BYTES;
+  STATE_BYTES +
+  PROGRESSION_STATE_BYTES +
+  ITEM_STATE_BYTES +
+  EXPLORATION_STATE_BYTES +
+  QUEST_STATE_BYTES;
 const ITEM_COMMAND_KIND = "items.command@1";
 const ITEM_PAYLOAD_BYTES = 24;
 const ITEM_OPERATIONS = Object.freeze({
@@ -225,6 +255,12 @@ const ITEM_OPERATION_BY_CODE: ReadonlyMap<
 );
 const INVENTORY_QUERY_KIND = "inventory.snapshot@1";
 const LANDMARK_QUERY_KIND = "landmarks.snapshot@1";
+const QUEST_QUERY_KIND = "quests.snapshot@1";
+const JOURNAL_QUERY_KIND = "journal.snapshot@1";
+const QUEST_COMMAND_KIND = "quests.command@1";
+const QUEST_PAYLOAD_BYTES = 16;
+const QUEST_OP_ACCEPT = 1;
+const QUEST_OP_INTENT = 2;
 const INVENTORY_TEXT_ENCODER = new TextEncoder();
 
 export function createGameSimulationAdapter(
@@ -277,11 +313,135 @@ export function createGameSimulationAdapter(
       ),
       spawnZ,
     ]) as readonly [number, number, number];
+  const applyQuestEvents = (
+    result: SimulationStepResult<M3SimulationState>,
+    tick: number,
+  ): SimulationStepResult<M3SimulationState> => {
+    const questResult = applyQuestSemanticEvents(result.state.quests, result.events, {
+      exploration: result.state.exploration,
+      items: result.state.items,
+      tick,
+    });
+    // Every quest event, XP award, and preparation transition accompanies a quest-state
+    // change, so an unchanged reducer result means there is nothing to append.
+    if (questResult.state === result.state.quests) return result;
+    let progression = result.state.progression;
+    let combat = result.state.combat;
+    const priorPreparation = questPreparationSnapshot(result.state.quests);
+    const nextPreparation = questPreparationSnapshot(questResult.state);
+    const preparationEvents: Readonly<{
+      readonly kind: string;
+      readonly payload: Uint8Array;
+    }>[] = [];
+    if (!priorPreparation.forestEntranceParleyed && nextPreparation.forestEntranceParleyed) {
+      const prepared = applyForestParleyPreparation(combat);
+      combat = prepared.state;
+      preparationEvents.push(
+        ...prepared.events.map((eventValue) =>
+          Object.freeze({ kind: eventValue.kind, payload: combatEventPayload(eventValue.values) }),
+        ),
+      );
+    }
+    const experienceEvents: Readonly<{ readonly kind: string; readonly payload: Uint8Array }>[] =
+      [];
+    for (const awardDefinition of questResult.experienceAwards) {
+      const award = awardExperience(progression, awardDefinition.amount);
+      progression = award.state;
+      experienceEvents.push(progressionExperienceEvent(awardDefinition.amount, award));
+    }
+    return Object.freeze({
+      events: Object.freeze([
+        ...result.events,
+        ...questResult.events.map((eventValue) =>
+          Object.freeze({ kind: eventValue.kind, payload: combatEventPayload(eventValue.values) }),
+        ),
+        ...preparationEvents,
+        ...experienceEvents,
+      ]),
+      state: Object.freeze({
+        ...result.state,
+        combat,
+        progression,
+        quests: questResult.state,
+      }),
+    });
+  };
   return Object.freeze({
     applyCommand(
       state: M3SimulationState,
       command: SimulationCommand,
     ): SimulationStepResult<M3SimulationState> {
+      if (command.kind === QUEST_COMMAND_KIND) {
+        if (command.payload.byteLength !== QUEST_PAYLOAD_BYTES) {
+          throw new Error("Quest command payload is invalid");
+        }
+        const view = new DataView(
+          command.payload.buffer,
+          command.payload.byteOffset,
+          command.payload.byteLength,
+        );
+        const operation = view.getUint32(0, true);
+        const questIndexValue = view.getUint32(4, true);
+        const intentIndex = view.getUint32(8, true);
+        if (view.getUint32(12, true) !== 0) throw new Error("Quest command payload is invalid");
+        const definition = QUEST_DEFINITIONS[questIndexValue];
+        if (definition === undefined) throw new Error("Quest command identity is invalid");
+        let items = state.items;
+        let applied = false;
+        let eventIntentIndex = intentIndex;
+        if (operation === QUEST_OP_ACCEPT) {
+          if (intentIndex !== 0) throw new Error("Quest accept command is invalid");
+          const bit = 1 << questIndexValue;
+          applied =
+            (state.quests.activeQuestMask & bit) === 0 &&
+            (state.quests.completedQuestMask & bit) === 0;
+          eventIntentIndex = 0;
+        } else if (operation === QUEST_OP_INTENT) {
+          const intent = QUEST_INTENTS[intentIndex];
+          const stageIndex = state.quests.questStageIndexes[questIndexValue] ?? 0;
+          const stage = definition.stages[stageIndex];
+          if (
+            intent === undefined ||
+            intent.questId !== definition.id ||
+            intent.stageId !== stage?.id ||
+            (state.quests.activeQuestMask & (1 << questIndexValue)) === 0 ||
+            // A preparation already recorded is a no-op; reject it before any delivery
+            // cost is validated or consumed so a repeated intent cannot double-charge.
+            (intent.preparation !== undefined &&
+              questPreparationRecorded(state.quests, intent.preparation))
+          ) {
+            applied = false;
+          } else {
+            applied = (intent.delivery ?? []).every(
+              ({ itemId, quantity }) => (items.stackCounts[itemIndex(itemId)] ?? 0) >= quantity,
+            );
+            if (applied) {
+              for (const delivery of intent.delivery ?? []) {
+                items = removeItemStack(items, delivery.itemId, delivery.quantity);
+              }
+            }
+          }
+        } else {
+          throw new Error("Quest command operation is invalid");
+        }
+        const source = Object.freeze({
+          events: Object.freeze([
+            Object.freeze({
+              kind: applied ? "quest.intent-validated" : "quest.intent-rejected",
+              payload: combatEventPayload([
+                operation,
+                questIndexValue,
+                eventIntentIndex,
+                operation === QUEST_OP_INTENT
+                  ? (state.quests.questStageIndexes[questIndexValue] ?? 0)
+                  : 0,
+              ]),
+            }),
+          ]),
+          state: applied && items !== state.items ? Object.freeze({ ...state, items }) : state,
+        });
+        return applied ? applyQuestEvents(source, command.targetTick) : source;
+      }
       if (command.kind === ITEM_COMMAND_KIND) {
         if (command.payload.byteLength !== ITEM_PAYLOAD_BYTES) {
           throw new Error("Item command payload is invalid");
@@ -303,7 +463,10 @@ export function createGameSimulationAdapter(
           state.combat.player.actionKind !== COMBAT_ACTION_IDLE ||
           state.combat.queuedActionId !== -1
         ) {
-          return itemCommandResult(state, false, operation, primary, secondary);
+          return applyQuestEvents(
+            itemCommandResult(state, false, operation, primary, secondary),
+            command.targetTick,
+          );
         }
         const priorSheet = derivePlayerSheet(
           progressionCombatProfile(state.progression, itemCombatBonuses(state.items)),
@@ -475,7 +638,12 @@ export function createGameSimulationAdapter(
         } else {
           throw new Error("Item command operation is invalid");
         }
-        if (!applied) return itemCommandResult(state, false, operation, primary, secondary);
+        if (!applied) {
+          return applyQuestEvents(
+            itemCommandResult(state, false, operation, primary, secondary),
+            command.targetTick,
+          );
+        }
         const nextSheet = derivePlayerSheet(
           progressionCombatProfile(progression, itemCombatBonuses(items)),
         );
@@ -485,7 +653,10 @@ export function createGameSimulationAdapter(
           items,
           progression,
         });
-        return itemCommandResult(next, true, operation, primary, secondary);
+        return applyQuestEvents(
+          itemCommandResult(next, true, operation, primary, secondary),
+          command.targetTick,
+        );
       }
       if (command.kind === PROGRESSION_COMMAND_KIND) {
         if (command.payload.byteLength !== PROGRESSION_PAYLOAD_BYTES) {
@@ -695,6 +866,7 @@ export function createGameSimulationAdapter(
         ]) as readonly [number, number, number],
         playerYawRadians: 0,
         progression,
+        quests: createInitialQuestState(),
         rngState: seed >>> 0,
         schemaVersion: GAME_SIMULATION_STATE_SCHEMA_VERSION,
       });
@@ -761,6 +933,7 @@ export function createGameSimulationAdapter(
         ]) as readonly [number, number, number],
         playerYawRadians: view.getFloat32(16, true),
         progression,
+        quests: deserializeQuestState(view, QUEST_OFFSET),
         rngState: view.getUint32(4, true),
         schemaVersion: GAME_SIMULATION_STATE_SCHEMA_VERSION,
       });
@@ -799,6 +972,13 @@ export function createGameSimulationAdapter(
       if (query.kind === LANDMARK_QUERY_KIND) {
         if (query.payload.byteLength !== 0) throw new Error("Landmark query payload is invalid");
         return landmarkQueryPayload(state.exploration);
+      }
+      if (query.kind === QUEST_QUERY_KIND) {
+        if (query.payload.byteLength !== 0) throw new Error("Quest query payload is invalid");
+        return questQueryPayload(state.quests);
+      }
+      if (query.kind === JOURNAL_QUERY_KIND) {
+        return journalQueryPayload(state.quests, query.payload);
       }
       return executeM3NpcKnowledgeQuery(
         query,
@@ -861,6 +1041,7 @@ export function createGameSimulationAdapter(
       serializeProgressionState(view, PROGRESSION_OFFSET, state.progression);
       serializeItemState(view, ITEM_OFFSET, state.items);
       serializeExplorationState(view, EXPLORATION_OFFSET, state.exploration);
+      serializeQuestState(view, QUEST_OFFSET, state.quests);
       return bytes;
     },
     step(state: M3SimulationState, _tick: number): SimulationStepResult<M3SimulationState> {
@@ -903,11 +1084,18 @@ export function createGameSimulationAdapter(
         state.playerYawRadians,
         tickSeconds,
         playerSheet,
+        questPreparationSnapshot(state.quests),
       );
       if (combatStep.state.player.actionKind === COMBAT_ACTION_DOWNED) {
         items = clearVigorHealing(items);
       }
       const defeatAwards = combatDefeatAwards(state.combat, combatStep.state, combatStep.events);
+      const monsterDefeatEvents = defeatAwards.defeated.map(({ entityId, kit }) =>
+        Object.freeze({
+          kind: "combat.monster-defeated",
+          payload: combatEventPayload([entityId, monsterKitIndex(kit.id), kit.xp, 0]),
+        }),
+      );
       const progressionAward =
         defeatAwards.experience === 0
           ? null
@@ -992,20 +1180,24 @@ export function createGameSimulationAdapter(
         playerPosition,
         progression,
       });
-      return Object.freeze({
-        events: Object.freeze([
-          ...interactionEvents(interaction),
-          ...combatStep.events.map((event) =>
-            Object.freeze({ kind: event.kind, payload: combatEventPayload(event.values) }),
-          ),
-          ...lootEvents,
-          ...(progressionAward === null
-            ? []
-            : [progressionExperienceEvent(defeatAwards.experience, progressionAward)]),
-          ...discoveryEvents,
-        ]),
-        state: next,
-      });
+      return applyQuestEvents(
+        Object.freeze({
+          events: Object.freeze([
+            ...interactionEvents(interaction),
+            ...combatStep.events.map((event) =>
+              Object.freeze({ kind: event.kind, payload: combatEventPayload(event.values) }),
+            ),
+            ...monsterDefeatEvents,
+            ...lootEvents,
+            ...(progressionAward === null
+              ? []
+              : [progressionExperienceEvent(defeatAwards.experience, progressionAward)]),
+            ...discoveryEvents,
+          ]),
+          state: next,
+        }),
+        _tick,
+      );
     },
     telemetryCounters(state: M3SimulationState): Readonly<Record<string, number>> {
       return Object.freeze({
@@ -1054,6 +1246,14 @@ export function createGameSimulationAdapter(
         progressionLoadoutChangeCount: state.progression.loadoutChangeCount,
         progressionUnspentAbilityPicks: state.progression.unspentAbilityPicks,
         progressionUnspentAttributePoints: state.progression.unspentAttributePoints,
+        questAcceptedCount: state.quests.acceptedQuestCount,
+        questActiveCount: popcount32(state.quests.activeQuestMask),
+        questCompletedCount: state.quests.completedQuestCount,
+        questJournalEntryCount: state.quests.journal.length,
+        questNominalExperienceAwarded: state.quests.nominalExperienceAwarded,
+        questObjectiveProgressCount: state.quests.objectiveProgressCount,
+        questPreparationFlagCount: popcount32(state.quests.preparationFlags),
+        questStageCompletionCount: state.quests.stageCompletionCount,
       });
     },
   });
@@ -1438,6 +1638,8 @@ function assertState(
   assertProgressionState(state.progression);
   assertExplorationState(state.exploration);
   assertItemState(state.items);
+  assertQuestState(state.quests);
+  assertQuestExplorationConsistency(state.quests, state.exploration);
   const gatheringMask = lowBitsMask(GATHERING_NODES.length);
   if (
     (state.items.gatheredNodeMask & ~gatheringMask) !== 0 ||
@@ -1743,6 +1945,71 @@ export function createReshapeCommand(sequence: number, targetTick: number): Simu
   return createItemCommand(sequence, targetTick, ITEM_OPERATIONS.reshape.code, 0, 0);
 }
 
+export function createAcceptQuestCommand(
+  sequence: number,
+  targetTick: number,
+  questId: string,
+): SimulationCommand {
+  return createQuestCommand(sequence, targetTick, QUEST_OP_ACCEPT, questIndex(questId), 0);
+}
+
+export function createQuestIntentCommand(
+  sequence: number,
+  targetTick: number,
+  intentId: string,
+): SimulationCommand {
+  const intentIndex = questIntentIndex(intentId);
+  const intent = QUEST_INTENTS[intentIndex];
+  if (intent === undefined) throw new Error("Quest intent identity is invalid");
+  return createQuestCommand(
+    sequence,
+    targetTick,
+    QUEST_OP_INTENT,
+    questIndex(intent.questId),
+    intentIndex,
+  );
+}
+
+export function createQuestSnapshotQuery(): SimulationGameStateQuery {
+  return Object.freeze({ kind: QUEST_QUERY_KIND, payload: new Uint8Array() });
+}
+
+export function createJournalSnapshotQuery(
+  fromSequence: number,
+  maximumEntries: number,
+): SimulationGameStateQuery {
+  if (
+    !Number.isSafeInteger(fromSequence) ||
+    fromSequence < 0 ||
+    fromSequence > 0xffff_ffff ||
+    !Number.isSafeInteger(maximumEntries) ||
+    maximumEntries <= 0 ||
+    maximumEntries > QUEST_JOURNAL_QUERY_MAXIMUM_ENTRIES
+  ) {
+    throw new Error("Journal query range is invalid");
+  }
+  const payload = new Uint8Array(8);
+  const view = new DataView(payload.buffer);
+  view.setUint32(0, fromSequence, true);
+  view.setUint16(4, maximumEntries, true);
+  return Object.freeze({ kind: JOURNAL_QUERY_KIND, payload });
+}
+
+function createQuestCommand(
+  sequence: number,
+  targetTick: number,
+  operation: number,
+  questIndexValue: number,
+  intentIndex: number,
+): SimulationCommand {
+  const payload = new Uint8Array(QUEST_PAYLOAD_BYTES);
+  const view = new DataView(payload.buffer);
+  view.setUint32(0, operation, true);
+  view.setUint32(4, questIndexValue, true);
+  view.setUint32(8, intentIndex, true);
+  return Object.freeze({ kind: QUEST_COMMAND_KIND, payload, sequence, targetTick });
+}
+
 function createItemCommand(
   sequence: number,
   targetTick: number,
@@ -1910,6 +2177,99 @@ function landmarkQueryPayload(state: ExplorationState): Uint8Array {
   );
 }
 
+function questQueryPayload(state: QuestState): Uint8Array {
+  const preparation = questPreparationSnapshot(state);
+  return INVENTORY_TEXT_ENCODER.encode(
+    JSON.stringify({
+      acceptedCount: state.acceptedQuestCount,
+      activeCount: popcount32(state.activeQuestMask),
+      completedCount: state.completedQuestCount,
+      journalEntryCount: state.journal.length,
+      nominalExperienceAwarded: state.nominalExperienceAwarded,
+      preparation,
+      quests: QUEST_DEFINITIONS.map((definition, questIndexValue) => {
+        const active = (state.activeQuestMask & (1 << questIndexValue)) !== 0;
+        const completed = (state.completedQuestMask & (1 << questIndexValue)) !== 0;
+        const currentStageIndex = state.questStageIndexes[questIndexValue] ?? 0;
+        return Object.freeze({
+          currentStageIndex,
+          id: definition.id,
+          kind: definition.kind,
+          localizationKey: definition.localizationKey,
+          stages: definition.stages.map((stage, stageIndex) => {
+            const objectiveOffset = questObjectiveOffset(questIndexValue, stageIndex);
+            return Object.freeze({
+              completion: stage.completion,
+              completed: currentStageIndex > stageIndex,
+              experience: stage.experience,
+              id: stage.id,
+              localizationKey: stage.localizationKey,
+              objectives: stage.objectives.map((candidate, objectiveIndex) =>
+                Object.freeze({
+                  kind: candidate.kind,
+                  localizationKey: candidate.localizationKey,
+                  progress: state.objectiveProgress[objectiveOffset + objectiveIndex] ?? 0,
+                  target: candidate.kind === "talk" ? 1 : candidate.count,
+                }),
+              ),
+            });
+          }),
+          status: completed ? "completed" : active ? "active" : "available",
+          systemTag: definition.systemTag,
+        });
+      }),
+      version: 1,
+    }),
+  );
+}
+
+function journalQueryPayload(state: QuestState, payload: Uint8Array): Uint8Array {
+  if (payload.byteLength !== 8) throw new Error("Journal query payload is invalid");
+  const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+  const fromSequence = view.getUint32(0, true);
+  const maximumEntries = view.getUint16(4, true);
+  if (
+    view.getUint16(6, true) !== 0 ||
+    maximumEntries === 0 ||
+    maximumEntries > QUEST_JOURNAL_QUERY_MAXIMUM_ENTRIES
+  ) {
+    throw new Error("Journal query payload is invalid");
+  }
+  const entries = state.journal.slice(fromSequence, fromSequence + maximumEntries).map((entry) => {
+    const definition = QUEST_DEFINITIONS[entry.questIndex];
+    const stage = definition?.stages[entry.stageIndex];
+    const objective = stage?.objectives[entry.objectiveIndex];
+    const landmark = NAMED_LANDMARKS[entry.subject];
+    return Object.freeze({
+      amount: entry.amount,
+      localizationKey: journalLocalizationKey(entry.kind),
+      objectiveId:
+        objective === undefined ? null : `${definition?.id}:${stage?.id}:${entry.objectiveIndex}`,
+      objectiveLocalizationKey: objective?.localizationKey ?? null,
+      questId: definition?.id ?? null,
+      questLocalizationKey: definition?.localizationKey ?? null,
+      sequence: entry.sequence,
+      stageId: stage?.id ?? null,
+      stageLocalizationKey: stage?.localizationKey ?? null,
+      subjectId: isLandmarkJournalKind(entry.kind) ? (landmark?.id ?? null) : null,
+      subjectLocalizationKey:
+        isLandmarkJournalKind(entry.kind) && landmark !== undefined
+          ? `landmark.${landmark.id}.name`
+          : null,
+      tick: entry.tick,
+    });
+  });
+  return INVENTORY_TEXT_ENCODER.encode(
+    JSON.stringify({
+      entries,
+      fromSequence,
+      nextSequence: Math.min(state.journal.length, fromSequence + entries.length),
+      totalEntries: state.journal.length,
+      version: 1,
+    }),
+  );
+}
+
 function progressionCommandResult(
   state: M3SimulationState,
   applied: boolean,
@@ -2025,6 +2385,16 @@ function combatEventPayload(values: readonly [number, number, number, number]): 
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
+}
+
+function popcount32(value: number): number {
+  let remaining = value >>> 0;
+  let count = 0;
+  while (remaining !== 0) {
+    remaining &= remaining - 1;
+    count += 1;
+  }
+  return count;
 }
 
 function markerIndexPayload(markerIndex: number): Uint8Array {

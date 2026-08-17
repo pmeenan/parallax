@@ -1422,8 +1422,19 @@ walkable navigation projection. The fixed step performs squared-distance proximi
 discovery, awards each identity once through the shared progression boundary, and emits
 both `landmark.discovered` and `progression.experience-gained`. The saved bitset, rules
 version, nominal-award counter, `landmarks.snapshot@1` query, and public telemetry are
-the exploration foundation that the later quest state machines and append-only journal
-consume.
+the exploration foundation that the quest state machines and append-only journal consume.
+D-171 advances the payload to v10 by appending a fixed quest block. Stable game-owned
+quest, stage, objective, and intent order is persisted identity; a typed reducer advances
+reach/collect/defeat/talk/craft/deliver objectives only from validated semantic sim
+events and reconciles already-held items or already-discovered landmarks when a stage is
+entered. Quest acceptance and state-changing dialog outcomes use the fixed
+`quests.command@1` boundary. Stage XP calls the same D-167 progression award path, while
+three bounded preparation flags suppress boss vents, yield the authored forest brigands,
+or record reliquary insight. The 256-entry append-only journal stores canonical quest
+beats and landmark discoveries with localization keys and paginates through
+`journal.snapshot@1`; `quests.snapshot@1`, public counters, exact journal/state
+reconstruction checks, and landmark-history parity keep the system observable and make
+corrupt or drifted saves fail closed.
 D-160 resolves D-143's measured UI-substrate spike with a per-surface hybrid. The render
 worker owns frame-coherent world anchors and heavy-screen visuals/interactions; the main
 thread owns DOM/CSS HUD and dialog. In-canvas screens may use a sparse DOM semantic,
