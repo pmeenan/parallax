@@ -247,240 +247,41 @@ episodic memory, and cross-machine replay remain build-later.
 
 ## M3.5 — Gameplay systems  `complete`
 
-The mechanics that make the slice a game (D-141): game-design.md promises D&D-tradition
-combat, magic, monsters, progression, crafting, and quests, and vision.md's bar is "no
-system is toy-grade" — but none of it existed as plan items before this milestone. Same
-working model as M4.5: heavily iterative human+agent exploration, greybox-first
-(capsule monsters and placeholder effects before art), with every system living in the
-deterministic sim worker so the M3 replay/determinism checks extend to all of it. Scope
-is slice-scale: deep enough that each system is real, small enough for a two-district
-demo. The detailed ruleset is designed as this milestone's first track and recorded in
-game-design.md — not invented ad hoc inside each system.
+- [x] Original slice-scale ruleset and headless balance model for deliberate-but-
+      forgiving combat, magic, progression, loot/economy, crafting, and quests
+      (D-142/D-165).
+- [x] Deterministic melee/ranged/magic combat, damage/status resolution, equipment,
+      abilities, semantic events, and versioned replay/save state.
+- [x] Authored navigation-aware creature and pack AI with readable attack/flee/boss
+      behaviors and recurring pressure coverage (D-166).
+- [x] Classless level-2-to-10 progression, attributes, learned abilities, active/knack
+      loadouts, authored XP pacing, and combat consumers (D-167).
+- [x] Saved gathering/regrowth, 24-recipe station crafting, vendors, consumables,
+      equipment/upgrades, seeded loot/affixes, and bounded inventory economy (D-168).
+- [x] One-time landmark discovery, the six-stage main arc, eight side quests,
+      semantic objectives, preparation consequences, and append-only queryable journal
+      (D-170/D-171).
+- [x] Authoritative hybrid-UI inventory/crafting, progression/loadout, and quest/journal
+      consumers, plus XP/unspent-choice, level-up payoff, and Ironset feedback (D-172).
+- [x] Exit: the game-owned `m35-gameplay-slice@1` command log completes fight → loot →
+      trade → craft → level → two multi-objective quests with byte-identical replay,
+      save/load, live-worker round-trip, and exact semantic counters (D-150/D-173).
 
-- [x] Ruleset design pass: expand game-design.md from one genre paragraph into the
-      slice-scale mechanics spec — combat loop shape, magic model, stat/ability/
-      progression scope, crafting depth, loot/economy scale, quest structure — with
-      original names and mechanics text throughout (no D&D-protected material).
-      *Ruleset v1 drafted 2026-07-29 ahead of M3 (D-142); v2 (D-165, 2026-08-09)
-      concretized the full spec under the deliberate-but-forgiving feel target. The
-      headless balancer now exists, consumed the spec, and validated every combat
-      band (its first tuning pass retuned skitterling/warden/boss stat blocks,
-      catalyst potencies, and elite recovery windows into game-design.md). D-167's
-      progression delivery closed the remaining pacing assertion: its ordinary
-      scripted-slice ledger awards 3,963 XP and lands at level 9, inside the authored
-      level 9–10 band.*
-- [x] Combat foundation: melee/ranged/magic resolution, hit detection, damage/status
-      model — all sim-worker state under the M3 determinism constraints, with player
-      intent flowing through the input-command pattern like everything else.
-      *Delivered 2026-08-09: pure integer combat core (checks, damage/soak, five
-      conditions + thermal-shock pair, block/dodge/caught-block, Answering Strike,
-      Aetherspark, keen refunds, elite break openings), monster entities with kit
-      data and minimal retaliation behavior (perception/aggro/flee stay with the
-      creature-AI item), soft-lock hit detection, waystone respawn, save schema v5,
-      input command v3 with combat buttons (LMB light / Q heavy / RMB block / Shift
-      dodge / 1–4 slots / F spark; G is a greybox dev spawn), combat semantic
-      events + telemetry counters, and the headless balancer in the unit gate.
-      Player-side bow content arrives with items/loadout work; the resolution model
-      already covers ranged (Steady Loose, monster lance, spell bolts). Qualifying
-      physical-console smoke (D-157: required — sim replay/save-load surface), run on
-      the review-corrected candidate:
-      `smoke-1-fe2a386a5569-dev-01-showcase-2026-08-10T12-54-54-713Z.{json,md}`
-      passed all three facets and 36/36 checks against exact artifact
-      `fe2a386a55690b6c126e3c93f0b4bad592ecccab85e7e66d66cef4a32df04717`; JSON/MD
-      SHA-256
-      `82e8b04b7bfb3c4bafec31046ed296a12904d0daa54469e1464d903259e53da5` /
-      `7c86f2dae75df7661a00a2fad9eb5e52059f8436f2885de9ea17426d84d41128`. An earlier
-      pre-correction candidate's smoke also passed and remains retained
-      machine-local evidence.*
-- [x] Creature/monster AI: perception, aggro, combat and flee behaviors layered on the
-      M3 navigation work — the behavior tier, distinct from LLM dialog. Monster body
-      types also feed requirements to the M5 character pipeline (game-design.md
-      implication #5).
-      *Complete under accepted D-166: authored D1 packs and per-kit
-      profiles now drive navigation-sight perception, semantic pack aggro, leashes,
-      deterministic steering/avoidance, greymaw flanking, gnawer flight, brigand
-      block/dodge/yield, warden openings, and both boss thresholds (bounded clutch,
-      recovery-only enrage, warned ember-vent Burning annulus). A bounded readability
-      refinement adds authored turn/facing gates, encounter-group attack slots that
-      include boss summons, stable opposite-first flank ranks, and a flee re-aggro
-      guard without changing save schema v6. Direct replay/save tests, public counters,
-      and a recurring multi-creature pressure fixture cover it. Final `pnpm check`
-      passed 196 test files / 2,507 passing tests (one skipped).
-      The required dev-01/Showcase physical smoke
-      `smoke-1-2c9f23fff5d7-dev-01-showcase-2026-08-10T15-05-44-099Z.{json,md}`
-      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
-      and 36/36 checks for build
-      `2c9f23fff5d7505fc01e03ab7b8030b793e4418c8df36c9443277e3401a91bd1`;
-      JSON/Markdown SHA-256 are
-      `7cd994ab1c754406706a56f3c807cb02bf1dd2a9cc139c9b173e48a45513aaa6` /
-      `f72f843d3778f55fdd7d218116844061426d391f320604261a262408f86ae1e9`.
-      All replay/save-load hashes matched and the combined sim-step high-water was
-      0.8 ms. D-119 makes this exact evidence-only closure non-triggering.*
-- [x] Progression: stats, abilities, leveling on the sim data model — save-schema
-      versioned like all sim state.
-      *Complete under accepted D-167: the deterministic sim now owns the level-2
-      starter, the cumulative `100×n` XP curve through cap 10, one attribute point and
-      one ability pick per gained level, the stable 14-ability learned set, four active
-      slots, two knack slots, and serializable spend/learn/equip commands with semantic
-      success/rejection events. Combat defeat events award authored monster XP; the
-      progression-built player sheet drives attribute/pool changes, Answering Strike,
-      Ironset Stance, Wellspring, and Quiet Tread, while Forager's Eye and Tinker's
-      Thrift remain stable selections for the next gathering/crafting consumer. The
-      canonical 96-byte progression block advances the game payload from save schema
-      v6 to v7 without moving prior fields, and public counters expose XP, levels,
-      spends, learns, and loadout changes. Direct tests cover curve/cap, command
-      rejection, loadout rules, combat consumers, XP-on-defeat, over-cap/reserved-byte
-      validation, save/load, and replay. Final `pnpm check` passed the repeatable
-      production build, lint, and 197 test files / 2,514 passing tests (one skipped).
-      The required dev-01/Showcase physical smoke
-      `smoke-1-c4a409e1d19b-dev-01-showcase-2026-08-11T16-24-09-800Z.{json,md}`
-      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
-      and 36/36 checks for build
-      `c4a409e1d19bf70858215f26afa121fb5d9327b44514f694e796b398db616437`;
-      JSON/Markdown SHA-256 are
-      `b9762cd9fef585258e109aa01db9df197ac1c6516b17a2bfb694631c67e32e0b` /
-      `fe27d7caf1d4d9cd5fe45fd70511c321dc7156955273abe57703e4ff0c0f3f7c`.
-      Every replay and live save/load converged on
-      `b13fb8309b4042f95da2e848f782c31f7bd87bc8781c585deb1a4f850fa8ec25`;
-      the 4,497-tick positioning replay/load digest was stable, and the combined
-      character/crowd/creature step high-water was 0.731 ms. D-119 makes this exact
-      evidence-only closure non-triggering.*
-- [x] Items, crafting, economy, loot: the systems on top of the M3 item/economy data
-      model (game-design.md implication #4).
-      *Complete under accepted D-168. Final `pnpm check` passed the repeatable
-      production build, lint, and 198 test files / 2,540 passing tests (one skipped).
-      After D-169 accepted Windows `26200.9168` as dev-01's servicing baseline, the
-      required physical-console dev-01/Showcase smoke retained schema-v71 /
-      mandatory-metric-set-v34 artifact
-      `harness/results/smoke-1-b0d26cc3f3f5-dev-01-showcase-2026-08-16T20-28-25-602Z.{json,md}`
-      for build
-      `b0d26cc3f3f52448e2ca75a958bb70d8667cbb1968d2869381dc097a36d1c29b`
-      and install release
-      `5c356a3b07e0234cd74b66f9697aefdff98066b0ed7252ae6d12626a1c1a4240`.
-      JSON/Markdown SHA-256 are
-      `570812938b6d67c7d4158403f8607080a46751fec52952c56c5faae348040e8d` /
-      `47e7811b8d56a853fade1f66f358173334e9303fd7becbc5c7285e89349e5dbf`.
-      All six launches, all three facets, and 36/36 budget checks passed; every
-      120-tick replay and live save/load converged on
-      `ab4e013c5f298c9b796ca4855ad2c1435f5884c3aafa125eeee7f84ec6312dda`,
-      the 4,497-tick positioning replay/load digest was
-      `31e9fd4dcc1318605fb9e84ec94875791357adec89967c6f0502ab9831208880`,
-      and the combined character/crowd/creature step high-water was 0.7 ms. D-119
-      makes this exact evidence-only closure non-triggering. A post-closure review
-      correction raised Hearthloaf's grain cost so Tinker's Thrift cannot fund a
-      craft-sell profit and made Mythic overflow preserve unique, rarer, and upgraded
-      gear before comparing price. The current artifact is
-      `4e8725a0361c44f2a1fd5fb68110f6982b7bec11dc55ed96bf2a2228d87bf4c6`
-      with install digest
-      `70a039e899f9e0ad38915b8f2dbf2319fe8aeecd7c35afbd6f1959bd3fdf8b60`;
-      `pnpm check` passed 198 test files / 2,542 tests (one skipped). D-157 requires no
-      new physical smoke because the smoke workload executes neither crafting/trade
-      nor boss-loot inventory overflow.*
-- [x] Quests and journal: quest state machine (main arc + side quests) and the journal
-      as a queryable play-history log — the same log that feeds the Summarizer-recap
-      feature and subtitles/localization. Land landmark-discovery XP first: award each
-      named landmark once through D-167's progression boundary, persist the discovered
-      set, and expose the award semantically before quest XP uses the same path.
-      *Foundation delivered under D-170: six stable D1 landmarks resolve from authored
-      world markers, award 25 XP once inside a 24 m discovery radius, persist in the
-      appended save-schema-v9 exploration block with an explicit landmark-rules version,
-      publish semantic discovery plus shared progression events, expose nominal-award
-      counters, and answer `landmarks.snapshot@1`. The vocabulary and authored-marker
-      graph fail closed on capacity, identity, district, value, tag-parity, or walkability
-      drift; the two added tagged waystones are also covered reshape sites. The quest state
-      machines and append-only journal are complete under D-171: stable data defines the
-      six-stage main arc and eight system-tagged side quests; typed objectives advance
-      only from semantic sim events or validated intents; quest stage XP uses D-167; and
-      bounded preparation flags suppress boss vents, clear the forest brigand ambush, or
-      record reliquary insight. Save schema v10 appends a fail-closed fixed quest block and
-      256-entry journal, with `quests.snapshot@1` and paginated `journal.snapshot@1`
-      queries ready for the next hybrid-UI/recap consumers. The Resonant Focus recipe now
-      uses the pre-boss-accessible emberpetal instead of the boss-only Mythic core.
-      Post-review `pnpm check` passed the repeatable production build, Biome over 502
-      files, and 200 test files / 2,561 passing tests (one skipped) for candidate artifact
-      `06bdd2412d794c200ffa72ecb2d1dd93adaa1807e77a1e992c381b0f7e77ccee` and install
-      release `81bf0074da8a928f16b7feb6619b9bc072cb7bb3fb0bcd13a08b0c97d03cdb0d`.
-      The required dev-01/Showcase physical `smoke@1`
-      `smoke-1-06bdd2412d79-dev-01-showcase-2026-08-22T20-58-41-357Z.{json,md}`
-      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
-      and 36/36 checks for that exact artifact and release. JSON/Markdown SHA-256 are
-      `cb5cb34b0ce3237f981f1608f62823c0d8cfd13f17dd83aaf80d3ce8deb79bbb` /
-      `9602788be1416c43436d8f9e4aeaa32a5b43a6de1f81d945701b596d28e62193`.
-      Every replay/save/load hash matched and the combined simulation-step high-water
-      was 0.835 ms. D-119 makes this exact evidence-only closure non-triggering.
-      The D-170 foundation's `pnpm check` passed 199
-      test files / 2,551 tests (one skipped) with exact build artifact
-      `5a87bce7a9199c9b1119500e4e0216334149f27b7f0b46b9e31bd0140fa6baf4`
-      and install release
-      `3c025b458de5cbbcd061b56be8e76b2dc3d50214624fd3783df0335d2441a2d1`;
-      the required D-157 physical `smoke@1` passed all three facets and 36 checks across
-      six launches under schema 71 / mandatory metric set 34, with identical replay/save/
-      load hashes and a 0.8 ms worst simulation-step high-water. Exact report and digests
-      are recorded in D-170.*
-- [x] Gameplay-system presentation and progression feel: build the real inventory/
-      crafting, progression/loadout, and journal consumers on D-161's hybrid UI. The
-      HUD shows current-level XP progress and makes unspent attribute points/ability
-      picks conspicuous. Author and playtest a deterministic level-up payoff (candidate:
-      refill stamina/aether but not health), with tunables in `balance/` and a semantic
-      event for presentation. Add an Ironset lifecycle event plus basic HUD telegraph so
-      its planted trade-off is legible before M6 VFX polish. Explicitly playtest and
-      record whether all 4 active + 2 knack slots stay available from level 2 or slot
-      access stages by level; any staged rule is derived from level, not new saved state.
-      D-172 records the result: all slots remain available from level 2; level-up refills
-      stamina and aether but not health; and Ironset exposes start/end semantics plus a
-      duration/trade-off HUD telegraph. The real screens query authoritative worker state
-      and route every craft, equip, consume, learn, attribute, loadout, and quest action
-      through the existing fixed-size command boundary. The pre-review candidate's
-      `pnpm check` passed 201 test files / 2,566 tests (one skipped) for exact artifact
-      `946a3c9fa33b2a504c81fb7b608833a8ed1c51a10a7eeb347b99eaf30d2f883a` and install
-      release `69e55ae8c500e814f50019404fbc5e13b01bb574aa1c8d66ede038ddd57a1529`;
-      required physical `smoke@1` for that artifact passed schema 71, all three facets,
-      and 36/36 checks (exact report
-      `smoke-1-946a3c9fa33b-dev-01-showcase-2026-08-22T21-32-13-649Z.{json,md}` and
-      report hashes are recorded in D-172). On-demand review then fixed heavy-screen
-      actions being silently dropped during HUD-only presentation churn (stale
-      action-identical acceptance in the render service and gameplay UI controller,
-      with regression tests) and moved hard-coded Ironset/level-cap HUD numbers onto
-      their balance authorities. The corrected candidate passed `pnpm check` (201 test
-      files / 2,567 tests, one skipped) as exact artifact
-      `1b55b0b31a77bb2db6a6af1327fc6137941f8e3162dd862fd3f792abb9d2593f` / install
-      release `fbc5f4f15aaab6bd6ca4352f4d19fee1477a05199f8cd70200afff09ec03d325`
-      (identities recorded in D-172). Its required physical-console dev-01/Showcase
-      `smoke@1`
-      `smoke-1-1b55b0b31a77-dev-01-showcase-2026-08-22T22-41-48-630Z.{json,md}`
-      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
-      and 36/36 checks for that exact artifact and release. JSON/Markdown SHA-256 are
-      `06664ebaebcc54df0484365b079c8d58f2d4843e01a75b8ff112393ec9076910` /
-      `0d8ecd043341d73a5c474fd8facf14827b0ab43b420ff929dc5b2efb5106b81c`.
-      Every replay/save/load hash matched and the combined simulation-step high-water
-      was 0.795 ms. D-119 makes this exact evidence-only closure non-triggering.
-- [x] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
-      multi-step quest end-to-end; all new state survives save/reload and hash-matches
-      under the deterministic same-host dev-01 replay check; the harness gains
-      gameplay-scenario coverage (extend the flythrough or add a scripted combat
-      scenario — extending the harness is part of the task). Cross-machine comparison
-      is advisory research, not an exit gate (D-150).
-      *Complete under D-173. The game-owned, versioned
-      `m35-gameplay-slice@1` scenario drives an 8,000-tick / 34-command ordinary-input
-      loop through three monster defeats and loot awards, three purchases, one meal
-      craft, level 3, and two accepted and completed multi-objective quests. Direct
-      replay tests and every physical core launch replayed it twice, required
-      byte-identical saves, loaded/re-saved it through the live worker, and converged on
-      `8548ffcd21d3217d5fb7643391647a53771e71d6f123a161eda534c238d3b59e`.
-      Final `pnpm check` passed the repeatable production build, lint, and 202 test
-      files / 2,568 tests (one skipped) for exact build artifact
-      `c7054f88eb10976bce076be4819f994be2b2624b5067913d587261ae857be279`
-      and install release
-      `15528289e8b0fca4a6e5d2eaa39281814c5f0648311176c94d31c574bce690f3`.
-      The required dev-01/Showcase physical smoke on adopted CfT 152.0.7977.54,
-      `smoke-1-c7054f88eb10-dev-01-showcase-2026-08-22T23-28-14-949Z.{json,md}`,
-      passed schema v72 / mandatory metric set v35, all six launches, all three
-      facets, and 36/36 checks. JSON/Markdown SHA-256 are
-      `41a50d66aed751725dd7f3cdffa0bad12ff4890b6fedfbbfcb8641cc6302c185` /
-      `fbe384171c3a94648ab8f13f8af3252fc740e578b1139e876d293a5d64706ff8`;
-      the ordinary simulation-step high-water was 0.740 ms. The exact same
-      artifact also passed on retained CfT 151.0.7922.108 before the current-Stable
-      transition. D-119 makes this evidence-only closure non-triggering.*
+**Closure evidence:** D-173 accepted M3.5 after exact build artifact
+`c7054f88eb10976bce076be4819f994be2b2624b5067913d587261ae857be279` /
+install release
+`15528289e8b0fca4a6e5d2eaa39281814c5f0648311176c94d31c574bce690f3`
+passed `pnpm check` (202 files / 2,568 tests, one skipped). Registered dev-01
+Showcase report
+`smoke-1-c7054f88eb10-dev-01-showcase-2026-08-22T23-28-14-949Z.{json,md}`
+passed schema v72 / mandatory metric set v35 on CfT 152.0.7977.54 across all six
+launches, all three facets, and 36/36 checks; JSON/Markdown SHA-256 are
+`41a50d66aed751725dd7f3cdffa0bad12ff4890b6fedfbbfcb8641cc6302c185` /
+`fbe384171c3a94648ab8f13f8af3252fc740e578b1139e876d293a5d64706ff8`.
+Every scenario replay/save/load converged on
+`8548ffcd21d3217d5fb7643391647a53771e71d6f123a161eda534c238d3b59e`;
+the ordinary simulation-step high-water was 0.740 ms. The same artifact also passed
+the complete contract on retained CfT 151.0.7922.108 before the Stable transition.
 
 ## M4 — District 2 (catacombs) + hard transitions  `pending`
 
