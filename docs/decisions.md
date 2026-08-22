@@ -101,8 +101,18 @@ with unchanged 266-resource / 2,621,468,856-byte OPFS identity
 `70cfaf8dee37bedd834413b079c602223ad1724300dd5d41788237c732a06742` and replay
 semantic-contract digest
 `367762458e077a9ea07aab34f9034ad00cf34474904ae37596bf944251807b17`. The corrected
-candidate touches the smoke-exercised hybrid UI substrate, so its one converged
-physical `smoke@1` on dev-01 is required and pending.
+candidate's required physical-console dev-01/Showcase `smoke@1`
+`smoke-1-1b55b0b31a77-dev-01-showcase-2026-08-22T22-41-48-630Z.{json,md}` passed
+schema v71 / mandatory metric set v34, all six launches, all three facets, and 36/36
+checks for that exact artifact and release. JSON/Markdown SHA-256 are
+`06664ebaebcc54df0484365b079c8d58f2d4843e01a75b8ff112393ec9076910` /
+`0d8ecd043341d73a5c474fd8facf14827b0ab43b420ff929dc5b2efb5106b81c`.
+Every replay/save/load hash matched
+`fde033eaca8b27038fba54eb65e4e4dfb12332156a1eb951d5021dad8eabfa74`, the
+4,497-tick positioning replay/load digest was
+`4f776d3979300c9f5cc58e0ab9d2b80be8cdbfbcb9ebd3cc112eb60037a9be5a`, and the
+combined simulation-step high-water was 0.795 ms. D-119 makes this exact
+evidence-only closure non-triggering.
 
 **Reopen if:** representative playtesting shows the no-health payoff causes unavoidable
 post-level defeat or the resource refill erases encounter pressure; empty level-2 slots

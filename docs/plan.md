@@ -445,8 +445,15 @@ game-design.md — not invented ad hoc inside each system.
       files / 2,567 tests, one skipped) as exact artifact
       `1b55b0b31a77bb2db6a6af1327fc6137941f8e3162dd862fd3f792abb9d2593f` / install
       release `fbc5f4f15aaab6bd6ca4352f4d19fee1477a05199f8cd70200afff09ec03d325`
-      (identities recorded in D-172); because it changes the smoke-exercised hybrid UI
-      substrate, its one converged physical `smoke@1` on dev-01 is pending.
+      (identities recorded in D-172). Its required physical-console dev-01/Showcase
+      `smoke@1`
+      `smoke-1-1b55b0b31a77-dev-01-showcase-2026-08-22T22-41-48-630Z.{json,md}`
+      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
+      and 36/36 checks for that exact artifact and release. JSON/Markdown SHA-256 are
+      `06664ebaebcc54df0484365b079c8d58f2d4843e01a75b8ff112393ec9076910` /
+      `0d8ecd043341d73a5c474fd8facf14827b0ab43b420ff929dc5b2efb5106b81c`.
+      Every replay/save/load hash matched and the combined simulation-step high-water
+      was 0.795 ms. D-119 makes this exact evidence-only closure non-triggering.
 - [ ] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
       multi-step quest end-to-end; all new state survives save/reload and hash-matches
       under the deterministic same-host dev-01 replay check; the harness gains
