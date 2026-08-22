@@ -34,8 +34,13 @@ import type {
   SimulationCommand,
   SimulationPresentationSnapshot,
   SimulationReplayResult,
+  SimulationScenarioDefinition,
   SimulationTelemetrySnapshot,
 } from "../sim/simulation-protocol";
+import {
+  assertSimulationReplayWorkload,
+  canonicalSimulationCommand,
+} from "../sim/simulation-runtime";
 import type { SimulationService } from "../sim/simulation-service";
 import type { InstallStoreTelemetrySnapshot } from "../storage/opfs-release-store-contract";
 import type {
@@ -103,6 +108,7 @@ export interface ParallaxTelemetryExport {
     seed: number,
   ): Promise<SimulationReplayResult>;
   saveSimulation(): Promise<Uint8Array>;
+  simulationScenario(id: string): SimulationScenarioDefinition;
   snapshot(): ParallaxTelemetrySnapshot;
   startFlythrough(): void;
   startBenchmark(): void;
@@ -129,11 +135,13 @@ export function installTelemetryExport(
   startStreamingTraversal: () => void,
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
+  simulationScenarios: readonly SimulationScenarioDefinition[] = [],
 ): ParallaxTelemetryExport {
   if (Object.hasOwn(target, TELEMETRY_GLOBAL_NAME)) {
     throw new Error(`${TELEMETRY_GLOBAL_NAME} is already installed in this realm`);
   }
   const frozenIdentity = Object.freeze({ ...identity });
+  const scenarios = canonicalSimulationScenarios(simulationScenarios);
   const assertBenchmarkDoesNotOwnScenario = (action: string): void => {
     const state = benchmarkService.snapshot().state;
     if (state !== "idle" && state !== "completed" && state !== "failed" && state !== "disposed") {
@@ -210,6 +218,11 @@ export function installTelemetryExport(
     },
     saveSimulation(): Promise<Uint8Array> {
       return simulationService.save();
+    },
+    simulationScenario(id: string): SimulationScenarioDefinition {
+      const definition = scenarios.get(id);
+      if (definition === undefined) throw new Error(`Simulation scenario ${id} is unavailable`);
+      return definition;
     },
     startBenchmark(): void {
       benchmarkService.start();
@@ -290,6 +303,40 @@ export function installTelemetryExport(
     writable: false,
   });
   return telemetryExport;
+}
+
+function canonicalSimulationScenarios(
+  definitions: readonly SimulationScenarioDefinition[],
+): ReadonlyMap<string, SimulationScenarioDefinition> {
+  if (!Array.isArray(definitions)) throw new Error("Simulation scenarios must be an array");
+  const scenarios = new Map<string, SimulationScenarioDefinition>();
+  for (const definition of definitions) {
+    if (
+      typeof definition !== "object" ||
+      definition === null ||
+      !/^[a-z0-9](?:[a-z0-9._:@-]{0,127})$/u.test(definition.id) ||
+      !Number.isSafeInteger(definition.version) ||
+      definition.version <= 0 ||
+      !Number.isSafeInteger(definition.seed) ||
+      definition.seed < 0 ||
+      definition.seed > 0xffff_ffff ||
+      scenarios.has(definition.id)
+    ) {
+      throw new Error("Simulation scenario definition is invalid");
+    }
+    assertSimulationReplayWorkload(definition.commands, definition.ticks);
+    scenarios.set(
+      definition.id,
+      Object.freeze({
+        commands: Object.freeze(definition.commands.map(canonicalSimulationCommand)),
+        id: definition.id,
+        seed: definition.seed,
+        ticks: definition.ticks,
+        version: definition.version,
+      }),
+    );
+  }
+  return scenarios;
 }
 
 function snapshot(

@@ -25,6 +25,7 @@ export type {
   M3GameplayRuntime,
 } from "./sim/m3-gameplay-runtime";
 export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";
+export { M35_GAMEPLAY_SLICE_SCENARIO } from "./sim/m35-gameplay-slice-scenario";
 export type { M3GameplayUiController } from "./ui/m3-gameplay-ui";
 export { createM3GameplayUiController } from "./ui/m3-gameplay-ui";
 export type {

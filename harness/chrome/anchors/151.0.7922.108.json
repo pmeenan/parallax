@@ -1,0 +1,15 @@
+{
+  "browserRevision": "@4744b886309d987d292e43232776d2206cccb13d",
+  "channel": "stable",
+  "downloads": {
+    "linux64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.108/linux64/chrome-linux64.zip",
+    "mac-arm64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.108/mac-arm64/chrome-mac-arm64.zip",
+    "mac-x64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.108/mac-x64/chrome-mac-x64.zip",
+    "win64": "https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.108/win64/chrome-win64.zip"
+  },
+  "executableSha256": {
+    "win64": "9df270f0a9fec0fd112db53ac824ff497e1c2d9bbcefd64b48c2d5eb8661736a"
+  },
+  "revision": "1654411",
+  "version": "151.0.7922.108"
+}

@@ -1483,6 +1483,17 @@ Level gains deterministically refill stamina/aether but not health and emit a de
 payoff event; Ironset start/end events make its bounded lifecycle presentable. All four
 active and both knack slots are available from level 2 as a level-derived rule with no
 additional saved state.
+The M3.5 exit follow-through adds a game-owned `m35-gameplay-slice@1` regression
+scenario without making the engine aware of game content. The app registers the frozen
+version/seed/tick/command-log definition through the generic telemetry export; the
+harness retrieves it by ID and sends its ordinary serializable commands through the
+existing replay service. Every core smoke launch runs the 8,000-tick slice twice,
+requires equal state hashes and save bytes, then loads and re-saves the result through
+the live simulation worker. Exact semantic counters prove three monster defeats and
+loot awards, vendor inputs, one craft, level 3, and two completed multi-objective quests
+before the probe restores the pre-scenario live save. The scenario is correctness
+evidence rather than a performance workload; the existing deterministic 120-tick
+character/crowd sample remains the simulation-step budget authority.
 D-143 identified no application-facing frame transaction or attributed presentation
 primitive between the DOM overlay and worker-owned WebGPU canvas; RE-047 keeps the
 request open without claiming an exhaustive Chrome capability audit.

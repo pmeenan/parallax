@@ -48,6 +48,7 @@ import {
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
   M3_HYBRID_UI_DOM_LABELS,
+  M35_GAMEPLAY_SLICE_SCENARIO,
 } from "@parallax/game";
 import { runBenchmarkUiAction } from "./benchmark-ui-action";
 import { preflightInstalledRuntime } from "./installed-runtime-preflight";
@@ -324,6 +325,8 @@ async function bootRuntimeAttempt(
       engineVersion: identity.engine.version,
       gameVersion: identity.version,
     },
+    globalThis,
+    [M35_GAMEPLAY_SLICE_SCENARIO],
   );
   registerFailureCleanup(() => telemetryExport.dispose());
   const streamingDashboard = document.querySelector("#streaming-dashboard");

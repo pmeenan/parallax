@@ -146,6 +146,14 @@ export interface SimulationReplayResult {
   readonly tick: number;
 }
 
+export interface SimulationScenarioDefinition {
+  readonly commands: readonly SimulationCommand[];
+  readonly id: string;
+  readonly seed: number;
+  readonly ticks: number;
+  readonly version: number;
+}
+
 export type SimulationWorkerRequest =
   | Readonly<{ readonly kind: "command"; readonly command: SimulationCommand }>
   | Readonly<{ readonly kind: "dispose" }>

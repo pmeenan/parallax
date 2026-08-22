@@ -65,6 +65,30 @@ interface SimulationGameplayEvidence {
   readonly saveLoadReloadedStateHash: string;
   readonly saveLoadStateHash: string;
   readonly stepDurationHighWaterMs: number;
+  readonly m35Exit: Readonly<{
+    readonly adapterInitializationHighWaterMs: number;
+    readonly combatMonstersDefeated: number;
+    readonly commandCount: number;
+    readonly finalSaveBytes: number;
+    readonly finalStateHash: string;
+    readonly itemBuyCount: number;
+    readonly itemCraftCount: number;
+    readonly itemLootAwardCount: number;
+    readonly loadedStateHash: string;
+    readonly progressionLevel: number;
+    readonly questAcceptedCount: number;
+    readonly questCompletedCount: number;
+    readonly questObjectiveProgressCount: number;
+    readonly questStageCompletionCount: number;
+    readonly replayBytesMatch: true;
+    readonly replayHashMatch: true;
+    readonly reloadedStateHash: string;
+    readonly scenarioId: string;
+    readonly scenarioSeed: number;
+    readonly scenarioVersion: number;
+    readonly stepDurationHighWaterMs: number;
+    readonly tick: number;
+  }>;
   readonly m3Exit: Readonly<{
     readonly dialogRequestCountBefore: number;
     readonly dialogRequestCount: number;
@@ -1377,6 +1401,73 @@ function requireSimulationGameplayEvidence(
     evidence.replayTick !== 120
   ) {
     invalidReport(`${path} has invalid replay/save-load evidence`);
+  }
+  requireRecord(evidence.m35Exit, `${path}.m35Exit`);
+  for (const field of [
+    "adapterInitializationHighWaterMs",
+    "combatMonstersDefeated",
+    "commandCount",
+    "finalSaveBytes",
+    "itemBuyCount",
+    "itemCraftCount",
+    "itemLootAwardCount",
+    "progressionLevel",
+    "questAcceptedCount",
+    "questCompletedCount",
+    "questObjectiveProgressCount",
+    "questStageCompletionCount",
+    "scenarioSeed",
+    "scenarioVersion",
+    "stepDurationHighWaterMs",
+    "tick",
+  ] as const) {
+    requireFiniteNonnegative(evidence.m35Exit[field], `${path}.m35Exit.${field}`);
+  }
+  for (const field of [
+    "combatMonstersDefeated",
+    "commandCount",
+    "finalSaveBytes",
+    "itemBuyCount",
+    "itemCraftCount",
+    "itemLootAwardCount",
+    "progressionLevel",
+    "questAcceptedCount",
+    "questCompletedCount",
+    "questObjectiveProgressCount",
+    "questStageCompletionCount",
+    "scenarioSeed",
+    "scenarioVersion",
+    "tick",
+  ] as const) {
+    if (!Number.isSafeInteger(evidence.m35Exit[field])) {
+      invalidReport(`${path}.m35Exit.${field} must be a safe integer`);
+    }
+  }
+  requireSha256(evidence.m35Exit.finalStateHash, `${path}.m35Exit.finalStateHash`);
+  requireSha256(evidence.m35Exit.loadedStateHash, `${path}.m35Exit.loadedStateHash`);
+  requireSha256(evidence.m35Exit.reloadedStateHash, `${path}.m35Exit.reloadedStateHash`);
+  if (
+    evidence.m35Exit.scenarioId !== "m35-gameplay-slice@1" ||
+    evidence.m35Exit.scenarioVersion !== 1 ||
+    evidence.m35Exit.scenarioSeed !== 424_242 ||
+    evidence.m35Exit.tick !== 8_000 ||
+    evidence.m35Exit.commandCount !== 34 ||
+    evidence.m35Exit.finalSaveBytes <= 64 ||
+    evidence.m35Exit.replayBytesMatch !== true ||
+    evidence.m35Exit.replayHashMatch !== true ||
+    evidence.m35Exit.loadedStateHash !== evidence.m35Exit.finalStateHash ||
+    evidence.m35Exit.reloadedStateHash !== evidence.m35Exit.finalStateHash ||
+    evidence.m35Exit.combatMonstersDefeated !== 3 ||
+    evidence.m35Exit.itemBuyCount !== 3 ||
+    evidence.m35Exit.itemCraftCount !== 1 ||
+    evidence.m35Exit.itemLootAwardCount !== 3 ||
+    evidence.m35Exit.progressionLevel !== 3 ||
+    evidence.m35Exit.questAcceptedCount !== 2 ||
+    evidence.m35Exit.questCompletedCount !== 2 ||
+    evidence.m35Exit.questObjectiveProgressCount !== 5 ||
+    evidence.m35Exit.questStageCompletionCount !== 2
+  ) {
+    invalidReport(`${path}.m35Exit has invalid end-to-end gameplay evidence`);
   }
   requireRecord(evidence.m3Exit, `${path}.m3Exit`);
   for (const field of [

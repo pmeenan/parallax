@@ -12,14 +12,14 @@ reproducible baseline; a periodic parity smoke run on it guards against divergen
 "Same version" across platforms = same milestone + V8 revision. Canary is permitted
 only when testing Chrome-side changes and is always labeled as such (D-019).
 
-The current automation pin is Chrome for Testing **151.0.7922.108**, revision
-**1654411** (`harness/chrome/stable.json`, selected 2026-08-09 at the M3-exit
+The current automation pin is Chrome for Testing **152.0.7977.54**, revision
+**1669021** (`harness/chrome/stable.json`, selected 2026-08-22 at the M3.5-exit
 dependency checkpoint). Its archived win64
 executable SHA-256 is
-`9df270f0a9fec0fd112db53ac824ff497e1c2d9bbcefd64b48c2d5eb8661736a`.
-The preceding 151.0.7922.71 and transition 151.0.7922.34 binaries remain reconstruction
-anchors with checked-in descriptors. Archived binaries are machine-local and are not
-checked into this repository.
+`b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4`.
+The preceding 151.0.7922.108, 151.0.7922.71, and transition 151.0.7922.34 binaries
+remain reconstruction anchors with checked-in descriptors. Archived binaries are
+machine-local and are not checked into this repository.
 
 ## dev-01 — primary dev machine; Showcase-tier gate and calibration reference
 

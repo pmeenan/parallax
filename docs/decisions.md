@@ -28,6 +28,76 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-173: Close M3.5 with a game-owned deterministic scenario and adopt Chrome 152 (2026-08-22, accepted)
+
+**Decision:** M3.5 is complete. Its exit contract is the game-owned, versioned
+`m35-gameplay-slice@1` scenario: seed 424242, 8,000 ticks, and 34 ordinary simulation
+commands that accept two quests, defeat and loot three burrow gnawers, buy two fish and
+one bittergreen, craft fisher's stew, reach level 3, and complete both multi-objective
+quests. Engine telemetry exposes a generic immutable scenario registry; it does not
+import or name game content. The app registers the game definition, and every core
+`smoke@1` launch retrieves it through that generic seam, replays it twice, requires
+byte-identical saves and hashes, loads and re-saves it through the live simulation
+worker, validates its exact semantic counters, and restores the pre-probe state. The
+report contract advances to schema v72 / mandatory metric set v35. Public telemetry
+snapshot schema remains v43 because its payload did not change.
+
+Adopt CfT Stable 152.0.7977.54, revision 1669021, as the current harness browser and
+retain 151.0.7922.108 as a checked-in reconstruction anchor. The win64 152 archive and
+executable SHA-256 are
+`91850065e6b80bba0c752e17a150fe1b9e39bba51ed705640c1273f565950dda` and
+`b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4`;
+CDP reports `Chrome/152.0.7977.54` at
+`@24072c1aa400ec4a89dc738b6b6acd12a8589b6f`. This transition satisfies the full
+M3.5-exit / M4-entry currency checkpoint. Other available runtime and build-tool
+candidates remain deferred to their isolated component-family gates in
+`dependencies.md`; no budget or accepted threshold changes.
+
+**Context:** The prior short replay proved simulation determinism but did not execute
+the complete gameplay promise added during M3.5. A game-authored command log makes the
+exit content reviewable and repeatable without leaking gameplay knowledge into the
+engine or giving the harness privileged mutation access. During the exit run the
+official Chrome-for-Testing feed advanced from 151 to 152. Parallax's latest-Chrome
+constraint required qualifying the new Stable rather than silently closing on the old
+pin. D-154 already defines the three-fresh/three-warm streaming relative-range result as
+informational; the 152 result's small relative-range noise remained inside the mandatory
+absolute allowance, while every per-launch 250 ms streaming budget and all other
+mandatory checks passed.
+
+**Consequences:** The scenario becomes recurring smoke correctness evidence, not a
+performance workload: its own duration is observed, while the existing 120-tick sample
+remains the simulation performance gate. A scenario change requires a new scenario ID
+or version and corresponding exact outcomes rather than silently rewriting accepted
+M3.5 evidence. Chrome 152 is the default physical harness input; 151.0.7922.108 remains
+available only for reconstruction and transition comparisons. M4 remains pending even
+though its entry dependency checkpoint is satisfied.
+
+**Implementation evidence:** Final `pnpm check` passed the repeatable production build,
+lint, 202 test files, and 2,568 tests (one skipped). The exact build artifact is
+`c7054f88eb10976bce076be4819f994be2b2624b5067913d587261ae857be279` and the install
+release is
+`15528289e8b0fca4a6e5d2eaa39281814c5f0648311176c94d31c574bce690f3`.
+Every direct and physical scenario replay/save/load converged on
+`8548ffcd21d3217d5fb7643391647a53771e71d6f123a161eda534c238d3b59e`.
+The old-pin report
+`smoke-1-c7054f88eb10-dev-01-showcase-2026-08-22T23-18-27-097Z.{json,md}`
+passed schema v72 / metric set v35, all six launches, all three facets, and 36/36
+checks; JSON/Markdown SHA-256 are
+`d39501914092df62a6cbfc72bb51c1af618bf99426715473ffe3af5444babed7` /
+`1cb881ffe807c766556bfdf98662df77581d9675c9ba9811a77952b6cbda7979`.
+The adopted-152 report
+`smoke-1-c7054f88eb10-dev-01-showcase-2026-08-22T23-28-14-949Z.{json,md}`
+passed the same complete contract; JSON/Markdown SHA-256 are
+`41a50d66aed751725dd7f3cdffa0bad12ff4890b6fedfbbfcb8641cc6302c185` /
+`fbe384171c3a94648ab8f13f8af3252fc740e578b1139e876d293a5d64706ff8`.
+Its ordinary simulation-step high-water was 0.740 ms.
+
+**Reopen if:** M3.5 content or exact outcomes change; the scenario cannot be expressed
+through ordinary commands; a game-specific dependency enters engine telemetry; replay,
+save bytes, live-worker round-trip, or semantic counters diverge; Chrome 152 is withdrawn
+or a relevant regression/advisory appears; or a later milestone needs a different
+performance workload.
+
 ## D-172: Present gameplay systems through the hybrid UI and make level-up payoff explicit (2026-08-22, accepted)
 
 **Decision:** Consume the canonical inventory, crafting, progression, loadout, quest,

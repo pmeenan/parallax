@@ -245,7 +245,7 @@ parity JSON/Markdown SHA-256 are
 Real inventory/journal/settings screens remain consumer work; semantic lore retrieval,
 episodic memory, and cross-machine replay remain build-later.
 
-## M3.5 — Gameplay systems  `in progress`
+## M3.5 — Gameplay systems  `complete`
 
 The mechanics that make the slice a game (D-141): game-design.md promises D&D-tradition
 combat, magic, monsters, progression, crafting, and quests, and vision.md's bar is "no
@@ -454,12 +454,33 @@ game-design.md — not invented ad hoc inside each system.
       `0d8ecd043341d73a5c474fd8facf14827b0ab43b420ff929dc5b2efb5106b81c`.
       Every replay/save/load hash matched and the combined simulation-step high-water
       was 0.795 ms. D-119 makes this exact evidence-only closure non-triggering.
-- [ ] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
+- [x] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
       multi-step quest end-to-end; all new state survives save/reload and hash-matches
       under the deterministic same-host dev-01 replay check; the harness gains
       gameplay-scenario coverage (extend the flythrough or add a scripted combat
       scenario — extending the harness is part of the task). Cross-machine comparison
       is advisory research, not an exit gate (D-150).
+      *Complete under D-173. The game-owned, versioned
+      `m35-gameplay-slice@1` scenario drives an 8,000-tick / 34-command ordinary-input
+      loop through three monster defeats and loot awards, three purchases, one meal
+      craft, level 3, and two accepted and completed multi-objective quests. Direct
+      replay tests and every physical core launch replayed it twice, required
+      byte-identical saves, loaded/re-saved it through the live worker, and converged on
+      `8548ffcd21d3217d5fb7643391647a53771e71d6f123a161eda534c238d3b59e`.
+      Final `pnpm check` passed the repeatable production build, lint, and 202 test
+      files / 2,568 tests (one skipped) for exact build artifact
+      `c7054f88eb10976bce076be4819f994be2b2624b5067913d587261ae857be279`
+      and install release
+      `15528289e8b0fca4a6e5d2eaa39281814c5f0648311176c94d31c574bce690f3`.
+      The required dev-01/Showcase physical smoke on adopted CfT 152.0.7977.54,
+      `smoke-1-c7054f88eb10-dev-01-showcase-2026-08-22T23-28-14-949Z.{json,md}`,
+      passed schema v72 / mandatory metric set v35, all six launches, all three
+      facets, and 36/36 checks. JSON/Markdown SHA-256 are
+      `41a50d66aed751725dd7f3cdffa0bad12ff4890b6fedfbbfcb8641cc6302c185` /
+      `fbe384171c3a94648ab8f13f8af3252fc740e578b1139e876d293a5d64706ff8`;
+      the ordinary simulation-step high-water was 0.740 ms. The exact same
+      artifact also passed on retained CfT 151.0.7922.108 before the current-Stable
+      transition. D-119 makes this evidence-only closure non-triggering.*
 
 ## M4 — District 2 (catacombs) + hard transitions  `pending`
 

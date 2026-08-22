@@ -416,6 +416,11 @@ const M3_EXIT_NPC_NAME = "Mara Venn";
 const M3_EXIT_PLAYER_QUESTION = "Is the road safe?";
 const M3_EXIT_RETRIEVED_FALLBACK =
   "The east road leaves the village through the east gate and follows the marked landward path.";
+const M35_EXIT_SCENARIO_ID = "m35-gameplay-slice@1";
+const M35_EXIT_SCENARIO_COMMAND_COUNT = 34;
+const M35_EXIT_SCENARIO_VERSION = 1;
+const M35_EXIT_SCENARIO_SEED = 424_242;
+const M35_EXIT_SCENARIO_TICKS = 8_000;
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await main();
@@ -2114,6 +2119,22 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
     const liveSave = await telemetry.saveSimulation();
     const liveLoaded = await telemetry.loadSimulation(liveSave);
     const liveReloaded = await telemetry.loadSimulation(liveSave);
+    const scenario = telemetry.simulationScenario("m35-gameplay-slice@1");
+    const scenarioFirst = await telemetry.replaySimulation(
+      scenario.commands,
+      scenario.ticks,
+      scenario.seed,
+    );
+    const scenarioSecond = await telemetry.replaySimulation(
+      scenario.commands,
+      scenario.ticks,
+      scenario.seed,
+    );
+    const scenarioLoaded = await telemetry.loadSimulation(scenarioFirst.finalSave);
+    const scenarioLiveSave = await telemetry.saveSimulation();
+    const scenarioReloaded = await telemetry.loadSimulation(scenarioLiveSave);
+    const scenarioLiveCounters = telemetry.snapshot().simulation.gameCounters;
+    const restored = await telemetry.loadSimulation(liveSave);
     return {
       adapterInitializationHighWaterMs: Math.max(
         first.adapterInitializationDurationMs,
@@ -2131,6 +2152,38 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
       liveReloadedStateHash: liveReloaded.stateHash,
       loadedStateHash: loaded.stateHash,
       secondStateHash: second.finalStateHash,
+      scenario: {
+        adapterInitializationHighWaterMs: Math.max(
+          scenarioFirst.adapterInitializationDurationMs,
+          scenarioSecond.adapterInitializationDurationMs,
+        ),
+        bytesMatch:
+          scenarioFirst.finalSave.length === scenarioSecond.finalSave.length &&
+          scenarioFirst.finalSave.every(
+            (value, index) => scenarioSecond.finalSave[index] === value,
+          ),
+        commandCount: scenario.commands.length,
+        finalSaveBytes: scenarioFirst.finalSave.byteLength,
+        finalStateHash: scenarioFirst.finalStateHash,
+        gameCounters: scenarioFirst.gameCounters,
+        hashMatch: scenarioFirst.finalStateHash === scenarioSecond.finalStateHash,
+        id: scenario.id,
+        liveCounters: scenarioLiveCounters,
+        liveSaveBytesMatch:
+          scenarioFirst.finalSave.length === scenarioLiveSave.length &&
+          scenarioFirst.finalSave.every((value, index) => scenarioLiveSave[index] === value),
+        loadedStateHash: scenarioLoaded.stateHash,
+        reloadedStateHash: scenarioReloaded.stateHash,
+        restoredStateHash: restored.stateHash,
+        secondStateHash: scenarioSecond.finalStateHash,
+        seed: scenario.seed,
+        stepDurationHighWaterMs: Math.max(
+          scenarioFirst.stepDurationHighWaterMs,
+          scenarioSecond.stepDurationHighWaterMs,
+        ),
+        tick: scenarioFirst.tick,
+        version: scenario.version,
+      },
       tick: first.tick,
       stepDurationHighWaterMs: Math.max(
         first.stepDurationHighWaterMs,
@@ -2183,6 +2236,43 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
       `Simulation determinism/save-load verification failed: ${JSON.stringify(evidence)}`,
     );
   }
+  const scenario = evidence.scenario;
+  const expectedScenarioCounters = {
+    combatMonstersDefeated: 3,
+    itemBuyCount: 3,
+    itemCraftCount: 1,
+    itemLootAwardCount: 3,
+    progressionLevel: 3,
+    questAcceptedCount: 2,
+    questCompletedCount: 2,
+    questObjectiveProgressCount: 5,
+    questStageCompletionCount: 2,
+  } as const;
+  if (
+    scenario.id !== M35_EXIT_SCENARIO_ID ||
+    scenario.version !== M35_EXIT_SCENARIO_VERSION ||
+    scenario.seed !== M35_EXIT_SCENARIO_SEED ||
+    scenario.tick !== M35_EXIT_SCENARIO_TICKS ||
+    scenario.commandCount !== M35_EXIT_SCENARIO_COMMAND_COUNT ||
+    !scenario.hashMatch ||
+    !scenario.bytesMatch ||
+    !scenario.liveSaveBytesMatch ||
+    scenario.loadedStateHash !== scenario.finalStateHash ||
+    scenario.reloadedStateHash !== scenario.finalStateHash ||
+    scenario.restoredStateHash !== evidence.liveLoadedStateHash ||
+    !/^[a-f0-9]{64}$/.test(scenario.finalStateHash) ||
+    scenario.finalSaveBytes <= 64 ||
+    !Number.isFinite(scenario.adapterInitializationHighWaterMs) ||
+    scenario.adapterInitializationHighWaterMs < 0 ||
+    !Number.isFinite(scenario.stepDurationHighWaterMs) ||
+    scenario.stepDurationHighWaterMs < 0 ||
+    Object.entries(expectedScenarioCounters).some(
+      ([key, expected]) =>
+        scenario.gameCounters[key] !== expected || scenario.liveCounters[key] !== expected,
+    )
+  ) {
+    throw new Error(`M3.5 gameplay-slice verification failed: ${JSON.stringify(scenario)}`);
+  }
   const m3Exit = await verifyM3PlayableLoop(page, evidence.liveSave, evidence.liveLoadedStateHash);
   return Object.freeze({
     adapterInitializationHighWaterMs: evidence.adapterInitializationHighWaterMs,
@@ -2208,6 +2298,30 @@ async function verifySimulationFoundation(page: Page): Promise<SimulationGamepla
     saveLoadReloadedStateHash: evidence.liveReloadedStateHash,
     saveLoadStateHash: evidence.liveLoadedStateHash,
     stepDurationHighWaterMs: evidence.stepDurationHighWaterMs,
+    m35Exit: Object.freeze({
+      adapterInitializationHighWaterMs: scenario.adapterInitializationHighWaterMs,
+      combatMonstersDefeated: scenario.gameCounters.combatMonstersDefeated ?? -1,
+      commandCount: scenario.commandCount,
+      finalSaveBytes: scenario.finalSaveBytes,
+      finalStateHash: scenario.finalStateHash,
+      itemBuyCount: scenario.gameCounters.itemBuyCount ?? -1,
+      itemCraftCount: scenario.gameCounters.itemCraftCount ?? -1,
+      itemLootAwardCount: scenario.gameCounters.itemLootAwardCount ?? -1,
+      loadedStateHash: scenario.loadedStateHash,
+      progressionLevel: scenario.gameCounters.progressionLevel ?? -1,
+      questAcceptedCount: scenario.gameCounters.questAcceptedCount ?? -1,
+      questCompletedCount: scenario.gameCounters.questCompletedCount ?? -1,
+      questObjectiveProgressCount: scenario.gameCounters.questObjectiveProgressCount ?? -1,
+      questStageCompletionCount: scenario.gameCounters.questStageCompletionCount ?? -1,
+      replayBytesMatch: true,
+      replayHashMatch: true,
+      reloadedStateHash: scenario.reloadedStateHash,
+      scenarioId: scenario.id,
+      scenarioSeed: scenario.seed,
+      scenarioVersion: scenario.version,
+      stepDurationHighWaterMs: scenario.stepDurationHighWaterMs,
+      tick: scenario.tick,
+    }),
     m3Exit,
   });
 }
@@ -2471,7 +2585,33 @@ interface SimulationGameplayEvidence {
   readonly saveLoadReloadedStateHash: string;
   readonly saveLoadStateHash: string;
   readonly stepDurationHighWaterMs: number;
+  readonly m35Exit: M35GameplaySliceEvidence;
   readonly m3Exit: M3PlayableLoopEvidence;
+}
+
+interface M35GameplaySliceEvidence {
+  readonly adapterInitializationHighWaterMs: number;
+  readonly combatMonstersDefeated: number;
+  readonly commandCount: number;
+  readonly finalSaveBytes: number;
+  readonly finalStateHash: string;
+  readonly itemBuyCount: number;
+  readonly itemCraftCount: number;
+  readonly itemLootAwardCount: number;
+  readonly loadedStateHash: string;
+  readonly progressionLevel: number;
+  readonly questAcceptedCount: number;
+  readonly questCompletedCount: number;
+  readonly questObjectiveProgressCount: number;
+  readonly questStageCompletionCount: number;
+  readonly replayBytesMatch: true;
+  readonly replayHashMatch: true;
+  readonly reloadedStateHash: string;
+  readonly scenarioId: string;
+  readonly scenarioSeed: number;
+  readonly scenarioVersion: number;
+  readonly stepDurationHighWaterMs: number;
+  readonly tick: number;
 }
 
 interface M3PlayableLoopEvidence {
@@ -2835,7 +2975,8 @@ function formatReport(report: SmokeReport): string {
   const simulationEvidence = report.runs.map((run) => {
     const evidence = run.simulationController.value;
     const exit = evidence.m3Exit;
-    return `- ${run.profile} repeat ${run.repeat}: 120-tick replay hashes \`${evidence.replayFinalStateHash}\` / \`${evidence.replaySecondStateHash}\`, loaded \`${evidence.replayLoadedStateHash}\` (match ${evidence.replayHashMatch}); live save/load hashes \`${evidence.saveLoadStateHash}\` / \`${evidence.saveLoadReloadedStateHash}\` (match ${evidence.saveLoadHashMatch}); ${exit.positioningReplayTick}-tick positioning replay/load SHA-256 \`${exit.positioningReplayStateHash}\`; ordinary input presses ${exit.gameplayInteractionPressCountBefore}→${exit.gameplayInteractionPressCount}; interacted with NPC ${exit.npcEntityId} (${exit.speaker}); installed model state ${exit.installedModelState}; question \`${exit.playerQuestion}\`; response \`${exit.response}\`; dialog requests ${exit.dialogRequestCountBefore}→${exit.dialogRequestCount}; knowledge requests ${exit.knowledgeRequestCountBefore}→${exit.knowledgeRequestCount}; retrieved entries ${exit.knowledgeEntryCountBefore}→${exit.knowledgeEntryCount}; retrieved-state authored fallback ${exit.responseUsedRetrievedState ? "verified" : "failed"}; character+crowd step high water ${formatMilliseconds(evidence.stepDurationHighWaterMs)}`;
+    const slice = evidence.m35Exit;
+    return `- ${run.profile} repeat ${run.repeat}: 120-tick replay hashes \`${evidence.replayFinalStateHash}\` / \`${evidence.replaySecondStateHash}\`, loaded \`${evidence.replayLoadedStateHash}\` (match ${evidence.replayHashMatch}); live save/load hashes \`${evidence.saveLoadStateHash}\` / \`${evidence.saveLoadReloadedStateHash}\` (match ${evidence.saveLoadHashMatch}); M3.5 \`${slice.scenarioId}\` v${slice.scenarioVersion} replay/load/reload SHA-256 \`${slice.finalStateHash}\` / \`${slice.loadedStateHash}\` / \`${slice.reloadedStateHash}\` (hash match ${slice.replayHashMatch}, bytes match ${slice.replayBytesMatch}), ${slice.combatMonstersDefeated} defeated, ${slice.itemLootAwardCount} loot awards, ${slice.itemCraftCount} craft, level ${slice.progressionLevel}, ${slice.questCompletedCount}/${slice.questAcceptedCount} quests and ${slice.questObjectiveProgressCount} objective progress events; ${exit.positioningReplayTick}-tick positioning replay/load SHA-256 \`${exit.positioningReplayStateHash}\`; ordinary input presses ${exit.gameplayInteractionPressCountBefore}→${exit.gameplayInteractionPressCount}; interacted with NPC ${exit.npcEntityId} (${exit.speaker}); installed model state ${exit.installedModelState}; question \`${exit.playerQuestion}\`; response \`${exit.response}\`; dialog requests ${exit.dialogRequestCountBefore}→${exit.dialogRequestCount}; knowledge requests ${exit.knowledgeRequestCountBefore}→${exit.knowledgeRequestCount}; retrieved entries ${exit.knowledgeEntryCountBefore}→${exit.knowledgeEntryCount}; retrieved-state authored fallback ${exit.responseUsedRetrievedState ? "verified" : "failed"}; character+crowd step high water ${formatMilliseconds(evidence.stepDurationHighWaterMs)}`;
   });
   const lines = [
     `# Parallax ${report.scenario}`,

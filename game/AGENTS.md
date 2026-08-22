@@ -34,7 +34,9 @@ game/
                validated save-schema-v9 one-time named-landmark discovery, versioned
                nominal XP awards, and shared progression XP; D-171 adds the six-stage
                main arc, eight side quests, validated quest intents, preparation hooks,
-               and the append-only save-schema-v10 journal
+               and the append-only save-schema-v10 journal; the versioned M3.5 exit
+               scenario exercises fight/loot/trade/craft/level/quest through ordinary
+               commands and is registered with the generic engine replay seam
   npc/         ✅ persona cards, dialog schemas, rolling memory + fallback policy
   ui/          in-game UI only: HUD, menus, journal, inventory, dialog presentation
                (installer/updater/launcher screens belong to app/, per D-012)

@@ -118,6 +118,30 @@ function simulationGameplayEvidence() {
     saveLoadReloadedStateHash: "d".repeat(64),
     saveLoadStateHash: "d".repeat(64),
     stepDurationHighWaterMs: 0.25,
+    m35Exit: Object.freeze({
+      adapterInitializationHighWaterMs: 5,
+      combatMonstersDefeated: 3,
+      commandCount: 34,
+      finalSaveBytes: 10_000,
+      finalStateHash: "f".repeat(64),
+      itemBuyCount: 3,
+      itemCraftCount: 1,
+      itemLootAwardCount: 3,
+      loadedStateHash: "f".repeat(64),
+      progressionLevel: 3,
+      questAcceptedCount: 2,
+      questCompletedCount: 2,
+      questObjectiveProgressCount: 5,
+      questStageCompletionCount: 2,
+      replayBytesMatch: true as const,
+      replayHashMatch: true as const,
+      reloadedStateHash: "f".repeat(64),
+      scenarioId: "m35-gameplay-slice@1",
+      scenarioSeed: 424_242,
+      scenarioVersion: 1,
+      stepDurationHighWaterMs: 0.5,
+      tick: 8_000,
+    }),
     m3Exit: Object.freeze({
       dialogRequestCountBefore: 0,
       dialogRequestCount: 1,
@@ -1033,6 +1057,28 @@ describe("baseline result store", () => {
         ),
       }),
     ).toThrow(/invalid playable fallback evidence/);
+    expect(() =>
+      parseBaselineEligibleReport({
+        ...report(),
+        runs: report().runs.map((run, index) =>
+          index === 0
+            ? {
+                ...run,
+                simulationController: {
+                  state: "measured",
+                  value: {
+                    ...run.simulationController.value,
+                    m35Exit: {
+                      ...run.simulationController.value.m35Exit,
+                      questCompletedCount: 1,
+                    },
+                  },
+                },
+              }
+            : run,
+        ),
+      }),
+    ).toThrow(/invalid end-to-end gameplay evidence/);
     expect(() =>
       parseBaselineEligibleReport({
         ...report(),

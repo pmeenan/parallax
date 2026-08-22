@@ -28,7 +28,8 @@ budgets.md → pass/fail with a report.
   to gameplay, update-flow cache preservation.
 - **Streaming:** cell load latency distribution, queue depths/stalls, eviction events
   (emergency count must be zero), transition-contract measurements (D1↔D2).
-- **Sim:** determinism hash (same command log ⇒ same state hash), step-time distribution.
+- **Sim:** determinism hash (same command log ⇒ same state hash), save-byte and live
+  load/re-save identity, exact game-semantic outcome counters, step-time distribution.
 - **AI:** app-owned-model first-token/total latency, throughput, model
   install/cache evidence, structured/context behavior, and frame impact during generation.
 
@@ -39,8 +40,9 @@ short (each gap in observability is itself a rough-edges finding — log it).
 ## Run catalog (versioned contracts; deterministic by construction)
 
 - `pnpm harness:smoke` — boot to first interactive frame and collect the mandatory
-  budget snapshot. Run once for a converged candidate that can affect this scenario's
-  exercised/evaluated surface under D-157 and
+  budget snapshot, including the game-owned M3.5 fight-to-quest replay/load probe. Run
+  once for a converged candidate that can affect this scenario's exercised/evaluated
+  surface under D-157 and
   [the physical-gate cadence](../docs/workflow.md#validation-and-physical-gate-cadence).
 - `pnpm harness:smoke:v8-cache` — the smoke core plus the opt-in multi-lineage V8
   lifecycle diagnostic. Run only for browser, Node, bundler, serving/cache, lifecycle,

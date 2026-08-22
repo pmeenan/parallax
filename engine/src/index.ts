@@ -420,6 +420,7 @@ export type {
   SimulationPresentationEntity,
   SimulationPresentationSnapshot,
   SimulationReplayResult,
+  SimulationScenarioDefinition,
   SimulationSemanticEvent,
   SimulationStartOptions,
   SimulationState,

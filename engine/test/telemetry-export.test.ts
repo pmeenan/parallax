@@ -34,6 +34,7 @@ describe("combined telemetry export", () => {
       snapshot: () => renderOverride ?? baseRenderService.snapshot(),
     };
     const target = {};
+    const scenarioPayload = new Uint8Array([7]);
     const telemetry = installTelemetryExport(
       renderService,
       createAppOwnedLlmSpikeService(),
@@ -144,6 +145,17 @@ describe("combined telemetry export", () => {
         gameVersion: "test",
       },
       target,
+      [
+        {
+          commands: [
+            { kind: "test.command@1", payload: scenarioPayload, sequence: 0, targetTick: 1 },
+          ],
+          id: "test-scenario@1",
+          seed: 17,
+          ticks: 2,
+          version: 1,
+        },
+      ],
     );
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     let deliveries = 0;
@@ -209,6 +221,14 @@ describe("combined telemetry export", () => {
     expect(Reflect.get(target, "__PARALLAX_TELEMETRY__")).toBe(telemetry);
     expect(telemetry.npcDialogSnapshot()).toMatchObject({ state: "unavailable" });
     expect(telemetry.npcKnowledgeSnapshot()).toMatchObject({ providerCount: 0, state: "ready" });
+    scenarioPayload[0] = 9;
+    expect(telemetry.simulationScenario("test-scenario@1")).toMatchObject({
+      commands: [{ payload: new Uint8Array([7]) }],
+      seed: 17,
+      ticks: 2,
+      version: 1,
+    });
+    expect(() => telemetry.simulationScenario("missing@1")).toThrow(/unavailable/);
     telemetry.dispose();
     expect(Object.hasOwn(target, "__PARALLAX_TELEMETRY__")).toBe(false);
     consoleError.mockRestore();

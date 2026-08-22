@@ -75,7 +75,7 @@ describe("smoke Chrome pin selection", () => {
       join(repositoryRoot, "harness/chrome/stable.json"),
     );
     await expect(loadSmokeChromePin(repositoryRoot, {})).resolves.toMatchObject({
-      version: "151.0.7922.108",
+      version: "152.0.7977.54",
     });
   });
 
@@ -164,9 +164,12 @@ describe("smoke Chrome pin selection", () => {
 });
 
 describe("Chrome pin descriptor validation", () => {
-  it("accepts the stable descriptor and both checked-in anchors", async () => {
+  it("accepts the stable descriptor and all checked-in anchors", async () => {
     await expect(
       loadChromePin(join(repositoryRoot, "harness/chrome/stable.json")),
+    ).resolves.toMatchObject({ version: "152.0.7977.54" });
+    await expect(
+      loadChromePin(join(repositoryRoot, "harness/chrome/anchors/151.0.7922.108.json")),
     ).resolves.toMatchObject({ version: "151.0.7922.108" });
     await expect(
       loadChromePin(join(repositoryRoot, "harness/chrome/anchors/151.0.7922.71.json")),
