@@ -261,9 +261,31 @@ export function hybridUiWorkerActionAllowed(
   if (action.presentationRevision !== presentation.revision || screen?.visible !== true) {
     return false;
   }
-  if (action.actionId === screen.cancelActionId) return true;
+  return hybridUiScreenActionAllowed(action.actionId, screen);
+}
+
+export function hybridUiScreenActionAllowed(
+  actionId: string,
+  screen: NonNullable<HybridUiPresentation["heavyScreen"]>,
+): boolean {
+  if (actionId === screen.cancelActionId) return true;
   return screen.primitives.some(
-    (primitive) => primitive.actionId === action.actionId && !primitive.disabled,
+    (primitive) => primitive.actionId === actionId && !primitive.disabled,
+  );
+}
+
+// Two heavy screens accept the same action set exactly when their cancel action and
+// primitives (including per-primitive action IDs and disabled states, which the
+// presentation validator binds to the semantic bridge) are identical. HUD-only
+// presentation updates keep the heavy screen action-identical, so an in-flight worker
+// action pinned to the older revision still means the same thing against the newer one.
+export function hybridUiHeavyScreenActionEquivalent(
+  left: HybridUiPresentation["heavyScreen"],
+  right: HybridUiPresentation["heavyScreen"],
+): boolean {
+  if (left === null || right === null || !left.visible || !right.visible) return false;
+  return (
+    left.cancelActionId === right.cancelActionId && hybridUiHeavyScreenGeometryEqual(left, right)
   );
 }
 

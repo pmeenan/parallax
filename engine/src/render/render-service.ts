@@ -10,7 +10,9 @@ import {
   type HybridUiPresentation,
   type HybridUiWorkerInput,
   type HybridUiWorkerTelemetrySnapshot,
+  hybridUiHeavyScreenActionEquivalent,
   hybridUiHeavyScreenGeometryEqual,
+  hybridUiScreenActionAllowed,
   hybridUiWorkerActionAllowed,
   idleHybridUiWorkerTelemetry,
   requireHybridUiWorkerInput,
@@ -57,6 +59,7 @@ export type RenderRecoveryCause =
 
 interface PendingHybridUiInput {
   readonly expectedActionId: string | null;
+  readonly heavyScreen: HybridUiPresentation["heavyScreen"];
   readonly presentationRevision: number | null;
 }
 
@@ -772,8 +775,21 @@ export function createRenderService(): RenderService {
             return;
           }
           if (latestHybridUiPresentation === null) return;
-          if (action.presentationRevision < latestHybridUiPresentation.revision) return;
-          if (!hybridUiWorkerActionAllowed(action, latestHybridUiPresentation)) {
+          if (action.presentationRevision < latestHybridUiPresentation.revision) {
+            // Presentations published during the input round trip (HUD meters,
+            // messages) must not eat the activation: the pinned action stays valid
+            // exactly when the heavy screen it was hit-tested against is
+            // action-identical to the current one. A changed or closed screen still
+            // drops the stale action silently.
+            const latestScreen = latestHybridUiPresentation.heavyScreen;
+            if (
+              !hybridUiHeavyScreenActionEquivalent(pending.heavyScreen, latestScreen) ||
+              latestScreen === null ||
+              !hybridUiScreenActionAllowed(action.actionId, latestScreen)
+            ) {
+              return;
+            }
+          } else if (!hybridUiWorkerActionAllowed(action, latestHybridUiPresentation)) {
             recoverOrFail("worker-message", "Render worker returned a disallowed hybrid UI action");
             return;
           }
@@ -1132,6 +1148,7 @@ export function createRenderService(): RenderService {
       lastHybridUiInputSequence = input.sequence;
       pendingHybridUiInputs.set(input.sequence, {
         expectedActionId: expected.actionId,
+        heavyScreen: latestHybridUiPresentation?.heavyScreen ?? null,
         presentationRevision: latestHybridUiPresentation?.revision ?? null,
       });
       try {

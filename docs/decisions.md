@@ -28,6 +28,90 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-172: Present gameplay systems through the hybrid UI and make level-up payoff explicit (2026-08-22, accepted)
+
+**Decision:** Consume the canonical inventory, crafting, progression, loadout, quest,
+and journal state through D-161's hybrid UI rather than duplicating game authority in
+page state. `progression.snapshot@1` joins the existing inventory, quest, and journal
+queries and exposes the complete learned build, attributes, loadout, current-level XP,
+unspent choices, and a derived slot-access rule. Heavy-screen visuals and hit testing
+remain render-worker owned; the DOM HUD owns health, stamina, aether, current-level XP,
+unspent-choice warnings, concise screen text, and the sparse semantic action bridge.
+Every mutating control produces the existing fixed-size simulation command and refreshes
+from a later query/event; UI state never treats a click as authoritative success.
+Because HUD meters and messages revise the shared presentation continuously (regen,
+current-level XP, the Ironset countdown), the render service accepts a worker action
+pinned to an older presentation revision when the heavy screen it was hit-tested against
+is action-identical (same cancel action, primitives, action IDs, and disabled states) to
+the current one; a changed or closed screen still drops the stale action silently.
+Without that rule, HUD-only churn during the input round trip silently ate heavy-screen
+activations.
+
+Keep all four active and both knack slots available from level 2. This makes the
+classless build's full shape legible immediately, lets early ability choices be tried in
+any slot, and avoids saved unlock state. If slot staging is revisited, it must be derived
+from level. The deterministic level-up payoff refills stamina and aether, clears their
+fractional regeneration bookkeeping, and does not refill health. The sim publishes
+`progression.level-up-payoff` with the resulting level and pools for presentation.
+Ironset publishes `combat.ironset-started` and `combat.ironset-ended` (duration,
+stamina-exhaustion, or downed reason); the HUD shows its remaining duration and the
+planted +4-guard, stagger-immunity, half-movement trade-off.
+
+**Context:** D-167, D-168, and D-171 deliberately stopped at deterministic systems,
+commands, and queryable state. D-161 supplied only the shared presentation substrate.
+The first real consumers therefore had to preserve worker authority while making
+unspent choices, crafting results, quest history, and Ironset's otherwise invisible
+movement trade-off understandable. A full health refill made attrition disappear at
+the exact moment XP rewards should encourage continuing; stamina/aether refill gives an
+immediate offensive payoff while leaving damage meaningful. Staging empty slots did not
+improve the level-2 choice set and added rules without adding build depth.
+
+**Consequences:** `I`, `P`, and `J` toggle inventory/crafting, progression/loadout, and
+quest/journal screens. Accessible screen actions share the worker action contract and
+keyboard/pointer validation. The HUD updates only when its typed status changes, and all
+new sim state remains covered by the existing save/replay hash because the payoff changes
+canonical combat pools but adds no saved field or schema version. UI copy and layouts are
+game-owned placeholder presentation; M5/M6 can replace their greybox visual treatment
+without changing command/query authority.
+
+**Implementation evidence:** The pre-review candidate's `pnpm check` passed 201 test
+files / 2,566 tests (one skipped), including worker-action/query integration, level-up
+payoff, slot access, Ironset lifecycle, HUD/heavy-screen, landmark-XP, save/load, and
+replay coverage; its exact build artifact was
+`946a3c9fa33b2a504c81fb7b608833a8ed1c51a10a7eeb347b99eaf30d2f883a` with install
+release `69e55ae8c500e814f50019404fbc5e13b01bb574aa1c8d66ede038ddd57a1529`.
+Physical-console `smoke@1` on dev-01 Showcase for that artifact passed schema 71, all
+three facets, and 36/36 checks across six launches with no blocking failures. The exact
+report is
+`smoke-1-946a3c9fa33b-dev-01-showcase-2026-08-22T21-32-13-649Z.{json,md}`; JSON and
+Markdown SHA-256 are
+`aae5f774adc44fb2df6666e21a59ee0bc81e9d4b8c37d5b856319d5f550a1d95` and
+`117682679c0008fd420c400ffef507f8e3ba07aab4298c1eb5c5ff807be785d3`.
+On-demand review then corrected two findings — heavy-screen actions were silently
+dropped whenever a HUD-only presentation landed during the input round trip (fixed by
+the action-identical acceptance rule above, in the render service and the gameplay UI
+controller), and the HUD hard-coded Ironset duration/trade-off numbers and the level
+cap instead of reading `IRONSET_STANCE` and `PROGRESSION_LEVEL_CAP`. The corrected
+candidate's `pnpm check` passed 201 test files / 2,567 tests (one skipped), including
+new engine and controller regression tests for the churn-drop mechanism. Its exact
+build artifact is
+`1b55b0b31a77bb2db6a6af1327fc6137941f8e3162dd862fd3f792abb9d2593f`; its install
+release is `fbc5f4f15aaab6bd6ca4352f4d19fee1477a05199f8cd70200afff09ec03d325`,
+with unchanged 266-resource / 2,621,468,856-byte OPFS identity
+`70cfaf8dee37bedd834413b079c602223ad1724300dd5d41788237c732a06742` and replay
+semantic-contract digest
+`367762458e077a9ea07aab34f9034ad00cf34474904ae37596bf944251807b17`. The corrected
+candidate touches the smoke-exercised hybrid UI substrate, so its one converged
+physical `smoke@1` on dev-01 is required and pending.
+
+**Reopen if:** representative playtesting shows the no-health payoff causes unavoidable
+post-level defeat or the resource refill erases encounter pressure; empty level-2 slots
+confuse players more than they invite experimentation; the 16-action sparse bridge or
+256-primitive pool cannot express representative final screens; or a new screen action
+cannot be represented by an existing deterministic command/query boundary.
+
+---
+
 ## D-171: Make quests and the journal canonical deterministic simulation state (2026-08-16, accepted)
 
 **Decision:** Implement ruleset-v2 quests as stable, game-owned data interpreted by a

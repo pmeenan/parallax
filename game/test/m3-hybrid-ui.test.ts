@@ -8,7 +8,9 @@ describe("M3 hybrid UI model", () => {
     const initial = model.snapshot();
 
     expect(initial.revision).toBe(0);
-    expect(initial.hud.messages).toEqual(["WASD to move · mouse to look · E to interact"]);
+    expect(initial.hud.messages).toEqual([
+      "WASD move · mouse look · E interact · I inventory/craft · P progression · J journal",
+    ]);
     expect(initial.worldAnchors).toEqual([
       {
         id: "transition-anchor:gate",
@@ -33,6 +35,60 @@ describe("M3 hybrid UI model", () => {
       }),
     ).toMatchObject({ dialog: { speaker: "Mara Venn", visible: true }, revision: 2 });
     expect(model.closeDialog()).toMatchObject({ dialog: { visible: false }, revision: 3 });
+  });
+
+  it("presents progression feel in the DOM HUD and worker-owned heavy screen", () => {
+    const model = createM3HybridUiModel(world());
+    const hud = model.updateHud({
+      aether: 20,
+      experienceForNextLevel: 200,
+      experienceIntoLevel: 75,
+      health: 70,
+      ironsetTicks: 120,
+      level: 2,
+      levelCap: 10,
+      maxAether: 40,
+      maxHealth: 80,
+      maxStamina: 100,
+      stamina: 60,
+      unspentAbilityPicks: 1,
+      unspentAttributePoints: 1,
+    });
+    expect(hud?.hud.meters.map((meter) => meter.id)).toEqual([
+      "health",
+      "stamina",
+      "aether",
+      "experience",
+      "ironset",
+    ]);
+    expect(hud?.hud.messages).toContain("UNSPENT · 1 attribute · 1 ability");
+    expect(hud?.hud.messages).toContain(
+      "IRONSET PLANTED · +4 guard · stagger immune · ×1/2 movement",
+    );
+    expect(hud?.hud.meters.find((meter) => meter.id === "ironset")).toMatchObject({
+      maximum: 240,
+      value: 120,
+    });
+
+    const screen = model.showScreen({
+      actions: Object.freeze([
+        Object.freeze({
+          actionId: "progression:spend:might",
+          disabled: false,
+          label: "Raise Might",
+        }),
+      ]),
+      id: "progression",
+      lines: Object.freeze(["All slots available from level 2."]),
+    });
+    expect(screen.heavyScreen).toMatchObject({
+      cancelActionId: "screen:close",
+      focusActionId: "progression:spend:might",
+      id: "progression",
+      visible: true,
+    });
+    expect(screen.hud.messages).toContain("All slots available from level 2.");
+    expect(model.closeScreen().heavyScreen).toBeNull();
   });
 });
 

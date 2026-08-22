@@ -10,12 +10,15 @@ import {
   PROGRESSION_ACTIVE_SLOT_COUNT,
   PROGRESSION_KNACK_SLOT_COUNT,
   PROGRESSION_LEVEL_CAP,
+  PROGRESSION_LEVEL_UP_PAYOFF,
   type ProgressionAbilityId,
   type ProgressionAbilityKind,
   type ProgressionAttributeId,
   progressionAbilityIndex,
+  progressionSlotAvailable,
 } from "../balance/progression";
 import { lowBitsMask } from "./bitmask";
+import type { CombatantCombatState, CombatantSheet } from "./combat-core";
 import type { ItemCombatBonuses } from "./items";
 
 export const PROGRESSION_STATE_BYTES = 96;
@@ -132,7 +135,7 @@ export function equipAbility(
   abilityId: ProgressionAbilityId | null,
 ): ProgressionState {
   const slots = kind === "active" ? state.activeSlots : state.knackSlots;
-  if (!Number.isSafeInteger(slot) || slot < 0 || slot >= slots.length) return state;
+  if (!progressionSlotAvailable(kind, slot, state.level) || slot >= slots.length) return state;
   if (abilityId !== null) {
     const definition = PROGRESSION_ABILITIES[progressionAbilityIndex(abilityId)];
     if (definition?.kind !== kind || !state.learnedAbilities.includes(abilityId)) return state;
@@ -150,6 +153,26 @@ export function equipAbility(
       ? { activeSlots: Object.freeze(nextSlots) }
       : { knackSlots: Object.freeze(nextSlots) }),
     loadoutChangeCount: state.loadoutChangeCount + 1,
+  });
+}
+
+export function applyLevelUpPayoff(
+  state: CombatantCombatState,
+  sheet: CombatantSheet,
+  levelsGained: number,
+): CombatantCombatState {
+  if (!Number.isSafeInteger(levelsGained) || levelsGained < 0) {
+    throw new Error("Progression level-up count is invalid");
+  }
+  if (levelsGained === 0) return state;
+  return Object.freeze({
+    ...state,
+    aether: PROGRESSION_LEVEL_UP_PAYOFF.refillAether ? sheet.maxAether : state.aether,
+    aetherAccumulator: PROGRESSION_LEVEL_UP_PAYOFF.refillAether ? 0 : state.aetherAccumulator,
+    health: PROGRESSION_LEVEL_UP_PAYOFF.refillHealth ? sheet.maxHealth : state.health,
+    stamina: PROGRESSION_LEVEL_UP_PAYOFF.refillStamina ? sheet.maxStamina : state.stamina,
+    staminaAccumulator: PROGRESSION_LEVEL_UP_PAYOFF.refillStamina ? 0 : state.staminaAccumulator,
+    staminaDelayTicks: PROGRESSION_LEVEL_UP_PAYOFF.refillStamina ? 0 : state.staminaDelayTicks,
   });
 }
 

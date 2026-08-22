@@ -34,6 +34,7 @@ import {
   APP_OWNED_LLM_SPIKE_FIXTURE_SET,
   createGreyboxScene,
   createM3GameplayRuntime,
+  createM3GameplayUiController,
   createM3HybridUiModel,
   createM3StructuredKnowledgeProvider,
   createNpcDialogController,
@@ -205,6 +206,24 @@ async function bootRuntimeAttempt(
   );
   registerFailureCleanup(() => gameUiService.dispose());
   gameUiService.present(gameUiModel.snapshot());
+  const gameplayUiController = createM3GameplayUiController(
+    simulationService,
+    gameplayRuntime,
+    gameUiModel,
+  );
+  registerFailureCleanup(() => gameplayUiController.dispose());
+  const unsubscribeGameplayUiPresentations = gameplayUiController.subscribePresentations(
+    (presentation) => gameUiService.present(presentation),
+  );
+  registerFailureCleanup(unsubscribeGameplayUiPresentations);
+  const onGameplayUiShortcut = (event: KeyboardEvent): void => {
+    if (event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!gameplayUiController.handleShortcut(event.code)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  };
+  window.addEventListener("keydown", onGameplayUiShortcut);
+  registerFailureCleanup(() => window.removeEventListener("keydown", onGameplayUiShortcut));
   const npcDialogController = createNpcDialogController(
     npcDialogService,
     npcKnowledgeService,
@@ -223,6 +242,10 @@ async function bootRuntimeAttempt(
     npcDialogController.handleAction(action),
   );
   registerFailureCleanup(unsubscribeDialogActions);
+  const unsubscribeGameplayUiActions = gameUiService.subscribeActions((action) =>
+    gameplayUiController.handleAction(action),
+  );
+  registerFailureCleanup(unsubscribeGameplayUiActions);
   const flythroughService = createFlythroughService(
     renderService,
     streamingService,

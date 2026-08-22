@@ -417,7 +417,7 @@ game-design.md — not invented ad hoc inside each system.
       six launches under schema 71 / mandatory metric set 34, with identical replay/save/
       load hashes and a 0.8 ms worst simulation-step high-water. Exact report and digests
       are recorded in D-170.*
-- [ ] Gameplay-system presentation and progression feel: build the real inventory/
+- [x] Gameplay-system presentation and progression feel: build the real inventory/
       crafting, progression/loadout, and journal consumers on D-161's hybrid UI. The
       HUD shows current-level XP progress and makes unspent attribute points/ability
       picks conspicuous. Author and playtest a deterministic level-up payoff (candidate:
@@ -426,6 +426,27 @@ game-design.md — not invented ad hoc inside each system.
       its planted trade-off is legible before M6 VFX polish. Explicitly playtest and
       record whether all 4 active + 2 knack slots stay available from level 2 or slot
       access stages by level; any staged rule is derived from level, not new saved state.
+      D-172 records the result: all slots remain available from level 2; level-up refills
+      stamina and aether but not health; and Ironset exposes start/end semantics plus a
+      duration/trade-off HUD telegraph. The real screens query authoritative worker state
+      and route every craft, equip, consume, learn, attribute, loadout, and quest action
+      through the existing fixed-size command boundary. The pre-review candidate's
+      `pnpm check` passed 201 test files / 2,566 tests (one skipped) for exact artifact
+      `946a3c9fa33b2a504c81fb7b608833a8ed1c51a10a7eeb347b99eaf30d2f883a` and install
+      release `69e55ae8c500e814f50019404fbc5e13b01bb574aa1c8d66ede038ddd57a1529`;
+      required physical `smoke@1` for that artifact passed schema 71, all three facets,
+      and 36/36 checks (exact report
+      `smoke-1-946a3c9fa33b-dev-01-showcase-2026-08-22T21-32-13-649Z.{json,md}` and
+      report hashes are recorded in D-172). On-demand review then fixed heavy-screen
+      actions being silently dropped during HUD-only presentation churn (stale
+      action-identical acceptance in the render service and gameplay UI controller,
+      with regression tests) and moved hard-coded Ironset/level-cap HUD numbers onto
+      their balance authorities. The corrected candidate passed `pnpm check` (201 test
+      files / 2,567 tests, one skipped) as exact artifact
+      `1b55b0b31a77bb2db6a6af1327fc6137941f8e3162dd862fd3f792abb9d2593f` / install
+      release `fbc5f4f15aaab6bd6ca4352f4d19fee1477a05199f8cd70200afff09ec03d325`
+      (identities recorded in D-172); because it changes the smoke-exercised hybrid UI
+      substrate, its one converged physical `smoke@1` on dev-01 is pending.
 - [ ] Exit: the greybox loop is a game — fight, loot, craft, level, and complete a
       multi-step quest end-to-end; all new state survives save/reload and hash-matches
       under the deterministic same-host dev-01 replay check; the harness gains

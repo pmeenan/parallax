@@ -5,6 +5,7 @@ import {
   levelForExperience,
   PROGRESSION_ABILITIES,
   PROGRESSION_LEVEL_CAP,
+  progressionSlotAvailable,
   SCRIPTED_SLICE_XP_LEDGER,
 } from "../src/balance/progression";
 import {
@@ -17,13 +18,17 @@ import {
   tickCombatant,
 } from "../src/sim/combat-core";
 import { createInitialItemState, itemCombatBonuses } from "../src/sim/items";
+import { COMBAT_PRESSED_SLOT_2 } from "../src/sim/m3-combat-system";
 import {
   createEquipAbilityCommand,
   createGameSimulationAdapter,
   createLearnAbilityCommand,
+  createPlayerInputCommand,
+  createProgressionSnapshotQuery,
   createSpendAttributeCommand,
 } from "../src/sim/m3-simulation";
 import {
+  applyLevelUpPayoff,
   assertProgressionState,
   awardExperience,
   createInitialProgressionState,
@@ -81,6 +86,40 @@ describe("M3.5 progression", () => {
     expect(() => assertProgressionState(equipped)).not.toThrow();
   });
 
+  it("makes the deterministic level-up payoff refill stamina and aether but not health", () => {
+    const progression = createInitialProgressionState();
+    const sheet = derivePlayerSheet(progressionCombatProfile(progression, STARTER_ITEM_BONUSES));
+    const depleted = Object.freeze({
+      ...createCombatantState(sheet),
+      aether: 3,
+      aetherAccumulator: 17,
+      health: sheet.maxHealth - 11,
+      stamina: 4,
+      staminaAccumulator: 23,
+      staminaDelayTicks: 19,
+    });
+    const payoff = applyLevelUpPayoff(depleted, sheet, 1);
+    expect(payoff).toMatchObject({
+      aether: sheet.maxAether,
+      aetherAccumulator: 0,
+      health: sheet.maxHealth - 11,
+      stamina: sheet.maxStamina,
+      staminaAccumulator: 0,
+      staminaDelayTicks: 0,
+    });
+    expect(applyLevelUpPayoff(depleted, sheet, 0)).toBe(depleted);
+  });
+
+  it("keeps all four active and two knack slots available from level 2", () => {
+    expect(
+      Array.from({ length: 4 }, (_, slot) => progressionSlotAvailable("active", slot, 2)),
+    ).toEqual([true, true, true, true]);
+    expect(
+      Array.from({ length: 2 }, (_, slot) => progressionSlotAvailable("knack", slot, 2)),
+    ).toEqual([true, true]);
+    expect(progressionSlotAvailable("active", 0, 1)).toBe(false);
+  });
+
   it("binds learned passives and equipped knacks into the combat sheet", () => {
     let state = awardExperience(createInitialProgressionState(), 500).state;
     state = learnAbility(state, "answering-strike");
@@ -106,6 +145,30 @@ describe("M3.5 progression", () => {
     expect(ticked.activeStartedActionId).toBe(actionId);
     const active = applySelfSpellEffects(ticked.state, actionId, sheet);
     expect(active.ironsetTicks).toBe(240);
+
+    const adapter = createGameSimulationAdapter(context);
+    const initial = adapter.createInitialState(3);
+    let simulationState = Object.freeze({ ...initial, progression: state });
+    const queued = adapter.applyCommand(
+      simulationState,
+      createPlayerInputCommand(0, 1, {
+        blockHeld: false,
+        combatPressed: COMBAT_PRESSED_SLOT_2,
+        forward: 0,
+        interactPressed: false,
+        right: 0,
+        yawRadians: 0,
+      }),
+    );
+    simulationState = queued.state;
+    const eventKinds: string[] = [];
+    for (let tick = 1; tick <= 30; tick += 1) {
+      const stepped = adapter.step(simulationState, tick);
+      simulationState = stepped.state;
+      eventKinds.push(...stepped.events.map((event) => event.kind));
+    }
+    expect(eventKinds).toContain("combat.ironset-started");
+    expect(adapter.telemetryCounters(simulationState).combatPlayerIronsetTicks).toBeGreaterThan(0);
   });
 
   it("round-trips the stable 14-ability state block and rejects noncanonical bytes", () => {
@@ -160,6 +223,22 @@ describe("M3.5 progression", () => {
       progressionLoadoutChangeCount: 1,
       progressionUnspentAbilityPicks: 1,
       progressionUnspentAttributePoints: 1,
+    });
+    const queryState = adapter.queryState;
+    if (queryState === undefined) throw new Error("Game-state query boundary is missing");
+    expect(
+      JSON.parse(
+        new TextDecoder().decode(queryState(equipped.state, createProgressionSnapshotQuery())),
+      ),
+    ).toMatchObject({
+      activeSlots: ["piercing-lunge", "emberlash", null, null],
+      level: 4,
+      slotAccess: {
+        active: [true, true, true, true],
+        knack: [true, true],
+        rule: "all-from-level-2",
+      },
+      version: 1,
     });
     expect(() => adapter.deserializeState(adapter.serializeState(equipped.state))).not.toThrow();
   });

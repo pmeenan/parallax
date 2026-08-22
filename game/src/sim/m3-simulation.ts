@@ -25,11 +25,14 @@ import {
 } from "../balance/items";
 import { NPC_CROWD_BALANCE } from "../balance/npc-crowd";
 import {
+  cumulativeExperienceForLevel,
   PROGRESSION_ABILITIES,
   PROGRESSION_ATTRIBUTES,
+  PROGRESSION_LEVEL_CAP,
   PROGRESSION_RESHAPE_MARK_COST,
   type ProgressionAbilityId,
   type ProgressionAttributeId,
+  progressionSlotAvailable,
 } from "../balance/progression";
 import {
   QUEST_DEFINITIONS,
@@ -116,6 +119,7 @@ import {
 } from "./m3-combat-system";
 import { buildNpcScheduleSet, type NpcScheduleSet } from "./npc-schedules";
 import {
+  applyLevelUpPayoff,
   assertProgressionState,
   awardExperience,
   createInitialProgressionState,
@@ -257,6 +261,7 @@ const INVENTORY_QUERY_KIND = "inventory.snapshot@1";
 const LANDMARK_QUERY_KIND = "landmarks.snapshot@1";
 const QUEST_QUERY_KIND = "quests.snapshot@1";
 const JOURNAL_QUERY_KIND = "journal.snapshot@1";
+const PROGRESSION_QUERY_KIND = "progression.snapshot@1";
 const QUEST_COMMAND_KIND = "quests.command@1";
 const QUEST_PAYLOAD_BYTES = 16;
 const QUEST_OP_ACCEPT = 1;
@@ -347,7 +352,12 @@ export function createGameSimulationAdapter(
     for (const awardDefinition of questResult.experienceAwards) {
       const award = awardExperience(progression, awardDefinition.amount);
       progression = award.state;
-      experienceEvents.push(progressionExperienceEvent(awardDefinition.amount, award));
+      const payoff = applyProgressionLevelUpPayoff(combat, progression, result.state.items, award);
+      combat = payoff.combat;
+      experienceEvents.push(
+        progressionExperienceEvent(awardDefinition.amount, award),
+        ...payoff.events,
+      );
     }
     return Object.freeze({
       events: Object.freeze([
@@ -980,6 +990,10 @@ export function createGameSimulationAdapter(
       if (query.kind === JOURNAL_QUERY_KIND) {
         return journalQueryPayload(state.quests, query.payload);
       }
+      if (query.kind === PROGRESSION_QUERY_KIND) {
+        if (query.payload.byteLength !== 0) throw new Error("Progression query payload is invalid");
+        return progressionQueryPayload(state.progression);
+      }
       return executeM3NpcKnowledgeQuery(
         query,
         context.world.id,
@@ -1100,6 +1114,21 @@ export function createGameSimulationAdapter(
         defeatAwards.experience === 0
           ? null
           : awardExperience(state.progression, defeatAwards.experience);
+      let combatAfterProgression = combatStep.state;
+      const progressionPayoffEvents: Readonly<{
+        readonly kind: string;
+        readonly payload: Uint8Array;
+      }>[] = [];
+      if (progressionAward !== null) {
+        const payoff = applyProgressionLevelUpPayoff(
+          combatAfterProgression,
+          progressionAward.state,
+          items,
+          progressionAward,
+        );
+        combatAfterProgression = payoff.combat;
+        progressionPayoffEvents.push(...payoff.events);
+      }
       const lootEvents: Readonly<{ readonly kind: string; readonly payload: Uint8Array }>[] = [];
       for (const { entityId, kit } of defeatAwards.defeated) {
         const award = awardMonsterLoot(items, kit.id);
@@ -1140,6 +1169,13 @@ export function createGameSimulationAdapter(
       for (const discovery of exploration.discoveries) {
         const award = awardExperience(progression, discovery.landmark.experience);
         progression = award.state;
+        const payoff = applyProgressionLevelUpPayoff(
+          combatAfterProgression,
+          progression,
+          items,
+          award,
+        );
+        combatAfterProgression = payoff.combat;
         discoveryEvents.push(
           Object.freeze({
             kind: "landmark.discovered",
@@ -1151,6 +1187,7 @@ export function createGameSimulationAdapter(
             ]),
           }),
           progressionExperienceEvent(discovery.landmark.experience, award),
+          ...payoff.events,
         );
       }
       const interaction = state.interactionRequested
@@ -1160,7 +1197,7 @@ export function createGameSimulationAdapter(
       const next = Object.freeze({
         ...state,
         collisionResolutionCount: state.collisionResolutionCount + movement.collisionCount,
-        combat: combatStep.state,
+        combat: combatAfterProgression,
         exploration: exploration.state,
         interactionActivationCount: state.interactionActivationCount + Number(activated),
         interactionRequested: false,
@@ -1191,7 +1228,10 @@ export function createGameSimulationAdapter(
             ...lootEvents,
             ...(progressionAward === null
               ? []
-              : [progressionExperienceEvent(defeatAwards.experience, progressionAward)]),
+              : [
+                  progressionExperienceEvent(defeatAwards.experience, progressionAward),
+                  ...progressionPayoffEvents,
+                ]),
             ...discoveryEvents,
           ]),
           state: next,
@@ -1200,6 +1240,9 @@ export function createGameSimulationAdapter(
       );
     },
     telemetryCounters(state: M3SimulationState): Readonly<Record<string, number>> {
+      const playerSheet = derivePlayerSheet(
+        progressionCombatProfile(state.progression, itemCombatBonuses(state.items)),
+      );
       return Object.freeze({
         ...combatTelemetryCounters(state.combat),
         collisionResolutionCount: state.collisionResolutionCount,
@@ -1246,6 +1289,9 @@ export function createGameSimulationAdapter(
         progressionLoadoutChangeCount: state.progression.loadoutChangeCount,
         progressionUnspentAbilityPicks: state.progression.unspentAbilityPicks,
         progressionUnspentAttributePoints: state.progression.unspentAttributePoints,
+        combatPlayerMaxAether: playerSheet.maxAether,
+        combatPlayerMaxHealth: playerSheet.maxHealth,
+        combatPlayerMaxStamina: playerSheet.maxStamina,
         questAcceptedCount: state.quests.acceptedQuestCount,
         questActiveCount: popcount32(state.quests.activeQuestMask),
         questCompletedCount: state.quests.completedQuestCount,
@@ -1974,6 +2020,14 @@ export function createQuestSnapshotQuery(): SimulationGameStateQuery {
   return Object.freeze({ kind: QUEST_QUERY_KIND, payload: new Uint8Array() });
 }
 
+export function createInventorySnapshotQuery(): SimulationGameStateQuery {
+  return Object.freeze({ kind: INVENTORY_QUERY_KIND, payload: new Uint8Array() });
+}
+
+export function createProgressionSnapshotQuery(): SimulationGameStateQuery {
+  return Object.freeze({ kind: PROGRESSION_QUERY_KIND, payload: new Uint8Array() });
+}
+
 export function createJournalSnapshotQuery(
   fromSequence: number,
   maximumEntries: number,
@@ -2177,6 +2231,47 @@ function landmarkQueryPayload(state: ExplorationState): Uint8Array {
   );
 }
 
+function progressionQueryPayload(state: ProgressionState): Uint8Array {
+  const levelFloor = cumulativeExperienceForLevel(state.level);
+  const atCap = state.level === PROGRESSION_LEVEL_CAP;
+  return INVENTORY_TEXT_ENCODER.encode(
+    JSON.stringify({
+      abilities: PROGRESSION_ABILITIES.map((ability) => ({
+        id: ability.id,
+        kind: ability.kind,
+        learned: state.learnedAbilities.includes(ability.id),
+      })),
+      activeSlots: state.activeSlots,
+      attributes: {
+        attunement: state.attunement,
+        finesse: state.finesse,
+        might: state.might,
+        vitality: state.vitality,
+      },
+      experience: state.experience,
+      experienceForNextLevel: atCap
+        ? 0
+        : cumulativeExperienceForLevel(state.level + 1) - levelFloor,
+      experienceIntoLevel: atCap ? 0 : state.experience - levelFloor,
+      knackSlots: state.knackSlots,
+      level: state.level,
+      levelCap: PROGRESSION_LEVEL_CAP,
+      slotAccess: {
+        active: state.activeSlots.map((_, slot) =>
+          progressionSlotAvailable("active", slot, state.level),
+        ),
+        knack: state.knackSlots.map((_, slot) =>
+          progressionSlotAvailable("knack", slot, state.level),
+        ),
+        rule: "all-from-level-2",
+      },
+      unspentAbilityPicks: state.unspentAbilityPicks,
+      unspentAttributePoints: state.unspentAttributePoints,
+      version: 1,
+    }),
+  );
+}
+
 function questQueryPayload(state: QuestState): Uint8Array {
   const preparation = questPreparationSnapshot(state);
   return INVENTORY_TEXT_ENCODER.encode(
@@ -2299,6 +2394,36 @@ function progressionExperienceEvent(
       award.state.experience,
       award.state.level,
       award.levelsGained,
+    ]),
+  });
+}
+
+function applyProgressionLevelUpPayoff(
+  combat: M3CombatState,
+  progression: ProgressionState,
+  items: ItemState,
+  award: ExperienceAwardResult,
+): Readonly<{
+  readonly combat: M3CombatState;
+  readonly events: readonly Readonly<{ readonly kind: string; readonly payload: Uint8Array }>[];
+}> {
+  if (award.levelsGained === 0) {
+    return Object.freeze({ combat, events: EMPTY_EVENTS });
+  }
+  const sheet = derivePlayerSheet(progressionCombatProfile(progression, itemCombatBonuses(items)));
+  const player = applyLevelUpPayoff(combat.player, sheet, award.levelsGained);
+  return Object.freeze({
+    combat: Object.freeze({ ...combat, player }),
+    events: Object.freeze([
+      Object.freeze({
+        kind: "progression.level-up-payoff",
+        payload: combatEventPayload([
+          progression.level,
+          player.stamina,
+          player.aether,
+          player.health,
+        ]),
+      }),
     ]),
   });
 }

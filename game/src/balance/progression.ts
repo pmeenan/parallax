@@ -6,6 +6,15 @@ export const PROGRESSION_LEVEL_CAP = 10;
 export const PROGRESSION_ACTIVE_SLOT_COUNT = 4;
 export const PROGRESSION_KNACK_SLOT_COUNT = 2;
 export const PROGRESSION_RESHAPE_MARK_COST = 25;
+export const PROGRESSION_LEVEL_UP_PAYOFF = Object.freeze({
+  refillAether: true,
+  refillHealth: false,
+  refillStamina: true,
+});
+export const PROGRESSION_SLOT_ACCESS = Object.freeze({
+  activeSlotsAvailableAtLevel: 2,
+  knackSlotsAvailableAtLevel: 2,
+});
 export const WELLSPRING_STAMINA_REGEN_PER_SECOND = 10;
 export const QUIET_TREAD_PERCEPTION = Object.freeze({
   denominator: 4,
@@ -96,4 +105,24 @@ export function progressionAbilityIndex(id: ProgressionAbilityId): number {
   const index = PROGRESSION_ABILITIES.findIndex((ability) => ability.id === id);
   if (index < 0) throw new Error(`Unknown progression ability ${id}`);
   return index;
+}
+
+export function progressionSlotAvailable(
+  kind: Exclude<ProgressionAbilityKind, "passive">,
+  slot: number,
+  level: number,
+): boolean {
+  const slotCount =
+    kind === "active" ? PROGRESSION_ACTIVE_SLOT_COUNT : PROGRESSION_KNACK_SLOT_COUNT;
+  const availableAtLevel =
+    kind === "active"
+      ? PROGRESSION_SLOT_ACCESS.activeSlotsAvailableAtLevel
+      : PROGRESSION_SLOT_ACCESS.knackSlotsAvailableAtLevel;
+  return (
+    Number.isSafeInteger(slot) &&
+    slot >= 0 &&
+    slot < slotCount &&
+    Number.isSafeInteger(level) &&
+    level >= availableAtLevel
+  );
 }

@@ -185,6 +185,86 @@ describe("render service recovery", () => {
     expect(service.snapshot().state).toBe("failed");
   });
 
+  it("delivers pinned heavy-screen actions across HUD-only churn and drops them across screen changes", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    const presentation = hybridUiPresentation();
+    service.setHybridUiPresentation(presentation);
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("Unexpected recovery");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const worker = requireWorker(0);
+    worker.emit(readyMessage());
+    const actions: string[] = [];
+    service.subscribeHybridUiActions((action) => actions.push(action.actionId));
+
+    // A HUD-only presentation (same heavy screen) lands during the input round trip.
+    service.sendHybridUiInput({ kind: "activate", sequence: 1 });
+    service.setHybridUiPresentation({
+      ...presentation,
+      hud: Object.freeze({
+        meters: Object.freeze([]),
+        messages: Object.freeze(["Stamina 41/100"]),
+        visible: true,
+      }),
+      revision: presentation.revision + 1,
+    });
+    worker.emit({
+      action: {
+        actionId: "inventory:use",
+        inputSequence: 1,
+        payload: null,
+        presentationRevision: presentation.revision,
+        source: "heavy-screen-worker",
+      },
+      kind: "hybrid-ui-action",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        actionCount: 1,
+        heavyPrimitiveCount: 1,
+        inputCount: 1,
+        presentationCount: 1,
+        presentationRevision: presentation.revision,
+      },
+    });
+    expect(actions).toEqual(["inventory:use"]);
+    expect(service.snapshot().state).toBe("ready");
+
+    // A heavy-screen change during the round trip still drops the stale action.
+    service.sendHybridUiInput({ kind: "activate", sequence: 2 });
+    service.setHybridUiPresentation({
+      ...presentation,
+      heavyScreen: null,
+      revision: presentation.revision + 2,
+    });
+    worker.emit({
+      action: {
+        actionId: "inventory:use",
+        inputSequence: 2,
+        payload: null,
+        presentationRevision: presentation.revision + 1,
+        source: "heavy-screen-worker",
+      },
+      kind: "hybrid-ui-action",
+      telemetry: {
+        ...idleHybridUiWorkerTelemetry(),
+        actionCount: 2,
+        heavyPrimitiveCount: 0,
+        inputCount: 2,
+        presentationCount: 2,
+        presentationRevision: presentation.revision + 1,
+      },
+    });
+    expect(actions).toEqual(["inventory:use"]);
+    expect(service.snapshot().state).toBe("ready");
+  });
+
   it("routes invalid standalone hybrid UI telemetry through recovery", () => {
     installBrowserFakes();
     const service = createRenderService();

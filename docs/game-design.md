@@ -199,8 +199,10 @@ science/alchemy vein is load-bearing, not flavor:
   grants one attribute point plus one **ability pick** from the single shared pool —
   nine picks by cap, from **14 authored abilities**, so no two builds need overlap
   much. Reshaping (respec) at any waystone costs 25 marks.
-- Loadout: **4 active slots + 2 knack slots**. Build identity comes from the loadout
-  limit, not class walls.
+- Loadout: **4 active slots + 2 knack slots**, all available from level 2. The empty
+  early slots advertise the full build shape and let every learned ability be tried in
+  any matching slot; access does not stage by level or add saved unlock state. Build
+  identity comes from the loadout limit, not class walls.
 - **The ability pool** (slice; costs are starting values):
 
   | Ability | Type | Cost | Effect |
@@ -226,6 +228,9 @@ science/alchemy vein is load-bearing, not flavor:
   +1 Attunement, −1 Might) — minor modifiers plus cosmetic identity. Full visual
   distinctiveness is an M5 character-pipeline deliverable (design implication #5).
 - **XP curve:** reaching level `n+1` from `n` costs `100×n` XP (4,500 total to cap).
+  A level gain refills stamina and aether, resets their fractional regeneration
+  bookkeeping, and deliberately leaves health unchanged: the reward immediately opens
+  another offensive sequence without erasing encounter attrition.
   Sources (starting values): common kills 4–20 by archetype (bestiary table), elites
   60, boss 400, main-arc stages 100–200, side quests 75–150, first visit to a named
   landmark 25. Target pacing: completing the slice content lands level 9–10 in a

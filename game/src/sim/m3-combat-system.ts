@@ -403,6 +403,7 @@ export function stepM3Combat(
   let spawnCounter = state.spawnCounter;
   let respawnPlayer = false;
   let position = playerPosition;
+  const ironsetTicksBeforeStep = player.ironsetTicks;
   const monsters: MutableMonster[] = state.monsters.map((entry) => ({ ...entry }));
   const inCombat = monsters.some(
     (entry) =>
@@ -825,6 +826,17 @@ export function stepM3Combat(
   }
 
   monsters.push(...pendingBossSummons);
+
+  if (ironsetTicksBeforeStep === 0 && player.ironsetTicks > 0) {
+    events.push(record("combat.ironset-started", 1, player.ironsetTicks, player.stamina, 0));
+  }
+  if (player.ironsetTicks > 0 && player.actionKind === COMBAT_ACTION_DOWNED) {
+    player = Object.freeze({ ...player, ironsetTicks: 0 });
+    events.push(record("combat.ironset-ended", 1, 3, player.stamina, 0));
+  } else if (ironsetTicksBeforeStep > 0 && player.ironsetTicks === 0) {
+    const endReason = player.stamina === 0 ? 2 : 1;
+    events.push(record("combat.ironset-ended", 1, endReason, player.stamina, 0));
+  }
 
   // Remove long-settled corpses while preserving order.
   const retained = monsters.filter(
@@ -1862,6 +1874,7 @@ export function combatTelemetryCounters(state: M3CombatState): Readonly<Record<s
     combatPlayerAether: state.player.aether,
     combatPlayerDefeats: state.counters.playerDefeats,
     combatPlayerHealth: state.player.health,
+    combatPlayerIronsetTicks: state.player.ironsetTicks,
     combatPlayerStamina: state.player.stamina,
     combatStaggers: state.counters.staggers,
   });

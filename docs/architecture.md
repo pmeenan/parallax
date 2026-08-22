@@ -1466,6 +1466,23 @@ the latch. UI telemetry
 records DOM mutation/node high water, forwarded and completed actions, worker pool counts,
 presentation revisions, and update/hit-test duration high water through the public
 harness export.
+D-172 supplies the first gameplay-system consumers without moving authority out of the
+sim worker. The DOM HUD reads public pool/progression counters and makes current-level XP,
+unspent choices, and Ironset's planted trade-off visible. Worker-owned heavy screens query
+`inventory.snapshot@1`, `progression.snapshot@1`, `quests.snapshot@1`, and paginated
+`journal.snapshot@1`; their sparse semantic actions enqueue the existing item,
+progression, and quest commands through the gameplay runtime's shared command-sequence
+allocator. Successful and rejected semantic events trigger authoritative refreshes.
+Because HUD meters and messages revise the presentation continuously (level XP, regen,
+the Ironset countdown), a worker action pinned to an older presentation revision is
+accepted when the heavy screen it was hit-tested against is action-identical (same
+cancel action, primitives, action IDs, and disabled states) to the current one; a
+changed or closed screen still drops the stale action silently. Without this rule,
+HUD-only churn during the input round trip silently eats heavy-screen activations.
+Level gains deterministically refill stamina/aether but not health and emit a dedicated
+payoff event; Ironset start/end events make its bounded lifecycle presentable. All four
+active and both knack slots are available from level 2 as a level-derived rule with no
+additional saved state.
 D-143 identified no application-facing frame transaction or attributed presentation
 primitive between the DOM overlay and worker-owned WebGPU canvas; RE-047 keeps the
 request open without claiming an exhaustive Chrome capability audit.

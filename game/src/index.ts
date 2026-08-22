@@ -19,9 +19,21 @@ export { createM3StructuredKnowledgeProvider } from "./npc/knowledge";
 export type { NpcLoreChunk } from "./npc/lore";
 export { NPC_LORE_CHUNKS } from "./npc/lore";
 export { NPC_PERSONA_CARDS } from "./npc/personas";
-export type { M3GameplayInteraction, M3GameplayRuntime } from "./sim/m3-gameplay-runtime";
+export type {
+  M3GameplayCommandFactory,
+  M3GameplayInteraction,
+  M3GameplayRuntime,
+} from "./sim/m3-gameplay-runtime";
 export { createM3GameplayRuntime } from "./sim/m3-gameplay-runtime";
-export type { M3HybridUiModel } from "./ui/m3-hybrid-ui";
+export type { M3GameplayUiController } from "./ui/m3-gameplay-ui";
+export { createM3GameplayUiController } from "./ui/m3-gameplay-ui";
+export type {
+  M3GameplayScreenAction,
+  M3GameplayScreenId,
+  M3GameplayScreenView,
+  M3HudStatus,
+  M3HybridUiModel,
+} from "./ui/m3-hybrid-ui";
 export { createM3HybridUiModel, M3_HYBRID_UI_DOM_LABELS } from "./ui/m3-hybrid-ui";
 export type {
   StreamingDashboardMetric,

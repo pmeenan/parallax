@@ -185,6 +185,34 @@ describe("M3.5 landmark discovery", () => {
     expect(restored.progression).toEqual(first.state.progression);
   });
 
+  it("publishes the level-up payoff while preserving current health", () => {
+    const adapter = createGameSimulationAdapter(context);
+    const initial = adapter.createInitialState(9);
+    const nearLevel = awardExperience(initial.progression, 190).state;
+    const health = initial.combat.player.health - 7;
+    const prepared = Object.freeze({
+      ...initial,
+      combat: Object.freeze({
+        ...initial.combat,
+        player: Object.freeze({
+          ...initial.combat.player,
+          aether: 1,
+          health,
+          stamina: 1,
+        }),
+      }),
+      progression: nearLevel,
+    });
+    const leveled = adapter.step(prepared, 1);
+    expect(leveled.events.map(({ kind }) => kind)).toContain("progression.level-up-payoff");
+    const telemetry = adapter.telemetryCounters(leveled.state);
+    expect(leveled.state.combat.player).toMatchObject({
+      aether: telemetry.combatPlayerMaxAether,
+      health,
+      stamina: telemetry.combatPlayerMaxStamina,
+    });
+  });
+
   it("keeps nominal discovery XP explicit when progression is already capped", () => {
     const adapter = createGameSimulationAdapter(context);
     const initial = adapter.createInitialState(13);

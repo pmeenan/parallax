@@ -1,6 +1,7 @@
 import type {
   GameplayInputService,
   RenderService,
+  SimulationCommand,
   SimulationService,
   SimulationWorldDefinition,
   WorldStreamingService,
@@ -9,10 +10,13 @@ import { createPlayerInputCommand, PLAYER_ENTITY_ID } from "./m3-simulation";
 
 export interface M3GameplayRuntime {
   dispose(): void;
+  enqueueCommand(factory: M3GameplayCommandFactory): void;
   maybeStartInput(interactiveEnabled: boolean): void;
   subscribeInteractions(listener: (interaction: M3GameplayInteraction) => void): () => void;
   update(timestamp: number, scenarioOwned: boolean, interactiveEnabled: boolean): void;
 }
+
+export type M3GameplayCommandFactory = (sequence: number, targetTick: number) => SimulationCommand;
 
 export type M3GameplayInteraction =
   | Readonly<{ readonly kind: "npc"; readonly entityId: number }>
@@ -47,6 +51,15 @@ export function createM3GameplayRuntime(
   ];
   let lastStreamingObserverAt = 0;
   const interactionListeners = new Set<(interaction: M3GameplayInteraction) => void>();
+  const enqueueCommand = (factory: M3GameplayCommandFactory): void => {
+    if (disposed || simulationService.snapshot().state !== "running") return;
+    const snapshot = simulationService.snapshot();
+    nextInputCommandSequence = Math.max(
+      nextInputCommandSequence,
+      snapshot.highestAcceptedCommandSequence + 1,
+    );
+    simulationService.enqueue(factory(nextInputCommandSequence++, snapshot.tick + 3));
+  };
   const unsubscribeEvents = simulationService.subscribeEvents((events) => {
     for (const event of events) {
       if (event.kind !== "interaction.activated" && event.kind !== "npc.interaction-activated") {
@@ -102,6 +115,7 @@ export function createM3GameplayRuntime(
       inputService.dispose();
       interactionListeners.clear();
     },
+    enqueueCommand,
     maybeStartInput(interactiveEnabled: boolean): void {
       if (
         disposed ||
@@ -116,13 +130,8 @@ export function createM3GameplayRuntime(
       inputStarted = true;
       inputService.start(activeCanvas, (frame) => {
         latestCameraPitchRadians = frame.cameraPitchRadians;
-        const snapshot = simulationService.snapshot();
-        nextInputCommandSequence = Math.max(
-          nextInputCommandSequence,
-          snapshot.highestAcceptedCommandSequence + 1,
-        );
-        simulationService.enqueue(
-          createPlayerInputCommand(nextInputCommandSequence++, snapshot.tick + 3, {
+        enqueueCommand((sequence, targetTick) =>
+          createPlayerInputCommand(sequence, targetTick, {
             blockHeld: frame.combatBlockHeld,
             combatPressed: frame.combatPressed,
             forward: frame.forward,
