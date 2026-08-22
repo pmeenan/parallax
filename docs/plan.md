@@ -376,7 +376,7 @@ game-design.md — not invented ad hoc inside each system.
       `pnpm check` passed 198 test files / 2,542 tests (one skipped). D-157 requires no
       new physical smoke because the smoke workload executes neither crafting/trade
       nor boss-loot inventory overflow.*
-- [ ] Quests and journal: quest state machine (main arc + side quests) and the journal
+- [x] Quests and journal: quest state machine (main arc + side quests) and the journal
       as a queryable play-history log — the same log that feeds the Summarizer-recap
       feature and subtitles/localization. Land landmark-discovery XP first: award each
       named landmark once through D-167's progression boundary, persist the discovered
@@ -400,7 +400,14 @@ game-design.md — not invented ad hoc inside each system.
       files, and 200 test files / 2,561 passing tests (one skipped) for candidate artifact
       `06bdd2412d794c200ffa72ecb2d1dd93adaa1807e77a1e992c381b0f7e77ccee` and install
       release `81bf0074da8a928f16b7feb6619b9bc072cb7bb3fb0bcd13a08b0c97d03cdb0d`.
-      The required D-157 physical-console smoke remains before this item closes.
+      The required dev-01/Showcase physical `smoke@1`
+      `smoke-1-06bdd2412d79-dev-01-showcase-2026-08-22T20-58-41-357Z.{json,md}`
+      passed schema v71 / mandatory metric set v34, all six launches, all three facets,
+      and 36/36 checks for that exact artifact and release. JSON/Markdown SHA-256 are
+      `cb5cb34b0ce3237f981f1608f62823c0d8cfd13f17dd83aaf80d3ce8deb79bbb` /
+      `9602788be1416c43436d8f9e4aeaa32a5b43a6de1f81d945701b596d28e62193`.
+      Every replay/save/load hash matched and the combined simulation-step high-water
+      was 0.835 ms. D-119 makes this exact evidence-only closure non-triggering.
       The D-170 foundation's `pnpm check` passed 199
       test files / 2,551 tests (one skipped) with exact build artifact
       `5a87bce7a9199c9b1119500e4e0216334149f27b7f0b46b9e31bd0140fa6baf4`

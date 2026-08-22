@@ -79,8 +79,7 @@ XP ledger, semantic-only progression, prior-fact reconciliation (including satch
 recovery), atomic delivery, rejected repeat preparation intents, no-op steady-state
 ticks, the one-stage-index-byte-per-reserved-quest layout, preparation consequences,
 paginated queries, fixed-block round trip, journal/exploration parity, corruption
-rejection, save/load, and replay. Final build and physical-console evidence are recorded
-below after the D-157 gate. The converged post-review pre-smoke candidate's `pnpm check`
+rejection, save/load, and replay. The converged post-review candidate's `pnpm check`
 passed the repeatable production build, Biome over 502 files, and 200 test files / 2,561
 passing tests (one skipped) for build artifact
 `06bdd2412d794c200ffa72ecb2d1dd93adaa1807e77a1e992c381b0f7e77ccee`, install release
@@ -88,8 +87,18 @@ passing tests (one skipped) for build artifact
 resource identity `70cfaf8dee37bedd834413b079c602223ad1724300dd5d41788237c732a06742`,
 and installer-repair semantic-contract digest
 `50b5c8d9ffb503b197977a62fd21355c7b3617d236eaacb1be05828af17d52c3`.
-Because smoke executes and hashes the changed save/replay/simulation surface, D-157
-requires one physical-console run before plan closure.
+The required physical-console dev-01/Showcase `smoke@1`
+`smoke-1-06bdd2412d79-dev-01-showcase-2026-08-22T20-58-41-357Z.{json,md}` passed
+schema v71 / mandatory metric set v34, all six launches, all three facets, and 36/36
+checks for that exact artifact and release. JSON/Markdown SHA-256 are
+`cb5cb34b0ce3237f981f1608f62823c0d8cfd13f17dd83aaf80d3ce8deb79bbb` /
+`9602788be1416c43436d8f9e4aeaa32a5b43a6de1f81d945701b596d28e62193`.
+Every 120-tick replay/save/load converged on
+`fde033eaca8b27038fba54eb65e4e4dfb12332156a1eb951d5021dad8eabfa74`, every
+4,497-tick positioning replay/load converged on
+`4f776d3979300c9f5cc58e0ab9d2b80be8cdbfbcb9ebd3cc112eb60037a9be5a`, and the
+combined character/crowd/creature step high-water was 0.835 ms. D-119 makes this exact
+evidence-only closure non-triggering.
 
 **Reopen if:** the two-district slice outgrows 31 quests, 64 objectives, or 256 journal
 entries; recap/localization needs a different canonical history vocabulary; M4 content
