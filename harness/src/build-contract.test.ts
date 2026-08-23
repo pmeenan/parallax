@@ -43,7 +43,7 @@ describe("assembled build contract", () => {
         .digest("hex"),
     );
     expect(installManifest.gameId).toBe("parallax");
-    expect(installSummary.countByTarget.opfs).toBe(266);
+    expect(installSummary.countByTarget.opfs).toBe(331);
     expect(installSummary.countByTarget.shell).toBe(23);
     expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
     expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
@@ -141,8 +141,16 @@ describe("assembled build contract", () => {
         scope: "game-specific",
         targetType: "district",
       }),
+      expect.objectContaining({
+        districtId: "district-2-catacombs",
+        schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
+        scope: "game-specific",
+        targetType: "district",
+      }),
     ]);
-    const districtEntrypoint = manifest.gameContentEntrypoints[0];
+    const districtEntrypoint = manifest.gameContentEntrypoints.find(
+      ({ districtId }) => districtId === "district-1-surface",
+    );
     expect(districtEntrypoint?.path).toMatch(
       /^immutable\/district-1-surface-index-[a-f0-9]{64}\.json$/,
     );
@@ -293,6 +301,71 @@ describe("assembled build contract", () => {
       units: "meters",
     };
     expect(validateGreyboxDistrict(reconstructedDistrict)).toMatchObject({ cellCount: 256 });
+
+    const catacombEntrypoint = manifest.gameContentEntrypoints.find(
+      ({ districtId }) => districtId === "district-2-catacombs",
+    );
+    expect(catacombEntrypoint?.path).toMatch(
+      /^immutable\/district-2-catacombs-index-[a-f0-9]{64}\.json$/,
+    );
+    const catacombIndexBytes = await readFile(
+      join(buildRoot, catacombEntrypoint?.path ?? "missing-catacomb-index"),
+    );
+    const catacombIndex = JSON.parse(catacombIndexBytes.toString("utf8")) as typeof districtIndex;
+    const parsedCatacombIndex = parseStreamingDistrictIndex(catacombIndex, "district-2-catacombs");
+    expect(catacombIndex).toMatchObject({
+      cellSizeMeters: 128,
+      districtId: "district-2-catacombs",
+      schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
+    });
+    expect(catacombIndex.cells).toHaveLength(64);
+    expect(parsedCatacombIndex.resources).toEqual(parsedDistrictIndex.resources);
+    const catacombIndexArtifact = manifest.artifacts.find(
+      ({ path }) => path === catacombEntrypoint?.path,
+    );
+    expect(createHash("sha256").update(catacombIndexBytes).digest("hex")).toBe(
+      catacombIndexArtifact?.sha256,
+    );
+    const catacombCells: GreyboxCell[] = [];
+    const catacombCoordinates = new Set<string>();
+    for (const cellEntry of catacombIndex.cells) {
+      expect(cellEntry.path).toMatch(
+        /^immutable\/district-2-catacombs-cell-\d{2}-\d{2}-[a-f0-9]{64}\.json$/,
+      );
+      const cellBytes = await readFile(join(buildRoot, cellEntry.path));
+      expect(createHash("sha256").update(cellBytes).digest("hex")).toBe(cellEntry.sha256);
+      const wrapper = JSON.parse(cellBytes.toString("utf8")) as {
+        cell: GreyboxCell;
+        districtId: string;
+        schemaVersion: number;
+      };
+      expect(wrapper).toMatchObject({ districtId: "district-2-catacombs", schemaVersion: 1 });
+      expect(wrapper.cell.id).toBe(cellEntry.cellId);
+      catacombCells.push(wrapper.cell);
+      catacombCoordinates.add(cellEntry.coordinate.join(","));
+    }
+    expect(catacombCoordinates).toEqual(
+      new Set(
+        Array.from({ length: 8 }, (_, row) =>
+          Array.from({ length: 8 }, (_unused, column) => `${column},${row}`),
+        ).flat(),
+      ),
+    );
+    expect(
+      validateGreyboxDistrict({
+        bounds: parsedCatacombIndex.bounds,
+        cells: catacombCells,
+        cellSizeMeters: parsedCatacombIndex.cellSizeMeters,
+        generator: { seed: 1, version: 1 },
+        id: parsedCatacombIndex.districtId,
+        lodHysteresisMeters: 32,
+        markers: [],
+        materials: parsedCatacombIndex.materials,
+        schemaVersion: 1,
+        standardTraversalMetersPerSecond: 12,
+        units: "meters",
+      }),
+    ).toMatchObject({ cellCount: 64 });
 
     const appArtifact = manifest.artifacts.find((artifact) =>
       artifact.path.startsWith("immutable/app-"),

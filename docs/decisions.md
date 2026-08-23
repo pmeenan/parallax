@@ -28,6 +28,70 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-174: Fix the D2 greybox and three-edge world graph (2026-08-22, accepted)
+
+**Decision:** District 2's greybox is a 1,024 m × 1,024 m underground square centered at
+its own local origin, divided row-major into an 8 × 8 grid of 128 m cells. Generator and
+descriptor version 1 use fixed seed `0x5eedD201`. Sixteen cells form one connected
+traversable network: a four-cell Warden arena, separate castle and village passages, and
+a forest passage with an authored turn. The other 48 cells are sealed rock. Collision is
+visual-LOD-independent: every cell carries a 17 × 17 heightfield at 8 m spacing plus
+static AABBs for solid cell-box features. The three visual LOD tiers end at 256, 640, and
+1,024 m with 32 m hysteresis.
+
+Adopt game-owned world-graph schema v1. It registers districts as data and models the
+castle undercroft, village well, and forest ruin as three undirected hard-transition
+edges. Every edge owns a surface-context identity and two arrival headings, and references
+one D1 and one D2 transition marker. Validation requires every greybox district exactly
+once and every authored transition marker on exactly one edge; it rejects unknown or
+duplicate districts, same-district edges, reused/missing/non-transition endpoints, and
+marker tags that disagree with the edge context. The build evaluates this graph contract
+before packaging every registered district. The graph deliberately has no prefetch
+trigger: D-055 reserves that contract element for the later measurement-backed M4 task.
+
+Extend the district-neutral procedural feature vocabulary with repeated cell-local boxes.
+The D2 descriptor uses that one generic primitive for sealed rock, passage walls and
+ceilings, the forest turn, and arena pillars. No generator branch names D2, a catacomb,
+or a particular entrance. The existing N-district packaging loop emits D2 as 64 canonical
+cell artifacts plus a separate content-addressed district index.
+
+**Context:** M4's first task requires a real second resident set and multiple entrance
+contexts before the streaming manager can implement or measure full district swaps. D1
+already carried three unpaired entrance markers, but there was no D2 content or world
+graph to establish their destinations. A compact underground network makes the total
+swap boundary concrete without spending M4 on final art or on terrain technology that
+belongs to M4.5.
+
+**Consequences:** The production install set grows from 266 OPFS resources / 2,621,468,856
+bytes to 331 resources / 2,621,639,471 bytes. D2 is packaged and renderable through the
+existing generic greybox/streaming contracts, but this decision does not claim that the
+runtime performs a resident-set swap; that remains M4's next task. It also makes no
+prefetch timing claim and does not complete D-055.
+
+**Implementation evidence:** `pnpm check` passed the repeatable production build, Biome
+over 511 files, and 203 test files / 2,572 passing tests (one skipped). The exact build
+artifact is `386376ca5d124765938fc8d0a623681c8a590c473c45889fe716f685e812e028`,
+the install release is
+`0b548dc68614f92cbc24d79f385a488decde59dc5b6234901df24787a713d8a2`, and the
+installer-repair semantic-contract digest is
+`29c253d7ee6a9cba59ea413129d7773ff0c080947959492839b6f147641f5197`.
+Registered physical-console dev-01/Showcase report
+`smoke-1-386376ca5d12-dev-01-showcase-2026-08-23T00-29-05-913Z.{json,md}`
+passed schema v72 / mandatory metric set v35 on CfT 152.0.7977.54 across all six
+launches, all three facets, and 36/36 checks. JSON/Markdown SHA-256 are
+`da556c649bc0ee45b28f7e7f242d9b50fde5b1bae7e51a270bf24126471a6574` /
+`fd677b438f8b3a650440236ca5fd9df5fa63210e882d1521eb24a3630abe6802`.
+The measured source was commit `908a20796da4726645fc4fa99d31767f5742f26d` with dirty-tree
+digest `f51f35897f6a42cb06ece2b0f1b09e630777303ccbdfc5d76acf938366710370`.
+D-119 makes this exact evidence-only closure non-triggering.
+
+**Reopen if:** transition measurements require a different D2 cell scale or route shape;
+the three contexts cannot share one hard-transition contract; representative catacomb
+content cannot be expressed through the generic representation/collision union; or the
+world graph cannot extend to another district or transition without a schema change.
+
+---
+
 ## D-173: Close M3.5 with a game-owned deterministic scenario and adopt Chrome 152 (2026-08-22, accepted)
 
 **Decision:** M3.5 is complete. Its exit contract is the game-owned, versioned

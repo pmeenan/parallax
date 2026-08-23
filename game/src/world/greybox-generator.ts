@@ -161,6 +161,29 @@ function createRuleFeatures(
   centerZ: number,
 ): readonly FeatureGroup[] {
   switch (rule.kind) {
+    case "cell-boxes": {
+      const ground = sampleGreyboxTerrain(spec, centerX, centerZ);
+      return Object.freeze([
+        Object.freeze({
+          primitives: Object.freeze(
+            rule.boxes.map((box) =>
+              Object.freeze({
+                ...(box.collision
+                  ? { collisionId: `${cellId(spec, cellX, cellZ)}-${box.id}` }
+                  : {}),
+                primitive: primitive(
+                  vec3(centerX + box.offset[0], ground + box.offset[1], centerZ + box.offset[2]),
+                  box.size,
+                  box.materialId,
+                  box.rotationYRadians,
+                ),
+              }),
+            ),
+          ),
+          tag: rule.tag,
+        }),
+      ]);
+    }
     case "oriented-path": {
       const northSouth = matches(rule.northSouthWhen, centerX, centerZ);
       return Object.freeze([

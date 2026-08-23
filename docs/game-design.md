@@ -42,6 +42,23 @@ collision samples so the streaming grid is not exposed by surface discontinuitie
 These greybox choices establish representative scale without deciding the final geometry
 representation or M3 physics runtime.
 
+## D2 greybox scale and layout (D-174)
+
+The catacombs occupy a 1,024 m × 1,024 m underground district divided row-major into an
+8 × 8 grid of 128 m cells. Generator/schema v1 uses fixed seed `0x5eedD201`. Sixteen
+connected cells form the traversable greybox: a four-cell central Warden arena, separate
+castle and village passages, and a bent forest passage. The other 48 cells are sealed
+rock, making the route network and full-occlusion boundary explicit rather than treating
+the whole underground square as walkable. Collision samples remain independent of visual
+LOD at 8 m spacing.
+
+Castle undercroft, village well, and forest ruin transition markers pair one-to-one with
+their D1 counterparts through world-graph schema v1. Each undirected hard-transition edge
+owns its context and two arrival headings; district and marker identities are references,
+not code paths. The graph validator requires every registered district exactly once and
+every authored transition marker on exactly one edge. D-055's prefetch trigger remains
+deliberately absent until the later M4 measurement task calibrates it per entrance.
+
 ## Genre and mechanics
 
 Fantasy in the **D&D tradition — but original**: multiple playable races, monsters,

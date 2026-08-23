@@ -476,9 +476,11 @@ async function writeGreyboxWorldArtifacts() {
   ]);
   if (
     typeof gameModule.createGreyboxScene !== "function" ||
-    !Array.isArray(gameModule.GREYBOX_DISTRICT_SPECS)
+    !Array.isArray(gameModule.GREYBOX_DISTRICT_SPECS) ||
+    typeof gameModule.validateWorldGraph !== "function" ||
+    typeof gameModule.PARALLAX_WORLD_GRAPH !== "object"
   ) {
-    throw new Error("Game build does not export the greybox generator and district registry");
+    throw new Error("Game build does not export the greybox generator, registry, and world graph");
   }
   if (
     typeof engineModule.validateGreyboxDistrict !== "function" ||
@@ -491,6 +493,7 @@ async function writeGreyboxWorldArtifacts() {
   if (gameModule.GREYBOX_DISTRICT_SPECS.length === 0) {
     throw new Error("Game greybox district registry is empty");
   }
+  gameModule.validateWorldGraph(gameModule.PARALLAX_WORLD_GRAPH, gameModule.GREYBOX_DISTRICT_SPECS);
   const districtIds = new Set();
   const artifactScopes = new Set();
   const entrypoints = [];

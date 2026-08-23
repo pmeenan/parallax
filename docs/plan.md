@@ -283,10 +283,10 @@ Every scenario replay/save/load converged on
 the ordinary simulation-step high-water was 0.740 ms. The same artifact also passed
 the complete contract on retained CfT 151.0.7922.108 before the Stable transition.
 
-## M4 — District 2 (catacombs) + hard transitions  `pending`
+## M4 — District 2 (catacombs) + hard transitions  `in progress`
 
-- [ ] Greybox catacombs district; multiple entrance choke points with different surface
-      contexts, driven by world-graph data (game-design.md).
+- [x] Greybox catacombs district; multiple entrance choke points with different surface
+      contexts, driven by world-graph data (D-174).
 - [ ] Full resident-set swap meeting the transition contract in budgets.md, per entrance.
 - [ ] Calibrate the per-entrance **prefetch trigger** from greybox transition
       measurements and add it to the budgets.md transition contract via a decision-log

@@ -21,7 +21,8 @@ extend the engine interface (in `engine/`, following its rules) — don't tunnel
 
 ```
 game/
-  world/       district/cell definitions, world graph, spawn tables (data-first)
+  world/       ✅ D1 surface + D2 catacomb district/cell definitions, validated
+               three-entrance world graph, spawn tables (data-first; D-090/D-174)
   sim/         ✅ gameplay adapter/state plus runtime binding; D1 movement,
                collision, transition interaction, deterministic NPC navigation/
                schedules/avoidance, and the M3.5 combat core + combat system

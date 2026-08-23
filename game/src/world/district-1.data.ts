@@ -331,5 +331,3 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
     ],
   },
 } satisfies GreyboxDistrictSpec);
-
-export const GREYBOX_DISTRICT_SPECS = freezeGreyboxData([DISTRICT_1_GREYBOX_SPEC]);

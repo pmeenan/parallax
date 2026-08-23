@@ -7,7 +7,9 @@ import type {
 } from "@parallax/engine";
 import { selectGreyboxCellLod, validateGreyboxDistrict } from "@parallax/engine";
 import { describe, expect, it, vi } from "vitest";
-import { DISTRICT_1_GREYBOX_SPEC, GREYBOX_DISTRICT_SPECS } from "../src/world/district-1.data";
+import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
+import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
+import { GREYBOX_DISTRICT_SPECS } from "../src/world/district-registry";
 import { createGreyboxScene } from "../src/world/greybox-generator";
 import { freezeGreyboxData } from "../src/world/greybox-spec";
 
@@ -48,7 +50,7 @@ function triangleRepresentation(cell: GreyboxCell, tier: 0 | 1 | 2): GreyboxTria
 
 describe("data-first greybox world generation", () => {
   it("interprets a versioned descriptor through the district-neutral public API", () => {
-    expect(GREYBOX_DISTRICT_SPECS).toEqual([DISTRICT_1_GREYBOX_SPEC]);
+    expect(GREYBOX_DISTRICT_SPECS).toEqual([DISTRICT_1_GREYBOX_SPEC, DISTRICT_2_GREYBOX_SPEC]);
     expect(Object.isFrozen(GREYBOX_DISTRICT_SPECS)).toBe(true);
     expect(Object.isFrozen(DISTRICT_1_GREYBOX_SPEC.world.zones)).toBe(true);
     expect(JSON.parse(JSON.stringify(DISTRICT_1_GREYBOX_SPEC))).toEqual(DISTRICT_1_GREYBOX_SPEC);

@@ -1149,6 +1149,23 @@ another tag in the same cell. Mixed-stride terrain edges receive single-sided do
 skirts whose triangle winding matches the terrain front-face convention; equal-stride
 interior neighbors do not duplicate those skirts.
 
+**D2 greybox v1 (D-174):** the underground district is a Y-up, metre-scaled 1,024 m
+square divided row-major into an 8 × 8 grid of 128 m cells. Fixed seed `0x5eedD201`
+produces 16 connected traversable cells and 48 sealed-rock cells. A generic repeated
+cell-box feature rule supplies corridor shells, the forest turn, arena pillars, ceilings,
+and collision AABBs without placing catacomb logic in the generator. Its three LOD
+distances are 256/640/1,024 m with 32 m hysteresis; collision uses a 17 × 17 heightfield
+per cell at 8 m spacing and does not change with visual LOD. The same N-district build
+loop emits D2's 64 cell artifacts and independent content-addressed index.
+
+**World graph v1 (D-174):** game-owned data registers the surface and underground
+districts and three undirected hard-transition edges for castle, village, and forest
+contexts. Each edge references two authored transition markers and carries arrival
+headings. Build-time validation rejects unknown/duplicate districts, same-district
+edges, non-transition or reused endpoints, context/marker disagreement, and any authored
+transition marker not owned by exactly one edge. The graph contains no prefetch trigger;
+D-055 reserves that field for M4's measurement-backed calibration task.
+
 - **Intra-district:** distance/visibility-driven cell load/evict with LOD tiers.
 - **Inter-district (hard transition):** full resident-set swap through choke points —
   the catacomb entrances (game-design.md), of which there are several with different

@@ -46,12 +46,22 @@ export {
   createStreamingDashboardModel,
   STREAMING_DASHBOARD_TITLE,
 } from "./ui/streaming-dashboard";
-export { DISTRICT_1_GREYBOX_SPEC, GREYBOX_DISTRICT_SPECS } from "./world/district-1.data";
+export { DISTRICT_1_GREYBOX_SPEC } from "./world/district-1.data";
 export { DISTRICT_1_FLYTHROUGH } from "./world/district-1.flythrough";
+export { DISTRICT_2_GREYBOX_SPEC } from "./world/district-2.data";
+export { GREYBOX_DISTRICT_SPECS } from "./world/district-registry";
 export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-generator";
 export type { GreyboxDistrictSpec } from "./world/greybox-spec";
 export type { NamedLandmarkDefinition } from "./world/landmarks";
 export { NAMED_LANDMARKS } from "./world/landmarks";
+export type {
+  WorldGraph,
+  WorldGraphDistrict,
+  WorldGraphEndpoint,
+  WorldGraphTransition,
+  WorldGraphValidationSummary,
+} from "./world/world-graph";
+export { PARALLAX_WORLD_GRAPH, validateWorldGraph } from "./world/world-graph";
 
 interface DevelopmentImportMeta extends ImportMeta {
   readonly env?: { readonly DEV?: boolean };

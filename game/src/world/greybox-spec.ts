@@ -42,6 +42,15 @@ export interface ZoneRuleSpec {
   readonly tag: string;
 }
 
+export interface CellBoxPlacementSpec {
+  readonly collision: boolean;
+  readonly id: string;
+  readonly materialId: string;
+  readonly offset: WorldVec3;
+  readonly rotationYRadians?: number;
+  readonly size: WorldVec3;
+}
+
 interface TaggedFeatureRuleSpec {
   readonly tag: string;
 }
@@ -62,6 +71,11 @@ export type FeatureRuleSpec =
         rotationSteps: number;
         rotationSalt: number;
         width: Readonly<{ base: number; hashSalt: number; step: number; variants: number }>;
+      }>)
+  | (TaggedFeatureRuleSpec &
+      Readonly<{
+        boxes: readonly CellBoxPlacementSpec[];
+        kind: "cell-boxes";
       }>)
   | (TaggedFeatureRuleSpec &
       Readonly<{
