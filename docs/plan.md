@@ -357,18 +357,42 @@ may run concurrently where they don't share substrate.
 - [ ] Procedural materials: generated stone, wood, brick, mud, clay, straw — plus
       metals through the standard PBR path; the generate-vs-bake trade-off is measured
       against both install size and frame cost.
+- [ ] Dynamic surface response (D-178): mud and soft-ground deformation — tracks and
+      footprints as cosmetic displacement (destruction stays ruled out, D-140) —
+      wetness blending with the water track, and a deterministic surface-material
+      classification the sim can query for movement friction/traction, so mud reads
+      and feels like mud. Snow reuses this at M6.
 - [ ] Vegetation at district scale: trees, plants, grass instancing/LOD — including the
-      shared wind system that must later also drive cloth, smoke, flags, and rain slant
-      (one signal, many consumers; designed here, not per-feature).
+      shared wind system that must later also drive cloth, fire/smoke/gas plumes,
+      flags, and rain slant (one signal, many consumers; designed here, not
+      per-feature).
 - [ ] Water: rendering first (ocean waves, lake/moat surfaces, rain, puddles,
       wet-surface response), with simulation (buoyancy, splashes, flow) scoped as
       explicit options costed separately — rendering and simulation are different cost
       classes and may reach different verdicts.
+- [ ] VFX substrate (moved from M6 — D-178): the GPU-compute particle and volumetrics
+      substrate every effect consumes — fire, smoke, gas, precipitation, spell
+      effects — built here so effect technology is settled before the M5/M6 content
+      passes.
+- [ ] Fire and smoke: movie-quality volumetric flame and smoke across the full
+      scenario range — oil torches, campfires, braziers, bonfires, fire spells and
+      potions, burning buildings — with flames as real emissive sources coupled to
+      the lighting track (not point-light stand-ins) and plumes driven by the shared
+      wind signal. Content placement stays in M6; the technology verdict lands here.
+- [ ] Gas, vapor, and mist: poison-gas volumes, steam, ground mist — the smoke
+      volumetric family made gameplay-legible (readable danger zones such as ember
+      vents), integrated with the atmosphere track's fog rather than fighting it.
+- [ ] Electrical and magic effect primitives: sky lightning (a signature lighting
+      moment) plus branching arc/bolt generation for spells, emissive
+      trails/ribbons/glows, and frost/ember surface responses — the engine primitives
+      M6's authored spell VFX compose, independent of any specific asset.
 - [ ] Reflections: SSR and/or probe strategy for water, wet streets, and metals;
       interacts with the lighting track.
 - [ ] Post-processing and image pipeline: TAA and a temporal upscaler (no DLSS/FSR
       equivalent exists on the web — building one is both necessary and finding-rich),
-      bloom, depth of field, motion blur, tonemapping/color grading, HDR canvas output.
+      bloom, depth of field, motion blur, heat-distortion/refraction (fire and heat
+      shimmer must survive temporal accumulation without smearing — D-178),
+      tonemapping/color grading, HDR canvas output.
 - [ ] Transparency/OIT and decals (puddle edges, mud, moss, wear).
 - [ ] GPU-driven rendering: compute culling and occlusion (the castle-on-a-hill vistas
       make occlusion pay), indirect draws; document the mesh-shader/bindless gaps.
@@ -411,14 +435,13 @@ may run concurrently where they don't share substrate.
 - [ ] SFX and ambience content at scale, plus the audio asset pipeline `assets/` never
       had (its current pipeline is visual-only): AI-generated/sourced audio through a
       QA gate like every other asset.
-- [ ] GPU-compute particle and volumetrics substrate shared by fire, smoke, snow, and
-      precipitation — built once, consumed by every VFX track below (D-140; same
-      explore-and-decide model as M4.5).
-- [ ] Fire and smoke: volumetric/particle rendering coupled to the M4.5 fire/torch
-      light sources — the illumination and shadow interplay is both the hard problem
-      and the showcase.
-- [ ] Precipitation pass: rain and snow fall, accumulation, and wet/snow surface
-      response, completing the M4.5 water/wet-surface work.
+- [ ] VFX content pass (D-178): authored effects composed from the M4.5 substrate and
+      primitives at content scale — torch/campfire/bonfire dressing, spell and potion
+      effects, burning-building set pieces, poison zones. The technology verdicts
+      landed in M4.5; this is placement, tuning, and showcase.
+- [ ] Precipitation pass on the M4.5 particle substrate: rain and snow fall,
+      accumulation, and wet/snow surface response, completing the M4.5
+      water/wet-surface and dynamic-surface work.
 - [ ] Physics garnish: ragdolls, ropes/chains, and buoyancy with a usable rowboat off
       the shore (cheap, high-impact water showcase).
 - [ ] Photo mode (a cheap, high-value capabilities showcase).

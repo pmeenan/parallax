@@ -28,6 +28,69 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-178: Move VFX engine technology into M4.5 and set the movie-quality effects bar (2026-08-23, accepted; amends D-140)
+
+**Decision:** Every visual effect that needs dedicated engine/shader technology
+independent of authored assets moves from M6 into M4.5 as explore-and-decide tracks
+under D-140's working model:
+
+- The GPU-compute particle and volumetrics substrate (formerly M6's shared substrate
+  item) — built in M4.5, consumed by every effect track and by M6 content.
+- Volumetric fire and smoke at **movie quality** across the full scenario range: oil
+  torches, campfires, braziers, bonfires, fire spells and potions, burning buildings.
+  Flames couple to the M4.5 lighting track as real emissive sources rather than
+  point-light stand-ins, and plumes consume the shared wind signal.
+- Gas, vapor, and mist: poison-gas volumes, steam, ground mist — the smoke volumetric
+  family made gameplay-legible (readable danger zones such as the authored ember
+  vents), integrated with the atmosphere track's fog.
+- Electrical and magic effect primitives: sky lightning, branching arc/bolt generation
+  for spells, emissive trails/ribbons/glows, frost/ember surface responses.
+- Heat-distortion/refraction post-effects, added to the existing post-processing
+  track — fire and heat shimmer must survive the TAA/temporal upscaler without
+  smearing, so the two are designed together.
+- Dynamic surface response: mud and soft-ground deformation (tracks and footprints as
+  cosmetic displacement), wetness blending with the water track, and a deterministic
+  surface-material classification the sim can query for movement friction/traction.
+  This is surface response, not destruction — D-140's destructible-environments
+  rule-out stands. Snow accumulation/deformation content completes at M6 on this
+  technology.
+
+The quality bar for these tracks is explicit: movie-quality, filmic effects, not
+sprite-flipbook garnish. A track that cannot reach that bar within measured cost
+records a rule-out or defer with evidence, exactly as D-140 prescribes; the bar being
+explicit is what makes a rule-out meaningful.
+
+M6 keeps only the asset/content side: a VFX content pass composing authored effects
+from the M4.5 substrate and primitives (torch/campfire/bonfire dressing, spell and
+potion effects, burning-building set pieces, poison zones), the precipitation pass on
+the M4.5 substrate, and physics garnish. D-140's no-pre-set-budget model applies
+unchanged to the moved tracks.
+
+**Context:** A scope review found fire *rendering* scheduled at M6 behind the M5 art
+pass, while M4.5's lighting track covered fire only as a light source. That parked
+the feasibility question — can WebGPU compute deliver movie-quality volumetric
+fire/smoke within frame budget at all — until the most expensive possible time,
+after an entire art pass had been built on M4.5's conclusions. Several couplings
+also crossed the milestone boundary: heat distortion interacts with the M4.5
+TAA/upscaler design; the lighting track needs to know whether fire lights are point
+approximations or emissive volumes; the shared wind system already listed smoke as a
+consumer; and mud friction touches the deterministic sim's movement contract. Moving
+the technology (not the content) forward puts every rendering-technology bet inside
+the milestone whose stated purpose is settling them.
+
+**Consequences:** plan.md M4.5 gains the tracks above and M6's substrate and
+fire/smoke technology items collapse into the content-pass item; features.md's
+VFX & weather, Terrain & procedural materials, Water/vegetation/wind, and Image
+pipeline rows are updated. M4.5 grows materially; if its span proves too large,
+splitting it is an explicit plan decision, not silent scope shrink. The
+surface-material friction classification is a design-now constraint on the sim's
+movement contract and must respect the M3 determinism/replay requirements.
+
+**Reopen if:** a substrate or effect track concludes the movie-quality bar is
+unreachable within measured cost (record the reduced bar explicitly rather than
+quietly shipping less); M4.5's expanded span forces a milestone split; or the
+sim-queryable friction classification conflicts with determinism/replay constraints.
+
 ## D-177: Calibrate per-entrance prefetch triggers from the M4 greybox matrix (2026-08-23, accepted)
 
 **Decision:** Adopt world-graph schema v2 with a positive finite
@@ -2892,7 +2955,7 @@ spike's compositing measurements invalidate the DOM-overlay bet; M3.5 scope prov
 large enough to split; or Standard-tier qualification needs to move earlier because M5
 art decisions depend on Standard-tier headroom.
 
-## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted)
+## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted; M6 VFX technology scope moved into M4.5 by D-178)
 
 **Decision:** The plan gains an explicit rendering/simulation technology program:
 
