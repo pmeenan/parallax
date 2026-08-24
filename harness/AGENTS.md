@@ -41,8 +41,9 @@ short (each gap in observability is itself a rough-edges finding — log it).
 
 - `pnpm harness:smoke` — boot to first interactive frame and collect the mandatory
   budget snapshot, including the game-owned M3.5 fight-to-quest replay/load probe. Run
-  once for a converged candidate that can affect this scenario's exercised/evaluated
-  surface under D-157 and
+  once against the exact converged candidate at each milestone exit under D-181, plus
+  bounded diagnostic points after a failed exit gate when no narrower reproducer can
+  classify the regression; see
   [the physical-gate cadence](../docs/workflow.md#validation-and-physical-gate-cadence).
 - `pnpm harness:smoke:v8-cache` — the smoke core plus the opt-in multi-lineage V8
   lifecycle diagnostic. Run only for browser, Node, bundler, serving/cache, lifecycle,
@@ -179,11 +180,11 @@ accepted decisions and evidence identities live in
    require valid resulting environment/presentation evidence; this agent-owned step
    needs no developer acknowledgment. One wake before a multi-minute sequence or a later
    browser action is not an acceptable wake boundary.
-   Under D-157, qualify the converged candidate once when it can affect a subsystem,
-   measurement, validator, or budget actually exercised by smoke, rather than after
-   every intermediate edit. Artifact identity drift alone is not a trigger. Record the
-   affected smoke surface—or the reason none is affected—as required by
-   `docs/workflow.md`.
+   Under D-181, qualify the exact converged candidate once at milestone exit, not after
+   intermediate changes or review fixes. If that exit gate fails, retain it and use
+   focused reproduction plus commit bisection; use physical smoke at selected bisection
+   points only when no narrower reliable probe exists. Record the cadence decision as
+   required by `docs/workflow.md`.
 10. **Intermittent failures remain failures.** Retain an RE-008/RE-036-class failed
     report and make one immediate same-artifact retry for classification. The retry is
     a separate result and cannot relabel the failed report; further repetitions require

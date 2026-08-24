@@ -28,6 +28,56 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-181: Qualify routine physical smoke only at milestone exit (2026-08-24, accepted; supersedes D-157 and D-097 routine cadence)
+
+**Decision:** `pnpm harness:smoke` is a required milestone-exit gate, not a gate for
+each runtime-affecting change or reviewable candidate. During a milestone, changes use
+`pnpm check`, focused contract and regression tests, local browser/render probes, and
+the specialized scenarios that directly cover their claims. After implementation,
+review corrections, documentation, dependency currency, and all other exit work
+converge, run one physical-console smoke against the exact candidate proposed for
+milestone closure. The milestone cannot exit unless that report passes its complete
+environment, evidence, and budget contract.
+
+If the exit smoke fails, retain the immutable failed report and keep the milestone
+open. Use D-097's single same-artifact retry only to classify a plausibly intermittent
+failure. For a reproducible regression, identify the failing facet, construct the
+narrowest reliable reproducer, and bisect the human-reviewed commits between the last
+passing milestone-exit anchor and the failed candidate. Physical smoke may be used at
+selected bisection points only when no narrower reliable probe exposes the regression;
+those are bounded diagnostic runs, not milestone qualification. Once the culprit is
+fixed and the exact exit candidate reconverges, run the milestone-exit smoke again.
+
+D-157's exercised-surface map remains useful for selecting focused checks and for
+understanding a failed smoke report, but it no longer triggers routine smoke within a
+milestone. D-179's observed physical-environment and unattended-launch rules, D-097's
+fail-closed result retention and intermittent-classification limit, specialized
+scenario triggers, and unchanged budget thresholds remain in force.
+
+**Context:** The six-launch Showcase smoke is broad integration and regression
+insurance. Repeating it after changes to paths it already covered supplied little new
+evidence in the common passing case, consumed physical-console time, and encouraged
+gate runs before review convergence. A single exact exit gate preserves the broad
+regression check while focused tests provide faster feedback during development. The
+tradeoff is delayed discovery of cross-cutting regressions; retaining granular
+human-reviewed commits and a last-passing milestone anchor makes that delay
+recoverable through bisection.
+
+**Consequences:** Ordinary work-unit handoffs state that physical smoke is deferred to
+the active milestone exit and name the focused verification performed. Milestone-exit
+handoffs identify the exact smoke report. Human commits remain small enough to bisect;
+agents continue to leave changes uncommitted and do not manipulate history. Historical
+physical reports and qualification claims remain immutable. This changes cadence, not
+the smoke scenario, its six launches, its budgets, or its fail-closed verdict.
+
+**Reopen if:** milestone duration or commit volume makes regressions prohibitively
+expensive to localize; repeated failures cannot be reproduced below the full physical
+smoke; a safety- or persistence-critical path demonstrates that delayed detection is
+unacceptable; or smoke becomes cheap enough that more frequent runs provide material
+confidence per unit cost.
+
+---
+
 ## D-180: Require agent-first visual convergence before M4.5 human verification (2026-08-23, accepted; amends D-140 and D-178)
 
 **Decision:** Every M4.5 visual track must go through a best-effort autonomous visual
@@ -1627,7 +1677,7 @@ commands.
 
 ---
 
-## D-157: Match physical qualification to the scenario's exercised surface (2026-08-08, accepted)
+## D-157: Match physical qualification to the scenario's exercised surface (2026-08-08, superseded in routine cadence by D-181)
 
 **Decision:** Supersede D-097's artifact-wide physical-smoke trigger with an
 impact-based trigger. A final candidate requires the registered physical-console
@@ -7589,7 +7639,7 @@ visual, storage, preparation, and environment evidence at both registered target
 
 ---
 
-## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, superseded in trigger scope by D-157; manual pre-run confirmation superseded by D-179)
+## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, routine cadence superseded by D-181; trigger scope superseded by D-157; manual pre-run confirmation superseded by D-179)
 
 **Decision:** Interpret the project's per-change performance requirement at the
 reviewable-candidate boundary, not after every edit or review exchange.

@@ -18,11 +18,11 @@ it to its delivered scope, final outcomes, unresolved carry-forwards, and exit e
 incremental run history remains in decisions.md, rough-edges.md, dependencies.md, and the
 harness result artifacts.
 
-Physical qualification is impact-matched under D-157. A plan item requires Showcase
-`smoke@1` only when its candidate can affect a subsystem, measurement, validator, or
-budget that smoke explicitly exercises. Items isolated to other surfaces use their
-relevant focused or specialized scenario instead; changed artifact identity alone does
-not create a smoke requirement.
+Physical `smoke@1` qualification is a milestone-exit gate under D-181, not a plan-item
+gate. During a milestone, each item uses focused checks and the relevant specialized
+scenario; the exact converged milestone candidate receives one Showcase smoke before
+the milestone can close. A failed exit report is retained and localized through a
+focused reproducer and commit bisection before the corrected exit candidate is rerun.
 
 ## Standing gate — dependency currency
 

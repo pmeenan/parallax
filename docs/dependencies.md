@@ -43,10 +43,15 @@ units; no floating ranges, unattended lockfile refreshes, or automatic merges.
 
 | Tier | What belongs here | Upgrade gate |
 | --- | --- | --- |
-| Runtime/platform critical | Rendering and asset runtimes (Babylon Lite); AI inference runtimes, model/tokenizer/chat-template pins; compression decoders; storage/crypto libraries; Chrome/CfT; future Rust/WASM runtime crates | One component family per change. Read upstream release/migration/security notes, audit affected local APIs and capability gaps, run `pnpm check` and engine repeatability, then run the relevant physical harness and subsystem fixtures against old and new pins. Keep budgets unchanged; record measured regressions as well as wins. |
-| Build and measurement critical | Node, pnpm, TypeScript, Rollup, esbuild, Vite, Playwright, Biome, Vitest, future Rust toolchain/wasm-bindgen/binaryen, deployment and measurement tools | Exact-pin change with `pnpm check`, repeatability, and the harness contract tests. Run a physical smoke when emitted bytes, browser launch/trace behavior, serving, or measurement semantics can change. Tool upgrades that change a result schema or baseline require the corresponding docs/decision update. |
+| Runtime/platform critical | Rendering and asset runtimes (Babylon Lite); AI inference runtimes, model/tokenizer/chat-template pins; compression decoders; storage/crypto libraries; Chrome/CfT; future Rust/WASM runtime crates | One component family per change. Read upstream release/migration/security notes, audit affected local APIs and capability gaps, run `pnpm check`, engine repeatability, subsystem fixtures, and any directly relevant specialized physical A/B harness against old and new pins. Routine `smoke@1` waits for the exact milestone-exit candidate under D-181. Keep budgets unchanged; record measured regressions as well as wins. |
+| Build and measurement critical | Node, pnpm, TypeScript, Rollup, esbuild, Vite, Playwright, Biome, Vitest, future Rust toolchain/wasm-bindgen/binaryen, deployment and measurement tools | Exact-pin change with `pnpm check`, repeatability, and the harness contract tests. Exercise changed launch/trace/serving/measurement behavior with focused fixtures during the milestone; the exact adopted set receives physical smoke at milestone exit under D-181. Tool upgrades that change a result schema or baseline require the corresponding docs/decision update. |
 | Development/supporting | Types-only packages and tooling that cannot affect shipped artifacts or measurement semantics | May be batched when the diff remains bisectable; exact pins, `pnpm check`, and repeatability are still mandatory. Escalate to a higher tier if emitted artifacts or harness evidence change. |
 | Transitive | Lockfile-only packages not directly selected by Parallax | Review through the owning direct dependency. Update independently only for a concrete advisory/bug, with the owning subsystem's tier gate; never refresh the lockfile merely to make it newer. |
+
+Historical ledger rows retain the physical evidence that supported their recorded
+outcomes. Any future-looking ledger trigger that mentions routine physical smoke is
+interpreted through D-181: focused or specialized qualification happens with the
+dependency work, while full `smoke@1` runs on the exact milestone-exit candidate.
 
 An upgrade is not accepted merely because tests compile. Runtime/platform-critical
 changes must preserve the relevant worker topology, telemetry identity, feature floor,

@@ -493,14 +493,15 @@ Definitions the harness implements; budgets above are meaningless without them.
 - **Repeats and aggregation:** a budget verdict comes from ≥ 3 runs of the scripted
   scenario. Percentiles are computed per run over all in-window frames; the *worst* run
   must pass (no averaging away a bad run).
-- **Qualification cadence (D-097):** run one physical-console `smoke@1` after the final
-  reviewable state of each runtime-affecting candidate, and rerun after a later change
-  to the built runtime, browser-facing behavior, measurement path, runtime pins,
-  reference-machine descriptor, budgets, or mandatory evidence contract. Documentation-
-  only, test-only, and machine-local tool-location changes that leave those inputs
-  unchanged do not require a physical run. An intermittent failure remains a failed
-  report; retain it and use at most one immediate same-artifact retry for routine
-  classification. Additional repetitions are an explicit diagnostic exercise.
+- **Qualification cadence (D-181):** run one physical-console `smoke@1` against the
+  exact converged candidate at each milestone exit. Do not rerun it for intermediate
+  implementation, review, documentation, test, artifact-identity, runtime, browser,
+  measurement, budget, or contract changes within the milestone; use focused and
+  specialized checks while those changes converge. A failed exit report remains failed
+  and keeps the milestone open. Retain it, use at most one immediate same-artifact retry
+  for intermittent classification, then localize a reproducible regression with the
+  narrowest probe and commit bisection. Physical smoke at selected bisection points is a
+  bounded diagnostic fallback when no narrower reliable reproducer exists.
 - **JavaScript code-cache lifecycle (D-040–D-042, D-051, D-095):** the targeted
   `pnpm harness:smoke:v8-cache` command gives each repeat one persistent profile for
   fresh/timestamp, produce, and warm/consume launches. Fresh must expose no production, every

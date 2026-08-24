@@ -10,10 +10,11 @@ deploys. The process is sized for that: the default path from idea to commit is
 ## The loop
 
 1. **Build.** One agent implements the task (scope from [plan.md](plan.md)), runs the
-   repo's checks (`pnpm check` — build, Biome lint, Vitest unit tests — plus one
-   physical `pnpm harness:smoke` when the change qualifies under the
-   [physical-gate cadence](#validation-and-physical-gate-cadence) below), and ends
-   with a short note: what changed, what was verified.
+   repo's checks (`pnpm check` — build, Biome lint, Vitest unit tests — plus relevant
+   focused or specialized checks), and ends with a short note: what changed, what was
+   verified. The exact converged milestone candidate receives one physical
+   `pnpm harness:smoke` as the final milestone-exit gate under the
+   [physical-gate cadence](#validation-and-physical-gate-cadence) below.
 2. **Commit.** The human scans the note and the diff at whatever depth the change
    warrants, and commits. Agents never commit.
 
@@ -127,10 +128,10 @@ The deployer cannot install `/etc/nginx` configuration or reload nginx. Those ar
 separate human-admin actions using the exact rollback-safe installer command in
 `deploy/README.md`. The portable unit gate executes the mocked production and model-
 content deployment safety suites; optional POSIX semantic fixtures are not required.
-For each post-M2 production candidate whose standing D-157 impact trigger
-fires, install any changed versioned config, deploy the exact candidate, and require
-local plus public header/artifact checks and the final production-target harness gate
-to pass before acceptance. D-153's M2 closure is not reopened by documentation-only work.
+For each post-M2 milestone-exit production candidate under D-181, install any changed
+versioned config, deploy the exact candidate, and require local plus public
+header/artifact checks and the final production-target harness gate to pass before
+acceptance. D-153's M2 closure is not reopened by documentation-only work.
 D-154 prospectively classifies short-`smoke@1` streaming p95 cross-launch repeatability
 as a non-blocking diagnostic. The final production-target gate still requires all six
 launches, valid per-launch streaming evidence, all 30 unchanged budget checks, all three
@@ -196,31 +197,38 @@ answered a settled decision.
 
 ## Validation and physical-gate cadence
 
-“Per change” means per final reviewable candidate whose changes can affect the selected
-scenario's exercised or evaluated surface, not after every edit or review exchange
-(D-157).
+Routine physical smoke is milestone-scoped, not change-scoped (D-181). It qualifies the
+exact exit candidate after all milestone implementation, review corrections, docs, and
+standing exit work have converged.
 
 - During implementation and review correction, run the focused tests, typecheck, and
   lint checks that cover the changed surface. Run `pnpm check` once after implementation
   and review corrections converge. Rerun that full gate only when a later change alters
   a qualifying input after the gate; do not rerun it after every intermediate edit or
   review exchange (D-145).
-- Run one physical-console `pnpm harness:smoke` after code and review fixes converge
-  only when the candidate can affect a path the current smoke actually executes, a
-  value it collects, a validator/report contract it applies, or a smoke-specific
-  budget/reference input. Current exercised subsystems are the six-launch boot/launch
-  core, greybox rendering, world streaming, simulation replay/save-load, SAB transport,
-  Rust/Wasm threads, render callback pacing, all-worker heap, Dawn pipeline cache, PSO
-  warmup, serving/environment identity, telemetry, and report finalization.
-- A changed build artifact or digest is not sufficient by itself. Changes isolated to
-  non-exercised or specialized-scenario-only code use their own focused verification
-  and do not require routine smoke. Changes to smoke harness logic, its collector,
-  mandatory contract, budget, browser/tool input, or registered-machine descriptor do
-  require smoke when they can affect the smoke result.
-- Record the impact decision in the handoff as `Physical smoke: required — <affected
-  surface>` or `Physical smoke: not required — <why no current smoke surface is
-  affected>`. Trace imports, runtime startup, telemetry, validators, and budget
-  consumers to decide; do not infer impact solely from filenames or artifact drift.
+- Do not run routine `pnpm harness:smoke` for intermediate plan items, review fixes,
+  artifact changes, dependency changes, or smoke-contract changes within a milestone.
+  Use the narrowest deterministic test, local browser probe, contract fixture, or
+  specialized scenario that covers the changed claim.
+- After all milestone exit criteria and the standing dependency checkpoint are ready,
+  run one physical-console `pnpm harness:smoke` against the exact candidate proposed for
+  closure. The milestone cannot close without a passing report whose source/artifact,
+  environment, mandatory metric set, and budgets bind that candidate.
+- If the exit smoke fails, retain the immutable failed report and keep the milestone
+  open. Use at most one immediate same-artifact retry when the failure may be
+  intermittent (D-097). Otherwise identify the failing facet, build the narrowest
+  reliable reproducer, and bisect the human-reviewed commits between the last passing
+  milestone exit and the failed candidate. A physical smoke may run at selected
+  bisection points only when no narrower reliable probe reproduces the failure; those
+  runs are diagnostic and do not qualify an exit. After fixing the culprit and
+  reconverging the exact candidate, rerun the milestone-exit smoke.
+- Preserve reviewable human commits throughout the milestone so the last passing exit
+  and each landed work unit form usable bisection boundaries. Agents still leave every
+  work unit uncommitted for the human gate and never manipulate history themselves.
+- Record ordinary handoffs as `Physical smoke: deferred to <milestone> exit — <focused
+  verification>`. The milestone-closing handoff records `Physical smoke: required —
+  <milestone> exit`; a failed gate also records the retained report and current
+  localization or bisection status.
 - After a completed qualifying run, D-119 permits the narrow evidence-only closure
   needed to mechanically record that exact report's path, digest, schema, mandatory
   metric set, and verdict and update status pointers. It requires no new physical run
@@ -228,7 +236,7 @@ scenario's exercised or evaluated surface, not after every edit or review exchan
   budget/threshold, mandatory evidence contract, runtime/tool/browser pin,
   reference-machine descriptor, or claim beyond the report. The measured identity
   remains the report's own source tuple and runtime artifact; this exception prevents
-  an infinite run → document → rerun loop and does not weaken any applicable D-157 gate.
+  an infinite run → document → rerun loop and does not weaken the D-181 exit gate.
 - Keep opt-in diagnostics on their documented triggers. In particular, run the V8
   lifecycle diagnostic only under D-095. Run
   `pnpm harness:branded-parity -- --target https://parallax-web.com` on physical-console
@@ -299,9 +307,9 @@ artifact, and does not turn the failed post-D-108 ten-minute variance into a pas
 Do not run another 30-plus-minute public benchmark or privileged M1 diagnostic for this
 milestone. The D-110 full reruns and D-111/D-113 diagnostic are consumed, and D-114
 removed the closed apparatus. D-116's converged D-097 `smoke@1` completed the final M1
-exit action; that milestone completion does not waive an applicable D-157 impact
-trigger for a subsequent candidate. Do not rerun the already qualified flythrough or
-render-recovery scenario. A future public benchmark invocation
+exit action; under D-181 the next routine `smoke@1` is the next milestone's exact exit
+gate, not an intermediate-candidate trigger. Do not rerun the already qualified
+flythrough or render-recovery scenario. A future public benchmark invocation
 requires an ordinary direct product/research trigger under D-115's reopen conditions,
 remains subject to the unchanged schema-v3 metrics, and is not a deferred M1 gate.
 Keep sending the ordinary F15 wake immediately before each Windows Chrome launch;
