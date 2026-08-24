@@ -361,10 +361,12 @@ may run concurrently where they don't share substrate.
       shadow interplay are signature moments and a known hard problem at
       many-lights-at-night scale. WebGPU has no ray-tracing extension; whatever
       technique survives here, the gap analysis is a headline finding.
-      The first implementation slice centralizes a deterministic solar/sky/ground
+      The current implementation centralizes a deterministic solar/sky/ground
       irradiance model across the authored time-of-day and weather matrix and drives
-      the live render worker with it. Directional-light, shadow, local-light, and GI
-      candidate comparisons remain open before this track can be concluded.
+      separate hemispheric ambient and directional-sun lights in the live render
+      worker. Directional-sun state is exported as mandatory harness evidence. Shadow,
+      local-light, and GI candidate comparisons remain open before this track can be
+      concluded.
 - [ ] Sky and atmosphere: day/night sky, volumetric clouds, height/distance fog, god
       rays, aerial perspective for the mountain vista — driven by the weather states
       already bound at M1.

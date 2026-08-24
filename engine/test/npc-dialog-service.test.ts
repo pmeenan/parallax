@@ -60,12 +60,16 @@ describe("NPC dialog service", () => {
                         lightingIntensity: 1,
                         lightingPhase: 0,
                         presentIntervalMs: 16,
+                        sunDirection: [0, -1, 0] as const,
+                        sunIntensity: 1,
                       },
                       {
                         durationMs: 4,
                         lightingIntensity: 1,
                         lightingPhase: 0,
                         presentIntervalMs: 20,
+                        sunDirection: [0, -1, 0] as const,
+                        sunIntensity: 1,
                       },
                     ]
                   : [
@@ -74,6 +78,8 @@ describe("NPC dialog service", () => {
                         lightingIntensity: 1,
                         lightingPhase: 0,
                         presentIntervalMs: 17,
+                        sunDirection: [0, -1, 0] as const,
+                        sunIntensity: 1,
                       },
                     ];
               render = {

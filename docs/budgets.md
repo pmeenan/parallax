@@ -194,7 +194,7 @@ than 0.1% of the canvas to remain detectably clear rather than relying on equali
 | D1↔D2 hard transition: prefetch trigger at 12 m/s | Castle: exactly 6 m; village/forest: exactly 5 m | Authored latest-start distances; runtime preload may begin earlier, but each measured total must fit the resulting 500.000 ms / 416.667 ms lead window (D-177) |
 | Eviction mode | Proactive only | Emergency eviction events = 0 per run |
 
-Smoke schema v75 applies these transition rows plus the 1.25× inter-district logical
+Smoke schema v76 applies these transition rows plus the 1.25× inter-district logical
 GPU-overlap row to the game-owned `m4-district-swap@1` v2 scenario (D-175–D-177). Every one of
 the three world-graph entrances must run in both directions on every fresh/warm launch.
 Each directed sample must retain exactly nine exclusive source and destination cell IDs,
@@ -556,8 +556,11 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-   the current `smoke@1` mandatory metric-set (v35, which retains measured D-090 greybox-world content,
-  observed lighting ranges, and hashed canvas-visible-pixel coverage in every core run,
+   the current `smoke@1` mandatory metric-set (v36, which retains measured D-090 greybox-world content,
+  observed lighting ranges and hashed canvas-visible-pixel coverage in every core run,
+  and requires M4.5's exact hemispheric-ambient/directional-sun model plus finite,
+  normalized, moving world-space sun-ray directions and positive direct intensity in
+  the daylight smoke window,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
   residents, bounded encoded-package residency and decode-pool/queue shape, positive GPU
   attribution, proactive eviction, zero encoded-budget rejections, and a representative cell-load p95 no
@@ -578,8 +581,8 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-   corresponding current `smoke@1` report schema is v72
-   and public telemetry is v43. D-161 additionally requires each core run to retain
+   corresponding current `smoke@1` report schema is v76
+   and public telemetry is v47. D-161 additionally requires each core run to retain
   measured hybrid-UI evidence: a ready DOM HUD tree plus the matching presentation
   revision and at least one visible world-anchor record ingested by the render worker's
   fixed UI pools. This is logical cross-thread ingestion evidence, not attributable

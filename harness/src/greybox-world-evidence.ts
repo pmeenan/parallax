@@ -1,9 +1,14 @@
-import type { GreyboxRenderTelemetry, RenderFrameSample } from "@parallax/engine";
+import {
+  type GreyboxRenderTelemetry,
+  RENDER_LIGHTING_MODEL,
+  type RenderFrameSample,
+} from "@parallax/engine";
 import {
   type GreyboxRenderedOutputEvidence,
   requireGreyboxRenderedOutputEvidence,
   screenshotClearColorRgb,
 } from "./greybox-rendered-output.js";
+import { isUnitVector3 } from "./value-utils.js";
 
 export interface GreyboxWorldEvidence extends GreyboxRenderTelemetry {
   readonly observedLighting: GreyboxObservedLightingEvidence;
@@ -18,6 +23,12 @@ export interface GreyboxObservedLightingEvidence {
   readonly phaseMinimum: number;
   readonly phaseRange: number;
   readonly sampleCount: number;
+  readonly sunDirectionAngularChangeRadians: number;
+  readonly sunDirectionEnd: readonly [number, number, number];
+  readonly sunDirectionStart: readonly [number, number, number];
+  readonly sunIntensityMaximum: number;
+  readonly sunIntensityMinimum: number;
+  readonly sunIntensityRange: number;
 }
 
 export function requireGreyboxWorld(
@@ -26,11 +37,22 @@ export function requireGreyboxWorld(
   renderedOutput: GreyboxRenderedOutputEvidence,
 ): GreyboxWorldEvidence {
   const telemetry = requireGreyboxRenderTelemetry(value);
-  if (frames.length < 2 || frames.some((frame) => !validLightingSample(frame))) {
-    throw new Error("Greybox lighting telemetry requires at least two finite frame samples");
+  if (frames.length < 2) {
+    throw new Error("Greybox lighting telemetry requires at least two frame samples");
+  }
+  if (frames.some((frame) => !validBaseLightingSample(frame))) {
+    throw new Error("Greybox lighting telemetry contains an invalid phase or perceived intensity");
+  }
+  if (frames.some((frame) => !validDirectionalSunSample(frame))) {
+    throw new Error("Greybox directional-sun telemetry is invalid");
   }
   const observedLighting = createObservedLightingEvidence(frames);
-  if (observedLighting.phaseRange <= 1e-6 || observedLighting.intensityRange <= 1e-6) {
+  if (
+    observedLighting.phaseRange <= 1e-6 ||
+    observedLighting.intensityRange <= 1e-6 ||
+    observedLighting.sunIntensityRange <= 1e-6 ||
+    observedLighting.sunDirectionAngularChangeRadians <= 1e-6
+  ) {
     throw new Error("Greybox lighting did not change during the measurement window");
   }
   const validatedOutput = requireGreyboxRenderedOutputEvidence(renderedOutput);
@@ -66,10 +88,18 @@ function createObservedLightingEvidence(
 ): GreyboxObservedLightingEvidence {
   const phases = frames.map((frame) => frame.lightingPhase);
   const intensities = frames.map((frame) => frame.lightingIntensity);
+  const sunIntensities = frames.map((frame) => frame.sunIntensity);
   const phaseMinimum = Math.min(...phases);
   const phaseMaximum = Math.max(...phases);
   const intensityMinimum = Math.min(...intensities);
   const intensityMaximum = Math.max(...intensities);
+  const sunIntensityMinimum = Math.min(...sunIntensities);
+  const sunIntensityMaximum = Math.max(...sunIntensities);
+  const sunDirectionStart = frames[0]?.sunDirection;
+  const sunDirectionEnd = frames.at(-1)?.sunDirection;
+  if (sunDirectionStart === undefined || sunDirectionEnd === undefined) {
+    throw new Error("Greybox directional-sun telemetry is missing");
+  }
   return Object.freeze({
     intensityMaximum,
     intensityMinimum,
@@ -78,6 +108,12 @@ function createObservedLightingEvidence(
     phaseMinimum,
     phaseRange: phaseMaximum - phaseMinimum,
     sampleCount: frames.length,
+    sunDirectionAngularChangeRadians: angularDistance(sunDirectionStart, sunDirectionEnd),
+    sunDirectionEnd: Object.freeze([...sunDirectionEnd]) as readonly [number, number, number],
+    sunDirectionStart: Object.freeze([...sunDirectionStart]) as readonly [number, number, number],
+    sunIntensityMaximum,
+    sunIntensityMinimum,
+    sunIntensityRange: sunIntensityMaximum - sunIntensityMinimum,
   });
 }
 
@@ -90,6 +126,10 @@ function requireObservedLightingEvidence(value: unknown): GreyboxObservedLightin
     value.phaseMaximum,
     value.phaseMinimum,
     value.phaseRange,
+    value.sunDirectionAngularChangeRadians,
+    value.sunIntensityMaximum,
+    value.sunIntensityMinimum,
+    value.sunIntensityRange,
   ];
   if (
     fields.some((field) => typeof field !== "number" || !Number.isFinite(field)) ||
@@ -101,8 +141,17 @@ function requireObservedLightingEvidence(value: unknown): GreyboxObservedLightin
     (value.intensityMinimum as number) <= 0 ||
     (value.intensityMaximum as number) > 1 ||
     (value.intensityMaximum as number) < (value.intensityMinimum as number) ||
+    !isUnitVector3(value.sunDirectionStart) ||
+    !isUnitVector3(value.sunDirectionEnd) ||
+    value.sunDirectionStart[1] >= 0 ||
+    value.sunDirectionEnd[1] >= 0 ||
+    (value.sunIntensityMinimum as number) <= 0 ||
+    (value.sunIntensityMaximum as number) > 1 ||
+    (value.sunIntensityMaximum as number) < (value.sunIntensityMinimum as number) ||
     (value.phaseRange as number) <= 1e-6 ||
     (value.intensityRange as number) <= 1e-6 ||
+    (value.sunIntensityRange as number) <= 1e-6 ||
+    (value.sunDirectionAngularChangeRadians as number) <= 1e-6 ||
     !nearlyEqual(
       value.phaseRange as number,
       (value.phaseMaximum as number) - (value.phaseMinimum as number),
@@ -110,6 +159,14 @@ function requireObservedLightingEvidence(value: unknown): GreyboxObservedLightin
     !nearlyEqual(
       value.intensityRange as number,
       (value.intensityMaximum as number) - (value.intensityMinimum as number),
+    ) ||
+    !nearlyEqual(
+      value.sunIntensityRange as number,
+      (value.sunIntensityMaximum as number) - (value.sunIntensityMinimum as number),
+    ) ||
+    !nearlyEqual(
+      value.sunDirectionAngularChangeRadians as number,
+      angularDistance(value.sunDirectionStart, value.sunDirectionEnd),
     )
   ) {
     throw new Error("Greybox observed-lighting evidence is invalid");
@@ -154,6 +211,7 @@ function requireGreyboxRenderTelemetry(value: unknown): GreyboxRenderTelemetry {
     !Number.isFinite(value.mainThreadScenePostMessageMs) ||
     value.mainThreadScenePostMessageMs < 0 ||
     value.dynamicLighting !== true ||
+    value.lightingModel !== RENDER_LIGHTING_MODEL ||
     value.worldBoundsMeters.minimum[0] !== -2_048 ||
     value.worldBoundsMeters.minimum[1] !== -32 ||
     value.worldBoundsMeters.minimum[2] !== -2_048 ||
@@ -166,7 +224,7 @@ function requireGreyboxRenderTelemetry(value: unknown): GreyboxRenderTelemetry {
   return value as unknown as GreyboxRenderTelemetry;
 }
 
-function validLightingSample(value: unknown): value is RenderFrameSample {
+function validBaseLightingSample(value: unknown): value is RenderFrameSample {
   if (!isRecord(value)) return false;
   return (
     typeof value.lightingPhase === "number" &&
@@ -178,6 +236,25 @@ function validLightingSample(value: unknown): value is RenderFrameSample {
     value.lightingIntensity > 0 &&
     value.lightingIntensity <= 1
   );
+}
+
+function validDirectionalSunSample(value: RenderFrameSample): boolean {
+  return (
+    isUnitVector3(value.sunDirection) &&
+    value.sunDirection[1] < 0 &&
+    typeof value.sunIntensity === "number" &&
+    Number.isFinite(value.sunIntensity) &&
+    value.sunIntensity > 0 &&
+    value.sunIntensity <= 1
+  );
+}
+
+function angularDistance(
+  left: readonly [number, number, number],
+  right: readonly [number, number, number],
+): number {
+  const dot = left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
+  return Math.acos(Math.min(1, Math.max(-1, dot)));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

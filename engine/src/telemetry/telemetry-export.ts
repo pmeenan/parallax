@@ -59,9 +59,9 @@ import type { HybridUiService } from "../ui/hybrid-ui-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v46 adds the scenario-owned prefetch trigger and traversal speed to
-// each district-swap sample. v45 corrected district-swap completion/render evidence.
-export const TELEMETRY_SCHEMA_VERSION = 46;
+// Public telemetry v47 makes the applied directional-sun model, direction, and intensity
+// observable. v46 added scenario-owned district-swap prefetch evidence.
+export const TELEMETRY_SCHEMA_VERSION = 47;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by

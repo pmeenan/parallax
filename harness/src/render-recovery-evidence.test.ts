@@ -1,3 +1,4 @@
+import { RENDER_LIGHTING_MODEL } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import type {
   MeasuredRenderRecoveryAttempt,
@@ -363,6 +364,7 @@ function boundary(
       districtId: "d1",
       dynamicLighting: true,
       heightSampleCount: 1,
+      lightingModel: RENDER_LIGHTING_MODEL,
       mainThreadScenePostMessageMs: 1,
       mainThreadWorldGenerationMs: 1,
       materialCount: 1,

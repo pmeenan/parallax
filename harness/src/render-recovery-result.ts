@@ -1,4 +1,5 @@
 import {
+  RENDER_LIGHTING_MODEL,
   STREAMING_DECODE_WORKER_MAXIMUM,
   STREAMING_DECODE_WORKER_RESERVED_THREADS,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
@@ -27,7 +28,7 @@ import {
   validateOfflineShellTelemetry,
   validateSimulationTelemetry,
 } from "./telemetry.js";
-import { isRecord } from "./value-utils.js";
+import { isRecord, isUnitVector3 } from "./value-utils.js";
 
 const HEX_40 = /^[a-f0-9]{40}$/;
 const HEX_64 = /^[a-f0-9]{64}$/;
@@ -520,13 +521,23 @@ function validateRenderFrame(value: unknown, label: string): void {
   const frame = requireRecord(value, label);
   requireExactKeys(
     frame,
-    ["durationMs", "lightingIntensity", "lightingPhase", "presentIntervalMs"],
+    [
+      "durationMs",
+      "lightingIntensity",
+      "lightingPhase",
+      "presentIntervalMs",
+      "sunDirection",
+      "sunIntensity",
+    ],
     label,
   );
   if (
     !nonNegativeFinite(frame.durationMs) ||
     !nonNegativeFinite(frame.lightingIntensity) ||
     !nonNegativeFinite(frame.lightingPhase) ||
+    !isUnitVector3(frame.sunDirection) ||
+    !nonNegativeFinite(frame.sunIntensity) ||
+    frame.sunIntensity > 1 ||
     (frame.presentIntervalMs !== null && !nonNegativeFinite(frame.presentIntervalMs))
   ) {
     throw new Error(`${label} is invalid`);
@@ -1434,6 +1445,7 @@ function validateGreybox(value: unknown, label: string): void {
       "districtId",
       "dynamicLighting",
       "heightSampleCount",
+      "lightingModel",
       "mainThreadScenePostMessageMs",
       "mainThreadWorldGenerationMs",
       "materialCount",
@@ -1449,6 +1461,7 @@ function validateGreybox(value: unknown, label: string): void {
   if (
     !nonEmptyString(world.districtId) ||
     world.dynamicLighting !== true ||
+    world.lightingModel !== RENDER_LIGHTING_MODEL ||
     !Array.isArray(world.clearColor) ||
     world.clearColor.length !== 4 ||
     world.clearColor.some((entry) => !nonNegativeFinite(entry)) ||

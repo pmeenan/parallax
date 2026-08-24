@@ -4,12 +4,14 @@ import {
   createArcRotateCamera,
   createBoxData,
   createCapsule,
+  createDirectionalLight,
   createEngine,
   createHemisphericLight,
   createMeshFromData,
   createSceneContext,
   createStandardMaterial,
   createTexture2DFromPixels,
+  type DirectionalLight,
   disposeMeshGpu,
   type HemisphericLight,
   type Mesh,
@@ -44,6 +46,7 @@ import {
 } from "../world/world-contract";
 import {
   type EnvironmentLightingSample,
+  type LinearRgb,
   quantizeAnimatedEnvironmentLightingPhase,
   sampleEnvironmentLighting,
 } from "./environment-lighting";
@@ -58,7 +61,7 @@ import type {
   FlythroughCheckpointRenderEvidence,
   GreyboxWorkerRenderTelemetry,
 } from "./render-protocol";
-import { RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render-protocol";
+import { RENDER_GAMEPLAY_CROWD_CAPACITY, RENDER_LIGHTING_MODEL } from "./render-protocol";
 
 export interface GeometryBatch {
   readonly indices: Uint32Array;
@@ -83,25 +86,34 @@ interface StreamingDependencyGpuValue {
 }
 
 function applyEnvironmentLighting(
-  light: HemisphericLight,
+  ambientLight: HemisphericLight,
+  sunLight: DirectionalLight,
   scene: SceneContext,
   lighting: EnvironmentLightingSample,
 ): void {
-  light.direction.set(
-    lighting.hemisphericUpDirection[0],
-    lighting.hemisphericUpDirection[1],
-    lighting.hemisphericUpDirection[2],
+  ambientLight.intensity = lighting.ambientIntensity;
+  copyRgb(ambientLight.diffuseColor, lighting.skyColor);
+  copyRgb(ambientLight.specularColor, lighting.skyColor);
+  copyRgb(ambientLight.groundColor, lighting.groundColor);
+  // Babylon Lite scalar/color writes do not invalidate the light UBO; set direction last.
+  ambientLight.direction.set(0, 1, 0);
+  sunLight.intensity = lighting.sunIntensity;
+  copyRgb(sunLight.diffuse, lighting.sunColor);
+  copyRgb(sunLight.specular, lighting.sunColor);
+  sunLight.direction.set(
+    lighting.sunDirection[0],
+    lighting.sunDirection[1],
+    lighting.sunDirection[2],
   );
-  light.intensity = lighting.perceivedIntensity;
-  light.diffuseColor[0] = lighting.skyColor[0];
-  light.diffuseColor[1] = lighting.skyColor[1];
-  light.diffuseColor[2] = lighting.skyColor[2];
-  light.groundColor[0] = lighting.groundColor[0];
-  light.groundColor[1] = lighting.groundColor[1];
-  light.groundColor[2] = lighting.groundColor[2];
   scene.clearColor.r = lighting.clearColor[0];
   scene.clearColor.g = lighting.clearColor[1];
   scene.clearColor.b = lighting.clearColor[2];
+}
+
+function copyRgb(target: [number, number, number], source: LinearRgb): void {
+  target[0] = source[0];
+  target[1] = source[1];
+  target[2] = source[2];
 }
 
 export function createGeometryBatch(primitives: readonly GreyboxPrimitive[]): GeometryBatch {
@@ -401,9 +413,11 @@ export async function createLiteGreyboxWorld(
       quantizeAnimatedEnvironmentLightingPhase(config.lighting.initialPhase),
       config.lighting.weather,
     );
-    const light = createHemisphericLight();
-    applyEnvironmentLighting(light, scene, lighting);
-    addToScene(scene, light);
+    const ambientLight = createHemisphericLight();
+    const sunLight = createDirectionalLight([...lighting.sunDirection]);
+    applyEnvironmentLighting(ambientLight, sunLight, scene, lighting);
+    addToScene(scene, ambientLight);
+    addToScene(scene, sunLight);
 
     const playerMesh = createCapsule(engine, {
       height: 1.8,
@@ -530,6 +544,7 @@ export async function createLiteGreyboxWorld(
       districtId: config.world.id,
       dynamicLighting: true,
       heightSampleCount: validation.heightSampleCount,
+      lightingModel: RENDER_LIGHTING_MODEL,
       materialCount: config.world.materials.length,
       materializationMs: performance.now() - materializationStartedAt,
       renderedFeaturePrimitiveCount,
@@ -548,7 +563,7 @@ export async function createLiteGreyboxWorld(
       config,
       crowdMeshes,
       engine,
-      light,
+      ambientLight,
       materials,
       previousTimestamp: null as number | null,
       presentationOwner: "preview" as "preview" | "streamed-residency",
@@ -566,6 +581,7 @@ export async function createLiteGreyboxWorld(
       >(),
       streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
       streamingDependencyGpuBytes: 0,
+      sunLight,
       flythroughSample: null as FlythroughScenarioSample | null,
       hybridUi,
       lighting,
@@ -662,6 +678,8 @@ export function gameplayCameraBeta(cameraPitchRadians: number): number {
 export interface GreyboxLightingSample {
   readonly intensity: number;
   readonly phase: number;
+  readonly sunDirection: readonly [number, number, number];
+  readonly sunIntensity: number;
 }
 
 function geometryGpuBytes(geometry: GeometryBatch): number {
@@ -1226,7 +1244,7 @@ export function renderLiteGreyboxWorld(
   if (lightingPhase !== renderer.lighting.phase || weather !== renderer.lighting.weather) {
     const lighting = sampleEnvironmentLighting(lightingPhase, weather);
     renderer.lighting = lighting;
-    applyEnvironmentLighting(renderer.light, renderer.scene, lighting);
+    applyEnvironmentLighting(renderer.ambientLight, renderer.sunLight, renderer.scene, lighting);
   }
 
   renderFrame(
@@ -1237,6 +1255,8 @@ export function renderLiteGreyboxWorld(
   return Object.freeze({
     intensity: renderer.lighting.perceivedIntensity,
     phase: renderer.lighting.phase,
+    sunDirection: renderer.lighting.sunDirection,
+    sunIntensity: renderer.lighting.sunIntensity,
   });
 }
 

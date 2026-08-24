@@ -36,7 +36,7 @@ describe("app-owned-llm-spike@1 contract", () => {
     const metrics = evaluateAppOwnedLlmRun({ cold, generationFrames: frames(30), warm });
 
     expect(APP_OWNED_LLM_SPIKE_SCENARIO).toBe("app-owned-llm-spike@1");
-    expect(APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION).toBe(3);
+    expect(APP_OWNED_LLM_SPIKE_REPORT_SCHEMA_VERSION).toBe(4);
     expect(APP_OWNED_LLM_SPIKE_TELEMETRY_SCHEMA_VERSION).toBe(3);
     expect(metrics.ttft).toMatchObject({ state: "measured", value: { p95: 1_400 } });
     expect(metrics.warmOpfs.state).toBe("measured");
@@ -294,5 +294,7 @@ function frames(count: number): RenderFrameSample[] {
     lightingIntensity: 1,
     lightingPhase: 0.25,
     presentIntervalMs: 16,
+    sunDirection: [0, -1, 0],
+    sunIntensity: 1,
   }));
 }

@@ -6,13 +6,14 @@ export interface EnvironmentLightingSample {
   readonly ambientIntensity: number;
   readonly clearColor: LinearRgb;
   readonly groundColor: LinearRgb;
-  readonly hemisphericUpDirection: readonly [number, number, number];
+  /** Backward-compatible normalized perceptual aggregate, not a raw light intensity. */
   readonly perceivedIntensity: number;
   readonly phase: EnvironmentTimeOfDayPhase;
   readonly skyColor: LinearRgb;
   readonly sunColor: LinearRgb;
   readonly sunElevation: number;
   readonly sunIntensity: number;
+  readonly sunDirection: readonly [number, number, number];
   readonly weather: EnvironmentWeatherState;
 }
 
@@ -61,9 +62,11 @@ export function sampleEnvironmentLighting(
   const solarAngle = phase * Math.PI * 2;
   const sunElevation = Math.sin(solarAngle);
   const daylight = smoothstep(-0.08, 0.18, sunElevation);
+  const directElevation = sunElevation <= Number.EPSILON ? 0 : sunElevation;
+  const directDaylight = smoothstep(0, 0.18, directElevation);
   const highSun = smoothstep(0.04, 0.78, sunElevation);
   const horizonGlow = daylight * (1 - highSun);
-  const sunIntensity = weatherProfile.direct * daylight * (0.2 + 0.8 * Math.max(0, sunElevation));
+  const sunIntensity = weatherProfile.direct * directDaylight * (0.2 + 0.8 * directElevation);
   const ambientIntensity = weatherProfile.ambient * (0.12 + 0.88 * daylight);
   const skyDay = mixRgb(STORM_TINT, DAY_SKY, weatherProfile.saturation);
   const skyColor = mixRgb(NIGHT_SKY, skyDay, daylight);
@@ -74,22 +77,18 @@ export function sampleEnvironmentLighting(
     mixRgb(NIGHT_CLEAR_COLOR, weatherProfile.clearColor, daylight),
     0.42 + 0.58 * daylight + horizonGlow * 0.08,
   );
-  const hemisphericUpDirection = normalizeDirection(
-    Math.cos(solarAngle),
-    Math.max(0.025, sunElevation),
-    Math.sin(solarAngle),
-  );
+  const sunDirection = normalizeDirection(-Math.cos(solarAngle), -sunElevation, 0);
   return Object.freeze({
     ambientIntensity,
     clearColor,
     groundColor,
-    hemisphericUpDirection,
     perceivedIntensity: clamp01(ambientIntensity + sunIntensity * 0.12),
     phase,
     skyColor,
     sunColor,
     sunElevation,
     sunIntensity,
+    sunDirection,
     weather,
   });
 }

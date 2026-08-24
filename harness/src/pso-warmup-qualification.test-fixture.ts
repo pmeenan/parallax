@@ -1,4 +1,4 @@
-import type { PsoWarmupTelemetrySnapshot } from "@parallax/engine";
+import { type PsoWarmupTelemetrySnapshot, RENDER_LIGHTING_MODEL } from "@parallax/engine";
 import type { ChromePin } from "./chrome-pin.js";
 import {
   SMOKE_MANDATORY_METRIC_SET_VERSION,
@@ -14,6 +14,7 @@ const greyboxWorld = {
   districtId: "district-1-surface",
   dynamicLighting: true,
   heightSampleCount: 256 * 17 * 17,
+  lightingModel: RENDER_LIGHTING_MODEL,
   mainThreadScenePostMessageMs: 4,
   mainThreadWorldGenerationMs: 20,
   materialCount: 8,
@@ -26,6 +27,12 @@ const greyboxWorld = {
     phaseMinimum: 0.5,
     phaseRange: 0.2,
     sampleCount: 120,
+    sunDirectionAngularChangeRadians: Math.acos(Math.sqrt(0.99)),
+    sunDirectionEnd: [0.1, -Math.sqrt(0.99), 0],
+    sunDirectionStart: [0, -1, 0],
+    sunIntensityMaximum: 0.8,
+    sunIntensityMinimum: 0.6,
+    sunIntensityRange: 0.2,
   },
   renderedFeaturePrimitiveCount: 318,
   renderedOutput: {

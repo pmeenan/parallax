@@ -1267,6 +1267,20 @@ storm-labelled lighting/environment configurations across dawn/daylight/dusk/nig
 It deliberately does not implement or claim M6 weather VFX such as precipitation, wind,
 wet surfaces, or particles.
 
+M4.5's lighting foundation evaluates one deterministic solar/sky/ground irradiance
+sample for the active authored phase and weather state. The render worker applies its
+sky and ground irradiance through a world-up hemispheric light and its direct irradiance
+through a separate directional sun whose vector records the world-space direction the
+light rays travel. A horizon-anchored smoothstep fades direct intensity continuously to
+zero while the wider twilight curve continues to drive ambient, sky, and ground color.
+The sun remains resident with zero intensity at and below the horizon so
+the scene light topology and Standard-material PSO family do not change across the day
+cycle. Public frame telemetry exposes the applied sun direction and intensity, and the
+greybox-world evidence names the exact no-shadow lighting model; this is an observable
+directional-light foundation, not a shadow-strategy or global-illumination verdict.
+Directional PCF/ESM, cascaded shadows, local-light shadows, many-light clustering, and
+GI remain measured M4.5 candidates.
+
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box
 features by material. Single-sided downward skirts are emitted at outer/cull boundaries

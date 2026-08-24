@@ -144,7 +144,7 @@ export interface RenderGameplayEntity {
   readonly yawRadians: number;
 }
 
-export { RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render-protocol";
+export { RENDER_GAMEPLAY_CROWD_CAPACITY, RENDER_LIGHTING_MODEL } from "./render-protocol";
 
 export interface RenderStartupTelemetry {
   readonly failStreamingCohort: (message: string) => void;
@@ -224,6 +224,13 @@ function freezeGreyboxTelemetry(value: GreyboxRenderTelemetry): GreyboxRenderTel
         number,
       ],
     }),
+  });
+}
+
+function freezeRenderFrameSample(value: RenderFrameSample): RenderFrameSample {
+  return Object.freeze({
+    ...value,
+    sunDirection: freezeWorldVector(value.sunDirection),
   });
 }
 
@@ -535,7 +542,7 @@ export function createRenderService(): RenderService {
           mainThreadScenePostMessageMs,
           mainThreadWorldGenerationMs: startup.mainThreadWorldGenerationMs,
         }),
-        recentFrames: Object.freeze([Object.freeze(message.firstFrame)]),
+        recentFrames: Object.freeze([freezeRenderFrameSample(message.firstFrame)]),
         psoWarmup: freezePsoWarmupTelemetry(message.psoWarmup),
         renderPixelSize: readyRenderSize,
         renderPixelSizeOverride,
@@ -611,10 +618,9 @@ export function createRenderService(): RenderService {
             ...telemetry,
             frameCount: message.frameCount,
             recentFrames: Object.freeze(
-              [
-                ...telemetry.recentFrames,
-                ...message.samples.map((sample) => Object.freeze(sample)),
-              ].slice(-MAX_RECENT_FRAMES),
+              [...telemetry.recentFrames, ...message.samples.map(freezeRenderFrameSample)].slice(
+                -MAX_RECENT_FRAMES,
+              ),
             ),
           });
           break;

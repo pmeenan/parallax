@@ -312,6 +312,7 @@ function sameWorldIdentity(left: GreyboxRenderTelemetry, right: GreyboxRenderTel
     left.districtId === right.districtId &&
     left.dynamicLighting === right.dynamicLighting &&
     left.heightSampleCount === right.heightSampleCount &&
+    left.lightingModel === right.lightingModel &&
     left.materialCount === right.materialCount &&
     left.renderedFeaturePrimitiveCount === right.renderedFeaturePrimitiveCount &&
     left.renderedTerrainPatchCount === right.renderedTerrainPatchCount &&

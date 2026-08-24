@@ -20,6 +20,7 @@ import type { PsoWarmupTelemetrySnapshot, PsoWarmupTraceBundle } from "./pso-war
 export type { GreyboxSceneConfig } from "../world/world-contract";
 
 export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
+export const RENDER_LIGHTING_MODEL = "hemispheric-ambient-directional-sun@1" as const;
 
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;
@@ -28,6 +29,7 @@ export interface GreyboxRenderTelemetry {
   readonly districtId: string;
   readonly dynamicLighting: true;
   readonly heightSampleCount: number;
+  readonly lightingModel: typeof RENDER_LIGHTING_MODEL;
   readonly mainThreadWorldGenerationMs: number;
   readonly mainThreadScenePostMessageMs: number;
   readonly materialCount: number;
@@ -150,9 +152,13 @@ export type RenderWorkerRequest =
 
 export interface RenderFrameSample {
   readonly durationMs: number;
+  /** Legacy bounded perceived/display index; not an individual applied light intensity. */
   readonly lightingIntensity: number;
   readonly lightingPhase: number;
   readonly presentIntervalMs: number | null;
+  /** Normalized world-space direction in which the directional sun's rays travel. */
+  readonly sunDirection: readonly [number, number, number];
+  readonly sunIntensity: number;
 }
 
 export interface RenderReadyMessage {

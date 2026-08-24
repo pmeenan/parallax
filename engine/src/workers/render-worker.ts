@@ -656,6 +656,8 @@ function startRenderWorker(): void {
           lightingPhase: lighting.phase,
           presentIntervalMs:
             previousFrameTimestamp === null ? null : timestamp - previousFrameTimestamp,
+          sunDirection: lighting.sunDirection,
+          sunIntensity: lighting.sunIntensity,
         });
         if (districtSwapFrameWindow !== null) {
           const presentIntervalInsideWindowMs = districtSwapPresentIntervalInsideWindow(

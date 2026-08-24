@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { RENDER_LIGHTING_MODEL } from "@parallax/engine";
 import { afterEach, describe, expect, it } from "vitest";
 import { evaluateBoundedRepeatability } from "./aggregate.js";
 import {
@@ -62,6 +63,7 @@ const validGreyboxWorld = Object.freeze({
   districtId: "district-1-surface",
   dynamicLighting: true,
   heightSampleCount: 256 * 17 * 17,
+  lightingModel: RENDER_LIGHTING_MODEL,
   materialCount: 8,
   mainThreadWorldGenerationMs: 20,
   mainThreadScenePostMessageMs: 4,
@@ -74,6 +76,12 @@ const validGreyboxWorld = Object.freeze({
     phaseMinimum: 0.5,
     phaseRange: 0.2,
     sampleCount: 120,
+    sunDirectionAngularChangeRadians: Math.acos(Math.sqrt(0.99)),
+    sunDirectionEnd: Object.freeze([0.1, -Math.sqrt(0.99), 0] as const),
+    sunDirectionStart: Object.freeze([0, -1, 0] as const),
+    sunIntensityMaximum: 0.8,
+    sunIntensityMinimum: 0.6,
+    sunIntensityRange: 0.2,
   }),
   renderedOutput: Object.freeze({
     clearColorRgb: Object.freeze([82, 163, 235] as const),

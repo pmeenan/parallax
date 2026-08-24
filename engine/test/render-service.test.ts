@@ -6,6 +6,7 @@ import type {
   RenderWorkerRequest,
   RenderWorkerResponse,
 } from "../src/render/render-protocol";
+import { RENDER_LIGHTING_MODEL } from "../src/render/render-protocol";
 import {
   createRenderService,
   FLYTHROUGH_RESET_TIMEOUT_MS,
@@ -103,6 +104,30 @@ afterEach(() => {
 });
 
 describe("render service recovery", () => {
+  it("deep-freezes worker-owned frame vectors at the telemetry boundary", () => {
+    installBrowserFakes();
+    const service = createRenderService();
+    service.start(new FakeCanvas() as unknown as HTMLCanvasElement, {} as GreyboxSceneConfig, {
+      failStreamingCohort: () => undefined,
+      mainThreadWorldGenerationMs: 2,
+      psoWarmupTrace: createEmbeddedPsoWarmupTrace(),
+      restartStreamingCohort: () => {
+        throw new Error("Unexpected recovery");
+      },
+      streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
+    });
+    const ready = readyMessage();
+    requireWorker(0).emit(ready);
+    const exportedSunDirection = service.snapshot().recentFrames[0]?.sunDirection;
+
+    expect(Object.isFrozen(exportedSunDirection)).toBe(true);
+    expect(() => {
+      (exportedSunDirection as unknown as number[])[0] = 1;
+    }).toThrow(TypeError);
+    (ready.firstFrame.sunDirection as unknown as number[])[0] = 1;
+    expect(service.snapshot().recentFrames[0]?.sunDirection).toEqual([0, -1, 0]);
+  });
+
   it("replays hybrid UI state and admits only worker-authorized actions", () => {
     installBrowserFakes();
     const service = createRenderService();
@@ -124,7 +149,8 @@ describe("render service recovery", () => {
       streamingPort: new FakeMessagePort(100) as unknown as MessagePort,
     });
     const worker = requireWorker(0);
-    worker.emit(readyMessage());
+    const ready = readyMessage();
+    worker.emit(ready);
     expect(retainedPresentationWasQueuedAtReady).toBe(true);
     expect(worker.requests.at(-1)?.message).toEqual({
       kind: "hybrid-ui-presentation",
@@ -1414,6 +1440,8 @@ function frameSample() {
     lightingIntensity: 1,
     lightingPhase: 0,
     presentIntervalMs: null,
+    sunDirection: [0, -1, 0] as [number, number, number],
+    sunIntensity: 1,
   });
 }
 
@@ -1449,6 +1477,7 @@ function readyMessage(): RenderReadyMessage {
       districtId: "test",
       dynamicLighting: true,
       heightSampleCount: 4,
+      lightingModel: RENDER_LIGHTING_MODEL,
       materialCount: 1,
       materializationMs: 1,
       renderedFeaturePrimitiveCount: 1,

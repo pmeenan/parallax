@@ -409,7 +409,11 @@ export type {
   RenderTelemetrySnapshot,
   RetainedPsoWarmupFailureTelemetry,
 } from "./render/render-service";
-export { createRenderService, RENDER_GAMEPLAY_CROWD_CAPACITY } from "./render/render-service";
+export {
+  createRenderService,
+  RENDER_GAMEPLAY_CROWD_CAPACITY,
+  RENDER_LIGHTING_MODEL,
+} from "./render/render-service";
 export type {
   GameSimulationAdapter,
   GameSimulationContext,

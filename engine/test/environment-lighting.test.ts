@@ -16,12 +16,38 @@ describe("environment lighting", () => {
     expect(dusk.sunElevation).toBeCloseTo(0, 12);
     expect(midnight.sunElevation).toBe(-1);
     expect(noon.sunIntensity).toBeGreaterThan(dawn.sunIntensity);
-    expect(dawn.sunIntensity).toBeGreaterThan(midnight.sunIntensity);
+    expect(dawn.sunIntensity).toBe(0);
+    expect(dusk.sunIntensity).toBe(0);
     expect(midnight.sunIntensity).toBe(0);
     expect(noon.ambientIntensity).toBeGreaterThan(midnight.ambientIntensity);
-    expect(dawn.hemisphericUpDirection[0]).toBeGreaterThan(0);
-    expect(noon.hemisphericUpDirection[1]).toBeGreaterThan(0);
-    expect(midnight.hemisphericUpDirection[1]).toBeGreaterThan(0);
+    expect(dawn.sunDirection[0]).toBeCloseTo(-1, 12);
+    expect(dawn.sunDirection[1]).toBeCloseTo(0, 12);
+    expect(noon.sunDirection[1]).toBeCloseTo(-1, 12);
+    expect(dusk.sunDirection[0]).toBeCloseTo(1, 12);
+  });
+
+  it("keeps twilight ambient while direct sunlight is below the horizon", () => {
+    const afterDusk = sampleEnvironmentLighting(0.51, "clear");
+    const beforeDawn = sampleEnvironmentLighting(0.99, "clear");
+
+    expect(afterDusk.sunElevation).toBeLessThan(0);
+    expect(beforeDawn.sunElevation).toBeLessThan(0);
+    expect(afterDusk.sunIntensity).toBe(0);
+    expect(beforeDawn.sunIntensity).toBe(0);
+    expect(afterDusk.ambientIntensity).toBeGreaterThan(0);
+    expect(beforeDawn.ambientIntensity).toBeGreaterThan(0);
+  });
+
+  it("fades direct sunlight continuously to zero at the horizon", () => {
+    const phaseEpsilon = 1e-7;
+    const beforeDawn = sampleEnvironmentLighting(1 - phaseEpsilon, "clear");
+    const dawn = sampleEnvironmentLighting(0, "clear");
+    const afterDawn = sampleEnvironmentLighting(phaseEpsilon, "clear");
+
+    expect(beforeDawn.sunIntensity).toBe(0);
+    expect(dawn.sunIntensity).toBe(0);
+    expect(afterDawn.sunIntensity).toBeGreaterThan(0);
+    expect(afterDawn.sunIntensity).toBeLessThan(1e-9);
   });
 
   it("retains ambient readability while weather suppresses direct light", () => {
@@ -43,7 +69,7 @@ describe("environment lighting", () => {
       for (let index = 0; index < 96; index += 1) {
         const sample = sampleEnvironmentLighting(index / 96, weather);
         expect(sample.weather).toBe(weather);
-        expect(Math.hypot(...sample.hemisphericUpDirection)).toBeCloseTo(1, 12);
+        expect(Math.hypot(...sample.sunDirection)).toBeCloseTo(1, 12);
         expect(sample.perceivedIntensity).toBeGreaterThan(0);
         expect(sample.perceivedIntensity).toBeLessThanOrEqual(1);
         for (const channel of [

@@ -18,7 +18,7 @@ export interface SmokeRunOptions {
 }
 
 export const SMOKE_SCENARIO = "smoke@1";
-export const SMOKE_MANDATORY_METRIC_SET_VERSION = 35;
+export const SMOKE_MANDATORY_METRIC_SET_VERSION = 36;
 export const SMOKE_REPEATS = 3;
 export const SMOKE_SIMULATION_GAMEPLAY_WORKLOAD = Object.freeze({
   navigationPathQueryCount: 8,
@@ -66,10 +66,10 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 46;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 47;
 export const SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION = 1;
-// v75 adds the calibrated per-entrance prefetch-trigger evidence to every M4 swap.
-export const SMOKE_REPORT_SCHEMA_VERSION = 75;
+// v76 makes the applied directional-sun model and motion durable smoke evidence.
+export const SMOKE_REPORT_SCHEMA_VERSION = 76;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

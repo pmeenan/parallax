@@ -1,5 +1,6 @@
 import {
   idleInstallerTransferTelemetrySnapshot,
+  RENDER_LIGHTING_MODEL,
   SIMULATION_TELEMETRY_SCHEMA_VERSION,
   unavailableInstallStoreTelemetrySnapshot,
 } from "@parallax/engine";
@@ -1720,6 +1721,7 @@ function readyRenderWorkerFields() {
       districtId: "d1",
       dynamicLighting: true,
       heightSampleCount: 1,
+      lightingModel: RENDER_LIGHTING_MODEL,
       mainThreadScenePostMessageMs: 1,
       mainThreadWorldGenerationMs: 1,
       materialCount: 1,
@@ -1739,6 +1741,8 @@ function readyRenderWorkerFields() {
         lightingIntensity: 1,
         lightingPhase: 0,
         presentIntervalMs: 1,
+        sunDirection: [0, -1, 0],
+        sunIntensity: 1,
       },
     ],
     workerInitToFirstFrameMs: 1,
