@@ -88,6 +88,10 @@ const streaming = {
   cellLoadSamples: streamingSamples,
   cpuBudgetRejectionCount: 0,
   currentObservers: [[0, 12, 0]],
+  districtId: "district-1-surface",
+  districtSwapCount: 0,
+  districtSwapInProgress: false,
+  districtSwapSamples: [],
   decodeQueueDepthHighWater: 9,
   decodeWorkerCount: 4,
   encodedBytesRead: 190_000,
@@ -124,7 +128,7 @@ const streaming = {
   residentEncodedBytesHighWater: 90_000,
   residentGpuBytes: 180_000,
   residentGpuBytesHighWater: 180_000,
-  schemaVersion: 11,
+  schemaVersion: 13,
   settledObserverUpdateCount: 10,
   settledRecoveryCheckpoint: {
     flythroughObserverUpdateCount: 0,
@@ -419,6 +423,15 @@ export function completePsoQualificationSmokeReport(input: {
           },
         },
         streaming: { state: "measured", value: streaming },
+        districtSwaps: {
+          state: "measured",
+          value: {
+            finalDistrictId: "district-1-surface",
+            samples: [],
+            scenarioId: "m4-district-swap@1",
+            verdicts: [],
+          },
+        },
       });
     }
   }

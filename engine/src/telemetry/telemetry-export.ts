@@ -10,6 +10,7 @@ import type { NpcKnowledgeTelemetrySnapshot } from "../ai/npc-knowledge-contract
 import type { NpcKnowledgeService } from "../ai/npc-knowledge-service";
 import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
 import type { BenchmarkService } from "../benchmark/benchmark-service";
+import { isRuntimeIdentifier } from "../core/runtime-identifier";
 import type {
   FlythroughService,
   FlythroughTelemetrySnapshot,
@@ -44,18 +45,22 @@ import {
 import type { SimulationService } from "../sim/simulation-service";
 import type { InstallStoreTelemetrySnapshot } from "../storage/opfs-release-store-contract";
 import type {
+  StreamingDistrictSwapTelemetry,
   StreamingRecoveryCheckpoint,
   WorldStreamingTelemetrySnapshot,
 } from "../streaming/streaming-protocol";
-import type { WorldStreamingService } from "../streaming/world-streaming-service";
+import type {
+  WorldStreamingDistrictSwapOptions,
+  WorldStreamingService,
+} from "../streaming/world-streaming-service";
 import type { HybridUiTelemetrySnapshot } from "../ui/hybrid-ui-contract";
 import type { HybridUiService } from "../ui/hybrid-ui-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v43 adds explicit gameplay-input suppression while a heavy UI screen
-// owns input. v42 added the D-160 hybrid UI substrate and DOM/worker observability.
-export const TELEMETRY_SCHEMA_VERSION = 43;
+// Public telemetry v44 adds district identity plus correlated hard-swap samples. v43
+// added explicit gameplay-input suppression while a heavy UI screen owns input.
+export const TELEMETRY_SCHEMA_VERSION = 45;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -67,6 +72,16 @@ export const TELEMETRY_FRAME_BATCH_FRAMES = 60;
 export interface ParallaxRuntimeIdentity {
   readonly engineVersion: string;
   readonly gameVersion: string;
+}
+
+export interface StreamingDistrictSwapScenarioStep extends WorldStreamingDistrictSwapOptions {
+  readonly sourceDistrictId: string;
+}
+
+export interface StreamingDistrictSwapScenarioDefinition {
+  readonly id: string;
+  readonly steps: readonly StreamingDistrictSwapScenarioStep[];
+  readonly version: number;
 }
 
 export interface ParallaxTelemetrySnapshot {
@@ -107,6 +122,7 @@ export interface ParallaxTelemetryExport {
     ticks: number,
     seed: number,
   ): Promise<SimulationReplayResult>;
+  runStreamingDistrictSwapScenario(id: string): Promise<readonly StreamingDistrictSwapTelemetry[]>;
   saveSimulation(): Promise<Uint8Array>;
   simulationScenario(id: string): SimulationScenarioDefinition;
   snapshot(): ParallaxTelemetrySnapshot;
@@ -136,12 +152,16 @@ export function installTelemetryExport(
   identity: ParallaxRuntimeIdentity,
   target: object = globalThis,
   simulationScenarios: readonly SimulationScenarioDefinition[] = [],
+  streamingDistrictSwapScenarios: readonly StreamingDistrictSwapScenarioDefinition[] = [],
 ): ParallaxTelemetryExport {
   if (Object.hasOwn(target, TELEMETRY_GLOBAL_NAME)) {
     throw new Error(`${TELEMETRY_GLOBAL_NAME} is already installed in this realm`);
   }
   const frozenIdentity = Object.freeze({ ...identity });
   const scenarios = canonicalSimulationScenarios(simulationScenarios);
+  const districtSwapScenarios = canonicalStreamingDistrictSwapScenarios(
+    streamingDistrictSwapScenarios,
+  );
   const assertBenchmarkDoesNotOwnScenario = (action: string): void => {
     const state = benchmarkService.snapshot().state;
     if (state !== "idle" && state !== "completed" && state !== "failed" && state !== "disposed") {
@@ -215,6 +235,32 @@ export function installTelemetryExport(
       seed: number,
     ): Promise<SimulationReplayResult> {
       return simulationService.replay(commands, ticks, seed);
+    },
+    async runStreamingDistrictSwapScenario(
+      id: string,
+    ): Promise<readonly StreamingDistrictSwapTelemetry[]> {
+      assertBenchmarkDoesNotOwnScenario("Streaming district-swap scenario");
+      const definition = districtSwapScenarios.get(id);
+      if (definition === undefined) {
+        throw new Error(`Streaming district-swap scenario ${id} is unavailable`);
+      }
+      const samples: StreamingDistrictSwapTelemetry[] = [];
+      for (const step of definition.steps) {
+        const currentDistrictId = streamingService.snapshot().districtId;
+        if (currentDistrictId !== step.sourceDistrictId) {
+          throw new Error(
+            `Streaming district-swap scenario ${id} expected ${step.sourceDistrictId}, received ${currentDistrictId ?? "no district"}`,
+          );
+        }
+        samples.push(
+          await streamingService.swapDistrict({
+            destinationDistrictId: step.destinationDistrictId,
+            entranceId: step.entranceId,
+            initialObservers: step.initialObservers,
+          }),
+        );
+      }
+      return Object.freeze(samples);
     },
     saveSimulation(): Promise<Uint8Array> {
       return simulationService.save();
@@ -305,6 +351,69 @@ export function installTelemetryExport(
   return telemetryExport;
 }
 
+function canonicalStreamingDistrictSwapScenarios(
+  definitions: readonly StreamingDistrictSwapScenarioDefinition[],
+): ReadonlyMap<string, StreamingDistrictSwapScenarioDefinition> {
+  if (!Array.isArray(definitions)) {
+    throw new Error("Streaming district-swap scenarios must be an array");
+  }
+  const scenarios = new Map<string, StreamingDistrictSwapScenarioDefinition>();
+  for (const definition of definitions) {
+    if (
+      typeof definition !== "object" ||
+      definition === null ||
+      !isRuntimeIdentifier(definition.id) ||
+      !Number.isSafeInteger(definition.version) ||
+      definition.version <= 0 ||
+      !Array.isArray(definition.steps) ||
+      definition.steps.length === 0 ||
+      scenarios.has(definition.id)
+    ) {
+      throw new Error("Streaming district-swap scenario definition is invalid");
+    }
+    const steps = definition.steps.map((step: StreamingDistrictSwapScenarioStep) => {
+      if (
+        typeof step !== "object" ||
+        step === null ||
+        step.sourceDistrictId.trim() === "" ||
+        step.destinationDistrictId.trim() === "" ||
+        step.sourceDistrictId === step.destinationDistrictId ||
+        step.entranceId.trim() === "" ||
+        !Array.isArray(step.initialObservers) ||
+        step.initialObservers.length === 0 ||
+        step.initialObservers.some(
+          (observer: StreamingDistrictSwapScenarioStep["initialObservers"][number]) =>
+            !Array.isArray(observer) ||
+            observer.length !== 3 ||
+            observer.some((coordinate) => !Number.isFinite(coordinate)),
+        )
+      ) {
+        throw new Error("Streaming district-swap scenario step is invalid");
+      }
+      return Object.freeze({
+        destinationDistrictId: step.destinationDistrictId,
+        entranceId: step.entranceId,
+        initialObservers: Object.freeze(
+          step.initialObservers.map(
+            (observer: StreamingDistrictSwapScenarioStep["initialObservers"][number]) =>
+              Object.freeze([...observer] as const),
+          ),
+        ),
+        sourceDistrictId: step.sourceDistrictId,
+      });
+    });
+    scenarios.set(
+      definition.id,
+      Object.freeze({
+        id: definition.id,
+        steps: Object.freeze(steps),
+        version: definition.version,
+      }),
+    );
+  }
+  return scenarios;
+}
+
 function canonicalSimulationScenarios(
   definitions: readonly SimulationScenarioDefinition[],
 ): ReadonlyMap<string, SimulationScenarioDefinition> {
@@ -314,7 +423,7 @@ function canonicalSimulationScenarios(
     if (
       typeof definition !== "object" ||
       definition === null ||
-      !/^[a-z0-9](?:[a-z0-9._:@-]{0,127})$/u.test(definition.id) ||
+      !isRuntimeIdentifier(definition.id) ||
       !Number.isSafeInteger(definition.version) ||
       definition.version <= 0 ||
       !Number.isSafeInteger(definition.seed) ||

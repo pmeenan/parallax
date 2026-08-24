@@ -1,7 +1,7 @@
 import type { GreyboxCell, GreyboxMaterial, WorldVec3 } from "../world/world-contract";
 import type { StreamingStartupTimingSnapshot } from "./streaming-startup-telemetry";
 
-export const STREAMING_TELEMETRY_SCHEMA_VERSION = 11;
+export const STREAMING_TELEMETRY_SCHEMA_VERSION = 13;
 export const STREAMING_DECODE_PROTOCOL_VERSION = 2;
 export const STREAMING_TIMING_ATTRIBUTION_TOLERANCE_MS = 0.1;
 export const STREAMING_CELL_LOAD_BUDGET_MS = 250;
@@ -12,6 +12,10 @@ export const STREAMING_RESIDENT_ENCODED_BUDGET_BYTES = 16 * 1024 * 1024;
 export const STREAMING_DEPENDENCY_ENCODED_MAX_BYTES = 8 * 1024 * 1024;
 export const STREAMING_DEPENDENCY_DECODED_MAX_BYTES = 32 * 1024 * 1024;
 export const STREAMING_BATCH_STAGING_BUDGET_BYTES = 128 * 1024 * 1024;
+export const STREAMING_DISTRICT_SWAP_MAX_HITCH_BUDGET_MS = 100;
+export const STREAMING_DISTRICT_SWAP_TOTAL_BUDGET_MS = 4_000;
+export const STREAMING_DISTRICT_SWAP_LOGICAL_GPU_OVERLAP_RATIO = 1.25;
+export const STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT = 32;
 export const STREAMING_DISTRICT_INDEX_SCHEMA_VERSION = 2;
 
 export interface StreamingCellIndexEntry {
@@ -145,11 +149,32 @@ export interface StreamingRecoveryCheckpoint {
   readonly workerGeneration: number;
 }
 
+export interface StreamingDistrictSwapTelemetry {
+  readonly completedAtMs: number;
+  readonly destinationLogicalGpuBytes: number;
+  readonly destinationDistrictId: string;
+  readonly destinationResidentCellIds: readonly string[];
+  readonly entranceId: string;
+  readonly logicalGpuBytesHighWater: number;
+  readonly maxHitchMs: number;
+  readonly renderFrameCount: number;
+  readonly proactiveEvictionCount: number;
+  readonly sourceDistrictId: string;
+  readonly sourceLogicalGpuBytes: number;
+  readonly sourceResidentCellIds: readonly string[];
+  readonly startedAtMs: number;
+  readonly totalMs: number;
+}
+
 export interface WorldStreamingTelemetrySnapshot {
   readonly cellLoadSamples: readonly StreamingCellLoadTelemetry[];
   readonly cellLoadSampleCount: number;
   readonly cpuBudgetRejectionCount: number;
   readonly currentObservers: readonly WorldVec3[];
+  readonly districtId: string | null;
+  readonly districtSwapCount: number;
+  readonly districtSwapInProgress: boolean;
+  readonly districtSwapSamples: readonly StreamingDistrictSwapTelemetry[];
   readonly decodeQueueDepthHighWater: number;
   readonly decodeWorkerCount: number;
   readonly dependencyDecodeFailureCount?: number;
@@ -220,12 +245,21 @@ export interface StreamingObserversRequest {
   readonly observers: readonly WorldVec3[];
 }
 
+export interface StreamingDistrictSwapRequest {
+  readonly destinationDistrictId: string;
+  readonly entranceId: string;
+  readonly initialObservers: readonly WorldVec3[];
+  readonly kind: "swap-district";
+  readonly requestId: number;
+}
+
 export interface StreamingDisposeRequest {
   readonly kind: "dispose";
 }
 
 export type StreamingWorkerRequest =
   | StreamingDisposeRequest
+  | StreamingDistrictSwapRequest
   | StreamingObserversRequest
   | StreamingStartRequest;
 
@@ -245,8 +279,15 @@ export interface StreamingDisposedResponse {
   readonly snapshot: WorldStreamingTelemetrySnapshot;
 }
 
+export interface StreamingDistrictSwapCompleteResponse {
+  readonly kind: "district-swap-complete";
+  readonly requestId: number;
+  readonly sample: StreamingDistrictSwapTelemetry;
+}
+
 export type StreamingWorkerResponse =
   | StreamingDisposedResponse
+  | StreamingDistrictSwapCompleteResponse
   | StreamingFailureResponse
   | StreamingTelemetryResponse;
 
@@ -397,7 +438,19 @@ export interface RenderEvictCellRequest {
   readonly requestId: number;
 }
 
-export type RenderStreamingRequest = RenderBatchTransactionRequest | RenderEvictCellRequest;
+export interface RenderDistrictSwapBoundaryRequest {
+  readonly destinationDistrictId: string;
+  readonly destinationMaterials: readonly GreyboxMaterial[];
+  readonly districtSwapRequestId: number;
+  readonly kind: "district-swap-boundary";
+  readonly phase: "begin" | "materials" | "end";
+  readonly requestId: number;
+}
+
+export type RenderStreamingRequest =
+  | RenderBatchTransactionRequest
+  | RenderDistrictSwapBoundaryRequest
+  | RenderEvictCellRequest;
 
 export interface RenderBatchTransactionMemberResponse {
   readonly batchCellOrdinal: number;
@@ -434,6 +487,16 @@ export interface RenderEvictCellResponse {
   readonly requestId: number;
 }
 
+export interface RenderDistrictSwapBoundaryResponse {
+  readonly destinationDistrictId: string;
+  readonly districtSwapRequestId: number;
+  readonly frameCount: number;
+  readonly kind: "district-swap-boundary-complete";
+  readonly maxHitchMs: number;
+  readonly phase: "begin" | "materials" | "end";
+  readonly requestId: number;
+}
+
 export interface RenderStreamingFailureResponse {
   readonly batchTransactionId: string | null;
   readonly kind: "streaming-render-failure";
@@ -443,6 +506,7 @@ export interface RenderStreamingFailureResponse {
 
 export type RenderStreamingResponse =
   | RenderBatchTransactionResponse
+  | RenderDistrictSwapBoundaryResponse
   | RenderEvictCellResponse
   | RenderStreamingFailureResponse;
 

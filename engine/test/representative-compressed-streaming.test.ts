@@ -5,7 +5,9 @@ import { MeshoptEncoder } from "meshoptimizer/encoder";
 import { describe, expect, it, vi } from "vitest";
 import {
   evictStreamingGreyboxCell,
+  installStreamingGreyboxMaterials,
   type LiteGreyboxWorld,
+  retainStreamingGreyboxMaterials,
   uploadStreamingGreyboxCell,
 } from "../src/render/lite-greybox-world";
 import { createRenderStreamingBatchTransactionManager } from "../src/render/render-streaming-batch";
@@ -31,6 +33,22 @@ const lite = vi.hoisted(() => ({
 vi.mock("@babylonjs/lite", () => lite);
 
 describe("representative compressed streaming fixtures", () => {
+  it("installs destination materials without invalidating the source registry", () => {
+    const renderer = {
+      materials: new Map([["ground", { id: "ground", color: [0.1, 0.2, 0.3] }]]),
+    } as unknown as LiteGreyboxWorld;
+    expect(() =>
+      installStreamingGreyboxMaterials(renderer, [{ color: [0.1, 0.2, 0.3], id: "ground" }]),
+    ).not.toThrow();
+    installStreamingGreyboxMaterials(renderer, [{ color: [0.2, 0.25, 0.3], id: "ceiling-stone" }]);
+    expect([...renderer.materials.keys()]).toEqual(["ground", "ceiling-stone"]);
+    expect(() =>
+      installStreamingGreyboxMaterials(renderer, [{ color: [0.9, 0.9, 0.9], id: "ceiling-stone" }]),
+    ).toThrow("conflicts across districts");
+    retainStreamingGreyboxMaterials(renderer, new Set(["ceiling-stone"]));
+    expect([...renderer.materials.keys()]).toEqual(["ceiling-stone"]);
+  });
+
   it("rejects non-finite legacy meshopt positions before render upload", async () => {
     await MeshoptEncoder.ready;
     const positions = new Float32Array([Number.NaN, 0, 0, 1, 0, 0, 0, 1, 0]);

@@ -6,6 +6,12 @@ import type {
   SimulationWorldDefinition,
   WorldStreamingService,
 } from "@parallax/engine";
+import { GREYBOX_DISTRICT_SPECS } from "../world/district-registry";
+import {
+  PARALLAX_WORLD_GRAPH,
+  type ResolvedWorldGraphTransition,
+  resolveWorldGraphTransition,
+} from "../world/world-graph";
 import { createPlayerInputCommand, PLAYER_ENTITY_ID } from "./m3-simulation";
 
 export interface M3GameplayRuntime {
@@ -20,7 +26,17 @@ export type M3GameplayCommandFactory = (sequence: number, targetTick: number) =>
 
 export type M3GameplayInteraction =
   | Readonly<{ readonly kind: "npc"; readonly entityId: number }>
-  | Readonly<{ readonly kind: "transition"; readonly markerId: string }>;
+  | Readonly<{ readonly kind: "transition"; readonly markerId: string }>
+  | Readonly<{
+      readonly entranceId: string;
+      readonly kind: "transition-completed";
+      readonly totalMs: number;
+    }>
+  | Readonly<{
+      readonly kind: "transition-failed";
+      readonly markerId: string;
+      readonly message: string;
+    }>;
 
 export function createM3GameplayRuntime(
   inputService: GameplayInputService,
@@ -50,7 +66,12 @@ export function createM3GameplayRuntime(
     Number.NaN,
   ];
   let lastStreamingObserverAt = 0;
+  let transitionSwapRunning = false;
   const interactionListeners = new Set<(interaction: M3GameplayInteraction) => void>();
+  const publishInteraction = (interaction: M3GameplayInteraction): void => {
+    if (disposed) return;
+    for (const listener of interactionListeners) listener(interaction);
+  };
   const enqueueCommand = (factory: M3GameplayCommandFactory): void => {
     if (disposed || simulationService.snapshot().state !== "running") return;
     const snapshot = simulationService.snapshot();
@@ -73,17 +94,69 @@ export function createM3GameplayRuntime(
         event.payload.byteOffset,
         event.payload.byteLength,
       ).getUint32(0, true);
-      let interaction: M3GameplayInteraction;
       if (event.kind === "npc.interaction-activated") {
-        interaction = Object.freeze({ entityId: value, kind: "npc" });
+        publishInteraction(Object.freeze({ entityId: value, kind: "npc" }));
       } else {
         const marker = world.markers[value];
         if (marker === undefined || marker.kind !== "transition") {
           throw new Error("Interaction event references an invalid transition marker");
         }
-        interaction = Object.freeze({ kind: "transition", markerId: marker.id });
+        publishInteraction(Object.freeze({ kind: "transition", markerId: marker.id }));
+        const streaming = streamingService.snapshot();
+        if (
+          transitionSwapRunning ||
+          streaming.state !== "streaming" ||
+          streaming.districtId !== world.id
+        ) {
+          continue;
+        }
+        let transition: ResolvedWorldGraphTransition;
+        try {
+          transition = resolveWorldGraphTransition(
+            PARALLAX_WORLD_GRAPH,
+            GREYBOX_DISTRICT_SPECS,
+            world.id,
+            marker.id,
+          );
+        } catch (error: unknown) {
+          publishInteraction(
+            Object.freeze({
+              kind: "transition-failed",
+              markerId: marker.id,
+              message: error instanceof Error ? error.message : String(error),
+            }),
+          );
+          continue;
+        }
+        transitionSwapRunning = true;
+        void streamingService
+          .swapDistrict({
+            destinationDistrictId: transition.destination.districtId,
+            entranceId: transition.entranceId,
+            initialObservers: [transition.destinationPosition],
+          })
+          .then((sample) => {
+            publishInteraction(
+              Object.freeze({
+                entranceId: sample.entranceId,
+                kind: "transition-completed",
+                totalMs: sample.totalMs,
+              }),
+            );
+          })
+          .catch((error: unknown) => {
+            publishInteraction(
+              Object.freeze({
+                kind: "transition-failed",
+                markerId: marker.id,
+                message: error instanceof Error ? error.message : String(error),
+              }),
+            );
+          })
+          .finally(() => {
+            transitionSwapRunning = false;
+          });
       }
-      for (const listener of interactionListeners) listener(interaction);
     }
   });
   const unsubscribeCanvas = renderService.subscribeCanvas((canvas) => {
@@ -178,10 +251,12 @@ export function createM3GameplayRuntime(
       lastPresentedYaw = player.yawRadians;
       lastPresentedPosition = player.position;
       lastPresentedCrowd = crowdEntities;
+      const streaming = streamingService.snapshot();
       if (
         interactiveEnabled &&
         timestamp - lastStreamingObserverAt >= 100 &&
-        streamingService.snapshot().state === "streaming"
+        streaming.state === "streaming" &&
+        streaming.districtId === world.id
       ) {
         streamingService.setObservers([player.position]);
         lastStreamingObserverAt = timestamp;

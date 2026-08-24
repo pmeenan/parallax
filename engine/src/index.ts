@@ -576,6 +576,8 @@ export {
   UNINSTALL_TELEMETRY_SCHEMA_VERSION,
   withUninstallDeletionAuthority,
 } from "./storage/uninstall-service";
+export type { StreamingDistrictSwapVerdict } from "./streaming/district-swap-contract";
+export { evaluateStreamingDistrictSwap } from "./streaming/district-swap-contract";
 export type {
   InstalledResourceReader,
   InstalledStreamingCell,
@@ -608,6 +610,7 @@ export {
 export type {
   StreamingCellLoadTelemetry,
   StreamingContentSource,
+  StreamingDistrictSwapTelemetry,
   StreamingRecoveryCheckpoint,
   WorldStreamingTelemetrySnapshot,
 } from "./streaming/streaming-protocol";
@@ -618,6 +621,10 @@ export {
   STREAMING_DEPENDENCY_DECODED_MAX_BYTES,
   STREAMING_DEPENDENCY_ENCODED_MAX_BYTES,
   STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
+  STREAMING_DISTRICT_SWAP_LOGICAL_GPU_OVERLAP_RATIO,
+  STREAMING_DISTRICT_SWAP_MAX_HITCH_BUDGET_MS,
+  STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT,
+  STREAMING_DISTRICT_SWAP_TOTAL_BUDGET_MS,
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
@@ -635,6 +642,7 @@ export {
   STREAMING_STARTUP_TIMING_SCHEMA_VERSION,
 } from "./streaming/streaming-startup-telemetry";
 export type {
+  WorldStreamingDistrictSwapOptions,
   WorldStreamingListener,
   WorldStreamingService,
   WorldStreamingStartOptions,
@@ -648,6 +656,8 @@ export type {
   ParallaxRuntimeIdentity,
   ParallaxTelemetryExport,
   ParallaxTelemetrySnapshot,
+  StreamingDistrictSwapScenarioDefinition,
+  StreamingDistrictSwapScenarioStep,
 } from "./telemetry/telemetry-export";
 export {
   installTelemetryExport,

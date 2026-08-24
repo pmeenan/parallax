@@ -19,6 +19,7 @@ import {
 } from "./runs/render-recovery.js";
 import { QUALITY_TIER_PROFILES } from "./runs/smoke.js";
 import { requireSabRingBufferCompleteAtMeasurementBoundary } from "./sab-ring-buffer.js";
+import { isSortedUniqueExactStringSet } from "./sorted-exact-string-set.js";
 import { requireWorldStreamingSnapshot } from "./streaming-evidence.js";
 import { validateHarnessTargetEvidence, validateHarnessTargetIdentity } from "./target.js";
 import {
@@ -671,7 +672,7 @@ function validateBoundary(value: unknown, label: string): void {
     JSON.stringify(checkpoint.residentCellIds) !== JSON.stringify(streaming.residentCellIds) ||
     checkpoint.observerUpdateCount !== streaming.settledObserverUpdateCount ||
     checkpoint.flythroughObserverUpdateCount !== streaming.flythroughObserverUpdateCount ||
-    !isSortedUniqueExactNine(boundaryResidents)
+    !isSortedUniqueExactStringSet(boundaryResidents, RENDER_RECOVERY_RESIDENT_CELL_COUNT)
   ) {
     throw new Error(`${label} checkpoint is not bound to current settled streaming state`);
   }
@@ -705,18 +706,9 @@ function validateCheckpoint(value: unknown, label: string): void {
   }
   validateVec3Array(checkpoint.observers, `${label} observers`);
   const residents = requireStringArray(checkpoint.residentCellIds, `${label} residents`);
-  if (!isSortedUniqueExactNine(residents)) {
+  if (!isSortedUniqueExactStringSet(residents, RENDER_RECOVERY_RESIDENT_CELL_COUNT)) {
     throw new Error(`${label} residents are not the exact sorted recovery residency`);
   }
-}
-
-function isSortedUniqueExactNine(value: readonly unknown[]): boolean {
-  return (
-    value.length === RENDER_RECOVERY_RESIDENT_CELL_COUNT &&
-    value.every((entry) => nonEmptyString(entry)) &&
-    new Set(value).size === RENDER_RECOVERY_RESIDENT_CELL_COUNT &&
-    JSON.stringify(value) === JSON.stringify([...value].sort())
-  );
 }
 
 function validateRenderRecovery(value: unknown, label: string): void {
@@ -1142,6 +1134,10 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
       "cellLoadSamples",
       "cpuBudgetRejectionCount",
       "currentObservers",
+      "districtId",
+      "districtSwapCount",
+      "districtSwapInProgress",
+      "districtSwapSamples",
       "decodeQueueDepthHighWater",
       "decodeWorkerCount",
       "encodedBytesRead",
@@ -1183,6 +1179,7 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
     "cpuBudgetRejectionCount",
     "decodeQueueDepthHighWater",
     "decodeWorkerCount",
+    "districtSwapCount",
     "encodedBytesRead",
     "flythroughObserverUpdateCount",
     "hardwareConcurrency",
@@ -1209,6 +1206,9 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
   }
   if (
     streaming.schemaVersion !== STREAMING_TELEMETRY_SCHEMA_VERSION ||
+    (streaming.districtId !== null && !nonEmptyString(streaming.districtId)) ||
+    typeof streaming.districtSwapInProgress !== "boolean" ||
+    !Array.isArray(streaming.districtSwapSamples) ||
     (streaming.installedReleaseDigest !== null &&
       (typeof streaming.installedReleaseDigest !== "string" ||
         !/^[a-f0-9]{64}$/.test(streaming.installedReleaseDigest))) ||

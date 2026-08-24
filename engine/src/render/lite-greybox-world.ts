@@ -37,7 +37,11 @@ import type {
   GreyboxPrimitive,
   GreyboxSceneConfig,
 } from "../world/world-contract";
-import { selectGreyboxCellLod, validateGreyboxDistrict } from "../world/world-contract";
+import {
+  parseGreyboxMaterials,
+  selectGreyboxCellLod,
+  validateGreyboxDistrict,
+} from "../world/world-contract";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
 import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
 import {
@@ -563,6 +567,30 @@ export async function createLiteGreyboxWorld(
 }
 
 export type LiteGreyboxWorld = Awaited<ReturnType<typeof createLiteGreyboxWorld>>;
+
+export function installStreamingGreyboxMaterials(
+  renderer: LiteGreyboxWorld,
+  materials: readonly GreyboxMaterial[],
+): readonly string[] {
+  const parsed = parseGreyboxMaterials(materials);
+  for (const material of parsed) {
+    const existing = renderer.materials.get(material.id);
+    if (existing?.color.some((component, index) => component !== material.color[index])) {
+      throw new Error(`Greybox material ${material.id} conflicts across districts`);
+    }
+    renderer.materials.set(material.id, material);
+  }
+  return Object.freeze(parsed.map(({ id }) => id));
+}
+
+export function retainStreamingGreyboxMaterials(
+  renderer: LiteGreyboxWorld,
+  retainedMaterialIds: ReadonlySet<string>,
+): void {
+  for (const materialId of renderer.materials.keys()) {
+    if (!retainedMaterialIds.has(materialId)) renderer.materials.delete(materialId);
+  }
+}
 
 export function applyGameplayPresentation(
   renderer: LiteGreyboxWorld,

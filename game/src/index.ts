@@ -54,14 +54,23 @@ export { createGreyboxScene, sampleGreyboxTerrain } from "./world/greybox-genera
 export type { GreyboxDistrictSpec } from "./world/greybox-spec";
 export type { NamedLandmarkDefinition } from "./world/landmarks";
 export { NAMED_LANDMARKS } from "./world/landmarks";
+export {
+  M4_DISTRICT_SWAP_SCENARIO,
+  M4_DISTRICT_SWAP_SCENARIO_ID,
+} from "./world/m4-district-swap-scenario";
 export type {
+  ResolvedWorldGraphTransition,
   WorldGraph,
   WorldGraphDistrict,
   WorldGraphEndpoint,
   WorldGraphTransition,
   WorldGraphValidationSummary,
 } from "./world/world-graph";
-export { PARALLAX_WORLD_GRAPH, validateWorldGraph } from "./world/world-graph";
+export {
+  PARALLAX_WORLD_GRAPH,
+  resolveWorldGraphTransition,
+  validateWorldGraph,
+} from "./world/world-graph";
 
 interface DevelopmentImportMeta extends ImportMeta {
   readonly env?: { readonly DEV?: boolean };

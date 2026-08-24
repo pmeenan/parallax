@@ -1179,6 +1179,27 @@ D-055 reserves that field for M4's measurement-backed calibration task.
   hardest case and is exercised early with greybox content (M4) because it shapes asset
   packaging and the streaming manager's design.
 
+  D-175 implements the resident transaction as an explicit render/streaming boundary.
+  The streaming worker may resolve the destination and open its immutable OPFS handles
+  while source handles remain live, but it proactively evicts all nine source cells and
+  drains both dependency caches before any destination decode/GPU upload. The render
+  worker installs the destination's validated material registry inside the same
+  correlated frame window; conflicting shared material IDs fail closed. Normal nearest-
+  observer scheduling then establishes exactly nine exclusive destination residents,
+  source-only handles close, and telemetry records per-entrance source/destination IDs,
+  logical GPU high-water, evictions, total time, frame count, and maximum hitch. The
+  game-owned `m4-district-swap@1` scenario is derived from the world graph and exercises
+  all three edges in both directions; no engine branch names either district or entrance.
+
+  D-176 makes the transaction boundary race-free and its measurements non-vacuous.
+  Admission closes and any executing schedule drains before source residency is
+  captured. Completion is an explicit request-correlated worker response rather than a
+  telemetry-history side effect. The render worker samples logical GPU high-water on
+  every publication inside the frame window, clamps the first interval to window open,
+  and reports zero frames as insufficient measurement evidence rather than a protocol
+  failure. World-graph resolution, arrival placement, and the one-transition-at-a-time
+  guard live in the game runtime; the app shell remains presentation-only.
+
 Asset packaging: per-cell bundles, content-addressed, with shared kits/materials
 deduplicated across cells. Formats: glTF/GLB, KTX2 (BasisU) textures, meshopt
 compression. (Decision D-006.) D-090's procedural descriptors are game world data; the

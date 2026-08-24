@@ -1,5 +1,7 @@
 import {
+  evaluateStreamingDistrictSwap,
   STREAMING_DECODE_WORKER_MAXIMUM,
+  STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT,
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
   STREAMING_STARTUP_TIMING_CONTRACT,
@@ -9,6 +11,7 @@ import {
   type StreamingCellLoadTelemetry,
   type WorldStreamingTelemetrySnapshot,
 } from "@parallax/engine";
+import { isSortedUniqueExactStringSet } from "./sorted-exact-string-set.js";
 
 export const STREAMING_MEASUREMENT_SAMPLE_MINIMUM = 10;
 
@@ -367,6 +370,20 @@ function streamingSnapshotFailure(
   if (telemetry.state !== "streaming" || telemetry.failureMessage !== null) {
     return `state=${String(telemetry.state)}, failureMessage=${String(telemetry.failureMessage)}`;
   }
+  if (
+    typeof telemetry.districtId !== "string" ||
+    telemetry.districtId.trim() === "" ||
+    !nonNegativeInteger(telemetry.districtSwapCount) ||
+    telemetry.districtSwapInProgress !== false ||
+    !Array.isArray(telemetry.districtSwapSamples) ||
+    telemetry.districtSwapSamples.length > telemetry.districtSwapCount ||
+    telemetry.districtSwapSamples.length > STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT ||
+    telemetry.districtSwapSamples.some((sample) => !validDistrictSwapSample(sample)) ||
+    (telemetry.districtSwapSamples.at(-1)?.destinationDistrictId ?? telemetry.districtId) !==
+      telemetry.districtId
+  ) {
+    return `district transition identity district=${String(telemetry.districtId)}, count=${String(telemetry.districtSwapCount)}, active=${String(telemetry.districtSwapInProgress)}, retained=${String(telemetry.districtSwapSamples?.length)}`;
+  }
   const installedRelease =
     typeof telemetry.installedReleaseDigest === "string" &&
     /^[a-f0-9]{64}$/.test(telemetry.installedReleaseDigest);
@@ -530,6 +547,38 @@ function streamingSnapshotFailure(
     }`;
   }
   return null;
+}
+
+function validDistrictSwapSample(
+  sample: WorldStreamingTelemetrySnapshot["districtSwapSamples"][number],
+): boolean {
+  const structurallyValid =
+    typeof sample.entranceId === "string" &&
+    sample.entranceId.trim() !== "" &&
+    typeof sample.sourceDistrictId === "string" &&
+    sample.sourceDistrictId.trim() !== "" &&
+    typeof sample.destinationDistrictId === "string" &&
+    sample.destinationDistrictId.trim() !== "" &&
+    sample.sourceDistrictId !== sample.destinationDistrictId &&
+    nonNegativeFinite(sample.startedAtMs) &&
+    nonNegativeFinite(sample.completedAtMs) &&
+    sample.completedAtMs >= sample.startedAtMs &&
+    nonNegativeFinite(sample.totalMs) &&
+    Math.abs(sample.totalMs - (sample.completedAtMs - sample.startedAtMs)) <= 0.1 &&
+    nonNegativeFinite(sample.logicalGpuBytesHighWater) &&
+    positiveInteger(sample.sourceLogicalGpuBytes) &&
+    positiveInteger(sample.destinationLogicalGpuBytes) &&
+    sample.logicalGpuBytesHighWater >=
+      Math.max(sample.sourceLogicalGpuBytes, sample.destinationLogicalGpuBytes) &&
+    nonNegativeFinite(sample.maxHitchMs) &&
+    positiveInteger(sample.renderFrameCount) &&
+    Array.isArray(sample.sourceResidentCellIds) &&
+    isSortedUniqueExactStringSet(sample.sourceResidentCellIds, STREAMING_RESIDENT_CELL_LIMIT) &&
+    Array.isArray(sample.destinationResidentCellIds) &&
+    isSortedUniqueExactStringSet(sample.destinationResidentCellIds, STREAMING_RESIDENT_CELL_LIMIT);
+  if (!structurallyValid) return false;
+  const verdict = evaluateStreamingDistrictSwap(sample);
+  return verdict.exclusiveResidentSets && verdict.proactiveOnly;
 }
 
 function streamingStartupTimingFailure(

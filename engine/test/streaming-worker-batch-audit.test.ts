@@ -37,9 +37,11 @@ describe("streaming worker batch transaction wiring", () => {
 
   it("records launch hydration before the initial schedule while leaving measurement filtering to consumers", async () => {
     const source = await workerSource();
-    const ready = source.indexOf("ready = true;");
+    const initialize = source.indexOf("const initialize = async");
+    const ready = source.indexOf("ready = true;", initialize);
     const recording = source.indexOf("recordCellLoadSamples = true;", ready);
     const initialSchedule = source.indexOf("await runSchedule();", ready);
+    expect(initialize).toBeGreaterThanOrEqual(0);
     expect(ready).toBeGreaterThanOrEqual(0);
     expect(recording).toBeGreaterThan(ready);
     expect(initialSchedule).toBeGreaterThan(recording);
@@ -154,6 +156,48 @@ describe("streaming worker batch transaction wiring", () => {
     expect(renderManager).not.toContain("PendingRenderBatch");
     expect(renderManager).not.toContain("pendingByUploadRequest");
     expect(renderManager).not.toContain("commit(");
+  });
+
+  it("drains ordinary scheduling before capturing a district-swap source set", async () => {
+    const source = await workerSource();
+    const swap = source.indexOf("const performDistrictSwap = async");
+    const drain = source.indexOf("while (scheduling", swap);
+    const sourceResidents = source.indexOf("const sourceResidentCellIds = Object.freeze", drain);
+    const completion = source.indexOf('kind: "district-swap-complete"', sourceResidents);
+    expect(swap).toBeGreaterThanOrEqual(0);
+    expect(drain).toBeGreaterThan(swap);
+    expect(sourceResidents).toBeGreaterThan(drain);
+    expect(completion).toBeGreaterThan(sourceResidents);
+  });
+
+  it("samples logical GPU residency on every publish while a swap window is active", async () => {
+    const source = await workerSource();
+    const publish = source.indexOf("const publish =");
+    const residentBytes = source.indexOf("const residentGpuBytes =", publish);
+    const highWater = source.indexOf(
+      "districtSwapLogicalGpuBytesHighWater = Math.max",
+      residentBytes,
+    );
+    const telemetryCommit = source.indexOf("telemetry = Object.freeze", highWater);
+    expect(residentBytes).toBeGreaterThan(publish);
+    expect(highWater).toBeGreaterThan(residentBytes);
+    expect(telemetryCommit).toBeGreaterThan(highWater);
+  });
+
+  it("memoizes immutable district resolution while reopening handles on revisit", async () => {
+    const source = await workerSource();
+    expect(source).toContain("preparedInstalledDistricts.get(districtId)");
+    expect(source).toContain("preparedLegacyDistricts.get(districtId)");
+    expect(source).toContain("await openAccessHandlesWithoutCleanup(prepared.index.cells)");
+    const installedResolution = source.indexOf(
+      "resolved?.();",
+      source.indexOf("preparedInstalledDistricts"),
+    );
+    const installedHandles = source.indexOf(
+      "await openAccessHandlesWithoutCleanup",
+      installedResolution,
+    );
+    expect(installedHandles).toBeGreaterThan(installedResolution);
   });
 
   it("lets a transaction failure win over disposal and reach app render teardown", async () => {

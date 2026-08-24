@@ -14,6 +14,7 @@ import {
   RENDER_RECOVERY_RESIDENT_CELL_COUNT,
 } from "./runs/render-recovery.js";
 import { requireSabRingBufferCompleteAtMeasurementBoundary } from "./sab-ring-buffer.js";
+import { isSortedUniqueExactStringSet } from "./sorted-exact-string-set.js";
 import {
   requireWorldStreamingSnapshot,
   type WorldStreamingSnapshotPolicy,
@@ -273,19 +274,13 @@ function requireHealthyBoundary(
     JSON.stringify(boundary.checkpoint.residentCellIds) !==
       JSON.stringify(boundary.streaming.residentCellIds) ||
     boundary.observers.length === 0 ||
-    !isSortedUniqueExactResidency(boundary.checkpoint.residentCellIds)
+    !isSortedUniqueExactStringSet(
+      boundary.checkpoint.residentCellIds,
+      RENDER_RECOVERY_RESIDENT_CELL_COUNT,
+    )
   ) {
     throw new Error(`${label} render/streaming cohort is not healthy and settled`);
   }
-}
-
-function isSortedUniqueExactResidency(value: readonly string[]): boolean {
-  return (
-    value.length === RENDER_RECOVERY_RESIDENT_CELL_COUNT &&
-    value.every((cellId) => cellId.length > 0) &&
-    new Set(value).size === RENDER_RECOVERY_RESIDENT_CELL_COUNT &&
-    JSON.stringify(value) === JSON.stringify([...value].sort())
-  );
 }
 
 function sameDecoderIdentity(left: RenderRecoveryBoundary, right: RenderRecoveryBoundary): boolean {

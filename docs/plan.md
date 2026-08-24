@@ -287,7 +287,14 @@ the complete contract on retained CfT 151.0.7922.108 before the Stable transitio
 
 - [x] Greybox catacombs district; multiple entrance choke points with different surface
       contexts, driven by world-graph data (D-174).
-- [ ] Full resident-set swap meeting the transition contract in budgets.md, per entrance.
+- [x] Full resident-set swap meeting the transition contract in budgets.md, per entrance
+      (D-175/D-176). The game-owned `m4-district-swap@1` scenario derives all six
+      directed crossings from the three world-graph edges. The corrected schema-v74
+      dev-01/Showcase matrix passed all 36 samples across three fresh and three warm
+      launches: worst total 320.4 ms, worst hitch 16.9 ms, logical GPU overlap 1.000×,
+      at least seven measured frames, exactly nine proactive evictions, and exclusive
+      source/destination resident sets for every crossing. D-175 retains the superseded
+      schema-v73 artifact; final corrected evidence identity is recorded in D-176.
 - [ ] Calibrate the per-entrance **prefetch trigger** from greybox transition
       measurements and add it to the budgets.md transition contract via a decision-log
       entry (D-055 — the contract element is deliberately undefined until these

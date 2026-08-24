@@ -5,6 +5,7 @@ import {
   validateFlythroughScenario,
 } from "../flythrough/flythrough-contract";
 import { installDecoderGlobals, runDecoderFixtures } from "../render/decoder-bootstrap";
+import { districtSwapPresentIntervalInsideWindow } from "../render/district-swap-frame-window";
 import {
   destroyLiteWebGpuDeviceForRecoveryTest,
   observeLiteWebGpuDeviceLoss,
@@ -17,8 +18,10 @@ import {
   createLiteGreyboxWorld,
   evictStreamingGreyboxCell,
   type GreyboxLightingSample,
+  installStreamingGreyboxMaterials,
   renderLiteGreyboxWorld,
   resizeLiteGreyboxWorld,
+  retainStreamingGreyboxMaterials,
   uploadStreamingGreyboxCell,
   visibleStreamingMeshCount,
 } from "../render/lite-greybox-world";
@@ -419,6 +422,14 @@ function startRenderWorker(): void {
         }, postError);
       };
       let activeBatchArrivedDuringPsoWarmup = false;
+      let districtSwapFrameWindow: {
+        readonly destinationDistrictId: string;
+        readonly districtSwapRequestId: number;
+        destinationMaterialIds: ReadonlySet<string>;
+        frameCount: number;
+        maxHitchMs: number;
+        readonly openedAtMs: number;
+      } | null = null;
       const streamingBatches = createRenderStreamingBatchTransactionManager({
         evict: (cellId) => evictStreamingGreyboxCell(renderer, cellId),
         onRollbackFailure: postError,
@@ -492,6 +503,61 @@ function startRenderWorker(): void {
             } finally {
               activeBatchArrivedDuringPsoWarmup = false;
             }
+          } else if (request.kind === "district-swap-boundary") {
+            if (
+              !Number.isSafeInteger(request.requestId) ||
+              request.requestId <= 0 ||
+              !Number.isSafeInteger(request.districtSwapRequestId) ||
+              request.districtSwapRequestId <= 0
+            ) {
+              throw new Error("District-swap render boundary identity is invalid");
+            }
+            if (request.phase === "begin") {
+              if (districtSwapFrameWindow !== null) {
+                throw new Error("District-swap render window is already active");
+              }
+              if (request.destinationDistrictId.trim() === "") {
+                throw new Error("District-swap destination identity is invalid");
+              }
+              districtSwapFrameWindow = {
+                destinationDistrictId: request.destinationDistrictId,
+                destinationMaterialIds: new Set<string>(),
+                districtSwapRequestId: request.districtSwapRequestId,
+                frameCount: 0,
+                maxHitchMs: 0,
+                openedAtMs: performance.now(),
+              };
+            } else if (
+              districtSwapFrameWindow === null ||
+              districtSwapFrameWindow.districtSwapRequestId !== request.districtSwapRequestId ||
+              districtSwapFrameWindow.destinationDistrictId !== request.destinationDistrictId
+            ) {
+              throw new Error("District-swap render end has no matching begin");
+            }
+            if (request.phase === "materials") {
+              const installedMaterialIds = installStreamingGreyboxMaterials(
+                renderer,
+                request.destinationMaterials,
+              );
+              districtSwapFrameWindow.destinationMaterialIds = new Set(installedMaterialIds);
+            }
+            const window = districtSwapFrameWindow;
+            if (window === null) {
+              throw new Error("District-swap render boundary lost its active frame window");
+            }
+            if (request.phase === "end") {
+              retainStreamingGreyboxMaterials(renderer, window.destinationMaterialIds);
+            }
+            streamingPort.postMessage({
+              destinationDistrictId: request.destinationDistrictId,
+              districtSwapRequestId: request.districtSwapRequestId,
+              frameCount: window.frameCount,
+              kind: "district-swap-boundary-complete",
+              maxHitchMs: window.maxHitchMs,
+              phase: request.phase,
+              requestId: request.requestId,
+            } satisfies RenderStreamingResponse);
+            if (request.phase === "end") districtSwapFrameWindow = null;
           } else {
             const evicted = evictStreamingGreyboxCell(renderer, request.cellId);
             streamingPort.postMessage({
@@ -591,6 +657,20 @@ function startRenderWorker(): void {
           presentIntervalMs:
             previousFrameTimestamp === null ? null : timestamp - previousFrameTimestamp,
         });
+        if (districtSwapFrameWindow !== null) {
+          const presentIntervalInsideWindowMs = districtSwapPresentIntervalInsideWindow(
+            districtSwapFrameWindow.frameCount,
+            sample.presentIntervalMs,
+            timestamp,
+            districtSwapFrameWindow.openedAtMs,
+          );
+          districtSwapFrameWindow.frameCount += 1;
+          districtSwapFrameWindow.maxHitchMs = Math.max(
+            districtSwapFrameWindow.maxHitchMs,
+            sample.durationMs,
+            presentIntervalInsideWindowMs,
+          );
+        }
         const activeFlythrough = flythroughAccumulator;
         if (activeFlythrough !== null) {
           const flythroughSample = renderer.flythroughSample;

@@ -193,6 +193,18 @@ than 0.1% of the canvas to remain detectably clear rather than relying on equali
 | D1↔D2 hard transition: total swap | ≤ 4 s | Choke-point traversal time hides it |
 | Eviction mode | Proactive only | Emergency eviction events = 0 per run |
 
+Smoke schema v74 applies these transition rows plus the 1.25× inter-district logical
+GPU-overlap row to the game-owned `m4-district-swap@1` scenario (D-175/D-176). Every one of
+the three world-graph entrances must run in both directions on every fresh/warm launch.
+Each directed sample must retain exactly nine exclusive source and destination cell IDs,
+exactly nine proactive source evictions, positive render-frame evidence, and a settled
+destination district. `logicalGpuBytesHighWater / max(sourceLogicalGpuBytes,
+destinationLogicalGpuBytes)` is attributable logical buffer accounting, not a claim of
+page-attributed physical WebGPU residency; RE-014's physical observability gap remains.
+The render worker samples that high-water on every telemetry publication while the
+correlated swap window is active. A zero-frame window remains transport-valid evidence
+but fails the budget verdict because it cannot substantiate the hitch metric (D-176).
+
 ## NPC AI
 
 | Metric | Target | Notes |

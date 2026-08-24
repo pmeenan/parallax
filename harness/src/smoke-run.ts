@@ -3,9 +3,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  evaluateStreamingDistrictSwap,
   type HybridUiTelemetrySnapshot,
   type ParallaxTelemetryExport,
   type PsoWarmupTelemetrySnapshot,
+  type StreamingDistrictSwapTelemetry,
+  type StreamingDistrictSwapVerdict,
   TELEMETRY_FRAME_BATCH_FRAMES,
 } from "@parallax/engine";
 import type { BrowserContext, CDPSession, Page } from "playwright-core";
@@ -249,6 +252,7 @@ interface RunMeasurement {
   readonly browserDisplayBefore: BrowserDisplayIdentity;
   readonly cpuFrameMs: MeasuredMetric<Distribution>;
   readonly dawnPipeline: MetricResult<DawnPipelineEvidence>;
+  readonly districtSwaps: MeasuredMetric<DistrictSwapEvidence>;
   readonly gpuMemory: GpuMemoryMetric;
   readonly greyboxWorld: MeasuredMetric<GreyboxWorldEvidence>;
   readonly http:
@@ -281,6 +285,13 @@ interface RunMeasurement {
   readonly workerInitToFirstFrameMs: MeasuredMetric<number>;
   readonly workerStartupToFirstFrameMs: MeasuredMetric<number>;
   readonly vizPresentationFeedbackCallbackIntervalMs: ProbeResult<Distribution>;
+}
+
+interface DistrictSwapEvidence {
+  readonly finalDistrictId: string;
+  readonly samples: readonly StreamingDistrictSwapTelemetry[];
+  readonly scenarioId: "m4-district-swap@1";
+  readonly verdicts: readonly StreamingDistrictSwapVerdict[];
 }
 
 interface V8CodeCacheDiagnosticRun {
@@ -1144,6 +1155,7 @@ async function measureRunWithBrowser(
       throw new Error("World streaming failed before the measurement boundary");
     }
     const simulationController = await verifySimulationFoundation(page);
+    const districtSwaps = await verifyDistrictSwapScenario(page);
     const warmupStartedAt = performance.now();
     await page.evaluate((globalName) => {
       const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
@@ -1342,6 +1354,7 @@ async function measureRunWithBrowser(
       browserDisplayBefore,
       cpuFrameMs: measured(distribution(frames.map((frame) => frame.durationMs))),
       dawnPipeline,
+      districtSwaps: measured(districtSwaps),
       gpuMemory,
       greyboxWorld: measured(requireGreyboxWorld(greyboxTelemetry, frames, renderedOutput)),
       hybridUi: measured(requireHybridUiEvidence(snapshot.hybridUi)),
@@ -1381,6 +1394,83 @@ async function measureRunWithBrowser(
       await context.close();
     }
   }
+}
+
+async function verifyDistrictSwapScenario(page: Page): Promise<DistrictSwapEvidence> {
+  const scenarioId = "m4-district-swap@1" as const;
+  const observed = await page.evaluate(
+    async ({ globalName, scenario }) => {
+      const telemetry = Reflect.get(globalThis, globalName) as ParallaxTelemetryExport;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      try {
+        return await Promise.race([
+          telemetry.runStreamingDistrictSwapScenario(scenario).then((samples) => ({
+            finalDistrictId: telemetry.snapshot().streaming.districtId,
+            samples,
+            timedOut: false as const,
+          })),
+          new Promise<{
+            readonly snapshot: ReturnType<ParallaxTelemetryExport["snapshot"]>["streaming"];
+            readonly timedOut: true;
+          }>((resolve) => {
+            timeoutId = setTimeout(
+              () => resolve({ snapshot: telemetry.snapshot().streaming, timedOut: true }),
+              30_000,
+            );
+          }),
+        ]);
+      } finally {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+      }
+    },
+    { globalName: SMOKE_TELEMETRY_GLOBAL_NAME, scenario: scenarioId },
+  );
+  if (observed.timedOut) {
+    const snapshot = observed.snapshot;
+    throw new Error(
+      `M4 district-swap scenario timed out after 30000 ms: state=${snapshot.state}, district=${snapshot.districtId ?? "none"}, swaps=${snapshot.districtSwapCount}, inProgress=${snapshot.districtSwapInProgress}, residents=${snapshot.residentCellCount}, failure=${snapshot.failureMessage ?? "none"}`,
+    );
+  }
+  if (observed.finalDistrictId === null || observed.samples.length !== 6) {
+    throw new Error(
+      `M4 district-swap scenario returned ${observed.samples.length} samples and final district ${observed.finalDistrictId ?? "none"}`,
+    );
+  }
+  const byEntrance = new Map<string, StreamingDistrictSwapTelemetry[]>();
+  for (const sample of observed.samples) {
+    const samples = byEntrance.get(sample.entranceId) ?? [];
+    samples.push(sample);
+    byEntrance.set(sample.entranceId, samples);
+  }
+  if (byEntrance.size !== 3) {
+    throw new Error(`M4 district-swap scenario exercised ${byEntrance.size} entrances, expected 3`);
+  }
+  for (const [entranceId, samples] of byEntrance) {
+    if (
+      samples.length !== 2 ||
+      samples[0]?.sourceDistrictId !== samples[1]?.destinationDistrictId ||
+      samples[0]?.destinationDistrictId !== samples[1]?.sourceDistrictId
+    ) {
+      throw new Error(`M4 district-swap entrance ${entranceId} did not run in both directions`);
+    }
+  }
+  if (observed.finalDistrictId !== observed.samples[0]?.sourceDistrictId) {
+    throw new Error("M4 district-swap scenario did not return to its starting district");
+  }
+  const verdicts = Object.freeze(observed.samples.map(evaluateStreamingDistrictSwap));
+  const failedIndex = verdicts.findIndex((verdict) => !verdict.passed);
+  if (failedIndex >= 0) {
+    const sample = observed.samples[failedIndex];
+    throw new Error(
+      `M4 district swap ${sample?.entranceId ?? failedIndex} ${sample?.sourceDistrictId ?? "unknown"}->${sample?.destinationDistrictId ?? "unknown"} exceeded its contract`,
+    );
+  }
+  return Object.freeze({
+    finalDistrictId: observed.finalDistrictId,
+    samples: Object.freeze(observed.samples),
+    scenarioId,
+    verdicts,
+  });
 }
 
 async function measureJsHeapSteadyStateWindow(
@@ -2967,6 +3057,12 @@ function formatReport(report: SmokeReport): string {
     const evidence = run.streaming.value;
     return `- ${run.profile} repeat ${run.repeat}: ${evidence.cellLoadSampleCount} OPFS→decode→GPU samples (${evidence.measurementCellLoadSamples.length} in-window), p95 ${formatMilliseconds(evidence.cellLoadP95Ms)}; ${evidence.opfsAccessHandleCount}/${evidence.opfsPackageCount} startup-open OPFS handles in ${formatMilliseconds(evidence.opfsAccessHandleOpenDurationMs)}; ${evidence.decodeWorkerCount} decode workers on hardwareConcurrency ${evidence.hardwareConcurrency}; queue high-water ${evidence.decodeQueueDepthHighWater}; ${evidence.residentCellCount} resident cells representing ${formatBytes(evidence.residentEncodedBytes)} encoded / ${formatBytes(evidence.residentGpuBytes)} attributable GPU bytes; ${evidence.measurementProactiveEvictionCount} in-window proactive evictions; ${evidence.cpuBudgetRejectionCount} encoded-budget rejections; ${formatBytes(evidence.opfsProvisionedBytes)} provisioned this launch`;
   });
+  const districtSwapEvidence = report.runs.flatMap((run) =>
+    run.districtSwaps.value.samples.map((sample, index) => {
+      const verdict = run.districtSwaps.value.verdicts[index];
+      return `- ${run.profile} repeat ${run.repeat}: ${sample.entranceId} ${sample.sourceDistrictId}→${sample.destinationDistrictId}; ${formatMilliseconds(sample.totalMs)} total / ${formatMilliseconds(sample.maxHitchMs)} max hitch across ${sample.renderFrameCount} frames; logical GPU high-water ${formatBytes(sample.logicalGpuBytesHighWater)} (${verdict?.logicalGpuOverlapRatio.toFixed(3) ?? "invalid"}× source/destination steady maximum); ${sample.proactiveEvictionCount} proactive evictions; exclusive resident sets ${verdict?.exclusiveResidentSets === true ? "verified" : "failed"}`;
+    }),
+  );
   const streamingVarianceEvidence = report.streamingCellLoadP95Variance.map((variance) =>
     variance.state === "measured"
       ? `- ${variance.profile}: measured absolute p95 range ${formatMilliseconds(variance.absoluteP95RangeMs)} (allowed ${formatMilliseconds(variance.allowedAbsoluteP95RangeMs)} = max(${(100 * SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toFixed(0)}% of the minimum, ${formatMilliseconds(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS)} floor)); relative range ${variance.relativeP95Range === null ? "unbounded at zero" : `${(100 * variance.relativeP95Range).toFixed(3)}%`}`
@@ -3025,6 +3121,10 @@ function formatReport(report: SmokeReport): string {
     "## D1 streaming repeatability diagnostic (informational)",
     "",
     ...streamingVarianceEvidence,
+    "",
+    "## M4 district resident-set swap evidence",
+    "",
+    ...(districtSwapEvidence.length === 0 ? ["No district-swap evidence."] : districtSwapEvidence),
     "",
     "## M3 simulation and playable-loop evidence",
     "",

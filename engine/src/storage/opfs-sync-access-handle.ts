@@ -13,6 +13,8 @@ export interface OpfsSyncAccessHandle {
 export interface OpfsSyncAccessHandleCache {
   readonly size: number;
   closeAll(): readonly unknown[];
+  closeExcept(retainedKeys: ReadonlySet<string>): readonly unknown[];
+  has(key: string): boolean;
   open(
     key: string,
     expectedBytes: number,
@@ -38,6 +40,22 @@ export function createOpfsSyncAccessHandleCache(): OpfsSyncAccessHandleCache {
       }
       handles.clear();
       return Object.freeze(failures);
+    },
+    closeExcept(retainedKeys: ReadonlySet<string>): readonly unknown[] {
+      const failures: unknown[] = [];
+      for (const [key, handle] of handles) {
+        if (retainedKeys.has(key)) continue;
+        try {
+          handle.close();
+          handles.delete(key);
+        } catch (error: unknown) {
+          failures.push(error);
+        }
+      }
+      return Object.freeze(failures);
+    },
+    has(key: string): boolean {
+      return handles.has(key);
     },
     async open(
       key: string,

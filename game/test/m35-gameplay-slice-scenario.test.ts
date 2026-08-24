@@ -12,6 +12,8 @@ const world = simulationWorldDefinition(createGreyboxScene(DISTRICT_1_GREYBOX_SP
 const context = Object.freeze({ timestepHz: 60, world });
 
 describe("M3.5 gameplay slice scenario", () => {
+  // This timeout is CI scheduler headroom for two full deterministic replays, not a
+  // performance threshold; simulation-step budgets remain harness-owned.
   it("fights, loots, crafts, levels, and completes a multi-objective quest deterministically", () => {
     const first = runSimulationReplay(
       createGameSimulationAdapter(context),
@@ -48,5 +50,5 @@ describe("M3.5 gameplay slice scenario", () => {
       questObjectiveProgressCount: 5,
       questStageCompletionCount: 2,
     });
-  }, 15_000);
+  }, 30_000);
 });

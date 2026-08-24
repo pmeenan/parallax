@@ -28,6 +28,132 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-176: Correlate district-swap completion and make render evidence non-vacuous (2026-08-23, accepted)
+
+**Decision:** Retain D-175's source-evict-before-destination-admit transaction, with four
+corrections to its observable contract. First, completion is an explicit
+`district-swap-complete` worker response correlated by request ID; the public service
+settles that request from the response plus a monotonically increasing completed-swap
+counter, never by waiting for a fixed-size telemetry history. The retained sample limit
+is exported shared policy, not completion state. Second, a swap closes admission,
+clears any queued schedule, and drains the currently executing schedule before it
+captures the source baseline or begins eviction.
+
+Third, logical GPU high-water is sampled on every render-worker telemetry publication
+during the correlated frame window, including intermediate eviction and admission
+states. The first frame interval is clamped to the instant the window opened so
+pre-window idle time cannot be charged to the swap. A zero-frame window is a valid
+transport result rather than a worker protocol failure, but it is explicitly
+insufficient render evidence and therefore fails the harness verdict. Fourth, the game
+runtime owns world-graph resolution, fixed/terrain-derived arrival placement, and the
+single in-flight transition guard. The app shell only presents game events. Destination
+material definitions are compared semantically, and destination-only definitions are
+removed when they cease to be active. Immutable installed district resolutions are
+memoized per worker generation; opened access handles still follow normal lifecycle
+rules.
+
+Streaming telemetry schema v13, public telemetry schema v45, and smoke report schema
+v74 carry this corrected contract. The harness uses shared exact-set validation and the
+engine evaluator as the authority for exclusive residents, proactive eviction, GPU
+overlap, duration, and render-evidence validity.
+
+**Context:** Review of the first D-175 working-tree implementation found that a request
+could deadlock after the 32-sample telemetry history filled, repeated input could issue
+duplicate or stale-source swaps, an already-running schedule could mutate residency
+after the source baseline was captured, and the renderer only sampled high-water at
+window close. That last behavior allowed a nominal 1.000x result even when an
+intermediate publication exceeded it. The first frame could also include idle time from
+before the window, while zero frames failed the transport rather than producing a
+diagnosable failed measurement. These are correctness defects in the evidence path, so
+the earlier schema-v73 smoke cannot close the resident-swap task.
+
+**Consequences:** The corrected candidate must receive a fresh physical schema-v74
+smoke before the resident-set plan item is complete. Sequential source eviction remains
+intentional: each acknowledged release validates the exact dependency-cache projection,
+and the 4 s end-to-end budget measures whether that stronger invariant is affordable.
+No previous artifact is rewritten or deleted; schema identity makes the superseded
+evidence unambiguous.
+
+**Evidence:** The final pinned Chrome 152.0.7977.54 dev-01/Showcase smoke used report
+schema v74 and mandatory metric set v35. All 36 directed samples passed over three fresh
+and three warm launches, with every entrance exercised in both directions: worst total
+320.4 ms, worst hitch 16.9 ms, logical GPU overlap 1.000x, at least seven measured
+frames, exactly nine proactive evictions, and exclusive nine-cell source/destination
+resident sets per sample. All 36 absolute budget checks and the environment,
+evidence-completeness, and budget-evaluation facets passed, with no core-run or
+finalization failure. The retained artifacts are
+`smoke-1-12cbdbe33744-dev-01-showcase-2026-08-23T23-56-49-665Z.json` (SHA-256
+`20c8449a3a7da26ab27e98d504832ee61461cd4ee89914acb781d04bbcd529c4`) and the
+same-stem Markdown report (SHA-256
+`3f4dfdb0c0a78aae1c9422939ec79ece9c69a0f1e93cbe3c2ac52f14f1399ddb`). The report
+binds build artifact
+`12cbdbe3374494f47ffb522b784f89cb3e5326567a183ffceab99923da5e7708`, commit
+`3feaf108769538bb3c334828f9f55800e4796ba3`, and dirty-tree digest
+`b9ed2462d341a295f118c43701b29e4b3fa788c89c733b2798e1c4e47cabc2fa`.
+
+**Reopen if:** correlated responses become a measurable throughput bottleneck, the
+sequential cache-projection invariant cannot stay within the transition budget, or a
+future renderer can expose physical page-attributed WebGPU residency that should replace
+logical accounting.
+
+## D-175: Swap districts with handle overlap but no source/destination GPU overlap (2026-08-23, accepted)
+
+**Decision:** A hard district transition is one generic streaming-worker transaction.
+It resolves the destination district from the active installed release and opens its
+content-addressed cell/dependency sync-access handles while the source handles remain
+open. It then proactively evicts the complete nine-cell source resident set, requires
+both CPU and render-worker dependency caches to reach zero live resources, installs the
+destination district's material definitions in the render worker, and only then admits
+the destination's complete nine-cell GPU resident set. After destination settlement it
+closes every source-only access handle. Shared immutable handles and material IDs may be
+retained only when their exact content/definition agrees.
+
+The renderer brackets the whole operation with a correlated frame window. Streaming
+telemetry retains source/destination district and resident identities, source and
+destination logical GPU bytes, logical GPU high-water, proactive eviction count, total
+duration, frame count, and worst render/callback interval. A game-owned scenario derives
+six directed steps from the three world-graph edges; the harness requires every edge in
+both directions and applies the existing ≤100 ms hitch, ≤4 s total, ≤1.25× logical GPU
+overlap, proactive-only eviction, and exclusive-resident-set contract to every sample.
+
+**Context:** D-174 supplied two independently packaged districts and three entrance
+edges but deliberately stopped before runtime replacement. The first physical attempt
+exposed that cell residency cannot move independently of the renderer's district
+material registry: D2 admission failed on its first `ceiling-stone` primitive after D1
+had been fully evicted. Treating material installation as an explicit correlated phase
+keeps the engine district-neutral and makes that cross-system dependency observable.
+
+**Consequences:** The current transaction chooses minimum logical GPU overlap over
+background destination upload: destination OPFS handle preparation overlaps the source,
+but destination decode/upload begins only after complete source eviction. D-055's
+prefetch-trigger calibration remains separate and may move destination handle
+preparation earlier; changing the no-GPU-overlap ordering requires a new measured
+decision. The transaction changes streaming residency only. Simulation-world and
+whole-world preview/presentation replacement remain part of completing the playable
+hard-transition flow and are not silently implied by this resident-set contract.
+
+**Superseded development evidence (corrected by D-176):** The pinned Chrome
+152.0.7977.54 dev-01/Showcase smoke used schema v73 and mandatory metric set v35. All 36
+directed samples passed over
+three fresh and three warm launches, with every entrance exercised in both directions:
+worst total 403.8 ms, worst hitch 16.8 ms, logical GPU overlap 1.000x, exactly nine
+proactive evictions, and exclusive nine-cell source/destination resident sets per
+sample. All 36 absolute budget checks and the environment, evidence-completeness, and
+budget-evaluation facets passed, with no core-run or finalization failure. The retained
+artifacts are
+`smoke-1-e7854cd2a4d7-dev-01-showcase-2026-08-23T16-20-26-995Z.json`
+(SHA-256 `0c5febec3566d7024711d5a561832c87c3913977f28a79d3f5213bba154e021c`)
+and the same-stem Markdown report (SHA-256
+`f26413eac8c6a7aed35c42c39dd195a04fb9df1d5affce9b5406e856c8653f41`). The report
+binds commit `3feaf108769538bb3c334828f9f55800e4796ba3` and dirty-tree digest
+`228e7163847133915a487a015db4399a6b802191c5c6e2b14bccf02d78ffa25a`.
+Because its high-water sampling and frame-window semantics were not non-vacuous, this
+artifact is retained for development history only and does not complete the M4 task.
+
+**Reopen if:** greybox or representative-art measurements cannot meet the 4 s total
+budget without destination GPU overlap, source-handle pressure becomes material, or an
+N>2 district workload requires a different cache-retention policy.
+
 ## D-174: Fix the D2 greybox and three-edge world graph (2026-08-22, accepted)
 
 **Decision:** District 2's greybox is a 1,024 m × 1,024 m underground square centered at

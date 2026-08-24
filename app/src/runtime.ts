@@ -48,6 +48,7 @@ import {
   M1_BENCHMARK_DEFINITION,
   M1_BENCHMARK_UI_COPY,
   M3_HYBRID_UI_DOM_LABELS,
+  M4_DISTRICT_SWAP_SCENARIO,
   M35_GAMEPLAY_SLICE_SCENARIO,
 } from "@parallax/game";
 import { runBenchmarkUiAction } from "./benchmark-ui-action";
@@ -327,6 +328,7 @@ async function bootRuntimeAttempt(
     },
     globalThis,
     [M35_GAMEPLAY_SLICE_SCENARIO],
+    [M4_DISTRICT_SWAP_SCENARIO],
   );
   registerFailureCleanup(() => telemetryExport.dispose());
   const streamingDashboard = document.querySelector("#streaming-dashboard");
@@ -607,7 +609,8 @@ async function bootRuntimeAttempt(
               ? " · WASM threads running"
               : "";
       const interactionStatus = status.dataset.lastInteraction;
-      status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${wasmStatus} · WASD / mouse · E interact${interactionStatus === undefined || interactionStatus === "" ? "" : ` · activated ${interactionStatus}`}`;
+      const districtSwapStatus = status.dataset.lastDistrictSwap;
+      status.textContent = `${buildIdentity} · WebGPU render worker ready · ${render.frameCount} frames${worldStatus}${wasmStatus} · WASD / mouse · E interact${interactionStatus === undefined || interactionStatus === "" ? "" : ` · activated ${interactionStatus}`}${districtSwapStatus === undefined || districtSwapStatus === "" ? "" : ` · district swap ${districtSwapStatus}`}`;
     } else if (render.state === "failed") {
       status.textContent = `${buildIdentity} · Render worker failed: ${render.failureMessage ?? "unknown error"}`;
     } else {
@@ -641,9 +644,13 @@ async function bootRuntimeAttempt(
     if (interaction.kind === "npc") {
       status.dataset.lastInteraction = `npc-${interaction.entityId}`;
       npcDialogController.open(interaction.entityId);
-    } else {
+    } else if (interaction.kind === "transition") {
       status.dataset.lastInteraction = interaction.markerId;
       gameUiService.present(gameUiModel.recordInteraction(interaction.markerId));
+    } else if (interaction.kind === "transition-completed") {
+      status.dataset.lastDistrictSwap = `${interaction.entranceId} ${interaction.totalMs.toFixed(1)} ms`;
+    } else {
+      status.dataset.lastDistrictSwap = `failed at ${interaction.markerId}: ${interaction.message}`;
     }
     updateStatus();
   });

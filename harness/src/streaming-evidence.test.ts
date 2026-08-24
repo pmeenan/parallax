@@ -37,6 +37,10 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
     decodeWorkerCount: 4,
     cpuBudgetRejectionCount: 0,
     currentObservers: Object.freeze([[0, 12, 0] as const]),
+    districtId: "district-1-surface",
+    districtSwapCount: 0,
+    districtSwapInProgress: false,
+    districtSwapSamples: Object.freeze([]),
     encodedBytesRead: 120_000,
     failureMessage: null,
     flythroughObserverUpdateCount: 0,
@@ -62,7 +66,7 @@ function validTelemetry(): WorldStreamingTelemetrySnapshot {
     renderBatchDirectUploadMsHighWater: 27,
     renderBatchRequestCount: 2,
     renderBatchTransactionCount: 2,
-    schemaVersion: 11,
+    schemaVersion: 13,
     settledRecoveryCheckpoint: Object.freeze({
       flythroughObserverUpdateCount: 0,
       observerUpdateCount: 12,
@@ -522,7 +526,7 @@ describe("M1 streaming smoke evidence", () => {
         renderBatchUploadRequestCount: 2,
         schemaVersion: 8,
       } as unknown as WorldStreamingTelemetrySnapshot),
-    ).toThrow(/schemaVersion=8; expected 11/);
+    ).toThrow(/schemaVersion=8; expected 13/);
     const [first, ...rest] = telemetry.cellLoadSamples;
     if (first === undefined) throw new Error("Test sample is absent");
     const {

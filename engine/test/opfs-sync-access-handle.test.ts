@@ -63,6 +63,21 @@ describe("OPFS sync access-handle cache", () => {
     expect(duplicate).not.toHaveBeenCalled();
   });
 
+  it("closes source-only handles while retaining destination-shared handles", async () => {
+    const sourceOnly = handle(4_096);
+    const shared = handle(8_192);
+    const cache = createOpfsSyncAccessHandleCache();
+    await cache.open("source", 4_096, async () => sourceOnly.access);
+    await cache.open("shared", 8_192, async () => shared.access);
+
+    expect(cache.has("source")).toBe(true);
+    expect(cache.closeExcept(new Set(["shared"]))).toEqual([]);
+    expect(sourceOnly.close).toHaveBeenCalledOnce();
+    expect(shared.close).not.toHaveBeenCalled();
+    expect(cache.size).toBe(1);
+    expect(cache.require("shared")).toBe(shared.access);
+  });
+
   it("attempts every close and clears the cache when a handle close fails", async () => {
     const first = handle(4_096);
     const second = handle(8_192);

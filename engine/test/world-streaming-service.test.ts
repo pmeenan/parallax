@@ -224,7 +224,150 @@ describe("world streaming service lifecycle", () => {
     firstPort.close();
     recovery.streamingPort.close();
   });
+
+  it("correlates one district swap and updates the recovery start identity", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createWorldStreamingService();
+    const firstPort = service.start(startOptions());
+    const worker = requireWorker();
+    worker.emit({ kind: "telemetry", snapshot: snapshot(service, "streaming") });
+
+    const result = service.swapDistrict({
+      destinationDistrictId: "district-2-catacombs",
+      entranceId: "forest-ruin",
+      initialObservers: [[320, 0, -192]],
+    });
+    expect(worker.requests.at(-1)).toMatchObject({
+      destinationDistrictId: "district-2-catacombs",
+      entranceId: "forest-ruin",
+      kind: "swap-district",
+      requestId: 1,
+    });
+    await expect(
+      service.swapDistrict({
+        destinationDistrictId: "district-2-catacombs",
+        entranceId: "forest-ruin",
+        initialObservers: [[320, 0, -192]],
+      }),
+    ).rejects.toThrow(/already in progress/);
+    const requestCountDuringSwap = worker.requests.length;
+    service.setObservers([[1, 2, 3]]);
+    expect(worker.requests).toHaveLength(requestCountDuringSwap);
+
+    const swapSample = Object.freeze({
+      completedAtMs: 101,
+      destinationDistrictId: "district-2-catacombs",
+      destinationLogicalGpuBytes: 900,
+      destinationResidentCellIds: Object.freeze(
+        Array.from({ length: 9 }, (_, index) => `d2-${index}`),
+      ),
+      entranceId: "forest-ruin",
+      logicalGpuBytesHighWater: 900,
+      maxHitchMs: 17,
+      proactiveEvictionCount: 9,
+      renderFrameCount: 6,
+      sourceDistrictId: "district-1-surface",
+      sourceLogicalGpuBytes: 800,
+      sourceResidentCellIds: Object.freeze(Array.from({ length: 9 }, (_, index) => `d1-${index}`)),
+      startedAtMs: 1,
+      totalMs: 100,
+    });
+    worker.emit({
+      kind: "telemetry",
+      snapshot: {
+        ...snapshot(service, "streaming"),
+        currentObservers: Object.freeze([[320, 0, -192] as const]),
+        districtId: "district-2-catacombs",
+        districtSwapCount: 1,
+        districtSwapInProgress: false,
+        districtSwapSamples: Object.freeze([swapSample]),
+        settledRecoveryCheckpoint: Object.freeze({
+          flythroughObserverUpdateCount: 0,
+          observerUpdateCount: 0,
+          observers: Object.freeze([[320, 0, -192] as const]),
+          residentCellIds: swapSample.destinationResidentCellIds,
+          workerGeneration: 1,
+        }),
+      },
+    });
+    worker.emit({ kind: "district-swap-complete", requestId: 1, sample: swapSample });
+    await expect(result).resolves.toEqual(swapSample);
+
+    const recovery = service.restartAfterRenderFailure();
+    expect(requireWorker().requests[0]).toMatchObject({
+      districtId: "district-2-catacombs",
+      initialObservers: [[320, 0, -192]],
+    });
+    void recovery.settled.catch(() => undefined);
+    firstPort.close();
+    recovery.streamingPort.close();
+  });
+
+  it("settles a correlated swap after the retained sample window reaches its cap", async () => {
+    vi.stubGlobal("Worker", FakeWorker);
+    const service = createWorldStreamingService();
+    const renderPort = service.start(startOptions());
+    const worker = requireWorker();
+    const retained = Object.freeze(
+      Array.from({ length: 32 }, (_, index) =>
+        swapSample(index, "district-2-catacombs", "district-1-surface"),
+      ),
+    );
+    worker.emit({
+      kind: "telemetry",
+      snapshot: {
+        ...snapshot(service, "streaming"),
+        districtSwapCount: 32,
+        districtSwapSamples: retained,
+      },
+    });
+
+    const result = service.swapDistrict({
+      destinationDistrictId: "district-2-catacombs",
+      entranceId: "castle-undercroft",
+      initialObservers: [[0, 0, 0]],
+    });
+    const completed = swapSample(32, "district-1-surface", "district-2-catacombs");
+    worker.emit({
+      kind: "telemetry",
+      snapshot: {
+        ...snapshot(service, "streaming"),
+        currentObservers: Object.freeze([[0, 0, 0] as const]),
+        districtId: "district-2-catacombs",
+        districtSwapCount: 33,
+        districtSwapSamples: Object.freeze([...retained.slice(1), completed]),
+        districtSwapInProgress: false,
+      },
+    });
+    worker.emit({ kind: "district-swap-complete", requestId: 1, sample: completed });
+
+    await expect(result).resolves.toEqual(completed);
+    renderPort.close();
+  });
 });
+
+function swapSample(index: number, sourceDistrictId: string, destinationDistrictId: string) {
+  return Object.freeze({
+    completedAtMs: index + 2,
+    destinationDistrictId,
+    destinationLogicalGpuBytes: 900,
+    destinationResidentCellIds: Object.freeze(
+      Array.from({ length: 9 }, (_, cellIndex) => `${destinationDistrictId}-${cellIndex}`),
+    ),
+    entranceId: "castle-undercroft",
+    logicalGpuBytesHighWater: 900,
+    maxHitchMs: 17,
+    proactiveEvictionCount: 9,
+    renderFrameCount: 6,
+    sourceDistrictId,
+    sourceLogicalGpuBytes: 800,
+    sourceResidentCellIds: Object.freeze(
+      Array.from({ length: 9 }, (_, cellIndex) => `${sourceDistrictId}-${cellIndex}`),
+    ),
+    startedAtMs: index + 1,
+    totalMs: 1,
+  });
+}
 
 function requireWorker(): FakeWorker {
   if (FakeWorker.latest === null) throw new Error("Streaming worker was not constructed");

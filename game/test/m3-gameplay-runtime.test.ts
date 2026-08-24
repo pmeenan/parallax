@@ -7,6 +7,7 @@ import type {
   SimulationSemanticEvent,
   SimulationService,
   SimulationWorldDefinition,
+  StreamingDistrictSwapTelemetry,
   WorldStreamingService,
 } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
@@ -16,7 +17,7 @@ import {
 } from "../src/sim/m3-gameplay-runtime";
 
 describe("M3 gameplay runtime", () => {
-  it("keeps app orchestration generic and yields presentation/observer ownership to scenarios", () => {
+  it("keeps app orchestration generic and yields presentation/observer ownership to scenarios", async () => {
     let inputListener: ((frame: GameplayInputFrame) => void) | null = null;
     let eventListener: ((events: readonly SimulationSemanticEvent[]) => void) | null = null;
     let canvasListener: ((canvas: HTMLCanvasElement) => void) | null = null;
@@ -35,7 +36,13 @@ describe("M3 gameplay runtime", () => {
     const presentations: RenderGameplayPresentation[] = [];
     const observers: (readonly [number, number, number])[][] = [];
     const reboundCanvases: HTMLCanvasElement[] = [];
+    const swapRequests: Parameters<WorldStreamingService["swapDistrict"]>[0][] = [];
     let emitCurrentFrameCount = 0;
+    let streamingDistrictId = "district-1-surface";
+    let resolveSwap!: (sample: StreamingDistrictSwapTelemetry) => void;
+    const pendingSwap = new Promise<StreamingDistrictSwapTelemetry>((resolve) => {
+      resolveSwap = resolve;
+    });
     const input = {
       dispose: () => undefined,
       emitCurrentFrame: () => {
@@ -80,10 +87,22 @@ describe("M3 gameplay runtime", () => {
     } as unknown as SimulationService;
     const streaming = {
       setObservers: (next: (readonly [number, number, number])[]) => observers.push(next),
-      snapshot: () => ({ state: "streaming" }),
+      snapshot: () => ({ districtId: streamingDistrictId, state: "streaming" }),
+      swapDistrict: (options: Parameters<WorldStreamingService["swapDistrict"]>[0]) => {
+        swapRequests.push(options);
+        return pendingSwap;
+      },
     } as unknown as WorldStreamingService;
     const world = {
-      markers: [{ id: "nearby-transition", kind: "transition", position: [0, 0, 0], tags: [] }],
+      id: "district-1-surface",
+      markers: [
+        {
+          id: "d1-transition-castle-catacomb",
+          kind: "transition",
+          position: [0, 0, 0],
+          tags: [],
+        },
+      ],
     } as unknown as SimulationWorldDefinition;
     const runtime = createM3GameplayRuntime(input, render, simulation, streaming, world);
 
@@ -173,6 +192,39 @@ describe("M3 gameplay runtime", () => {
     const payload = new Uint8Array(4);
     new DataView(payload.buffer).setUint32(0, 0, true);
     activeEvents([{ kind: "interaction.activated", payload, sequence: 0, tick: 1 }]);
-    expect(interactions).toEqual([{ kind: "transition", markerId: "nearby-transition" }]);
+    activeEvents([{ kind: "interaction.activated", payload, sequence: 1, tick: 2 }]);
+    expect(swapRequests).toHaveLength(1);
+    expect(interactions).toEqual([
+      { kind: "transition", markerId: "d1-transition-castle-catacomb" },
+      { kind: "transition", markerId: "d1-transition-castle-catacomb" },
+    ]);
+
+    resolveSwap({
+      completedAtMs: 2,
+      destinationDistrictId: "district-2-catacombs",
+      destinationLogicalGpuBytes: 900,
+      destinationResidentCellIds: Array.from({ length: 9 }, (_, index) => `d2-${index}`),
+      entranceId: "castle-undercroft",
+      logicalGpuBytesHighWater: 900,
+      maxHitchMs: 16,
+      proactiveEvictionCount: 9,
+      renderFrameCount: 4,
+      sourceDistrictId: "district-1-surface",
+      sourceLogicalGpuBytes: 800,
+      sourceResidentCellIds: Array.from({ length: 9 }, (_, index) => `d1-${index}`),
+      startedAtMs: 1,
+      totalMs: 1,
+    });
+    await pendingSwap;
+    await Promise.resolve();
+    expect(interactions.at(-1)).toEqual({
+      entranceId: "castle-undercroft",
+      kind: "transition-completed",
+      totalMs: 1,
+    });
+
+    streamingDistrictId = "district-2-catacombs";
+    activeEvents([{ kind: "interaction.activated", payload, sequence: 2, tick: 3 }]);
+    expect(swapRequests).toHaveLength(1);
   });
 });

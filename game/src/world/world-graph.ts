@@ -1,5 +1,6 @@
 import { DISTRICT_1_ID, DISTRICT_2_ID, type KnownDistrictId } from "./district-identity";
 import { GREYBOX_DISTRICT_SPECS } from "./district-registry";
+import { sampleGreyboxTerrain } from "./greybox-generator";
 import type { GreyboxDistrictSpec } from "./greybox-spec";
 import { freezeGreyboxData } from "./greybox-spec";
 
@@ -31,6 +32,59 @@ export interface WorldGraphValidationSummary {
   readonly districtCount: number;
   readonly endpointCount: number;
   readonly transitionCount: number;
+}
+
+export interface ResolvedWorldGraphTransition {
+  readonly destination: WorldGraphEndpoint;
+  readonly destinationPosition: readonly [number, number, number];
+  readonly entranceId: string;
+  readonly source: WorldGraphEndpoint;
+}
+
+export function resolveWorldGraphTransition(
+  graph: WorldGraph,
+  districtSpecs: readonly GreyboxDistrictSpec[],
+  sourceDistrictId: string,
+  sourceMarkerId: string,
+): ResolvedWorldGraphTransition {
+  const transition = graph.transitions.find(({ endpoints }) =>
+    endpoints.some(
+      (endpoint) =>
+        endpoint.districtId === sourceDistrictId && endpoint.markerId === sourceMarkerId,
+    ),
+  );
+  const source = transition?.endpoints.find(
+    (endpoint) => endpoint.districtId === sourceDistrictId && endpoint.markerId === sourceMarkerId,
+  );
+  const destination = transition?.endpoints.find((endpoint) => endpoint !== source);
+  const destinationSpec = districtSpecs.find(({ world }) => world.id === destination?.districtId);
+  const destinationMarker = destinationSpec?.markers.find(({ id }) => id === destination?.markerId);
+  if (
+    transition === undefined ||
+    source === undefined ||
+    destination === undefined ||
+    destinationSpec === undefined ||
+    destinationMarker?.kind !== "transition"
+  ) {
+    throw new Error(
+      `World-graph transition endpoint ${sourceDistrictId}:${sourceMarkerId} is unknown`,
+    );
+  }
+  return Object.freeze({
+    destination,
+    destinationPosition: Object.freeze([
+      destinationMarker.position[0],
+      destinationMarker.fixedY ??
+        sampleGreyboxTerrain(
+          destinationSpec,
+          destinationMarker.position[0],
+          destinationMarker.position[1],
+        ),
+      destinationMarker.position[1],
+    ] as const),
+    entranceId: transition.id,
+    source,
+  });
 }
 
 function requireNonEmpty(value: string, label: string): void {

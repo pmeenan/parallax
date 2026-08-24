@@ -3,8 +3,13 @@ import { validateGreyboxDistrict } from "@parallax/engine";
 import { describe, expect, it, vi } from "vitest";
 import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
 import { GREYBOX_DISTRICT_SPECS } from "../src/world/district-registry";
-import { createGreyboxScene } from "../src/world/greybox-generator";
-import { PARALLAX_WORLD_GRAPH, validateWorldGraph } from "../src/world/world-graph";
+import { createGreyboxScene, sampleGreyboxTerrain } from "../src/world/greybox-generator";
+import { M4_DISTRICT_SWAP_SCENARIO } from "../src/world/m4-district-swap-scenario";
+import {
+  PARALLAX_WORLD_GRAPH,
+  resolveWorldGraphTransition,
+  validateWorldGraph,
+} from "../src/world/world-graph";
 
 function detailedBoxes(cell: GreyboxCell): GreyboxTriangleBoxPayload {
   const representation = cell.lods[0].representations.find(
@@ -127,5 +132,60 @@ describe("District 2 catacombs greybox", () => {
     ]);
     expect(Object.isFrozen(PARALLAX_WORLD_GRAPH.transitions[0]?.endpoints)).toBe(true);
     expect(JSON.parse(JSON.stringify(PARALLAX_WORLD_GRAPH))).toEqual(PARALLAX_WORLD_GRAPH);
+  });
+
+  it("resolves every entrance in both directions without district-specific code", () => {
+    for (const transition of PARALLAX_WORLD_GRAPH.transitions) {
+      for (const source of transition.endpoints) {
+        const resolved = resolveWorldGraphTransition(
+          PARALLAX_WORLD_GRAPH,
+          GREYBOX_DISTRICT_SPECS,
+          source.districtId,
+          source.markerId,
+        );
+        const expectedDestination = transition.endpoints.find((endpoint) => endpoint !== source);
+        expect(resolved).toMatchObject({
+          destination: expectedDestination,
+          entranceId: transition.id,
+          source,
+        });
+        expect(resolved.destinationPosition).toHaveLength(3);
+        const destinationSpec = GREYBOX_DISTRICT_SPECS.find(
+          ({ world }) => world.id === expectedDestination?.districtId,
+        );
+        const destinationMarker = destinationSpec?.markers.find(
+          ({ id }) => id === expectedDestination?.markerId,
+        );
+        if (destinationSpec === undefined || destinationMarker === undefined) {
+          throw new Error("Resolved destination fixture is missing");
+        }
+        expect(resolved.destinationPosition[1]).toBe(
+          destinationMarker.fixedY ??
+            sampleGreyboxTerrain(
+              destinationSpec,
+              destinationMarker.position[0],
+              destinationMarker.position[1],
+            ),
+        );
+      }
+    }
+  });
+
+  it("authors the measurement scenario from all three graph edges in both directions", () => {
+    expect(M4_DISTRICT_SWAP_SCENARIO).toMatchObject({
+      id: "m4-district-swap@1",
+      version: 1,
+    });
+    expect(M4_DISTRICT_SWAP_SCENARIO.steps).toHaveLength(6);
+    for (let index = 0; index < M4_DISTRICT_SWAP_SCENARIO.steps.length; index += 2) {
+      const forward = M4_DISTRICT_SWAP_SCENARIO.steps[index];
+      const reverse = M4_DISTRICT_SWAP_SCENARIO.steps[index + 1];
+      expect(forward?.entranceId).toBe(reverse?.entranceId);
+      expect(forward?.sourceDistrictId).toBe(reverse?.destinationDistrictId);
+      expect(forward?.destinationDistrictId).toBe(reverse?.sourceDistrictId);
+      expect(forward?.initialObservers).toHaveLength(1);
+      expect(reverse?.initialObservers).toHaveLength(1);
+    }
+    expect(Object.isFrozen(M4_DISTRICT_SWAP_SCENARIO.steps)).toBe(true);
   });
 });

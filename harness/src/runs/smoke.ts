@@ -60,11 +60,10 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 43;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 45;
 export const SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION = 1;
-// v72 adds the game-owned M3.5 fight/loot/craft/level/quest command log plus repeated
-// replay and live save/load evidence without changing the performance budgets.
-export const SMOKE_REPORT_SCHEMA_VERSION = 72;
+// v73 adds the game-owned M4 six-direction district resident-set swap evidence.
+export const SMOKE_REPORT_SCHEMA_VERSION = 74;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

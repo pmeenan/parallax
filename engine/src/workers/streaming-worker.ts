@@ -11,6 +11,7 @@ import {
 import { createFlythroughObserverProtocol } from "../streaming/flythrough-observer-protocol";
 import { openAndAdmitInstalledStreamingRelease } from "../streaming/installed-streaming-admission";
 import {
+  type InstalledStreamingRelease,
   parseStreamingDistrictIndex,
   resolveInstalledStreamingRelease,
 } from "../streaming/installed-streaming-release";
@@ -38,6 +39,7 @@ import {
   type RenderToStreamingMessage,
   STREAMING_BATCH_STAGING_BUDGET_BYTES,
   STREAMING_DECODE_PROTOCOL_VERSION,
+  STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT,
   STREAMING_RESIDENT_CELL_LIMIT,
   STREAMING_RESIDENT_ENCODED_BUDGET_BYTES,
   STREAMING_TELEMETRY_SCHEMA_VERSION,
@@ -151,6 +153,10 @@ function initialTelemetry(): WorldStreamingTelemetrySnapshot {
     cellLoadSampleCount: 0,
     cpuBudgetRejectionCount: 0,
     currentObservers: Object.freeze([]),
+    districtId: null,
+    districtSwapCount: 0,
+    districtSwapInProgress: false,
+    districtSwapSamples: Object.freeze([]),
     decodeQueueDepthHighWater: 0,
     decodeWorkerCount: 0,
     dependencyDecodeFailureCount: 0,
@@ -237,6 +243,11 @@ function startStreamingWorker(): void {
   let nextRenderRequestId = 1;
   let nextLoadBatchOrdinal = 1;
   let recordCellLoadSamples = false;
+  let prepareDistrict:
+    | ((districtId: string, resolved?: () => void) => Promise<StreamingDistrictIndex>)
+    | null = null;
+  let districtSwapRunning = false;
+  let districtSwapLogicalGpuBytesHighWater: number | null = null;
   let recoveryTarget: StreamingRecoveryCheckpoint | null = null;
   let startupTiming: StreamingStartupTimingTracker | null = null;
   let flythroughObserverProtocol = createFlythroughObserverProtocol(0);
@@ -269,24 +280,44 @@ function startStreamingWorker(): void {
 
   const publish = (patch: Partial<WorldStreamingTelemetrySnapshot> = {}): void => {
     const checkpoint = patch.settledRecoveryCheckpoint ?? telemetry.settledRecoveryCheckpoint;
+    const residentGpuBytes =
+      [...residents.values()].reduce((sum, resident) => sum + resident.gpuBytes, 0) +
+      ((patch.dependencyGpuCache ?? telemetry.dependencyGpuCache)?.liveDecodedBytes ?? 0);
+    if (districtSwapLogicalGpuBytesHighWater !== null) {
+      districtSwapLogicalGpuBytesHighWater = Math.max(
+        districtSwapLogicalGpuBytesHighWater,
+        residentGpuBytes,
+      );
+    }
     telemetry = Object.freeze({
       ...telemetry,
       ...patch,
-      cellLoadSamples: Object.freeze(
-        (patch.cellLoadSamples ?? telemetry.cellLoadSamples).slice(-LOAD_SAMPLE_LIMIT),
-      ),
+      cellLoadSamples:
+        patch.cellLoadSamples === undefined
+          ? telemetry.cellLoadSamples
+          : Object.freeze(patch.cellLoadSamples.slice(-LOAD_SAMPLE_LIMIT)),
       currentObservers: Object.freeze(
         observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
       ),
+      districtSwapSamples:
+        patch.districtSwapSamples === undefined
+          ? telemetry.districtSwapSamples
+          : Object.freeze(
+              patch.districtSwapSamples.map((sample) =>
+                Object.freeze({
+                  ...sample,
+                  destinationResidentCellIds: Object.freeze([...sample.destinationResidentCellIds]),
+                  sourceResidentCellIds: Object.freeze([...sample.sourceResidentCellIds]),
+                }),
+              ),
+            ),
       opfsAccessHandleCount: opfsAccessHandles.size,
       residentCellCount: residents.size,
       residentCellIds: Object.freeze([...residents.keys()].sort()),
       residentEncodedBytes:
         [...residents.values()].reduce((sum, resident) => sum + resident.encodedBytes, 0) +
         dependencyCache.snapshot().liveEncodedBytes,
-      residentGpuBytes:
-        [...residents.values()].reduce((sum, resident) => sum + resident.gpuBytes, 0) +
-        ((patch.dependencyGpuCache ?? telemetry.dependencyGpuCache)?.liveDecodedBytes ?? 0),
+      residentGpuBytes,
       settledRecoveryCheckpoint:
         checkpoint === null
           ? null
@@ -967,6 +998,7 @@ function startStreamingWorker(): void {
       const batch = uniqueEntries.slice(offset, offset + 8);
       const results = await Promise.allSettled(
         batch.map(async (entry) => {
+          if (opfsAccessHandles.has(entry.sha256)) return;
           const handle = await openResourceFile(entry);
           await opfsAccessHandles.open(entry.sha256, entry.bytes, () =>
             (handle as OpfsFileHandle).createSyncAccessHandle(),
@@ -981,6 +1013,191 @@ function startStreamingWorker(): void {
     publish({
       opfsAccessHandleOpenDurationMs: performance.now() - startedAt,
     });
+  };
+
+  const performDistrictSwap = async (
+    request: Extract<StreamingWorkerRequest, { kind: "swap-district" }>,
+  ): Promise<void> => {
+    if (
+      !ready ||
+      districtSwapRunning ||
+      index === null ||
+      prepareDistrict === null ||
+      !Number.isSafeInteger(request.requestId) ||
+      request.requestId <= 0 ||
+      request.destinationDistrictId.trim() === "" ||
+      request.destinationDistrictId === index.districtId ||
+      request.entranceId.trim() === "" ||
+      !validObservers(request.initialObservers)
+    ) {
+      throw new Error("Streaming district swap request is invalid");
+    }
+    districtSwapRunning = true;
+    ready = false;
+    scheduleRequested = false;
+    const startedAtMs = performance.now();
+    districtSwapLogicalGpuBytesHighWater = telemetry.residentGpuBytes;
+    publish({ districtSwapInProgress: true });
+    try {
+      const beginBoundaryRequestId = nextRenderRequestId++;
+      const beginBoundary = await requestRender({
+        destinationDistrictId: request.destinationDistrictId,
+        destinationMaterials: Object.freeze([]),
+        districtSwapRequestId: request.requestId,
+        kind: "district-swap-boundary",
+        phase: "begin",
+        requestId: beginBoundaryRequestId,
+      });
+      if (
+        beginBoundary.kind !== "district-swap-boundary-complete" ||
+        beginBoundary.phase !== "begin" ||
+        beginBoundary.destinationDistrictId !== request.destinationDistrictId ||
+        beginBoundary.districtSwapRequestId !== request.requestId ||
+        beginBoundary.frameCount !== 0 ||
+        beginBoundary.maxHitchMs !== 0
+      ) {
+        throw new Error("Renderer did not establish an empty district-swap frame window");
+      }
+      const drainDeadline = performance.now() + DISPOSAL_DRAIN_TIMEOUT_MS;
+      while (scheduling && performance.now() < drainDeadline) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      }
+      if (scheduling) throw new Error("Streaming scheduling did not drain before district swap");
+
+      const sourceIndex = index;
+      const sourceLogicalGpuBytes = telemetry.residentGpuBytes;
+      const proactiveEvictionCountAtStart = telemetry.proactiveEvictionCount;
+      const sourceResidentCellIds = Object.freeze([...residents.keys()].sort());
+      if (
+        sourceResidentCellIds.length !== STREAMING_RESIDENT_CELL_LIMIT ||
+        sourceResidentCellIds.some(
+          (cellId) => !sourceIndex.cells.some((entry) => entry.cellId === cellId),
+        )
+      ) {
+        throw new Error("Streaming district swap requires a complete source resident set");
+      }
+
+      const destinationIndex = await prepareDistrict(request.destinationDistrictId);
+      const materialBoundaryRequestId = nextRenderRequestId++;
+      const materialBoundary = await requestRender({
+        destinationDistrictId: destinationIndex.districtId,
+        destinationMaterials: destinationIndex.materials,
+        districtSwapRequestId: request.requestId,
+        kind: "district-swap-boundary",
+        phase: "materials",
+        requestId: materialBoundaryRequestId,
+      });
+      if (
+        materialBoundary.kind !== "district-swap-boundary-complete" ||
+        materialBoundary.phase !== "materials" ||
+        materialBoundary.destinationDistrictId !== destinationIndex.districtId ||
+        materialBoundary.districtSwapRequestId !== request.requestId
+      ) {
+        throw new Error("Renderer did not install destination district materials");
+      }
+      const sourceEntries = new Map(sourceIndex.cells.map((entry) => [entry.cellId, entry]));
+      // Keep eviction acknowledgements sequential: each response validates the exact
+      // dependency-cache projection produced by the preceding release.
+      for (const cellId of sourceResidentCellIds) {
+        const entry = sourceEntries.get(cellId);
+        if (entry === undefined) throw new Error(`Source resident ${cellId} is absent from index`);
+        await evictCell(entry);
+      }
+      if (residents.size !== 0 || dependencyCache.snapshot().liveResourceCount !== 0) {
+        throw new Error("Streaming district swap did not fully release source residency");
+      }
+
+      index = destinationIndex;
+      observers = Object.freeze(
+        request.initialObservers.map((observer) => Object.freeze([...observer]) as WorldVec3),
+      );
+      ready = true;
+      publish({
+        districtId: destinationIndex.districtId,
+        observerUpdateCount: telemetry.observerUpdateCount + 1,
+        settledRecoveryCheckpoint: null,
+      });
+      await runSchedule();
+      const destinationResidentCellIds = Object.freeze([...residents.keys()].sort());
+      if (
+        destinationResidentCellIds.length !== STREAMING_RESIDENT_CELL_LIMIT ||
+        destinationResidentCellIds.some(
+          (cellId) => !destinationIndex.cells.some((entry) => entry.cellId === cellId),
+        ) ||
+        destinationResidentCellIds.some((cellId) => sourceResidentCellIds.includes(cellId))
+      ) {
+        throw new Error("Streaming district swap did not establish an exclusive destination set");
+      }
+      const retainedHandleKeys = new Set([
+        ...destinationIndex.cells.map(({ sha256 }) => sha256),
+        ...(destinationIndex.resources ?? []).map(({ sha256 }) => sha256),
+      ]);
+      const closeFailures = opfsAccessHandles.closeExcept(retainedHandleKeys);
+      if (closeFailures.length > 0) {
+        throw new Error(
+          appendCloseFailures("District source-handle cleanup failed", closeFailures),
+        );
+      }
+      const endBoundaryRequestId = nextRenderRequestId++;
+      const endBoundary = await requestRender({
+        destinationDistrictId: destinationIndex.districtId,
+        destinationMaterials: Object.freeze([]),
+        districtSwapRequestId: request.requestId,
+        kind: "district-swap-boundary",
+        phase: "end",
+        requestId: endBoundaryRequestId,
+      });
+      if (
+        endBoundary.kind !== "district-swap-boundary-complete" ||
+        endBoundary.phase !== "end" ||
+        endBoundary.destinationDistrictId !== destinationIndex.districtId ||
+        endBoundary.districtSwapRequestId !== request.requestId ||
+        !Number.isSafeInteger(endBoundary.frameCount) ||
+        endBoundary.frameCount < 0 ||
+        !Number.isFinite(endBoundary.maxHitchMs) ||
+        endBoundary.maxHitchMs < 0
+      ) {
+        throw new Error("Renderer returned invalid district-swap frame evidence");
+      }
+      const completedAtMs = performance.now();
+      const destinationLogicalGpuBytes = telemetry.residentGpuBytes;
+      const logicalGpuBytesHighWater = districtSwapLogicalGpuBytesHighWater;
+      if (logicalGpuBytesHighWater === null) {
+        throw new Error("Streaming district swap lost its logical GPU high-water tracker");
+      }
+      const sample = Object.freeze({
+        completedAtMs,
+        destinationLogicalGpuBytes,
+        destinationDistrictId: destinationIndex.districtId,
+        destinationResidentCellIds,
+        entranceId: request.entranceId,
+        logicalGpuBytesHighWater,
+        maxHitchMs: endBoundary.maxHitchMs,
+        proactiveEvictionCount: telemetry.proactiveEvictionCount - proactiveEvictionCountAtStart,
+        renderFrameCount: endBoundary.frameCount,
+        sourceDistrictId: sourceIndex.districtId,
+        sourceLogicalGpuBytes,
+        sourceResidentCellIds,
+        startedAtMs,
+        totalMs: completedAtMs - startedAtMs,
+      });
+      publish({
+        districtSwapCount: telemetry.districtSwapCount + 1,
+        districtSwapInProgress: false,
+        districtSwapSamples: Object.freeze(
+          [...telemetry.districtSwapSamples, sample].slice(-STREAMING_DISTRICT_SWAP_SAMPLE_LIMIT),
+        ),
+      });
+      scope.postMessage({
+        kind: "district-swap-complete",
+        requestId: request.requestId,
+        sample,
+      });
+    } finally {
+      districtSwapLogicalGpuBytesHighWater = null;
+      districtSwapRunning = false;
+      ready = lifecycle.state === "active";
+    }
   };
 
   const initialize = async (request: Extract<StreamingWorkerRequest, { kind: "start" }>) => {
@@ -1102,41 +1319,49 @@ function startStreamingWorker(): void {
       const store = createOpfsReleaseStore(platform);
       const binding = await bindActiveInstalledRelease(request.contentSource.releaseDigest, store);
       markStartup((tracker) => tracker.markReleaseBindingCompleted());
-      const installed = await resolveInstalledStreamingRelease(
-        binding,
-        request.districtId,
-        async (path) => {
-          const bytes = await platform.read(path);
-          if (bytes === null) throw new Error(`Installed streaming object is missing: ${path}`);
-          return bytes;
-        },
-      );
-      markStartup((tracker) => tracker.markReleaseResolutionCompleted());
-      index = installed.index;
-      for (const cell of installed.cells) {
-        installedCellPaths.set(cell.entry.sha256, cell.path);
-      }
-      for (const dependency of installed.dependencies) {
-        installedDependencyPaths.set(dependency.descriptor.sha256, dependency.path);
-      }
       const releaseTelemetry = binding.snapshot();
       publish({
-        installedReleaseDigest: installed.releaseDigest,
+        installedReleaseDigest: binding.releaseDigest,
         installedResourceBytes: releaseTelemetry.referencedBytes,
         installedResourceCount: releaseTelemetry.referencedResourceCount,
       });
+      // The admitted release and its content-addressed references are immutable for this
+      // worker generation. Cache resolution metadata, while reopening closed handles on
+      // every revisit.
+      const preparedInstalledDistricts = new Map<string, InstalledStreamingRelease>();
+      prepareDistrict = async (districtId, resolved) => {
+        let installed = preparedInstalledDistricts.get(districtId);
+        if (installed === undefined) {
+          installed = await resolveInstalledStreamingRelease(binding, districtId, async (path) => {
+            const bytes = await platform.read(path);
+            if (bytes === null) throw new Error(`Installed streaming object is missing: ${path}`);
+            return bytes;
+          });
+          preparedInstalledDistricts.set(districtId, installed);
+        }
+        resolved?.();
+        for (const cell of installed.cells) installedCellPaths.set(cell.entry.sha256, cell.path);
+        for (const dependency of installed.dependencies) {
+          installedDependencyPaths.set(dependency.descriptor.sha256, dependency.path);
+        }
+        await openAccessHandlesWithoutCleanup([
+          ...installed.index.cells,
+          ...(installed.index.resources ?? []),
+        ]);
+        return installed.index;
+      };
       await openAndAdmitInstalledStreamingRelease({
         admit: async () => {
-          await store.admitActiveRelease(installed.releaseDigest);
+          await store.admitActiveRelease(binding.releaseDigest);
           markStartup((tracker) => tracker.markFinalAdmissionCompleted());
         },
         closeHandles: () => opfsAccessHandles.closeAll(),
         openHandles: async () => {
           // This helper owns cleanup across partial handle opening and final admission.
-          await openAccessHandlesWithoutCleanup([
-            ...installed.index.cells,
-            ...(installed.index.resources ?? []),
-          ]);
+          index =
+            (await prepareDistrict?.(request.districtId, () =>
+              markStartup((tracker) => tracker.markReleaseResolutionCompleted()),
+            )) ?? null;
           markStartup((tracker) => tracker.markAccessHandlesOpened());
         },
       });
@@ -1145,34 +1370,6 @@ function startStreamingWorker(): void {
       if (!manifestResponse.ok)
         throw new Error(`Build manifest fetch failed (${manifestResponse.status})`);
       const manifest = validateStreamingBuildManifest(await manifestResponse.json());
-      const entrypoint = manifest.gameContentEntrypoints.find(
-        (candidate) => candidate.districtId === request.districtId,
-      );
-      if (entrypoint === undefined)
-        throw new Error(`District ${request.districtId} is not in the build manifest`);
-      const indexUrl = new URL(entrypoint.path, manifestResponse.url);
-      const indexResponse = await fetchLegacy(indexUrl);
-      if (!indexResponse.ok)
-        throw new Error(`District index fetch failed (${indexResponse.status})`);
-      const parsedIndex = parseStreamingDistrictIndex(
-        await indexResponse.json(),
-        request.districtId,
-      );
-      // The privileged automation route deliberately retains the historical v1 greybox
-      // consumer. Product installed releases alone exercise v2 compressed dependencies.
-      index = Object.freeze({
-        bounds: parsedIndex.bounds,
-        cellSizeMeters: parsedIndex.cellSizeMeters,
-        cells: Object.freeze(
-          parsedIndex.cells.map(({ bytes, cellId, coordinate, path, sha256 }) =>
-            Object.freeze({ bytes, cellId, coordinate, path, sha256 }),
-          ),
-        ),
-        districtId: parsedIndex.districtId,
-        materials: parsedIndex.materials,
-        schemaVersion: 1,
-      });
-      markStartup((tracker) => tracker.markReleaseResolutionCompleted());
       const opfsRoot = await navigator.storage.getDirectory();
       const streamingRoot = await opfsRoot.getDirectoryHandle(OPFS_DIRECTORY, {
         create: true,
@@ -1182,30 +1379,78 @@ function startStreamingWorker(): void {
           await streamingRoot.removeEntry(name);
         }
       }
-      rootDirectory = await streamingRoot.getDirectoryHandle(
-        await districtDirectoryName(index.districtId),
-        { create: true },
+      // Legacy provisioning verifies each package once per worker generation. A revisit
+      // reopens its handles without rereading and hashing the same immutable packages.
+      const preparedLegacyDistricts = new Map<
+        string,
+        Readonly<{
+          readonly directory: FileSystemDirectoryHandle;
+          readonly index: StreamingDistrictIndex;
+        }>
+      >();
+      prepareDistrict = async (districtId, resolved) => {
+        const prepared = preparedLegacyDistricts.get(districtId);
+        if (prepared !== undefined) {
+          rootDirectory = prepared.directory;
+          resolved?.();
+          await openAccessHandlesWithoutCleanup(prepared.index.cells);
+          return prepared.index;
+        }
+        const entrypoint = manifest.gameContentEntrypoints.find(
+          (candidate) => candidate.districtId === districtId,
+        );
+        if (entrypoint === undefined)
+          throw new Error(`District ${districtId} is not in the build manifest`);
+        const indexResponse = await fetchLegacy(new URL(entrypoint.path, manifestResponse.url));
+        if (!indexResponse.ok)
+          throw new Error(`District index fetch failed (${indexResponse.status})`);
+        const parsedIndex = parseStreamingDistrictIndex(await indexResponse.json(), districtId);
+        // The privileged automation route deliberately retains the historical v1 greybox
+        // consumer. Product installed releases alone exercise v2 compressed dependencies.
+        const nextIndex: StreamingDistrictIndex = Object.freeze({
+          bounds: parsedIndex.bounds,
+          cellSizeMeters: parsedIndex.cellSizeMeters,
+          cells: Object.freeze(
+            parsedIndex.cells.map(({ bytes, cellId, coordinate, path, sha256 }) =>
+              Object.freeze({ bytes, cellId, coordinate, path, sha256 }),
+            ),
+          ),
+          districtId: parsedIndex.districtId,
+          materials: parsedIndex.materials,
+          schemaVersion: 1,
+        });
+        resolved?.();
+        rootDirectory = await streamingRoot.getDirectoryHandle(
+          await districtDirectoryName(nextIndex.districtId),
+          { create: true },
+        );
+        const previouslyProvisionedBytes = telemetry.opfsProvisionedBytes;
+        let provisionedBytes = 0;
+        for (let offset = 0; offset < nextIndex.cells.length; offset += 8) {
+          const batch = nextIndex.cells.slice(offset, offset + 8);
+          const written = await Promise.all(
+            batch.map((entry) => provision(entry, new URL(manifestResponse.url))),
+          );
+          provisionedBytes += written.reduce((sum, value) => sum + value, 0);
+          publish({
+            opfsProvisionedBytes: previouslyProvisionedBytes + provisionedBytes,
+          });
+        }
+        await removeStalePackages(nextIndex.cells);
+        await openAccessHandlesWithoutCleanup(nextIndex.cells);
+        preparedLegacyDistricts.set(
+          districtId,
+          Object.freeze({ directory: rootDirectory, index: nextIndex }),
+        );
+        return nextIndex;
+      };
+      index = await prepareDistrict(request.districtId, () =>
+        markStartup((tracker) => tracker.markReleaseResolutionCompleted()),
       );
-      let provisionedBytes = 0;
-      for (let offset = 0; offset < index.cells.length; offset += 8) {
-        const batch = index.cells.slice(offset, offset + 8);
-        const written = await Promise.all(
-          batch.map((entry) => provision(entry, new URL(manifestResponse.url))),
-        );
-        provisionedBytes += written.reduce((sum, value) => sum + value, 0);
-        publish({ opfsProvisionedBytes: provisionedBytes });
-      }
-      await removeStalePackages(index.cells);
-      try {
-        await openAccessHandlesWithoutCleanup(index.cells);
-      } catch (error: unknown) {
-        throw new Error(
-          appendCloseFailures(errorMessage(error), opfsAccessHandles.closeAll()),
-          error instanceof Error ? { cause: error } : undefined,
-        );
-      }
       markStartup((tracker) => tracker.markAccessHandlesOpened());
     }
+    if (index === null) throw new Error("Streaming district preparation produced no index");
+    publish({ districtId: index.districtId });
     createDecodePool();
     markStartup((tracker) => tracker.markDecodePoolCreated());
     ready = true;
@@ -1273,6 +1518,10 @@ function startStreamingWorker(): void {
       publish({ observerUpdateCount: telemetry.observerUpdateCount + 1 });
       scheduleRequested = true;
       void runSchedule().catch(fail);
+      return;
+    }
+    if (request.kind === "swap-district") {
+      void performDistrictSwap(request).catch(fail);
       return;
     }
     if (started) {

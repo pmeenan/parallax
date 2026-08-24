@@ -1,5 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { isRuntimeIdentifier } from "../core/runtime-identifier";
 import {
   type GameSimulationAdapter,
   type GameSimulationModule,
@@ -298,7 +299,7 @@ export function canonicalSimulationGameStateQuery(
 }
 
 function assertSimulationGameStateQuery(query: SimulationGameStateQuery): void {
-  if (!/^[a-z0-9](?:[a-z0-9._:@-]{0,127})$/u.test(query.kind)) {
+  if (!isRuntimeIdentifier(query.kind)) {
     throw new Error("Simulation game-state query kind is invalid");
   }
   if (

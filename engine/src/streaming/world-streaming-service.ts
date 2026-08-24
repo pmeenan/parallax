@@ -2,6 +2,7 @@ import type { WorldVec3 } from "../world/world-contract";
 import {
   STREAMING_TELEMETRY_SCHEMA_VERSION,
   type StreamingContentSource,
+  type StreamingDistrictSwapTelemetry,
   type StreamingRecoveryCheckpoint,
   type StreamingWorkerRequest,
   type StreamingWorkerResponse,
@@ -33,6 +34,13 @@ export interface WorldStreamingService {
   snapshot(): WorldStreamingTelemetrySnapshot;
   start(options: WorldStreamingStartOptions): MessagePort;
   subscribe(listener: WorldStreamingListener): () => void;
+  swapDistrict(options: WorldStreamingDistrictSwapOptions): Promise<StreamingDistrictSwapTelemetry>;
+}
+
+export interface WorldStreamingDistrictSwapOptions {
+  readonly destinationDistrictId: string;
+  readonly entranceId: string;
+  readonly initialObservers: readonly WorldVec3[];
 }
 
 export interface WorldStreamingRecoveryAttempt {
@@ -53,6 +61,10 @@ function initialSnapshot(): WorldStreamingTelemetrySnapshot {
     cellLoadSampleCount: 0,
     cpuBudgetRejectionCount: 0,
     currentObservers: Object.freeze([]),
+    districtId: null,
+    districtSwapCount: 0,
+    districtSwapInProgress: false,
+    districtSwapSamples: Object.freeze([]),
     decodeQueueDepthHighWater: 0,
     decodeWorkerCount: 0,
     encodedBytesRead: 0,
@@ -103,16 +115,40 @@ export function createWorldStreamingService(): WorldStreamingService {
     resolve: () => void;
     timeout: ReturnType<typeof setTimeout>;
   }> | null = null;
+  let nextDistrictSwapRequestId = 1;
+  let districtSwapSettlement: Readonly<{
+    readonly previousDistrictSwapCount: number;
+    readonly reject: (error: Error) => void;
+    readonly requestId: number;
+    readonly resolve: (sample: StreamingDistrictSwapTelemetry) => void;
+  }> | null = null;
   const listeners = new Set<WorldStreamingListener>();
   const publish = (snapshot: WorldStreamingTelemetrySnapshot): void => {
+    const retainedCellLoadSamples =
+      snapshot.cellLoadSampleCount === telemetry.cellLoadSampleCount &&
+      snapshot.cellLoadSamples.length === telemetry.cellLoadSamples.length
+        ? telemetry.cellLoadSamples
+        : Object.freeze(snapshot.cellLoadSamples.map((sample) => Object.freeze(sample)));
+    const retainedDistrictSwapSamples =
+      snapshot.districtSwapCount === telemetry.districtSwapCount &&
+      snapshot.districtSwapSamples.length === telemetry.districtSwapSamples.length
+        ? telemetry.districtSwapSamples
+        : Object.freeze(
+            snapshot.districtSwapSamples.map((sample) =>
+              Object.freeze({
+                ...sample,
+                destinationResidentCellIds: Object.freeze([...sample.destinationResidentCellIds]),
+                sourceResidentCellIds: Object.freeze([...sample.sourceResidentCellIds]),
+              }),
+            ),
+          );
     telemetry = Object.freeze({
       ...snapshot,
-      cellLoadSamples: Object.freeze(
-        snapshot.cellLoadSamples.map((sample) => Object.freeze(sample)),
-      ),
+      cellLoadSamples: retainedCellLoadSamples,
       currentObservers: Object.freeze(
         snapshot.currentObservers.map((observer) => Object.freeze([...observer]) as WorldVec3),
       ),
+      districtSwapSamples: retainedDistrictSwapSamples,
       residentCellIds: Object.freeze([...snapshot.residentCellIds]),
       settledRecoveryCheckpoint: freezeCheckpoint(snapshot.settledRecoveryCheckpoint),
       startupTiming:
@@ -153,6 +189,8 @@ export function createWorldStreamingService(): WorldStreamingService {
     worker = null;
     recoverySettlement?.reject(new Error(message));
     recoverySettlement = null;
+    districtSwapSettlement?.reject(new Error(message));
+    districtSwapSettlement = null;
     publish({ ...telemetry, failureMessage: message, state: "failed" });
   };
 
@@ -192,7 +230,31 @@ export function createWorldStreamingService(): WorldStreamingService {
         rejectDisposal(event.data.message);
         recoverySettlement?.reject(new Error(event.data.message));
         recoverySettlement = null;
+        districtSwapSettlement?.reject(new Error(event.data.message));
+        districtSwapSettlement = null;
         publish(event.data.snapshot);
+      } else if (event.data.kind === "district-swap-complete") {
+        const pendingSwap = districtSwapSettlement;
+        if (
+          pendingSwap === null ||
+          pendingSwap.requestId !== event.data.requestId ||
+          telemetry.districtSwapInProgress ||
+          telemetry.districtSwapCount !== pendingSwap.previousDistrictSwapCount + 1 ||
+          telemetry.districtId !== event.data.sample.destinationDistrictId ||
+          telemetry.districtSwapSamples.at(-1)?.completedAtMs !== event.data.sample.completedAtMs
+        ) {
+          fail("Streaming worker district-swap completion correlation is invalid");
+          return;
+        }
+        districtSwapSettlement = null;
+        if (startOptions !== null) {
+          startOptions = Object.freeze({
+            ...startOptions,
+            districtId: event.data.sample.destinationDistrictId,
+            initialObservers: telemetry.currentObservers,
+          });
+        }
+        pendingSwap.resolve(freezeDistrictSwapSample(event.data.sample));
       } else {
         publish(event.data.snapshot);
       }
@@ -239,6 +301,8 @@ export function createWorldStreamingService(): WorldStreamingService {
       worker = null;
       recoverySettlement?.reject(new Error(message));
       recoverySettlement = null;
+      districtSwapSettlement?.reject(new Error(message));
+      districtSwapSettlement = null;
       if (telemetry.state !== "disposed") {
         publish({ ...telemetry, failureMessage: message, state: "failed" });
       }
@@ -288,6 +352,7 @@ export function createWorldStreamingService(): WorldStreamingService {
       if (worker === null || telemetry.state !== "streaming") {
         throw new Error("Streaming service is not running");
       }
+      if (districtSwapSettlement !== null || telemetry.districtSwapInProgress) return;
       const frozenObservers = Object.freeze(
         observers.map((observer) => Object.freeze([...observer]) as WorldVec3),
       );
@@ -315,6 +380,59 @@ export function createWorldStreamingService(): WorldStreamingService {
       listener(telemetry);
       return () => listeners.delete(listener);
     },
+    swapDistrict(
+      options: WorldStreamingDistrictSwapOptions,
+    ): Promise<StreamingDistrictSwapTelemetry> {
+      if (worker === null || telemetry.state !== "streaming") {
+        return Promise.reject(new Error("Streaming service is not running"));
+      }
+      if (districtSwapSettlement !== null || telemetry.districtSwapInProgress) {
+        return Promise.reject(new Error("Streaming district swap is already in progress"));
+      }
+      if (
+        options.destinationDistrictId.trim() === "" ||
+        options.destinationDistrictId === telemetry.districtId ||
+        options.entranceId.trim() === "" ||
+        options.initialObservers.length === 0 ||
+        options.initialObservers.some(
+          (observer) =>
+            observer.length !== 3 || observer.some((component) => !Number.isFinite(component)),
+        )
+      ) {
+        return Promise.reject(new Error("Streaming district swap options are invalid"));
+      }
+      let resolveSwap!: (sample: StreamingDistrictSwapTelemetry) => void;
+      let rejectSwap!: (error: Error) => void;
+      const result = new Promise<StreamingDistrictSwapTelemetry>((resolve, reject) => {
+        resolveSwap = resolve;
+        rejectSwap = reject;
+      });
+      const requestId = nextDistrictSwapRequestId++;
+      districtSwapSettlement = Object.freeze({
+        previousDistrictSwapCount: telemetry.districtSwapCount,
+        reject: rejectSwap,
+        requestId,
+        resolve: resolveSwap,
+      });
+      worker.postMessage({
+        destinationDistrictId: options.destinationDistrictId,
+        entranceId: options.entranceId,
+        initialObservers: options.initialObservers,
+        kind: "swap-district",
+        requestId,
+      } satisfies StreamingWorkerRequest);
+      return result;
+    },
+  });
+}
+
+function freezeDistrictSwapSample(
+  sample: StreamingDistrictSwapTelemetry,
+): StreamingDistrictSwapTelemetry {
+  return Object.freeze({
+    ...sample,
+    destinationResidentCellIds: Object.freeze([...sample.destinationResidentCellIds]),
+    sourceResidentCellIds: Object.freeze([...sample.sourceResidentCellIds]),
   });
 }
 
