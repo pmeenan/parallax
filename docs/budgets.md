@@ -191,14 +191,22 @@ than 0.1% of the canvas to remain detectably clear rather than relying on equali
 | Visible pop-in at traversal speed | None at LOD contract distances | Deterministic visual diff deferred to M5's representative-art streaming swap (D-115); M1 checkpoints prove streamed ownership/non-blank output, not absence of pop |
 | D1↔D2 hard transition: max hitch | ≤ 100 ms | Single worst frame during swap |
 | D1↔D2 hard transition: total swap | ≤ 4 s | Choke-point traversal time hides it |
+| D1↔D2 hard transition: prefetch trigger at 12 m/s | Castle: exactly 6 m; village/forest: exactly 5 m | Authored latest-start distances; runtime preload may begin earlier, but each measured total must fit the resulting 500.000 ms / 416.667 ms lead window (D-177) |
 | Eviction mode | Proactive only | Emergency eviction events = 0 per run |
 
-Smoke schema v74 applies these transition rows plus the 1.25× inter-district logical
-GPU-overlap row to the game-owned `m4-district-swap@1` scenario (D-175/D-176). Every one of
+Smoke schema v75 applies these transition rows plus the 1.25× inter-district logical
+GPU-overlap row to the game-owned `m4-district-swap@1` v2 scenario (D-175–D-177). Every one of
 the three world-graph entrances must run in both directions on every fresh/warm launch.
 Each directed sample must retain exactly nine exclusive source and destination cell IDs,
 exactly nine proactive source evictions, positive render-frame evidence, and a settled
-destination district. `logicalGpuBytesHighWater / max(sourceLogicalGpuBytes,
+destination district. It must also retain its positive finite authored prefetch distance
+and 12 m/s traversal speed, and `totalMs` must not exceed
+`prefetchTriggerDistanceMeters / traversalSpeedMetersPerSecond × 1000`. The calibrated
+distances use each entrance's worst duration across the D-176 and first schema-v75
+fresh/warm calibration cohorts, plus 20% provisional greybox sizing reserve rounded
+outward to a whole metre. The subsequent final schema-v75 run is held-out qualification
+against those frozen distances, not a recursive calibration input (D-177).
+`logicalGpuBytesHighWater / max(sourceLogicalGpuBytes,
 destinationLogicalGpuBytes)` is attributable logical buffer accounting, not a claim of
 page-attributed physical WebGPU residency; RE-014's physical observability gap remains.
 The render worker samples that high-water on every telemetry publication while the

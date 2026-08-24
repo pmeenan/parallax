@@ -576,7 +576,10 @@ export {
   UNINSTALL_TELEMETRY_SCHEMA_VERSION,
   withUninstallDeletionAuthority,
 } from "./storage/uninstall-service";
-export type { StreamingDistrictSwapVerdict } from "./streaming/district-swap-contract";
+export type {
+  StreamingDistrictSwapPrefetchContract,
+  StreamingDistrictSwapVerdict,
+} from "./streaming/district-swap-contract";
 export { evaluateStreamingDistrictSwap } from "./streaming/district-swap-contract";
 export type {
   InstalledResourceReader,
@@ -657,6 +660,7 @@ export type {
   ParallaxTelemetryExport,
   ParallaxTelemetrySnapshot,
   StreamingDistrictSwapScenarioDefinition,
+  StreamingDistrictSwapScenarioSample,
   StreamingDistrictSwapScenarioStep,
 } from "./telemetry/telemetry-export";
 export {

@@ -20,11 +20,12 @@ export interface WorldGraphTransition {
   readonly endpoints: readonly [WorldGraphEndpoint, WorldGraphEndpoint];
   readonly id: string;
   readonly kind: "hard";
+  readonly prefetchTriggerDistanceMeters: number;
 }
 
 export interface WorldGraph {
   readonly districts: readonly WorldGraphDistrict[];
-  readonly schemaVersion: 1;
+  readonly schemaVersion: 2;
   readonly transitions: readonly WorldGraphTransition[];
 }
 
@@ -38,6 +39,7 @@ export interface ResolvedWorldGraphTransition {
   readonly destination: WorldGraphEndpoint;
   readonly destinationPosition: readonly [number, number, number];
   readonly entranceId: string;
+  readonly prefetchTriggerDistanceMeters: number;
   readonly source: WorldGraphEndpoint;
 }
 
@@ -83,6 +85,7 @@ export function resolveWorldGraphTransition(
       destinationMarker.position[1],
     ] as const),
     entranceId: transition.id,
+    prefetchTriggerDistanceMeters: transition.prefetchTriggerDistanceMeters,
     source,
   });
 }
@@ -95,7 +98,7 @@ export function validateWorldGraph(
   graph: WorldGraph,
   districtSpecs: readonly GreyboxDistrictSpec[],
 ): WorldGraphValidationSummary {
-  if (graph.schemaVersion !== 1) throw new Error("Unsupported world-graph schema");
+  if (graph.schemaVersion !== 2) throw new Error("Unsupported world-graph schema");
   const specsById = new Map(districtSpecs.map((spec) => [spec.world.id, spec]));
   if (specsById.size !== districtSpecs.length) {
     throw new Error("World-graph district registry contains duplicate ids");
@@ -123,6 +126,12 @@ export function validateWorldGraph(
     requireNonEmpty(transition.context, `World-graph transition ${transition.id} context`);
     if (transition.kind !== "hard" || transitionIds.has(transition.id)) {
       throw new Error(`World-graph transition ${transition.id} is duplicate or invalid`);
+    }
+    if (
+      !Number.isFinite(transition.prefetchTriggerDistanceMeters) ||
+      transition.prefetchTriggerDistanceMeters <= 0
+    ) {
+      throw new Error(`World-graph transition ${transition.id} prefetch trigger is invalid`);
     }
     transitionIds.add(transition.id);
     if (transition.endpoints[0].districtId === transition.endpoints[1].districtId) {
@@ -168,7 +177,7 @@ export const PARALLAX_WORLD_GRAPH = freezeGreyboxData({
     { id: DISTRICT_1_ID, kind: "surface" },
     { id: DISTRICT_2_ID, kind: "underground" },
   ],
-  schemaVersion: 1,
+  schemaVersion: 2,
   transitions: [
     {
       context: "castle",
@@ -186,6 +195,7 @@ export const PARALLAX_WORLD_GRAPH = freezeGreyboxData({
       ],
       id: "castle-undercroft",
       kind: "hard",
+      prefetchTriggerDistanceMeters: 6,
     },
     {
       context: "village",
@@ -203,6 +213,7 @@ export const PARALLAX_WORLD_GRAPH = freezeGreyboxData({
       ],
       id: "village-well",
       kind: "hard",
+      prefetchTriggerDistanceMeters: 5,
     },
     {
       context: "forest",
@@ -220,6 +231,7 @@ export const PARALLAX_WORLD_GRAPH = freezeGreyboxData({
       ],
       id: "forest-ruin",
       kind: "hard",
+      prefetchTriggerDistanceMeters: 5,
     },
   ],
 } satisfies WorldGraph);

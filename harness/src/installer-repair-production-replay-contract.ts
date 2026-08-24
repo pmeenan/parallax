@@ -22,8 +22,8 @@ export type ProductionReplayLifetimeMode =
 const EXPECTED_OPFS_BYTES = 2_621_639_471;
 const EXPECTED_OPFS_RESOURCES = 331;
 const ADMITTED_BYTES = 43;
-const BUILD_MANIFEST_SHA256 = "12cbdbe3374494f47ffb522b784f89cb3e5326567a183ffceab99923da5e7708";
-const INSTALL_MANIFEST_SHA256 = "0b1f750f913a854f041e1fcee722259d70e38c870342b2b09210413f0d381256";
+const BUILD_MANIFEST_SHA256 = "e2533f33f0514184e3125e68ba16d2eb7cb9e9a26d8692810fe7da4b984ce736";
+const INSTALL_MANIFEST_SHA256 = "bdeb95df6e0f966e295045f3d1984a5ccb0b80aaa118c0a6be1e52175b0237cf";
 const RESOURCE_IDENTITY_SHA256 = "6041a7050808a9ca93b3a3df5edbc30353edde19493d8b1902e25ccb19f087ba";
 const APP_ENTRYPOINT_PATH =
   "immutable/app-b842d3ad5b9cca22beb4069bf88199d187a722bb4acb4520000a4872534983e5.js";
@@ -200,7 +200,7 @@ const expectedPublication = Object.freeze([
   Object.freeze({
     bytes: 115,
     path: `parallax-install-v1/commits/00000000000000000001-${INSTALL_MANIFEST_SHA256}.json`,
-    sha256: "85649a9693a800e177a52c203000ac6c8e9704247f00d521adc0c50d5e1207e7",
+    sha256: "ede4e5e3d2e9d9cc876be5ddfa751cfdbfd8cf87092fd733cb1260ba417e1b22",
   }),
   Object.freeze({
     bytes: 138_831,
@@ -210,17 +210,17 @@ const expectedPublication = Object.freeze([
   Object.freeze({
     bytes: 103,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/published.json`,
-    sha256: "b1178020734e0ec1a6b8858fb6925893d8b1dd4f0a8f308864905a874cd5871e",
+    sha256: "40ed99ca17259abe3df008676942d5be3fae58d1632312b0c3b59433e5fdb0a2",
   }),
   Object.freeze({
     bytes: 150,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/ready.json`,
-    sha256: "f789e3a80641a7e1755c106a28b910789bae9e4116fb7a9b8bd33babea0e7947",
+    sha256: "e209b17e24ae74864e1aed4e25ffb07f91832992bd4819aa166d7a60bc2226cf",
   }),
   Object.freeze({
     bytes: 156,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/staged.json`,
-    sha256: "2c781caaad0d68c797136f78a2d26ea0211fd276c1cae71eb021f2c336e90052",
+    sha256: "8e1d22f008d2f5276ca8016e76d1893e21fb226f06173d16fd469414266d9748",
   }),
 ]);
 
@@ -466,7 +466,7 @@ export const INSTALLER_REPAIR_PRODUCTION_REPLAY_EXPECTED_CONTRACT = Object.freez
 });
 
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST =
-  "c0d0be52e31a8df527dc330e1fe9f7c9f41ad32e2c9e01e8d59f0e4b2c4ce786";
+  "aba7fa6e46a1050665bf33ae62e8936abf990f9d0aa04fd7b7d89cc32278973a";
 
 export interface InstallerRepairProductionReplayCompiledModule {
   readonly INSTALLER_REPAIR_PRODUCTION_REPLAY_PROTOCOL_IDENTITY?: unknown;
@@ -492,14 +492,14 @@ export function assertInstallerRepairProductionReplayCompiledModule(
   assert.equal(module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION, 9);
   assert.equal(
     module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST,
-    "c0d0be52e31a8df527dc330e1fe9f7c9f41ad32e2c9e01e8d59f0e4b2c4ce786",
+    "aba7fa6e46a1050665bf33ae62e8936abf990f9d0aa04fd7b7d89cc32278973a",
   );
   assert.equal(typeof module.executeReplay, "function");
   assert.equal(typeof module.validateProductionReplayArtifactIdentity, "function");
   assert.equal(typeof module.recomputeProductionReplaySemanticContractDigest, "function");
   assert.equal(
     (module.recomputeProductionReplaySemanticContractDigest as () => string)(),
-    "c0d0be52e31a8df527dc330e1fe9f7c9f41ad32e2c9e01e8d59f0e4b2c4ce786",
+    "aba7fa6e46a1050665bf33ae62e8936abf990f9d0aa04fd7b7d89cc32278973a",
   );
 }
 

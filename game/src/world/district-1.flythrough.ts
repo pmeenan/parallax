@@ -1,4 +1,5 @@
 import type { FlythroughScenario } from "@parallax/engine";
+import { STANDARD_TRAVERSAL_SPEED_METERS_PER_SECOND } from "../balance/exploration";
 
 export const DISTRICT_1_FLYTHROUGH = Object.freeze({
   camera: Object.freeze({
@@ -67,5 +68,5 @@ export const DISTRICT_1_FLYTHROUGH = Object.freeze({
     Object.freeze([-1_200, 12, 600] as const),
   ]),
   schemaVersion: 1,
-  speedMetersPerSecond: 12,
+  speedMetersPerSecond: STANDARD_TRAVERSAL_SPEED_METERS_PER_SECOND,
 }) satisfies FlythroughScenario;

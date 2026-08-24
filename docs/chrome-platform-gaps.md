@@ -1,7 +1,7 @@
 # Chrome platform gaps exposed by Parallax
 
 Chrome-facing synthesis of the platform changes that would most improve AAA-scale web games and
-their measurement. Updated 2026-08-09 through accepted M3 exit evidence from registered physical-console Chrome
+their measurement. Updated 2026-08-23 through accepted M4 exit evidence from registered physical-console Chrome
 for Testing experiments and explicitly labeled CfT/branded-Chrome production diagnostics on Parallax's
 Windows/D3D12 dev-01 reference machine; each evidence entry states its provenance. D-150 makes
 dev-01 the sole required gate, so this synthesis makes no Standard, Metal, or other-hardware
@@ -22,6 +22,20 @@ metric-set-v34 exit proof and an exact-artifact production `branded-parity@1` ru
 installed Chrome 151.0.7922.72 each passed all six launches, all three facets, and 36/36
 checks. The branded result is explicitly non-budget-authoritative and baseline-ineligible;
 it establishes the required adoption parity, not a second baseline platform.
+
+M3.5 closed under D-173 after the exact CfT 152.0.7977.54 schema-v72 / mandatory-
+metric-set-v35 candidate passed all six launches, all three facets, and 36/36 checks.
+That milestone added deterministic gameplay systems and consumers without producing a
+new Chrome-facing platform request; the open observability gaps below remained unchanged.
+
+M4 closed under D-177 after the final CfT 152.0.7977.54 schema-v75 / mandatory-
+metric-set-v35 candidate exercised all three D1↔D2 entrances in both directions on every
+fresh/warm launch and passed all 36 checks. Its 36 resident-set swaps met the calibrated
+6 m / 5 m / 5 m prefetch-trigger contract, ≤100 ms hitch and ≤4 s total limits, exact
+proactive eviction, and 1.000× logical GPU overlap. This is application-attributable
+logical buffer accounting, not physical page-attributed WebGPU residency; M4 therefore
+reinforces the existing RE-014 memory request rather than adding or closing a platform
+gap. No new rough-edge or upstream candidate was earned by the milestone.
 
 ## Priority model
 

@@ -16,6 +16,8 @@ import {
   parseSmokeRunOptions,
   QUALITY_TIER_PROFILES,
   renderSurfaceMismatch,
+  SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS,
+  SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_MANDATORY_METRIC_SET_VERSION,
   SMOKE_METRICS,
@@ -40,7 +42,13 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(74);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(75);
+    expect(SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS).toEqual({
+      "castle-undercroft": 6,
+      "forest-ruin": 5,
+      "village-well": 5,
+    });
+    expect(SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND).toBe(12);
   });
 
   it("stays synchronized with the public engine telemetry contract", () => {

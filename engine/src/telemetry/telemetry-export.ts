@@ -44,6 +44,7 @@ import {
 } from "../sim/simulation-runtime";
 import type { SimulationService } from "../sim/simulation-service";
 import type { InstallStoreTelemetrySnapshot } from "../storage/opfs-release-store-contract";
+import type { StreamingDistrictSwapPrefetchContract } from "../streaming/district-swap-contract";
 import type {
   StreamingDistrictSwapTelemetry,
   StreamingRecoveryCheckpoint,
@@ -58,9 +59,9 @@ import type { HybridUiService } from "../ui/hybrid-ui-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v44 adds district identity plus correlated hard-swap samples. v43
-// added explicit gameplay-input suppression while a heavy UI screen owns input.
-export const TELEMETRY_SCHEMA_VERSION = 45;
+// Public telemetry v46 adds the scenario-owned prefetch trigger and traversal speed to
+// each district-swap sample. v45 corrected district-swap completion/render evidence.
+export const TELEMETRY_SCHEMA_VERSION = 46;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -74,9 +75,15 @@ export interface ParallaxRuntimeIdentity {
   readonly gameVersion: string;
 }
 
-export interface StreamingDistrictSwapScenarioStep extends WorldStreamingDistrictSwapOptions {
+export interface StreamingDistrictSwapScenarioStep
+  extends WorldStreamingDistrictSwapOptions,
+    StreamingDistrictSwapPrefetchContract {
   readonly sourceDistrictId: string;
 }
+
+export interface StreamingDistrictSwapScenarioSample
+  extends StreamingDistrictSwapTelemetry,
+    StreamingDistrictSwapPrefetchContract {}
 
 export interface StreamingDistrictSwapScenarioDefinition {
   readonly id: string;
@@ -122,7 +129,9 @@ export interface ParallaxTelemetryExport {
     ticks: number,
     seed: number,
   ): Promise<SimulationReplayResult>;
-  runStreamingDistrictSwapScenario(id: string): Promise<readonly StreamingDistrictSwapTelemetry[]>;
+  runStreamingDistrictSwapScenario(
+    id: string,
+  ): Promise<readonly StreamingDistrictSwapScenarioSample[]>;
   saveSimulation(): Promise<Uint8Array>;
   simulationScenario(id: string): SimulationScenarioDefinition;
   snapshot(): ParallaxTelemetrySnapshot;
@@ -238,13 +247,13 @@ export function installTelemetryExport(
     },
     async runStreamingDistrictSwapScenario(
       id: string,
-    ): Promise<readonly StreamingDistrictSwapTelemetry[]> {
+    ): Promise<readonly StreamingDistrictSwapScenarioSample[]> {
       assertBenchmarkDoesNotOwnScenario("Streaming district-swap scenario");
       const definition = districtSwapScenarios.get(id);
       if (definition === undefined) {
         throw new Error(`Streaming district-swap scenario ${id} is unavailable`);
       }
-      const samples: StreamingDistrictSwapTelemetry[] = [];
+      const samples: StreamingDistrictSwapScenarioSample[] = [];
       for (const step of definition.steps) {
         const currentDistrictId = streamingService.snapshot().districtId;
         if (currentDistrictId !== step.sourceDistrictId) {
@@ -252,11 +261,16 @@ export function installTelemetryExport(
             `Streaming district-swap scenario ${id} expected ${step.sourceDistrictId}, received ${currentDistrictId ?? "no district"}`,
           );
         }
+        const sample = await streamingService.swapDistrict({
+          destinationDistrictId: step.destinationDistrictId,
+          entranceId: step.entranceId,
+          initialObservers: step.initialObservers,
+        });
         samples.push(
-          await streamingService.swapDistrict({
-            destinationDistrictId: step.destinationDistrictId,
-            entranceId: step.entranceId,
-            initialObservers: step.initialObservers,
+          Object.freeze({
+            ...sample,
+            prefetchTriggerDistanceMeters: step.prefetchTriggerDistanceMeters,
+            traversalSpeedMetersPerSecond: step.traversalSpeedMetersPerSecond,
           }),
         );
       }
@@ -379,6 +393,10 @@ function canonicalStreamingDistrictSwapScenarios(
         step.destinationDistrictId.trim() === "" ||
         step.sourceDistrictId === step.destinationDistrictId ||
         step.entranceId.trim() === "" ||
+        !Number.isFinite(step.prefetchTriggerDistanceMeters) ||
+        step.prefetchTriggerDistanceMeters <= 0 ||
+        !Number.isFinite(step.traversalSpeedMetersPerSecond) ||
+        step.traversalSpeedMetersPerSecond <= 0 ||
         !Array.isArray(step.initialObservers) ||
         step.initialObservers.length === 0 ||
         step.initialObservers.some(
@@ -399,7 +417,9 @@ function canonicalStreamingDistrictSwapScenarios(
               Object.freeze([...observer] as const),
           ),
         ),
+        prefetchTriggerDistanceMeters: step.prefetchTriggerDistanceMeters,
         sourceDistrictId: step.sourceDistrictId,
+        traversalSpeedMetersPerSecond: step.traversalSpeedMetersPerSecond,
       });
     });
     scenarios.set(

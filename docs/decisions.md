@@ -28,6 +28,106 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-177: Calibrate per-entrance prefetch triggers from the M4 greybox matrix (2026-08-23, accepted)
+
+**Decision:** Adopt world-graph schema v2 with a positive finite
+`prefetchTriggerDistanceMeters` on every hard-transition edge. At D-090's standard
+12 m/s traversal speed, preload must begin no later than 6 m before the castle
+undercroft boundary and 5 m before the village-well and forest-ruin boundaries. The
+game-owned `m4-district-swap@1` scenario advances to v2 and carries each authored
+distance plus the 12 m/s speed into every directed sample. The shared engine evaluator
+requires total swap duration to fit inside the corresponding distance/speed lead window:
+500.000 ms for castle and 416.667 ms for village and forest. Missing, non-positive, or
+non-finite trigger evidence fails closed.
+
+The calibration takes the worst duration for each undirected entrance across D-176's
+corrected matrix and D-177's first schema-v75 qualification, adds a provisional 20%
+greybox measurement reserve, converts that time to distance at 12 m/s, and rounds outward
+to a whole metre. The combined inputs are 362.360 ms for castle, 333.150 ms for village,
+and 322.720 ms for forest, producing 6 m, 5 m, and 5 m respectively. Those values freeze
+before held-out qualification; recursively feeding every qualification back
+into the sizing formula would provide no stopping rule because each changed distance
+requires another qualification. The 20% value is therefore a calibration-cohort sizing
+heuristic, not an additional runtime verdict. The runtime contract uses the frozen
+authored distance as the latest allowed preload start: preload may begin earlier, while
+a transaction that cannot complete inside the corresponding lead window violates the
+transition contract even if it remains below the separate 4 s ceiling.
+
+**Context:** D-055 deliberately left this element undefined until M4 had real cell
+sizes, OPFS behavior, and traversal speed. D-176 supplied 36 corrected, non-vacuous
+samples on registered dev-01/Showcase. The first 5 m / 4 m / 4 m schema-v75 candidate
+passed, but its village maximum reached 333.150 ms of a 333.333 ms lead window. That
+0.183 ms margin demonstrated that calibrating only against D-176 did not preserve the
+stated reserve. Folding the valid new cohort back into the same formula moves the final
+triggers outward without changing the transaction or inventing an unrelated threshold.
+
+**Consequences:** `budgets.md` now defines and enforces the previously missing trigger
+element per entrance. Public telemetry schema v46 retains the scenario's distance and
+traversal speed beside every swap; smoke report schema v75 additionally retains the
+harness-computed lead time and verdict.
+The mandatory metric set remains v35 because this strengthens the already mandatory M4
+scenario rather than adding a new top-level metric. D-175's source-evict-before-
+destination-admit ordering and its 4 s absolute ceiling are unchanged; the trigger lead
+is the tighter greybox gate.
+
+**Calibration evidence:** D-176's retained schema-v74 report
+`smoke-1-12cbdbe33744-dev-01-showcase-2026-08-23T23-56-49-665Z.json` is the measured
+starting input. Its SHA-256 is
+`20c8449a3a7da26ab27e98d504832ee61461cd4ee89914acb781d04bbcd529c4`.
+The first schema-v75 candidate passed all 36 checks but is calibration-only because its
+result changed the final authored distances. Its retained JSON is
+`smoke-1-ea12613be8c1-dev-01-showcase-2026-08-24T00-23-27-793Z.json` (SHA-256
+`2dea3b8b9565cbd3c6d8c0db304a61143e50307bf48bcb481586cfcb27faf698`); the paired
+Markdown SHA-256 is
+`a40e7df52e1e8c380ee36874e3dd4b6217b48a886646147003fc101485440c95`.
+
+**Initial qualification evidence:** The first final-distance schema-v75 /
+mandatory-metric-set-v35
+dev-01/Showcase smoke on pinned Chrome 152.0.7977.54 passed all six launches, all three
+facets, and 36/36 checks. All 36 directed samples carried the exact 6 m / 5 m / 5 m
+trigger and 12 m/s speed. Worst total duration was 433.675 ms against the castle's
+500.000 ms lead; village and forest maxima were 307.390 ms and 311.050 ms against their
+416.667 ms leads. Worst hitch was 16.800 ms, every window retained at least eight
+frames, logical GPU overlap remained 1.000×, and every sample had exactly nine proactive
+evictions plus exclusive source/destination resident sets. The retained artifacts are
+`smoke-1-b9ba39bfb2a4-dev-01-showcase-2026-08-24T00-30-56-898Z.json` (SHA-256
+`45250d54eb37f4cca485aa713639e0db3478e01d13475ec1e1d2ccf292e91ca7`) and the
+same-stem Markdown report (SHA-256
+`822fb019a86c4a4c7f2592fbcef07718357408d166cc73cc8ffcc08103ae1db9`). The report
+binds build artifact
+`b9ba39bfb2a4c39395e11541e0fcf3179962fe99cff4189bbf6dc4c305cdfee4`, install
+release `04783cc89d127783c44e35e06106d8ee45f7214b9e79f1485757bfd3808e9205`, commit
+`55a97bf14abc7e42ec8318d3ce915b449c62de53`, and dirty-tree digest
+`935177c59b9623645bb8ff6914f801ac9f486b60ea1e37f90b8a46467613c643`.
+This held-out run directly qualifies the frozen lead-window budget; its castle maximum
+is not claimed to retain the calibration heuristic's full 20% sizing reserve.
+
+**Review-corrected qualification evidence:** Review then isolated every engine verdict
+test, made the smoke evaluator construct its prefetch contract solely from harness-owned
+pins, unified the game-owned 12 m/s authority, and corrected the schema/reserve wording;
+the authored triggers and runtime transaction were unchanged. The resulting D-157
+physical smoke on the same registered dev-01/Showcase and pinned Chrome passed schema
+v75 / mandatory metric set v35 across all six launches, all three facets, and 36/36
+checks. Its 36 directed swaps retained exact 6 m / 5 m / 5 m triggers at 12 m/s;
+per-entrance maxima were 232.510 ms for castle, 206.600 ms for village, and 207.150 ms
+for forest. Worst hitch was 16.780 ms, every window retained at least five frames,
+logical GPU overlap remained 1.000×, and every sample again had exactly nine proactive
+evictions plus exclusive resident sets. The retained artifacts are
+`smoke-1-e2533f33f051-dev-01-showcase-2026-08-24T01-07-54-872Z.json` (SHA-256
+`32d0040621c836b5b2659048e0ce3ade0e7bd7635382747c2f0ac18903a426e3`) and the
+same-stem Markdown report (SHA-256
+`32f52574ed130c67dc1415211b196d61120f7fe5cf766cacfe3e56d11470ff9d`). The report
+binds build artifact
+`e2533f33f0514184e3125e68ba16d2eb7cb9e9a26d8692810fe7da4b984ce736`, install
+release `bdeb95df6e0f966e295045f3d1984a5ccb0b80aaa118c0a6be1e52175b0237cf`, commit
+`55a97bf14abc7e42ec8318d3ce915b449c62de53`, and dirty-tree digest
+`8a043b7debb9ab0b9768741d74545eaef072c77dae41f2df042b01e2b63c8020`.
+
+**Reopen if:** representative art changes per-entrance duration materially; traversal
+speed changes; a larger fresh/warm cohort justifies a different reserve; or separating
+destination-handle preparation from the resident-set transaction provides measured
+benefit and requires a distinct trigger contract.
+
 ## D-176: Correlate district-swap completion and make render evidence non-vacuous (2026-08-23, accepted)
 
 **Decision:** Retain D-175's source-evict-before-destination-admit transaction, with four

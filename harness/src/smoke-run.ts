@@ -7,7 +7,7 @@ import {
   type HybridUiTelemetrySnapshot,
   type ParallaxTelemetryExport,
   type PsoWarmupTelemetrySnapshot,
-  type StreamingDistrictSwapTelemetry,
+  type StreamingDistrictSwapScenarioSample,
   type StreamingDistrictSwapVerdict,
   TELEMETRY_FRAME_BATCH_FRAMES,
 } from "@parallax/engine";
@@ -110,6 +110,8 @@ import {
   parseQualityTier,
   parseSmokeRunOptions,
   renderSurfaceMismatch,
+  SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS,
+  SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND,
   SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION,
   SMOKE_INCOMPLETE_METRICS,
   SMOKE_JS_HEAP_SAMPLE_INTERVAL_MS,
@@ -289,7 +291,7 @@ interface RunMeasurement {
 
 interface DistrictSwapEvidence {
   readonly finalDistrictId: string;
-  readonly samples: readonly StreamingDistrictSwapTelemetry[];
+  readonly samples: readonly StreamingDistrictSwapScenarioSample[];
   readonly scenarioId: "m4-district-swap@1";
   readonly verdicts: readonly StreamingDistrictSwapVerdict[];
 }
@@ -1436,8 +1438,19 @@ async function verifyDistrictSwapScenario(page: Page): Promise<DistrictSwapEvide
       `M4 district-swap scenario returned ${observed.samples.length} samples and final district ${observed.finalDistrictId ?? "none"}`,
     );
   }
-  const byEntrance = new Map<string, StreamingDistrictSwapTelemetry[]>();
+  const byEntrance = new Map<string, StreamingDistrictSwapScenarioSample[]>();
+  const expectedPrefetchTriggerMetersByEntrance: Readonly<Record<string, number>> =
+    SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS;
   for (const sample of observed.samples) {
+    const expectedPrefetchTrigger = expectedPrefetchTriggerMetersByEntrance[sample.entranceId];
+    if (
+      sample.prefetchTriggerDistanceMeters !== expectedPrefetchTrigger ||
+      sample.traversalSpeedMetersPerSecond !== SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND
+    ) {
+      throw new Error(
+        `M4 district-swap entrance ${sample.entranceId} has prefetch trigger ${sample.prefetchTriggerDistanceMeters} m at ${sample.traversalSpeedMetersPerSecond} m/s; expected ${expectedPrefetchTrigger ?? "a known entrance"} m at ${SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND} m/s`,
+      );
+    }
     const samples = byEntrance.get(sample.entranceId) ?? [];
     samples.push(sample);
     byEntrance.set(sample.entranceId, samples);
@@ -1457,7 +1470,15 @@ async function verifyDistrictSwapScenario(page: Page): Promise<DistrictSwapEvide
   if (observed.finalDistrictId !== observed.samples[0]?.sourceDistrictId) {
     throw new Error("M4 district-swap scenario did not return to its starting district");
   }
-  const verdicts = Object.freeze(observed.samples.map(evaluateStreamingDistrictSwap));
+  const verdicts = Object.freeze(
+    observed.samples.map((sample) =>
+      evaluateStreamingDistrictSwap(sample, {
+        prefetchTriggerDistanceMeters:
+          expectedPrefetchTriggerMetersByEntrance[sample.entranceId] ?? Number.NaN,
+        traversalSpeedMetersPerSecond: SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND,
+      }),
+    ),
+  );
   const failedIndex = verdicts.findIndex((verdict) => !verdict.passed);
   if (failedIndex >= 0) {
     const sample = observed.samples[failedIndex];
@@ -3060,7 +3081,7 @@ function formatReport(report: SmokeReport): string {
   const districtSwapEvidence = report.runs.flatMap((run) =>
     run.districtSwaps.value.samples.map((sample, index) => {
       const verdict = run.districtSwaps.value.verdicts[index];
-      return `- ${run.profile} repeat ${run.repeat}: ${sample.entranceId} ${sample.sourceDistrictId}→${sample.destinationDistrictId}; ${formatMilliseconds(sample.totalMs)} total / ${formatMilliseconds(sample.maxHitchMs)} max hitch across ${sample.renderFrameCount} frames; logical GPU high-water ${formatBytes(sample.logicalGpuBytesHighWater)} (${verdict?.logicalGpuOverlapRatio.toFixed(3) ?? "invalid"}× source/destination steady maximum); ${sample.proactiveEvictionCount} proactive evictions; exclusive resident sets ${verdict?.exclusiveResidentSets === true ? "verified" : "failed"}`;
+      return `- ${run.profile} repeat ${run.repeat}: ${sample.entranceId} ${sample.sourceDistrictId}→${sample.destinationDistrictId}; ${formatMilliseconds(sample.totalMs)} total / ${formatMilliseconds(sample.maxHitchMs)} max hitch across ${sample.renderFrameCount} frames; ${sample.prefetchTriggerDistanceMeters.toFixed(1)} m prefetch trigger at ${sample.traversalSpeedMetersPerSecond.toFixed(1)} m/s gives ${formatMilliseconds(verdict?.prefetchLeadTimeMs ?? Number.NaN)} lead (${verdict?.prefetchWithinBudget === true ? "verified" : "failed"}); logical GPU high-water ${formatBytes(sample.logicalGpuBytesHighWater)} (${verdict?.logicalGpuOverlapRatio.toFixed(3) ?? "invalid"}× source/destination steady maximum); ${sample.proactiveEvictionCount} proactive evictions; exclusive resident sets ${verdict?.exclusiveResidentSets === true ? "verified" : "failed"}`;
     }),
   );
   const streamingVarianceEvidence = report.streamingCellLoadP95Variance.map((variance) =>

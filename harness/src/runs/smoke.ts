@@ -27,6 +27,12 @@ export const SMOKE_SIMULATION_GAMEPLAY_WORKLOAD = Object.freeze({
 });
 export const SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS = 1;
 export const SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT = 0.1;
+export const SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS = Object.freeze({
+  "castle-undercroft": 6,
+  "forest-ruin": 5,
+  "village-well": 5,
+} as const);
+export const SMOKE_DISTRICT_SWAP_TRAVERSAL_SPEED_METERS_PER_SECOND = 12;
 export const SMOKE_BUDGET_METRICS = Object.freeze({
   allRealmJsHeapHighWaterBytes: "allRealmJsHeapHighWaterBytes",
   mainThreadLongTasksOver50Ms: "mainThreadLongTasksOver50Ms",
@@ -60,10 +66,10 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 45;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 46;
 export const SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION = 1;
-// v73 adds the game-owned M4 six-direction district resident-set swap evidence.
-export const SMOKE_REPORT_SCHEMA_VERSION = 74;
+// v75 adds the calibrated per-entrance prefetch-trigger evidence to every M4 swap.
+export const SMOKE_REPORT_SCHEMA_VERSION = 75;
 
 export const SMOKE_METRICS: readonly SmokeMetricDefinition[] = Object.freeze([
   metric(

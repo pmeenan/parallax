@@ -7,3 +7,6 @@ export const LANDMARK_DISCOVERY_EXPERIENCE = 25;
 // Discovery applies to every named-landmark kind. It is intentionally distinct
 // from the smaller waystone interaction radius used for reshape commands.
 export const LANDMARK_DISCOVERY_RADIUS_METERS = 24;
+
+// D-090's target-scale validation pace is the shared world traversal authority.
+export const STANDARD_TRAVERSAL_SPEED_METERS_PER_SECOND = 12;

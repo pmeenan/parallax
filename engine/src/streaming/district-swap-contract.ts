@@ -6,11 +6,18 @@ import {
   type StreamingDistrictSwapTelemetry,
 } from "./streaming-protocol";
 
+export interface StreamingDistrictSwapPrefetchContract {
+  readonly prefetchTriggerDistanceMeters: number;
+  readonly traversalSpeedMetersPerSecond: number;
+}
+
 export interface StreamingDistrictSwapVerdict {
   readonly exclusiveResidentSets: boolean;
   readonly logicalGpuOverlapRatio: number;
   readonly logicalGpuOverlapWithinBudget: boolean;
   readonly maxHitchWithinBudget: boolean;
+  readonly prefetchLeadTimeMs: number;
+  readonly prefetchWithinBudget: boolean;
   readonly proactiveOnly: boolean;
   readonly renderEvidenceAvailable: boolean;
   readonly passed: boolean;
@@ -19,6 +26,7 @@ export interface StreamingDistrictSwapVerdict {
 
 export function evaluateStreamingDistrictSwap(
   sample: StreamingDistrictSwapTelemetry,
+  prefetch: StreamingDistrictSwapPrefetchContract | null,
 ): StreamingDistrictSwapVerdict {
   const steadyLogicalGpuBytes = Math.max(
     sample.sourceLogicalGpuBytes,
@@ -37,6 +45,18 @@ export function evaluateStreamingDistrictSwap(
   const maxHitchWithinBudget =
     Number.isFinite(sample.maxHitchMs) &&
     sample.maxHitchMs <= STREAMING_DISTRICT_SWAP_MAX_HITCH_BUDGET_MS;
+  const prefetchLeadTimeMs =
+    prefetch === null ||
+    !Number.isFinite(prefetch.prefetchTriggerDistanceMeters) ||
+    prefetch.prefetchTriggerDistanceMeters <= 0 ||
+    !Number.isFinite(prefetch.traversalSpeedMetersPerSecond) ||
+    prefetch.traversalSpeedMetersPerSecond <= 0
+      ? Number.NaN
+      : (prefetch.prefetchTriggerDistanceMeters / prefetch.traversalSpeedMetersPerSecond) * 1_000;
+  const prefetchWithinBudget =
+    Number.isFinite(prefetchLeadTimeMs) &&
+    Number.isFinite(sample.totalMs) &&
+    sample.totalMs <= prefetchLeadTimeMs;
   const proactiveOnly = sample.proactiveEvictionCount === STREAMING_RESIDENT_CELL_LIMIT;
   const renderEvidenceAvailable =
     Number.isSafeInteger(sample.renderFrameCount) && sample.renderFrameCount > 0;
@@ -47,11 +67,14 @@ export function evaluateStreamingDistrictSwap(
     logicalGpuOverlapRatio,
     logicalGpuOverlapWithinBudget,
     maxHitchWithinBudget,
+    prefetchLeadTimeMs,
+    prefetchWithinBudget,
     proactiveOnly,
     passed:
       exclusiveResidentSets &&
       logicalGpuOverlapWithinBudget &&
       maxHitchWithinBudget &&
+      prefetchWithinBudget &&
       proactiveOnly &&
       renderEvidenceAvailable &&
       totalWithinBudget,

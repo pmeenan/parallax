@@ -53,11 +53,12 @@ the whole underground square as walkable. Collision samples remain independent o
 LOD at 8 m spacing.
 
 Castle undercroft, village well, and forest ruin transition markers pair one-to-one with
-their D1 counterparts through world-graph schema v1. Each undirected hard-transition edge
+their D1 counterparts through world-graph schema v2. Each undirected hard-transition edge
 owns its context and two arrival headings; district and marker identities are references,
-not code paths. The graph validator requires every registered district exactly once and
-every authored transition marker on exactly one edge. D-055's prefetch trigger remains
-deliberately absent until the later M4 measurement task calibrates it per entrance.
+not code paths. The graph validator requires every registered district exactly once,
+every authored transition marker on exactly one edge, and a positive finite prefetch
+trigger. D-177 calibrates those latest-start distances at 6 m for castle and 5 m for
+village and forest against the standard 12 m/s traversal.
 
 ## Genre and mechanics
 

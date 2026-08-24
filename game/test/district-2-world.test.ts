@@ -113,6 +113,11 @@ describe("District 2 catacombs greybox", () => {
       "forest",
     ]);
     expect(
+      PARALLAX_WORLD_GRAPH.transitions.map(
+        ({ prefetchTriggerDistanceMeters }) => prefetchTriggerDistanceMeters,
+      ),
+    ).toEqual([6, 5, 5]);
+    expect(
       PARALLAX_WORLD_GRAPH.transitions.map(({ endpoints }) =>
         endpoints.map(({ districtId, markerId }) => `${districtId}:${markerId}`),
       ),
@@ -147,6 +152,7 @@ describe("District 2 catacombs greybox", () => {
         expect(resolved).toMatchObject({
           destination: expectedDestination,
           entranceId: transition.id,
+          prefetchTriggerDistanceMeters: transition.prefetchTriggerDistanceMeters,
           source,
         });
         expect(resolved.destinationPosition).toHaveLength(3);
@@ -174,7 +180,7 @@ describe("District 2 catacombs greybox", () => {
   it("authors the measurement scenario from all three graph edges in both directions", () => {
     expect(M4_DISTRICT_SWAP_SCENARIO).toMatchObject({
       id: "m4-district-swap@1",
-      version: 1,
+      version: 2,
     });
     expect(M4_DISTRICT_SWAP_SCENARIO.steps).toHaveLength(6);
     for (let index = 0; index < M4_DISTRICT_SWAP_SCENARIO.steps.length; index += 2) {
@@ -185,6 +191,12 @@ describe("District 2 catacombs greybox", () => {
       expect(forward?.destinationDistrictId).toBe(reverse?.sourceDistrictId);
       expect(forward?.initialObservers).toHaveLength(1);
       expect(reverse?.initialObservers).toHaveLength(1);
+      expect(forward?.prefetchTriggerDistanceMeters).toBe(
+        PARALLAX_WORLD_GRAPH.transitions[index / 2]?.prefetchTriggerDistanceMeters,
+      );
+      expect(reverse?.prefetchTriggerDistanceMeters).toBe(forward?.prefetchTriggerDistanceMeters);
+      expect(forward?.traversalSpeedMetersPerSecond).toBe(12);
+      expect(reverse?.traversalSpeedMetersPerSecond).toBe(12);
     }
     expect(Object.isFrozen(M4_DISTRICT_SWAP_SCENARIO.steps)).toBe(true);
   });

@@ -139,8 +139,9 @@ the engine decision and assume Unity). Never cite them as a source of truth.
 ## Current status
 
 Milestones **M0 (harness + skeleton), M1 (Greybox District 1 streaming), M2
-(install/launch/run lifecycle + caches), M3 (gameplay core + NPC AI), and M3.5
-(gameplay systems) are complete**. **M4 (District 2 + hard transitions) is pending.**
+(install/launch/run lifecycle + caches), M3 (gameplay core + NPC AI), M3.5
+(gameplay systems), and M4 (District 2 + hard transitions) are complete**. **M4.5
+(environment rendering technology) is pending.**
 
 Use [docs/plan.md](docs/plan.md) for the live checklist, active scope, exit criteria,
 and closure evidence; [docs/dependencies.md](docs/dependencies.md) for dependency

@@ -577,7 +577,7 @@ function validDistrictSwapSample(
     Array.isArray(sample.destinationResidentCellIds) &&
     isSortedUniqueExactStringSet(sample.destinationResidentCellIds, STREAMING_RESIDENT_CELL_LIMIT);
   if (!structurallyValid) return false;
-  const verdict = evaluateStreamingDistrictSwap(sample);
+  const verdict = evaluateStreamingDistrictSwap(sample, null);
   return verdict.exclusiveResidentSets && verdict.proactiveOnly;
 }
 

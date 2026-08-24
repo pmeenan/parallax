@@ -283,7 +283,7 @@ Every scenario replay/save/load converged on
 the ordinary simulation-step high-water was 0.740 ms. The same artifact also passed
 the complete contract on retained CfT 151.0.7922.108 before the Stable transition.
 
-## M4 — District 2 (catacombs) + hard transitions  `in progress`
+## M4 — District 2 (catacombs) + hard transitions  `done`
 
 - [x] Greybox catacombs district; multiple entrance choke points with different surface
       contexts, driven by world-graph data (D-174).
@@ -295,13 +295,26 @@ the complete contract on retained CfT 151.0.7922.108 before the Stable transitio
       at least seven measured frames, exactly nine proactive evictions, and exclusive
       source/destination resident sets for every crossing. D-175 retains the superseded
       schema-v73 artifact; final corrected evidence identity is recorded in D-176.
-- [ ] Calibrate the per-entrance **prefetch trigger** from greybox transition
+- [x] Calibrate the per-entrance **prefetch trigger** from greybox transition
       measurements and add it to the budgets.md transition contract via a decision-log
       entry (D-055 — the contract element is deliberately undefined until these
       measurements exist).
-- [ ] Exit: repeated D1↔D2 transitions through every entrance in a harness run with no
+- [x] Exit: repeated D1↔D2 transitions through every entrance in a harness run with no
       contract violations — including the prefetch-trigger element the calibration task
       above adds; the exit cannot be declared against a contract that still lacks it.
+
+**Closure evidence:** D-177 completes D-055 with world-graph schema v2 and exact 6 m
+castle / 5 m village / 5 m forest latest-start triggers at 12 m/s. The final
+schema-v75 / mandatory-metric-set-v35 dev-01/Showcase report
+`smoke-1-e2533f33f051-dev-01-showcase-2026-08-24T01-07-54-872Z.{json,md}` passed
+all six launches, all three facets, and 36/36 checks. Across all 36 directed swaps,
+worst total was 232.510 ms against its 500.000 ms lead, worst hitch was 16.780 ms,
+logical GPU overlap remained 1.000×, every window retained at least five frames, and
+every sample proved nine proactive evictions plus exclusive resident sets. JSON/Markdown
+SHA-256 are `32d0040621c836b5b2659048e0ce3ade0e7bd7635382747c2f0ac18903a426e3` /
+`32f52574ed130c67dc1415211b196d61120f7fe5cf766cacfe3e56d11470ff9d`.
+The earlier passing 5 m / 4 m / 4 m schema-v75 candidate is retained as calibration
+input only; its near-zero village headroom forced the final outward recalibration.
 
 ## M4.5 — Environment rendering technology  `pending`
 

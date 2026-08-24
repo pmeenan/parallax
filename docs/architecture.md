@@ -1158,24 +1158,24 @@ distances are 256/640/1,024 m with 32 m hysteresis; collision uses a 17 × 17 he
 per cell at 8 m spacing and does not change with visual LOD. The same N-district build
 loop emits D2's 64 cell artifacts and independent content-addressed index.
 
-**World graph v1 (D-174):** game-owned data registers the surface and underground
+**World graph v2 (D-174/D-177):** game-owned data registers the surface and underground
 districts and three undirected hard-transition edges for castle, village, and forest
 contexts. Each edge references two authored transition markers and carries arrival
 headings. Build-time validation rejects unknown/duplicate districts, same-district
 edges, non-transition or reused endpoints, context/marker disagreement, and any authored
-transition marker not owned by exactly one edge. The graph contains no prefetch trigger;
-D-055 reserves that field for M4's measurement-backed calibration task.
+transition marker not owned by exactly one edge. Schema v2 adds a required positive
+finite prefetch-trigger distance to every hard edge: 6 m for castle and 5 m for village
+and forest at the standard 12 m/s traversal speed (D-177).
 
 - **Intra-district:** distance/visibility-driven cell load/evict with LOD tiers.
 - **Inter-district (hard transition):** full resident-set swap through choke points —
   the catacomb entrances (game-design.md), of which there are several with different
   surface contexts; the transition system handles N entrances as data, not one bespoke
   passage. Contract lives in [budgets.md](budgets.md): memory high-water during overlap,
-  max hitch, and total swap time — applied per entrance. The prefetch-trigger element
-  (when a transition preload must start, per entrance) is deliberately not yet defined
-  (D-055): it needs M4 greybox measurements to set honestly; calibrating and adding it
-  to budgets.md is an explicit plan.md M4 task, and the M4 exit cannot be declared
-  against a contract that still lacks it. This is deliberately the
+  max hitch, total swap time, and the D-177 measurement-calibrated prefetch trigger —
+  applied per entrance. The trigger is the latest preload start before the authored
+  boundary, and every measured total must fit inside its distance/speed lead window.
+  This is deliberately the
   hardest case and is exercised early with greybox content (M4) because it shapes asset
   packaging and the streaming manager's design.
 
@@ -1199,6 +1199,12 @@ D-055 reserves that field for M4's measurement-backed calibration task.
   and reports zero frames as insufficient measurement evidence rather than a protocol
   failure. World-graph resolution, arrival placement, and the one-transition-at-a-time
   guard live in the game runtime; the app shell remains presentation-only.
+
+  D-177 completes D-055's deferred contract element. World-graph schema v2 carries the
+  trigger as data; `m4-district-swap@1` v2 models crossing that trigger by starting each
+  directed transaction and carries distance plus standard traversal speed into public
+  evidence. The engine evaluator fails a sample whose total duration exceeds the
+  resulting lead time, independently of the looser 4 s absolute ceiling.
 
 Asset packaging: per-cell bundles, content-addressed, with shared kits/materials
 deduplicated across cells. Formats: glTF/GLB, KTX2 (BasisU) textures, meshopt

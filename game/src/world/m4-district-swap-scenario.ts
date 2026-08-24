@@ -2,6 +2,7 @@ import type {
   StreamingDistrictSwapScenarioDefinition,
   StreamingDistrictSwapScenarioStep,
 } from "@parallax/engine";
+import { STANDARD_TRAVERSAL_SPEED_METERS_PER_SECOND } from "../balance/exploration";
 import { GREYBOX_DISTRICT_SPECS } from "./district-registry";
 import {
   PARALLAX_WORLD_GRAPH,
@@ -22,7 +23,9 @@ function step(endpoint: WorldGraphEndpoint): StreamingDistrictSwapScenarioStep {
     destinationDistrictId: resolved.destination.districtId,
     entranceId: resolved.entranceId,
     initialObservers: Object.freeze([resolved.destinationPosition]),
+    prefetchTriggerDistanceMeters: resolved.prefetchTriggerDistanceMeters,
     sourceDistrictId: resolved.source.districtId,
+    traversalSpeedMetersPerSecond: STANDARD_TRAVERSAL_SPEED_METERS_PER_SECOND,
   });
 }
 
@@ -34,5 +37,5 @@ export const M4_DISTRICT_SWAP_SCENARIO: StreamingDistrictSwapScenarioDefinition 
       step(endpoints[1]),
     ]),
   ),
-  version: 1,
+  version: 2,
 });
