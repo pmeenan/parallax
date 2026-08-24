@@ -28,6 +28,85 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-180: Require agent-first visual convergence before M4.5 human verification (2026-08-23, accepted; amends D-140 and D-178)
+
+**Decision:** Every M4.5 visual track must go through a best-effort autonomous visual
+iteration loop before it is presented for human judgment. The agent owns the loop from
+the first prototype through the strongest candidate it can produce independently: run
+the real build in a controllable Chrome session, exercise deterministic representative
+cameras and motion across the relevant weather/time-of-day states, inspect stills and
+temporal behavior together with telemetry and physics evidence, compare the result with
+appropriate film and movie-quality VFX references, and keep iterating while a concrete
+improvement or unresolved defect remains.
+
+Agents are expected to exercise informed visual judgment rather than treating "good" as
+unknowable. At minimum they evaluate composition and silhouette, scale cues, material
+and lighting integration, temporal coherence, motion and energy, gameplay readability,
+and visible artifacts such as banding, popping, smearing, boiling, clipping, aliasing,
+or implausible simulation response. Automated image comparisons and deterministic
+capture matrices support that judgment but do not define the artistic bar by
+themselves.
+
+Human visual verification remains mandatory after autonomous convergence for every
+effect and for each track conclusion that depends on visual payoff. The handoff includes
+representative captures or sequences, exercised states, measured cost, known
+compromises, and any close alternatives that need a taste decision. Human review is the
+final artistic acceptance boundary, not the first visual QA pass; an agent may not call
+the movie-quality bar accepted solely from its own inspection.
+
+**Context:** D-140 correctly made M4.5 human-plus-agent exploration, and D-178 made the
+movie-quality effects bar explicit, but neither said who owns the early convergence
+loop. That ambiguity could cause an agent to stop at the first subjective question and
+hand a visibly immature prototype to the human. Codex can operate the live Chrome
+build, inspect rendered output, compare references, and iterate on code and parameters;
+those capabilities should be exhausted before scarce human judgment is requested.
+
+**Consequences:** M4.5 plans and handoffs distinguish autonomous convergence evidence
+from final human visual verification. Human feedback can still trigger another
+agent-owned iteration loop, and measured harness cost remains required for adoption.
+No agent score, pixel metric, or reference comparison replaces the human verdict.
+
+**Reopen if:** the available browser/capture path cannot expose a track's decisive
+visual behavior; a validated perceptual evaluation method can safely replace part of
+the human verification contract; or repeated handoffs show that the required evidence
+matrix is producing ceremony without improving decisions.
+
+## D-179: Run dev-01 physical gates without human pre-run confirmation (2026-08-23, accepted; amends D-097 coordination)
+
+**Decision:** Agents may start registered dev-01 physical-console gates without asking
+the developer to confirm native local access and without waiting for a human
+acknowledgment. dev-01 is no longer operated through RDP, so the old routine
+coordination pause no longer protects a live workflow.
+
+This does not weaken the physical-environment contract. The harness-observed identity
+remains authoritative and must fail closed for a remote session, remote or virtual
+display adapter, wrong registered display/power/driver identity, ineffective Chrome
+sandbox, or invalid presentation evidence. The agent still runs the F15 display-wake
+preflight immediately before every Chrome context launch. If observation is invalid or
+ambiguous, retain the failed evidence and ask the human to restore or inspect the
+machine instead of asserting that the environment is valid.
+
+Existing commands whose interface still says `--physical-console-confirmed` keep that
+token as a legacy operator acknowledgment of the physical-gate policy; an agent may
+supply it under this decision. It no longer represents a separate human attestation and
+is not evidence of physical-console validity.
+
+**Context:** Manual confirmation was introduced when convenient RDP use could silently
+put Chrome on the Microsoft Remote Display Adapter and corrupt presentation timing.
+The repository subsequently gained fail-closed environment observation and a per-launch
+display-wake preflight, and the machine is no longer accessed through RDP. Requiring a
+human message before every gate now adds latency without supplying evidence that the
+report does not already validate more directly.
+
+**Consequences:** workflow.md, harness/AGENTS.md, and the dev-01 machine description no
+longer instruct agents to pause for human confirmation. Historical RDP findings and
+retained results remain unchanged; physical-console, registered-machine, pinned-Chrome,
+display-wake, and D-157 cadence requirements all remain in force.
+
+**Reopen if:** RDP or another remote/virtual-display workflow returns on dev-01; the
+harness can no longer distinguish it fail-closed; or unattended launches repeatedly
+produce invalid presentation evidence that an explicit human preflight would prevent.
+
 ## D-178: Move VFX engine technology into M4.5 and set the movie-quality effects bar (2026-08-23, accepted; amends D-140)
 
 **Decision:** Every visual effect that needs dedicated engine/shader technology
@@ -2955,7 +3034,7 @@ spike's compositing measurements invalidate the DOM-overlay bet; M3.5 scope prov
 large enough to split; or Standard-tier qualification needs to move earlier because M5
 art decisions depend on Standard-tier headroom.
 
-## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted; M6 VFX technology scope moved into M4.5 by D-178)
+## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted; M6 VFX technology scope moved into M4.5 by D-178; visual-iteration workflow amended by D-180)
 
 **Decision:** The plan gains an explicit rendering/simulation technology program:
 
@@ -7510,7 +7589,7 @@ visual, storage, preparation, and environment evidence at both registered target
 
 ---
 
-## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, superseded in trigger scope by D-157)
+## D-097: Qualify final runtime-affecting candidates at the physical console (2026-07-24, superseded in trigger scope by D-157; manual pre-run confirmation superseded by D-179)
 
 **Decision:** Interpret the project's per-change performance requirement at the
 reviewable-candidate boundary, not after every edit or review exchange.

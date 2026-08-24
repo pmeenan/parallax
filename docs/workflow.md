@@ -339,10 +339,22 @@ Only a pinned-Chrome run on registered dev-01 at its physical console carries a 
 verdict (D-150). Remote and other-machine runs are advisory and cannot replace the final
 qualifying dev-01 run or invalidate its acceptance.
 
+dev-01 is no longer accessed through RDP. Under D-179, an agent may start a qualifying
+physical-console gate without asking the developer to confirm native local access and
+without waiting for a human acknowledgment. The harness-observed environment identity,
+not a human attestation, remains authoritative and fails closed for remote sessions,
+remote/virtual display adapters, or other registered-environment mismatches. If that
+observation is invalid or ambiguous, retain the evidence and ask the developer to
+restore or inspect the environment. A legacy `--physical-console-confirmed` command
+token is an operator acknowledgment that this policy applies, not a claim that a human
+separately confirmed the session.
+
 Immediately before every Chrome context launch in a Windows physical-console gate,
 including identity/reference launches and every measured attempt or repeat, wake the
-local display with the harness preflight (`WScript.Shell.SendKeys("{F15}")`) and verify
-the monitor is visibly awake. The inert F15 key is sent before Chrome starts so it
-cannot affect the scenario. A sleeping display can change presentation timing or make
-visual readback evidence unrepresentative even when the session remains locally
-interactive; one wake before a multi-minute sequence is insufficient.
+local display with the harness preflight (`WScript.Shell.SendKeys("{F15}")`). This is an
+agent-owned preflight and requires no developer acknowledgment. The inert F15 key is
+sent before Chrome starts so it cannot affect the scenario; the resulting environment
+and presentation evidence must still validate. A sleeping display can change
+presentation timing or make visual readback evidence unrepresentative even when the
+session remains locally interactive; one wake before a multi-minute sequence is
+insufficient.

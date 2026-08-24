@@ -321,19 +321,34 @@ input only; its near-zero village headroom forced the final outward recalibratio
 The rendering-feature research program (D-140): build — or rule out — each
 environment-scale rendering technology the M5 art pass and M6 VFX pass will stand on.
 This milestone is deliberately different in texture from M0–M4. Each track below is a
-**heavily iterative exploration, humans and agents working together**: prototype
-competing approaches, measure what they actually cost, weigh cost against visual payoff
-and both project goals, and converge on a conclusion. Tracks are bounded spikes in the
-P-002 tradition — each ends in a decision-log entry that adopts an approach (with
-harness-measured cost), rules it out, or defers it, usually with rough-edges findings,
-since most tracks press directly on WebGPU gaps (no ray tracing, no mesh shaders, no
-bindless, no platform upscaler — goal-1 territory).
+**heavily iterative exploration, with agent-first convergence followed by human visual
+verification**: prototype competing approaches, measure what they actually cost, weigh
+cost against visual payoff and both project goals, and converge on a conclusion. Tracks
+are bounded spikes in the P-002 tradition — each ends in a decision-log entry that
+adopts an approach (with harness-measured cost), rules it out, or defers it, usually
+with rough-edges findings, since most tracks press directly on WebGPU gaps (no ray
+tracing, no mesh shaders, no bindless, no platform upscaler — goal-1 territory).
 
 **No pre-set budgets (D-140).** Unlike prior milestones, these tracks do not start from
 budgets.md allocations. Costs are discovered first; budgets are calibrated afterward
 through decision entries (the existing budgets.md recalibration model, run in discovery
 order). A track is not done until its adopted approach has measured cost and a recorded
 conclusion, but no track fails merely for busting a number that was never set.
+
+**Agent-first visual convergence; human verification required (D-180).** Before asking
+for human judgment, the agent takes every visual track as far as it reasonably can in
+the real Chrome build. It exercises deterministic representative cameras and motion
+across relevant weather/time-of-day states, inspects stills and temporal behavior with
+telemetry and physics evidence, compares against appropriate film and movie-quality VFX
+references, and iterates while a concrete improvement or unresolved defect remains.
+"Quality is subjective" is not a stopping condition: agents are expected to judge
+composition, scale, lighting/material integration, temporal coherence, motion,
+readability, and visible artifacts against the movie-quality target. Automated visual
+diffs support this loop but do not define success. After that autonomous convergence,
+every effect and every visually decided track still receives human verification. The
+handoff includes representative captures or sequences, exercised states, measured
+cost, known compromises, and close alternatives; only the human supplies final artistic
+acceptance, and human feedback starts another agent-owned iteration loop when needed.
 
 Ordering is dependency-driven: lighting first (everything else is lit by it), then
 terrain/materials (everything sits on them), then the rest as capacity allows; tracks
@@ -399,9 +414,11 @@ may run concurrently where they don't share substrate.
 - [ ] Virtual texturing / texture-residency streaming alongside the geometry streaming
       system.
 - [ ] Exit: every track has a recorded adopt/rule-out/defer decision with measured
-      costs; adopted features run in the standard flythrough across the
-      weather/time-of-day states; budgets.md is recalibrated from the measured results;
-      rough-edges captures each platform gap encountered.
+      costs and autonomous visual-convergence evidence; every effect and visually
+      decided track has recorded human verification; adopted features run in the
+      standard flythrough across the weather/time-of-day states; budgets.md is
+      recalibrated from the measured results; rough-edges captures each platform gap
+      encountered.
 
 ## M5 — Art pipeline + District 1 art pass  `pending`
 

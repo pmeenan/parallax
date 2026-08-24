@@ -39,6 +39,10 @@ OS build, GPU driver, display mode, and Windows power scheme. Updating one of th
 is an explicit reviewed environment-baseline change. A gate must run from the physical
 console: RDP/remote display adapters are detected and reported as `invalid` (D-034), even
 when the requested viewport and Windows video-controller mode still say 3840×2160.
+dev-01 is no longer accessed through RDP, so D-179 requires no separate human pre-run
+confirmation. Agents may launch gates directly; the observed environment identity and
+per-launch display-wake preflight remain fail-closed authority, and an invalid or
+ambiguous observation is retained and escalated rather than overridden.
 
 **Note:** Showcase budgets are **calibrated to this machine** (D-018) — it defines the
 platform-ceiling tier and, under D-150, the sole enforced gate. Envelopes (GPU ≤ 14 GB,

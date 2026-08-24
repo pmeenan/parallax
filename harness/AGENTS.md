@@ -164,16 +164,21 @@ accepted decisions and evidence identities live in
    timings to the in-game result. This keeps manual and automated invocations equivalent
    and removes driver overhead/variability from browser-engine comparisons.
 9. **Reference gates run from the machine's physical console.** Before starting a
-   reference-machine budget gate, tell the developer that direct local access is needed
-   and wait for confirmation that the browser will run in a native local interactive
-   session. RDP, remote/indirect display adapters, virtual displays, and remotely altered
-   display timing make the environment identity `invalid`; they are allowed for
-   development and explicitly non-gating diagnostics only. Never promote a remote-session
+   reference-machine budget gate on dev-01, no human pre-run confirmation is required:
+   the machine is no longer accessed through RDP, and D-179 makes the harness-observed
+   environment identity authoritative. RDP, remote/indirect display adapters, virtual
+   displays, and remotely altered display timing make the environment identity
+   `invalid`; they are allowed for development and explicitly non-gating diagnostics
+   only. If observation is invalid or ambiguous, retain the evidence and ask the human
+   to restore or inspect the environment; never self-attest or promote a remote-session
    result by copying declared display, power, GPU, or machine labels into the report.
+   Legacy `--physical-console-confirmed` command tokens acknowledge this policy and do
+   not require a separate human attestation.
    On Windows, wake the physical display immediately before every Chrome context launch,
    including identity/reference and measured launches, with the scoped F15 preflight and
-   confirm the monitor is visibly awake; one wake before a multi-minute sequence or a
-   later browser action is not an acceptable wake boundary.
+   require valid resulting environment/presentation evidence; this agent-owned step
+   needs no developer acknowledgment. One wake before a multi-minute sequence or a later
+   browser action is not an acceptable wake boundary.
    Under D-157, qualify the converged candidate once when it can affect a subsystem,
    measurement, validator, or budget actually exercised by smoke, rather than after
    every intermediate edit. Artifact identity drift alone is not a trigger. Record the
