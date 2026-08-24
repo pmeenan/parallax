@@ -1,13 +1,18 @@
-import type { WorldBounds, WorldVec3 } from "../world/world-contract";
+import type {
+  EnvironmentTimeOfDayPhase,
+  EnvironmentWeatherState,
+  WorldBounds,
+  WorldVec3,
+} from "../world/world-contract";
 
-export type FlythroughWeatherState = "clear" | "overcast" | "storm";
+export type FlythroughWeatherState = EnvironmentWeatherState;
 
 export interface FlythroughEnvironmentPhase {
   readonly endMs: number;
   readonly id: string;
   readonly startMs: number;
   readonly timeOfDay: "dawn" | "daylight" | "dusk" | "night";
-  readonly timeOfDayPhase: number;
+  readonly timeOfDayPhase: EnvironmentTimeOfDayPhase;
   readonly weather: FlythroughWeatherState;
 }
 

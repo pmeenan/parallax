@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { GreyboxCell, GreyboxDistrict } from "../src/world/world-contract";
-import { selectGreyboxCellLod, validateGreyboxDistrict } from "../src/world/world-contract";
+import {
+  selectGreyboxCellLod,
+  validateGreyboxDistrict,
+  validateGreyboxLightingConfig,
+} from "../src/world/world-contract";
 
 function cell(): GreyboxCell {
   const primitive = Object.freeze({
@@ -79,6 +83,34 @@ function district(overrides: Partial<GreyboxDistrict> = {}): GreyboxDistrict {
 }
 
 describe("greybox world contract", () => {
+  it("validates the authored lighting cycle before renderer initialization", () => {
+    expect(() =>
+      validateGreyboxLightingConfig({ cycleSeconds: 900, initialPhase: 0, weather: "clear" }),
+    ).not.toThrow();
+    expect(() =>
+      validateGreyboxLightingConfig({
+        cycleSeconds: 900,
+        initialPhase: 1 - Number.EPSILON,
+        weather: "storm",
+      }),
+    ).not.toThrow();
+
+    for (const cycleSeconds of [0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() =>
+        validateGreyboxLightingConfig({ cycleSeconds, initialPhase: 0.25, weather: "clear" }),
+      ).toThrow("cycleSeconds must be finite and positive");
+    }
+    for (const initialPhase of [-Number.EPSILON, 1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() =>
+        validateGreyboxLightingConfig({ cycleSeconds: 900, initialPhase, weather: "clear" }),
+      ).toThrow("initialPhase must be finite and within [0, 1)");
+    }
+    expect(() =>
+      validateGreyboxLightingConfig({ cycleSeconds: 900, initialPhase: 0.25, weather: "snow" }),
+    ).toThrow("weather is invalid");
+    expect(() => validateGreyboxLightingConfig(null)).toThrow("must be an object");
+  });
+
   it("summarizes a valid district and selects LOD by distance to cell bounds", () => {
     expect(validateGreyboxDistrict(district())).toEqual({
       cellCount: 1,

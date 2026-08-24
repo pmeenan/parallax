@@ -316,7 +316,7 @@ SHA-256 are `32d0040621c836b5b2659048e0ce3ade0e7bd7635382747c2f0ac18903a426e3` /
 The earlier passing 5 m / 4 m / 4 m schema-v75 candidate is retained as calibration
 input only; its near-zero village headroom forced the final outward recalibration.
 
-## M4.5 — Environment rendering technology  `pending`
+## M4.5 — Environment rendering technology  `in progress`
 
 The rendering-feature research program (D-140): build — or rule out — each
 environment-scale rendering technology the M5 art pass and M6 VFX pass will stand on.
@@ -361,6 +361,10 @@ may run concurrently where they don't share substrate.
       shadow interplay are signature moments and a known hard problem at
       many-lights-at-night scale. WebGPU has no ray-tracing extension; whatever
       technique survives here, the gap analysis is a headline finding.
+      The first implementation slice centralizes a deterministic solar/sky/ground
+      irradiance model across the authored time-of-day and weather matrix and drives
+      the live render worker with it. Directional-light, shadow, local-light, and GI
+      candidate comparisons remain open before this track can be concluded.
 - [ ] Sky and atmosphere: day/night sky, volumetric clouds, height/distance fog, god
       rays, aerial perspective for the mountain vista — driven by the weather states
       already bound at M1.

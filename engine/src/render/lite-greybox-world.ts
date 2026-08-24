@@ -11,18 +11,17 @@ import {
   createStandardMaterial,
   createTexture2DFromPixels,
   disposeMeshGpu,
+  type HemisphericLight,
   type Mesh,
   registerScene,
   releaseTexture,
   removeFromScene,
   renderFrame,
+  type SceneContext,
   setEngineSize,
   type Texture2D,
 } from "@babylonjs/lite";
-import type {
-  FlythroughScenarioSample,
-  FlythroughWeatherState,
-} from "../flythrough/flythrough-contract";
+import type { FlythroughScenarioSample } from "../flythrough/flythrough-contract";
 import { flythroughCameraPose } from "../flythrough/flythrough-contract";
 import type {
   RenderStreamingDependency,
@@ -41,7 +40,13 @@ import {
   parseGreyboxMaterials,
   selectGreyboxCellLod,
   validateGreyboxDistrict,
+  validateGreyboxLightingConfig,
 } from "../world/world-contract";
+import {
+  type EnvironmentLightingSample,
+  quantizeAnimatedEnvironmentLightingPhase,
+  sampleEnvironmentLighting,
+} from "./environment-lighting";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
 import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
 import {
@@ -77,17 +82,27 @@ interface StreamingDependencyGpuValue {
   readonly vertexCount: number;
 }
 
-const WEATHER_INTENSITY = Object.freeze({
-  clear: 1,
-  overcast: 0.62,
-  storm: 0.38,
-} as const);
-
-const WEATHER_CLEAR_COLOR = Object.freeze({
-  clear: Object.freeze([0.32, 0.64, 0.92] as const),
-  overcast: Object.freeze([0.2, 0.28, 0.38] as const),
-  storm: Object.freeze([0.055, 0.075, 0.11] as const),
-} as const);
+function applyEnvironmentLighting(
+  light: HemisphericLight,
+  scene: SceneContext,
+  lighting: EnvironmentLightingSample,
+): void {
+  light.direction.set(
+    lighting.hemisphericUpDirection[0],
+    lighting.hemisphericUpDirection[1],
+    lighting.hemisphericUpDirection[2],
+  );
+  light.intensity = lighting.perceivedIntensity;
+  light.diffuseColor[0] = lighting.skyColor[0];
+  light.diffuseColor[1] = lighting.skyColor[1];
+  light.diffuseColor[2] = lighting.skyColor[2];
+  light.groundColor[0] = lighting.groundColor[0];
+  light.groundColor[1] = lighting.groundColor[1];
+  light.groundColor[2] = lighting.groundColor[2];
+  scene.clearColor.r = lighting.clearColor[0];
+  scene.clearColor.g = lighting.clearColor[1];
+  scene.clearColor.b = lighting.clearColor[2];
+}
 
 export function createGeometryBatch(primitives: readonly GreyboxPrimitive[]): GeometryBatch {
   const box = createBoxData(1);
@@ -354,6 +369,7 @@ export async function createLiteGreyboxWorld(
   psoWarmup: PsoWarmupRegistry,
 ) {
   const materializationStartedAt = performance.now();
+  validateGreyboxLightingConfig(config.lighting);
   const validation = validateGreyboxDistrict(config.world);
   const engine = await createEngine(canvas, { format: "bgra8unorm", msaaSamples: 4 });
   const psoObservation = observeStandardOpaquePsoRegistration(engine);
@@ -381,7 +397,12 @@ export async function createLiteGreyboxWorld(
     camera.farPlane = Math.max(10_000, config.camera.radius * 3);
     scene.camera = camera;
 
-    const light = createHemisphericLight([0.25, 1, 0.15], 1);
+    const lighting = sampleEnvironmentLighting(
+      quantizeAnimatedEnvironmentLightingPhase(config.lighting.initialPhase),
+      config.lighting.weather,
+    );
+    const light = createHemisphericLight();
+    applyEnvironmentLighting(light, scene, lighting);
     addToScene(scene, light);
 
     const playerMesh = createCapsule(engine, {
@@ -547,6 +568,7 @@ export async function createLiteGreyboxWorld(
       streamingDependencyGpuBytes: 0,
       flythroughSample: null as FlythroughScenarioSample | null,
       hybridUi,
+      lighting,
       playerMesh,
       telemetry,
     };
@@ -1199,21 +1221,23 @@ export function renderLiteGreyboxWorld(
       1;
   const weather =
     renderer.flythroughSample?.environment.weather ?? renderer.config.lighting.weather;
-  const sunAngle = phase * Math.PI * 2;
-  const elevation = Math.sin(sunAngle);
-  renderer.light.direction.set(Math.cos(sunAngle), Math.max(0.12, elevation), Math.sin(sunAngle));
-  renderer.light.intensity = WEATHER_INTENSITY[weather] * (0.12 + Math.max(0, elevation) * 0.88);
-  const clearColor = environmentClearColor(weather, phase);
-  renderer.scene.clearColor.r = clearColor[0];
-  renderer.scene.clearColor.g = clearColor[1];
-  renderer.scene.clearColor.b = clearColor[2];
+  const lightingPhase =
+    renderer.flythroughSample === null ? quantizeAnimatedEnvironmentLightingPhase(phase) : phase;
+  if (lightingPhase !== renderer.lighting.phase || weather !== renderer.lighting.weather) {
+    const lighting = sampleEnvironmentLighting(lightingPhase, weather);
+    renderer.lighting = lighting;
+    applyEnvironmentLighting(renderer.light, renderer.scene, lighting);
+  }
 
   renderFrame(
     renderer.engine,
     renderer.previousTimestamp === null ? 0 : timestamp - renderer.previousTimestamp,
   );
   renderer.previousTimestamp = timestamp;
-  return Object.freeze({ intensity: renderer.light.intensity, phase });
+  return Object.freeze({
+    intensity: renderer.lighting.perceivedIntensity,
+    phase: renderer.lighting.phase,
+  });
 }
 
 export function visibleStreamingMeshCount(renderer: LiteGreyboxWorld): number {
@@ -1230,16 +1254,6 @@ function currentClearColorRgb(renderer: LiteGreyboxWorld): readonly [number, num
     Math.round(renderer.scene.clearColor.g * 255),
     Math.round(renderer.scene.clearColor.b * 255),
   ]);
-}
-
-function environmentClearColor(
-  weather: FlythroughWeatherState,
-  phase: number,
-): readonly [number, number, number] {
-  const elevation = Math.sin(phase * Math.PI * 2);
-  const daylight = 0.18 + Math.max(0, elevation) * 0.82;
-  const base = WEATHER_CLEAR_COLOR[weather];
-  return Object.freeze([base[0] * daylight, base[1] * daylight, base[2] * daylight]);
 }
 
 export function resizeLiteGreyboxWorld(

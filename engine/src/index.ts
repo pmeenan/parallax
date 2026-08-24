@@ -723,6 +723,8 @@ export type {
 export { createInstallerWorkerSession } from "./workers/installer-worker-session";
 export type { SabRingBufferSpikeTelemetrySnapshot } from "./workers/sab-ring-buffer-spike-protocol";
 export type {
+  EnvironmentTimeOfDayPhase,
+  EnvironmentWeatherState,
   GreyboxAabbCollider,
   GreyboxCell,
   GreyboxCollisionPayload,
@@ -730,6 +732,7 @@ export type {
   GreyboxGaussianSplatPayload,
   GreyboxHeightfieldCollider,
   GreyboxHeightfieldGridPayload,
+  GreyboxLightingConfig,
   GreyboxLodSelectionOptions,
   GreyboxLodTier,
   GreyboxMaterial,
@@ -748,4 +751,5 @@ export {
   parseGreyboxMaterials,
   selectGreyboxCellLod,
   validateGreyboxDistrict,
+  validateGreyboxLightingConfig,
 } from "./world/world-contract";

@@ -1,5 +1,10 @@
 export type WorldVec3 = readonly [number, number, number];
 
+/** Normalized solar phase: 0 dawn, 0.25 noon, 0.5 dusk, and 0.75 midnight. */
+export type EnvironmentTimeOfDayPhase = number;
+
+export type EnvironmentWeatherState = "clear" | "overcast" | "storm";
+
 export interface WorldBounds {
   readonly maximum: WorldVec3;
   readonly minimum: WorldVec3;
@@ -108,6 +113,12 @@ export interface GreyboxDistrict {
   readonly units: "meters";
 }
 
+export interface GreyboxLightingConfig {
+  readonly cycleSeconds: number;
+  readonly initialPhase: EnvironmentTimeOfDayPhase;
+  readonly weather: EnvironmentWeatherState;
+}
+
 export interface GreyboxSceneConfig {
   readonly camera: Readonly<{
     alpha: number;
@@ -117,11 +128,7 @@ export interface GreyboxSceneConfig {
     target: WorldVec3;
   }>;
   readonly clearColor: readonly [number, number, number, number];
-  readonly lighting: Readonly<{
-    cycleSeconds: number;
-    initialPhase: number;
-    weather: "clear" | "overcast" | "storm";
-  }>;
+  readonly lighting: Readonly<GreyboxLightingConfig>;
   readonly lodObservers: readonly WorldVec3[];
   readonly world: GreyboxDistrict;
 }
@@ -146,6 +153,30 @@ export interface GreyboxLodSelectionOptions {
 
 function finite(value: number, label: string): void {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`);
+}
+
+const ENVIRONMENT_WEATHER_STATES: ReadonlySet<unknown> = new Set(["clear", "overcast", "storm"]);
+
+export function validateGreyboxLightingConfig(lighting: unknown): void {
+  if (typeof lighting !== "object" || lighting === null) {
+    throw new Error("Greybox lighting config must be an object");
+  }
+  const cycleSeconds = Reflect.get(lighting, "cycleSeconds");
+  if (typeof cycleSeconds !== "number" || !Number.isFinite(cycleSeconds) || cycleSeconds <= 0) {
+    throw new Error("Greybox lighting cycleSeconds must be finite and positive");
+  }
+  const initialPhase = Reflect.get(lighting, "initialPhase");
+  if (
+    typeof initialPhase !== "number" ||
+    !Number.isFinite(initialPhase) ||
+    initialPhase < 0 ||
+    initialPhase >= 1
+  ) {
+    throw new Error("Greybox lighting initialPhase must be finite and within [0, 1)");
+  }
+  if (!ENVIRONMENT_WEATHER_STATES.has(Reflect.get(lighting, "weather"))) {
+    throw new Error("Greybox lighting weather is invalid");
+  }
 }
 
 function validateVec3(value: WorldVec3, label: string, positive = false): void {
