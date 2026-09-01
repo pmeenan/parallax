@@ -28,6 +28,7 @@
     "harness:asset-update:v8": "pnpm build && node harness/dist/types/asset-update-v8-run.js",
     "harness:model-source-verification": "pnpm build && node harness/dist/types/model-source-verification-run.js",
     "harness:pso-warmup:qualify": "pnpm build && node harness/dist/types/pso-warmup-qualification-run.js",
+    "harness:shadow-strategies": "pnpm typecheck && node harness/dist/types/shadow-strategy-spike-run.js",
     "harness:uninstall-verification": "pnpm build && node harness/dist/types/uninstall-verification-run.js",
     "harness:scale-streaming": "pnpm build && node harness/dist/types/scale-streaming-run.js",
     "harness:baseline:promote": "pnpm build && node harness/dist/types/baseline-promote-bin.js",

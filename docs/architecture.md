@@ -1281,6 +1281,20 @@ directional-light foundation, not a shadow-strategy or global-illumination verdi
 Directional PCF/ESM, cascaded shadows, local-light shadows, many-light clustering, and
 GI remain measured M4.5 candidates.
 
+The active `m45-directional-shadow-strategies@1` probe keeps those candidates outside
+the shipping scene and its exact no-shadow PSO trace. It runs a deterministic 103-caster
+wide-range scene directly on pinned Babylon Lite, captures near/mid/vista cameras, and
+records fresh-launch whole-frame/task GPU timings plus CPU submission. Its first
+repeatability-qualified matrix narrowed the visual follow-up to CSM: the single-map PCF
+and ESM arms lost receiver coverage across the camera range, while ESM also over-darkened
+receivers. Four-cascade CSM retained coverage after a 0.12 m world-space bias removed the
+severe self-shadow acne without visibly detaching contact shadows; faint top-face
+striping remains. The cost comparison is deliberately unresolved: the 103-caster GPU
+workload sat close enough to timestamp granularity and power-state noise that all four
+whole-frame p50 ranges failed the probe's 10% rule. No technique is adopted, no
+production shadow pipeline or warmup trace changes, and no budget follows until an
+amplified representative workload produces a repeatable delta.
+
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box
 features by material. Single-sided downward skirts are emitted at outer/cull boundaries

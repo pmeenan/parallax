@@ -83,12 +83,18 @@ importers:
 
   harness:
     devDependencies:
+      '@babylonjs/lite':
+        specifier: 1.12.0
+        version: 1.12.0
       '@parallax/engine':
         specifier: workspace:*
         version: link:../engine
       '@types/node':
         specifier: 24.13.3
         version: 24.13.3
+      esbuild:
+        specifier: 0.28.1
+        version: 0.28.1
       playwright-core:
         specifier: 1.61.1
         version: 1.61.1
