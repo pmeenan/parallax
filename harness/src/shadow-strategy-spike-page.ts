@@ -31,18 +31,26 @@ import {
 import {
   finalizeShadowTaskSummary,
   isShadowStrategyArm,
+  SHADOW_STRATEGY_CASTER_COUNT,
+  SHADOW_STRATEGY_RENDER_HEIGHT,
+  SHADOW_STRATEGY_RENDER_WIDTH,
   SHADOW_STRATEGY_RENDERER_ID,
+  SHADOW_STRATEGY_SPHERE_SEGMENTS,
   SHADOW_STRATEGY_SPIKE_ID,
   SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION,
+  SHADOW_STRATEGY_WORKLOAD_ID,
   type ShadowStrategyArm,
   type ShadowStrategyCapture,
   type ShadowStrategyPageResult,
   summarizeShadowStrategySamples,
 } from "./shadow-strategy-spike-contract";
 
-const WARMUP_FRAMES = 90;
+const WARMUP_FRAMES = 240;
 const MEASURED_FRAMES = 240;
 const FRAME_DELTA_MS = 1_000 / 60;
+const BOX_GRID_ROWS = 17;
+const BOX_GRID_COLUMNS = 25;
+const SPHERE_CASTER_COUNT = 128;
 const CAPTURE_CHECKPOINTS = Object.freeze([
   Object.freeze({ alpha: -0.72, beta: 1.08, id: "near-casters", radius: 34 }),
   Object.freeze({ alpha: -1.42, beta: 1.17, id: "mid-range", radius: 72 }),
@@ -147,6 +155,7 @@ async function run(): Promise<void> {
   }
   mutableApi.result = Object.freeze({
     arm,
+    casterCount: SHADOW_STRATEGY_CASTER_COUNT,
     configuration: shadowConfiguration(arm),
     configuredShadowMapTexels: configuredShadowMapTexels(arm),
     cpuRenderCallMs: summarizeShadowStrategySamples(cpuRenderCallMs),
@@ -155,12 +164,16 @@ async function run(): Promise<void> {
     gpuFrameTimeMs: summarizeShadowStrategySamples(gpuFrameTimeMs),
     gpuTimingSupported,
     measuredFrames: MEASURED_FRAMES,
+    renderHeight: SHADOW_STRATEGY_RENDER_HEIGHT,
+    renderWidth: SHADOW_STRATEGY_RENDER_WIDTH,
     renderer: SHADOW_STRATEGY_RENDERER_ID,
     scenarioId: SHADOW_STRATEGY_SPIKE_ID,
     sceneTaskGpuMs: summarizeShadowStrategySamples(sceneTaskGpuMs),
     schemaVersion: SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION,
     shadowTaskGpuMs: finalizeShadowTaskSummary(arm, shadowTaskGpuMs),
+    sphereCasterSegments: SHADOW_STRATEGY_SPHERE_SEGMENTS,
     warmupFrames: WARMUP_FRAMES,
+    workloadId: SHADOW_STRATEGY_WORKLOAD_ID,
   });
   mutableApi.state = "complete";
 }
@@ -170,7 +183,7 @@ async function createProbeScene(
   selectedArm: ShadowStrategyArm,
 ): Promise<ProbeScene> {
   const engine = await createEngine(canvas, { format: "bgra8unorm", msaaSamples: 4 });
-  setEngineSize(engine, 1_280, 720);
+  setEngineSize(engine, SHADOW_STRATEGY_RENDER_WIDTH, SHADOW_STRATEGY_RENDER_HEIGHT);
   const scene = createSceneContext(engine);
   scene.clearColor = { a: 1, b: 0.23, g: 0.17, r: 0.1 };
   const camera = createArcRotateCamera(-0.72, 1.08, 34, { x: 0, y: 4, z: 0 });
@@ -193,35 +206,47 @@ async function createProbeScene(
   stoneMaterial.diffuseColor = [0.48, 0.52, 0.58];
   const accentMaterial = createStandardMaterial();
   accentMaterial.diffuseColor = [0.74, 0.28, 0.09];
-  const ground = createGround(engine, { height: 180, subdivisions: 1, width: 180 });
+  const ground = createGround(engine, { height: 220, subdivisions: 1, width: 220 });
   ground.name = "probe-ground";
   ground.material = groundMaterial;
   ground.receiveShadows = selectedArm !== "no-shadow";
   addToScene(scene, ground);
 
   const casters: Mesh[] = [];
-  for (let row = -3; row <= 3; row += 1) {
-    for (let column = -6; column <= 6; column += 1) {
-      const index = (row + 3) * 13 + column + 6;
+  const rowOffset = Math.floor(BOX_GRID_ROWS / 2);
+  const columnOffset = Math.floor(BOX_GRID_COLUMNS / 2);
+  for (let row = -rowOffset; row <= rowOffset; row += 1) {
+    for (let column = -columnOffset; column <= columnOffset; column += 1) {
+      const index = (row + rowOffset) * BOX_GRID_COLUMNS + column + columnOffset;
       const height = 2.5 + ((index * 17) % 11) * 0.72;
       const mesh = createBox(engine, 1);
       mesh.name = `probe-caster-${index}`;
       mesh.material = index % 9 === 0 ? accentMaterial : stoneMaterial;
-      mesh.position.set(column * 8.5, height / 2, row * 12.5);
+      mesh.position.set(column * 7, height / 2, row * 8.5);
       mesh.scaling.set(2.1 + (index % 3) * 0.5, height, 2.1 + ((index + 1) % 4) * 0.4);
       mesh.receiveShadows = selectedArm !== "no-shadow";
       addToScene(scene, mesh);
       casters.push(mesh);
     }
   }
-  for (let index = 0; index < 12; index += 1) {
-    const marker = createSphere(engine, { diameter: 2.2, segments: 12 });
+  for (let index = 0; index < SPHERE_CASTER_COUNT; index += 1) {
+    const marker = createSphere(engine, {
+      diameter: 2.2,
+      segments: SHADOW_STRATEGY_SPHERE_SEGMENTS,
+    });
     marker.name = `probe-sphere-${index}`;
     marker.material = accentMaterial;
-    marker.position.set(-42 + index * 7.5, 2.1 + (index % 3), -25 + (index % 4) * 17);
+    const angle = (index / SPHERE_CASTER_COUNT) * Math.PI * 2;
+    const radius = 18 + (index % 8) * 10;
+    marker.position.set(Math.cos(angle) * radius, 2.1 + (index % 3), Math.sin(angle) * radius);
     marker.receiveShadows = selectedArm !== "no-shadow";
     addToScene(scene, marker);
     casters.push(marker);
+  }
+  if (casters.length !== SHADOW_STRATEGY_CASTER_COUNT) {
+    throw new Error(
+      `Shadow workload configured ${casters.length} casters instead of ${SHADOW_STRATEGY_CASTER_COUNT}`,
+    );
   }
 
   const shadowGenerator = createShadowGenerator(engine, sun, selectedArm);

@@ -24,6 +24,8 @@ import {
   assertShadowStrategyRendererPackage,
   evaluateShadowStrategyRepeatability,
   SHADOW_STRATEGY_ARMS,
+  SHADOW_STRATEGY_RENDER_HEIGHT,
+  SHADOW_STRATEGY_RENDER_WIDTH,
   SHADOW_STRATEGY_SPIKE_ID,
   SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION,
   type ShadowStrategyArm,
@@ -351,11 +353,11 @@ function probeDocument(): string {
   <title>Parallax M4.5 directional shadow strategy probe</title>
   <style>
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #111; }
-    #probe-canvas { display: block; width: 1280px; height: 720px; }
+    #probe-canvas { display: block; width: ${SHADOW_STRATEGY_RENDER_WIDTH}px; height: ${SHADOW_STRATEGY_RENDER_HEIGHT}px; }
   </style>
 </head>
 <body>
-  <canvas id="probe-canvas" width="1280" height="720"></canvas>
+  <canvas id="probe-canvas" width="${SHADOW_STRATEGY_RENDER_WIDTH}" height="${SHADOW_STRATEGY_RENDER_HEIGHT}"></canvas>
   <script type="module" src="/probe.js"></script>
 </body>
 </html>

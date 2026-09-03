@@ -4,7 +4,12 @@ import {
   assertShadowStrategyRendererPackage,
   evaluateShadowStrategyRepeatability,
   finalizeShadowTaskSummary,
+  SHADOW_STRATEGY_CASTER_COUNT,
+  SHADOW_STRATEGY_RENDER_HEIGHT,
+  SHADOW_STRATEGY_RENDER_WIDTH,
+  SHADOW_STRATEGY_SPHERE_SEGMENTS,
   SHADOW_STRATEGY_SPIKE_ID,
+  SHADOW_STRATEGY_WORKLOAD_ID,
   summarizeShadowStrategySamples,
 } from "./shadow-strategy-spike-contract";
 
@@ -23,6 +28,7 @@ describe("shadow strategy spike contract", () => {
     const summary = { count: 240, maximum: 2, mean: 1, p50: 1, p95: 1.5 };
     const result = {
       arm: "pcf-2048",
+      casterCount: SHADOW_STRATEGY_CASTER_COUNT,
       configuration: { mapSize: 2_048 },
       configuredShadowMapTexels: 4_194_304,
       cpuRenderCallMs: summary,
@@ -31,15 +37,47 @@ describe("shadow strategy spike contract", () => {
       gpuFrameTimeMs: summary,
       gpuTimingSupported: true,
       measuredFrames: 240,
+      renderHeight: SHADOW_STRATEGY_RENDER_HEIGHT,
+      renderWidth: SHADOW_STRATEGY_RENDER_WIDTH,
       renderer: "@babylonjs/lite@1.12.0",
       scenarioId: SHADOW_STRATEGY_SPIKE_ID,
       sceneTaskGpuMs: summary,
-      schemaVersion: 1,
+      schemaVersion: 4,
       shadowTaskGpuMs: null,
-      warmupFrames: 90,
+      sphereCasterSegments: SHADOW_STRATEGY_SPHERE_SEGMENTS,
+      warmupFrames: 240,
+      workloadId: SHADOW_STRATEGY_WORKLOAD_ID,
     };
 
     expect(() => assertShadowStrategyPageResult(result, "pcf-2048")).toThrow("shadowTaskGpuMs");
+  });
+
+  it("rejects results from a different caster workload", () => {
+    const summary = { count: 240, maximum: 2, mean: 1, p50: 1, p95: 1.5 };
+    const result = {
+      arm: "no-shadow",
+      casterCount: 103,
+      configuration: { technique: "none" },
+      configuredShadowMapTexels: 0,
+      cpuRenderCallMs: summary,
+      drawCalls: summary,
+      droppedGpuTaskSamples: 0,
+      gpuFrameTimeMs: summary,
+      gpuTimingSupported: true,
+      measuredFrames: 240,
+      renderHeight: SHADOW_STRATEGY_RENDER_HEIGHT,
+      renderWidth: SHADOW_STRATEGY_RENDER_WIDTH,
+      renderer: "@babylonjs/lite@1.12.0",
+      scenarioId: SHADOW_STRATEGY_SPIKE_ID,
+      sceneTaskGpuMs: summary,
+      schemaVersion: 4,
+      shadowTaskGpuMs: null,
+      sphereCasterSegments: SHADOW_STRATEGY_SPHERE_SEGMENTS,
+      warmupFrames: 240,
+      workloadId: SHADOW_STRATEGY_WORKLOAD_ID,
+    };
+
+    expect(() => assertShadowStrategyPageResult(result, "no-shadow")).toThrow("identity");
   });
 
   it("rejects a contaminated no-shadow control instead of discarding its shadow task", () => {

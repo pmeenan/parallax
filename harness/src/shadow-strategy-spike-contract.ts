@@ -1,6 +1,11 @@
-export const SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION = 1 as const;
-export const SHADOW_STRATEGY_SPIKE_ID = "m45-directional-shadow-strategies@1" as const;
+export const SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION = 4 as const;
+export const SHADOW_STRATEGY_SPIKE_ID = "m45-directional-shadow-strategies@4" as const;
 export const SHADOW_STRATEGY_RENDERER_ID = "@babylonjs/lite@1.12.0" as const;
+export const SHADOW_STRATEGY_WORKLOAD_ID = "showcase-4k-final-art-proxy-553-casters@1" as const;
+export const SHADOW_STRATEGY_CASTER_COUNT = 553 as const;
+export const SHADOW_STRATEGY_RENDER_WIDTH = 3_840 as const;
+export const SHADOW_STRATEGY_RENDER_HEIGHT = 2_160 as const;
+export const SHADOW_STRATEGY_SPHERE_SEGMENTS = 64 as const;
 export const SHADOW_STRATEGY_ARMS = Object.freeze([
   "no-shadow",
   "pcf-2048",
@@ -20,6 +25,7 @@ export interface ShadowStrategySampleSummary {
 
 export interface ShadowStrategyPageResult {
   readonly arm: ShadowStrategyArm;
+  readonly casterCount: typeof SHADOW_STRATEGY_CASTER_COUNT;
   readonly configuration: Readonly<Record<string, boolean | number | string>>;
   readonly configuredShadowMapTexels: number;
   readonly cpuRenderCallMs: ShadowStrategySampleSummary;
@@ -28,12 +34,16 @@ export interface ShadowStrategyPageResult {
   readonly gpuFrameTimeMs: ShadowStrategySampleSummary;
   readonly gpuTimingSupported: boolean;
   readonly measuredFrames: number;
+  readonly renderHeight: typeof SHADOW_STRATEGY_RENDER_HEIGHT;
+  readonly renderWidth: typeof SHADOW_STRATEGY_RENDER_WIDTH;
   readonly renderer: typeof SHADOW_STRATEGY_RENDERER_ID;
   readonly scenarioId: typeof SHADOW_STRATEGY_SPIKE_ID;
   readonly sceneTaskGpuMs: ShadowStrategySampleSummary;
   readonly schemaVersion: typeof SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION;
   readonly shadowTaskGpuMs: ShadowStrategySampleSummary | null;
+  readonly sphereCasterSegments: typeof SHADOW_STRATEGY_SPHERE_SEGMENTS;
   readonly warmupFrames: number;
+  readonly workloadId: typeof SHADOW_STRATEGY_WORKLOAD_ID;
 }
 
 export interface ShadowStrategyCapture {
@@ -131,7 +141,12 @@ export function assertShadowStrategyPageResult(
     Reflect.get(value, "schemaVersion") !== SHADOW_STRATEGY_SPIKE_SCHEMA_VERSION ||
     Reflect.get(value, "scenarioId") !== SHADOW_STRATEGY_SPIKE_ID ||
     Reflect.get(value, "arm") !== expectedArm ||
-    Reflect.get(value, "renderer") !== SHADOW_STRATEGY_RENDERER_ID
+    Reflect.get(value, "renderer") !== SHADOW_STRATEGY_RENDERER_ID ||
+    Reflect.get(value, "workloadId") !== SHADOW_STRATEGY_WORKLOAD_ID ||
+    Reflect.get(value, "casterCount") !== SHADOW_STRATEGY_CASTER_COUNT ||
+    Reflect.get(value, "renderWidth") !== SHADOW_STRATEGY_RENDER_WIDTH ||
+    Reflect.get(value, "renderHeight") !== SHADOW_STRATEGY_RENDER_HEIGHT ||
+    Reflect.get(value, "sphereCasterSegments") !== SHADOW_STRATEGY_SPHERE_SEGMENTS
   ) {
     throw new Error("Shadow strategy page result identity is invalid");
   }

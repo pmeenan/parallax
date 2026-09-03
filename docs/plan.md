@@ -366,19 +366,25 @@ may run concurrently where they don't share substrate.
       separate hemispheric ambient and directional-sun lights in the live render
       worker. Directional-sun state is exported as mandatory harness evidence. Shadow,
       local-light, and GI candidate comparisons remain open before this track can be
-      concluded. The standalone `m45-directional-shadow-strategies@1` matrix now
+      concluded. The standalone `m45-directional-shadow-strategies@4` matrix now
       provides the first shadow narrowing without changing the shipping no-shadow PSO
       contract: fixed near/mid/vista captures reject the PCF/ESM single-map arms for
       wide-camera coverage (and ESM for over-darkening), while four-cascade CSM at
       4×1024 and 0.12 m world-space bias retains coverage and attached contact shadows
-      with faint residual top-face striping. This is not yet an adoption: retained
-      report `m45-shadow-strategies-2026-09-01T18-06-36-988Z/result.{json,md}`
-      (`40b2b87f0e6334dc26b26b7ce362043191d458ceaacf76e7ebc0a8ca494609f6` /
-      `918af76ea6c0c9de66d38cf263bc87b9d8032cfb05fc518f14219663796d6fed`)
-      marks every GPU p50 repeatability result invalid: no-shadow 20.3%, PCF 13.8%, ESM
-      12.9%, and CSM 12.3%. Next, amplify the representative shadow workload above
-      timer/power-state noise and remeasure before production integration, local-light
-      comparison, or GI work.
+      with faint residual top-face striping. The initial 103-caster run was too close to
+      timer/power-state noise; the amplified native-4K final-art proxy binds 425
+      architectural plus 128 curved 64-segment casters (553 meshes, about 2.23 million
+      curved-caster triangles before cascades). Its retained confirmation report
+      `m45-shadow-strategies-2026-09-01T18-53-19-616Z/result.{json,md}`
+      (`72e00c1d794edbdd6e5cfa0c9fcef08e7788f15ab4edb422b3a3757fa0fa4edf` /
+      `4756b04c3331a66adfcb54ef6d3d391140c8e2badac324e7dbf022e1a3281cf4`)
+      records repeatable CSM whole-frame GPU p50 at 3.412/3.156/3.298 ms (8.1%),
+      CPU-submit p50 at 0.645/0.605/0.640 ms (6.6%), and isolated shadow-task p50 at
+      1.376/1.245/1.311 ms. The lighter no-shadow arm remained power-state-sensitive
+      and invalid at 143.8%, so no control-relative delta is claimed. This is still not
+      adoption. Next, integrate the CSM candidate into the render worker and
+      release-owned PSO warmup trace, add shipping telemetry, and measure its delta in
+      the standard flythrough before local-light comparison or GI work.
 - [ ] Sky and atmosphere: day/night sky, volumetric clouds, height/distance fog, god
       rays, aerial perspective for the mountain vista — driven by the weather states
       already bound at M1.

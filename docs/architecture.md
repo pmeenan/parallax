@@ -1281,19 +1281,27 @@ directional-light foundation, not a shadow-strategy or global-illumination verdi
 Directional PCF/ESM, cascaded shadows, local-light shadows, many-light clustering, and
 GI remain measured M4.5 candidates.
 
-The active `m45-directional-shadow-strategies@1` probe keeps those candidates outside
-the shipping scene and its exact no-shadow PSO trace. It runs a deterministic 103-caster
-wide-range scene directly on pinned Babylon Lite, captures near/mid/vista cameras, and
-records fresh-launch whole-frame/task GPU timings plus CPU submission. Its first
-repeatability-qualified matrix narrowed the visual follow-up to CSM: the single-map PCF
-and ESM arms lost receiver coverage across the camera range, while ESM also over-darkened
-receivers. Four-cascade CSM retained coverage after a 0.12 m world-space bias removed the
-severe self-shadow acne without visibly detaching contact shadows; faint top-face
-striping remains. The cost comparison is deliberately unresolved: the 103-caster GPU
-workload sat close enough to timestamp granularity and power-state noise that all four
-whole-frame p50 ranges failed the probe's 10% rule. No technique is adopted, no
-production shadow pipeline or warmup trace changes, and no budget follows until an
-amplified representative workload produces a repeatable delta.
+The active `m45-directional-shadow-strategies@4` probe keeps those candidates outside
+the shipping scene and its exact no-shadow PSO trace. Its deterministic native-4K
+final-art proxy combines 425 architectural casters with 128 curved 64-segment casters
+(about 2.23 million curved-caster triangles before cascade amplification), captures
+near/mid/vista cameras, and records fresh-launch whole-frame/task GPU timings plus CPU
+submission. The original 103-caster matrix narrowed the visual follow-up to CSM: the
+single-map PCF and ESM arms lost receiver coverage across the camera range, while ESM
+also over-darkened receivers. Four-cascade CSM retained coverage after a 0.12 m
+world-space bias removed the severe self-shadow acne without visibly detaching contact
+shadows; faint top-face striping remains.
+
+The exact-current amplified matrix resolves the selected candidate's absolute cost
+above timestamp and GPU-power-state noise. Across three fresh CSM launches, whole-frame
+GPU p50 was 3.412/3.156/3.298 ms (8.1% range), CPU submission was
+0.645/0.605/0.640 ms (6.6%), and the isolated shadow task was
+1.376/1.245/1.311 ms. The lighter no-shadow arm remained GPU-power-state-sensitive and
+failed repeatability, so the probe deliberately withholds a control-relative delta.
+This qualifies CSM for production integration and flythrough delta measurement; it is
+not yet adoption. The shipping shadow pipeline, warmup trace, and budgets remain
+unchanged until that integration is measured in the real render worker under its
+sustained game workload.
 
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box

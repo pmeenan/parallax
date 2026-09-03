@@ -78,11 +78,12 @@ short (each gap in observability is itself a rough-edges finding — log it).
   decode, cache-ownership, and GPU-upload scale qualifier.
 - `pnpm harness:shadow-strategies` — active M4.5 standalone directional-shadow research
   probe. It isolates the shipping no-shadow PSO contract, compares no-shadow, PCF, ESM,
-  and CSM in fresh pinned-Chrome launches, records per-task/whole-frame GPU and CPU-submit
-  costs plus fixed-camera captures, and marks any cross-launch cost spread above 10% as
-  invalid evidence instead of a cost claim (the run itself still completes and retains
-  its report). It is discovery evidence, not a budget or milestone gate; remove it when
-  the lighting decision consumes the experiment.
+  and CSM over the exact `showcase-4k-final-art-proxy-553-casters@1` workload in fresh
+  pinned-Chrome launches, records per-task/whole-frame GPU and CPU-submit costs plus
+  fixed-camera captures, and marks any cross-launch cost spread above 10% as invalid
+  evidence instead of a cost claim (the run itself still completes and retains its
+  report). It is discovery evidence, not a budget or milestone gate; remove it when the
+  lighting decision consumes the experiment.
 - `pnpm harness:baseline:promote` — guarded offline baseline-store promotion utility,
   not a browser scenario or automatic post-run action.
 - `transition` — repeated D1↔D2 swaps against the transition contract.
