@@ -1,42 +1,45 @@
 # Feature matrix
 
-The project's ambition is to exercise **every major feature surface of a AAA title**, each
-in a way that is novel and web-idiomatic — not a downported approximation. This document
-tracks that coverage and holds the design constraints of build-later features that
-today's code must respect.
+The project's ambition is broad AAA feature coverage in a coherent, high-fidelity
+open-world experience. D-182 delivers a representative finished area first and expands
+from measured scene needs. Reuse established implementations where they satisfy the
+scene; novelty may come from scale and integration rather than every component.
+This document tracks coverage and the binding constraints of build-later features.
 
 **Status legend:** `active` (on the committed mainline plan — see its Milestone column;
 not necessarily in progress yet, plan.md tracks that) · `designed` (constraints locked,
 build later) · `implemented` (the planned implementation and result contract are
 complete; any explicit physical-qualification limits still apply) · `explored` (idea
-logged, no constraints yet)
+logged, no constraints yet) · `deferred` (retained research ambition; requires a named
+scene need, measured bottleneck, or selected platform study before implementation;
+not a fixed milestone exit requirement)
 
 ## Matrix
 
-| Feature area | Web-novel angle | Status | Milestone |
+| Feature area | Capability / research value | Status | Milestone |
 | --- | --- | --- | --- |
-| Open-world streaming | OPFS sync-access reads in workers feeding GPU under a hard memory budget; D-112 makes the authoritative cohort, residency, storage, latency-stage, queue, and eviction telemetry visible in-game; D-115 defers no-visible-pop visual diff to M5 representative art; hard district swaps | active | M1, M4, M5 visual gate |
+| Open-world streaming | OPFS worker streaming under memory budgets; D-112 observability; representative-art no-visible-pop qualification starts on M4.5's route and extends across D1 in M5 (D-115/D-182); hard district swaps | active | M1, M4, M4.5 route, M5 district |
 | Install/update lifecycle | Multi-GB browser-native installer; D-144 qualifies the asset-only-update warm-launch outcome under the fixed budget while retaining cache attribution as best-effort evidence (D-051); full offline; clean confirmed uninstall with measured full-removal (D-024) | implemented | M2 complete (D-153) |
 | High-fidelity rendering | WebGPU-only pipeline, WGSL compute (culling/terrain/VFX), zero runtime PSO compiles via trace-driven warmup | active | M1, M4.5, M5 |
-| Lighting, GI & atmosphere | Fully dynamic time-of-day/weather lighting with no ray-tracing extension available — technique selection under that constraint, fire/torch many-light nights, volumetric sky/clouds/fog; the gap analysis is itself a deliverable (D-140) | active | M4.5 |
-| Terrain & procedural materials | Instruction-set terrain and generated materials: placements/features authored and deterministic, geometry/textures generated at install or runtime — trading install bytes for compute (M2 research tie-in, D-140); D-178 adds mud/soft-ground dynamic surface response (cosmetic track/footprint deformation, wetness blending, sim-queryable friction classification) | active | M4.5 |
-| Water, vegetation & wind | District-scale vegetation instancing, one shared wind signal driving grass/trees/cloth/fire/smoke/gas/rain, water rendering vs. simulation costed separately (D-140) | active | M4.5 |
-| Image pipeline | Hand-built TAA/temporal upscaler (no DLSS/FSR equivalent on the web), HDR canvas output, full post stack including heat-distortion/refraction that must survive temporal accumulation (D-140/D-178) | active | M4.5 |
-| GPU-driven rendering & texture residency | Compute occlusion culling and indirect draws without mesh shaders/bindless; virtual texturing beside the geometry streaming system (D-140) | active | M4.5 |
+| Lighting, GI & atmosphere | Dynamic day/night/weather and selected local-light/fire moments in the finished area; advanced GI, many-light shadows, and atmosphere promoted for demonstrated scene needs (D-182) | active; advanced techniques deferred | M4.5 scene, research backlog |
+| Terrain & procedural materials | Authored deterministic terrain and representative PBR materials first; extend instruction-set generation and measure generate-vs-bake bytes/compute when real content justifies it. Mud/deformation and friction classification remain triggered research (D-182) | active baseline; extensions deferred | M4.5 scene, research backlog |
+| Water, vegetation & wind | Representative foliage and shared wind as consumers land; district instancing/LOD, water and wetness promoted by chosen scenes or density limits; water simulation costed separately (D-182) | active foliage; extensions deferred | M4.5, M5 density, research backlog |
+| Image pipeline | Scene-driven AA, tonemapping/grading and bloom; TAA/upscaling, HDR and extended post effects require demonstrated visual/cost need. Reuse pinned implementations; hand-built temporal reconstruction is not presumed necessary (D-182) | active baseline; extensions deferred | M4.5 scene, research backlog |
+| GPU-driven rendering & texture residency | Compute culling/occlusion, indirect draws and virtual texturing promoted only by a representative density/residency bottleneck or selected platform study; qualify any required interop (D-182) | deferred | Research backlog; no fixed milestone prerequisite |
 | NPC navigation & crowds | Navmesh over streamed procedural cells plus village-scale crowd movement under the sim determinism constraints (D-140) | active | M3 |
 | Combat, progression & crafting | Full mechanics stack inside the deterministic sim worker — replays double as gameplay regression tests; D-166 adds authored navigation-aware pack AI and D-167 classless progression; D-168 adds saved gathering/regrowth, the 24-recipe station loop, static vendors, equipment/consumables/upgrades, seeded loot/affixes, and the material satchel; D-172 adds authoritative hybrid-UI consumers, current-level XP/unspent-choice HUD, stamina/aether-only level-up payoff, and Ironset lifecycle telegraph; original slice-scale ruleset, no D&D-protected material (D-141) | implemented | M3.5 |
 | Quests & journal | D-170 supplies validated saved one-time landmark discovery and shared progression XP. D-171 adds the data-owned six-stage main arc and eight side quests, semantic-event-only typed objectives, validated intent/delivery commands, bounded encounter-preparation consequences, shared quest XP, and a fail-closed append-only save-schema-v10 journal with paginated localization-ready queries. D-172 consumes quest state and the canonical journal through the hybrid UI. | implemented | M3.5 |
 | Game UI stack | D-160 selects a measured hybrid over the worker-owned WebGPU canvas; D-161 implements the shared framework-free substrate with typed game presentations, keyed DOM/CSS HUD/dialog, fixed render-worker anchor/heavy-screen pools, worker-owned hit testing, recovery replay, a sparse semantic/IME bridge, and harness telemetry. D-172 adds the real inventory/crafting, progression/loadout, and quest/journal consumers while preserving simulation command/query authority. D-143 identified no page-visible cross-thread presentation synchronization/attribution primitive; RE-047 keeps that request open. | implemented | M3, M3.5 |
-| Music & audio content | Weather/danger/district-adaptive score plus AI-generated music/SFX pipeline; the sim event hooks it consumes are a design-now constraint on M3 — see constraints section below (D-141) | active (hooks designed M3) | M6 |
-| Animation content | Retargeted and/or AI-generated locomotion/combat/schedule animation sets across all races/monster body types, QA-gated (D-141) | active | M5 |
-| Cinematics & scripted cameras | Undecided: cheap scripted-camera moments vs an explicit rule-out — needs a decision before M6 rather than staying an implicit omission (D-141) | explored | M6 |
-| Geometry representation & LOD | D-098 retains classic triangle LOD for the current D1 path because neither bounded challenger supplied fully eligible displacement evidence; this was not a valid triangle-performance win. Representation-agnostic streaming/asset boundaries preserve a future full virtual-geometry, relightable-splat, higher-density-art, or capture-UGC reopening without shipping the closed spike's apparatus. | active | M1 decision, M5 content |
+| Music & audio content | First QA-gated spatial SFX/ambience set in M4.5's playable route; district-scale content and weather/danger/district-adaptive score in M6 using existing semantic events (D-141/D-182) | active (planned) | M4.5 first set, M6 expansion |
+| Animation content | One rigged NPC and enemy with QA-gated locomotion/idle/combat in M4.5; expand retargeted/AI-generated sets across required body types in M5 (D-141/D-182) | active (planned) | M4.5 first set, M5 expansion |
+| Cinematics & scripted cameras | Undecided: cheap scripted-camera moments vs an explicit rule-out — resolve scope before M6 begins (D-141/D-182) | explored | Before M6 |
+| Geometry representation & LOD | D-098 retains triangle LOD because challengers lacked eligible displacement evidence, not a proven triangle performance win. Representative M4.5/M5 art can justify a bounded reopening through unchanged representation-agnostic asset/streaming boundaries (D-182) | active | M1 decision, M4.5/M5 content |
 | Conversational NPCs | App-owned on-device Gemma 4 E2B QAT-GGUF on wllama, WebGPU by default with an explicit CPU/WASM headroom mode (D-074/D-096). D-162 adds the ordinary lazy release-bound OPFS-`File` caller, strict finite intent/subject validation, game-owned persona/rolling-memory/fallback policy, dialog UI/input ownership, and padded frame-impact telemetry. D-033 now supplies the generic budgeted knowledge service, public retrieval telemetry, a bounded sim-worker state-query seam, an NPC-scoped structured-state/world-fact provider shared with authored fallback, and tagged dormant lore chunks; semantic lore retrieval and episodic memory remain build-later. | implemented (first authored NPC + structured knowledge tier) | M3 |
 | Simulation & save | Deterministic fixed-timestep sim worker; input-command logs double as replay and harness regression formats. The game-owned `m35-gameplay-slice@1` log drives fight → loot → trade → craft → level → two multi-objective quest completions through the generic engine replay seam, with repeated hashes, byte-identical saves, live-worker load/re-save, and exact semantic-counter validation in every core smoke launch. | implemented | M3, M3.5 |
-| Character & animation | Babylon animation system + AI-generated rigged characters from the assets pipeline; M5 adds explore-and-decide character-surface/dynamics tracks (skin/SSS, eyes, hair/fur, cloth, muscle deformation, IK) at the "NPC ≈ player" visual bar (D-140) | active | M3, M5 |
+| Character & animation | Babylon animation and AI-generated rigged NPC/enemy in M4.5, then multiple body types in M5. Skin/SSS, eyes, hair/fur, cloth, muscle deformation and IK are selected by visible deficiencies, not an exhaustive prerequisite (D-182) | active baseline; advanced techniques deferred | M4.5, M5, research backlog |
 | Physics | Scoped at M3: likely Havok WASM (Babylon-integrated) in/beside the sim worker; determinism requirement may force alternatives — see P-003 implications. M6 adds ragdoll/rope/buoyancy garnish (D-140); destructible environments are ruled out (D-140) | explored | M3, M6 |
-| Spatial audio | WebAudio worklets, HRTF panning, underground/surface acoustic contrast as a showcase | explored (direction sketched; no binding constraints recorded yet — promote to `designed` only with a constraints section like Multiplayer's) | M6 |
-| VFX & weather | Full weather system is core creative direction (game-design.md): sun→overcast→storms, lightning, day/night, fire/area lighting; GPU-compute particles. Dynamic-lighting consequence binds the renderer from M1 (architecture.md); D-178 moves the particle/volumetrics substrate and all effect *technology* — movie-quality fire/smoke, gas/vapor, electrical and magic primitives — into M4.5 beside the lighting track, leaving M6 as the authored content pass (D-140/D-178) | designed (renderer constraint active from M1; technology M4.5, content M6) | M1 constraint, M4.5 technology, M6 content |
+| Spatial audio | A small surface/underground spatial sound demonstration and QA path in M4.5; expand worklet/HRTF/acoustic coverage in M6 (D-182); no implementation claimed yet | active (planned) | M4.5 first route, M6 expansion |
+| VFX & weather | Dynamic daylight/night/storm scene with selected coherent fire illumination and lightning in M4.5. Grow shared wind/particle/volumetric facilities from those consumers; full fire, gas and magic families remain a triggered backlog, with selected content expansion in M6 (D-178 amended by D-182) | active scene; broader technology deferred | M4.5 scene, M6 expansion, research backlog |
 | Photo mode | Cheap, high-value web flex: canvas capture, offline render-quality crank, shareable output | explored | M6 |
 | P2P multiplayer | WebRTC data channels; **no game-simulation servers** (peers run the sim). Connection infrastructure is permitted per D-016: self-hosted signaling + STUN, TURN if connectivity data warrants | **designed — constraints below** | M7 |
 | Input | Keyboard/mouse (Pointer Lock w/ `unadjustedMovement`, Keyboard Lock for Esc/system keys in fullscreen), Gamepad API incl. haptics, Fullscreen, Screen Wake Lock | active | M3 |
@@ -44,8 +47,10 @@ logged, no constraints yet)
 | Benchmark mode | Public deterministic front end to canonical scenarios and telemetry without an opaque score. D-105 implements M1's browser-neutral advisory `benchmark-result@1`; privileged harness gates remain separate, and continuous-page versus fresh-profile lineage is explicit. D-115 qualifies the implementation/result contract from complete fail-honest physical exports while preserving their unchanged variance failures; another 30-plus-minute run is not an M1 gate. | implemented; physically exercised | M1+ |
 | Live content hooks | Manifest-driven content drops using the update path (no code deploy) | explored | post-M6 |
 
-Anything added to the game that doesn't fit a row: add a row, including its web-novel
-angle. A feature with no novel angle should prompt the question of why we're building it.
+Anything added to the game that doesn't fit a row: add a row with its playable or
+research value. A conventional implementation is appropriate when it serves the scene.
+The plan's triggered research backlog governs unselected advanced techniques; listing
+one here does not require an experiment or implementation before M4.5/M5 can exit.
 
 ## Beyond AAA: features even native AAA titles don't usually ship
 

@@ -157,7 +157,9 @@ accepted decisions and evidence identities live in
    don't silently swap them.
 5. **The harness may not depend on `engine/` or `game/` internals** — only on the
    telemetry export schema and public URLs. It must be able to measure a broken build.
-6. **Attribution first.** When a metric regresses, the harness should help prove which
+6. **Attribution first.** Reuse capture/timing/report utilities across scene-driven
+   tracks (D-182); new machinery needs a current question or measured iteration cost.
+   When a metric regresses, the harness should help prove which
    layer (app / Babylon / Dawn / V8 / storage / OS) — prefer adding a probe or a
    standalone micro-repro (`probes/`) over speculation. Micro-repros double as
    rough-edges reproductions.

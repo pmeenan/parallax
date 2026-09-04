@@ -1210,8 +1210,9 @@ Asset packaging: per-cell bundles, content-addressed, with shared kits/materials
 deduplicated across cells. Formats: glTF/GLB, KTX2 (BasisU) textures, meshopt
 compression. (Decision D-006.) D-090's procedural descriptors are game world data; the
 build-generated canonical cell JSON files are validated greybox library/package output.
-Their structural QA gate replaces only Blender-binary-specific checks until M5, not the
-asset gate itself. The later streaming task installs and reads these bundles through
+Their structural QA gate omits only inapplicable Blender-binary-specific checks, not the
+asset gate itself. D-182 activates binary checks for M4.5's first representative art.
+The streaming system installs and reads these bundles through
 OPFS; generating and packaging them does not by itself claim an OPFS cell-load result.
 
 The shipped compressed-streaming layer consumes schema-v2 dependency descriptors from
@@ -1252,11 +1253,22 @@ surface deliberately. Material policy:
 aggressively minimize pipeline permutations (uber-shader mindset) to keep Dawn's cache
 warm; the harness tracks pipeline-count and compile-stall metrics per build.
 
-D-140 places the post-M2 environment-rendering program behind iterative,
-measure-before-adopt tracks rather than preselecting GI, terrain/material, vegetation,
-water, post-processing, GPU-driven, or virtual-texturing techniques. An adopted track
-must update this architecture and its calibrated budget; the program itself is not an
-implemented renderer claim.
+D-182 develops rendering against a small finished area inside the existing installed,
+streamed game. Art, materials, animation, shadows, and selected effects integrate early
+through the ordinary engine interfaces. Preserve the existing collision/simulation
+authority and asset QA boundaries; a standalone probe cannot substitute for integration.
+Use established pinned implementations first. Promote GI, water, temporal reconstruction,
+GPU-driven rendering, virtual texturing, or other custom techniques only for a selected
+showcase or a measured limitation, using the bounded workflow. Introduce shared VFX and
+wind facilities as real consumers need them rather than completing a general substrate
+before content. Adopted load-bearing changes update this architecture and calibrated
+budgets; the revised program is not an implemented-renderer or performance claim.
+
+Measure combined scene cost from the first representative integration, including
+streaming, animation, foliage, local lighting/effects, and on-device inference as they
+land. Per-pass costs guide attribution but do not establish the composed scene's cost
+or physical presentation rate. The plan's daylight, night/storm, and playable-route
+checkpoints share production content and deterministic capture paths.
 
 **Dynamic lighting is a day-one requirement**, not an optimization decision: the game's
 full day/night cycle and weather system (game-design.md) rule out fully-baked lighting.
@@ -1279,7 +1291,8 @@ cycle. Public frame telemetry exposes the applied sun direction and intensity, a
 greybox-world evidence names the exact no-shadow lighting model; this is an observable
 directional-light foundation, not a shadow-strategy or global-illumination verdict.
 Directional PCF/ESM, cascaded shadows, local-light shadows, many-light clustering, and
-GI remain measured M4.5 candidates.
+GI remain candidates; D-182 integrates CSM first and selects further lighting work
+against the night/storm scene rather than requiring every comparison before content.
 
 The active `m45-directional-shadow-strategies@4` probe keeps those candidates outside
 the shipping scene and its exact no-shadow PSO trace. Its deterministic native-4K
@@ -1451,9 +1464,10 @@ representative flythrough memory and not additive with V8 backing storage. Logic
 streaming byte counters are not physical residency.
 
 The M1 contract therefore permits exit with zero violations among evaluated mandatory
-metrics while retaining those gaps as unqualified, never passed. Visible-pop visual
-diff moves to M5's representative-art streaming swap. D1↔D2 remains M4, where the
-transition and prefetch-trigger contract is defined and measured.
+metrics while retaining those gaps as unqualified, never passed. D-115 deferred
+visible-pop visual diff to representative art; D-182 now starts that evidence on
+M4.5's finished route and extends it across D1 in M5. M4 defined and measured the
+D1↔D2 transition and prefetch-trigger contract.
 
 ## Simulation
 

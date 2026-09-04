@@ -69,5 +69,6 @@ game/
    quest-critical interactions must never require the model.
 5. **Tunables live in `balance/` data**, not as magic numbers in systems — this is also
    what lets agents iterate on feel without touching sim correctness.
-6. **Placeholder-first.** Gameplay is built and proven against greybox content; nothing
-   in this directory may depend on final art existing.
+6. **Art-independent rules, early integrated content.** Simulation remains testable
+   with greybox content. M4.5 integrates representative art/animation through engine
+   interfaces (D-182); gameplay rules never depend on a particular render asset.

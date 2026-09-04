@@ -34,6 +34,28 @@ and all 24 blocking checks passed. Canvas coverage was 87.78% in every run with 
 lighting motion. The immediately preceding same-artifact RE-008 trace failure is retained
 alongside it.
 
-Blender mesh, UV, texture, and compressed-export checks are not applicable because v1
-contains no binary mesh or texture assets. Those checks become mandatory when M5 replaces
-the procedural descriptors with final-art library assets.
+Blender mesh, UV, texture, and compressed-export checks are not applicable to greybox
+v1 because it contains no binary mesh or texture assets. Under D-182 they become
+mandatory before M4.5's first representative binary assets enter the library, rather
+than waiting for M5. The pipeline is planned, not implemented by this documentation.
+
+## First representative art and animation (M4.5, planned)
+
+Start from sunny/gloomy reference sheets and a small D1 modular kit. Apply the asset
+class budgets, scale, UV/texel-density, material, provenance/rights, LOD, and compressed
+export checks in `../AGENTS.md`; round-trip the accepted outputs through the actual
+worker loader. Resolve P-004 storage before retaining the first binary library outputs.
+For the NPC/enemy, include rig/export integrity and the selected locomotion, idle, and
+combat clips, inspecting deformation and motion in the shipping scene. Introduce only
+the class-specific checks needed by those assets; later content extends the gate.
+
+Deterministic route captures and motion inspection establish visual consistency and
+no-visible-pop evidence for this finished area. Human acceptance and structural QA are
+both required; neither substitutes for the other. M5 extends coverage across D1.
+Track accepted kit pieces/animations per work session and rework during the two-week
+trial to expose pipeline bottlenecks before expanding content generation.
+
+M4.5's selected spatial SFX/ambience also needs a provenance/rights and audio QA path
+before library admission: validate decodable format, duration/channel metadata and
+authored level/loop behavior, then audition the asset in the surface/underground scene.
+Class-specific audio checks replace inapplicable mesh checks; M6 expands this first set.

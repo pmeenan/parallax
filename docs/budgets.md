@@ -28,6 +28,28 @@ violation (D-150). "It's fine at 1080p" is not a defense of the enforced 4K tier
 | Showcase | dev-01 (i9-14900KF / 128 GB / RTX 4080 Super, D3D12) | 4K @ 60 Hz (its display) | Sole enforced gate, calibrated to dev-01 itself (D-018/D-150) |
 | Standard | standard-target profile (M1 Pro MacBook Pro 16 GB, 120 Hz, Metal — no registration required) | 1440p @ 120 Hz | Advisory planning envelope for optional transfer/cross-hardware research; never a milestone gate |
 
+## Integrated rendering planning (D-182)
+
+Initial discovery may run without a per-effect allocation. At the first representative
+integration, and when a new effect or density change materially changes the workload,
+record combined whole-frame GPU and CPU-submit distributions, available memory/logical
+allocation evidence, streaming costs, pipeline compiles, and inference interference.
+Include the selected daylight, night/storm, motion, and density conditions rather than
+adding isolated feature timings and calling that the scene cost.
+
+With those measurements, state the total-cost target and proposed headroom for the
+remaining content/effects in the active plan item's evidence. Explain what that headroom
+must accommodate. Calibrate any new enforceable allocation through a decision entry
+before adoption; do not wait for every research topic to finish. The 4K/60 Showcase
+target and existing thresholds remain unchanged by D-182. CPU submission and GPU work
+are pipelined and must not be summed as a frame budget. GPU execution headroom does not
+prove physical presentation, and logical allocations do not prove resident memory.
+
+This is an early integration planning requirement, not a new mandatory metric set or
+extra physical-smoke gate. Unsupported/invalid evidence retains its state, and existing
+qualification limits below remain in force. Focused combined-scene measurements guide
+decisions during M4.5; D-181 qualifies the exact milestone-exit candidate.
+
 ## Frame time (during gameplay, measured over scripted runs, per tier)
 
 Presentation intervals quantize to the display's refresh period, so the enforced

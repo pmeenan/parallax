@@ -54,18 +54,26 @@ even if a later layer stalls.
 
 ## What "AAA-quality" means here
 
-Not "competes with a 500-person studio." It means: **no system is toy-grade.** The
-project exercises the full feature surface of a AAA title — streaming open world,
-high-fidelity rendering, character animation, spatial audio, physics, conversational
-NPCs, save systems, and (later) multiplayer — each implemented in a way that is novel
-and idiomatic for the web rather than a downported approximation. The feature matrix in
-[features.md](features.md) tracks this coverage explicitly.
+It means a coherent, high-fidelity playable experience: convincing art, lighting,
+motion, sound, interaction, and open-world scale working together. D-182 makes a small
+finished area the next proof point, then expands its density and coverage. Broad AAA
+feature coverage remains the research ambition tracked in [features.md](features.md),
+but completing every advanced technique is not a prerequisite for visible progress.
+
+Use established implementations wherever they satisfy the scene. Invent where doing
+so demonstrates a meaningful browser capability or resolves a measured limitation.
+Novelty can come from the combination, scale, and integration of systems; each component
+need not introduce a new technique. Movie-quality references guide selected signature
+moments, with explicit scope and human visual acceptance rather than an unbounded
+per-feature perfection requirement.
 
 ## Success criteria
 
-- **Platform goal:** ≥ 20 documented, reproducible rough-edge findings of the quality
-  that could become Chrome bugs, spec proposals, or design docs; harness able to attribute
-  any regression to a specific layer (app code / Babylon / Dawn / V8 / OS).
+- **Platform goal:** actionable, evidence-backed findings tied to representative
+  workloads, suitable for Chrome bugs, spec proposals, or design docs, with attribution
+  to the responsible layer wherever observable. D-182 replaces the ≥20 finding-count
+  target: useful browser improvements and demonstrated capability matter, and a
+  successful workload need not manufacture a finding to count as progress.
 - **Demo goal:** a stranger with latest Chrome can install (~multi-GB), relaunch to
   gameplay in seconds from fully local storage, and play at budget frame rates
   ([budgets.md](budgets.md)) — including offline.
@@ -101,13 +109,18 @@ remain open rather than being inferred from dev-01 or callback/logical-size sign
   this project is a fixed law — the project exists to learn, and learning changes
   plans. The only invariant is process: changes are argued, recorded in the decision
   log, and reflected in the docs, never made silently.
-- **Verification bandwidth is the bottleneck**, not code generation. Harness first;
-  every system observable; budgets enforced mechanically (M0 before anything else).
+- **Measure delivery bottlenecks.** Keep every system observable and budgets enforced;
+  measure asset throughput and edit-to-visible-result time before investing in more
+  tooling. Harness work serves a current claim or repeated development need.
 - **Attribution over blame-guessing.** When something is slow or broken, the stack is
   shallow enough (TS → Babylon → WebGPU/Dawn) to prove which layer is at fault. That
   attribution is the research.
-- **Greybox first.** Mechanics, streaming, and budgets are proven with placeholder
-  geometry before high-fidelity assets are swapped in.
+- **Greybox foundations, early representative art.** The established mechanics and
+  streaming substrate now support a finished area in M4.5. Develop content and its
+  rendering technology together; placeholder evidence does not qualify final art.
+- **Visible weekly progress.** During active development, show the playable build,
+  before/after captures, growth of the finished area, and useful platform findings.
+  Completed contracts and test counts alone do not establish visual or playable quality.
 - **Design for N, build for 1.** World partitioning, save format, entity identity, and
   simulation/state separation assume multiple districts and future multiplayer from the
   first line of code, even while only one district exists.

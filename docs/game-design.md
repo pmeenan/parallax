@@ -521,6 +521,14 @@ lighting).
 
 ## Weather, time, and light
 
+D-182 proves this direction first in one finished D1 courtyard/street with a castle
+silhouette, a rigged NPC and enemy, and a playable route to a catacomb entrance. Sunny
+and gloomy references govern the same kit. Judge composition, materials, animation,
+encounter readability, and sound together in moving gameplay. Expand the accepted kit
+across D1 in M5; additional character techniques or effect variants enter only for a
+chosen visual deficiency or showcase. This sequencing does not change the world layout,
+ruleset, required body-type variety at district scale, or dynamic-lighting direction.
+
 Full weather system as a core feature, not a bolt-on: bright sun → overcast → storms
 with lightning; day/night cycle; local light sources (fire, torches, magic) that matter
 at night and underground. Lightning and fire are signature lighting moments.

@@ -66,7 +66,8 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
    siblings. (This includes the game-design licensing rule: nothing derived from
    D&D-protected material.)
 5. **Greybox is an asset class too** — placeholder kits go through the same pipeline
-   (relaxed visual checks, same structural ones), so the swap to final art (M5) is a
+   (relaxed visual checks, same structural ones), so the first final-art area (M4.5,
+   D-182) and district expansion (M5) use the same asset boundary. The swap is a
    library substitution, not a code change.
 6. **Large binaries don't live in git.** `library/` and `source/` binary storage
    strategy (LFS vs. external store + manifest) is decision P-004 — to be made when the

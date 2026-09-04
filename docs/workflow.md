@@ -33,6 +33,62 @@ structure, and no verification-of-the-verification.
 - **Fix the docs the change makes wrong** (status paragraph, plan checkbox, affected
   doc) in the same change. Nothing more is owed.
 
+## Bounded visual and research work
+
+D-182 replaces D-180's open-ended convergence rule with agent-owned, bounded iteration.
+Before an experiment or visual work package, put a short brief in the active plan note:
+the scene/reference and cameras/states, the question, must-fix defects, an initial
+allowance, and the decision that ends the work. Default to at most two implementation/
+capture/evaluation cycles for an initial experiment; a cycle makes a concrete change,
+captures it, and evaluates it. Also state a finite work-session or elapsed-effort limit
+appropriate to that package so a cycle cannot hide an unlimited implementation task.
+These are planning limits, not runtime performance budgets.
+
+Use established implementations on the exact pin first. A competing implementation or
+new evidence tool needs a named visual/capability gap, measured bottleneck, or recurring
+workflow need. Inspect actual Chrome output, motion, composition, material integration,
+readability, and artifacts against the selected references. Agents fix the brief's
+defects autonomously; subjectivity is not an excuse to skip inspection. Integrate the
+best supported candidate into the ordinary game before enlarging an isolated spike.
+
+At the allowance boundary, record one outcome: integrate/adopt with measured evidence
+and required human artistic acceptance; extend with a specific unresolved question,
+expected payoff and a new finite allowance; or defer with the limitation and reopening
+trigger. An agent may make a justified extension within authorized scope, but may not
+silently reset allowances. An unmet required scene outcome remains open; defer the
+technique, not the acceptance requirement. Time expiry never grants quality acceptance.
+
+Human visual verification remains the artistic acceptance boundary for each delivered
+effect and visually decided outcome. Handoffs contain representative stills/sequences,
+exercised states, measured costs, known compromises, and close alternatives. Fixes from
+human feedback begin another bounded work package. An optional further improvement is
+backlog work once the agreed outcome is accepted; it is not an automatic reason to
+keep iterating. Film-quality references apply to chosen signature moments at the stated
+scale, not every possible effect variant before the first playable scene.
+
+## Delivery feedback and tooling cost
+
+During active development, the weekly handoff links the latest playable build and
+before/after captures, describes growth or improvement of the finished area, and names
+the largest blocker plus actionable platform findings (if any). Keep this in the live
+plan note; retain detailed evidence in result artifacts and decision/finding records.
+No separate recurring report system or unattended automation is required.
+
+For the first two-week M4.5 trial, sample edit-to-visible-result time across normal
+material/lighting/asset changes and record asset throughput as accepted kit pieces or
+animations per work session, including rework. Separate build/launch/capture waiting
+from implementation and visual inspection. Use the observations to choose the next
+tooling improvement and revise the delivery estimate; these are not pass/fail gates.
+
+Reuse deterministic cameras, parameter tuning, capture, timing, and report utilities
+across tracks. Keep rapid visual iteration close to production rendering while retaining
+exact release/PSO verification for qualified evidence. Build new machinery only when it
+answers the active question or saves repeated measured effort. Keep current operating
+instructions short and link historical evidence instead of copying run narratives into
+each handoff. Decision entries remain for load-bearing choices; routine experiment
+briefs and tuning outcomes belong in plan notes/results. D-181's focused-check and
+milestone-exit smoke cadence is unchanged.
+
 ## Reviews happen on demand, not by default
 
 The human asks for a review when a change warrants one. When asked:
@@ -246,102 +302,21 @@ standing exit work have converged.
   the registered installed branded executable, but is baseline-ineligible,
   nonpromotable, and not budget-authoritative; see `harness/AGENTS.md` for its fail-closed
   identity contract.
-- D-124 closes D-122/D-123's consumed streaming-tail experiment. Both invalid,
-  non-qualifying reports and consumption records remain machine-local evidence, and
-  both dirty measured sources have independently verified D-099 bundles. D-123
-  retained five valid attempts plus one null fresh-repeat-2 attempt after
-  `control 8 timestamps are misordered`; no retry is authorized. The valid observations
-  localize application-visible cross-realm waiting but cannot distinguish browser/OS
-  scheduling or GPU completion, so D-116 remains unchanged and RE-043 stays open.
-- The temporary command, protocol, controls, timing/correlation ring, worker/telemetry
-  hooks, public methods, runner, validator, and tests are removed under the closed-
-  experiment rule. Rebuild, deploy, and verify the cleaned production artifact after
-  review convergence, then run one final D-097 physical-console production smoke.
-  That smoke qualifies the converged D-121 candidate; it is not a diagnostic retry.
-- D-125 retains that final cleaned-candidate smoke as failed and denies a blind retry.
-  Its batch-atomic render transaction correction requires review, deterministic rebuild,
-  production deployment/verification, and exactly one post-correction D-097 smoke.
-  Any failure is retained and adjudicated before another run.
-- D-126 retains D-125's post-correction smoke as failed after all 30 absolute checks
-  passed but fresh streaming p95 spread reached 1.250 ms. No retry is authorized.
-  The remaining two-phase batch transaction becomes one ordered render
-  request/response, with reverse rollback on mutation/enqueue failure and ordinary
-  streaming-worker timeout plus renderer teardown after response loss. Review,
-  deterministic rebuild, exact production verification, and exactly one post-D-126
-  D-097 smoke are required. Any failure is again retained and adjudicated.
-- D-127 records that one post-D-126 production smoke as passed under D-119's
-  evidence-only closure. Exact pre/post production identity, all six launches, all
-  three facets, and 30/30 checks passed; both D-116 cohorts were within the unchanged
-  1 ms allowance. The baseline remains untracked. No additional physical, public,
-  flythrough, recovery, or V8 run is required for the production item. M2 remains open
-  and Installer UX is next.
-- D-134 retains D-133's first production smoke as failed after all six mandatory
-  all-realm heap checks rejected the eager installer worker as an unknown CDP target.
-  This is deterministic harness drift, not an intermittent failure, so no
-  same-artifact classification retry is authorized. After the shared exact
-  build-manifest-v13 target resolver, deterministic gates, and adversarial review
-  converged, exact production identity was verified and the one corrected D-097 smoke
-  passed all six launches, all three facets, and 30/30 checks. The baseline remains
-  untracked and no retry ran. Final independent review accepted D-133 after
-  recomputing the retained hashes, exact identity, raw eight-realm heap samples,
-  high-waters, repeatability, and all 30 checks.
 
-D-115 completes M1's public Benchmark mode task on its implementation and fail-honest
-result contract. The two complete page-only reports remain failed under their unchanged
-10% repeat-variance checks and their budget facets remain `not-evaluated`; neither is a
-performance pass. Because the public continuous-page artifact is intentionally advisory
-and incomparable with the authoritative fresh-profile flythrough, D-115 supersedes
-D-110's requirement that it eventually pass as a second M1 qualification.
-D-115's authoritative M1 evidence is explicitly versioned: D-102's passing
-schema-v4/metric-set-v4 flythrough is the long-window anchor, not a claimed then-current
-schema-v12 pass; D-104's qualifier, post-D-108 physical lifecycle evidence, and the
-final current smoke bridge the later mandatory/runtime changes without altering any
-retained verdict. D-116 preserves the first schema-v44/metric-set-v21 smoke as failed:
-its six runs and 30 individual budget checks completed, but the newly introduced
-pure-relative short-smoke streaming verdict was uncalibrated around ~2 ms. The final
-schema-v45/metric-set-v22 smoke reuses the same six core-run p95 samples and requires
-absolute spread no greater than `max(10% × minimum cohort p95, 1 ms)` separately for
-fresh and warm. It adds no launch or measurement time, does not relabel the failed v44
-artifact, and does not turn the failed post-D-108 ten-minute variance into a pass.
+### Closed qualification history
 
-Do not run another 30-plus-minute public benchmark or privileged M1 diagnostic for this
-milestone. The D-110 full reruns and D-111/D-113 diagnostic are consumed, and D-114
-removed the closed apparatus. D-116's converged D-097 `smoke@1` completed the final M1
-exit action; under D-181 the next routine `smoke@1` is the next milestone's exact exit
-gate, not an intermediate-candidate trigger. Do not rerun the already qualified
-flythrough or render-recovery scenario. A future public benchmark invocation
-requires an ordinary direct product/research trigger under D-115's reopen conditions,
-remains subject to the unchanged schema-v3 metrics, and is not a deferred M1 gate.
-Keep sending the ordinary F15 wake immediately before each Windows Chrome launch;
-D-114 removed only the broken diagnostic-specific execution-state lease.
+M0–M4 and the post-M1 cleanup are closed. Their run-by-run histories are not current
+run instructions. Use [plan.md](plan.md) for milestone closure pointers and
+[decisions.md](decisions.md) for D-115–D-120 (M1 and cleanup), D-124–D-127 (streaming
+and production corrections), and D-133/D-134 (installer-worker qualification).
+[rough-edges.md](rough-edges.md) preserves the corresponding failures, including RE-044.
+Reports remain immutable; this compression neither relabels failures nor authorizes
+retries. Closed diagnostics remain consumed. Public Benchmark retains D-115's advisory,
+fail-honest contract and requires a direct product/research reopening trigger; no old
+benchmark, flythrough, recovery, or smoke rerun is pending merely from historical prose.
+Current work follows the focused/specialized triggers and D-181 exit cadence above.
 
-D-117's post-M1 cleanup removes the unconsumed memory64 experiment and records the
-resulting build/telemetry envelope versions without changing a metric set, budget, or
-measurement semantic. Because it changed the built app/engine artifacts and manifest/
-telemetry contracts, one ordinary D-097 physical `smoke@1` ran after all D-117,
-D-118, D-120, and bulk-review fixes converged. External review then produced one final
-runtime/harness fix candidate. Its schema-v47 / metric-set-v23 report
-`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-39-01-804Z.json`
-(SHA-256
-`ec70dfdb8a34622641bb976d2e1b41a083653bce87a78ded9c179401842d2f4e`)
-passed all six launches, all three facets, and 30/30 checks. No benchmark, flythrough,
-recovery, privileged diagnostic, or additional smoke is pending. This is post-M1
-candidate qualification and does not reopen M1. A future concrete module
-meeting D-117's reopen rule starts a new bounded experiment under the then-current
-cadence.
-
-RE-044 retains the preceding same-artifact attempt
-`smoke-1-8e932618990f-dev-01-showcase-2026-07-26T12-35-18-277Z.json`
-(SHA-256
-`91d839dddf16644dafb3576b5f4a06e6551ee06219bb88527423d915caaa5827`),
-which failed before the first measured run when streaming provisioning reported
-`Failed to fetch`. The one immediate unchanged-artifact classification retry above
-passed; it does not relabel or erase the failed attempt.
-
-Every failed report remains evidence. For an intermittent RE-008/RE-036-class failure,
-retain it and run one immediate same-artifact retry for classification. The retry is a
-separate result, cannot turn the failed report green, and does not justify repeated
-passes outside a bounded diagnosis.
+### Physical-console execution
 
 Only a pinned-Chrome run on registered dev-01 at its physical console carries a budget
 verdict (D-150). Remote and other-machine runs are advisory and cannot replace the final

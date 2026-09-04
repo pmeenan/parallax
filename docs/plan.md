@@ -6,10 +6,11 @@ expected and healthy; what is *not* allowed is silent change. Scope changes get 
 decision-log entry; progress changes are reflected here by checking boxes and updating
 status lines as work lands.
 
-Milestones are ordered by risk: platform substrate before content, greybox before art,
-one district before two. Each has exit criteria the harness can verify. Check a box only
-when the item is done and verified (per root rule: measured, not asserted); partially
-done items stay unchecked, optionally with a note.
+Milestones are ordered by risk. M0–M4 established platform and greybox foundations;
+D-182 now brings representative art into M4.5 to expose content and integration risks
+early. Each milestone has measured exit criteria and human visual acceptance where
+applicable. Check a box only when the item is done and verified; partially done items
+stay unchecked, optionally with a note.
 
 **Status legend:** `pending` · `in progress` · `done` · `parked`
 
@@ -316,182 +317,169 @@ SHA-256 are `32d0040621c836b5b2659048e0ce3ade0e7bd7635382747c2f0ac18903a426e3` /
 The earlier passing 5 m / 4 m / 4 m schema-v75 candidate is retained as calibration
 input only; its near-zero village headroom forced the final outward recalibration.
 
-## M4.5 — Environment rendering technology  `in progress`
+## M4.5 — First finished playable area  `in progress`
 
-The rendering-feature research program (D-140): build — or rule out — each
-environment-scale rendering technology the M5 art pass and M6 VFX pass will stand on.
-This milestone is deliberately different in texture from M0–M4. Each track below is a
-**heavily iterative exploration, with agent-first convergence followed by human visual
-verification**: prototype competing approaches, measure what they actually cost, weigh
-cost against visual payoff and both project goals, and converge on a conclusion. Tracks
-are bounded spikes in the P-002 tradition — each ends in a decision-log entry that
-adopts an approach (with harness-measured cost), rules it out, or defers it, usually
-with rough-edges findings, since most tracks press directly on WebGPU gaps (no ray
-tracing, no mesh shaders, no bindless, no platform upscaler — goal-1 territory).
+D-182 replaces the all-tracks-first environment program with a representative area in
+the existing streamed world. The immediate target is one finished village street or
+courtyard, with a distant castle silhouette and a route to an existing catacomb entrance.
+Develop art, animation, lighting, and effects together here; use the resulting combined
+workload to choose further research. This is a small finished footprint within the
+open-world architecture, not a separate showcase scene that bypasses production systems.
 
-**No pre-set budgets (D-140).** Unlike prior milestones, these tracks do not start from
-budgets.md allocations. Costs are discovered first; budgets are calibrated afterward
-through decision entries (the existing budgets.md recalibration model, run in discovery
-order). A track is not done until its adopted approach has measured cost and a recorded
-conclusion, but no track fails merely for busting a number that was never set.
+The broad rendering ambitions remain in the research backlog below. Only techniques
+needed by the selected scene or a measured bottleneck enter the critical path. Reuse
+established implementations verified against the exact project pins; custom work needs
+a named visual deficiency, capability demonstration, or platform limitation. Dynamic
+lighting, worker ownership, deterministic simulation, asset QA, and install/streaming
+contracts remain binding.
 
-**Agent-first visual convergence; human verification required (D-180).** Before asking
-for human judgment, the agent takes every visual track as far as it reasonably can in
-the real Chrome build. It exercises deterministic representative cameras and motion
-across relevant weather/time-of-day states, inspects stills and temporal behavior with
-telemetry and physics evidence, compares against appropriate film and movie-quality VFX
-references, and iterates while a concrete improvement or unresolved defect remains.
-"Quality is subjective" is not a stopping condition: agents are expected to judge
-composition, scale, lighting/material integration, temporal coherence, motion,
-readability, and visible artifacts against the movie-quality target. Automated visual
-diffs support this loop but do not define success. After that autonomous convergence,
-every effect and every visually decided track still receives human verification. The
-handoff includes representative captures or sequences, exercised states, measured
-cost, known compromises, and close alternatives; only the human supplies final artistic
-acceptance, and human feedback starts another agent-owned iteration loop when needed.
+### Delivery sequence
 
-Ordering is dependency-driven: lighting first (everything else is lit by it), then
-terrain/materials (everything sits on them), then the rest as capacity allows; tracks
-may run concurrently where they don't share substrate.
+These are checkpoints within M4.5, not additional milestones or full-smoke gates.
+Each uses focused validation, representative captures, and measured combined costs.
+Use the bounded visual-work procedure in [workflow.md](workflow.md#bounded-visual-and-research-work).
 
-- [ ] Lighting foundation: dynamic time-of-day sun/sky lighting, shadow strategy
-      (cascades plus local-light shadows), and a global-illumination approach that
-      works under fully dynamic lighting (game-design.md implication #1). Includes
-      local dynamic lights — fire, torches, magic — whose flicker, range, and
-      shadow interplay are signature moments and a known hard problem at
-      many-lights-at-night scale. WebGPU has no ray-tracing extension; whatever
-      technique survives here, the gap analysis is a headline finding.
-      The current implementation centralizes a deterministic solar/sky/ground
-      irradiance model across the authored time-of-day and weather matrix and drives
-      separate hemispheric ambient and directional-sun lights in the live render
-      worker. Directional-sun state is exported as mandatory harness evidence. Shadow,
-      local-light, and GI candidate comparisons remain open before this track can be
-      concluded. The standalone `m45-directional-shadow-strategies@4` matrix now
-      provides the first shadow narrowing without changing the shipping no-shadow PSO
-      contract: fixed near/mid/vista captures reject the PCF/ESM single-map arms for
-      wide-camera coverage (and ESM for over-darkening), while four-cascade CSM at
-      4×1024 and 0.12 m world-space bias retains coverage and attached contact shadows
-      with faint residual top-face striping. The initial 103-caster run was too close to
-      timer/power-state noise; the amplified native-4K final-art proxy binds 425
-      architectural plus 128 curved 64-segment casters (553 meshes, about 2.23 million
-      curved-caster triangles before cascades). Its retained confirmation report
-      `m45-shadow-strategies-2026-09-01T18-53-19-616Z/result.{json,md}`
-      (`72e00c1d794edbdd6e5cfa0c9fcef08e7788f15ab4edb422b3a3757fa0fa4edf` /
-      `4756b04c3331a66adfcb54ef6d3d391140c8e2badac324e7dbf022e1a3281cf4`)
-      records repeatable CSM whole-frame GPU p50 at 3.412/3.156/3.298 ms (8.1%),
-      CPU-submit p50 at 0.645/0.605/0.640 ms (6.6%), and isolated shadow-task p50 at
-      1.376/1.245/1.311 ms. The lighter no-shadow arm remained power-state-sensitive
-      and invalid at 143.8%, so no control-relative delta is claimed. This is still not
-      adoption. Next, integrate the CSM candidate into the render worker and
-      release-owned PSO warmup trace, add shipping telemetry, and measure its delta in
-      the standard flythrough before local-light comparison or GI work.
-- [ ] Sky and atmosphere: day/night sky, volumetric clouds, height/distance fog, god
-      rays, aerial perspective for the mountain vista — driven by the weather states
-      already bound at M1.
-- [ ] Terrain: instruction-set-driven procedural terrain — placements and features are
-      authored and deterministic while the terrain itself is generated rather than
-      fully modeled (install-size research angle: generate at install/runtime instead
-      of downloading; ties to M2). Includes terrain materials/splatting and integration
-      with the streaming-cell and collision contracts (D-090).
-- [ ] Procedural materials: generated stone, wood, brick, mud, clay, straw — plus
-      metals through the standard PBR path; the generate-vs-bake trade-off is measured
-      against both install size and frame cost.
-- [ ] Dynamic surface response (D-178): mud and soft-ground deformation — tracks and
-      footprints as cosmetic displacement (destruction stays ruled out, D-140) —
-      wetness blending with the water track, and a deterministic surface-material
-      classification the sim can query for movement friction/traction, so mud reads
-      and feels like mud. Snow reuses this at M6.
-- [ ] Vegetation at district scale: trees, plants, grass instancing/LOD — including the
-      shared wind system that must later also drive cloth, fire/smoke/gas plumes,
-      flags, and rain slant (one signal, many consumers; designed here, not
-      per-feature).
-- [ ] Water: rendering first (ocean waves, lake/moat surfaces, rain, puddles,
-      wet-surface response), with simulation (buoyancy, splashes, flow) scoped as
-      explicit options costed separately — rendering and simulation are different cost
-      classes and may reach different verdicts.
-- [ ] VFX substrate (moved from M6 — D-178): the GPU-compute particle and volumetrics
-      substrate every effect consumes — fire, smoke, gas, precipitation, spell
-      effects — built here so effect technology is settled before the M5/M6 content
-      passes.
-- [ ] Fire and smoke: movie-quality volumetric flame and smoke across the full
-      scenario range — oil torches, campfires, braziers, bonfires, fire spells and
-      potions, burning buildings — with flames as real emissive sources coupled to
-      the lighting track (not point-light stand-ins) and plumes driven by the shared
-      wind signal. Content placement stays in M6; the technology verdict lands here.
-- [ ] Gas, vapor, and mist: poison-gas volumes, steam, ground mist — the smoke
-      volumetric family made gameplay-legible (readable danger zones such as ember
-      vents), integrated with the atmosphere track's fog rather than fighting it.
-- [ ] Electrical and magic effect primitives: sky lightning (a signature lighting
-      moment) plus branching arc/bolt generation for spells, emissive
-      trails/ribbons/glows, and frost/ember surface responses — the engine primitives
-      M6's authored spell VFX compose, independent of any specific asset.
-- [ ] Reflections: SSR and/or probe strategy for water, wet streets, and metals;
-      interacts with the lighting track.
-- [ ] Post-processing and image pipeline: TAA and a temporal upscaler (no DLSS/FSR
-      equivalent exists on the web — building one is both necessary and finding-rich),
-      bloom, depth of field, motion blur, heat-distortion/refraction (fire and heat
-      shimmer must survive temporal accumulation without smearing — D-178),
-      tonemapping/color grading, HDR canvas output.
-- [ ] Transparency/OIT and decals (puddle edges, mud, moss, wear).
-- [ ] GPU-driven rendering: compute culling and occlusion (the castle-on-a-hill vistas
-      make occlusion pay), indirect draws; document the mesh-shader/bindless gaps.
-- [ ] Virtual texturing / texture-residency streaming alongside the geometry streaming
-      system.
-- [ ] Exit: every track has a recorded adopt/rule-out/defer decision with measured
-      costs and autonomous visual-convergence evidence; every effect and visually
-      decided track has recorded human verification; adopted features run in the
-      standard flythrough across the weather/time-of-day states; budgets.md is
-      recalibrated from the measured results; rough-edges captures each platform gap
-      encountered.
+1. **Finished daylight courtyard.** Establish the asset pipeline and material/shadow
+   baseline with final-quality representative content.
+2. **The same area at night and in a storm.** Establish dynamic local lighting,
+   atmosphere, and selected signature fire/lightning effects in the combined scene.
+3. **Five-minute playable route.** Combine animation, encounter readability, NPC
+   interaction, spatial sound, and a D1↔D2 crossing using existing gameplay.
+4. **Density and coverage expansion.** Exercise the kit at higher density and through
+   streamed cells to identify the real bottlenecks and set M5's expansion priorities.
 
-## M5 — Art pipeline + District 1 art pass  `pending`
+**First two-week trial:** starting with implementation of this revised plan, target CSM
+integration, the first reference/kit and binary-asset path, and a before/after courtyard
+comparison. This is a planning target, not a completion promise or quality waiver.
+At the end of each active development week, link the latest playable build and captures,
+state the visible improvement and remaining blocker, and record any actionable platform
+finding. At two weeks, assess actual asset throughput and edit-to-visible-result time
+and adjust the next work package. No unattended scheduled work is implied.
 
-- [ ] assets/ pipeline live: Flow-derived reference sheets → Blender-agent generation →
-      QA gate → library; kit-of-parts + trim sheets for D1's style.
-- [ ] Character rendering and dynamics tracks (same explore-and-decide model as M4.5,
-      D-140): skin shading with subsurface scattering, eyes, hair and fur, cloth,
-      muscle/skin deformation, and movement (IK and procedural animation layered on the
-      Babylon animation system). Sets the visual bar for multiple rigged body types
-      (game-design.md implication #5) and the "NPCs not blindingly distinguishable from
-      players" aspiration.
-- [ ] Animation content pipeline (D-141): locomotion, combat, and schedule/idle
-      animation sets across the multiple races/monsters body types — retargeting
-      and/or AI-generated motion through a QA gate; a distinct toolchain problem from
-      mesh/texture generation. M3.5 combat runs on placeholder animation until this
-      lands.
-- [ ] Swap greybox D1 to final art without regressing M1/M2 budgets (the real test of
-      the pipeline). Add D-115's deferred deterministic visual-diff gate for no visible
-      pop at the 12 m/s traversal/LOD contract against representative art; M1
-      checkpoints established streamed ownership/non-blank output, not this claim.
-- [ ] Exit: D1 fully art-passed, all budgets green, install size within budget.
+### Current work and exit checklist
+
+- [ ] Integrate the selected CSM candidate into the shipping render worker, release-owned
+      PSO warmup trace, and public telemetry. Measure the standard-flythrough delta
+      before expanding the isolated shadow experiment or starting GI comparisons.
+      Retain invalid control evidence as invalid; integration is not adoption until
+      measured and visually verified.
+- [ ] Author sunny and gloomy references and a small modular D1 kit: architecture,
+      representative PBR materials, terrain detail, foliage, and the castle silhouette.
+      Activate the applicable mesh/UV/texture/LOD/export QA before the first binary
+      asset enters the library; resolve P-004 binary storage at that point.
+      Preserve authored deterministic terrain, collision, and streamed ownership.
+- [ ] Produce one rigged NPC and one enemy with locomotion, idle, and the encounter's
+      combat animation through the same provenance and QA path. Use existing gameplay
+      and Babylon animation; additional body types remain M5 expansion.
+- [ ] Integrate the daylight area in the ordinary installed game, with moving near,
+      mid, and vista cameras. Inspect material response, contact/cascade artifacts,
+      foliage, character motion, and LOD transitions together. Human visual acceptance
+      records the reference, exercised states, known compromises, and captures.
+- [ ] Add night/storm presentations: dynamic local lights, readable atmospheric depth,
+      a selected torch/fire example, and lightning. Couple visible fire and illumination
+      coherently; choose the implementation by observed payoff and cost. More elaborate
+      emissive transport and the full fire/smoke range are research options, not
+      prerequisites. Share wind across consumers introduced here.
+- [ ] Make the five-minute route playable: an existing encounter, NPC conversation,
+      and catacomb crossing, with a small QA-gated spatial SFX/ambience set. Validate
+      animation/readability, input, save/replay, and the surface/underground contrast.
+      Exercise inference while the representative scene renders and streams.
+- [ ] Measure the integrated daylight/night/storm workload and a bounded density/
+      streamed-cell expansion. Record whole-frame GPU and CPU-submit distributions,
+      available memory/allocation evidence, streaming, warmup, and inference impact.
+      Document total cost and proposed headroom for remaining content as required by
+      [budgets.md](budgets.md#integrated-rendering-planning-d-182); do not infer physical
+      presentation or residency from proxy counters.
+- [ ] Establish representative-art no-visible-pop evidence at the 12 m/s traversal/
+      LOD contract for the finished route, including deterministic visual comparisons
+      and motion inspection. M5 extends this evidence across D1; greybox coverage
+      never established the claim.
+- [ ] Exit: the daylight area, night/storm presentation, and playable route have human
+      visual acceptance; adopted features run through the standard flythrough's relevant
+      weather/time states; combined costs and calibrated allocations are documented;
+      actionable findings feed the Chrome synthesis; the exact converged candidate
+      passes applicable budgets and the D-181 milestone-exit smoke. Unaccepted required
+      outcomes keep M4.5 open. Backlog completion is not an exit condition.
+
+**Retained shadow evidence (not adoption):** the deterministic solar/sky/ground model
+and directional sun are already live and instrumented. The standalone
+`m45-directional-shadow-strategies@4` narrowed near/mid/vista coverage to four-cascade
+CSM at 4×1024 with 0.12 m world-space bias; faint top-face striping remains.
+The amplified native-4K proxy used 425 architectural and 128 curved casters (553 meshes,
+about 2.23 million curved-caster triangles before cascades). Confirmation report
+`m45-shadow-strategies-2026-09-01T18-53-19-616Z/result.{json,md}`
+(JSON SHA-256 `72e00c1d794edbdd6e5cfa0c9fcef08e7788f15ab4edb422b3a3757fa0fa4edf`;
+Markdown SHA-256 `4756b04c3331a66adfcb54ef6d3d391140c8e2badac324e7dbf022e1a3281cf4`)
+records CSM whole-frame GPU p50 3.412/3.156/3.298 ms (8.1% range), CPU-submit
+0.645/0.605/0.640 ms (6.6%), and shadow-task 1.376/1.245/1.311 ms.
+The no-shadow arm remained invalid at 143.8% range; no control-relative delta is claimed.
+
+### Rendering research backlog — promote only for a named need
+
+D-182 defers the unselected scope below without claiming it was evaluated or ruled out.
+A selected showcase moment or representative-workload limitation is the promotion trigger.
+Record the question, bounded allowance, measured conclusion, and implementation outcome;
+only load-bearing choices need a decision entry. No exhaustive comparison or
+per-row experiment is required to keep a topic deferred.
+
+| Area | Retained ambition and promotion trigger |
+| --- | --- |
+| Lighting/GI | Fully dynamic indirect lighting, many-light shadows, and emissive transport when the night/interior scene exposes an unacceptable lighting gap or supplies a selected platform study |
+| Atmosphere | Volumetric clouds, god rays, and richer aerial perspective when the selected vista/storm needs them |
+| Terrain/material generation | Extend deterministic instruction-set terrain and generated stone/wood/brick/mud/clay/straw; compare install/runtime generation with baking when representative content makes the byte/compute trade-off meaningful |
+| Vegetation/wind | District-scale instancing, LOD, and richer shared wind when density expansion reveals cost or visual deficiencies |
+| Water/reflections | Ocean/lake/moat, wet streets/puddles, SSR/probes; select for a water/wetness scene, and cost simulation separately |
+| Dynamic surfaces | Cosmetic mud tracks/footprints, wetness/snow blending, and sim-queryable friction classification when a chosen encounter needs them; destruction remains excluded |
+| Fire/smoke | Movie-quality torches through burning buildings, wind-driven plumes and emissive lighting; extend beyond the initial fire only for an authored showcase |
+| VFX substrate and magic | Shared GPU particles/volumetrics, gas/steam/mist, electrical arcs, trails, frost/ember responses; grow from selected effects, never build the whole library first |
+| Image pipeline | AA, tonemapping/grading, bloom first as the scene requires; TAA/upscaling, HDR, DOF, motion blur and heat refraction require a visual/cost need; custom temporal reconstruction is not presumed necessary |
+| Transparency/decals | OIT, puddle edges, moss, wear and mud where demonstrated sorting or dressing needs justify them |
+| GPU-driven rendering | Compute culling/occlusion and indirect draws when representative density identifies a bottleneck; qualify any required pinned interop and document encountered platform gaps |
+| Texture residency | Virtual texturing or finer residency streaming when the real material working set exceeds the selected streaming approach's measured capacity |
+
+## M5 — District 1 art and density expansion  `pending`
+
+M4.5 establishes the first art, animation, audio, and visual-validation paths (D-182).
+M5 scales their accepted output through D1; it does not wait for every rendering
+backlog topic to conclude.
+
+- [ ] Expand the validated reference → generation → QA → library pipeline and modular
+      kit/trim sheets across D1, measuring throughput and consistency.
+- [ ] Expand locomotion, combat, and schedule/idle animation across the required races
+      and monster body types. Preserve the established rig/export/retargeting checks.
+- [ ] Improve character rendering against chosen in-game references. Skin/SSS, eyes,
+      hair/fur, cloth, muscle deformation, and IK are bounded research options selected
+      by visible deficiencies, not a mandatory technology checklist before expansion.
+- [ ] Extend the finished art and D-115/D-182 visual-pop validation to all representative
+      D1 traversal/LOD conditions at 12 m/s without regressing applicable M1/M2 budgets.
+- [ ] Promote only rendering backlog work needed by observed density, content, or
+      selected showcase requirements; measure it in the integrated scene.
+- [ ] Resolve cinematics/scripted-camera scope before entering M6 (D-141).
+- [ ] Exit: D1 fully art-passed with human visual acceptance, all applicable budgets
+      green, install size within budget, and one exact-candidate milestone-exit smoke.
 
 ## M6 — District 2 art, audio, polish  `pending`
 
-- [ ] D2 art pass (distinct palette/kit).
-- [ ] Spatial audio: WebAudio worklets, HRTF panning, underground/surface acoustic
-      contrast as a showcase.
-- [ ] Adaptive music system (D-141): weather/danger/district-reactive score consuming
-      the sim's semantic event stream (the event hooks are a design-now constraint on
-      M3 — see features.md); AI-generated music fits the project's stacked-AI bet.
-- [ ] SFX and ambience content at scale, plus the audio asset pipeline `assets/` never
-      had (its current pipeline is visual-only): AI-generated/sourced audio through a
-      QA gate like every other asset.
-- [ ] VFX content pass (D-178): authored effects composed from the M4.5 substrate and
-      primitives at content scale — torch/campfire/bonfire dressing, spell and potion
-      effects, burning-building set pieces, poison zones. The technology verdicts
-      landed in M4.5; this is placement, tuning, and showcase.
-- [ ] Precipitation pass on the M4.5 particle substrate: rain and snow fall,
-      accumulation, and wet/snow surface response, completing the M4.5
-      water/wet-surface and dynamic-surface work.
-- [ ] Physics garnish: ragdolls, ropes/chains, and buoyancy with a usable rowboat off
-      the shore (cheap, high-impact water showcase).
-- [ ] Photo mode (a cheap, high-value capabilities showcase).
-- [ ] Optional Standard-tier/cross-hardware research (D-150; supersedes D-141's gate
-      provision): exercise the Standard planning profile or macOS/Metal when hardware
-      is available, retain findings, and compare with dev-01 without creating a
-      milestone gate or registration prerequisite.
-- [ ] Exit: end-to-end demo build a stranger can install and play, qualified on the
-      exact dev-01 candidate. Other-hardware results are advisory (D-150).
+- [ ] D2 art pass with a distinct palette/kit.
+- [ ] Expand M4.5's spatial audio and QA-gated SFX/ambience pipeline to district scale,
+      including HRTF and surface/underground acoustic contrast.
+- [ ] Adaptive music (D-141): weather/danger/district-reactive score consuming the
+      existing semantic event stream, with AI-generated/sourced content through QA.
+- [ ] Expand authored VFX from the accepted M4.5 examples. Select further fire/smoke,
+      spell/potion, gas, or burning-building moments for visible payoff; commission
+      missing technology through the bounded research backlog as needed. M4.5 does
+      not promise every effect substrate is complete.
+- [ ] Extend weather and precipitation beyond the accepted storm example as needed
+      for D1/D2 presentation; snow accumulation and deformation remain conditional
+      research scope, not assumed M4.5 dependencies.
+- [ ] Evaluate selected physics garnish (ragdolls, ropes/chains, buoyancy/rowboat) and
+      photo mode within bounded allowances; adopt or explicitly defer based on payoff.
+- [ ] Resolve and deliver the selected accessibility scope before final handoff.
+- [ ] Optional Standard-tier/cross-hardware research (D-150): retain advisory findings
+      when hardware is available without adding a milestone gate.
+- [ ] Exit: an end-to-end demo a stranger can install and play, visually accepted and
+      qualified on the exact dev-01 candidate under D-181. Other-hardware results
+      remain advisory.
 
 ## M7 — P2P multiplayer exploration  `parked (design constraints active now)`
 

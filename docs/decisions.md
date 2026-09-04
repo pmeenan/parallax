@@ -28,6 +28,77 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-182: Deliver representative art and playable scenes before exhaustive rendering research (2026-09-04, accepted; amends D-140/D-141/D-178/D-180)
+
+**Decision:** M4.5 becomes "First finished playable area": a daylight courtyard or village
+street in the existing streamed world, its night/storm presentation, a five-minute
+playable route with an NPC, encounter, and catacomb crossing, then bounded density and
+coverage expansion. Pull the first modular art kit, PBR materials, foliage, rigged NPC
+and enemy, animation QA, representative-art visual-pop checks, and small spatial
+SFX/ambience pipeline forward from M5/M6. M5 expands accepted content through D1;
+M6 expands D2, audio, selected effects, and polish. Their full-content outcomes remain.
+
+Use established implementations verified against project pins where they satisfy the
+scene. Novelty is justified by meaningful capability, scale/integration, or measured
+limitations; it is not required of every component. AAA quality is judged through the
+coherent playable result. Replace the vision's finding-count target with actionable,
+evidence-backed browser findings and demonstrated capabilities; no finding is owed when
+a workload succeeds without exposing a gap.
+
+Integrate the narrowed CSM candidate, its release-bound warmup and public telemetry,
+and measure the standard-flythrough delta before broadening the isolated shadow study
+or GI comparisons. The retained CSM proxy measurements support integration, not adoption
+or a relative-cost claim: the no-shadow control remains invalid. Other research topics
+remain a triggered backlog, not an all-tracks M4.5 exit gate. A selected scene or
+measured bottleneck promotes a topic. Custom temporal reconstruction, virtual texturing,
+full volumetric/fire/magic infrastructure, surface deformation, and advanced character
+dynamics are not presumed necessary before the first finished area. D-178's full
+movie-quality fire range and mandatory emissive-source technique become research
+ambitions; the selected fire must visibly and coherently illuminate its scene, with the
+technique chosen by measured cost and human visual acceptance.
+
+Visual work uses a brief naming the scene/reference, exercised states, must-fix defects,
+finite initial iteration and effort allowances, and an integrate/extend/defer decision
+point. D-180's agent-owned inspection and human artistic acceptance remain; its instruction
+to continue whenever another improvement exists is superseded. Extensions state the
+remaining question, payoff, and new allowance. Timeboxing never accepts unfinished
+required outcomes or changes a failed metric. Existing asset provenance, rights, and
+structural QA apply before the first binary asset, now in M4.5; P-004 is resolved then.
+
+Discovery may begin without per-effect allocations, but integrated scene measurements,
+a total-cost target, and proposed headroom are required from the first representative
+integration and revisited as workload changes. Calibrate enforceable allocations through
+the existing decision process before adoption. No numeric budget, metric state, or
+presentation/residency qualification limit changes here. D-181 remains one exact-candidate
+physical smoke at milestone exit; the scene checkpoints are focused validation points.
+
+**Context:** The September 4 plan assessment found sixteen environment research tracks
+ahead of the first final-art pipeline, while the production renderer still uses greybox
+materials and capsule characters. The shadow proxy already supplies a narrowed candidate.
+This sequencing postpones asset-throughput and integrated visual/performance risks.
+An unlimited improvement loop and novelty in every subsystem also make completion
+elastic. Representative content provides an earlier test of both project goals.
+
+**Consequences:** The first two implementation weeks are a planning trial targeting CSM
+integration, the first kit/binary-asset path, and a courtyard comparison, not a promised
+completion date. Weekly active-development handoffs show a playable build, visible
+improvement/finished-area growth, the main blocker, and useful findings. Measure asset
+throughput and edit-to-visible-result time before investing in more tooling. Reuse
+capture/timing/report infrastructure and keep historical narratives out of the active
+instructions where links suffice. The plan owns the live checklist and research
+promotion triggers; no runtime work or visual acceptance is claimed by this doc change.
+
+Chrome-only/latest+, Babylon Lite as sole renderer, the worker/layer model, deterministic
+simulation, AI-generated content/provenance policy, install/launch/run, the two-district
+goal, future-design constraints, and the human commit gate remain unchanged.
+
+**Reopen if:** representative content cannot be produced through the selected pipeline
+within the trial's measured throughput; a scene exposes an unavoidable substrate
+dependency; bounded iterations repeatedly prevent useful conclusions; or integrated
+cost demonstrates that the selected scene scope or a standing budget must change.
+
+---
+
 ## D-181: Qualify routine physical smoke only at milestone exit (2026-08-24, accepted; supersedes D-157 and D-097 routine cadence)
 
 **Decision:** `pnpm harness:smoke` is a required milestone-exit gate, not a gate for
@@ -78,7 +149,7 @@ confidence per unit cost.
 
 ---
 
-## D-180: Require agent-first visual convergence before M4.5 human verification (2026-08-23, accepted; amends D-140 and D-178)
+## D-180: Require agent-first visual convergence before M4.5 human verification (2026-08-23, accepted; amends D-140 and D-178; unbounded iteration superseded by D-182)
 
 **Decision:** Every M4.5 visual track must go through a best-effort autonomous visual
 iteration loop before it is presented for human judgment. The agent owns the loop from
@@ -157,7 +228,7 @@ display-wake, and D-157 cadence requirements all remain in force.
 harness can no longer distinguish it fail-closed; or unattended launches repeatedly
 produce invalid presentation evidence that an explicit human preflight would prevent.
 
-## D-178: Move VFX engine technology into M4.5 and set the movie-quality effects bar (2026-08-23, accepted; amends D-140)
+## D-178: Move VFX engine technology into M4.5 and set the movie-quality effects bar (2026-08-23, accepted; amends D-140; sequencing and full-range technique requirements amended by D-182)
 
 **Decision:** Every visual effect that needs dedicated engine/shader technology
 independent of authored assets moves from M6 into M4.5 as explore-and-decide tracks
@@ -3018,7 +3089,7 @@ scale; M3.5 balancing demands a structural change (new pool, new resolution mode
 or the M5 character pipeline cannot deliver three visually distinct folk plus the
 bestiary within budget.
 
-## D-141: Fill the gameplay, UI, audio-content, and animation plan gaps (2026-07-29, accepted; mandatory Standard-tier qualification provision superseded by D-150)
+## D-141: Fill the gameplay, UI, audio-content, and animation plan gaps (2026-07-29, accepted; mandatory Standard-tier qualification provision superseded by D-150; initial art/animation/audio sequencing amended by D-182)
 
 **Decision:** Second pass of the D-140 gap review, applying the same test — systems the
 vision and game-design docs promise ("no system is toy-grade") that no plan item
@@ -3084,7 +3155,7 @@ spike's compositing measurements invalidate the DOM-overlay bet; M3.5 scope prov
 large enough to split; or Standard-tier qualification needs to move earlier because M5
 art decisions depend on Standard-tier headroom.
 
-## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted; M6 VFX technology scope moved into M4.5 by D-178; visual-iteration workflow amended by D-180)
+## D-140: Run the rendering-feature program as iterative explore-and-decide tracks (2026-07-29, accepted; M6 VFX technology scope moved into M4.5 by D-178; visual-iteration workflow amended by D-180; scene-first scope and bounded workflow adopted by D-182)
 
 **Decision:** The plan gains an explicit rendering/simulation technology program:
 
