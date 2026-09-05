@@ -358,6 +358,27 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
+**Reference/kit brief (2026-09-05):** prepare an original paired sunny/overcast
+reference for the village-well courtyard, looking toward the central hilltop castle,
+plus a small modular kit specification. Keep the same camera, buildings, materials,
+and traversable route in both states. Question: can a compact shared kit carry the
+bright coastal-village identity and gloomy-weather contrast without changing authored
+terrain, collision, or transition locations? Must fix unreadable route, inconsistent
+architecture between states, and missing material/scale guidance. Allow two reference
+generation/inspection cycles within 45 minutes; deliver references and an implementation
+spec for human artistic acceptance before deriving final library art. Pipeline readiness
+inspection runs alongside this work. No runtime or milestone acceptance is claimed.
+
+The human endorsed the first paired image as the quality benchmark: AAA-quality,
+photorealistic movie-style visuals. Bright readability must not become cartoon or
+toy-like graphics. The [reference/provenance](../assets/reference/d1-courtyard.md)
+and [kit specification](../assets/reference/d1-courtyard-kit.md) retain the direction.
+Proceed to one source-only limestone paving candidate using installed Blender 5.1.2:
+two model/render/inspection cycles within 45 minutes, sunny/gloomy grazing views,
+with believable joints, scale and surface roughness as must-fix requirements.
+Keep generated binaries in ignored results pending P-004 and full admission QA;
+this preview does not claim worker integration, baked export, or finished-area acceptance.
+
 - [x] Integrate the selected CSM candidate into the shipping render worker, release-owned
       PSO warmup trace, and public telemetry (D-183; implementation only).
 - [x] Human visual verification of the integrated CSM candidate: explicitly accepted

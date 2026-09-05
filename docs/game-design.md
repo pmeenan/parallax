@@ -519,6 +519,12 @@ those states is itself part of the showcase. Reference sheets in `assets/referen
 must encode both states for every environment kit (same asset, sunny vs. gloomy
 lighting).
 
+The rendering/art quality target is **AAA-quality, photorealistic movie-style visuals**
+(human clarification, 2026-09-05). Bright saturation and readability describe the
+lighting/color direction, not cartoon proportions or toy-like materials. The first
+[courtyard reference](../assets/reference/d1-courtyard.md) is the human-endorsed quality
+benchmark; implemented assets must earn acceptance through actual in-game inspection.
+
 ## Weather, time, and light
 
 D-182 proves this direction first in one finished D1 courtyard/street with a castle
