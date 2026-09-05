@@ -11,7 +11,7 @@ import {
 } from "@parallax/engine";
 
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION = 4;
-export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION = 10;
+export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION = 11;
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_LIFETIME_MODES = Object.freeze([
   "restarted",
   "same-worker",
@@ -22,8 +22,8 @@ export type ProductionReplayLifetimeMode =
 const EXPECTED_OPFS_BYTES = 2621647812;
 const EXPECTED_OPFS_RESOURCES = 331;
 const ADMITTED_BYTES = 43;
-const BUILD_MANIFEST_SHA256 = "3e610c0328febe0113c648852af3a0d15c891811236751b183160e7f20201fb3";
-const INSTALL_MANIFEST_SHA256 = "5bb59a456b8eb15e29d756a321f44b51ff100bc273d30b0e61d92590b1cbf8d0";
+const BUILD_MANIFEST_SHA256 = "baf25bbbb771eb11047932e9b7d189559ad598bdbc260e3418e294df3069814e";
+const INSTALL_MANIFEST_SHA256 = "40c77b892d2936426073fa4b4a54ec92e0b413c96582a8d7f0d4d033fe9c9b8f";
 const RESOURCE_IDENTITY_SHA256 = "f58bf140a7c91a71dcbb0e816715d749f543f17f200574f06e8639dfea6ee7a3";
 const APP_ENTRYPOINT_PATH =
   "immutable/app-b842d3ad5b9cca22beb4069bf88199d187a722bb4acb4520000a4872534983e5.js";
@@ -200,7 +200,7 @@ const expectedPublication = Object.freeze([
   Object.freeze({
     bytes: 115,
     path: `parallax-install-v1/commits/00000000000000000001-${INSTALL_MANIFEST_SHA256}.json`,
-    sha256: "11b2b2ee11dee4d3df0fec786e06e71e430cbe283ad7aa34012ea5c07f44795a",
+    sha256: "b9704f598e2b46f0f3033452b74f8f4a868269dde8b4fbcd8e8b07183a02448b",
   }),
   Object.freeze({
     bytes: 138832,
@@ -210,17 +210,17 @@ const expectedPublication = Object.freeze([
   Object.freeze({
     bytes: 103,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/published.json`,
-    sha256: "cb2382c8f476674c46a3102ad27b4046a9e6229483a4261f5f2f081f60ec3355",
+    sha256: "07622c37b51b3f2eb47ddf074ff69ba21144b2c1c698f15b05545a32efeabf56",
   }),
   Object.freeze({
     bytes: 150,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/ready.json`,
-    sha256: "99d24ff444057ce0c2beb0d93f3af2ed2150ebd9b9859dbca502c8e825e7f2ad",
+    sha256: "92a20d9e928f42d39e72f4509fc471d910ca91752b1f47a7d581e80752717476",
   }),
   Object.freeze({
     bytes: 156,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/staged.json`,
-    sha256: "0e7724fe57b8e08ba63f7b04904feea94cf78141acb0274d3cc0928dc06010d4",
+    sha256: "135b9defffa1b2d89ffc8c9093772914ff2cbccb1daf58a5b7d72b276fc89462",
   }),
 ]);
 
@@ -466,7 +466,7 @@ export const INSTALLER_REPAIR_PRODUCTION_REPLAY_EXPECTED_CONTRACT = Object.freez
 });
 
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST =
-  "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda";
+  "df8b0980397e64d8963dd3b94f5225c8c9dadab7c8bcc3a5ed4d863782e046b5";
 
 export interface InstallerRepairProductionReplayCompiledModule {
   readonly INSTALLER_REPAIR_PRODUCTION_REPLAY_PROTOCOL_IDENTITY?: unknown;
@@ -489,17 +489,17 @@ export function assertInstallerRepairProductionReplayCompiledModule(
     module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION,
     INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION,
   );
-  assert.equal(module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION, 10);
+  assert.equal(module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION, 11);
   assert.equal(
     module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST,
-    "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda",
+    "df8b0980397e64d8963dd3b94f5225c8c9dadab7c8bcc3a5ed4d863782e046b5",
   );
   assert.equal(typeof module.executeReplay, "function");
   assert.equal(typeof module.validateProductionReplayArtifactIdentity, "function");
   assert.equal(typeof module.recomputeProductionReplaySemanticContractDigest, "function");
   assert.equal(
     (module.recomputeProductionReplaySemanticContractDigest as () => string)(),
-    "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda",
+    "df8b0980397e64d8963dd3b94f5225c8c9dadab7c8bcc3a5ed4d863782e046b5",
   );
 }
 

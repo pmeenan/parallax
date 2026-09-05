@@ -362,10 +362,10 @@ and adjust the next work package. No unattended scheduled work is implied.
       PSO warmup trace, and public telemetry (D-183; implementation only).
 - [x] Human visual verification of the integrated CSM candidate: explicitly accepted
       in this task, including the delivered contact shadows and bounded distance fade.
-- [ ] Complete the integrated candidate's standard-flythrough comparison
-      before expanding the isolated shadow experiment or starting GI comparisons.
-      Retain invalid control evidence as invalid; integration is not adoption until
-      measured and visually verified.
+- [x] Localize and fix the integrated candidate's intermittent checkpoint failure;
+      verify the corrected six-state preflight and regression coverage. D-184 defers
+      full integrated traversal qualification to the M4.5 candidate. Retain the failed
+      reports as invalid and make no qualified CSM control-relative cost claim.
 - [ ] Author sunny and gloomy references and a small modular D1 kit: architecture,
       representative PBR materials, terrain detail, foliage, and the castle silhouette.
       Activate the applicable mesh/UV/texture/LOD/export QA before the first binary
@@ -404,7 +404,46 @@ and adjust the next work package. No unattended scheduled work is implied.
       passes applicable budgets and the D-181 milestone-exit smoke. Unaccepted required
       outcomes keep M4.5 open. Backlog completion is not an exit condition.
 
-**Active CSM integration brief (2026-09-04):** use the ordinary streamed D1
+**Checkpoint localization follow-up (2026-09-05):** reopen the intermittent
+all-nonbackground checkpoint using the same six preflight cameras/states. Retain exact
+readback pixels, clear color, and camera state from up to six fresh launches; fix a
+demonstrated capture/state defect without changing visibility thresholds. Allow two
+implementation/capture/evaluation cycles and 90 minutes for localization and checks.
+If localized, run one matched three-repeat control and candidate set (a further
+90-minute measurement allowance); otherwise retain the failure and name the unresolved
+mechanism. This is performance evidence work, with no new artistic acceptance claim.
+The first six short launches passed all checkpoints with identical coverage. Extend
+localization by one six-launch set within the same 90-minute allowance, reproducing
+the standard runner's host/display identity collection before preflight; the initial
+probe omitted that sequence and therefore did not reproduce its startup timing.
+
+Localization outcome: extended launch five reproduced the historical failing RGBA
+hash `5331e8cd34720fef29c46000dc916b3b7eae4aba828db5f0758d5a179d605798`.
+Exact pixels show stale preview terrain covering the sky, with the correct camera and
+clear color; this is not a corrupt readback. Direct `mesh.visible` assignments bypassed
+Lite 1.12.0's draw-bundle visibility epoch. Use the public `setSubtreeVisible` API for
+flythrough ownership and player/crowd visibility changes. Six corrected fresh launches
+passed all 36 checkpoints; first-checkpoint coverage was identically 0.8666023484889465.
+The regression test observes the actual pinned cache epoch, including no invalidation
+for unchanged presentation. Before/fixed pixels and exact verified reconstruction
+bundles live in `harness/results/checkpoint-localization-2026-09-05T02-21-47-133Z/`
+and `checkpoint-localization-2026-09-05T02-26-16-408Z/`. Temporary pixel retention is
+removed before measurement. The initially planned comparison prepared pre-CSM commit
+`54bc7c2` with the same visibility fix and explicit 1 GiB collector buffer. It was stopped
+on human feedback about development latency (D-184), without a qualifying report; no
+candidate traversal set was started. The localization step is complete, and the next
+work is the sunny/gloomy references and modular D1 kit. Full integrated traversal
+qualification remains at M4.5 exit; a qualified CSM control-relative cost delta remains
+unavailable.
+`pnpm check` passes (2,620 tests, one existing skip). The new regression test fails
+against the reconstructed original source because the draw-cache epoch stays unchanged.
+The installer replay fixture is rebound to the corrected artifact under semantic
+contract v11, preserving its exact identities, publication hashes, and rejection checks.
+Physical smoke is deferred to M4.5 exit; this work uses the focused real-worker
+preflight, regression test, standard checks, and exact installer replay
+`installer-repair-production-replay-v4-2026-09-05T02-34-38-887Z.json` (passed).
+
+**Historical CSM integration brief (2026-09-04; follow-up above, cadence amended by D-184):** use the ordinary streamed D1
 flythrough's six daylight/overcast/dusk/night/dawn states, plus its installed renderer
 and gameplay camera, against the retained near/mid/vista CSM captures. Question: does
 the selected 4×1024, 180 m, 0.12 m world-bias candidate preserve coverage and residency
@@ -475,7 +514,8 @@ render-worker p95 was 0.340 / 0.285 ms, with a different trace-capacity configur
 Review [the before/after captures and measurement summary](../harness/results/m45-csm-integration-2026-09-04/summary.md).
 The initial allowance plus one visual extension produced three capture cycles; no
 binary kit assets were authored. This session measured renderer integration and
-collector cost, not normal art-edit throughput. **Reopen next:** capture the exact first
+collector cost, not normal art-edit throughput. **Then-next action (localization now
+resolved above; full comparison deferred by D-184):** capture the exact first
 checkpoint pixels/clear-color/camera state to localize the intermittent all-nonbackground
 readback, then obtain complete control and candidate sets with matched collector
 configuration. Human artistic acceptance is recorded above; near contact is improved, and

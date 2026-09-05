@@ -25,6 +25,21 @@ inference* (searched, found nothing — not proof).
 
 ## 1. The decision (D-004, re-grounded by D-046; core updated by D-078/D-080)
 
+**Pinned visibility integration finding (2026-09-05):** Lite 1.12.0 caches opaque draw
+bundles against scene membership and its visibility epoch. Assigning `mesh.visible`
+on an already-rendered mesh changes the flag without advancing that epoch; use the
+public `setSubtreeVisible`/`setMeshVisible` API for runtime changes. Parallax's first
+flythrough handoff intermittently retained hidden preview terrain in those bundles.
+The captured failure exactly reproduced the earlier checkpoint RGBA hash
+`5331e8cd34720fef29c46000dc916b3b7eae4aba828db5f0758d5a179d605798`; all-nonbackground
+pixels were actual stale geometry, not a browser readback fault. Six corrected fresh
+launches passed all 36 preflight checkpoints. Pinned sources: `lib/scene/visibility.js`
+and `lib/frame-graph/render-task.js`; evidence and reconstruction bundles:
+`harness/results/checkpoint-localization-2026-09-05T02-21-47-133Z/` and
+`checkpoint-localization-2026-09-05T02-26-16-408Z/`. This corrects API usage without a
+private production seam or a visibility-threshold change; performance qualification
+remains separate in the live plan.
+
 **TypeScript + exactly pinned Babylon Lite as scene/material/animation core; WebGPU
 exclusively; Parallax owns scheduling, streaming, memory, the frame loop, and the worker
 fabric.** D-078 replaced D-004's classic-Babylon component after a same-gate M0

@@ -28,6 +28,34 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-184: Keep long traversal qualification out of routine plan steps (2026-09-05, accepted; refines D-181/D-182)
+
+**Decision:** intermediate fixes and feature integrations use the narrowest focused
+test or real-worker probe that answers their correctness question. Rendering cost
+discovery uses short representative camera/state windows, labelled diagnostic; it does
+not automatically run three ten-minute control traversals plus three candidate
+traversals. Run a full standard-flythrough set only when sustained streaming, long-run
+behavior, or repeatability is necessary to a named decision, or for the integrated
+milestone candidate where the plan requires it. A separate control set is warranted
+only when that decision needs a qualified control-relative claim. Do not rerun long
+sets merely to complete each feature's paperwork.
+
+**Context:** the human flagged the recurring hour of measurement as unacceptable
+development latency. The CSM checkpoint defect was already reproduced, corrected,
+covered by a regression test, and verified in six fresh six-state preflights. Those
+results answer the fix's correctness question; another hour does not improve that
+answer. The newly started control collection was stopped without a qualifying report,
+and the candidate collection was not started.
+
+**Consequences:** close the CSM localization step on focused evidence and proceed to
+representative art. Defer its full integrated traversal qualification to the M4.5
+candidate; retain prior failed reports and do not claim a qualified CSM cost delta.
+Short probes cannot satisfy the full runner's evidence or budget contracts. Existing
+budgets, scenario lengths, repeat counts, variance limits, and D-181's exact-candidate
+milestone-exit physical smoke are unchanged. A long run's brief must name the decision
+it enables and its elapsed cost before starting. Reopen the cadence when a demonstrated
+regression escapes focused checks, rather than restoring per-step long runs by default.
+
 ## D-183: Bind integrated CSM to the release warmup registry (2026-09-04, accepted; human visual acceptance confirmed, performance qualification pending)
 
 **Decision:** retain the strict D-139 trace schema and expand its exact state registry

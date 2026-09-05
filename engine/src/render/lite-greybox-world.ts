@@ -24,6 +24,7 @@ import {
   setEngineSize,
   setGpuTimingEnabled,
   setRenderTaskGpuTimingEnabled,
+  setSubtreeVisible,
   type Texture2D,
 } from "@babylonjs/lite";
 import type { FlythroughScenarioSample } from "../flythrough/flythrough-contract";
@@ -674,12 +675,12 @@ export function applyGameplayPresentation(
     readonly playerYawRadians: number;
   }>,
 ): void {
-  renderer.playerMesh.visible = true;
+  setSubtreeVisible(renderer.playerMesh, true);
   renderer.playerMesh.position.set(...presentation.playerPosition);
   renderer.playerMesh.rotation.y = presentation.playerYawRadians;
   for (const [index, mesh] of renderer.crowdMeshes.entries()) {
     const entity = presentation.crowdEntities[index];
-    mesh.visible = entity !== undefined;
+    setSubtreeVisible(mesh, entity !== undefined);
     if (entity === undefined) continue;
     mesh.position.set(...entity.position);
     mesh.rotation.y = entity.yawRadians;
@@ -1073,13 +1074,14 @@ export function applyFlythroughSample(
   sample: FlythroughScenarioSample,
   camera: Readonly<{ beta: number; heightMeters: number; radiusMeters: number }>,
 ): void {
-  renderer.playerMesh.visible = false;
-  for (const mesh of renderer.crowdMeshes) mesh.visible = false;
+  setSubtreeVisible(renderer.playerMesh, false);
+  for (const mesh of renderer.crowdMeshes) setSubtreeVisible(mesh, false);
   if (renderer.presentationOwner === "preview") {
     renderer.presentationOwner = "streamed-residency";
-    for (const mesh of renderer.previewMeshes) mesh.visible = false;
+    // Lite caches draw lists: direct .visible writes do not invalidate those lists.
+    for (const mesh of renderer.previewMeshes) setSubtreeVisible(mesh, false);
     for (const resident of renderer.streamingCells.values()) {
-      for (const mesh of resident.meshes) mesh.visible = true;
+      for (const mesh of resident.meshes) setSubtreeVisible(mesh, true);
     }
   }
   renderer.flythroughSample = sample;

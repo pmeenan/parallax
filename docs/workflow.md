@@ -28,6 +28,10 @@ structure, and no verification-of-the-verification.
   so plainly instead of papering over it.
 - **One stream of work at a time.** Check `git status` first; if there are changes you
   didn't make, you're iterating on in-flight work, not starting fresh.
+- **Use the main checkout by default.** Do not create worktrees unless the human
+  explicitly requests them. If requested, bring the final changes and retained evidence
+  back to the main checkout and remove temporary worktrees before handoff. Preserve
+  unique work before cleanup; agents still never commit or rewrite history.
 - **Scratch files stay out of the tree.** Temporary scripts/outputs go to the session
   scratchpad, not the repo.
 - **Fix the docs the change makes wrong** (status paragraph, plan checkbox, affected
@@ -223,7 +227,7 @@ ignored result directory:
 3. Add a manifest with every captured file payload's path, size, and SHA-256 plus
    explicit deletion entries; the result artifact digest; environment/tool pins; exact
    run command; and scenario/schema/metric-set identity.
-4. In a clean scratch checkout or worktree at the recorded base commit, apply the
+4. In a clean scratch checkout at the recorded base commit, apply the
    bundle, restore its untracked files, and recompute source identity with the same
    harness algorithm used by the measured scenario. Both reconstructed `commit` and
    `dirtyTreeDigest` must exactly equal the measured report before cleanup is allowed.
@@ -256,6 +260,14 @@ answered a settled decision.
 Routine physical smoke is milestone-scoped, not change-scoped (D-181). It qualifies the
 exact exit candidate after all milestone implementation, review corrections, docs, and
 standing exit work have converged.
+
+D-184 applies the same restraint to specialized long traversals: an intermediate plan
+step does not automatically receive three ten-minute control runs and three candidate
+runs. Use focused correctness probes and short representative cost windows first;
+label short costs diagnostic. Start full traversal sets only for a named sustained-load
+or repeatability decision, or the integrated milestone candidate where required. Add a
+control set only when a qualified delta is needed. State the decision and elapsed cost
+in the brief; short probes never inherit full-run budget authority or relax its gates.
 
 - During implementation and review correction, run the focused tests, typecheck, and
   lint checks that cover the changed surface. Run `pnpm check` once after implementation
