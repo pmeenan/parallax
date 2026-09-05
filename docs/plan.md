@@ -379,6 +379,38 @@ with believable joints, scale and surface roughness as must-fix requirements.
 Keep generated binaries in ignored results pending P-004 and full admission QA;
 this preview does not claim worker integration, baked export, or finished-area acceptance.
 
+Both procedural previews were rejected by the lead: regular courses, manufactured
+edges and empty joints miss the endorsed reference. Extend by one material-source
+comparison cycle within 30 minutes: evaluate Poly Haven's CC0 Cobblestone Pavement
+maps on a metric source surface with restrained displacement, using the same sunny,
+gloomy and grazing views. The question is whether scanned surface detail resolves
+the demonstrated realism gap; it does not authorize changing the reference or
+claiming the material is limestone. Retain provenance and exact downloaded hashes;
+no library admission or public deployment. End with visual evaluation and the
+remaining export/QA requirements, not another automatic modeling cycle.
+
+**Source-stage outcome:** reference and kit brief delivered; the human endorsed the
+reference quality target. Two procedural paving attempts were rejected. The scanned
+comparison improves surface variation and filled joints, but uses smaller/darker
+cobblestones and remains flat at grazing angles. Its 2.5 m source tile and
+73,728 / 18,432 / 1,152 source triangles do not satisfy the proposed 2 m kit module
+or its production limits. No art was admitted to the library (accepted kit throughput:
+zero), no runtime behavior changed, and M4.5 remains open. See the
+[source comparison and captures](../assets/source/d1-paving/README.md).
+The next human input is artistic selection of this cobblestone material direction
+versus pursuing the reference's larger/paler stone; the reference quality bar remains
+binding in either case. Then implement production geometry/maps, binary QA and the
+worker instance/material path, resolving P-004 before library admission.
+
+Repository validation: build and repeatability checks, Biome, and 209 unit suites
+pass (2,620 tests, one existing skip). The initial check exposed the corpus validator's
+unintended KTX2 CDN dependency; a network-blocked regression reproduced the same error
+and now passes with the installed pinned UASTC sRGB WASM. The old error discarded its
+underlying cause, so the initial failure cannot be attributed retrospectively with
+certainty. This repair and the reference stage were committed separately under the
+human's explicit authorization for this session. No physical smoke or traversal gate
+was run; those remain milestone-scoped. Blender preview timing is not game performance.
+
 - [x] Integrate the selected CSM candidate into the shipping render worker, release-owned
       PSO warmup trace, and public telemetry (D-183; implementation only).
 - [x] Human visual verification of the integrated CSM candidate: explicitly accepted

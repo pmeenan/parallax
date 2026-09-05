@@ -1,0 +1,37 @@
+{
+  "status": "source-comparison-only",
+  "asset": "cobblestone_pavement",
+  "author": "Charlotte Baglioni",
+  "provider": "Poly Haven",
+  "assetUrl": "https://polyhaven.com/a/cobblestone_pavement",
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "reviewedAt": "2026-09-05",
+  "rightsReview": "source-provider-CC0-verified; no-public-library-admission",
+  "sourcePhysicalWidthMetres": 2.5,
+  "reference": "assets/reference/d1-courtyard-sunny-gloomy.png",
+  "referenceRole": "human-endorsed appearance benchmark; scan independently sourced",
+  "adaptation": "Blender 5.1.2 source comparison by Codex; full UV scan at 2.5m scale, 15mm displacement scale, 0.35 normal strength",
+  "maps": [
+    {
+      "role": "diffuse",
+      "file": "cobblestone_pavement_diff_2k.png",
+      "sha256": "b411fc9aa9f2764412641b5dac92985a01d83c15eec0e349469dbf6e287d3f07"
+    },
+    {
+      "role": "displacement",
+      "file": "cobblestone_pavement_disp_2k.png",
+      "sha256": "0c65757d2dd1421c6f2115a46ff906c7a6bc09b5bb3e4e80eb9c6c06237203ff"
+    },
+    {
+      "role": "normal_gl",
+      "file": "cobblestone_pavement_nor_gl_2k.png",
+      "sha256": "28166816f5d6be0fc960ac7c9f8f449472da7e51395f19ee7d1d6f1481c74ef3"
+    },
+    {
+      "role": "roughness",
+      "file": "cobblestone_pavement_rough_2k.png",
+      "sha256": "5242ea8bdf8d1ab44743b6227d97aa13a062e16ff4d2dd20acfa543f71db1048"
+    }
+  ]
+}
