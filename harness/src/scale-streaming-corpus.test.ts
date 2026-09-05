@@ -326,7 +326,7 @@ describe("representative scale-streaming corpus", () => {
     }
   });
 
-  it("resolves codecs from the emitted harness module layout", async () => {
+  it("resolves pinned codecs from the emitted harness module layout without network access", async () => {
     const metadataPath = join(firstRoot, "scale-streaming-corpus.json");
     await writeFile(metadataPath, `${JSON.stringify(firstDocument)}\n`);
     const moduleUrl = pathToFileURL(
@@ -337,6 +337,7 @@ describe("representative scale-streaming corpus", () => {
       "--eval",
       `
         import { readFile } from "node:fs/promises";
+        globalThis.fetch = async (url) => { throw new Error("Unexpected codec network access: " + url); };
         const module = await import(${JSON.stringify(moduleUrl)});
         const document = JSON.parse(await readFile(${JSON.stringify(metadataPath)}, "utf8"));
         const corpus = await module.readGeneratedScaleStreamingCorpus(${JSON.stringify(firstRoot)}, document);

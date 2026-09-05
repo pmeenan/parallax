@@ -790,7 +790,7 @@ interface KtxCodecModule {
       width: number;
     }>;
   };
-  readonly MSCTranscoder: { WasmBinary: ArrayBufferLike };
+  readonly LiteTranscoder_UASTC_RGBA_SRGB: { WasmBinary: ArrayBufferLike };
 }
 interface MeshoptCodecModule {
   readonly MeshoptDecoder: {
@@ -829,7 +829,8 @@ async function validateGraphCodecSemantics(
     }));
     const { ktx, meshopt } = await codecModules;
     ktxDecoderReady ??= readFile(codecPaths.ktxDecoderWasm).then((wasm) => {
-      ktx.MSCTranscoder.WasmBinary = wasm.buffer.slice(
+      // These fixtures are UASTC sRGB: bind the selected transcoder, not the MSC fallback.
+      ktx.LiteTranscoder_UASTC_RGBA_SRGB.WasmBinary = wasm.buffer.slice(
         wasm.byteOffset,
         wasm.byteOffset + wasm.byteLength,
       );
@@ -854,7 +855,10 @@ async function validateGraphCodecSemantics(
       base.height !== graph.texture.height ||
       base.data.byteLength !== expectedTextureBytes
     ) {
-      throw new Error("KTX2 decoded dimensions or RGBA8 payload disagree with the declaration");
+      throw new Error(
+        "KTX2 decoded dimensions or RGBA8 payload disagree with the declaration",
+        decodedTexture.errors === undefined ? undefined : { cause: decodedTexture.errors },
+      );
     }
     await meshopt.MeshoptDecoder.ready;
     const decodedVertices = new Uint8Array(graph.vertexCount * 32);
@@ -934,7 +938,7 @@ function resolveScaleStreamingCodecPaths(moduleDirectory: string): Readonly<{
     ktxDecoderJs: resolve(repositoryRoot, "engine/node_modules/@babylonjs/ktx2decoder/index.js"),
     ktxDecoderWasm: resolve(
       repositoryRoot,
-      "engine/node_modules/@babylonjs/ktx2decoder/wasm/msc_basis_transcoder.wasm",
+      "engine/node_modules/@babylonjs/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm",
     ),
     meshoptDecoderJs: resolve(
       repositoryRoot,
