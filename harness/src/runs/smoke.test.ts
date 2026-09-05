@@ -42,7 +42,7 @@ const expectedSchemaVersion: ParallaxTelemetrySnapshot["schemaVersion"] =
 
 describe("smoke@1 contract", () => {
   it("versions baseline evidence in the Lite-only result contract", () => {
-    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(76);
+    expect(SMOKE_REPORT_SCHEMA_VERSION).toBe(77);
     expect(SMOKE_DISTRICT_SWAP_PREFETCH_TRIGGER_METERS).toEqual({
       "castle-undercroft": 6,
       "forest-ruin": 5,
@@ -132,7 +132,7 @@ describe("smoke@1 contract", () => {
       mandatoryForHarnessV1: true,
       probe: "implemented",
     });
-    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(36);
+    expect(SMOKE_MANDATORY_METRIC_SET_VERSION).toBe(37);
     expect(SMOKE_STREAMING_P95_ABSOLUTE_RANGE_FLOOR_MS).toBe(1);
     expect(SMOKE_STREAMING_P95_RELATIVE_RANGE_LIMIT).toBe(0.1);
     expect(SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS).toBe(10_000);

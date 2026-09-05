@@ -445,7 +445,8 @@ Build-manifest v15 adds one content-addressed JSON asset-pack with exact resourc
 `game-specific-pso-warmup-trace`. Its payload contract is
 `pso-warmup-trace@1`: exact keys, Babylon Lite 1.12.0 renderer identity, a render-state
 compatibility digest, priority-then-ID ordering, and a state digest per logical pipeline
-family. The install-manifest v1 document shape and kind vocabulary stay unchanged; the
+family. D-183 expands this registry to opaque, CSM receiver, and CSM depth states,
+all observed during the shared boot registration before Ready. The install-manifest v1 document shape and kind vocabulary stay unchanged; the
 existing `asset-pack` kind plus exact ID/path/game-specific/OPFS placement identifies
 this specialized payload.
 
@@ -1288,14 +1289,14 @@ zero while the wider twilight curve continues to drive ambient, sky, and ground 
 The sun remains resident with zero intensity at and below the horizon so
 the scene light topology and Standard-material PSO family do not change across the day
 cycle. Public frame telemetry exposes the applied sun direction and intensity, and the
-greybox-world evidence names the exact no-shadow lighting model; this is an observable
-directional-light foundation, not a shadow-strategy or global-illumination verdict.
+greybox-world evidence names the integrated CSM lighting model (D-183). The sun keeps
+its CSM topology at night; direct intensity, rather than shader membership, fades out.
 Directional PCF/ESM, cascaded shadows, local-light shadows, many-light clustering, and
 GI remain candidates; D-182 integrates CSM first and selects further lighting work
 against the night/storm scene rather than requiring every comparison before content.
 
-The active `m45-directional-shadow-strategies@4` probe keeps those candidates outside
-the shipping scene and its exact no-shadow PSO trace. Its deterministic native-4K
+The retained `m45-directional-shadow-strategies@4` probe evaluated those candidates
+outside the shipping scene. Its deterministic native-4K
 final-art proxy combines 425 architectural casters with 128 curved 64-segment casters
 (about 2.23 million curved-caster triangles before cascade amplification), captures
 near/mid/vista cameras, and records fresh-launch whole-frame/task GPU timings plus CPU
@@ -1312,9 +1313,14 @@ GPU p50 was 3.412/3.156/3.298 ms (8.1% range), CPU submission was
 1.376/1.245/1.311 ms. The lighter no-shadow arm remained GPU-power-state-sensitive and
 failed repeatability, so the probe deliberately withholds a control-relative delta.
 This qualifies CSM for production integration and flythrough delta measurement; it is
-not yet adoption. The shipping shadow pipeline, warmup trace, and budgets remain
-unchanged until that integration is measured in the real render worker under its
-sustained game workload.
+not yet adoption. D-183 now integrates the selected CSM candidate into the real render worker and
+release warmup trace. The human has visually accepted the integrated candidate;
+standard-flythrough qualification remains open after the checkpoint failure recorded
+in the active plan note. Existing budgets remain unchanged. Visible streamed/preview meshes own
+casters, and UI is excluded. A pinned adapter prunes evicted material-view/generation
+cache keys in Lite 1.12.0; public caster lists own task membership. New frame and
+flythrough diagnostics expose CPU submission, latest completed whole-frame GPU timing,
+deduplicated shadow-task timings, caster counts, and logical depth-array bytes.
 
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box

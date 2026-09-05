@@ -118,7 +118,7 @@ describe("installer Repair production replay required-gate wiring", () => {
       "same-worker",
     ]);
     expect(typeof executeReplay).toBe("function");
-    expect(INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION).toBe(9);
+    expect(INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION).toBe(10);
     expect(INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST).toBe(
       recomputeProductionReplaySemanticContractDigest(),
     );

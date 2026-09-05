@@ -93,7 +93,7 @@ describe("representative scale-streaming corpus", () => {
         installBytes: validatedMaterialized.installSummary.bytesByTarget.opfs,
         installResourceCount: validatedMaterialized.installSummary.countByTarget.opfs,
       });
-      expect(materialized.population.installBytes).toBe(2_623_210_681);
+      expect(materialized.population.installBytes).toBe(2623219022);
       expect(materialized.population.installResourceCount).toBe(349);
       expect(materialized.population.representativeResourceCount).toBe(339);
       const heroIndex = corpus.graphs

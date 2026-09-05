@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import type { ParallaxTelemetryExport } from "@parallax/engine";
+import type { ParallaxTelemetryExport, ParallaxTelemetrySnapshot } from "@parallax/engine";
 import type { BrowserContext, CDPSession, Page } from "playwright-core";
 import { evaluateP95Variance, type VarianceMetric } from "./aggregate.js";
 import {
@@ -87,6 +87,7 @@ import {
   FLYTHROUGH_D1_REPORT_SCHEMA_VERSION,
   FLYTHROUGH_D1_SCENARIO,
   FLYTHROUGH_D1_TELEMETRY_SCHEMA_VERSION,
+  FLYTHROUGH_D1_TRACE_BUFFER_KIB,
   FLYTHROUGH_D1_TRACE_COMPLETION_TIMEOUT_MS,
   FLYTHROUGH_D1_TRACE_LATE_OBSERVATION_MS,
   FLYTHROUGH_D1_WARMUP_POLICY,
@@ -356,6 +357,7 @@ async function main(): Promise<void> {
 }
 
 interface MutableAttemptCapture {
+  diagnosticTelemetry: ParallaxTelemetrySnapshot | null;
   readonly browserErrors: string[];
   environment: MeasuredFlythroughEnvironment | null;
   jsHeap: JsHeapMetric | null;
@@ -372,6 +374,7 @@ async function measureFlythroughAttempt(
   heapWorkerUrls: HeapWorkerUrls,
 ): Promise<FlythroughAttempt<FlythroughRun>> {
   const capture: MutableAttemptCapture = {
+    diagnosticTelemetry: null,
     browserErrors: [],
     environment: null,
     jsHeap: null,
@@ -471,6 +474,7 @@ async function measureFlythroughResult(
         { timeout: 180_000 },
       );
       const prepared = await readTelemetry(page);
+      capture.diagnosticTelemetry = prepared;
       if (prepared.flythrough.state !== "prepared") {
         throw new Error(prepared.flythrough.failureMessage ?? "Flythrough preflight failed");
       }
@@ -502,6 +506,9 @@ async function measureFlythroughResult(
         );
         await trace.mark(page, "parallax-presentation-window-end");
         const snapshot = await readTelemetry(page);
+        // A later trace/heap failure must not erase the gameplay observation. This
+        // remains raw diagnostic evidence and never enters the measured-run list.
+        capture.diagnosticTelemetry = snapshot;
         const longTasks = await readMainThreadLongTasks(page);
         let jsHeapEvidence: JsHeapEvidence;
         try {
@@ -664,12 +671,14 @@ async function beginTrace(context: BrowserContext): Promise<TraceCapture> {
     traceConfig: {
       includedCategories: [...categories],
       recordMode: "recordAsMuchAsPossible",
+      traceBufferSizeInKb: FLYTHROUGH_D1_TRACE_BUFFER_KIB,
     },
     transferMode: "ReportEvents",
   });
   traceStartedAtMs = performance.now();
   const diagnostics = (): FlythroughTraceDrainEvidence =>
     Object.freeze({
+      requestedBufferSizeKiB: FLYTHROUGH_D1_TRACE_BUFFER_KIB,
       categories,
       completionAfterEndCommandMs:
         completedAtMs === null || endCommandCompletedAtMs === null

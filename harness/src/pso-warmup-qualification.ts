@@ -362,20 +362,25 @@ function validateExactReplay(input: PsoWarmupTelemetrySnapshot): void {
     input.state !== "ready" ||
     input.source !== "privileged-embedded" ||
     input.releaseDigest !== null ||
-    input.traceEntryCount !== 1 ||
-    input.requestedCount !== 2 ||
-    input.compiledCount !== 1 ||
-    input.deferredCount !== 1 ||
-    input.cacheMissCount !== 1 ||
+    input.traceEntryCount !== 3 ||
+    input.requestedCount !== 4 ||
+    input.compiledCount !== 3 ||
+    input.deferredCount !== 3 ||
+    input.cacheMissCount !== 3 ||
     input.cacheHitCount !== 1 ||
     input.failure !== null ||
     input.failureCount !== 0 ||
-    input.queueHighWater !== 1 ||
-    input.entries.length !== 1 ||
+    input.queueHighWater !== 3 ||
+    input.entries.length !== 3 ||
     input.entries[0]?.id !== "babylon-lite.standard-opaque-msaa4" ||
     input.entries[0].compileAttemptCount !== 1 ||
     !input.entries[0].compiled ||
-    input.entries[0].requestCount !== 2
+    input.entries[0].requestCount !== 2 ||
+    input.entries
+      .slice(1)
+      .some(
+        (entry) => entry.compileAttemptCount !== 1 || !entry.compiled || entry.requestCount !== 1,
+      )
   ) {
     throw new Error("PSO warmup qualification did not observe exact progressive trace replay");
   }

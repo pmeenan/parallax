@@ -13,14 +13,17 @@ import {
   createTexture2DFromPixels,
   type DirectionalLight,
   disposeMeshGpu,
+  getRenderTaskGpuTimings,
   type HemisphericLight,
   type Mesh,
-  registerScene,
+  registerSceneWithShadowSupport,
   releaseTexture,
   removeFromScene,
   renderFrame,
   type SceneContext,
   setEngineSize,
+  setGpuTimingEnabled,
+  setRenderTaskGpuTimingEnabled,
   type Texture2D,
 } from "@babylonjs/lite";
 import type { FlythroughScenarioSample } from "../flythrough/flythrough-contract";
@@ -44,6 +47,7 @@ import {
   validateGreyboxDistrict,
   validateGreyboxLightingConfig,
 } from "../world/world-contract";
+import { createDirectionalShadows } from "./directional-shadows";
 import {
   type EnvironmentLightingSample,
   type LinearRgb,
@@ -53,6 +57,7 @@ import {
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
 import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
 import {
+  PSO_WARMUP_PIPELINES,
   PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
   PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
 } from "./pso-warmup-contract";
@@ -60,6 +65,7 @@ import type { PsoWarmupRegistry } from "./pso-warmup-registry";
 import type {
   FlythroughCheckpointRenderEvidence,
   GreyboxWorkerRenderTelemetry,
+  RenderFrameSample,
 } from "./render-protocol";
 import { RENDER_GAMEPLAY_CROWD_CAPACITY, RENDER_LIGHTING_MODEL } from "./render-protocol";
 
@@ -418,6 +424,7 @@ export async function createLiteGreyboxWorld(
     applyEnvironmentLighting(ambientLight, sunLight, scene, lighting);
     addToScene(scene, ambientLight);
     addToScene(scene, sunLight);
+    const shadows = createDirectionalShadows(engine, sunLight);
 
     const playerMesh = createCapsule(engine, {
       height: 1.8,
@@ -441,9 +448,9 @@ export async function createLiteGreyboxWorld(
         return mesh;
       }),
     );
-    const markerMeshes = config.world.markers
+    config.world.markers
       .filter((marker) => marker.kind === "transition")
-      .map((marker) => {
+      .forEach((marker) => {
         const mesh = createCapsule(engine, { height: 3, radius: 0.35, tessellation: 8 });
         mesh.name = `interaction-${marker.id}`;
         const material = createStandardMaterial();
@@ -451,7 +458,6 @@ export async function createLiteGreyboxWorld(
         mesh.material = material;
         mesh.position.set(marker.position[0], marker.position[1] + 1.5, marker.position[2]);
         addToScene(scene, mesh);
-        return mesh;
       });
 
     const materials = new Map(config.world.materials.map((material) => [material.id, material]));
@@ -520,10 +526,31 @@ export async function createLiteGreyboxWorld(
       }
     }
     const hybridUi = createHybridUiRenderer(engine, scene, camera);
-    await psoWarmup.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, () =>
-      psoObservation.register(
-        [...previewMeshes, playerMesh, ...crowdMeshes, ...markerMeshes, ...hybridUi.meshes],
-        () => registerScene(scene),
+    const shadowExcluded = new Set(hybridUi.meshes);
+    for (const mesh of scene.meshes) {
+      if (!shadowExcluded.has(mesh)) mesh.receiveShadows = true;
+    }
+    shadows.synchronize(scene.meshes, shadowExcluded);
+    let registration: Promise<ReadonlyMap<string, string>> | null = null;
+    let joinedRequests = 0;
+    const allRequestsDeferred = Promise.withResolvers<void>();
+    // Scene registration compiles these three states together. Registry durations
+    // cover that shared registration window; they are not additive per-pipeline costs.
+    await Promise.all(
+      PSO_WARMUP_PIPELINES.map((entry) =>
+        psoWarmup.requestObserved(entry.id, async () => {
+          joinedRequests += 1;
+          if (joinedRequests === PSO_WARMUP_PIPELINES.length) allRequestsDeferred.resolve();
+          await allRequestsDeferred.promise;
+          registration ??= psoObservation.registerAll(scene.meshes, async () => {
+            await registerSceneWithShadowSupport(scene);
+            // The depth task's first execution creates its PSO. Do it before Ready.
+            renderFrame(engine, 0);
+          });
+          const digest = (await registration).get(entry.id);
+          if (digest === undefined) throw new Error(`PSO warmup missing observed ${entry.id}`);
+          return digest;
+        }),
       ),
     );
     // A second authoritative request proves that the registry deduplicates a repeated
@@ -536,6 +563,8 @@ export async function createLiteGreyboxWorld(
       },
     );
     await psoWarmup.finish();
+    setGpuTimingEnabled(engine, true);
+    await setRenderTaskGpuTimingEnabled(engine, true);
 
     const telemetry: GreyboxWorkerRenderTelemetry = Object.freeze({
       cellCount: validation.cellCount,
@@ -570,6 +599,8 @@ export async function createLiteGreyboxWorld(
       previewMeshes: Object.freeze(previewMeshes),
       psoWarmup,
       scene,
+      shadows,
+      shadowExcluded,
       streamingCells: new Map<
         string,
         Readonly<{
@@ -676,6 +707,7 @@ export function gameplayCameraBeta(cameraPitchRadians: number): number {
 }
 
 export interface GreyboxLightingSample {
+  readonly rendering: RenderFrameSample["rendering"];
   readonly intensity: number;
   readonly phase: number;
   readonly sunDirection: readonly [number, number, number];
@@ -745,6 +777,7 @@ export function uploadStreamingGreyboxCell(
     material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
     mesh.material = material;
     mesh.visible = renderer.presentationOwner === "streamed-residency";
+    mesh.receiveShadows = true;
     addToScene(renderer.scene, mesh);
     addedMeshes.add(mesh);
     gpuBytes += geometryGpuBytes(geometry);
@@ -880,6 +913,7 @@ export function uploadStreamingGreyboxCell(
           const material = createStandardMaterial();
           material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
           mesh.material = material;
+          mesh.receiveShadows = true;
           mesh.visible = renderer.presentationOwner === "streamed-residency";
           // Babylon may register the mesh before addToScene reports a failure. From this
           // boundary onward cleanup must attempt scene removal, not local-only disposal.
@@ -950,6 +984,7 @@ export function uploadStreamingGreyboxCell(
           const material = createStandardMaterial();
           material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
           mesh.material = material;
+          mesh.receiveShadows = true;
           mesh.visible = renderer.presentationOwner === "streamed-residency";
           // Babylon may register the mesh before addToScene reports a failure. From this
           // boundary onward cleanup must attempt scene removal, not local-only disposal.
@@ -1247,12 +1282,29 @@ export function renderLiteGreyboxWorld(
     applyEnvironmentLighting(renderer.ambientLight, renderer.sunLight, renderer.scene, lighting);
   }
 
+  renderer.shadows.synchronize(renderer.scene.meshes, renderer.shadowExcluded);
+  const submitStartedAt = performance.now();
   renderFrame(
     renderer.engine,
     renderer.previousTimestamp === null ? 0 : timestamp - renderer.previousTimestamp,
   );
   renderer.previousTimestamp = timestamp;
+  const cpuSubmitMs = performance.now() - submitStartedAt;
+  const timings = getRenderTaskGpuTimings(renderer.engine);
+  const shadowTask =
+    timings.status === "available"
+      ? timings.tasks.find((task) => task.name === "shadow")
+      : undefined;
   return Object.freeze({
+    rendering: Object.freeze({
+      ...renderer.shadows.snapshot(),
+      cpuSubmitMs,
+      gpuFrameEmaMs: renderer.engine.gpuFrameTimeMs > 0 ? renderer.engine.gpuFrameTimeMs : null,
+      shadowTaskGpuMs: shadowTask?.durationMs ?? null,
+      gpuTaskFrameIndex: timings.status === "available" ? timings.frameIndex : null,
+      gpuTaskStatus: timings.status,
+      droppedGpuTasks: timings.droppedTaskCount,
+    }),
     intensity: renderer.lighting.perceivedIntensity,
     phase: renderer.lighting.phase,
     sunDirection: renderer.lighting.sunDirection,

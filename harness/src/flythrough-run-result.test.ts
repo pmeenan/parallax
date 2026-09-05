@@ -1,3 +1,4 @@
+import type { ParallaxTelemetrySnapshot } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import {
   assembleFlythroughAttempt,
@@ -6,6 +7,7 @@ import {
 import { JsHeapValidationError } from "./js-heap.js";
 
 const traceDrain = Object.freeze({
+  requestedBufferSizeKiB: 1_048_576,
   categories: Object.freeze(["dawn"]),
   completionAfterEndCommandMs: 5_020,
   completionDeadlineExceeded: true,
@@ -32,9 +34,28 @@ const heapEvidence = Object.freeze({
 });
 
 describe("flythrough attempt assembly", () => {
+  it("preserves a diagnostic snapshot without promoting a trace-failed result", () => {
+    // Assembly preserves identity; it deliberately does not qualify raw telemetry.
+    const diagnosticTelemetry = { schemaVersion: 48 } as ParallaxTelemetrySnapshot;
+    const attempt = assembleFlythroughAttempt({
+      browserErrors: [],
+      diagnosticTelemetry,
+      environment: null,
+      error: new Error("trace data loss"),
+      jsHeap: null,
+      repeat: 1,
+      result: { completed: true },
+      traceDrain,
+    });
+    expect(attempt.diagnosticTelemetry).toBe(diagnosticTelemetry);
+    expect(attempt.state).toBe("invalid");
+    expect(attempt.result).toBeNull();
+  });
+
   it("retains late trace diagnostics on an invalid attempt", () => {
     const attempt = assembleFlythroughAttempt({
       browserErrors: [],
+      diagnosticTelemetry: null,
       environment: null,
       error: new Error("trace completed after validity deadline"),
       jsHeap: null,
@@ -57,6 +78,7 @@ describe("flythrough attempt assembly", () => {
   it("retains JsHeapValidationError evidence instead of reducing it to text", () => {
     const attempt = assembleFlythroughAttempt({
       browserErrors: [],
+      diagnosticTelemetry: null,
       environment: null,
       error: new JsHeapValidationError("heap cadence failed", heapEvidence),
       jsHeap: null,
@@ -87,6 +109,7 @@ describe("flythrough attempt assembly", () => {
       attempts: [
         {
           browserErrors: [],
+          diagnosticTelemetry: null,
           environment: {
             ...reference,
             adapter: reference.adapter as never,
@@ -145,6 +168,7 @@ describe("flythrough attempt assembly", () => {
       attempts: [
         {
           browserErrors: [],
+          diagnosticTelemetry: null,
           environment: {
             adapter: {
               ...stableAdapter,
@@ -189,6 +213,7 @@ describe("flythrough attempt assembly", () => {
       attempts: [
         assembleFlythroughAttempt({
           browserErrors: [],
+          diagnosticTelemetry: null,
           environment: null,
           error: new Error("Browser.getVersion failed"),
           jsHeap: null,

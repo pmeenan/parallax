@@ -47,6 +47,7 @@ export function requireFlythroughEvidence(value: unknown): FlythroughEvidence {
     render.observerUpdateCount < 8_000 ||
     !validDistribution(render.callbackIntervalMs, render.frameCount - 1) ||
     !validDistribution(render.renderDurationMs, render.frameCount) ||
+    !validRenderingDiagnostics(render.rendering, render.frameCount) ||
     !validBounds(render.cameraTargetMinimum, render.cameraTargetMaximum) ||
     !validBounds(render.cameraPositionMinimum, render.cameraPositionMaximum) ||
     Object.values(render.environmentFrameCounts).reduce((sum, count) => sum + count, 0) !==
@@ -79,6 +80,40 @@ export function requireFlythroughEvidence(value: unknown): FlythroughEvidence {
   }
   requireCheckpointEvidence(telemetry.checkpointEvidence);
   return telemetry as FlythroughEvidence;
+}
+
+function validRenderingDiagnostics(value: unknown, frameCount: number): boolean {
+  if (
+    !record(value) ||
+    !validDistribution(value.cpuSubmitMs, frameCount) ||
+    value.depthArrayBytes !== 16_777_216 ||
+    !positiveInteger(value.maximumCasterCount) ||
+    value.gpuSamplePolicy !== "latest-completed-at-submit" ||
+    !["measured", "unsupported", "invalid"].includes(String(value.gpuTimingState))
+  )
+    return false;
+  const samples = [value.gpuFrameEmaMs, value.shadowTaskGpuMs];
+  if (
+    !samples.every(
+      (sample) =>
+        sample === null ||
+        (record(sample) &&
+          positiveInteger(sample.sampleCount) &&
+          sample.sampleCount <= frameCount &&
+          validDistribution(sample, sample.sampleCount)),
+    )
+  )
+    return false;
+  const complete = samples.every(
+    (sample) =>
+      record(sample) &&
+      typeof sample.sampleCount === "number" &&
+      sample.sampleCount >= frameCount * 0.8,
+  );
+  return (
+    value.gpuTimingState === "unsupported" ||
+    (value.gpuTimingState === "measured" ? complete : !complete)
+  );
 }
 
 function requireCheckpointEvidence(
@@ -191,17 +226,13 @@ function exactPhase(
   );
 }
 
-function validDistribution(
-  value: Readonly<{
-    maximum: number;
-    p50: number;
-    p95: number;
-    p999: number;
-    sampleCount: number;
-  }>,
-  expectedSampleCount: number,
-): boolean {
+function validDistribution(value: unknown, expectedSampleCount: number): boolean {
   return (
+    record(value) &&
+    typeof value.maximum === "number" &&
+    typeof value.p50 === "number" &&
+    typeof value.p95 === "number" &&
+    typeof value.p999 === "number" &&
     value.sampleCount === expectedSampleCount &&
     [value.p50, value.p95, value.p999, value.maximum].every(
       (sample) => Number.isFinite(sample) && sample >= 0,

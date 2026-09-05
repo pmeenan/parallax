@@ -11,7 +11,7 @@ import {
 } from "@parallax/engine";
 
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION = 4;
-export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION = 9;
+export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION = 10;
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_LIFETIME_MODES = Object.freeze([
   "restarted",
   "same-worker",
@@ -19,12 +19,12 @@ export const INSTALLER_REPAIR_PRODUCTION_REPLAY_LIFETIME_MODES = Object.freeze([
 export type ProductionReplayLifetimeMode =
   (typeof INSTALLER_REPAIR_PRODUCTION_REPLAY_LIFETIME_MODES)[number];
 
-const EXPECTED_OPFS_BYTES = 2_621_639_471;
+const EXPECTED_OPFS_BYTES = 2621647812;
 const EXPECTED_OPFS_RESOURCES = 331;
 const ADMITTED_BYTES = 43;
-const BUILD_MANIFEST_SHA256 = "a0b20b40bdebd4f983f22539cf41b335ab5a540b95ce5b22261941421e180fde";
-const INSTALL_MANIFEST_SHA256 = "81c5cfec29612d08e3be48dd64cce2851a96c459c3e5ce5d15ef618bfb6b77d4";
-const RESOURCE_IDENTITY_SHA256 = "6041a7050808a9ca93b3a3df5edbc30353edde19493d8b1902e25ccb19f087ba";
+const BUILD_MANIFEST_SHA256 = "3e610c0328febe0113c648852af3a0d15c891811236751b183160e7f20201fb3";
+const INSTALL_MANIFEST_SHA256 = "5bb59a456b8eb15e29d756a321f44b51ff100bc273d30b0e61d92590b1cbf8d0";
+const RESOURCE_IDENTITY_SHA256 = "f58bf140a7c91a71dcbb0e816715d749f543f17f200574f06e8639dfea6ee7a3";
 const APP_ENTRYPOINT_PATH =
   "immutable/app-b842d3ad5b9cca22beb4069bf88199d187a722bb4acb4520000a4872534983e5.js";
 
@@ -200,27 +200,27 @@ const expectedPublication = Object.freeze([
   Object.freeze({
     bytes: 115,
     path: `parallax-install-v1/commits/00000000000000000001-${INSTALL_MANIFEST_SHA256}.json`,
-    sha256: "7c1ea66820abe3481be448c4ed9d9dd8dbffe906df13d08f77bdb939d081cbd2",
+    sha256: "11b2b2ee11dee4d3df0fec786e06e71e430cbe283ad7aa34012ea5c07f44795a",
   }),
   Object.freeze({
-    bytes: 138_831,
+    bytes: 138832,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/install-manifest.json`,
     sha256: INSTALL_MANIFEST_SHA256,
   }),
   Object.freeze({
     bytes: 103,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/published.json`,
-    sha256: "d6cb44222384d05054a627e68ea9fcf75391cc4fd8f43912b8fcc9d7af909ffb",
+    sha256: "cb2382c8f476674c46a3102ad27b4046a9e6229483a4261f5f2f081f60ec3355",
   }),
   Object.freeze({
     bytes: 150,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/ready.json`,
-    sha256: "286c959a121ef4ec6f62498960e4b4562a39f7671132f986d319c13b725a4041",
+    sha256: "99d24ff444057ce0c2beb0d93f3af2ed2150ebd9b9859dbca502c8e825e7f2ad",
   }),
   Object.freeze({
     bytes: 156,
     path: `parallax-install-v1/releases/${INSTALL_MANIFEST_SHA256}/staged.json`,
-    sha256: "92c589c21619995cbe29f899d44b401695a81d1c624018db182131bc2107aff9",
+    sha256: "0e7724fe57b8e08ba63f7b04904feea94cf78141acb0274d3cc0928dc06010d4",
   }),
 ]);
 
@@ -466,7 +466,7 @@ export const INSTALLER_REPAIR_PRODUCTION_REPLAY_EXPECTED_CONTRACT = Object.freez
 });
 
 export const INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST =
-  "d621e6efc56ce2fb99da8cce1a8004afbe21676e43249d4f212a319bad2edfbc";
+  "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda";
 
 export interface InstallerRepairProductionReplayCompiledModule {
   readonly INSTALLER_REPAIR_PRODUCTION_REPLAY_PROTOCOL_IDENTITY?: unknown;
@@ -489,17 +489,17 @@ export function assertInstallerRepairProductionReplayCompiledModule(
     module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION,
     INSTALLER_REPAIR_PRODUCTION_REPLAY_SCHEMA_VERSION,
   );
-  assert.equal(module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION, 9);
+  assert.equal(module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_VERSION, 10);
   assert.equal(
     module.INSTALLER_REPAIR_PRODUCTION_REPLAY_SEMANTIC_CONTRACT_DIGEST,
-    "d621e6efc56ce2fb99da8cce1a8004afbe21676e43249d4f212a319bad2edfbc",
+    "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda",
   );
   assert.equal(typeof module.executeReplay, "function");
   assert.equal(typeof module.validateProductionReplayArtifactIdentity, "function");
   assert.equal(typeof module.recomputeProductionReplaySemanticContractDigest, "function");
   assert.equal(
     (module.recomputeProductionReplaySemanticContractDigest as () => string)(),
-    "d621e6efc56ce2fb99da8cce1a8004afbe21676e43249d4f212a319bad2edfbc",
+    "da47bb2b1995c736b6474197c9ecc0d4b5b43fd923d6ccf355bac08178aefdda",
   );
 }
 

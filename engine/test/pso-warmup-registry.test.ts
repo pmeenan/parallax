@@ -5,6 +5,7 @@ import {
   PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
   PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
 } from "../src/index";
+import { PSO_WARMUP_PIPELINES } from "../src/render/pso-warmup-contract";
 
 describe("PSO warmup registry", () => {
   it("progresses across a task boundary, compiles once, and deduplicates replay", async () => {
@@ -33,23 +34,25 @@ describe("PSO warmup registry", () => {
         throw new Error("cache hit invoked compile");
       },
     );
+    for (const entry of PSO_WARMUP_PIPELINES.slice(1))
+      await registry.request(entry.id, entry.stateDigest, () => undefined);
     await registry.finish();
 
-    expect({ compileCount, yieldCount }).toEqual({ compileCount: 1, yieldCount: 1 });
+    expect({ compileCount, yieldCount }).toEqual({ compileCount: 1, yieldCount: 3 });
     expect(registry.snapshot()).toMatchObject({
       cacheHitCount: 1,
-      cacheMissCount: 1,
-      compiledCount: 1,
-      deferredCount: 1,
+      cacheMissCount: 3,
+      compiledCount: 3,
+      deferredCount: 3,
       failureCount: 0,
       maximumCompileDurationMs: 4,
       queueHighWater: 1,
-      requestedCount: 2,
+      requestedCount: 4,
       state: "ready",
-      totalDurationMs: 6,
-      traceEntryCount: 1,
+      totalDurationMs: 10,
+      traceEntryCount: 3,
     });
-    expect(registry.snapshot().entries).toEqual([
+    expect(registry.snapshot().entries.slice(0, 1)).toEqual([
       {
         compileAttemptCount: 1,
         compileDurationMs: 4,
@@ -153,8 +156,10 @@ describe("PSO warmup registry", () => {
     await registry.requestObserved(PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID, async () => {
       return PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST;
     });
+    for (const entry of PSO_WARMUP_PIPELINES.slice(1))
+      await registry.request(entry.id, entry.stateDigest, () => undefined);
     await registry.finish();
-    expect(registry.snapshot()).toMatchObject({ compiledCount: 1, state: "ready" });
+    expect(registry.snapshot()).toMatchObject({ compiledCount: 3, state: "ready" });
   });
 
   it("fails closed when the observed compile boundary returns a different digest", async () => {

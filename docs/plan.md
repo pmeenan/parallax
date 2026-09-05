@@ -358,8 +358,11 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
-- [ ] Integrate the selected CSM candidate into the shipping render worker, release-owned
-      PSO warmup trace, and public telemetry. Measure the standard-flythrough delta
+- [x] Integrate the selected CSM candidate into the shipping render worker, release-owned
+      PSO warmup trace, and public telemetry (D-183; implementation only).
+- [x] Human visual verification of the integrated CSM candidate: explicitly accepted
+      in this task, including the delivered contact shadows and bounded distance fade.
+- [ ] Complete the integrated candidate's standard-flythrough comparison
       before expanding the isolated shadow experiment or starting GI comparisons.
       Retain invalid control evidence as invalid; integration is not adoption until
       measured and visually verified.
@@ -400,6 +403,84 @@ and adjust the next work package. No unattended scheduled work is implied.
       actionable findings feed the Chrome synthesis; the exact converged candidate
       passes applicable budgets and the D-181 milestone-exit smoke. Unaccepted required
       outcomes keep M4.5 open. Backlog completion is not an exit condition.
+
+**Active CSM integration brief (2026-09-04):** use the ordinary streamed D1
+flythrough's six daylight/overcast/dusk/night/dawn states, plus its installed renderer
+and gameplay camera, against the retained near/mid/vista CSM captures. Question: does
+the selected 4×1024, 180 m, 0.12 m world-bias candidate preserve coverage and residency
+when integrated, at an acceptable combined cost? Must fix missing warmup states,
+stale/hidden/evicted casters, retained caster-material references, and rendering errors.
+Initial allowance: two implementation/capture/evaluation cycles in one work session,
+with a two-hour elapsed-effort limit. Measure the unchanged standard flythrough before
+and after; existing worker render-duration distributions provide the comparable CPU
+signal. New candidate GPU/task diagnostics have no historical no-shadow counterpart,
+so do not invent a GPU control delta. Integrate the best supported candidate, record
+costs/limitations, and leave artistic adoption open for human visual acceptance. The
+full M4.5 exit smoke remains deferred under D-181.
+
+Extension after cycle two: one additional implementation/capture/evaluation cycle,
+within the original two-hour session. The first candidate omitted default-visible
+meshes from its caster list (fixed); the second exposed last-cascade edge shadowing
+on the kilometer-scale terrain. Exercise Lite's public frustum-edge falloff and
+retain the result. The unchanged baseline also failed its third preflight checkpoint
+(`visiblePixelRatio=1`), so its two completed traversals are diagnostic evidence only;
+do not present them as a qualified three-run control or relax the checkpoint gate.
+
+Cycle three outcome: integrate with `frustumEdgeFalloff: 0.1`; the gameplay dark band
+is absent and all six preflight states plus the short motion sequence complete without
+browser errors in `harness/results/m45-csm-integration-2026-09-04/after-falloff/`.
+Near player contact is visible; distant shadows fade at the bounded cascade footprint.
+The standard measured candidate traversal and repository checks close this work package;
+qualified before/after comparison and human artistic acceptance remain explicit until
+their evidence is available. No additional visual cycle is authorized by this outcome.
+
+Measurement follow-up (one rerun of the standard three-repeat command, within the
+original two-hour session): the candidate's first ten-minute traversal reported trace
+data loss after 4,329,014 events / 710,956,503 serialized bytes (RE-008). Preserve that
+invalid attempt. Retain raw gameplay snapshots before trace finalization, and test an
+explicit 1 GiB requested trace buffer against the same route, categories, timeouts, and
+loss checks. The buffer is a collector configuration, not game GPU memory or a budget
+increase. Stop at this rerun's terminal outcome; if evidence remains invalid, defer
+adoption and name the exact reopening work rather than silently retrying.
+
+**Work-package outcome (2026-09-04):** implementation integrated and visually accepted
+by the human; performance qualification remains open. Acceptance covers the delivered
+integrated CSM captures, including the 180 m cascade footprint and edge fade; it does
+not close the later finished-area, night/storm, or milestone-exit requirements.
+`pnpm check` passes (2,619 tests, one existing skip), and exact production installer
+replay `installer-repair-production-replay-v4-2026-09-05T01-18-40-642Z.json` passes.
+Physical smoke: deferred to M4.5 exit — those checks, real-worker captures, and the
+specialized flythrough cover this intermediate work. The final candidate report is
+`harness/results/flythrough-d1-1-3e610c0328fe-dev-01-showcase-2026-09-05T01-58-31-402Z.json`
+(schema 37 / metric set 11; SHA-256
+`8b50944a06521f7ce77ec727668f645e70402a807c333c7ba6b9e3cac347b11d`).
+It binds artifact `3e610c0328febe0113c648852af3a0d15c891811236751b183160e7f20201fb3`,
+release `5bb59a456b8eb15e29d756a321f44b51ff100bc273d30b0e61d92590b1cbf8d0`,
+base `54bc7c2c332f0285a47a2e4eb13e1cd51bb65c3f` and measured dirty-tree digest
+`118964b08a20587c867fc105a26a618d69cbf03e39cf8cf7625f4fd277d7fdaf`.
+The source tuple matched before this evidence-only status update.
+
+Two candidate repeats completed with 36,002 frames and 92 in-window cell loads each:
+render-worker p95 **0.600 / 0.535 ms**, CPU-submit p95 **0.530 / 0.475 ms**, GPU
+frame-EMA p95 **3.515 / 3.591 ms**, shadow-task GPU p95 **0.131 / 0.131 ms**.
+Both recorded zero in-window pipeline creation/shader compilation and zero main-thread
+long tasks. At completion, each retained 18 caster materials for 18 live casters after
+83 / 81 membership updates. The shadow array is 16 MiB logical allocation; this is not
+attributed GPU residency. The trace-capacity follow-up was lossless in both repeats
+(RE-008). Repeat three failed checkpoint zero with `visiblePixelRatio=1`, as the clean
+pre-CSM control did. The report remains **FAIL**, 2/3 complete, budget **not-evaluated**;
+the two-run observations do not qualify a before/after delta. The old control's
+render-worker p95 was 0.340 / 0.285 ms, with a different trace-capacity configuration.
+
+Review [the before/after captures and measurement summary](../harness/results/m45-csm-integration-2026-09-04/summary.md).
+The initial allowance plus one visual extension produced three capture cycles; no
+binary kit assets were authored. This session measured renderer integration and
+collector cost, not normal art-edit throughput. **Reopen next:** capture the exact first
+checkpoint pixels/clear-color/camera state to localize the intermittent all-nonbackground
+readback, then obtain complete control and candidate sets with matched collector
+configuration. Human artistic acceptance is recorded above; near contact is improved, and
+distant shadows fade at the 180 m cascade footprint. No further retry or visual cycle
+is pending from this work package.
 
 **Retained shadow evidence (not adoption):** the deterministic solar/sky/ground model
 and directional sun are already live and instrumented. The standalone

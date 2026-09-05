@@ -121,7 +121,58 @@ const EFFECTIVE_PIPELINE_STATE = deepFreeze({
   ],
 } as const);
 
-export type PsoWarmupEffectivePipelineState = typeof EFFECTIVE_PIPELINE_STATE;
+const CSM_RECEIVER_STATE = deepFreeze({
+  ...EFFECTIVE_PIPELINE_STATE,
+  layout: {
+    ...EFFECTIVE_PIPELINE_STATE.layout,
+    bindGroups: [
+      ...EFFECTIVE_PIPELINE_STATE.layout.bindGroups,
+      {
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              kind: "texture",
+              multisampled: false,
+              sampleType: "depth",
+              viewDimension: "2d-array",
+            },
+            visibility: 2,
+          },
+          { binding: 1, resource: { kind: "sampler", type: "comparison" }, visibility: 2 },
+          {
+            binding: 2,
+            resource: {
+              hasDynamicOffset: false,
+              kind: "buffer",
+              minBindingSize: 0,
+              type: "uniform",
+            },
+            visibility: 2,
+          },
+        ],
+        index: 2,
+      },
+    ],
+  },
+  shader: { ...EFFECTIVE_PIPELINE_STATE.shader, meshFeatureKey: 256, variantKey: "1e" },
+} as const);
+const CSM_DEPTH_STATE = deepFreeze({
+  ...EFFECTIVE_PIPELINE_STATE,
+  colorTarget: null,
+  depthStencil: {
+    ...EFFECTIVE_PIPELINE_STATE.depthStencil,
+    depthCompare: "less-equal",
+    format: "depth32float",
+  },
+  multisample: { ...EFFECTIVE_PIPELINE_STATE.multisample, count: 1 },
+  shader: { ...EFFECTIVE_PIPELINE_STATE.shader, materialFeatureKey: 262144 },
+} as const);
+
+export type PsoWarmupEffectivePipelineState =
+  | typeof EFFECTIVE_PIPELINE_STATE
+  | typeof CSM_RECEIVER_STATE
+  | typeof CSM_DEPTH_STATE;
 
 export interface PsoWarmupTraceIdentity {
   readonly buildCompatibilityDigest: string;
@@ -133,6 +184,13 @@ export interface PsoWarmupTraceIdentity {
     readonly state: PsoWarmupEffectivePipelineState;
     readonly stateDigest: string;
   }>;
+  readonly entries: readonly Readonly<{
+    id: string;
+    kind: "render";
+    priority: number;
+    state: PsoWarmupEffectivePipelineState;
+    stateDigest: string;
+  }>[];
   readonly renderer: typeof RENDERER;
   readonly resource: Readonly<{
     readonly id: typeof RESOURCE_ID;
@@ -255,19 +313,36 @@ function createExpectedIdentity(): PsoWarmupTraceIdentity {
     state: EFFECTIVE_PIPELINE_STATE,
     stateDigest,
   });
+  const entries = Object.freeze([
+    entry,
+    ...[CSM_RECEIVER_STATE, CSM_DEPTH_STATE].map((state, index) =>
+      Object.freeze({
+        id:
+          index === 0
+            ? "babylon-lite.standard-csm-receiver-msaa4"
+            : "babylon-lite.standard-csm-depth",
+        kind: "render" as const,
+        priority: index + 1,
+        state,
+        stateDigest: digestCanonical(state),
+      }),
+    ),
+  ]);
   const buildCompatibilityDigest = digestCanonical({
-    entries: [{ id: ENTRY_ID, stateDigest }],
+    entries: entries.map(({ id, stateDigest }) => ({ id, stateDigest })),
     renderer: RENDERER,
     schemaVersion: TRACE_SCHEMA_VERSION,
   });
   const partial: Readonly<{
     readonly buildCompatibilityDigest: string;
     readonly entry: PsoWarmupTraceIdentity["entry"];
+    readonly entries: PsoWarmupTraceIdentity["entries"];
     readonly renderer: typeof RENDERER;
     readonly schemaVersion: typeof TRACE_SCHEMA_VERSION;
   }> = {
     buildCompatibilityDigest,
     entry,
+    entries,
     renderer: RENDERER,
     schemaVersion: TRACE_SCHEMA_VERSION,
   };
@@ -290,13 +365,14 @@ function expectedTrace(
   identity: Readonly<{
     readonly buildCompatibilityDigest: string;
     readonly entry: PsoWarmupTraceIdentity["entry"];
+    readonly entries: PsoWarmupTraceIdentity["entries"];
     readonly renderer: typeof RENDERER;
     readonly schemaVersion: typeof TRACE_SCHEMA_VERSION;
   }>,
 ): unknown {
   return {
     buildCompatibilityDigest: identity.buildCompatibilityDigest,
-    entries: [identity.entry],
+    entries: identity.entries,
     renderer: identity.renderer,
     schemaVersion: identity.schemaVersion,
   };

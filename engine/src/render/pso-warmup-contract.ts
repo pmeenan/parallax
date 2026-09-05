@@ -123,16 +123,79 @@ const STANDARD_OPAQUE_STATE = deepFreeze({
   ],
 } as const);
 
-export type PsoWarmupEffectivePipelineState = typeof STANDARD_OPAQUE_STATE;
+export const CSM_RECEIVER_STATE = deepFreeze({
+  ...STANDARD_OPAQUE_STATE,
+  layout: {
+    ...STANDARD_OPAQUE_STATE.layout,
+    bindGroups: [
+      ...STANDARD_OPAQUE_STATE.layout.bindGroups,
+      {
+        entries: [
+          {
+            binding: 0,
+            resource: {
+              kind: "texture",
+              multisampled: false,
+              sampleType: "depth",
+              viewDimension: "2d-array",
+            },
+            visibility: 2,
+          },
+          { binding: 1, resource: { kind: "sampler", type: "comparison" }, visibility: 2 },
+          {
+            binding: 2,
+            resource: {
+              hasDynamicOffset: false,
+              kind: "buffer",
+              minBindingSize: 0,
+              type: "uniform",
+            },
+            visibility: 2,
+          },
+        ],
+        index: 2,
+      },
+    ],
+  },
+  shader: { ...STANDARD_OPAQUE_STATE.shader, meshFeatureKey: 256, variantKey: "1e" },
+} as const);
+export const CSM_DEPTH_STATE = deepFreeze({
+  ...STANDARD_OPAQUE_STATE,
+  colorTarget: null,
+  depthStencil: {
+    ...STANDARD_OPAQUE_STATE.depthStencil,
+    depthCompare: "less-equal",
+    format: "depth32float",
+  },
+  multisample: { ...STANDARD_OPAQUE_STATE.multisample, count: 1 },
+  shader: { ...STANDARD_OPAQUE_STATE.shader, materialFeatureKey: 262144 },
+} as const);
+
+export type PsoWarmupEffectivePipelineState =
+  | typeof STANDARD_OPAQUE_STATE
+  | typeof CSM_RECEIVER_STATE
+  | typeof CSM_DEPTH_STATE;
 
 export const PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST = digestCanonical(STANDARD_OPAQUE_STATE);
+export const PSO_WARMUP_PIPELINES = Object.freeze([
+  Object.freeze({
+    id: PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
+    state: STANDARD_OPAQUE_STATE,
+    stateDigest: PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
+  }),
+  Object.freeze({
+    id: "babylon-lite.standard-csm-receiver-msaa4",
+    state: CSM_RECEIVER_STATE,
+    stateDigest: digestCanonical(CSM_RECEIVER_STATE),
+  }),
+  Object.freeze({
+    id: "babylon-lite.standard-csm-depth",
+    state: CSM_DEPTH_STATE,
+    stateDigest: digestCanonical(CSM_DEPTH_STATE),
+  }),
+]);
 export const PSO_WARMUP_BUILD_COMPATIBILITY_DIGEST = digestCanonical({
-  entries: [
-    {
-      id: PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
-      stateDigest: PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
-    },
-  ],
+  entries: PSO_WARMUP_PIPELINES.map(({ id, stateDigest }) => ({ id, stateDigest })),
   renderer: PSO_WARMUP_RENDERER,
   schemaVersion: PSO_WARMUP_TRACE_SCHEMA_VERSION,
 });
@@ -268,15 +331,17 @@ const BUNDLE_KEYS = Object.freeze([
 export function createPsoWarmupTrace(): PsoWarmupTrace {
   return Object.freeze({
     buildCompatibilityDigest: PSO_WARMUP_BUILD_COMPATIBILITY_DIGEST,
-    entries: Object.freeze([
-      Object.freeze({
-        id: PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID,
-        kind: "render" as const,
-        priority: 0,
-        state: STANDARD_OPAQUE_STATE,
-        stateDigest: PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
-      }),
-    ]),
+    entries: Object.freeze(
+      PSO_WARMUP_PIPELINES.map((entry, priority) =>
+        Object.freeze({
+          id: entry.id,
+          kind: "render" as const,
+          priority,
+          state: entry.state,
+          stateDigest: entry.stateDigest,
+        }),
+      ),
+    ),
     renderer: PSO_WARMUP_RENDERER,
     schemaVersion: PSO_WARMUP_TRACE_SCHEMA_VERSION,
   });
@@ -356,9 +421,12 @@ export function parsePsoWarmupTrace(input: unknown): PsoWarmupTrace {
     previous = entry;
   }
   if (
-    entries.length !== 1 ||
-    entries[0]?.id !== PSO_WARMUP_STANDARD_OPAQUE_ENTRY_ID ||
-    entries[0].stateDigest !== PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST
+    entries.length !== PSO_WARMUP_PIPELINES.length ||
+    entries.some(
+      (entry, index) =>
+        entry.id !== PSO_WARMUP_PIPELINES[index]?.id ||
+        entry.stateDigest !== PSO_WARMUP_PIPELINES[index]?.stateDigest,
+    )
   ) {
     throw psoWarmupFailureError(
       incompatibilityFailure(
@@ -480,6 +548,7 @@ function parseEntry(input: unknown, traceIndex: number): PsoWarmupTraceEntry {
       error,
     );
   }
+  const expected = PSO_WARMUP_PIPELINES.find((entry) => entry.id === record.id);
   if (
     typeof record.id !== "string" ||
     !ENTRY_ID.test(record.id) ||
@@ -488,7 +557,8 @@ function parseEntry(input: unknown, traceIndex: number): PsoWarmupTraceEntry {
     (record.priority as number) < 0 ||
     typeof record.stateDigest !== "string" ||
     !SHA256.test(record.stateDigest) ||
-    !canonicalEqual(record.state, STANDARD_OPAQUE_STATE)
+    expected === undefined ||
+    !canonicalEqual(record.state, expected.state)
   ) {
     throw psoWarmupFailureError(
       incompatibilityFailure(
@@ -504,7 +574,7 @@ function parseEntry(input: unknown, traceIndex: number): PsoWarmupTraceEntry {
     id: record.id,
     kind: "render",
     priority: record.priority as number,
-    state: STANDARD_OPAQUE_STATE,
+    state: expected.state,
     stateDigest: record.stateDigest,
   });
 }

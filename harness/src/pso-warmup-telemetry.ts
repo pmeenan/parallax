@@ -280,14 +280,16 @@ export function validateExactPsoWarmupTelemetrySnapshot(
   expected: PsoWarmupTraceIdentity = resolveExpectedPsoWarmupTraceIdentity(),
 ): PsoWarmupTelemetrySnapshot {
   const validated = validatePsoWarmupTelemetrySnapshot(input);
-  const entry = validated.entries[0];
   if (
     validated.buildCompatibilityDigest !== expected.buildCompatibilityDigest ||
     validated.traceSha256 !== expected.sha256 ||
-    validated.traceEntryCount !== 1 ||
-    validated.entries.length !== 1 ||
-    entry?.id !== expected.entry.id ||
-    entry.stateDigest !== expected.entry.stateDigest
+    validated.traceEntryCount !== expected.entries.length ||
+    validated.entries.length !== expected.entries.length ||
+    validated.entries.some(
+      (entry, index) =>
+        entry.id !== expected.entries[index]?.id ||
+        entry.stateDigest !== expected.entries[index]?.stateDigest,
+    )
   ) {
     throw new Error("PSO warmup telemetry does not match the exact trace identity");
   }

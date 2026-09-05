@@ -74,6 +74,15 @@ function validEvidence(): unknown {
       minimumVisibleStreamingMeshCount: 10,
       observerUpdateCount: 8_000,
       previewVisibleFrameCount: 0,
+      rendering: {
+        cpuSubmitMs: { p50: 1, p95: 1, p999: 1, maximum: 1, sampleCount: 36_000 },
+        gpuFrameEmaMs: null,
+        shadowTaskGpuMs: null,
+        gpuTimingState: "unsupported" as const,
+        gpuSamplePolicy: "latest-completed-at-submit" as const,
+        maximumCasterCount: 30,
+        depthArrayBytes: 16_777_216,
+      },
       renderDurationMs: {
         maximum: 4,
         p50: 1,
@@ -106,6 +115,22 @@ function validEvidence(): unknown {
 }
 
 describe("flythrough-d1@1 evidence", () => {
+  it("rejects incomplete submission counts and GPU claims without samples", () => {
+    const value = validEvidence() as { render: { rendering: Record<string, unknown> } };
+    for (const rendering of [
+      {
+        ...value.render.rendering,
+        cpuSubmitMs: { p50: 1, p95: 1, p999: 1, maximum: 1, sampleCount: 1 },
+      },
+      { ...value.render.rendering, gpuTimingState: "measured" },
+      { ...value.render.rendering, maximumCasterCount: 0 },
+    ]) {
+      expect(() =>
+        requireFlythroughEvidence({ ...value, render: { ...value.render, rendering } }),
+      ).toThrow();
+    }
+  });
+
   it("accepts complete path, environment, presentation, and checkpoint evidence", () => {
     expect(requireFlythroughEvidence(validEvidence())).toMatchObject({
       scenarioId: FLYTHROUGH_D1_SCENARIO,

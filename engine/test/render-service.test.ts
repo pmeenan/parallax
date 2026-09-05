@@ -591,6 +591,15 @@ describe("render service recovery", () => {
       minimumVisibleStreamingMeshCount: 1,
       observerUpdateCount: 1,
       previewVisibleFrameCount: 0,
+      rendering: {
+        cpuSubmitMs: { p50: 1, p95: 1, p999: 1, maximum: 1, sampleCount: 1 },
+        gpuFrameEmaMs: null,
+        shadowTaskGpuMs: null,
+        gpuTimingState: "unsupported" as const,
+        gpuSamplePolicy: "latest-completed-at-submit" as const,
+        maximumCasterCount: 0,
+        depthArrayBytes: 16_777_216,
+      },
       renderDurationMs: distribution(1),
       scenario: mutableScenario,
       scenarioId: "mutable@1",
@@ -1442,6 +1451,19 @@ function frameSample() {
     presentIntervalMs: null,
     sunDirection: [0, -1, 0] as [number, number, number],
     sunIntensity: 1,
+    rendering: {
+      casterCount: 0,
+      depthArrayBytes: 16_777_216,
+      membershipUpdates: 0,
+      retainedMaterialCount: 0,
+      technique: "directional-csm-pcf5@1" as const,
+      cpuSubmitMs: 1,
+      gpuFrameEmaMs: null,
+      shadowTaskGpuMs: null,
+      gpuTaskFrameIndex: null,
+      gpuTaskStatus: "unsupported",
+      droppedGpuTasks: 0,
+    },
   });
 }
 

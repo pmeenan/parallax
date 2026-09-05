@@ -708,3 +708,23 @@ evidence.
 **Ecosystem numbers (measured 2026-07-19 via npm/GitHub APIs)**
 - npm weekly downloads: `three` 11.58M · `@babylonjs/core` 211K (+ legacy `babylonjs` 18K)
 - GitHub stars: three.js 113.8K · Babylon.js 25.8K
+
+### M4.5 integrated CSM material retention (D-183)
+
+The exact Lite 1.12.0 `csm-shadow-task-hooks.js` incremental path removes retired
+meshes from cascade tasks but leaves their source materials in `_materialViews` and
+`_casterMatGens`. Production streaming creates new material instances on uploads, so
+those maps otherwise retain evicted content across traversals. The engine's bounded
+adapter prunes keys absent from the next visible caster list; it neither disposes live
+shared materials nor changes the public task-update path. Guards require the pinned Map
+shape. Focused tests cover shared live materials, retired keys, and shape drift; the
+integration run verifies behavior in the real worker. This is a renderer-library gap,
+not a Chrome finding. Remove/requalify the adapter when an upgraded pin fixes retention.
+
+The same integration exposed a separate coverage default: the pinned CSM receiver
+selects its last cascade beyond `shadowMaxZ`, and its default zero edge falloff leaves
+clamped depth samples visible on kilometer-scale ground. The `after-cycle2` captures
+show a broad dark band; `after-falloff` removes it with the public
+`frustumEdgeFalloff: 0.1` setting while preserving the capsule contact shadow. Both
+captures live under `harness/results/m45-csm-integration-2026-09-04/`. This is bounded
+coverage with an edge fade, not long-distance shadows or an artistic acceptance claim.

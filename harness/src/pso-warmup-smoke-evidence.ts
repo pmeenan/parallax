@@ -36,20 +36,25 @@ export function resolvePsoWarmupEvidence(
     validated.state !== "ready" ||
     validated.source !== "privileged-embedded" ||
     validated.releaseDigest !== null ||
-    validated.traceEntryCount !== 1 ||
-    validated.requestedCount !== 2 ||
-    validated.compiledCount !== 1 ||
-    validated.cacheMissCount !== 1 ||
+    validated.traceEntryCount !== 3 ||
+    validated.requestedCount !== 4 ||
+    validated.compiledCount !== 3 ||
+    validated.cacheMissCount !== 3 ||
     validated.cacheHitCount !== 1 ||
-    validated.deferredCount !== 1 ||
+    validated.deferredCount !== 3 ||
     validated.failure !== null ||
     validated.failureCount !== 0 ||
-    validated.queueHighWater !== 1 ||
-    validated.entries.length !== 1 ||
+    validated.queueHighWater !== 3 ||
+    validated.entries.length !== 3 ||
     entry?.id !== "babylon-lite.standard-opaque-msaa4" ||
     entry.compileAttemptCount !== 1 ||
     !entry.compiled ||
-    entry.requestCount !== 2
+    entry.requestCount !== 2 ||
+    validated.entries
+      .slice(1)
+      .some(
+        (entry) => entry.compileAttemptCount !== 1 || !entry.compiled || entry.requestCount !== 1,
+      )
   ) {
     return Object.freeze({
       reason: "PSO warmup telemetry did not prove exact trace replay and registry deduplication",

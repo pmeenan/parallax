@@ -230,6 +230,7 @@ function freezeGreyboxTelemetry(value: GreyboxRenderTelemetry): GreyboxRenderTel
 function freezeRenderFrameSample(value: RenderFrameSample): RenderFrameSample {
   return Object.freeze({
     ...value,
+    rendering: Object.freeze({ ...value.rendering }),
     sunDirection: freezeWorldVector(value.sunDirection),
   });
 }
@@ -1452,6 +1453,18 @@ function freezeRenderFlythroughTelemetry(
     environmentPhaseOrder: Object.freeze([...value.environmentPhaseOrder]),
     finalObserver: freezeWorldVector(value.finalObserver),
     renderDurationMs: Object.freeze({ ...value.renderDurationMs }),
+    rendering: Object.freeze({
+      ...value.rendering,
+      cpuSubmitMs: Object.freeze({ ...value.rendering.cpuSubmitMs }),
+      gpuFrameEmaMs:
+        value.rendering.gpuFrameEmaMs === null
+          ? null
+          : Object.freeze({ ...value.rendering.gpuFrameEmaMs }),
+      shadowTaskGpuMs:
+        value.rendering.shadowTaskGpuMs === null
+          ? null
+          : Object.freeze({ ...value.rendering.shadowTaskGpuMs }),
+    }),
     scenario: Object.freeze({
       ...value.scenario,
       camera: Object.freeze({ ...value.scenario.camera }),

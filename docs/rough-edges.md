@@ -1920,6 +1920,27 @@ history if a current plan item reopens the comparison.
   intermittent signature and not evidence of a separate zero-chunk bug. D-114 closes
   the one-shot apparatus; the result changes neither routine smoke nor flythrough
   deadlines.
+- **M4.5 integrated CSM, 2026-09-04:** physical dev-01 / Chrome for Testing Stable
+  152.0.7977.54 / Windows 11 26200.9168 / RTX 4080 Super driver 32.0.16.1074,
+  D3D12, completed the standard ten-minute route but reported `dataLoss=true` in
+  `flythrough-d1-1-3e610c0328fe-dev-01-showcase-2026-09-05T01-31-08-959Z.json`.
+  The narrow Dawn/user-timing trace delivered 4,329,014 events in 24,766 chunks /
+  710,956,503 serialized bytes; `Tracing.end` acknowledged in 0.246 ms and completion
+  arrived in 17,933.7 ms. This is reported data loss, not a completion timeout. Capacity
+  was unspecified (the pinned CDP protocol documents a 200 MB default); the actual
+  loss location is not established. No budget or zero-gameplay-compile claim survives.
+  The pre-CSM control separately failed its third clear-daylight checkpoint, so it is
+  also invalid. Flythrough v37 now preserves raw gameplay telemetry before trace
+  finalization and requests/records 1,048,576 KiB; a bounded rerun tests that capacity
+  hypothesis without changing categories, route, repeats, loss checks, or deadlines.
+  The bounded same-artifact rerun
+  `flythrough-d1-1-3e610c0328fe-dev-01-showcase-2026-09-05T01-58-31-402Z.json`
+  completed two lossless traces: 6,626,049 / 6,624,862 events and 1,093,350,490 /
+  1,092,301,292 serialized bytes, draining in 28,120.3 / 28,822.3 ms within the unchanged
+  30-second deadline. This supports explicit capacity as a mitigation for this workload;
+  it does not identify the internal loss location or qualify larger workloads. Repeat
+  three failed its initial rendered checkpoint before tracing, exactly as the pre-CSM
+  control did. The overall report remains failed and its budget facet not evaluated.
 - **Repro:** to reproduce the coupling, run a combined trace with
   `disabled-by-default-gpu.dawn`, `disabled-by-default-display.framedisplayed`, `v8`, and
   `blink.user_timing`; keep the measured page alive through `Tracing.end` with the ten-second

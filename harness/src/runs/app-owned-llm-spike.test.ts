@@ -296,5 +296,18 @@ function frames(count: number): RenderFrameSample[] {
     presentIntervalMs: 16,
     sunDirection: [0, -1, 0],
     sunIntensity: 1,
+    rendering: {
+      casterCount: 0,
+      depthArrayBytes: 16_777_216,
+      membershipUpdates: 0,
+      retainedMaterialCount: 0,
+      technique: "directional-csm-pcf5@1" as const,
+      cpuSubmitMs: 1,
+      gpuFrameEmaMs: null,
+      shadowTaskGpuMs: null,
+      gpuTaskFrameIndex: null,
+      gpuTaskStatus: "unsupported",
+      droppedGpuTasks: 0,
+    },
   }));
 }

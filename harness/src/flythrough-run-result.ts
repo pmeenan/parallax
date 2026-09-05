@@ -1,3 +1,4 @@
+import type { ParallaxTelemetrySnapshot } from "@parallax/engine";
 import type {
   BrowserDisplayIdentity,
   CdpGpuDevice,
@@ -7,6 +8,7 @@ import type {
 import { type JsHeapEvidence, type JsHeapMetric, JsHeapValidationError } from "./js-heap.js";
 
 export interface FlythroughTraceDrainEvidence {
+  readonly requestedBufferSizeKiB: number;
   readonly categories: readonly string[];
   readonly completionAfterEndCommandMs: number | null;
   readonly completionDeadlineExceeded: boolean | null;
@@ -37,6 +39,8 @@ export interface MeasuredFlythroughEnvironment {
 }
 
 export interface FlythroughAttempt<T> {
+  /** Raw observation retained on failure; never contributes to qualification. */
+  readonly diagnosticTelemetry: ParallaxTelemetrySnapshot | null;
   readonly browserErrors: readonly string[];
   readonly environment: MeasuredFlythroughEnvironment | null;
   readonly failureMessage: string | null;
@@ -52,6 +56,7 @@ export interface FlythroughAttempt<T> {
 }
 
 export function assembleFlythroughAttempt<T>(input: {
+  readonly diagnosticTelemetry?: ParallaxTelemetrySnapshot | null;
   readonly browserErrors: readonly string[];
   readonly environment: MeasuredFlythroughEnvironment | null;
   readonly error: unknown | null;
@@ -83,6 +88,7 @@ export function assembleFlythroughAttempt<T>(input: {
     input.environment !== null &&
     input.traceDrain !== null;
   return Object.freeze({
+    diagnosticTelemetry: input.diagnosticTelemetry ?? null,
     browserErrors: Object.freeze([...input.browserErrors]),
     environment: input.environment,
     failureMessage: measured

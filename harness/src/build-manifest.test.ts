@@ -47,7 +47,7 @@ async function writeFixture(
   const psoBody = `${JSON.stringify(
     {
       buildCompatibilityDigest: psoIdentity.buildCompatibilityDigest,
-      entries: [psoIdentity.entry],
+      entries: psoIdentity.entries,
       renderer: psoIdentity.renderer,
       schemaVersion: psoIdentity.schemaVersion,
     },

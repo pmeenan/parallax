@@ -19,6 +19,17 @@ import {
 } from "../src/render/pso-warmup-babylon-observer";
 
 describe("PSO warmup trace contract", () => {
+  it("observes all three pinned shipping pipelines and rejects an omitted depth pass", async () => {
+    const complete = await createCsmBoundary();
+    const observed = await complete.observation.registerAll([complete.mesh], complete.compile);
+    expect([...observed]).toEqual(
+      createPsoWarmupTrace().entries.map((entry) => [entry.id, entry.stateDigest]),
+    );
+    const missing = await createCsmBoundary(true);
+    await expect(missing.observation.registerAll([missing.mesh], missing.compile)).rejects.toThrow(
+      /standard-csm-depth.*observed 0/,
+    );
+  });
   it("keeps bounded failure details idempotent at whitespace truncation boundaries", () => {
     for (let prefixLength = 0; prefixLength < 240; prefixLength += 1) {
       const sanitized = sanitizePsoWarmupFailureDetail(
@@ -91,21 +102,24 @@ describe("PSO warmup trace contract", () => {
 
   it("rejects mutation of every effective pipeline descriptor leaf", () => {
     const trace = createPsoWarmupTrace();
-    const state = trace.entries[0]?.state;
-    expect(state).toBeDefined();
-    const paths = leafPaths(state);
-    expect(paths.length).toBeGreaterThan(40);
-    for (const path of paths) {
-      const mutatedState = structuredClone(state);
-      mutateLeaf(mutatedState, path);
-      expect(
-        () =>
-          parsePsoWarmupTrace({
-            ...trace,
-            entries: [{ ...trace.entries[0], state: mutatedState }],
-          }),
-        path.join("."),
-      ).toThrow(/entry is incompatible/);
+    for (const [index, entry] of trace.entries.entries()) {
+      const state = entry.state;
+      const paths = leafPaths(state);
+      expect(paths.length).toBeGreaterThan(40);
+      for (const path of paths) {
+        const mutatedState = structuredClone(state);
+        mutateLeaf(mutatedState, path);
+        expect(
+          () =>
+            parsePsoWarmupTrace({
+              ...trace,
+              entries: trace.entries.map((candidate, candidateIndex) =>
+                candidateIndex === index ? { ...candidate, state: mutatedState } : candidate,
+              ),
+            }),
+          path.join("."),
+        ).toThrow(/entry is incompatible/);
+      }
     }
   });
 
@@ -610,4 +624,75 @@ function mutateLeaf(input: unknown, path: readonly (string | number)[]): void {
         : typeof value === "number"
           ? value + 1
           : `${String(value)}-mutated`;
+}
+
+async function createCsmBoundary(omitDepth = false) {
+  const device = createFakeDevice();
+  const observation = observeStandardOpaquePsoRegistration(engineForDevice(device));
+  const mesh = createStandardMesh();
+  mesh.receiveShadows = true;
+  // Exact-pin private shader composition is deliberately exercised at this boundary.
+  const composer = (await import(
+    // @ts-expect-error The package does not expose the private composer in its exports.
+    "../node_modules/@babylonjs/lite/lib/material/standard/standard-pipeline.js"
+  )) as unknown as {
+    composeStandardShader(
+      features: number,
+      meshFeatures: number,
+      fragments: readonly unknown[],
+    ): {
+      _meshBGLDescriptor: GPUBindGroupLayoutDescriptor;
+      _shadowBGLDescriptor?: GPUBindGroupLayoutDescriptor;
+      _vertexWGSL: string;
+      _fragmentWGSL: string;
+      _vertexBufferLayouts: GPUVertexBufferLayout[];
+    };
+  };
+  const fragments = (await import(
+    // @ts-expect-error Same pinned private receiver fragment used by the shipping public CSM API.
+    "../node_modules/@babylonjs/lite/lib/material/standard/fragments/std-csm-shadow-fragment.js"
+  )) as unknown as {
+    createStdCsmShadowFragment(lights: readonly { lightIndex: number }[]): unknown;
+  };
+  const sceneLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: 3, buffer: { type: "uniform" } },
+      { binding: 1, visibility: 2, buffer: { type: "uniform" } },
+    ],
+  });
+  return {
+    observation,
+    mesh,
+    compile: () => {
+      for (const entry of createPsoWarmupTrace().entries.slice(0, omitDepth ? 2 : 3)) {
+        const state = entry.state;
+        const composed = composer.composeStandardShader(
+          state.shader.materialFeatureKey,
+          state.shader.meshFeatureKey,
+          state.shader.meshFeatureKey === 256
+            ? [fragments.createStdCsmShadowFragment([{ lightIndex: 1 }])]
+            : [],
+        );
+        const groups = [sceneLayout, device.createBindGroupLayout(composed._meshBGLDescriptor)];
+        if (composed._shadowBGLDescriptor)
+          groups.push(device.createBindGroupLayout(composed._shadowBGLDescriptor));
+        device.createRenderPipeline({
+          layout: device.createPipelineLayout({ bindGroupLayouts: groups }),
+          vertex: {
+            module: device.createShaderModule({ code: composed._vertexWGSL }),
+            entryPoint: "main",
+            buffers: composed._vertexBufferLayouts,
+          },
+          fragment: {
+            module: device.createShaderModule({ code: composed._fragmentWGSL }),
+            entryPoint: "main",
+            targets: state.colorTarget === null ? [] : [{ format: state.colorTarget.format }],
+          },
+          depthStencil: state.depthStencil,
+          multisample: state.multisample,
+          primitive: { topology: "triangle-list", cullMode: "back", frontFace: "ccw" },
+        });
+      }
+    },
+  };
 }

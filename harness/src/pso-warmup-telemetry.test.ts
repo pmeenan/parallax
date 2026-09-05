@@ -26,11 +26,17 @@ describe("independent PSO warmup telemetry validator", () => {
       { ...snapshot, buildCompatibilityDigest: "b".repeat(64) },
       {
         ...snapshot,
-        entries: [{ ...snapshot.entries[0], stateDigest: "c".repeat(64) }],
+        entries: [
+          { ...snapshot.entries[0], stateDigest: "c".repeat(64) },
+          ...snapshot.entries.slice(1),
+        ],
       },
       {
         ...snapshot,
-        entries: [{ ...snapshot.entries[0], id: "babylon-lite.other-well-formed-entry" }],
+        entries: [
+          { ...snapshot.entries[0], id: "babylon-lite.other-well-formed-entry" },
+          ...snapshot.entries.slice(1),
+        ],
       },
     ]) {
       expect(() =>
@@ -141,31 +147,33 @@ function exactSnapshot(): PsoWarmupTelemetrySnapshot {
   return Object.freeze({
     buildCompatibilityDigest: identity.buildCompatibilityDigest,
     cacheHitCount: 1,
-    cacheMissCount: 1,
-    compiledCount: 1,
+    cacheMissCount: 3,
+    compiledCount: 3,
     contract: "pso-warmup-telemetry@1",
-    deferredCount: 1,
-    entries: Object.freeze([
-      Object.freeze({
-        compileAttemptCount: 1,
-        compileDurationMs: 1,
-        compiled: true,
-        id: identity.entry.id,
-        requestCount: 2,
-        stateDigest: identity.entry.stateDigest,
-      }),
-    ]),
+    deferredCount: 3,
+    entries: Object.freeze(
+      identity.entries.map((entry, index) =>
+        Object.freeze({
+          compileAttemptCount: 1,
+          compileDurationMs: 1,
+          compiled: true,
+          id: entry.id,
+          requestCount: index === 0 ? 2 : 1,
+          stateDigest: entry.stateDigest,
+        }),
+      ),
+    ),
     failure: null,
     failureCount: 0,
     maximumCompileDurationMs: 1,
-    queueHighWater: 1,
+    queueHighWater: 3,
     releaseDigest: null,
-    requestedCount: 2,
+    requestedCount: 4,
     schemaVersion: 1,
     source: "privileged-embedded",
     state: "ready",
     totalDurationMs: 2,
-    traceEntryCount: 1,
+    traceEntryCount: 3,
     traceSha256: identity.sha256,
   });
 }
@@ -176,6 +184,9 @@ function compileFailureSnapshot(): PsoWarmupTelemetrySnapshot {
   if (entry === undefined) throw new Error("Ready PSO fixture has no entry");
   return Object.freeze({
     ...ready,
+    cacheMissCount: 1,
+    deferredCount: 1,
+    queueHighWater: 1,
     cacheHitCount: 0,
     compiledCount: 0,
     entries: Object.freeze([

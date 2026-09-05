@@ -77,7 +77,7 @@ short (each gap in observability is itself a rough-edges finding — log it).
 - `pnpm harness:scale-streaming` — representative schema-v2 compressed dependency,
   decode, cache-ownership, and GPU-upload scale qualifier.
 - `pnpm harness:shadow-strategies` — active M4.5 standalone directional-shadow research
-  probe. It isolates the shipping no-shadow PSO contract, compares no-shadow, PCF, ESM,
+  probe. It isolates comparison variants from the release PSO registry, compares no-shadow, PCF, ESM,
   and CSM over the exact `showcase-4k-final-art-proxy-553-casters@1` workload in fresh
   pinned-Chrome launches, records per-task/whole-frame GPU and CPU-submit costs plus
   fixed-camera captures, and marks any cross-launch cost spread above 10% as invalid

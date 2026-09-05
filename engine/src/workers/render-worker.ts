@@ -94,6 +94,12 @@ interface FlythroughFrameAccumulator {
   observerUpdateCount: number;
   previewVisibleFrameCount: number;
   readonly renderDurationsMs: number[];
+  readonly cpuSubmitMs: number[];
+  readonly gpuFrameEmaMs: number[];
+  readonly shadowTaskGpuMs: number[];
+  lastGpuTaskFrameIndex: number;
+  maximumCasterCount: number;
+  gpuTimingUnsupported: boolean;
   readonly scenarioId: string;
   streamedPresentationFrameCount: number;
 }
@@ -348,6 +354,12 @@ function startRenderWorker(): void {
           observerUpdateCount: 0,
           previewVisibleFrameCount: 0,
           renderDurationsMs: [],
+          cpuSubmitMs: [],
+          gpuFrameEmaMs: [],
+          shadowTaskGpuMs: [],
+          lastGpuTaskFrameIndex: -1,
+          maximumCasterCount: 0,
+          gpuTimingUnsupported: false,
           scenarioId: scenario.id,
           streamedPresentationFrameCount: 0,
         };
@@ -651,6 +663,7 @@ function startRenderWorker(): void {
         }
 
         const sample: RenderFrameSample = Object.freeze({
+          rendering: lighting.rendering,
           durationMs: performance.now() - frameStartedAt,
           lightingIntensity: lighting.intensity,
           lightingPhase: lighting.phase,
@@ -680,6 +693,23 @@ function startRenderWorker(): void {
             throw new Error("Flythrough aggregation lost its active render sample");
           }
           activeFlythrough.renderDurationsMs.push(sample.durationMs);
+          activeFlythrough.cpuSubmitMs.push(sample.rendering.cpuSubmitMs);
+          activeFlythrough.gpuTimingUnsupported ||=
+            sample.rendering.gpuTaskStatus === "unsupported";
+          if (sample.rendering.gpuFrameEmaMs !== null)
+            activeFlythrough.gpuFrameEmaMs.push(sample.rendering.gpuFrameEmaMs);
+          if (
+            sample.rendering.gpuTaskFrameIndex !== null &&
+            sample.rendering.gpuTaskFrameIndex > activeFlythrough.lastGpuTaskFrameIndex
+          ) {
+            activeFlythrough.lastGpuTaskFrameIndex = sample.rendering.gpuTaskFrameIndex;
+            if (sample.rendering.shadowTaskGpuMs !== null)
+              activeFlythrough.shadowTaskGpuMs.push(sample.rendering.shadowTaskGpuMs);
+          }
+          activeFlythrough.maximumCasterCount = Math.max(
+            activeFlythrough.maximumCasterCount,
+            sample.rendering.casterCount,
+          );
           if (activeFlythrough.frameCount > 0 && sample.presentIntervalMs !== null) {
             activeFlythrough.callbackIntervalsMs.push(sample.presentIntervalMs);
           }
@@ -996,6 +1026,22 @@ function freezeFlythroughTelemetry(
     observerUpdateCount: accumulator.observerUpdateCount,
     previewVisibleFrameCount: accumulator.previewVisibleFrameCount,
     renderDurationMs: distribution(accumulator.renderDurationsMs),
+    rendering: Object.freeze({
+      cpuSubmitMs: distribution(accumulator.cpuSubmitMs),
+      gpuFrameEmaMs:
+        accumulator.gpuFrameEmaMs.length === 0 ? null : distribution(accumulator.gpuFrameEmaMs),
+      shadowTaskGpuMs:
+        accumulator.shadowTaskGpuMs.length === 0 ? null : distribution(accumulator.shadowTaskGpuMs),
+      gpuTimingState: accumulator.gpuTimingUnsupported
+        ? "unsupported"
+        : accumulator.gpuFrameEmaMs.length >= accumulator.frameCount * 0.8 &&
+            accumulator.shadowTaskGpuMs.length >= accumulator.frameCount * 0.8
+          ? "measured"
+          : "invalid",
+      gpuSamplePolicy: "latest-completed-at-submit" as const,
+      maximumCasterCount: accumulator.maximumCasterCount,
+      depthArrayBytes: 16_777_216,
+    }),
     scenario: freezeFlythroughScenario(scenario),
     scenarioId: accumulator.scenarioId,
     state: "completed",

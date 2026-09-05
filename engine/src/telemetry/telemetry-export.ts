@@ -61,7 +61,7 @@ import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
 // Public telemetry v47 makes the applied directional-sun model, direction, and intensity
 // observable. v46 added scenario-owned district-swap prefetch evidence.
-export const TELEMETRY_SCHEMA_VERSION = 47;
+export const TELEMETRY_SCHEMA_VERSION = 48;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by

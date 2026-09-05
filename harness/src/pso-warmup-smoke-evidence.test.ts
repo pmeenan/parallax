@@ -105,31 +105,33 @@ function readySnapshot(): PsoWarmupTelemetrySnapshot {
   return {
     buildCompatibilityDigest: identity.buildCompatibilityDigest,
     cacheHitCount: 1,
-    cacheMissCount: 1,
-    compiledCount: 1,
+    cacheMissCount: 3,
+    compiledCount: 3,
     contract: "pso-warmup-telemetry@1",
-    deferredCount: 1,
-    entries: [
-      {
-        compileAttemptCount: 1,
-        compileDurationMs: 1,
-        compiled: true,
-        id: identity.entry.id,
-        requestCount: 2,
-        stateDigest: identity.entry.stateDigest,
-      },
-    ],
+    deferredCount: 3,
+    entries: Object.freeze(
+      identity.entries.map((entry, index) =>
+        Object.freeze({
+          compileAttemptCount: 1,
+          compileDurationMs: 1,
+          compiled: true,
+          id: entry.id,
+          requestCount: index === 0 ? 2 : 1,
+          stateDigest: entry.stateDigest,
+        }),
+      ),
+    ),
     failure: null,
     failureCount: 0,
     maximumCompileDurationMs: 1,
-    queueHighWater: 1,
+    queueHighWater: 3,
     releaseDigest: null,
-    requestedCount: 2,
+    requestedCount: 4,
     schemaVersion: 1,
     source: "privileged-embedded",
     state: "ready",
     totalDurationMs: 2,
-    traceEntryCount: 1,
+    traceEntryCount: 3,
     traceSha256: identity.sha256,
   };
 }
@@ -140,6 +142,9 @@ function compileFailureSnapshot(): PsoWarmupTelemetrySnapshot {
   if (entry === undefined) throw new Error("Ready fixture has no PSO entry");
   return {
     ...ready,
+    cacheMissCount: 1,
+    deferredCount: 1,
+    queueHighWater: 1,
     cacheHitCount: 0,
     compiledCount: 0,
     entries: [{ ...entry, compiled: false, requestCount: 1 }],

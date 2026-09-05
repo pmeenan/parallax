@@ -110,7 +110,7 @@ async function traceFixture(): Promise<
   const source = `immutable/pso-warmup-trace-${identity.sha256}.json`;
   const trace = {
     buildCompatibilityDigest: identity.buildCompatibilityDigest,
-    entries: [identity.entry],
+    entries: identity.entries,
     renderer: identity.renderer,
     schemaVersion: identity.schemaVersion,
   };

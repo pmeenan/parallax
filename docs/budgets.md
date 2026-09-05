@@ -578,9 +578,10 @@ Definitions the harness implements; budgets above are meaningless without them.
   through a platform evidence gap, but neither missing evidence nor a passing subset
   of checks can appear green. D-051 deliberately classifies the M0 compositor/V8 observability
   gaps as non-mandatory informational failures; this rule continues to apply to every metric in
-   the current `smoke@1` mandatory metric-set (v36, which retains measured D-090 greybox-world content,
+   the current `smoke@1` mandatory metric-set (v37, which retains measured D-090 greybox-world content,
   observed lighting ranges and hashed canvas-visible-pixel coverage in every core run,
-  and requires M4.5's exact hemispheric-ambient/directional-sun model plus finite,
+  and requires M4.5's exact hemispheric-ambient/directional-sun/CSM model and all three
+  release-bound warmup states (D-183), plus finite,
   normalized, moving world-space sun-ray directions and positive direct intensity in
   the daylight smoke window,
   adds D-091 world-streaming telemetry with at least ten OPFS-to-GPU samples, exactly nine
@@ -603,7 +604,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   while retaining the JSON artifact. D-126 additionally requires exact single-response
   batch-atomic render transaction identity, ordered membership, request/completion counters,
   cell/direct-upload high-water, and conserved per-cell timing attribution. The
-   corresponding current `smoke@1` report schema is v76
+   corresponding current `smoke@1` report schema is v77
    and public telemetry is v47. D-161 additionally requires each core run to retain
   measured hybrid-UI evidence: a ready DOM HUD tree plus the matching presentation
   revision and at least one visible world-anchor record ingested by the render worker's
@@ -701,7 +702,11 @@ Definitions the harness implements; budgets above are meaningless without them.
   count for stored-evidence revalidation; invalid smoke attempts preserve the raw
   start/end streaming snapshots and localized validation reason.
   V8 lifecycle checks are diagnostics, not budget checks.
-  `flythrough-d1@1` report schema v35/mandatory metric set v11 consumes flythrough
+  `flythrough-d1@1` report schema v37/mandatory metric set v11 consumes flythrough
+  rendering diagnostics with complete CPU-submit counts and explicit GPU availability.
+  `gpuFrameEmaMs` summarizes Lite's smoothed whole-frame values; `shadowTaskGpuMs`
+  summarizes distinct completed shadow-task frames. These are diagnostic costs, not
+  replacements for existing frame/present budgets. The report consumes flythrough
   telemetry v3 and separately requires exact
   route and ordered environment completion, streamed presentation ownership with the
   preview hidden, six GPU-backbuffer checkpoint captures, full-window render aggregates,

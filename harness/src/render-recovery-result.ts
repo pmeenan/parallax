@@ -526,6 +526,7 @@ function validateRenderFrame(value: unknown, label: string): void {
       "lightingIntensity",
       "lightingPhase",
       "presentIntervalMs",
+      "rendering",
       "sunDirection",
       "sunIntensity",
     ],
@@ -541,6 +542,44 @@ function validateRenderFrame(value: unknown, label: string): void {
     (frame.presentIntervalMs !== null && !nonNegativeFinite(frame.presentIntervalMs))
   ) {
     throw new Error(`${label} is invalid`);
+  }
+  const rendering = requireRecord(frame.rendering, `${label} rendering`);
+  requireExactKeys(
+    rendering,
+    [
+      "casterCount",
+      "depthArrayBytes",
+      "membershipUpdates",
+      "retainedMaterialCount",
+      "technique",
+      "cpuSubmitMs",
+      "gpuFrameEmaMs",
+      "shadowTaskGpuMs",
+      "gpuTaskFrameIndex",
+      "gpuTaskStatus",
+      "droppedGpuTasks",
+    ],
+    `${label} rendering`,
+  );
+  if (
+    rendering.technique !== "directional-csm-pcf5@1" ||
+    rendering.depthArrayBytes !== 16_777_216 ||
+    ![
+      rendering.casterCount,
+      rendering.membershipUpdates,
+      rendering.retainedMaterialCount,
+      rendering.droppedGpuTasks,
+    ].every(nonNegativeInteger) ||
+    !nonNegativeFinite(rendering.cpuSubmitMs) ||
+    ![rendering.gpuFrameEmaMs, rendering.shadowTaskGpuMs].every(
+      (value) => value === null || nonNegativeFinite(value),
+    ) ||
+    !(rendering.gpuTaskFrameIndex === null || nonNegativeInteger(rendering.gpuTaskFrameIndex)) ||
+    !["available", "disabled", "pending", "unsupported", "error"].includes(
+      String(rendering.gpuTaskStatus),
+    )
+  ) {
+    throw new Error(`${label} rendering is invalid`);
   }
 }
 

@@ -20,7 +20,7 @@ import type { PsoWarmupTelemetrySnapshot, PsoWarmupTraceBundle } from "./pso-war
 export type { GreyboxSceneConfig } from "../world/world-contract";
 
 export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
-export const RENDER_LIGHTING_MODEL = "hemispheric-ambient-directional-sun@1" as const;
+export const RENDER_LIGHTING_MODEL = "hemispheric-ambient-directional-sun-csm@1" as const;
 
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;
@@ -151,6 +151,20 @@ export type RenderWorkerRequest =
   | RenderStartMessage;
 
 export interface RenderFrameSample {
+  readonly rendering: Readonly<{
+    casterCount: number;
+    depthArrayBytes: number;
+    membershipUpdates: number;
+    retainedMaterialCount: number;
+    technique: "directional-csm-pcf5@1";
+    cpuSubmitMs: number;
+    /** Lite 1.12.0 EMA (0.8 previous + 0.2 latest), not a raw frame duration. */
+    gpuFrameEmaMs: number | null;
+    shadowTaskGpuMs: number | null;
+    gpuTaskFrameIndex: number | null;
+    gpuTaskStatus: string;
+    droppedGpuTasks: number;
+  }>;
   readonly durationMs: number;
   /** Legacy bounded perceived/display index; not an individual applied light intensity. */
   readonly lightingIntensity: number;
@@ -231,6 +245,15 @@ export interface RenderFlythroughTelemetry {
   readonly observerUpdateCount: number;
   readonly previewVisibleFrameCount: number;
   readonly renderDurationMs: RenderDistributionTelemetry;
+  readonly rendering: Readonly<{
+    cpuSubmitMs: RenderDistributionTelemetry;
+    gpuFrameEmaMs: RenderDistributionTelemetry | null;
+    shadowTaskGpuMs: RenderDistributionTelemetry | null;
+    gpuTimingState: "measured" | "unsupported" | "invalid";
+    gpuSamplePolicy: "latest-completed-at-submit";
+    maximumCasterCount: number;
+    depthArrayBytes: number;
+  }>;
   readonly scenario: FlythroughScenario;
   readonly scenarioId: string;
   readonly state: "completed";

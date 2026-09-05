@@ -28,6 +28,41 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-183: Bind integrated CSM to the release warmup registry (2026-09-04, accepted; human visual acceptance confirmed, performance qualification pending)
+
+**Decision:** retain the strict D-139 trace schema and expand its exact state registry
+from Standard opaque MSAA4 to three ordered states: opaque, Standard CSM receiver
+MSAA4, and Standard CSM depth32float/MSAA1. The compatibility digest and immutable
+trace bytes change with this registry. Boot observes exactly one creation of each
+pinned descriptor and composed WGSL family, including an initial shadow-task execution,
+before Ready. The three registry requests share Babylon scene registration; their
+reported durations overlap and must not be summed. An additional opaque request still
+proves registry deduplication. Independent harness trace/replay validation covers every
+entry and fails for omissions, extras, or drift.
+
+**Context/consequences:** D-182 selects production integration of the retained CSM
+candidate; it does not grant artistic acceptance. All runtime meshes except UI receive
+shadows. The caster list contains visible scene-owned meshes and is replaced on
+membership changes. A bounded Lite 1.12.0 adapter prunes retired keys from the CSM
+material-view/generation maps, whose native incremental removal leaves those references
+behind. Shape guards fail closed; public caster inputs still own render-task updates.
+Frame/flythrough telemetry reports caster counts, the logical 16 MiB depth array,
+submission/GPU/task diagnostics and timing availability. Whole-frame GPU values use
+Lite's EMA (0.8 previous + 0.2 latest), labelled `gpuFrameEmaMs`; their distribution
+is not a raw-frame GPU percentile. Task samples deduplicate their frame indices.
+Flythrough report v37 retains raw diagnostic gameplay snapshots even when trace/heap
+finalization invalidates an attempt; only qualified `result` entries enter budgets.
+Its trace configuration explicitly requests 1 GiB and records that request, after the
+integrated workload reported loss with unspecified capacity (RE-008). Categories,
+route, repeat count, loss rejection, and completion deadlines are unchanged. Buffer
+capacity is part of the measurement configuration, so prior configurations are not
+treated as matched controls.
+
+**Reopen if:** the material/mesh/shadow topology or pinned shader/descriptor changes,
+or a Lite update changes the retained material-cache behavior. Add exact trace states
+and requalify the observer instead of permitting unobserved gameplay compiles. CSM
+adoption and its visual compromises remain in the active M4.5 work note.
+
 ## D-182: Deliver representative art and playable scenes before exhaustive rendering research (2026-09-04, accepted; amends D-140/D-141/D-178/D-180)
 
 **Decision:** M4.5 becomes "First finished playable area": a daylight courtyard or village
