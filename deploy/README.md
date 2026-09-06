@@ -1,5 +1,9 @@
 # Production serving and deployment
 
+Shared development-asset storage on `plex` is provisioned separately through
+[`lfs/README.md`](lfs/README.md). Its data and configuration never enter the game
+webroot or the fixed production deployer's inventory.
+
 Production is the fixed origin `https://parallax-web.com`, served directly by nginx
 from `/var/www/parallax-web.com` (D-011/D-121). The frozen placeholder source remains
 in `site/`; production deployment publishes the verified application `dist/` and never

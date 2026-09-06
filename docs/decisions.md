@@ -28,7 +28,69 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
-## D-188: Commit concept-art and reference originals in git (2026-09-05, accepted; scopes D-186 and the assets binary rule)
+## D-190: Version creative originals through self-hosted Git LFS (2026-09-05, accepted; supersedes D-188 and completes D-189's repository migration)
+
+**Decision:** `.lfsconfig` points this repository at
+`https://git-lfs.meenan.dev/api/pmeenan/parallax`. `.gitattributes` routes creative
+binary formats beneath `assets/` through Git LFS. Reference images/contact sheets
+retain their full-resolution working-tree paths and original-byte hashes; Git records
+LFS pointers. Retained authored source binaries also use LFS, while scripts, metadata,
+provenance, rights records and manifests stay in ordinary Git. D-186's ignored library
+object store and runtime QA/admission contracts remain unchanged.
+
+**Context:** the human requested the switch after D-189's production service passed
+LAN Git LFS transfer and Cloudflare read/access checks. Creative originals will grow
+far beyond practical ordinary Git storage. Initial migration uploads 27 reference
+PNGs (86,281,531 bytes), including five previously tracked images. Their next revision
+contains pointers; existing Git history is not rewritten. New formats require a
+scoped attribute rule before staging; ignored intermediates are not force-added.
+
+**Consequences:** clones/jobs that consume creative originals need Git LFS and network
+access for hydration. LAN hosts overrides bypass Cloudflare's upload limit. All
+objects on this service are public; third-party rights clearance remains mandatory.
+The pre-push hook transfers future objects, but agents still never commit or push
+Git refs. Explicit LFS object transfers are allowed within an authorized asset task.
+Off-machine backup remains outstanding; local originals/caches are retained.
+See `assets/storage.md` for the contributor workflow and `deploy/lfs/README.md` for
+server operations. Existing artistic review states and game budgets are unchanged.
+
+**Reopen if:** private assets, unreliable hydration, storage/backup capacity or
+transfer performance requires a different backend or asset distribution contract.
+
+## D-189: Provision shared self-hosted LFS on plex (2026-09-05, accepted; repository migration completed by D-190)
+
+**Decision:** provision Rudolfs with local-disk storage at `/srv/git-lfs`, behind
+nginx at `git-lfs.meenan.dev`, independently of the game webroot. GitHub remains the
+code host. Cloudflare serves public traffic; developer hosts overrides route the
+same hostname directly to `192.168.0.7`. Per the operator's explicit requirement,
+actual peers in `192.168.0.0/16` may upload without credentials. Other writes require
+nginx Basic authentication. All namespaces are publicly readable; private projects
+need a different access policy before uploading. Forwarded headers cannot grant LAN
+privileges. Source-NAT of public connections into the trusted subnet is incompatible
+with this policy.
+
+**Context:** the expected creative originals outgrow ordinary Git storage. A dedicated
+LFS backend avoids operating another full Git host. The installer and operational
+contract are in `deploy/lfs/README.md`; the image is digest-pinned in its compose file.
+Read-only batch negotiation remains public, while every object PUT is checked by
+nginx. Local disk is required: presigned object-storage uploads would need a fresh
+authorization review. A disposable plex qualification passed authenticated and LAN
+uploads, anonymous downloads, spoof rejection and a 2,147,483,665-byte SHA-256 round
+trip. The operator installed the service; production verification then passed trusted
+TLS, a real Git LFS LAN upload/cold-cache checkout, public Cloudflare batch/download
+with matching hashes, and denied non-LAN writes. Details are in `deploy/lfs/README.md`.
+
+**Consequences:** this provisions infrastructure; it does not yet supersede D-188,
+change `.gitattributes`, migrate originals or change D-186's QA/library contracts.
+Those changes follow production verification. Off-machine backups are required for
+durability but are not configured by this installation. LFS pointers cannot replace
+lost objects. This Rudolfs version provides full downloads, not Range-based resume.
+
+**Reopen if:** private projects, multiple permission levels, remote writer workflows,
+storage scale, resumable transfers or upstream security/maintenance needs exceed this
+service's qualified scope.
+
+## D-188: Commit concept-art and reference originals in git (2026-09-05, superseded by D-190)
 
 **Decision:** generated concept images, contact sheets and their target records for
 the D-187 program are committed in git under `assets/reference/` at full resolution,

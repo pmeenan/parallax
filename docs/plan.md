@@ -373,14 +373,50 @@ Cobblestone modeling and further asset iteration stay paused until its reference
 review is complete. Existing technical admission is not artistic acceptance; the
 individual-stone previews remain rejected. The generation stage now has a prioritized
 target catalog reconciled against named gameplay content, the feature matrix and
-deferred research. No new concepts have been generated or approved. The whole catalog
+deferred research. The human selected Batch 001's B for village character and quality,
+with flame-only lamps; matched gloomy and detail views remain open. The whole catalog
 (about 300 targets, several images each) is generated and reviewed before asset
 iteration resumes; expect on the order of a hundred or more reviewed batches, with no
-total image cap. Concept originals are committed in git under `assets/reference/`
-(D-188).
+total image cap. Concept originals are versioned through Git LFS under `assets/reference/`
+(D-190), with metadata and original-byte hashes in ordinary Git. The shared plex
+service is live; see [asset storage](../assets/storage.md).
+
+Completed direction-selection brief: [Batch 001 — coastal village direction](../assets/reference/concept-art-batch-001.md)
+addressed DIR-002 with three sunny/overcast alternatives (six initially planned images), up to
+two generation/review passes per image and 90 minutes active work, with generation
+waiting separate. Subagents inspect each image before the next generation; the batch
+ends at human direction selection. Theme, construction, material quality, traversal
+readability and paired-state consistency are the must-fix criteria. At A overcast's
+two-pass boundary, both attempts were rejected for paving/plaster drift. The batch
+finished three sunny alternatives; matched overcast coverage remains open for
+the selected direction's next batch, avoiding weather work on discarded alternatives.
+The [comparison board](../assets/reference/concept-art-batch-001-review.md) presents
+A plaster-led, B timber-led and C limestone-led candidates, all passed for human
+review. The human chose B; A's plaster and C's pristine/high-end walls and gutter
+treatment are not selected. Preserve B's weathered character, exclude electric lamps,
+and resolve candle/oil-flame construction in the next detail references. Seven
+originals, prompts, hashes and critiques are retained; reviews now
+explicitly use GPT-6 Astra / low under human direction. No concept target is closed.
 
 - [ ] Complete the [concept-art program and coverage/selection gate](../assets/reference/concept-art-program.md#exit-checklist)
-      before resuming cobblestone iteration. Include the whole game's visual scope,
+      [Batch 002 comparison](../assets/reference/concept-art-batch-002-review.md) is
+      completed castle-direction selection: the human chose A's classic castle and
+      large round tower. Ten originals across six subjects stayed within two passes
+      each / 90 minutes; all received sequential GPT-6 Astra / low reviews. Facade and
+      candle-lantern drafts passed; both B overcast attempts failed surface correspondence.
+      Matched weather and remaining kit/scene views stay open. Continue from the castle
+      choice to its detailed views and underground alternatives; no asset iteration yet.
+      [Batch 003 comparison](../assets/reference/concept-art-batch-003-review.md) is ready:
+      castle eye-level/gate drafts and three catacomb directions, six originals across
+      five subjects within two passes each / 90 minutes. Sequential GPT-6 Astra / low
+      reviews caught and corrected an unsupported chamber roof. The human selected
+      underground B for its creepy atmosphere; arena/entrances, construction and matched-weather coverage
+      remain open. Complete the reference gate before resuming cobblestone iteration.
+      [Batch 004](../assets/reference/concept-art-batch-004-review.md) has five originals
+      across four subjects, reviewed sequentially with GPT-6 Astra / low. Passage
+      junction passed; arena B is human-selected for its carved-earth character. A's vent
+      state was corrected; B vent details and C fill-light source remain open.
+      Include the whole game's visual scope,
       all planned rendered effects and physics behavior targets, with deferred work
       labeled separately from current implementation obligations.
 

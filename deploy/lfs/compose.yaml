@@ -1,0 +1,19 @@
+services:
+  rudolfs:
+    image: jasonwhite0/rudolfs:0.3.8@sha256:ad9591c1109874ffb2e58ace9897cb20525a8856e0397eb724e959ef0bed5555
+    user: "${LFS_UID:?Set LFS_UID}:${LFS_GID:?Set LFS_GID}"
+    entrypoint: ["/tini", "--", "/rudolfs"]
+    command: ["--port", "8080", "local", "--path", "/data"]
+    ports: ["127.0.0.1:18781:8080"]
+    volumes: ["/srv/git-lfs:/data"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 128
+    mem_limit: 1g
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -23,6 +23,11 @@ structure, and no verification-of-the-verification.
 
 ## Ground rules
 
+Creative binary assets use the shared Git LFS service (D-190). Run
+`git lfs install --local` in a new checkout and hydrate originals with `git lfs pull`
+before consuming them. See [asset storage](../assets/storage.md) for tracking,
+LAN setup, pointer verification and the boundary with ignored runtime objects.
+
 - **Agents never commit** — even if a prompt asks. The working tree is the handoff.
 - **Don't hand off broken.** Checks pass before you end your turn; if they don't, say
   so plainly instead of papering over it.
