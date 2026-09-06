@@ -57,10 +57,7 @@ export function createDirectionalShadows(engine: EngineContext, sun: Directional
   };
 }
 
-/** Lite 1.12.0 removes evicted meshes from tasks but retains their material views/gens.
- * Views are plain inherited material objects, not owners of GPU resources. Prune only
- * those two caches; the public caster-list update owns render-task removal/rebinding.
- */
+/** Lite 1.12.0 removes evicted meshes from tasks but retains their material views/gens. */
 export function pruneRetiredCasterMaterials(
   generator: ShadowGenerator,
   casters: readonly Mesh[],

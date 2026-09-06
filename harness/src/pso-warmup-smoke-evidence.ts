@@ -36,16 +36,16 @@ export function resolvePsoWarmupEvidence(
     validated.state !== "ready" ||
     validated.source !== "privileged-embedded" ||
     validated.releaseDigest !== null ||
-    validated.traceEntryCount !== 3 ||
-    validated.requestedCount !== 4 ||
-    validated.compiledCount !== 3 ||
-    validated.cacheMissCount !== 3 ||
+    validated.traceEntryCount !== 5 ||
+    validated.requestedCount !== 6 ||
+    validated.compiledCount !== 5 ||
+    validated.cacheMissCount !== 5 ||
     validated.cacheHitCount !== 1 ||
-    validated.deferredCount !== 3 ||
+    validated.deferredCount !== 5 ||
     validated.failure !== null ||
     validated.failureCount !== 0 ||
-    validated.queueHighWater !== 3 ||
-    validated.entries.length !== 3 ||
+    validated.queueHighWater !== 5 ||
+    validated.entries.length !== 5 ||
     entry?.id !== "babylon-lite.standard-opaque-msaa4" ||
     entry.compileAttemptCount !== 1 ||
     !entry.compiled ||

@@ -362,16 +362,16 @@ function validateExactReplay(input: PsoWarmupTelemetrySnapshot): void {
     input.state !== "ready" ||
     input.source !== "privileged-embedded" ||
     input.releaseDigest !== null ||
-    input.traceEntryCount !== 3 ||
-    input.requestedCount !== 4 ||
-    input.compiledCount !== 3 ||
-    input.deferredCount !== 3 ||
-    input.cacheMissCount !== 3 ||
+    input.traceEntryCount !== 5 ||
+    input.requestedCount !== 6 ||
+    input.compiledCount !== 5 ||
+    input.deferredCount !== 5 ||
+    input.cacheMissCount !== 5 ||
     input.cacheHitCount !== 1 ||
     input.failure !== null ||
     input.failureCount !== 0 ||
-    input.queueHighWater !== 3 ||
-    input.entries.length !== 3 ||
+    input.queueHighWater !== 5 ||
+    input.entries.length !== 5 ||
     input.entries[0]?.id !== "babylon-lite.standard-opaque-msaa4" ||
     input.entries[0].compileAttemptCount !== 1 ||
     !input.entries[0].compiled ||

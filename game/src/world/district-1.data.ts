@@ -1,6 +1,8 @@
+import { DISTRICT_1_STONES } from "./district-1-stones.data";
 import { DISTRICT_1_ID } from "./district-identity";
 import type { GreyboxDistrictSpec } from "./greybox-spec";
 import { freezeGreyboxData } from "./greybox-spec";
+import { createStoneAssemblyPlacements } from "./stone-assembly";
 
 const absRange = (axis: "x" | "z", minimum?: number, maximum?: number) =>
   ({
@@ -19,7 +21,7 @@ const axisRange = (axis: "x" | "z", minimum?: number, maximum?: number) =>
 const all = (...conditions: GreyboxDistrictSpec["world"]["zones"][number]["match"][]) =>
   ({ conditions, kind: "all" }) as const;
 
-export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
+const DISTRICT_1_BASE_SPEC = freezeGreyboxData({
   descriptorVersion: 1,
   features: [
     {
@@ -259,6 +261,9 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
     lodObservers: [[0, 12, -900]],
   },
   terrain: {
+    // Finished courtyard: exact level 16m grid square, smoothly graded over
+    // 32m outside it. Render and collision share this world-coordinate field.
+    levelPads: [{ minimum: [0, 0], maximum: [16, 16], height: 18.97375, transitionMeters: 32 }],
     layers: [
       {
         afterHeight: 2,
@@ -330,4 +335,16 @@ export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
       },
     ],
   },
+} satisfies GreyboxDistrictSpec);
+
+export const DISTRICT_1_STONE_ASSEMBLY = createStoneAssemblyPlacements(
+  DISTRICT_1_BASE_SPEC,
+  DISTRICT_1_STONES,
+  [6, 6],
+  [198, 198],
+  24,
+);
+export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
+  ...DISTRICT_1_BASE_SPEC,
+  assetPlacements: DISTRICT_1_STONE_ASSEMBLY.placements,
 } satisfies GreyboxDistrictSpec);

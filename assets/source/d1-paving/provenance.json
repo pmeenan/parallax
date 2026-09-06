@@ -1,37 +1,34 @@
 {
-  "status": "source-comparison-only",
-  "asset": "cobblestone_pavement",
-  "author": "Charlotte Baglioni",
-  "provider": "Poly Haven",
-  "assetUrl": "https://polyhaven.com/a/cobblestone_pavement",
+  "sourcePhysicalWidthMetres": 2,
+  "asset": "stone_pathway_02",
+  "author": "Amal Kumar",
+  "assetUrl": "https://polyhaven.com/a/stone_pathway_02",
   "license": "CC0-1.0",
   "licenseUrl": "https://polyhaven.com/license",
-  "reviewedAt": "2026-09-05",
-  "rightsReview": "source-provider-CC0-verified; no-public-library-admission",
-  "sourcePhysicalWidthMetres": 2.5,
-  "reference": "assets/reference/d1-courtyard-sunny-gloomy.png",
-  "referenceRole": "human-endorsed appearance benchmark; scan independently sourced",
-  "adaptation": "Blender 5.1.2 source comparison by Codex; full UV scan at 2.5m scale, 15mm displacement scale, 0.35 normal strength",
   "maps": [
     {
-      "role": "diffuse",
-      "file": "cobblestone_pavement_diff_2k.png",
-      "sha256": "b411fc9aa9f2764412641b5dac92985a01d83c15eec0e349469dbf6e287d3f07"
+      "sha256": "3dcde5a2cc1afd439febdfbf55fe78d9d27db3cb4f2855b84f51f12b3cc33375",
+      "file": "stone_pathway_02_diff_4k.png",
+      "role": "diffuse"
     },
     {
-      "role": "displacement",
-      "file": "cobblestone_pavement_disp_2k.png",
-      "sha256": "0c65757d2dd1421c6f2115a46ff906c7a6bc09b5bb3e4e80eb9c6c06237203ff"
+      "sha256": "12afefa5cd2d1bc406a71c904034768d26d914d52841162fa4af458738bc0874",
+      "file": "stone_pathway_02_disp_4k.png",
+      "role": "displacement"
     },
     {
-      "role": "normal_gl",
-      "file": "cobblestone_pavement_nor_gl_2k.png",
-      "sha256": "28166816f5d6be0fc960ac7c9f8f449472da7e51395f19ee7d1d6f1481c74ef3"
+      "sha256": "7e548438327f33ea5835218988a228421674db9b9325acc264db9007f0f13a6b",
+      "file": "stone_pathway_02_nor_gl_4k.png",
+      "role": "normal_gl"
     },
     {
-      "role": "roughness",
-      "file": "cobblestone_pavement_rough_2k.png",
-      "sha256": "5242ea8bdf8d1ab44743b6227d97aa13a062e16ff4d2dd20acfa543f71db1048"
+      "sha256": "d633af014374d5577da3bdb74311f6abfa440fd9eaed54b0c435de284562498d",
+      "file": "stone_pathway_02_rough_4k.png",
+      "role": "roughness"
     }
-  ]
+  ],
+  "reference": "assets/reference/d1-courtyard-sunny-gloomy.png",
+  "reviewedAt": "2026-09-05",
+  "rightsReview": "source-provider-CC0-verified; no public library admission",
+  "adaptation": "Blender5.1.2 source model: full2m scan,65mm height scale,0.35 normal strength,HSV value2.4 and saturation0.72"
 }

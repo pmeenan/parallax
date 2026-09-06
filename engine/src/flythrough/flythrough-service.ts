@@ -8,12 +8,13 @@ import type { WorldStreamingService } from "../streaming/world-streaming-service
 import type { WorldBounds } from "../world/world-contract";
 import {
   type FlythroughScenario,
+  type FlythroughScenarioSample,
   type FlythroughScenarioValidation,
   sampleFlythroughScenario,
   validateFlythroughScenario,
 } from "./flythrough-contract";
 
-export const FLYTHROUGH_TELEMETRY_SCHEMA_VERSION = 3;
+export const FLYTHROUGH_TELEMETRY_SCHEMA_VERSION = 4;
 export const FLYTHROUGH_STABILIZATION_MS = 10_000;
 const STREAMING_SETTLEMENT_TIMEOUT_MS = 15_000;
 
@@ -26,6 +27,7 @@ export interface FlythroughTelemetrySnapshot {
   readonly schemaVersion: typeof FLYTHROUGH_TELEMETRY_SCHEMA_VERSION;
   readonly state:
     | "idle"
+    | "previewing"
     | "preflighting"
     | "stabilizing"
     | "prepared"
@@ -41,10 +43,21 @@ export interface FlythroughTelemetrySnapshot {
 
 export type FlythroughListener = (snapshot: FlythroughTelemetrySnapshot) => void;
 
+export interface ScenePreviewRequest {
+  readonly observer: FlythroughScenarioSample["observer"];
+  readonly headingRadians: number;
+  readonly camera: FlythroughScenario["camera"];
+  readonly environment: Pick<
+    FlythroughScenarioSample["environment"],
+    "timeOfDay" | "timeOfDayPhase" | "weather"
+  >;
+}
+
 export interface FlythroughService {
   abort(reason: string): Promise<void>;
   dispose(): void;
   prepare(): void;
+  previewScene(request: ScenePreviewRequest): Promise<FlythroughCheckpointRenderEvidence>;
   reset(): Promise<void>;
   snapshot(): FlythroughTelemetrySnapshot;
   start(): void;
@@ -76,6 +89,7 @@ export function createFlythroughService(
   let preparationAbort: AbortController | null = null;
   let runGeneration = 0;
   let resetInFlight: Promise<void> | null = null;
+  let previewInFlight = false;
   const listeners = new Set<FlythroughListener>();
 
   const publish = (patch: Partial<FlythroughTelemetrySnapshot>): void => {
@@ -111,7 +125,8 @@ export function createFlythroughService(
 
   const unsubscribeRender = renderService.subscribe((render) => {
     if (
-      (telemetry.state === "preflighting" ||
+      (telemetry.state === "previewing" ||
+        telemetry.state === "preflighting" ||
         telemetry.state === "stabilizing" ||
         telemetry.state === "prepared" ||
         telemetry.state === "running") &&
@@ -131,7 +146,8 @@ export function createFlythroughService(
   });
   const unsubscribeStreaming = streamingService.subscribe((streaming) => {
     if (
-      (telemetry.state === "preflighting" ||
+      (telemetry.state === "previewing" ||
+        telemetry.state === "preflighting" ||
         telemetry.state === "stabilizing" ||
         telemetry.state === "prepared" ||
         telemetry.state === "running") &&
@@ -239,6 +255,77 @@ export function createFlythroughService(
   }
 
   return Object.freeze({
+    async previewScene(request: ScenePreviewRequest): Promise<FlythroughCheckpointRenderEvidence> {
+      if (
+        disposed ||
+        resetInFlight !== null ||
+        previewInFlight ||
+        !["idle", "previewing"].includes(telemetry.state) ||
+        renderService.snapshot().state !== "ready" ||
+        streamingService.snapshot().state !== "streaming"
+      )
+        throw new Error("Scene preview requires idle or settled preview ownership");
+      const { observer, camera, environment } = request;
+      if (
+        observer.length !== 3 ||
+        observer.some(
+          (value, axis) =>
+            !Number.isFinite(value) ||
+            value < (worldBounds.minimum[axis] ?? Infinity) ||
+            value > (worldBounds.maximum[axis] ?? -Infinity),
+        ) ||
+        !Number.isFinite(request.headingRadians) ||
+        !Number.isFinite(camera.beta) ||
+        camera.beta <= 0 ||
+        camera.beta >= Math.PI ||
+        !Number.isFinite(camera.heightMeters) ||
+        camera.heightMeters <= 0 ||
+        !Number.isFinite(camera.radiusMeters) ||
+        camera.radiusMeters <= 0 ||
+        !["clear", "overcast", "storm"].includes(environment.weather) ||
+        !["dawn", "daylight", "dusk", "night"].includes(environment.timeOfDay) ||
+        !Number.isFinite(environment.timeOfDayPhase) ||
+        environment.timeOfDayPhase < 0 ||
+        environment.timeOfDayPhase >= 1
+      )
+        throw new Error("Invalid scene preview state");
+      const sample: FlythroughScenarioSample = Object.freeze({
+        distanceMeters: 0,
+        elapsedMs: 0,
+        progress: 0,
+        headingRadians: request.headingRadians,
+        observer: Object.freeze([...observer]) as FlythroughScenarioSample["observer"],
+        environment: Object.freeze({ ...environment, id: "visual-preview", startMs: 0, endMs: 1 }),
+      });
+      const fixedCamera = Object.freeze({ ...camera });
+      const generation = ++preparationGeneration;
+      const controller = new AbortController();
+      preparationAbort = controller;
+      previewInFlight = true;
+      publish({ state: "previewing", checkpointEvidence: Object.freeze([]) });
+      const requireCurrent = () => {
+        if (!preparationIsCurrent(generation, "previewing"))
+          throw new Error("Scene preview was cancelled");
+      };
+      try {
+        const expectedSettlement = streamingService.snapshot().observerUpdateCount + 1;
+        streamingService.setObservers([sample.observer]);
+        await waitForStreamingSettlement(streamingService, expectedSettlement, controller.signal);
+        requireCurrent();
+        await renderService.applyFlythroughPreflight("visual-preview@1", sample, fixedCamera);
+        requireCurrent();
+        const evidence = await renderService.captureFlythroughCheckpoint("visual-preview");
+        requireCurrent();
+        publish({ checkpointEvidence: Object.freeze([evidence]) });
+        return evidence;
+      } catch (error: unknown) {
+        if (preparationIsCurrent(generation, "previewing")) fail(error);
+        throw error;
+      } finally {
+        previewInFlight = false;
+        if (preparationGeneration === generation) preparationAbort = null;
+      }
+    },
     abort(reason: string): Promise<void> {
       if (
         disposed ||

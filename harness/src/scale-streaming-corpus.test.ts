@@ -93,15 +93,16 @@ describe("representative scale-streaming corpus", () => {
         installBytes: validatedMaterialized.installSummary.bytesByTarget.opfs,
         installResourceCount: validatedMaterialized.installSummary.countByTarget.opfs,
       });
-      expect(materialized.population.installBytes).toBe(2623219022);
-      expect(materialized.population.installResourceCount).toBe(349);
+      // Individual-stone inventory: models + two district indices + asset packs + cells.
+      expect(materialized.population.installBytes).toBe(2639677555);
+      expect(materialized.population.installResourceCount).toBe(418);
       expect(materialized.population.representativeResourceCount).toBe(339);
       const heroIndex = corpus.graphs
         .find(({ id }) => id === "hero")
         ?.resources.find(({ role }) => role === "indices");
       if (heroIndex === undefined) throw new Error("Generated hero index resource is absent");
       expect(Object.isFrozen(materialized.expectedStreamingResourceCacheKeys)).toBe(true);
-      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(18);
+      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(90);
       expect(materialized.expectedStreamingResourceCacheKeys[heroIndex.resourceId]).toHaveLength(
         542,
       );
@@ -114,6 +115,24 @@ describe("representative scale-streaming corpus", () => {
       );
       if (districtIndexResource === undefined) {
         throw new Error("Materialized scale-streaming district index resource is absent");
+      }
+      const productionIndex = parseStreamingDistrictIndex(
+        JSON.parse(await readFile(join(productionRoot, productionDistrict.path), "utf8")),
+        "district-1-surface",
+      );
+      const composedIndex = parseStreamingDistrictIndex(
+        JSON.parse(await readFile(join(materialized.root, composedDistrict.path), "utf8")),
+        "district-1-surface",
+      );
+      for (const resource of productionIndex.resources ?? []) {
+        expect(composedIndex.resources).toContainEqual(resource);
+      }
+      for (const cell of productionIndex.cells) {
+        const composedCell = composedIndex.cells.find(({ cellId }) => cellId === cell.cellId);
+        expect(composedCell?.dependencies).toEqual(
+          expect.arrayContaining([...(cell.dependencies ?? [])]),
+        );
+        expect(composedCell?.dependencies).toHaveLength((cell.dependencies?.length ?? 0) + 1);
       }
       const representativeResourceIds = new Set([
         districtIndexResource.id,
@@ -420,10 +439,19 @@ describe("representative scale-streaming corpus", () => {
       "district-1-surface",
     );
     expect(composedIndex.schemaVersion).toBe(2);
-    expect(composedIndex.resources).toHaveLength(18);
-    expect(composedIndex.cells.map(({ dependencies }) => dependencies?.[0])).toEqual(
-      corpus.graphs.map(({ resources }) => resources[2].resourceId),
+    expect(composedIndex.resources).toHaveLength(19);
+    const authoredRoot = scaleStreamingDependencyResourceId(
+      "texture",
+      digest("authored-linear-texture"),
     );
+    expect(
+      composedIndex.cells.every(({ dependencies }) => dependencies?.includes(authoredRoot)),
+    ).toBe(true);
+    expect(
+      composedIndex.cells.map(({ dependencies }) =>
+        dependencies?.find((id) => id !== authoredRoot),
+      ),
+    ).toEqual(corpus.graphs.map(({ resources }) => resources[2].resourceId));
     for (const original of fixture.manifest.resources) {
       const composed = first.installManifest.resources.find(({ id }) => id === original.id);
       expect(composed).toBeDefined();
@@ -702,11 +730,15 @@ function productionFixture(): Readonly<{
   index: Readonly<Record<string, unknown>>;
   manifest: InstallManifest;
 }> {
+  const authoredSha256 = digest("authored-linear-texture");
+  const authoredResourceId = scaleStreamingDependencyResourceId("texture", authoredSha256);
+  const authoredSource = `immutable/streaming-texture-${authoredSha256}.ktx2`;
   const cells = Array.from({ length: 6 }, (_, x) => {
     const sha256 = digest(`cell-${x}`);
     const identity = canonicalStreamingCellArtifactIdentity("district-1-surface", [x, 0], sha256);
     return Object.freeze({
       bytes: 100 + x,
+      dependencies: [authoredResourceId],
       cellId: identity.cellId,
       coordinate: [x, 0] as const,
       path: identity.source,
@@ -719,7 +751,17 @@ function productionFixture(): Readonly<{
     cells,
     districtId: "district-1-surface",
     materials: [{ color: [0.2, 0.3, 0.4], id: "ground" }],
-    resources: [],
+    resources: [
+      {
+        bytes: 100,
+        decode: { colorSpace: "linear", format: "rgba8", height: 4, width: 4, version: 1 },
+        dependencies: [],
+        format: "ktx2",
+        path: authoredSource,
+        resourceId: authoredResourceId,
+        sha256: authoredSha256,
+      },
+    ],
     schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
   });
   const indexSha = digest(JSON.stringify(index));
@@ -750,6 +792,15 @@ function productionFixture(): Readonly<{
         scope: "game-specific",
         sha256: indexSha,
         source: "immutable/district-index-fixture.json",
+        target: "opfs",
+      },
+      {
+        bytes: 100,
+        id: authoredResourceId,
+        kind: "asset-pack",
+        scope: "game-specific",
+        sha256: authoredSha256,
+        source: authoredSource,
         target: "opfs",
       },
       ...cells.map((cell) => ({

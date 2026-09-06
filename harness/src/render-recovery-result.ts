@@ -602,7 +602,7 @@ function validateDiagnosticFlythrough(value: unknown, label: string): void {
     label,
   );
   if (
-    flythrough.schemaVersion !== 3 ||
+    flythrough.schemaVersion !== 4 ||
     !nonEmptyString(flythrough.scenarioId) ||
     (flythrough.failureMessage !== null && typeof flythrough.failureMessage !== "string") ||
     (flythrough.preflightElapsedMs !== null && !nonNegativeFinite(flythrough.preflightElapsedMs)) ||

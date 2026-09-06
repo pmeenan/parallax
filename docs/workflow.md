@@ -39,6 +39,12 @@ structure, and no verification-of-the-verification.
 
 ## Bounded visual and research work
 
+D-187 adds an immediate [concept-art and visual-target stage](../assets/reference/concept-art-program.md)
+before further asset iteration. Future visual implementation briefs cite selected
+target IDs, with matched camera/light/scale and temporal or physical behavior references
+where applicable. A generated still is not a physics specification. This reference
+stage does not authorize implementation of every deferred rendering feature.
+
 D-182 replaces D-180's open-ended convergence rule with agent-owned, bounded iteration.
 Before an experiment or visual work package, put a short brief in the active plan note:
 the scene/reference and cameras/states, the question, must-fix defects, an initial

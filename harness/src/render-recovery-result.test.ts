@@ -1212,7 +1212,7 @@ function initialLatestTelemetry() {
       preflightElapsedMs: null,
       render: null,
       scenarioId: "flythrough-d1@1",
-      schemaVersion: 3,
+      schemaVersion: 4,
       state: "idle",
       streamingAtMeasurementEnd: null,
       streamingAtMeasurementStart: null,

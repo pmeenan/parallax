@@ -4,6 +4,7 @@ import {
   type DecodeWorkerResponse,
   STREAMING_DECODE_PROTOCOL_VERSION,
 } from "../streaming/streaming-protocol";
+import { validatePbrAssetPlacements } from "../world/pbr-asset";
 import type { GreyboxCell } from "../world/world-contract";
 
 interface DecodeWorkerScope {
@@ -45,6 +46,8 @@ async function decodeRequest(request: DecodeWorkerRequest): Promise<void> {
       throw new Error(`Decoded cell identity mismatch for ${request.cellId}`);
     }
     const dependencies = [];
+    if (wrapper.cell.pbrAssets !== undefined)
+      validatePbrAssetPlacements(wrapper.cell.pbrAssets, wrapper.cell.bounds);
     for (const dependency of request.dependencies) {
       dependencies.push(await compressedDecoder.decode(dependency));
     }
@@ -61,9 +64,9 @@ async function decodeRequest(request: DecodeWorkerRequest): Promise<void> {
     } satisfies DecodeWorkerResponse;
     scope.postMessage(
       response,
-      dependencies.map((dependency) =>
+      dependencies.flatMap((dependency) =>
         dependency.format === "ktx2"
-          ? dependency.rgba
+          ? (dependency.mipmaps?.map((mip) => mip.rgba) ?? [dependency.rgba])
           : dependency.kind !== "legacy-positions"
             ? dependency.kind === "indices"
               ? dependency.indices

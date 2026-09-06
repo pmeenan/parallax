@@ -230,7 +230,12 @@ function freezeGreyboxTelemetry(value: GreyboxRenderTelemetry): GreyboxRenderTel
 function freezeRenderFrameSample(value: RenderFrameSample): RenderFrameSample {
   return Object.freeze({
     ...value,
-    rendering: Object.freeze({ ...value.rendering }),
+    rendering: Object.freeze({
+      ...value.rendering,
+      ...(value.rendering.pbrAssets === undefined
+        ? {}
+        : { pbrAssets: Object.freeze({ ...value.rendering.pbrAssets }) }),
+    }),
     sunDirection: freezeWorldVector(value.sunDirection),
   });
 }

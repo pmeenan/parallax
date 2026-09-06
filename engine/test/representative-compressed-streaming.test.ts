@@ -371,6 +371,18 @@ describe("representative compressed streaming fixtures", () => {
 
   it("decodes materially different production-like texture, attribute, and index graphs", async () => {
     vi.clearAllMocks();
+    for (const [transcoder, file] of [
+      [KTX2DecoderPackage.LiteTranscoder_UASTC_RGBA_SRGB, "uastc_rgba8_srgb_v2.wasm"],
+      [KTX2DecoderPackage.LiteTranscoder_UASTC_RGBA_UNORM, "uastc_rgba8_unorm_v2.wasm"],
+    ] as const) {
+      const bytes = readFileSync(
+        new URL(`../node_modules/@babylonjs/ktx2decoder/wasm/${file}`, import.meta.url),
+      );
+      transcoder.WasmBinary = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      );
+    }
     const wasm = readFileSync(
       new URL(
         "../node_modules/@babylonjs/ktx2decoder/wasm/msc_basis_transcoder.wasm",

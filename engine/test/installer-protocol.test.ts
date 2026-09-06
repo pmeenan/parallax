@@ -9,6 +9,33 @@ import {
 import { unavailableInstallStoreTelemetrySnapshot } from "../src/storage/opfs-release-store";
 
 describe("installer protocol v7", () => {
+  it("accepts cumulative retry credit only with exact current release verification", () => {
+    const ready = {
+      ...idleInstallerTransferTelemetrySnapshot(),
+      state: "ready",
+      resourceCount: 400,
+      totalBytes: 1000,
+      completedResourceCount: 402,
+      verifiedBytes: 1100,
+      plannedDownloadBytes: 900,
+      reusedBytes: 100,
+      finalVerificationPhase: "complete",
+      finalVerificationBytes: 1000,
+      finalVerificationTotalBytes: 1000,
+      finalVerificationResourceCount: 400,
+      finalVerificationTotalResourceCount: 400,
+    };
+    expect(parseInstallerTransferTelemetry(ready)).toMatchObject({ completedResourceCount: 402 });
+    for (const mismatch of [
+      { completedResourceCount: 399 },
+      { verifiedBytes: 999 },
+      { finalVerificationBytes: 999 },
+      { finalVerificationResourceCount: 399 },
+      { finalVerificationPhase: "verifying" },
+      { plannedDownloadBytes: 899 },
+    ])
+      expect(() => parseInstallerTransferTelemetry({ ...ready, ...mismatch })).toThrow();
+  });
   it("accepts exact request/response variants", () => {
     const shellEntrypointPath = `immutable/app-${"c".repeat(64)}.js`;
     expect(parseInstallerRequest({ kind: "install", requestId: 1, shellEntrypointPath })).toEqual({
@@ -430,7 +457,6 @@ describe("installer protocol v7", () => {
       { operationRepairedBytes: 9 },
       { operationRepairAttemptCount: 2 },
       { operationRepairedResourceCount: 0 },
-      { completedResourceCount: 2, verifiedBytes: 16 },
       { completedResourceCount: 0 },
       { verifiedBytes: 7 },
       { finalVerificationPhase: "verifying" },

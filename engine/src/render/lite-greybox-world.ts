@@ -1,6 +1,7 @@
 import {
   addToScene,
   captureScreenshot,
+  cloneTransformNode,
   createArcRotateCamera,
   createBoxData,
   createCapsule,
@@ -13,6 +14,7 @@ import {
   createTexture2DFromPixels,
   type DirectionalLight,
   disposeMeshGpu,
+  enableThinInstanceDynamicDrawCount,
   getRenderTaskGpuTimings,
   type HemisphericLight,
   type Mesh,
@@ -25,6 +27,8 @@ import {
   setGpuTimingEnabled,
   setRenderTaskGpuTimingEnabled,
   setSubtreeVisible,
+  setThinInstanceCount,
+  setThinInstances,
   type Texture2D,
 } from "@babylonjs/lite";
 import type { FlythroughScenarioSample } from "../flythrough/flythrough-contract";
@@ -35,6 +39,8 @@ import type {
 } from "../streaming/streaming-protocol";
 import { createStreamingResourceCache } from "../streaming/streaming-resource-cache";
 import { streamingResourceCacheKey } from "../streaming/streaming-resource-key";
+import { type PbrAssetPlacement, validatePbrAssetPlacements } from "../world/pbr-asset";
+import { writePbrAssetMatrix } from "../world/pbr-asset-transform";
 import type {
   GreyboxCell,
   GreyboxHeightfieldGridPayload,
@@ -69,6 +75,14 @@ import type {
   RenderFrameSample,
 } from "./render-protocol";
 import { RENDER_GAMEPLAY_CROWD_CAPACITY, RENDER_LIGHTING_MODEL } from "./render-protocol";
+import {
+  createPbrWarmupMesh,
+  createStreamedPbrMaterial,
+  groupPbrAssetPlacements,
+  selectPbrAssetLod,
+  uploadStreamedPbrTexture,
+  withPbrTextureAddressMode,
+} from "./streamed-pbr-asset";
 
 export interface GeometryBatch {
   readonly indices: Uint32Array;
@@ -90,6 +104,16 @@ interface StreamingDependencyGpuValue {
   readonly mesh: Mesh | null;
   readonly texture: Texture2D | null;
   readonly vertexCount: number;
+}
+
+interface ResidentPbrAsset {
+  readonly placements: readonly PbrAssetPlacement[];
+  readonly meshes: readonly Mesh[];
+  readonly triangleCounts: readonly number[];
+  readonly activeLods: Uint8Array;
+  readonly sourceMatrices: Float32Array;
+  readonly lodMatrices: readonly Float32Array[];
+  readonly lodCounts: Uint32Array;
 }
 
 function applyEnvironmentLighting(
@@ -527,6 +551,8 @@ export async function createLiteGreyboxWorld(
       }
     }
     const hybridUi = createHybridUiRenderer(engine, scene, camera);
+    const pbrWarmup = createPbrWarmupMesh(engine);
+    addToScene(scene, pbrWarmup.mesh);
     const shadowExcluded = new Set(hybridUi.meshes);
     for (const mesh of scene.meshes) {
       if (!shadowExcluded.has(mesh)) mesh.receiveShadows = true;
@@ -543,11 +569,13 @@ export async function createLiteGreyboxWorld(
           joinedRequests += 1;
           if (joinedRequests === PSO_WARMUP_PIPELINES.length) allRequestsDeferred.resolve();
           await allRequestsDeferred.promise;
-          registration ??= psoObservation.registerAll(scene.meshes, async () => {
+          registration ??= psoObservation.registerAll(scene.meshes.filter(
+            (mesh) => mesh !== pbrWarmup.mesh,
+          ), async () => {
             await registerSceneWithShadowSupport(scene);
             // The depth task's first execution creates its PSO. Do it before Ready.
             renderFrame(engine, 0);
-          });
+          }, [pbrWarmup.mesh]);
           const digest = (await registration).get(entry.id);
           if (digest === undefined) throw new Error(`PSO warmup missing observed ${entry.id}`);
           return digest;
@@ -564,6 +592,8 @@ export async function createLiteGreyboxWorld(
       },
     );
     await psoWarmup.finish();
+    removeFromScene(scene, pbrWarmup.mesh);
+    for (const texture of Object.values(pbrWarmup.textures)) releaseTexture(texture);
     setGpuTimingEnabled(engine, true);
     await setRenderTaskGpuTimingEnabled(engine, true);
 
@@ -609,10 +639,13 @@ export async function createLiteGreyboxWorld(
           dependencyKeys: readonly string[];
           gpuBytes: number;
           meshes: readonly Mesh[];
+          pbrAssets: readonly ResidentPbrAsset[];
         }>
       >(),
       streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
       streamingDependencyGpuBytes: 0,
+      pbrAssetUploadMs: 0,
+      pbrAssetLodChanges: 0,
       sunLight,
       flythroughSample: null as FlythroughScenarioSample | null,
       hybridUi,
@@ -675,6 +708,9 @@ export function applyGameplayPresentation(
     readonly playerYawRadians: number;
   }>,
 ): void {
+  // The initial world preview covers launch hydration. Ordinary gameplay must
+  // transfer ownership once resident cells exist, just as scene inspection does.
+  if (renderer.streamingCells.size > 0) activateStreamedPresentation(renderer);
   setSubtreeVisible(renderer.playerMesh, true);
   renderer.playerMesh.position.set(...presentation.playerPosition);
   renderer.playerMesh.rotation.y = presentation.playerYawRadians;
@@ -758,6 +794,16 @@ export function uploadStreamingGreyboxCell(
     }
   }
   const meshes: Mesh[] = [];
+  const pbrAssets: ResidentPbrAsset[] = [];
+  const pbrPlacements = cell.pbrAssets ?? [];
+  validatePbrAssetPlacements(
+    pbrPlacements,
+    cell.bounds,
+    dependencies.map((dependency) => dependency.descriptor),
+  );
+  const pbrIndexIds = new Set(
+    pbrPlacements.flatMap((asset) => asset.lods.map((lod) => lod.indexResourceId)),
+  );
   const addedMeshes = new Set<Mesh>();
   let gpuBytes = 0;
   let dependencyUploadBytes = 0;
@@ -810,24 +856,29 @@ export function uploadStreamingGreyboxCell(
         if (rgba.byteLength !== dependency.width * dependency.height * 4) {
           throw new Error(`Streaming KTX2 dependency ${dependency.resourceId} is invalid`);
         }
-        const texture = createTexture2DFromPixels(
-          renderer.engine,
-          rgba,
-          dependency.width,
-          dependency.height,
-          {
+        const uploaded =
+          dependency.mipmaps === undefined
+            ? null
+            : uploadStreamedPbrTexture(
+                renderer.engine,
+                dependency.mipmaps,
+                dependency.descriptor.decode.colorSpace === "srgb",
+              );
+        const texture =
+          uploaded?.texture ??
+          createTexture2DFromPixels(renderer.engine, rgba, dependency.width, dependency.height, {
             magFilter: "linear",
             minFilter: "linear",
-            srgb: true,
-          },
-        );
+            srgb: dependency.descriptor.decode.colorSpace === "srgb",
+          });
+        const textureGpuBytes = uploaded?.gpuBytes ?? rgba.byteLength;
         let cacheOwnsTexture = false;
         try {
-          renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, rgba.byteLength);
+          renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, textureGpuBytes);
           renderer.streamingDependencyCache.fulfill(acquired.key, {
             attributes: null,
             format: "ktx2",
-            gpuBytes: rgba.byteLength,
+            gpuBytes: textureGpuBytes,
             mesh: null,
             texture,
             vertexCount: 0,
@@ -837,8 +888,8 @@ export function uploadStreamingGreyboxCell(
           if (!cacheOwnsTexture) releaseTexture(texture);
           throw error;
         }
-        renderer.streamingDependencyGpuBytes += rgba.byteLength;
-        dependencyUploadBytes += rgba.byteLength;
+        renderer.streamingDependencyGpuBytes += textureGpuBytes;
+        dependencyUploadBytes += textureGpuBytes;
         dependencyUploadCount += 1;
       } else if (dependency.kind === "vertex-attributes") {
         const attributes = new Float32Array(dependency.attributes);
@@ -915,7 +966,9 @@ export function uploadStreamingGreyboxCell(
           material.diffuseColor = [definition.color[0], definition.color[1], definition.color[2]];
           mesh.material = material;
           mesh.receiveShadows = true;
-          mesh.visible = renderer.presentationOwner === "streamed-residency";
+          mesh.visible =
+            !pbrIndexIds.has(dependency.resourceId) &&
+            renderer.presentationOwner === "streamed-residency";
           // Babylon may register the mesh before addToScene reports a failure. From this
           // boundary onward cleanup must attempt scene removal, not local-only disposal.
           sceneOwnsMesh = true;
@@ -1039,6 +1092,98 @@ export function uploadStreamingGreyboxCell(
       }
     }
     const dependencyGpuCache = dependencyGpuCacheSnapshot(renderer);
+    const pbrSetupStartedAt = performance.now();
+    const dependencyById = new Map(
+      dependencies.map((dependency) => [dependency.resourceId, dependency]),
+    );
+    const requireGpuResource = (resourceId: string): StreamingDependencyGpuValue => {
+      const dependency = dependencyById.get(resourceId);
+      if (dependency === undefined) throw new Error(`PBR resource ${resourceId} is absent`);
+      const value = renderer.streamingDependencyCache.require(dependency.cacheKey).value;
+      if (value === null) throw new Error(`PBR resource ${resourceId} is not uploaded`);
+      return value;
+    };
+    const requireTexture = (resourceId: string): Texture2D => {
+      const texture = requireGpuResource(resourceId).texture;
+      if (texture === null) throw new Error(`PBR texture ${resourceId} is not a texture`);
+      return texture;
+    };
+    for (const placements of groupPbrAssetPlacements(pbrPlacements)) {
+      const placement = placements[0];
+      if (placement === undefined) continue;
+      const sourceMatrices = new Float32Array(placements.length * 16);
+      for (const [index, instance] of placements.entries())
+        writePbrAssetMatrix(sourceMatrices, index * 16, instance);
+      const lodMatrices = [
+        new Float32Array(sourceMatrices),
+        new Float32Array(sourceMatrices.length),
+        new Float32Array(sourceMatrices.length),
+      ];
+      const lodCounts = new Uint32Array([placements.length, 0, 0]);
+      // Reserve all three fixed-capacity native matrix/indirect buffers in the
+      // cell governor even before hidden LOD pools allocate lazily in Lite.
+      gpuBytes += placements.length * 3 * 64 + 3 * 20;
+      const textureForMaterial = (resourceId: string) =>
+        withPbrTextureAddressMode(
+          renderer.engine,
+          requireTexture(resourceId),
+          placement.material.textureAddressMode,
+        );
+      const material = createStreamedPbrMaterial(
+        {
+          baseColor: textureForMaterial(placement.material.baseColorResourceId),
+          normal: textureForMaterial(placement.material.normalResourceId),
+          orm: textureForMaterial(placement.material.ormResourceId),
+        },
+        placement.material,
+      );
+      const lodMeshes: Mesh[] = [];
+      const triangleCounts: number[] = [];
+      for (const [level, lod] of placement.lods.entries()) {
+        const source = requireGpuResource(lod.indexResourceId).mesh;
+        if (source === null) throw new Error(`PBR LOD ${lod.indexResourceId} is not a mesh`);
+        // The public clone retains shared GPU geometry; cell eviction releases only
+        // its placement ownership before the dependency cache releases the source.
+        const mesh = cloneTransformNode(source) as Mesh;
+        mesh.name = `${cell.id}-${placement.id}-lod${level}`;
+        mesh.material = material;
+        // Group mesh remains identity: every instance matrix already includes
+        // canonical RH-to-LH conversion followed by its full world placement.
+        mesh.position.set(0, 0, 0);
+        mesh.rotation.set(0, 0, 0);
+        mesh.scaling.set(1, 1, 1);
+        const matrices = lodMatrices[level];
+        if (matrices === undefined) throw new Error("Missing PBR instance matrix pool");
+        setThinInstances(mesh, matrices, placements.length);
+        // Count changes must survive Lite's cached render bundles; its public
+        // dynamic-count path keeps indirect draw arguments synchronized.
+        enableThinInstanceDynamicDrawCount(mesh);
+        setThinInstanceCount(mesh, lodCounts[level] ?? 0);
+        mesh.receiveShadows = true;
+        mesh.visible = renderer.presentationOwner === "streamed-residency" && level === 0;
+        meshes.push(mesh);
+        lodMeshes.push(mesh);
+        addToScene(renderer.scene, mesh);
+        addedMeshes.add(mesh);
+        const descriptor = dependencyById.get(lod.indexResourceId)?.descriptor;
+        triangleCounts.push(
+          descriptor?.format === "meshopt" && "version" in descriptor.decode
+            ? descriptor.decode.count / 3
+            : 0,
+        );
+      }
+      pbrAssets.push({
+        placements,
+        meshes: lodMeshes,
+        triangleCounts,
+        activeLods: new Uint8Array(placements.length),
+        sourceMatrices,
+        lodMatrices,
+        lodCounts,
+      });
+    }
+    if (pbrPlacements.length > 0)
+      renderer.pbrAssetUploadMs += performance.now() - pbrSetupStartedAt;
     renderer.streamingCells.set(
       cell.id,
       Object.freeze({
@@ -1046,6 +1191,7 @@ export function uploadStreamingGreyboxCell(
         dependencyKeys: Object.freeze(dependencyKeys),
         gpuBytes,
         meshes: Object.freeze(meshes),
+        pbrAssets: Object.freeze(pbrAssets),
       }),
     );
     return Object.freeze({
@@ -1076,14 +1222,7 @@ export function applyFlythroughSample(
 ): void {
   setSubtreeVisible(renderer.playerMesh, false);
   for (const mesh of renderer.crowdMeshes) setSubtreeVisible(mesh, false);
-  if (renderer.presentationOwner === "preview") {
-    renderer.presentationOwner = "streamed-residency";
-    // Lite caches draw lists: direct .visible writes do not invalidate those lists.
-    for (const mesh of renderer.previewMeshes) setSubtreeVisible(mesh, false);
-    for (const resident of renderer.streamingCells.values()) {
-      for (const mesh of resident.meshes) setSubtreeVisible(mesh, true);
-    }
-  }
+  activateStreamedPresentation(renderer);
   renderer.flythroughSample = sample;
   const pose = flythroughCameraPose(sample, camera);
   renderer.camera.target.x = pose.target[0];
@@ -1092,6 +1231,17 @@ export function applyFlythroughSample(
   renderer.camera.alpha = sample.headingRadians + Math.PI;
   renderer.camera.beta = camera.beta;
   renderer.camera.radius = camera.radiusMeters;
+}
+
+function activateStreamedPresentation(renderer: LiteGreyboxWorld): void {
+  if (renderer.presentationOwner === "preview") {
+    renderer.presentationOwner = "streamed-residency";
+    // Lite caches draw lists: direct .visible writes do not invalidate those lists.
+    for (const mesh of renderer.previewMeshes) setSubtreeVisible(mesh, false);
+    for (const resident of renderer.streamingCells.values()) {
+      for (const mesh of resident.meshes) setSubtreeVisible(mesh, true);
+    }
+  }
 }
 
 export function clearFlythroughPresentation(renderer: LiteGreyboxWorld): void {
@@ -1284,6 +1434,7 @@ export function renderLiteGreyboxWorld(
     applyEnvironmentLighting(renderer.ambientLight, renderer.sunLight, renderer.scene, lighting);
   }
 
+  updatePbrAssetLods(renderer);
   renderer.shadows.synchronize(renderer.scene.meshes, renderer.shadowExcluded);
   const submitStartedAt = performance.now();
   renderFrame(
@@ -1300,6 +1451,7 @@ export function renderLiteGreyboxWorld(
   return Object.freeze({
     rendering: Object.freeze({
       ...renderer.shadows.snapshot(),
+      pbrAssets: pbrAssetSnapshot(renderer),
       cpuSubmitMs,
       gpuFrameEmaMs: renderer.engine.gpuFrameTimeMs > 0 ? renderer.engine.gpuFrameTimeMs : null,
       shadowTaskGpuMs: shadowTask?.durationMs ?? null,
@@ -1312,6 +1464,100 @@ export function renderLiteGreyboxWorld(
     sunDirection: renderer.lighting.sunDirection,
     sunIntensity: renderer.lighting.sunIntensity,
   });
+}
+
+function updatePbrAssetLods(renderer: LiteGreyboxWorld): void {
+  const camera = renderer.camera;
+  const eyeX = camera.target.x + camera.radius * Math.cos(camera.alpha) * Math.sin(camera.beta);
+  const eyeY = camera.target.y + camera.radius * Math.cos(camera.beta);
+  const eyeZ = camera.target.z + camera.radius * Math.sin(camera.alpha) * Math.sin(camera.beta);
+  for (const resident of renderer.streamingCells.values()) {
+    for (const asset of resident.pbrAssets ?? []) {
+      let changed = false;
+      for (let index = 0; index < asset.placements.length; index += 1) {
+        const placement = asset.placements[index];
+        if (placement === undefined) continue;
+        const position = placement.position;
+        const distance = Math.hypot(eyeX - position[0], eyeY - position[1], eyeZ - position[2]);
+        const next = selectPbrAssetLod(
+          distance,
+          placement.lodDistancesMeters,
+          asset.activeLods[index] ?? 0,
+        );
+        if (next !== asset.activeLods[index]) {
+          renderer.pbrAssetLodChanges += 1;
+          changed = true;
+          asset.activeLods[index] = next;
+        }
+      }
+      if (changed) {
+        asset.lodCounts.fill(0);
+        for (let index = 0; index < asset.placements.length; index += 1) {
+          const lod = asset.activeLods[index] ?? 0;
+          const matrices = asset.lodMatrices[lod];
+          if (matrices === undefined) throw new Error("Missing PBR LOD matrix pool");
+          const target = asset.lodCounts[lod] ?? 0;
+          // No temporary subarray views or growing arrays on the frame path.
+          for (let component = 0; component < 16; component += 1)
+            matrices[target * 16 + component] = asset.sourceMatrices[index * 16 + component] ?? 0;
+          asset.lodCounts[lod] = target + 1;
+        }
+        for (const [lod, mesh] of asset.meshes.entries())
+          setThinInstanceCount(mesh, asset.lodCounts[lod] ?? 0);
+      }
+      for (const [lod, mesh] of asset.meshes.entries()) {
+        const visible =
+          renderer.presentationOwner === "streamed-residency" && (asset.lodCounts[lod] ?? 0) > 0;
+        if (mesh.visible !== visible) setSubtreeVisible(mesh, visible);
+      }
+    }
+  }
+}
+
+function pbrAssetSnapshot(renderer: LiteGreyboxWorld) {
+  let residentPlacementCount = 0;
+  let visibleTriangleCount = 0;
+  let residentGroupCount = 0;
+  let visibleDrawGroupCount = 0;
+  let instanceMatrixCpuBytes = 0;
+  let instanceMatrixGpuBytes = 0;
+  let instanceDrawArgsGpuBytes = 0;
+  for (const resident of renderer.streamingCells.values()) {
+    for (const asset of resident.pbrAssets ?? []) {
+      residentPlacementCount += asset.placements.length;
+      residentGroupCount += 1;
+      instanceMatrixCpuBytes +=
+        asset.sourceMatrices.byteLength +
+        asset.lodMatrices.reduce((sum, matrices) => sum + matrices.byteLength, 0);
+      for (const [lod, mesh] of asset.meshes.entries()) {
+        // Exact Lite 1.12 owns/allocates these buffers lazily and destroys them
+        // with the mesh. Observe actual allocated sizes rather than capacity.
+        const buffer = mesh.thinInstances
+          ? (Reflect.get(mesh.thinInstances, "_gpuBuffer") as GPUBuffer | null)
+          : null;
+        instanceMatrixGpuBytes += buffer?.size ?? 0;
+        const drawArgs = mesh.thinInstances
+          ? (Reflect.get(mesh.thinInstances, "_drawArgsBuffer") as GPUBuffer | null)
+          : null;
+        instanceDrawArgsGpuBytes += drawArgs?.size ?? 0;
+        if (mesh.visible) {
+          visibleDrawGroupCount += 1;
+          visibleTriangleCount += (asset.triangleCounts[lod] ?? 0) * (asset.lodCounts[lod] ?? 0);
+        }
+      }
+    }
+  }
+  return {
+    residentPlacementCount,
+    visibleTriangleCount,
+    residentGroupCount,
+    visibleDrawGroupCount,
+    instanceMatrixCpuBytes,
+    instanceMatrixGpuBytes,
+    instanceDrawArgsGpuBytes,
+    lodChanges: renderer.pbrAssetLodChanges,
+    placementSetupMs: renderer.pbrAssetUploadMs,
+  };
 }
 
 export function visibleStreamingMeshCount(renderer: LiteGreyboxWorld): number {

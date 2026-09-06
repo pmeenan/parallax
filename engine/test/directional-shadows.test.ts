@@ -43,8 +43,8 @@ describe("directional shadow residency", () => {
     const sun = {} as DirectionalLight;
     const shadow = createDirectionalShadows({} as EngineContext, sun);
     // Lite treats an absent visibility override as visible.
-    const preview = {} as Mesh;
-    const streamed = { visible: false } as Mesh;
+    const preview = { material: {} } as Mesh;
+    const streamed = { material: {}, visible: false } as Mesh;
     const ui = { visible: true } as Mesh;
     const excluded = new Set([ui]);
     shadow.synchronize([preview, streamed, ui], excluded);

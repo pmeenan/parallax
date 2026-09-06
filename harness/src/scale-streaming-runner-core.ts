@@ -356,7 +356,12 @@ export async function materializeScaleStreamingTarget(input: {
     const expectedStreamingResourceCacheKeys = deriveScaleStreamingResourceCacheKeyAuthority(
       JSON.parse(documents.districtIndexBytes.toString("utf8")) as unknown,
     );
-    if (Object.keys(expectedStreamingResourceCacheKeys).length !== documents.dependencyCount) {
+    const productionDependencyCount =
+      parseStreamingDistrictIndex(districtIndex, "district-1-surface").resources?.length ?? 0;
+    if (
+      Object.keys(expectedStreamingResourceCacheKeys).length !==
+      productionDependencyCount + documents.dependencyCount
+    ) {
       throw new Error("Composed scale-streaming cache-key authority is incomplete");
     }
     for (const resource of corpus.graphs.flatMap(({ resources }) => resources)) {

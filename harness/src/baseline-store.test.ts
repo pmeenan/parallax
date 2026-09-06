@@ -28,10 +28,10 @@ const psoIdentity = resolveExpectedPsoWarmupTraceIdentity();
 const validPsoWarmup = Object.freeze({
   buildCompatibilityDigest: psoIdentity.buildCompatibilityDigest,
   cacheHitCount: 1,
-  cacheMissCount: 3,
-  compiledCount: 3,
+  cacheMissCount: psoIdentity.entries.length,
+  compiledCount: psoIdentity.entries.length,
   contract: "pso-warmup-telemetry@1" as const,
-  deferredCount: 3,
+  deferredCount: psoIdentity.entries.length,
   entries: Object.freeze(
     psoIdentity.entries.map((entry, index) =>
       Object.freeze({
@@ -47,14 +47,14 @@ const validPsoWarmup = Object.freeze({
   failure: null,
   failureCount: 0,
   maximumCompileDurationMs: 1,
-  queueHighWater: 3,
+  queueHighWater: psoIdentity.entries.length,
   releaseDigest: null,
-  requestedCount: 4,
+  requestedCount: psoIdentity.entries.length + 1,
   schemaVersion: 1 as const,
   source: "privileged-embedded" as const,
   state: "ready" as const,
   totalDurationMs: 2,
-  traceEntryCount: 3,
+  traceEntryCount: psoIdentity.entries.length,
   traceSha256: psoIdentity.sha256,
 });
 

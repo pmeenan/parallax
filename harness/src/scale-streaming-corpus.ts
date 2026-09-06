@@ -436,7 +436,8 @@ export function createScaleStreamingTargetDocuments(
   if (!record(currentDistrictIndex) || !Array.isArray(currentDistrictIndex.cells)) {
     throw new Error("Production district index is unavailable for scale-streaming composition");
   }
-  const resources = validatedGenerated.graphs
+  const productionIndex = parseStreamingDistrictIndex(currentDistrictIndex, "district-1-surface");
+  const generatedResources = validatedGenerated.graphs
     .flatMap((graph) => {
       const [texture, vertices, indices] = graph.resources;
       if (texture === undefined || vertices === undefined || indices === undefined) {
@@ -449,6 +450,9 @@ export function createScaleStreamingTargetDocuments(
       ];
     })
     .sort((left, right) => compare(left.resourceId, right.resourceId));
+  const resources = [...(productionIndex.resources ?? []), ...generatedResources].sort(
+    (left, right) => compare(left.resourceId, right.resourceId),
+  );
   const indexDocument = {
     ...currentDistrictIndex,
     cells: currentDistrictIndex.cells.map((cell, index) => {
@@ -457,7 +461,14 @@ export function createScaleStreamingTargetDocuments(
       const root = graph?.resources[2];
       if (root === undefined)
         throw new Error(`Scale-streaming cell ${index} has no dependency graph`);
-      return { ...cell, dependencies: [root.resourceId] };
+      const original = productionIndex.cells[index];
+      if (original === undefined) throw new Error(`Production cell ${index} is absent`);
+      return {
+        ...cell,
+        dependencies: [...new Set([...(original.dependencies ?? []), root.resourceId])].sort(
+          compare,
+        ),
+      };
     }),
     resources,
     schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,

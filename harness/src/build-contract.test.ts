@@ -43,7 +43,7 @@ describe("assembled build contract", () => {
         .digest("hex"),
     );
     expect(installManifest.gameId).toBe("parallax");
-    expect(installSummary.countByTarget.opfs).toBe(331);
+    expect(installSummary.countByTarget.opfs).toBe(400);
     expect(installSummary.countByTarget.shell).toBe(23);
     expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
     expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
@@ -181,27 +181,15 @@ describe("assembled build contract", () => {
       "schemaVersion",
     ]);
     expect(districtIndex.districtId).toBe(districtEntrypoint?.districtId);
-    expect(districtIndex.cells.every((cell) => cell.dependencies.length === 1)).toBe(true);
-    expect(districtIndex.resources.map(({ format }) => format)).toEqual([
-      "ktx2",
-      "meshopt",
-      "meshopt",
-    ]);
     const parsedDistrictIndex = parseStreamingDistrictIndex(districtIndex, "district-1-surface");
-    expect(parsedDistrictIndex.cells.every(({ dependencies }) => dependencies?.length === 1)).toBe(
-      true,
+    expect(parsedDistrictIndex.resources).toHaveLength(72);
+    expect(districtIndex.resources.filter(({ format }) => format === "ktx2")).toHaveLength(10);
+    expect(districtIndex.resources.filter(({ format }) => format === "meshopt")).toHaveLength(62);
+    expect(districtIndex.cells.filter((cell) => cell.dependencies.length === 1)).toHaveLength(255);
+    const pavingCell = districtIndex.cells.find(
+      (cell) => cell.cellId === "district-1-surface-cell-08-08",
     );
-    expect(
-      parsedDistrictIndex.resources?.map(({ decode, dependencies, resourceId }) => ({
-        dependencies,
-        mode: "mode" in decode ? decode.mode : "texture",
-        resourceId,
-      })),
-    ).toEqual([
-      expect.objectContaining({ dependencies: [], mode: "texture" }),
-      expect.objectContaining({ mode: "ATTRIBUTES" }),
-      expect.objectContaining({ mode: "TRIANGLES" }),
-    ]);
+    expect(pavingCell?.dependencies).toHaveLength(37);
     const compactFixture = PRODUCTION_COMPRESSED_STREAMING_FIXTURES.find(
       ({ id }) => id === "compact",
     );
@@ -213,7 +201,13 @@ describe("assembled build contract", () => {
       Buffer.from(compactFixture.attributes, "base64"),
       Buffer.from(compactFixture.indices, "base64"),
     ];
-    const [textureResource, vertexResource, indexResource] = parsedDistrictIndex.resources;
+    const compactResources = expectedCompressedBytes.map((bytes) => {
+      const sha256 = createHash("sha256").update(bytes).digest("hex");
+      const resource = parsedDistrictIndex.resources?.find((entry) => entry.sha256 === sha256);
+      if (resource === undefined) throw new Error(`Missing compact fixture ${sha256}`);
+      return resource;
+    });
+    const [textureResource, vertexResource, indexResource] = compactResources;
     if (
       textureResource === undefined ||
       vertexResource === undefined ||
@@ -227,9 +221,31 @@ describe("assembled build contract", () => {
       vertexResource.resourceId,
     ]);
     expect(parsedDistrictIndex.cells[0]?.dependencies).toEqual([indexResource.resourceId]);
-    for (const [index, resource] of parsedDistrictIndex.resources.entries()) {
+    const pavingLibrary = JSON.parse(
+      await readFile(join(repositoryRoot, "assets/library/d1-paving.json"), "utf8"),
+    ) as {
+      resources: readonly Readonly<{ bytes: number; file: string; path: string; sha256: string }>[];
+    };
+    const pavingResources = pavingLibrary.resources.filter(({ file }) => !file.endsWith(".glb"));
+    expect(pavingResources).toHaveLength(69);
+    expect(
+      parsedDistrictIndex.resources.filter(({ sha256 }) =>
+        pavingResources.some((entry) => entry.sha256 === sha256),
+      ),
+    ).toHaveLength(69);
+    for (const resource of parsedDistrictIndex.resources) {
       const actualBytes = await readFile(join(buildRoot, resource.path));
-      expect(actualBytes).toEqual(expectedCompressedBytes[index]);
+      const compactIndex = compactResources.findIndex(({ sha256 }) => sha256 === resource.sha256);
+      if (compactIndex >= 0) {
+        expect(actualBytes).toEqual(expectedCompressedBytes[compactIndex]);
+      } else {
+        const admitted = pavingResources.find(({ sha256 }) => sha256 === resource.sha256);
+        if (admitted === undefined) throw new Error(`Unadmitted asset ${resource.resourceId}`);
+        expect(resource.bytes).toBe(admitted.bytes);
+        expect(
+          actualBytes.equals(await readFile(join(repositoryRoot, "assets/library", admitted.path))),
+        ).toBe(true);
+      }
       expect(actualBytes.byteLength).toBe(resource.bytes);
       expect(createHash("sha256").update(actualBytes).digest("hex")).toBe(resource.sha256);
       expect(installManifest.resources).toContainEqual(
@@ -319,7 +335,7 @@ describe("assembled build contract", () => {
       schemaVersion: STREAMING_DISTRICT_INDEX_SCHEMA_VERSION,
     });
     expect(catacombIndex.cells).toHaveLength(64);
-    expect(parsedCatacombIndex.resources).toEqual(parsedDistrictIndex.resources);
+    expect(parsedCatacombIndex.resources).toEqual(compactResources);
     const catacombIndexArtifact = manifest.artifacts.find(
       ({ path }) => path === catacombEntrypoint?.path,
     );

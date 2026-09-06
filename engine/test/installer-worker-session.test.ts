@@ -20,6 +20,46 @@ const digest = "a".repeat(64);
 const shellEntrypointPath = `immutable/app-${"b".repeat(64)}.js`;
 
 describe("installer worker session", () => {
+  it("binds Repair to cumulative credit after a partial attempt and repeated Install", async () => {
+    let attempt = 0;
+    const test = fixture(async (context) => {
+      if (context.operation === "repair") {
+        expect(context.completionCredit).toEqual({
+          releaseDigest: digest,
+          resourceCount: 2,
+          totalBytes: 10,
+          lifetimeResourceCount: 5,
+          lifetimeVerifiedBytes: 23,
+        });
+      } else {
+        attempt += 1;
+        const before = test.snapshot();
+        test.update({
+          completedResourceCount: before.completedResourceCount + (attempt === 1 ? 1 : 2),
+          verifiedBytes: before.verifiedBytes + (attempt === 1 ? 3 : 10),
+        });
+        if (attempt === 1) throw new Error("interrupted partial transfer");
+      }
+      return { readyBytes: 10, readyResourceCount: 2, releaseDigest: digest };
+    });
+    await expect(
+      test.send({ kind: "install", requestId: 1, shellEntrypointPath }),
+    ).resolves.toMatchObject({ kind: "failure" });
+    for (const requestId of [2, 3]) {
+      await expect(
+        test.send({ kind: "install", requestId, shellEntrypointPath }),
+      ).resolves.toMatchObject({ kind: "install-complete" });
+      await Promise.resolve();
+    }
+    await expect(
+      test.send({
+        kind: "repair",
+        requestId: 4,
+        shellEntrypointPath,
+        expectedReleaseDigest: digest,
+      }),
+    ).resolves.toMatchObject({ kind: "install-complete" });
+  });
   it.each(
     INSTALLER_REPAIR_STORE_BOUNDARY_RULES,
   )("publishes the typed $boundary tuple before Repair recovery", async (rule) => {
@@ -88,7 +128,16 @@ describe("installer worker session", () => {
     });
     await expect(repair).resolves.toMatchObject({ kind: "install-complete", requestId: 2 });
 
-    expect(observed).toEqual([null, { releaseDigest: digest, resourceCount: 2, totalBytes: 10 }]);
+    expect(observed).toEqual([
+      null,
+      {
+        releaseDigest: digest,
+        resourceCount: 2,
+        totalBytes: 10,
+        lifetimeResourceCount: 0,
+        lifetimeVerifiedBytes: 0,
+      },
+    ]);
     expect(test.snapshot().lockWaitDurationMs).toBeGreaterThan(0);
     expect(test.snapshot().operationDurationMs).toBeGreaterThan(0);
   });
@@ -561,5 +610,8 @@ function fixture(
       });
     },
     snapshot: () => transfer,
+    update: (partial: Partial<InstallerTransferTelemetrySnapshot>) => {
+      transfer = Object.freeze({ ...transfer, ...partial });
+    },
   });
 }

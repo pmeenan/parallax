@@ -7,10 +7,11 @@ import type {
 } from "@parallax/engine";
 import { selectGreyboxCellLod, validateGreyboxDistrict } from "@parallax/engine";
 import { describe, expect, it, vi } from "vitest";
+import { createHeightfieldGeometryBatch } from "../../engine/src/render/lite-greybox-world";
 import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
 import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
 import { GREYBOX_DISTRICT_SPECS } from "../src/world/district-registry";
-import { createGreyboxScene } from "../src/world/greybox-generator";
+import { createGreyboxScene, sampleGreyboxTerrain } from "../src/world/greybox-generator";
 import { freezeGreyboxData } from "../src/world/greybox-spec";
 
 const CELLS_PER_AXIS = 16;
@@ -49,6 +50,81 @@ function triangleRepresentation(cell: GreyboxCell, tier: 0 | 1 | 2): GreyboxTria
 }
 
 describe("data-first greybox world generation", () => {
+  it("places the admitted rigid stone courtyard and bounded slope diagnostic", () => {
+    const placements = DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? [];
+    expect(placements).toHaveLength(179);
+    expect(new Set(placements.map((p) => p.id)).size).toBe(179);
+    const courtyard = placements.filter((p) => p.id.startsWith("courtyard-stone-"));
+    const slope = placements.filter((p) => p.id.startsWith("slope-stone-"));
+    expect(courtyard).toHaveLength(153);
+    expect(slope).toHaveLength(24);
+    for (const placement of courtyard) {
+      expect(placement.assetId).toBe("d1-individual-limestone-stones");
+      expect(placement.heightAnchor).toEqual([6, 6]);
+      expect(placement.heightOffset).toBe(-0.057);
+      expect(placement.scale).toBe(1);
+      expect(
+        sampleGreyboxTerrain(DISTRICT_1_GREYBOX_SPEC, ...placement.center) + placement.heightOffset,
+      ).toBeCloseTo(18.91675, 10);
+    }
+    for (const variantId of ["substrate", "grass"])
+      expect(placements.find((p) => p.variantId === variantId)).toMatchObject({
+        center: [6, 6],
+        heightOffset: 0,
+        rotationYRadians: 0,
+      });
+    expect(
+      slope.some(
+        (p) => Math.abs(p.rotationXRadians ?? 0) + Math.abs(p.rotationZRadians ?? 0) > 0.01,
+      ),
+    ).toBe(true);
+  });
+  it("keeps the courtyard plane identical in collision and every rendered terrain LOD", () => {
+    const scene = createScene();
+    const cell = requireCell(scene, 8, 8);
+    const height = 18.97375;
+    const h = cell.collision.heightfield;
+    for (const index of [0, 1, h.columns, h.columns + 1]) expect(h.heights[index]).toBe(height);
+    // Both triangles of the [0,16]² lattice square are level, containing the
+    // entire [3,9]² paving footprint, not merely its center sample.
+    for (const tier of [0, 1, 2] as const) {
+      const geometry = createHeightfieldGeometryBatch([
+        { cell, representation: heightfieldRepresentation(cell, tier) },
+      ]);
+      const corners = [];
+      for (let index = 0; index < h.columns * h.rows * 3; index += 3) {
+        const x = geometry.positions[index] ?? Infinity,
+          z = geometry.positions[index + 2] ?? Infinity;
+        if (x >= 0 && x <= 16 && z >= 0 && z <= 16) corners.push(geometry.positions[index + 1]);
+      }
+      expect(corners).toHaveLength(4);
+      for (const y of corners) expect(y).toBeCloseTo(height, 5);
+    }
+    const original = {
+      ...DISTRICT_1_GREYBOX_SPEC,
+      terrain: { ...DISTRICT_1_GREYBOX_SPEC.terrain, levelPads: [] },
+    };
+    for (let z = -48; z <= 64; z += 16)
+      for (let x = -48; x <= 64; x += 16) {
+        if (x <= -32 || x >= 48 || z <= -32 || z >= 48)
+          expect(sampleGreyboxTerrain(DISTRICT_1_GREYBOX_SPEC, x, z)).toBe(
+            sampleGreyboxTerrain(original, x, z),
+          );
+      }
+    expect(sampleGreyboxTerrain(DISTRICT_1_GREYBOX_SPEC, -16, 0)).toBeCloseTo(
+      (height + sampleGreyboxTerrain(original, -16, 0)) / 2,
+      12,
+    );
+    const retained = scene.world.cells.filter(
+      (c) => heightfieldRepresentation(c, 2).sampleStride === 1,
+    );
+    expect(retained.map((c) => c.coordinate)).toEqual([
+      [7, 7],
+      [8, 7],
+      [7, 8],
+      [8, 8],
+    ]);
+  });
   it("interprets a versioned descriptor through the district-neutral public API", () => {
     expect(GREYBOX_DISTRICT_SPECS).toEqual([DISTRICT_1_GREYBOX_SPEC, DISTRICT_2_GREYBOX_SPEC]);
     expect(Object.isFrozen(GREYBOX_DISTRICT_SPECS)).toBe(true);
@@ -211,7 +287,7 @@ describe("data-first greybox world generation", () => {
     expect(coordinates.size).toBe(256);
   });
 
-  it("provides stride 1/2/4 terrain and monotonically simpler feature representations", () => {
+  it("retains authored pad terrain and otherwise provides stride 1/2/4 with simpler features", () => {
     const scene = createScene();
 
     for (const cell of scene.world.cells) {
@@ -220,7 +296,11 @@ describe("data-first greybox world generation", () => {
       ]);
       expect(
         cell.lods.map((lod) => heightfieldRepresentation(cell, lod.tier).sampleStride),
-      ).toEqual([1, 2, 4]);
+      ).toEqual(
+        cell.coordinate.every((coordinate) => coordinate === 7 || coordinate === 8)
+          ? [1, 1, 1]
+          : [1, 2, 4],
+      );
       expect(cell.lods[0].complexityScore).toBeGreaterThanOrEqual(cell.lods[1].complexityScore);
       expect(cell.lods[1].complexityScore).toBeGreaterThanOrEqual(cell.lods[2].complexityScore);
       expect(triangleRepresentation(cell, 0).primitives.length).toBeGreaterThanOrEqual(

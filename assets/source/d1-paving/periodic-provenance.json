@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "sourceKind": "generated-art",
+  "assetId": "d1-clean-limestone-paving",
+  "sourcePhysicalWidthMetres": 2,
+  "inputs": [
+    {
+      "sha256": "487c0d04c9d8009cc4783b233a4f075f983bdcc0f68e4b93de4a5af7037e1b55",
+      "rights": "OpenAI generated output; reviewed output terms apply",
+      "role": "generation-input",
+      "path": "assets/reference/d1-paving-clean/limestone-v1.png"
+    },
+    {
+      "sha256": "bc91212862638324ae1eed36d22e573092c656f74d8927e22151c50d07fdeebe",
+      "rights": "OpenAI generated output edited from v1; reviewed output terms apply",
+      "role": "material-reference",
+      "path": "assets/reference/d1-paving-clean/limestone-v2-rough.png"
+    }
+  ],
+  "generation": {
+    "provider": "OpenAI built-in imagegen",
+    "model": "unspecified",
+    "lineage": "v1 text-only generation; v2 edit of v1 only; no third-party image inputs. Physical relief is subsequently authored, not measured from a scan. Periodic adaptation uses hand-packed whole V2 stones in a toroidal layout; Blender UV emission bake produces planar periodic maps. Rejected V3 is not an input.",
+    "seed": null,
+    "prompts": [
+      {
+        "sha256": "569b52ead42e2c63132263fa72fc07a1d4889648c317011879e44ea191ae9314",
+        "path": "assets/reference/d1-paving-clean/README.md"
+      },
+      {
+        "sha256": "108eab62bf99f4c7590966a634821978b6d099812d5f76bd4933745ea2fcd8f4",
+        "path": "assets/reference/d1-paving-clean/rough-v2.md"
+      }
+    ]
+  },
+  "outputTerms": {
+    "url": "https://openai.com/policies/row-terms-of-use/",
+    "effectiveDate": "2026-01-01",
+    "basis": "User owns output as between OpenAI and user, subject to law; outputs may not be unique. No CC0 or copyright-exclusivity claim.",
+    "reviewedAt": "2026-09-05"
+  },
+  "rightsReview": {
+    "scope": "public-build",
+    "reviewedAt": "2026-09-05",
+    "status": "approved",
+    "reviewedBy": "Codex root"
+  }
+}

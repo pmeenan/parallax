@@ -96,6 +96,31 @@ export function planStreamingBatch(
   );
 }
 
+/** Match executeStreamingBatchCacheTransaction's first-miss ownership before
+ * reserving: resident/shared references do not allocate another decode buffer.
+ * Each cell's peak scratch is summed conservatively even when the decode pool
+ * cannot run all cells concurrently.
+ */
+export function streamingBatchDemandStagingBytes(
+  plans: readonly StreamingBatchPlan[],
+  dependencyCache: StreamingResourceCache<DecodedStreamingDependency>,
+): number {
+  const known = new Set(dependencyCache.snapshot().resources.map((entry) => entry.cacheKey));
+  let demand = 0;
+  for (const plan of plans) {
+    const misses = plan.descriptors.filter((descriptor) => {
+      const key = streamingResourceCacheKey(descriptor);
+      if (known.has(key)) return false;
+      known.add(key);
+      return true;
+    });
+    demand += planStreamingCellMemoryReservation(plan.entry, misses).totalBytes;
+    if (!Number.isSafeInteger(demand) || demand <= 0)
+      throw new Error("Streaming batch staging demand is invalid");
+  }
+  return demand;
+}
+
 export async function executeStreamingBatchCacheTransaction(
   options: Readonly<{
     afterCommit: (result: StreamingBatchCacheTransactionResult) => void | Promise<void>;

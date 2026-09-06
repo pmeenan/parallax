@@ -556,9 +556,11 @@ export function parseInstallerTransferTelemetry(
       resourceId: record.failureResourceId as string | null,
     });
   }
-  const exactLifetimeCompletion =
-    ((record.completedResourceCount as number) === (record.resourceCount as number) &&
-      (record.verifiedBytes as number) === (record.totalBytes as number)) ||
+  // Transfer counters accumulate across cancelled/retried Install requests. The
+  // exact current-release proof is the finalVerification tuple checked below.
+  const sufficientLifetimeCompletion =
+    ((record.completedResourceCount as number) >= (record.resourceCount as number) &&
+      (record.verifiedBytes as number) >= (record.totalBytes as number)) ||
     ((record.operationRepairAttemptCount as number) > 0 &&
       (record.completedResourceCount as number) === 0 &&
       (record.verifiedBytes as number) === 0);
@@ -625,7 +627,7 @@ export function parseInstallerTransferTelemetry(
         (record.operationRepairedResourceCount as number) ||
         (record.resourceCount as number) === 0 ||
         (record.totalBytes as number) === 0 ||
-        !exactLifetimeCompletion ||
+        !sufficientLifetimeCompletion ||
         record.finalVerificationPhase !== "complete" ||
         (record.finalVerificationBytes as number) !== (record.totalBytes as number) ||
         (record.finalVerificationResourceCount as number) !== (record.resourceCount as number) ||

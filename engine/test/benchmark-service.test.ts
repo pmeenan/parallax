@@ -1170,6 +1170,9 @@ function flythroughHarness(
         return Promise.resolve();
       },
       dispose: () => undefined,
+      async previewScene(): Promise<never> {
+        throw new Error("unused preview");
+      },
       prepare(): void {
         prepares += 1;
         publish(
@@ -1258,7 +1261,7 @@ function flythroughSnapshot(
     preflightElapsedMs: state === "idle" ? null : 10_000,
     render,
     scenarioId: scenario.id,
-    schemaVersion: 3,
+    schemaVersion: 4,
     state,
     streamingAtMeasurementEnd: render === null ? null : streamingSnapshot(10, 1),
     streamingAtMeasurementStart: render === null ? null : streamingSnapshot(0, 0),

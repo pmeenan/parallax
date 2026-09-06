@@ -12,15 +12,16 @@ import { createFlythroughObserverProtocol } from "../streaming/flythrough-observ
 import { openAndAdmitInstalledStreamingRelease } from "../streaming/installed-streaming-admission";
 import {
   type InstalledStreamingRelease,
-  parseStreamingDistrictIndex,
   resolveInstalledStreamingRelease,
 } from "../streaming/installed-streaming-release";
+import { parsePrivilegedStreamingProvisionPlan } from "../streaming/privileged-streaming-provision";
 import { createStreamingBatchBudget } from "../streaming/streaming-batch-budget";
 import {
   executeStreamingBatchCacheTransaction,
   planStreamingBatch,
   type StreamingBatchPreparedCell,
   streamingBatchDemandEncodedBytes,
+  streamingBatchDemandStagingBytes,
 } from "../streaming/streaming-batch-cache-transaction";
 import { validateStreamingBuildManifest } from "../streaming/streaming-build-manifest";
 import {
@@ -491,15 +492,15 @@ function startStreamingWorker(): void {
                   member.dependencies.flatMap((dependency) =>
                     "kind" in dependency && dependency.kind === "cached-dependency-reference"
                       ? []
-                      : [
-                          dependency.format === "ktx2"
-                            ? dependency.rgba
-                            : dependency.kind !== "legacy-positions"
+                      : dependency.format === "ktx2"
+                        ? (dependency.mipmaps?.map((mip) => mip.rgba) ?? [dependency.rgba])
+                        : [
+                            dependency.kind !== "legacy-positions"
                               ? dependency.kind === "indices"
                                 ? dependency.indices
                                 : dependency.attributes
                               : dependency.positions,
-                        ],
+                          ],
                   ),
                 ),
               ),
@@ -608,7 +609,7 @@ function startStreamingWorker(): void {
     const resources = index?.resources ?? [];
     const plans = planStreamingBatch(entries, resources, batch.ordinal);
     const aggregateDemandEncodedBytes = streamingBatchDemandEncodedBytes(plans, dependencyCache);
-    const aggregateStagingBytes = plans.reduce((sum, plan) => sum + plan.memory.totalBytes, 0);
+    const aggregateStagingBytes = streamingBatchDemandStagingBytes(plans, dependencyCache);
     const reservation = encodedBatchBudget.reserve(
       [...residents.values()].reduce((sum, resident) => sum + resident.encodedBytes, 0) +
         dependencyCache.snapshot().liveEncodedBytes,
@@ -635,7 +636,9 @@ function startStreamingWorker(): void {
     if (stagingReservation === null) {
       reservation.release();
       publish({ cpuBudgetRejectionCount: telemetry.cpuBudgetRejectionCount + 1 });
-      throw new Error(`Streaming staging exceeds ${STREAMING_BATCH_STAGING_BUDGET_BYTES}`);
+      throw new Error(
+        `Streaming staging demand ${aggregateStagingBytes} exceeds ${STREAMING_BATCH_STAGING_BUDGET_BYTES}`,
+      );
     }
     const batchTransactionId = [
       telemetry.workerGeneration,
@@ -944,7 +947,10 @@ function startStreamingWorker(): void {
     return fetch(input);
   };
 
-  const provision = async (entry: StreamingCellIndexEntry, baseUrl: URL): Promise<number> => {
+  const provision = async (
+    entry: Pick<StreamingCellIndexEntry, "bytes" | "path" | "sha256">,
+    baseUrl: URL,
+  ): Promise<number> => {
     if (rootDirectory === null) throw new Error("Streaming OPFS directory is unavailable");
     const handle = await rootDirectory.getFileHandle(`${entry.sha256}.cell`, { create: true });
     const existing = await handle.getFile();
@@ -955,21 +961,21 @@ function startStreamingWorker(): void {
       return 0;
     }
     const response = await fetchLegacy(new URL(entry.path, baseUrl));
-    if (!response.ok) throw new Error(`Cell fetch failed (${response.status}): ${entry.path}`);
+    if (!response.ok) throw new Error(`Package fetch failed (${response.status}): ${entry.path}`);
     const bytes = await response.arrayBuffer();
     if (bytes.byteLength !== entry.bytes) {
       throw new Error(
-        `Fetched cell ${entry.cellId} has ${bytes.byteLength} bytes; expected ${entry.bytes}`,
+        `Fetched package ${entry.path} has ${bytes.byteLength} bytes; expected ${entry.bytes}`,
       );
     }
     const digest = await sha256Hex(bytes);
-    if (digest !== entry.sha256) throw new Error(`Fetched cell ${entry.cellId} failed SHA-256`);
+    if (digest !== entry.sha256) throw new Error(`Fetched package ${entry.path} failed SHA-256`);
     const access = await (handle as OpfsFileHandle).createSyncAccessHandle();
     try {
       access.truncate(0);
       const written = access.write(new Uint8Array(bytes), { at: 0 });
       if (written !== bytes.byteLength) {
-        throw new Error(`OPFS cell ${entry.cellId} wrote ${written} of ${bytes.byteLength} bytes`);
+        throw new Error(`OPFS package ${entry.path} wrote ${written} of ${bytes.byteLength} bytes`);
       }
       access.flush();
     } finally {
@@ -978,7 +984,9 @@ function startStreamingWorker(): void {
     return bytes.byteLength;
   };
 
-  const removeStalePackages = async (entries: readonly StreamingCellIndexEntry[]) => {
+  const removeStalePackages = async (
+    entries: readonly Pick<StreamingCellIndexEntry, "sha256">[],
+  ) => {
     if (rootDirectory === null) throw new Error("Streaming OPFS directory is unavailable");
     const expectedNames = new Set(entries.map((entry) => `${entry.sha256}.cell`));
     for await (const name of rootDirectory.keys()) {
@@ -1393,7 +1401,10 @@ function startStreamingWorker(): void {
         if (prepared !== undefined) {
           rootDirectory = prepared.directory;
           resolved?.();
-          await openAccessHandlesWithoutCleanup(prepared.index.cells);
+          await openAccessHandlesWithoutCleanup([
+            ...prepared.index.cells,
+            ...(prepared.index.resources ?? []),
+          ]);
           return prepared.index;
         }
         const entrypoint = manifest.gameContentEntrypoints.find(
@@ -1404,21 +1415,10 @@ function startStreamingWorker(): void {
         const indexResponse = await fetchLegacy(new URL(entrypoint.path, manifestResponse.url));
         if (!indexResponse.ok)
           throw new Error(`District index fetch failed (${indexResponse.status})`);
-        const parsedIndex = parseStreamingDistrictIndex(await indexResponse.json(), districtId);
-        // The privileged automation route deliberately retains the historical v1 greybox
-        // consumer. Product installed releases alone exercise v2 compressed dependencies.
-        const nextIndex: StreamingDistrictIndex = Object.freeze({
-          bounds: parsedIndex.bounds,
-          cellSizeMeters: parsedIndex.cellSizeMeters,
-          cells: Object.freeze(
-            parsedIndex.cells.map(({ bytes, cellId, coordinate, path, sha256 }) =>
-              Object.freeze({ bytes, cellId, coordinate, path, sha256 }),
-            ),
-          ),
-          districtId: parsedIndex.districtId,
-          materials: parsedIndex.materials,
-          schemaVersion: 1,
-        });
+        const { index: nextIndex, packages } = parsePrivilegedStreamingProvisionPlan(
+          await indexResponse.json(),
+          districtId,
+        );
         resolved?.();
         rootDirectory = await streamingRoot.getDirectoryHandle(
           await districtDirectoryName(nextIndex.districtId),
@@ -1426,8 +1426,8 @@ function startStreamingWorker(): void {
         );
         const previouslyProvisionedBytes = telemetry.opfsProvisionedBytes;
         let provisionedBytes = 0;
-        for (let offset = 0; offset < nextIndex.cells.length; offset += 8) {
-          const batch = nextIndex.cells.slice(offset, offset + 8);
+        for (let offset = 0; offset < packages.length; offset += 8) {
+          const batch = packages.slice(offset, offset + 8);
           const written = await Promise.all(
             batch.map((entry) => provision(entry, new URL(manifestResponse.url))),
           );
@@ -1436,8 +1436,8 @@ function startStreamingWorker(): void {
             opfsProvisionedBytes: previouslyProvisionedBytes + provisionedBytes,
           });
         }
-        await removeStalePackages(nextIndex.cells);
-        await openAccessHandlesWithoutCleanup(nextIndex.cells);
+        await removeStalePackages(packages);
+        await openAccessHandlesWithoutCleanup(packages);
         preparedLegacyDistricts.set(
           districtId,
           Object.freeze({ directory: rootDirectory, index: nextIndex }),

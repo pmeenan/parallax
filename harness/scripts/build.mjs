@@ -5,6 +5,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { scaleStreamingDependencyResourceId } from "../../engine/src/streaming/scale-streaming-resource-id.ts";
 import { buildRustWasm } from "./build-wasm.mjs";
+import { loadPbrAssetLibrary, resolvePbrAssetsForCell } from "./pbr-asset-packaging.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const outputRoot = join(repositoryRoot, "dist");
@@ -164,9 +165,13 @@ for (const role of ["decode", "installer", "render", "sim", "streaming", "wasm-t
     bytes = Buffer.from(source);
   }
   if (role === "decode") {
-    const msc = decoderWasmArtifacts.find((artifact) => artifact.scope === "msc-transcoder");
-    if (msc === undefined) throw new Error("MSC decoder artifact is unavailable");
-    bytes = Buffer.from(replaceExactlyOnce(bytes.toString("utf8"), msc.token, msc.outputName));
+    let source = bytes.toString("utf8");
+    for (const scope of ["msc-transcoder", "uastc-rgba-srgb", "uastc-rgba-unorm"]) {
+      const artifact = decoderWasmArtifacts.find((entry) => entry.scope === scope);
+      if (artifact === undefined) throw new Error(`Decoder artifact ${scope} is unavailable`);
+      source = replaceExactlyOnce(source, artifact.token, artifact.outputName);
+    }
+    bytes = Buffer.from(source);
   }
   if (role === "streaming") {
     const decodeWorker = workerDescriptors.find((worker) => worker.role === "decode");
@@ -555,6 +560,7 @@ async function writeGreyboxWorldArtifacts() {
     }),
   ];
   const resolvedDependencyResources = await Promise.all(dependencyResources);
+  const pbrLibrary = await loadPbrAssetLibrary(repositoryRoot, writeCompressedFixture);
   for (const districtSpec of gameModule.GREYBOX_DISTRICT_SPECS) {
     const district = gameModule.createGreyboxScene(districtSpec).world;
     engineModule.validateGreyboxDistrict(district);
@@ -567,7 +573,15 @@ async function writeGreyboxWorldArtifacts() {
     }
     artifactScopes.add(artifactScope);
     const cellEntries = [];
-    for (const cell of district.cells) {
+    for (const sourceCell of district.cells) {
+      const resolvedAssets = resolvePbrAssetsForCell(
+        sourceCell,
+        districtSpec.assetPlacements,
+        pbrLibrary,
+      );
+      const cell = resolvedAssets.cell;
+      if (cell.pbrAssets !== undefined)
+        engineModule.validatePbrAssetPlacements(cell.pbrAssets, cell.bounds, pbrLibrary.resources);
       const bytes = Buffer.from(
         `${JSON.stringify({ districtId: district.id, schemaVersion: district.schemaVersion, cell })}\n`,
       );
@@ -585,7 +599,7 @@ async function writeGreyboxWorldArtifacts() {
         bytes: bytes.byteLength,
         cellId: cell.id,
         coordinate: cell.coordinate,
-        dependencies: [indexId],
+        dependencies: [indexId, ...resolvedAssets.dependencies].sort(),
         path: identity.source,
         sha256: identity.sha256,
       });
@@ -597,7 +611,10 @@ async function writeGreyboxWorldArtifacts() {
         cells: cellEntries,
         districtId: district.id,
         materials: district.materials,
-        resources: resolvedDependencyResources,
+        resources: [
+          ...resolvedDependencyResources,
+          ...(districtSpec.assetPlacements?.length ? pbrLibrary.resources : []),
+        ].sort((a, b) => compareCodepoints(a.resourceId, b.resourceId)),
         schemaVersion: districtIndexSchemaVersion,
       })}\n`,
     );

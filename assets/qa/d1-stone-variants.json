@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "class": "individual-stone-variants",
+  "rationale": "Reusable closed limestone meshes preserve modeled shoulders and individually varied placement across a nonrepeating section. These asset production ceilings do not replace runtime performance budgets.",
+  "maxVariants": 8,
+  "stoneTriangles": [4000, 1200, 400],
+  "substrateTriangles": [8192, 2048, 512],
+  "grassTriangles": [4000, 2000, 1000],
+  "groundRationale": "Separate 4m substrate supplies visible recessed joints; rooted original vegetation is retained as a distinct reusable patch rather than painted into the stone material.",
+  "maxSceneStones": 200,
+  "maxSceneNearTriangles": 750000,
+  "sceneTriangleRationale": "The accepted fracture silhouette needs up to 3900 triangles per stone: 153 courtyard stones alone can require 596700 triangles. A 750000-triangle scene asset ceiling retains a small slope diagnostic while eight shared unique variants bound resident geometry. Existing runtime performance budgets and encoded resource limits remain unchanged.",
+  "materials": 3,
+  "textureWidths": {
+    "baseColor": 2048,
+    "normal": 2048,
+    "orm": 1024,
+    "earthBaseColor": 1024,
+    "earthNormal": 1024,
+    "earthOrm": 1024,
+    "grassBaseColor": 4,
+    "grassNormal": 4,
+    "grassOrm": 4
+  },
+  "maxRuntimeEncodedBytes": 16777216,
+  "maxResourceEncodedBytes": 8388608,
+  "uvPolicy": "The selected generated limestone surface and original procedural material detail intentionally reuse surface UVs across independently parameterized faces; no exclusive image atlas ownership or planar tile coverage is asserted. Every non-vegetation triangle still requires nondegenerate UVs.",
+  "boundsMetres": { "minimum": [-0.4, -0.00001, -0.4], "maximum": [0.4, 0.15, 0.4] }
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "sourceKind": "original-geometry-generated-surface",
+  "assetId": "d1-individual-limestone-stones",
+  "geometryLicense": "Apache-2.0",
+  "generatedImagePixelsSampled": true,
+  "thirdPartySampledMaterial": false,
+  "measuredMaterial": false,
+  "inputs": [
+    {
+      "path": "assets/reference/d1-paving-clean/limestone-single-surface-v1.png",
+      "sha256": "238a6280665ce29d202b5024050c8152836b3ca6641c6af10c404dfcb25cdfc1",
+      "role": "generated-surface",
+      "rights": "OpenAI generated output under reviewed output terms; no input image was supplied"
+    },
+    {
+      "path": "assets/source/d1-paving/individual.py",
+      "sha256": "45bea67b978bb28838e074150879ba54583ee2a52d4ca792e19ec552cea09816",
+      "role": "generator",
+      "rights": "Original project-authored Apache-2.0 source"
+    },
+    {
+      "path": "assets/source/d1-paving/stone_geometry.py",
+      "sha256": "eb1e14461c8bab0175063771c92c1ff652bcfc885582d90afa6382e201ba3be4",
+      "role": "generator",
+      "rights": "Original project-authored Apache-2.0 source"
+    },
+    {
+      "path": "assets/source/d1-paving/hero.py",
+      "sha256": "5d69b602fe04a88002778e3cbda507db4fd41a8d375d3f0ea7a1bfd44502ea6c",
+      "role": "generator",
+      "rights": "Original project-authored Apache-2.0 source"
+    },
+    {
+      "path": "assets/source/d1-paving/export_individual.py",
+      "sha256": "ae233f5517a9864e9c39c6b8ecde86644917b5ec19575a29650c8e7d865a8108",
+      "role": "generator",
+      "rights": "Original project-authored Apache-2.0 source"
+    }
+  ],
+  "generation": {
+    "provider": "OpenAI built-in imagegen",
+    "model": "unspecified",
+    "seed": null,
+    "lineage": "Single-surface-v1 text-only image generation with no image inputs. Original Blender geometry supplies fracture, wear and shoulder relief; fine normal detail and substrate/vegetation are original procedural construction. No scanned maps are combined and no calibrated or measured limestone material claim is made.",
+    "prompts": [
+      {
+        "path": "assets/reference/d1-paving-clean/single-surface-v1.md",
+        "sha256": "7ecbb4b3c47f66bd4e9374a7bcc809d97c8bc3c019e7737a2c0818571c65699b"
+      }
+    ]
+  },
+  "outputTerms": {
+    "url": "https://openai.com/policies/row-terms-of-use/",
+    "effectiveDate": "2026-01-01",
+    "basis": "User owns output as between OpenAI and user, subject to law; outputs may not be unique. No CC0 or copyright-exclusivity claim.",
+    "reviewedAt": "2026-09-05"
+  },
+  "rightsReview": {
+    "scope": "public-build",
+    "reviewedAt": "2026-09-05",
+    "status": "approved",
+    "reviewedBy": "Codex root",
+    "basis": "Reviewed OpenAI generated output terms apply to the sampled surface image; original project geometry and procedural components are Apache-2.0. No third-party image inputs or scan maps are sampled. Review supports project public-build usage, not a claim of exclusive copyright."
+  }
+}

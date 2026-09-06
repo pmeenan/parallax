@@ -139,6 +139,8 @@ export function createInstallerWorkerSession(
                 releaseDigest: result.releaseDigest,
                 resourceCount: result.readyResourceCount,
                 totalBytes: result.readyBytes,
+                lifetimeResourceCount: platform.snapshotTransfer().completedResourceCount,
+                lifetimeVerifiedBytes: platform.snapshotTransfer().verifiedBytes,
               })
             : null;
         platform.update({

@@ -51,6 +51,21 @@ describe("independent PSO warmup trace resolver", () => {
     expect(identity.buildCompatibilityDigest).toMatch(/^[a-f0-9]{64}$/);
     expect(identity.entry.stateDigest).toMatch(/^[a-f0-9]{64}$/);
     expect(identity.sha256).toMatch(/^[a-f0-9]{64}$/);
+    expect(identity.entries.map((entry) => entry.id)).toEqual([
+      "babylon-lite.standard-opaque-msaa4",
+      "babylon-lite.standard-csm-receiver-msaa4",
+      "babylon-lite.standard-csm-depth",
+      "babylon-lite.pbr-csm-receiver-msaa4",
+      "babylon-lite.pbr-csm-depth",
+    ]);
+    const depth = identity.entries[4]?.state;
+    expect(depth?.colorTarget).toBeNull();
+    expect(depth?.layout.bindGroups[1]?.entries).toHaveLength(8);
+    expect(depth?.shader).toMatchObject({
+      family: "pbr",
+      vertexSha256: "80ce3c63c56133027271da687fc86d2f21c3e1bffc1dfbf14a9a8fbd062fca84",
+      fragmentSha256: "8655fedc8d364cc42ae079bbc15f8a20efe52799932ef3ee8f70fd2392c0ad95",
+    });
   });
 
   it("validates exact build/install resource and trace bytes", async () => {

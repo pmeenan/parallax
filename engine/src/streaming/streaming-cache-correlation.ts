@@ -1,3 +1,4 @@
+import { expectedStreamingDependencyDecodedBytes } from "./streaming-dependency-contract";
 import type {
   StreamingDependencyIndexEntry,
   StreamingResourceCacheTelemetry,
@@ -8,7 +9,7 @@ export function expectedStreamingDependencyGpuBytes(
   descriptor: StreamingDependencyIndexEntry,
 ): number {
   return descriptor.format === "ktx2"
-    ? descriptor.decode.width * descriptor.decode.height * 4
+    ? expectedStreamingDependencyDecodedBytes(descriptor)
     : "version" in descriptor.decode
       ? descriptor.decode.count * descriptor.decode.stride
       : descriptor.decode.count * (descriptor.decode.stride + 12 + 8 + 4);

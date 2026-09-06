@@ -726,6 +726,9 @@ export type {
 } from "./workers/installer-worker-session";
 export { createInstallerWorkerSession } from "./workers/installer-worker-session";
 export type { SabRingBufferSpikeTelemetrySnapshot } from "./workers/sab-ring-buffer-spike-protocol";
+export type { PbrAssetLod, PbrAssetMaterial, PbrAssetPlacement } from "./world/pbr-asset";
+export { validatePbrAssetPlacements } from "./world/pbr-asset";
+export { type PbrAssetTransform, writePbrAssetMatrix } from "./world/pbr-asset-transform";
 export type {
   EnvironmentTimeOfDayPhase,
   EnvironmentWeatherState,

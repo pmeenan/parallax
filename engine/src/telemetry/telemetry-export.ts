@@ -14,6 +14,7 @@ import { isRuntimeIdentifier } from "../core/runtime-identifier";
 import type {
   FlythroughService,
   FlythroughTelemetrySnapshot,
+  ScenePreviewRequest,
 } from "../flythrough/flythrough-service";
 import type {
   GameplayInputService,
@@ -120,6 +121,10 @@ export interface ParallaxTelemetryExport {
     probe: RenderRecoveryProbeKind,
   ): Promise<StreamingRecoveryCheckpoint>;
   prepareFlythrough(): void;
+  previewScene(
+    request: ScenePreviewRequest,
+  ): Promise<import("../render/render-protocol").FlythroughCheckpointRenderEvidence>;
+  endScenePreview(): Promise<void>;
   resetBenchmark(): Promise<void>;
   loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
   npcDialogSnapshot(): NpcDialogTelemetrySnapshot;
@@ -178,6 +183,17 @@ export function installTelemetryExport(
     }
   };
   const telemetryExport: ParallaxTelemetryExport = Object.freeze({
+    previewScene(request: ScenePreviewRequest) {
+      assertBenchmarkDoesNotOwnScenario("Scene preview");
+      return flythroughService.previewScene(request);
+    },
+    async endScenePreview(): Promise<void> {
+      assertBenchmarkDoesNotOwnScenario("Scene preview release");
+      if (flythroughService.snapshot().state !== "previewing")
+        throw new Error("No scene preview owns the camera");
+      await flythroughService.abort("Scene preview ended");
+      await flythroughService.reset();
+    },
     benchmarkResult(): BenchmarkReport | null {
       return benchmarkService.snapshot().report;
     },

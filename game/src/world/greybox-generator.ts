@@ -117,7 +117,21 @@ export function sampleGreyboxTerrain(spec: GreyboxDistrictSpec, x: number, z: nu
     0,
   );
   const scale = 10 ** spec.terrain.roundingDecimalPlaces;
-  return Math.round(height * scale) / scale;
+  let result = Math.round(height * scale) / scale;
+  for (const pad of spec.terrain.levelPads ?? []) {
+    const distance = Math.max(
+      pad.minimum[0] - x,
+      x - pad.maximum[0],
+      pad.minimum[1] - z,
+      z - pad.maximum[1],
+      0,
+    );
+    if (distance >= pad.transitionMeters) continue;
+    const t = distance / pad.transitionMeters;
+    const blend = 1 - t * t * (3 - 2 * t);
+    result += (pad.height - result) * blend;
+  }
+  return result;
 }
 
 function cellId(spec: GreyboxDistrictSpec, x: number, z: number): string {
@@ -405,9 +419,19 @@ function createCell(
       );
     }),
   );
+  // Coarse strides would discard a small authored pad's defining vertices.
+  // Retain its existing collision lattice; surrounding cells keep normal LODs.
+  const retainsLevelPad = (spec.terrain.levelPads ?? []).some(
+    (pad) =>
+      minimumX < pad.maximum[0] + pad.transitionMeters &&
+      minimumX + spec.world.cellSizeMeters > pad.minimum[0] - pad.transitionMeters &&
+      minimumZ < pad.maximum[1] + pad.transitionMeters &&
+      minimumZ + spec.world.cellSizeMeters > pad.minimum[1] - pad.transitionMeters,
+  );
   const lods = spec.lodTiers.map((tier): GreyboxLodTier => {
+    const sampleStride = retainsLevelPad ? 1 : tier.sampleStride;
     const primitives = selectFeatures(featureGroups, tier.featureSelection);
-    const terrainVertices = (intervals / tier.sampleStride + 1) ** 2;
+    const terrainVertices = (intervals / sampleStride + 1) ** 2;
     return Object.freeze({
       complexityScore: terrainVertices + primitives.length * 8,
       maxDistanceMeters: tier.maxDistanceMeters,
@@ -415,7 +439,7 @@ function createCell(
         Object.freeze({
           kind: "heightfield-grid" as const,
           materialId: spec.terrain.materialId,
-          sampleStride: tier.sampleStride,
+          sampleStride,
         }),
         Object.freeze({ kind: "triangle-boxes" as const, primitives }),
       ]),
@@ -479,7 +503,9 @@ function createDistrict(spec: GreyboxDistrictSpec): GreyboxDistrict {
   }
   const cells: GreyboxCell[] = [];
   for (let z = 0; z < cellsZ; z += 1) {
-    for (let x = 0; x < cellsX; x += 1) cells.push(createCell(spec, x, z, cellsX, cellsZ));
+    for (let x = 0; x < cellsX; x += 1) {
+      cells.push(createCell(spec, x, z, cellsX, cellsZ));
+    }
   }
 
   return Object.freeze({

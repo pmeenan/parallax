@@ -25,6 +25,42 @@ inference* (searched, found nothing — not proof).
 
 ## 1. The decision (D-004, re-grounded by D-046; core updated by D-078/D-080)
 
+**Compressed GLB worker loading verified (2026-09-05, UP-003):** unpatched Lite
+1.12.0's public `loadGltf` loaded a canonical meshopt + KTX2 GLB in a Chrome
+152.0.7977.54 module worker using Parallax's existing `installDecoderGlobals`.
+The result had one entity, no GPU validation error and no CDN request. Lite's
+default script-loading branches require `document` only when the decoder globals
+are absent; this is not a blocker for the configured worker. This probe verifies
+asset loading, not rendered quality or all glTF extensions. Separately, Parallax's
+streaming decoder had configured MSC but omitted UASTC WASM URLs. Explicit local
+URLs fixed that omission; all 18 paving resources then decoded with external
+network blocked and zero external requests. That was a Parallax integration bug,
+not a Lite or Chrome failure. [Evidence](../harness/results/upstream-lite-loader-2026-09-05/summary.md).
+
+**Custom material shadow binding finding (2026-09-05, RE-049):** public
+ShaderMaterial and CSM receiver hooks support deformed instanced stones, but the
+default no-color caster view inherits receiver samplers. Sampling the CSM texture
+from that view aliases its writable depth attachment and invalidates the pass.
+Parallax uses identical deformation in a sampler-free depth material through the
+exact-pin `_shadowCasterMaterial` hook consumed by `pcf-shadow-task-hooks.js` and
+`csm-shadow-task-hooks.js`. No public setter exists in 1.12.0. An actual consumer
+regression and observed GPU validation/source/layout checks guard this narrow seam.
+This is a binding integration gap; Chrome correctly rejects the feedback hazard.
+
+**Contact caster preload finding (2026-09-05, Lite 1.12.0):** a sampler-free
+ShaderMaterial caster override on Standard/PBR materials also needs explicit
+`_preloadShadowTask` for the override family: the ordinary preloader inspects the
+surface material family. Registering hidden ordinary and thin-instance shader
+triangles initializes the shader builder before depth execution; without this,
+the factory or `_rebuildSingle` is unavailable. The rejected contact candidate
+removed those triangles after warmup, retained the two shared depth materials, and
+accounted for both bootstrap color pipelines in its seven-state registry. The
+pinned Chrome probe passed strict observed descriptors and WGSL hashes with no
+error (`harness/results/d1-contact-shadow-candidate-2026-09-05/pso/`). This verified
+integration, but installed dawn terrain acne rejected the candidate. Its caster
+and bootstrap code was removed and the historical bias restored; evidence remains
+in `d1-contact-shadow-integration-2026-09-05`. It used rigid transforms without deformation.
+
 **Pinned visibility integration finding (2026-09-05):** Lite 1.12.0 caches opaque draw
 bundles against scene membership and its visibility epoch. Assigning `mesh.visible`
 on an already-rendered mesh changes the flag without advancing that epoch; use the

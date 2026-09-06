@@ -15,6 +15,7 @@ import {
   parseStreamingDistrictIndex,
   resolveInstalledStreamingRelease,
 } from "../src/streaming/installed-streaming-release";
+import { parsePrivilegedStreamingProvisionPlan } from "../src/streaming/privileged-streaming-provision";
 
 const releaseDigest = "a".repeat(64);
 
@@ -114,6 +115,73 @@ describe("installed model source", () => {
 });
 
 describe("installed streaming release", () => {
+  it("preserves the complete v2 graph when planning privileged automation provisioning", () => {
+    const document = productionCompressedDistrictIndexDocument();
+    const plan = parsePrivilegedStreamingProvisionPlan(document, "district-1-surface");
+    expect(plan.index.schemaVersion).toBe(2);
+    expect(plan.index.cells[0]?.dependencies).toEqual(["production-02-indices"]);
+    expect(plan.index.resources).toEqual(document.resources);
+    expect(plan.packages).toEqual([...plan.index.cells, ...document.resources]);
+    expect(plan.packages.reduce((sum, entry) => sum + entry.bytes, 0)).toBe(
+      document.cells.reduce((sum, entry) => sum + (entry.bytes ?? 0), 0) +
+        document.resources.reduce((sum, entry) => sum + entry.bytes, 0),
+    );
+    expect(() =>
+      parsePrivilegedStreamingProvisionPlan({ ...document, resources: [] }, "district-1-surface"),
+    ).toThrow();
+  });
+  it("admits full mip chains and linear auxiliary texture roots without loosening mesh bindings", () => {
+    const valid = productionCompressedDistrictIndexDocument();
+    const base = valid.resources[0];
+    if (!base) throw new Error("fixture texture absent");
+    const auxiliary = {
+      ...base,
+      resourceId: "production-03-normal",
+      sha256: "f".repeat(64),
+      path: `immutable/streaming-texture-${"f".repeat(64)}.ktx2`,
+      decode: {
+        colorSpace: "linear",
+        format: "rgba8",
+        width: 32,
+        height: 16,
+        version: 2,
+        mipLevelCount: 6,
+      },
+    };
+    const candidate = {
+      ...valid,
+      cells: valid.cells.map((cell) => ({
+        ...cell,
+        dependencies: [...cell.dependencies, auxiliary.resourceId],
+      })),
+      resources: [...valid.resources, auxiliary],
+    };
+    expect(() => parseStreamingDistrictIndex(candidate, "district-1-surface")).not.toThrow();
+    expect(() =>
+      parseStreamingDistrictIndex(
+        {
+          ...candidate,
+          resources: [
+            ...valid.resources,
+            { ...auxiliary, decode: { ...auxiliary.decode, mipLevelCount: 5 } },
+          ],
+        },
+        "district-1-surface",
+      ),
+    ).toThrow(/format/);
+    expect(() =>
+      parseStreamingDistrictIndex(
+        {
+          ...candidate,
+          resources: [
+            ...valid.resources,
+            { ...auxiliary, decode: { ...auxiliary.decode, colorSpace: "srgb" } },
+          ],
+        },
+        "district-1-surface",
+      ),
+    ).toThrow(/dependency graph/);
+  });
   it("binds a strict per-cell KTX2 -> meshopt dependency graph to installed objects", async () => {
     const indexDocument = productionCompressedDistrictIndexDocument();
     const cell = indexDocument.cells[0];

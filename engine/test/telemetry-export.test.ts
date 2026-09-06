@@ -68,6 +68,9 @@ describe("combined telemetry export", () => {
         abort: () => Promise.resolve(),
         dispose: () => undefined,
         prepare: () => undefined,
+        previewScene: async () => {
+          throw new Error("unused preview");
+        },
         reset: () => Promise.resolve(),
         snapshot: () =>
           ({
@@ -76,7 +79,7 @@ describe("combined telemetry export", () => {
             preflightElapsedMs: null,
             render: null,
             scenarioId: "test@1",
-            schemaVersion: 3,
+            schemaVersion: 4,
             state: "idle",
             streamingAtMeasurementEnd: null,
             streamingAtMeasurementStart: null,

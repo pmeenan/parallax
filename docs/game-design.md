@@ -525,6 +525,12 @@ lighting/color direction, not cartoon proportions or toy-like materials. The fir
 [courtyard reference](../assets/reference/d1-courtyard.md) is the human-endorsed quality
 benchmark; implemented assets must earn acceptance through actual in-game inspection.
 
+D-187 schedules the [extensive concept-art program](../assets/reference/concept-art-program.md)
+now, before further cobblestone/asset iteration. It establishes coherent targets for
+the whole game, including effects and physics presentation. Still concepts are paired
+with temporal boards, motion references and explicit behavior criteria where needed;
+their coverage does not expand the implementation scope of deferred features.
+
 ## Weather, time, and light
 
 D-182 proves this direction first in one finished D1 courtyard/street with a castle

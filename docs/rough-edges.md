@@ -85,6 +85,39 @@ COS APIs exist):
 
 ## Findings
 
+## RE-049: Shader shadow views can bind the depth attachment as a receiver texture
+
+- **Date / Chrome version:** 2026-09-05; Chrome for Testing Stable 152.0.7977.54,
+  Windows, Babylon Lite 1.12.0.
+- **Layer:** Babylon material/shadow binding; WebGPU validation; our observability.
+- **Status:** our integration bug corrected; sampler-free caster bindings and shared
+  material identity verified in Chrome, including streamed re-entry and six lighting
+  preflight checkpoints. Re-entry reproduced the original worker pixel hash.
+- **What happened:** the instanced stone ShaderMaterial sampled the CSM depth array
+  for lighting. Its inherited shadow-caster view retained that sampler while the
+  same array was a writable depth attachment. Chrome rejected the command scope:
+  `usage (TextureBinding|RenderAttachment) includes writable usage and another usage
+  in the same synchronization scope`. The scene was black, although descriptor-only
+  warmup reported Ready, CPU frames advanced, and visible mesh counts were positive.
+  Different cameras returned the same black-scene capture digest. GPU frame timing
+  was unavailable and shadow task timing was zero; these did not establish success.
+- **Repro/evidence:** D1 procedural pathway through the ordinary render worker;
+  initial captures and snapshots in `harness/results/d1-pathway-2026-09-05/`.
+  The validation failure appears on first shadow execution, before Ready, once the
+  observer checks a WebGPU validation error scope around compilation and execution.
+- **Impact:** warmup now checks actual shader compilation diagnostics and GPU
+  validation in addition to exact source/layout identity. Matching descriptors do
+  not establish a valid pipeline or render pass. Regression fixtures reject both
+  invalid WGSL and GPU validation errors without relaxing the state registry.
+  Adding soil also exposed duplicate depth PSOs: Lite's primary shader-group path
+  enables its shared cache for distinct materials, while separate shadow override
+  materials bypass that path. The helper in `shader-pipeline-cache.js` is not a root
+  export. Retaining one source/caster material pair per engine/shadow generator avoids
+  this additional private cache seam and preserves reuse across streamed instances.
+- **Proposed improvement:** ShaderMaterial shadow views should omit receiver-only
+  resources or offer an explicit caster binding contract. This is a renderer
+  integration issue, not evidence that Chrome's read/write hazard rule is wrong.
+
 ## RE-048: CDP attributes Chrome-owned omnibox targets to the app browser context
 
 - **Date / Chrome version:** 2026-08-09; Chrome for Testing Stable 151.0.7922.108,

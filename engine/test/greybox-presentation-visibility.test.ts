@@ -17,6 +17,39 @@ function mesh(visible: boolean): Mesh {
 }
 
 describe("greybox presentation draw-list invalidation", () => {
+  it("shows installed streamed assets during ordinary gameplay without a flythrough", () => {
+    const preview = mesh(true);
+    const streamed = mesh(false);
+    const renderer = {
+      camera: createArcRotateCamera(0, 1, 9, { x: 0, y: 0, z: 0 }),
+      crowdMeshes: [],
+      playerMesh: mesh(true),
+      presentationOwner: "preview",
+      previewMeshes: [preview],
+      streamingCells: new Map(),
+    } as unknown as LiteGreyboxWorld;
+    const gameplay = {
+      cameraPitchRadians: 0,
+      crowdEntities: [],
+      playerPosition: [0, 0, 0] as const,
+      playerYawRadians: 0,
+    };
+    applyGameplayPresentation(renderer, gameplay);
+    expect(preview.visible).toBe(true);
+    renderer.streamingCells.set("cell", {
+      meshes: [streamed],
+      dependencyKeys: [],
+      dependencyUploadBytes: 0,
+      gpuBytes: 0,
+      pbrAssets: [],
+    });
+    const before = visibilityEpoch;
+    applyGameplayPresentation(renderer, gameplay);
+    expect(renderer.presentationOwner).toBe("streamed-residency");
+    expect(preview.visible).toBe(false);
+    expect(streamed.visible).toBe(true);
+    expect(visibilityEpoch).toBeGreaterThan(before);
+  });
   it("invalidates cached preview/crowd draws at handoff and on gameplay resumption", () => {
     const player = mesh(true);
     const crowd = [mesh(true), mesh(true)];

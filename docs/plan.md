@@ -339,6 +339,13 @@ These are checkpoints within M4.5, not additional milestones or full-smoke gates
 Each uses focused validation, representative captures, and measured combined costs.
 Use the bounded visual-work procedure in [workflow.md](workflow.md#bounded-visual-and-research-work).
 
+0. **Concept art and comparison targets — next creative step (D-187).** Complete the
+   [game-wide reference program](../assets/reference/concept-art-program.md) now,
+   before further cobblestone or other asset iteration. Generate extensive coherent
+   environment/asset/character concepts and effect/physics target sheets, including
+   temporal boards and grounded motion references. Review the coverage and select
+   targets with the human. Technical installer/streaming closure remains separate;
+   Blender MCP setup is handled separately and does not block concept generation.
 1. **Finished daylight courtyard.** Establish the asset pipeline and material/shadow
    baseline with final-quality representative content.
 2. **The same area at night and in a storm.** Establish dynamic local lighting,
@@ -357,6 +364,334 @@ finding. At two weeks, assess actual asset throughput and edit-to-visible-result
 and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
+
+**Current creative priority (human direction, 2026-09-05):** the reference program
+above supersedes the previously proposed immediate small-patch art correction.
+Cobblestone modeling and further asset iteration stay paused until its reference
+review is complete. Existing technical admission is not artistic acceptance; the
+individual-stone previews remain rejected. This docs change schedules the generation
+stage; no new concepts have been generated or approved by this change.
+
+- [ ] Complete the [concept-art program and coverage/selection gate](../assets/reference/concept-art-program.md#exit-checklist)
+      before resuming cobblestone iteration. Include the whole game's visual scope,
+      all planned rendered effects and physics behavior targets, with deferred work
+      labeled separately from current implementation obligations.
+
+**Accepted paving integration brief (2026-09-05):** the human accepts the scan-driven
+source as the starting point for the game asset and authorizes integration. Preserve
+the worn relief, matching PBR response and small joint plants in a 2 m module. Export
+three source-derived LODs, implement paving-class QA and immutable binary storage,
+and use the existing installed dependency/decode path in the ordinary render worker.
+Inspect sunny/overcast/grazing and short motion/LOD/stream-return captures against the
+accepted Blender preview. Allow two integration/capture/correction cycles within
+three hours; extend only for a named observed defect. End with the actual game
+candidate and short costs/limits. No milestone closure or full traversal is implied.
+
+**Paving integration outcome (2026-09-05):** one QA-admitted 2 m module now renders
+through the ordinary installed dependency/decode path, with three LODs, complete PBR
+mips and modeled joint plants. Integration corrected dependency loss in privileged
+and scale-corpus composition, ordinary-game visibility, full-mip GPU accounting, and
+the missing glTF-to-Lite coordinate conversion. The corrected candidate passes build,
+repeatability, lint and 2,636 tests (one existing skip), six-state preflight, LOD
+hysteresis and unload/re-entry with a pixel-identical returned view. Short combined
+GPU EMA medians are 3.56–3.64 ms, diagnostic only. Physical smoke is deferred to M4.5
+exit. See [installed captures, costs and limits](../harness/results/d1-paving-integration-2026-09-05/summary.md).
+Runtime artistic acceptance remains open: lighting is darker than the source,
+surroundings are greybox, and the human reports grass-like marks on stone faces.
+Inspection separates scanned leaf litter from modeled blades and finds some narrow
+joints bridged by the reduced mesh. The human identifies the marks as probable scanned
+grass and requests a cleaner generated or sourced starting texture.
+Do not enlarge this paving patch before resolving the joint/vegetation presentation.
+
+**Grass-feedback correction extension:** allow one adaptive-mesh candidate experiment
+within 30 minutes. The observed defect is up to 32.54 mm of root burial where the
+uniform LOD0 grid bridges source joints. Test source-derived adaptive reduction within
+the same 32,768-triangle limit; compare root/surface error and inspect the candidate
+before changing admitted bytes. Do not remove scanned litter without identifying the
+reported spot. End with adoption evidence or a specific retained limitation.
+
+The adaptive LOD0 candidate preserves the accepted source appearance at the same
+triangle ceiling and retains all 2,048 boundary vertices. Surface RMS error falls
+from 1.684 to 0.970 mm; worst blade-root burial falls from 32.54 to 17.88 mm, with the
+remaining extreme also present in the dense source. Adoption was paused before
+exporter/library changes when the human requested a cleaner starting texture.
+Retain the experiment as evidence; the existing admitted asset remains active.
+
+**Clean-source correction (2026-09-05):** compare clean scanned alternatives and up to
+two imagegen candidates within 30 minutes against the courtyard's pale irregular
+rectangular blocks. Must fix baked vegetation/litter on stone faces. Deliver a concrete
+reference candidate; material preparation and installed visual acceptance remain open.
+The first built-in imagegen candidate is retained at
+`assets/reference/d1-paving-clean/limestone-v1.png`, with prompt and limitations in its
+README. Inspection finds clean worn faces and irregular rectangular fitting; seamless
+tiling and matched physical maps are not yet validated. It is a reference/color starting
+point, not an admitted PBR material. Scanned alternatives are cleaner but more polygonal.
+Human feedback found v1 too smooth. The second imagegen cycle retains its layout while
+adding pronounced pits, flakes and chipped relief: `limestone-v2-rough.png` beside v1.
+See `rough-v2.md` for prompt and inspection. This closes the two-image reference batch;
+artistic acceptance and material preparation remain open, with no runtime substitution.
+
+**Accepted rough-reference integration (2026-09-05):** the human accepts rough v2 and
+requests continuation. Build aligned stone/joint geometry and material maps from this
+reference, with separate joint-rooted vegetation. Initial allowance: two source/render
+cycles within 90 minutes, followed by one QA/install/capture cycle within 60 minutes.
+Must fix smooth faces, baked litter and misplaced roots; inspect overhead and grazing
+views in sunny and overcast states. Preserve the existing library until candidate QA
+passes. Generated/inferred maps must be identified as authored estimates, not measured
+scan data; do not interpret base-color brightness directly as physical height. End with
+an installed candidate and evidence, or a specific retained limitation and next step.
+Palette follow-up: the human asks about yellow/red/gray stone variants and procedural
+color variation. Proposed direction is authored regional stone palettes with restrained
+per-stone variation masked away from dirt and vegetation. Different close-up stone
+types eventually need distinct grain/erosion/roughness, not only tint. Finish baseline
+limestone evaluation before adding variants or a new material mask channel.
+
+Baseline integration outcome: final candidate `340834a6…7ff926` admitted after
+structural QA and 18 production-worker decodes. Ordinary installed Chrome captures
+are in `harness/results/d1-paving-clean-integration-2026-09-05/`: sunny, overcast,
+overhead and grazing, with no render/streaming failures. Settled LOD checks show
+37,264 → 9,188 → 2,826 → 37,264 visible asset triangles. Build/repeatability/lint pass;
+after updating the exact materialized-inventory fixture, 2,638 tests pass with one
+existing skip. A 660-frame sunny diagnostic gives GPU EMA p50/p95 3.62/4.27 ms,
+not milestone qualification. See the result summary for exact build/release identities.
+The human asks whether it tiles: it does not. Edge continuity across color/layout/
+height/normals is the next asset step before expansion or palette variants. Some fine
+relief remains baked source shading; runtime artistic acceptance stays open. No full
+physical smoke or physical repair replay is claimed.
+
+**Individual-stone quality reference (2026-09-05):** the human authorizes replacing
+the repeated panel strategy with reusable individually modeled stones, controlled
+placement and terrain fitting. This first asset must establish the game's quality
+bar. Reference remains the paired courtyard; evaluate a nonrepeating 4×4 m section
+and a sloped diagnostic overhead and at walking height in sunny/overcast light.
+Must fix repeated face stamps and courses, uniformly corrugated tops, pale flat joints,
+and rigid patch terrain fit. Preserve broad worn tops, localized chips/pits, varied
+quarried outlines, narrow earthy aggregate joints and restrained joint vegetation.
+Initial allowance: two source/render/evaluation cycles within 90 minutes, concurrent
+bounded renderer/QA implementation, then one installed evaluation/check cycle within
+60 minutes. Extend only with a specific remaining defect/payoff and finite allowance;
+elapsed limits do not accept deficient art. End with the best supported installed
+candidate and human artistic review, or retain the prior baseline with a named blocker.
+Use an initial eight closed stone variants with shared original procedural PBR maps,
+preserving variant geometry and rigid instance transforms separately. Native Lite
+thin instancing is verified in the exact installed source; group by variant/material
+and LOD, with game-owned placement and terrain samples. Add explicit pitch/roll and
+instance-aware PSO warmup, lifecycle and measurement coverage. Existing runtime
+budgets and the asset admission boundary remain unchanged. Palette expansion waits
+for a convincing limestone baseline.
+Contact-light diagnostic within this package: the retained CSM uses 0.12 m caster
+bias, exceeding the proposed stone height; the earlier 0.01 m/1024 trial caused
+terrain acne. Allow one scratch configuration comparison within 20 minutes to test
+higher shadow resolution with 0.01–0.02 m bias on shallow geometry and slopes under
+several sun angles. Keep the measured shipping shadow configuration unchanged until
+visual evidence supports an improvement; record logical memory/cost and inspect the
+installed scene before adopting any change. This does not repeat engine selection or
+relax the existing shadow acceptance and frame budgets.
+Scratch outcome: six Lite worker captures compare 1024/0.12 m with 4096/0.015 m.
+The latter improves contact but both show low-sun self-shadow striping; logical
+shadow storage rises from 16 to 256 MiB. Reject this simple configuration change.
+Evidence: `harness/results/csm-shallow-stone-2026-09-05/`; the simplified boxes/slope
+fixture is diagnostic only and does not supersede installed CSM acceptance.
+One additional 20-minute slope-bias diagnostic found that slope scale 2 with
+1024/0.015 m removes visible dawn striping in the controlled fixture, unlike slope
+scale 1. Nine GPU-valid views and actual depth-state descriptors are retained under
+`harness/results/csm-slope-caster-2026-09-05/`. Allow a bounded 30-minute production
+caster integration, using Lite's existing ShaderMaterial path with explicit preload,
+guarded caster hookup and registered warmup states, followed by installed inspection;
+this is a candidate, not yet adopted shadow evidence.
+Source cycles 1 and 2 fail artistic evaluation: pillow-like initial forms become
+manufactured concrete with overly uniform faces/joints. Do not export or admit them.
+Extend by one focused hero-stone cycle within 45 minutes: asymmetric intermediate
+fractures and variable worn shoulders on one original mesh, then apply a photo-based
+CC0 rock material before expanding to the courtyard. The generic procedural-noise
+surface is deferred. Poly Haven Worn Rock Natural 01 is sandstone reference data
+adapted to the desired limestone appearance, not a measured limestone reconstruction.
+Its color/normal/roughness/height/AO inputs must retain source hashes and mixed
+provenance; generated reference pixels remain unsampled. Require another explicit
+outcome at this extension boundary; the first-asset excellence requirement stays open.
+Human steering explicitly reiterates imagegen. Add one built-in generated limestone
+surface comparison within the hero extension, with a 30-minute allowance for generation
+and matched-mesh inspection if required. Ask for even illumination and no joints,
+vegetation or stone boundary; retain prompt/output identity. Compare on the same mesh
+against the scanned surface. An image is not automatically calibrated PBR data; do not
+mix unrelated scan normals with generated features or label shading-free output proven.
+Hero outcome: corrected original geometry with imagegen's single limestone surface
+is selected for courtyard reconstruction after matched-camera inspection; it is warmer
+and less veined than the sandstone arm. Scan maps are not selected runtime inputs.
+Retain restrained original procedural fine normals and authored macro relief; generated
+diffuse is not calibrated height. One assembly/export cycle within 40 minutes now
+rebuilds the eight variants around this shape/material direction, before QA and the
+previously allocated installed evaluation. This selection is not final artistic acceptance.
+Human feedback identifies apparent surface noise in previews. Within the assembly
+cycle, compare the same source camera with fine bump disabled before freezing maps;
+the current direct Cycles PNGs precede compression, so KTX2 cannot explain their noise.
+Then inspect compressed/runtime output at matched distances and during motion, using
+the existing full mip chain and anisotropic filtering. Preserve calm worn areas and
+localized larger wear; do not solve noisy detail by flattening all geometric relief.
+The human subsequently identifies the bright tilted **in-game green-background**
+preview, which still uses the old periodic resource. Source bump-off/256-sample
+comparisons are retained diagnostics; they do not diagnose that installed image.
+Match its camera for the new asset and inspect movement before attributing its noise
+to compression or antialiasing.
+Installed contact-candidate outcome: dawn terrain still stripes in the ordinary
+game. Reject 0.015 m/slope 2 and remove its caster/warmup machinery; restore 0.12 m
+and the five required pipelines. Evidence and short cost samples are retained in
+`harness/results/d1-contact-shadow-integration-2026-09-05/summary.md`.
+The same check exposes ambient-dominated PBR lighting. Allow one 30-minute shared
+ambient-only calibration and installed comparison: clear noon 0.25 instead of 0.88,
+scaling existing weather/night fill consistently while leaving direct sun unchanged.
+Inspect Standard terrain and PBR stones in daylight/dawn/overcast/night; retain the
+candidate only if the actual game improves without unacceptable darkness. This does
+not establish solved shallow contact shadows or relax frame budgets.
+The original eight-variant/generated-surface candidate passes the separate asset
+gate and all 69 production-worker decodes with zero external requests. Final admitted
+identity is `37981b52cdce6a3b11cc0e37771832b3c6d0a26bf2b614c6ad768b7bc6f444b6`;
+72 immutable objects include 69 runtime streams/maps totaling 16,096,163 bytes.
+Source has 153 courtyard stones and 150 grass roots checked against all LOD hulls,
+with at least 1.06049 mm extra clearance. Each stone uses 3,900/1,150/380 triangles;
+the explicit scene asset proposal is now 750k near triangles to preserve this shape,
+with eight shared variants and existing runtime/encoded-byte budgets unchanged.
+Ordinary content activation includes those stones, substrate/grass and 24 separate
+stone-only slope placements (179 total). Courtyard anchor remains [6,6]; the slope
+diagnostic at [198,198] follows actual collision triangles with 57 mm nominal burial.
+It does not claim terrain-conforming substrate or grass outside the flat courtyard.
+Installed visual and lighting evaluation remains pending at this point.
+The first installed attempt is not accepted: completion triggers an installer
+protocol relationship error after the page reports 400/400 resources verified.
+Reload discovers the committed install, but launch then rejects projected streaming
+staging above 128 MiB before any dependency decode. Retain both failures and repair
+their causes within the installed evaluation allowance; do not bypass protocol checks
+or raise the staging budget to obtain an image. The final source previews remain
+available for artistic feedback while actual runtime validation is blocked.
+Human artistic outcome: the individual-stone previews are rejected as far below the
+paired courtyard reference. They read as uniform pale slabs with continuous exposed
+shoulders, flat joints and weak vegetation. Do not treat technical admission as the
+quality benchmark. The human now requests a pause after installer/streaming fixes and
+visible-path verification, before any further asset work, to restart with Blender MCP
+available. A proposed small assembled art correction is stopped; resume it only after
+that restart/user continuation. No additional asset generation is authorized in this
+technical closure stage.
+
+**Periodic paving integration (2026-09-05):** user requests continuation after the
+tileability discussion. Preserve accepted rough pale stone character; make color,
+height, normals and every LOD boundary continuous, without mirrored repetition or a
+visible square border gutter. Initial allowance: two image/source/evaluation cycles
+within 90 minutes and one QA/install/capture cycle within 60 minutes. Inspect a 3×3
+module patch overhead and at grazing angles under sunny/overcast lighting, plus
+numerical seam checks. Adopt the best supported periodic candidate or retain the
+finite baseline with a specific limitation; do not label approximate edges seamless.
+Palette variants follow a successful periodic baseline.
+The six-metre patch exposes 120 mm of existing ground variation at [6,6]. Deliberately
+author a local level courtyard pad, keeping render terrain and collision in agreement,
+rather than burying or floating the paving. Preserve the current anchor elevation;
+measure and record the actual affected extent of the terrain sample grid. This is a
+local content adjustment for the finished courtyard, not a change to world scale.
+Measured pad implementation: [0,16]² is level at 18.97375 m; interpolation support
+extends to [-32,48]² with unchanged outer samples. Sixteen grid samples change, and
+four cells retain stride-1 terrain at every LOD so visual terrain matches collision
+(1,920 additional far surface triangles, excluding skirts). Twelve world tests and
+engine/game typecheck pass; the existing single placement remains active until the
+periodic material passes its seam and worker gates (subsequently passed below).
+The generated v3 repeat failed visual joins. The first atlas repeat exposed empty
+notches from isolated L-shaped stones and stretched samples. Extend by one bounded
+30-minute source correction within the overall 90-minute allowance: use complete
+stone samples and fitted subdivisions with preserved proportions, then evaluate the
+repeat before exporting. No further image generation is needed for this correction.
+Contour follow-up: the human asks whether paving can follow the ground. Current
+modules are rigid and use the local level pad. Future paths should place/tilt whole
+stones from terrain samples while fitting joint substrate/vegetation continuously;
+do not bend broad stones or imply periodic texturing implements terrain conformance.
+Retain source stone IDs/contours for that placement work before extending along slopes.
+Human feedback rejects atlas-cycle2's linear courses and similar blocks. New bounded
+layout correction: two layout/render evaluations within 45 minutes, preserving the
+accepted rough material while mixing block sizes/orientations and infill, with no
+continuous row across the tile. Keep toroidal joins, avoid mirrored symmetry and
+stretched source samples, and inspect the 2×2 layout before geometry/compression.
+The row-based candidate remains diagnostic only and must not be admitted.
+The first courseless correction uses 19 mixed rectangular footprints, quarter-turns
+and small infill stones. Agent inspection of the flat 2×2 and shaded geometry repeat
+finds the continuous courses resolved sufficiently for QA and installed evaluation;
+repeated source faces and pale joints remain visible limitations, not final artistic
+acceptance. Evidence: `harness/results/d1-paving-periodic-2026-09-05/courseless-shaded1/`.
+Integrated outcome: candidate `0650525cd2139ef2257afc669a5dcb2a489f19e5448a93c11f9e33630a755e01`
+passed all 18 production-worker decodes and 2,322 all-LOD seam comparisons with zero
+height mismatch. Nine modules now form a 6 m patch; texture repeat sampling and shared
+height anchoring are active. A fresh ordinary installed launch was inspected overhead,
+grazing, sunny and overcast with no browser/render/streaming failures. The two-metre
+motif remains recognizable, and joint substrate is pale/uniform; further source/layout
+variation and joint art remain open for human acceptance before palette expansion.
+Full `pnpm check` passes: 214 test files, 2,647 tests, one existing skip. A 660-frame
+sunny diagnostic gives GPU EMA p50/p95 3.91/4.51 ms, not milestone qualification.
+Logical GPU resource residency is 51,965,592 bytes with 18 stone/grass placements;
+near/mixed/far selections were exercised. Exact identities, captures and limitations:
+`harness/results/d1-paving-periodic-integration-2026-09-05/summary.md`.
+Physical smoke remains deferred to M4.5 exit; no physical repair replay was run.
+
+**Paving correction brief (2026-09-05, human rejection):** the shader slab prototype
+is substantially below the supplied courtyard reference. Rebuild a small source patch
+with closely fitted, weathered limestone blocks, shallow irregular relief, narrow
+filled joints and restrained vegetation. Direct Blender modeling and scanned material
+techniques are authorized; compact shader geometry is not an artistic constraint.
+Compare sunny and overcast walking-height views against the endorsed courtyard image.
+Allow two modeling/render/inspection cycles within 90 minutes. End with a materially
+better modeled candidate and explicit runtime handoff, or identify the remaining
+visual blocker. Do not expand the patch or call source renders game captures.
+
+The two authored-block attempts still look manufactured, even with scanned grain.
+The selected scan's full displacement/material pairing is visibly stronger. Allow
+one focused 15-minute source correction to add restrained living plants in its joints;
+retain the scan-driven source rather than continue synthetic block recipes.
+
+**Source correction outcome:** the selected scan now drives a real 2 m relief mesh,
+matching material maps and 26 small modeled grass clumps. Sunny/overcast/grazing
+Blender inspection shows substantially more credible wear and surface variation than
+the rejected shader slabs. Retain this source candidate; the original reference's
+greener joints, palette and scene-level integration remain artistic targets. Source
+LOD0 is 524,288 triangles plus 3,980 plant triangles and is not a runtime budget
+proposal. Three renders take about 37 seconds on the local Blender setup, not a game
+performance result. See the [source comparison](../harness/results/d1-paving-rework-2026-09-05/summary.md).
+The next runtime package needs a baked PBR module, paving-class library QA and installed
+asset loading with material/pipeline ownership; the existing compressed transport does
+not yet bind PBR maps. No source render is presented as an integrated game result.
+
+**Shader-shaped pathway brief (2026-09-05):** the human rejects the regular scanned
+cobblestones and selects the irregular structure of Poly Haven `stone_pathway_02`,
+with brighter stones and live-looking plants in recessed gaps, under the courtyard's
+photorealistic reference. Build a compact, deterministic per-stone descriptor and a
+shared mesh deformed by WGSL in the ordinary streamed render worker. Inspect a small
+village patch at walking height, grazing angle and overhead in sunny/overcast and
+low-angle sunlight, plus a short camera-motion sequence. Must fix flat-looking relief,
+regular rows, floating plants, incorrect deformed normals/shadows, bounds/disposal
+faults, and unregistered pipeline creation. Allow two implementation/capture/evaluation
+cycles within a two-hour work session. Use short combined-scene cost windows and
+six-state preflight; no full traversal or milestone smoke. End with an integrated
+candidate and explicit visual/performance limits, or record the specific blocker;
+human finished-area acceptance remains open. No final-art binary admission is implied
+by the procedural descriptor. The earlier material-choice question is superseded.
+
+**Pathway integration finding and bounded extension:** the first GPU execution exposed
+receiver/depth texture aliasing in Lite's default custom-material caster view (RE-049).
+Descriptor identity alone had allowed a black frame to reach Ready; actual GPU
+validation and sampler-free caster bindings now cover that failure. The first valid
+Chrome capture proves relief but fails the visual brief: sparse thick blocks, green
+placeholder ground and spike-like plants. Allow one additional correction/capture
+cycle, at most 60 minutes, for denser irregular packing, thinner exposed slabs,
+terrain-conforming soil and lower tufts. Test 0.01 m CSM world-space bias against the
+previous 0.12 m setting for contact definition and six-state acne; do not silently
+replace the previously measured shadow evidence or claim finished-art acceptance.
+
+**Pathway outcome (2026-09-05):** retain the compact shared geometry mechanism
+(D-185), but defer the synthetic-only finish as final art: manufactured surfaces,
+simple vegetation and weak near-contact lighting still miss the reference. The
+90-stone patch runs in the ordinary streamed worker; unload/re-entry restored a
+pixel-identical view, and all six lighting preflight checkpoints passed. The 0.01 m
+shadow bias produced terrain acne and was rejected; 0.12 m remains. Build and lint
+passed; the final unit run passed 2,637 tests with one skipped. Short combined-scene
+GPU EMA medians were 3.83–4.21 ms, diagnostic only. See the
+[captures, measurements and limitations](../harness/results/d1-pathway-2026-09-05/summary.md).
+This bounded prototype is closed; M4.5 artistic acceptance remains open. The next
+art package needs scan-derived surface detail, convincing chips/vegetation and
+contact lighting before this patch can represent the finished courtyard.
 
 **Reference/kit brief (2026-09-05):** prepare an original paired sunny/overcast
 reference for the village-well courtyard, looking toward the central hilltop castle,
@@ -421,8 +756,9 @@ was run; those remain milestone-scoped. Blender preview timing is not game perfo
       reports as invalid and make no qualified CSM control-relative cost claim.
 - [ ] Author sunny and gloomy references and a small modular D1 kit: architecture,
       representative PBR materials, terrain detail, foliage, and the castle silhouette.
-      Activate the applicable mesh/UV/texture/LOD/export QA before the first binary
-      asset enters the library; resolve P-004 binary storage at that point.
+      Paving-class mesh/UV/texture/LOD/export QA is active and the first module is
+      admitted; D-186 resolves P-004 binary storage. Extend class QA for the rest of
+      the kit before admission.
       Preserve authored deterministic terrain, collision, and streamed ownership.
 - [ ] Produce one rigged NPC and one enemy with locomotion, idle, and the encounter's
       combat animation through the same provenance and QA path. Use existing gameplay

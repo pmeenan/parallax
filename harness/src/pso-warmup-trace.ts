@@ -169,10 +169,89 @@ const CSM_DEPTH_STATE = deepFreeze({
   shader: { ...EFFECTIVE_PIPELINE_STATE.shader, materialFeatureKey: 262144 },
 } as const);
 
+// Independently pinned expected descriptors; never import the producer registry.
+// Captured on pinned Chrome 152.0.7977.54 with the exact Lite 1.12.0 PBR feature
+// set: opaque, derivative normal map, ORM, factor, specular AA and directional CSM.
+const PBR_VERTEX_WGSL_SHA256 = "80ce3c63c56133027271da687fc86d2f21c3e1bffc1dfbf14a9a8fbd062fca84";
+const PBR_FRAGMENT_WGSL_SHA256 = "0b24f8b27d393e29deba8953e3f09c85e438cfb2bd38ca0dc92b8a54a478c8d6";
+const PBR_MATERIAL_GROUP = {
+  entries: [
+    ...EFFECTIVE_PIPELINE_STATE.layout.bindGroups[1].entries,
+    ...[2, 4, 6].flatMap((binding) => [
+      {
+        binding,
+        resource: {
+          kind: "texture" as const,
+          multisampled: false,
+          sampleType: "float" as const,
+          viewDimension: "2d" as const,
+        },
+        visibility: 2,
+      },
+      {
+        binding: binding + 1,
+        resource: { kind: "sampler" as const, type: "filtering" as const },
+        visibility: 2,
+      },
+    ]),
+  ],
+  index: 1,
+};
+const PBR_COLOR_STATE = deepFreeze({
+  ...CSM_RECEIVER_STATE,
+  layout: {
+    bindGroups: [
+      EFFECTIVE_PIPELINE_STATE.layout.bindGroups[0],
+      PBR_MATERIAL_GROUP,
+      CSM_RECEIVER_STATE.layout.bindGroups[2],
+    ],
+    mode: "explicit",
+  },
+  shader: {
+    family: "pbr",
+    vertexEntryPoint: "main",
+    fragmentEntryPoint: "main",
+    vertexSha256: PBR_VERTEX_WGSL_SHA256,
+    fragmentSha256: PBR_FRAGMENT_WGSL_SHA256,
+  },
+  vertexBuffers: [
+    ...EFFECTIVE_PIPELINE_STATE.vertexBuffers,
+    {
+      arrayStride: 8,
+      attributes: [{ format: "float32x2", offset: 0, shaderLocation: 2 }],
+      stepMode: "vertex",
+    },
+    {
+      arrayStride: 64,
+      attributes: [0, 1, 2, 3].map((column) => ({
+        format: "float32x4" as const,
+        offset: column * 16,
+        shaderLocation: column + 3,
+      })),
+      stepMode: "instance",
+    },
+  ],
+} as const);
+const PBR_DEPTH_FRAGMENT_WGSL_SHA256 =
+  "8655fedc8d364cc42ae079bbc15f8a20efe52799932ef3ee8f70fd2392c0ad95";
+const PBR_DEPTH_STATE = deepFreeze({
+  ...PBR_COLOR_STATE,
+  colorTarget: null,
+  depthStencil: CSM_DEPTH_STATE.depthStencil,
+  layout: {
+    bindGroups: [EFFECTIVE_PIPELINE_STATE.layout.bindGroups[0], PBR_MATERIAL_GROUP],
+    mode: "explicit",
+  },
+  multisample: CSM_DEPTH_STATE.multisample,
+  shader: { ...PBR_COLOR_STATE.shader, fragmentSha256: PBR_DEPTH_FRAGMENT_WGSL_SHA256 },
+} as const);
+
 export type PsoWarmupEffectivePipelineState =
   | typeof EFFECTIVE_PIPELINE_STATE
   | typeof CSM_RECEIVER_STATE
-  | typeof CSM_DEPTH_STATE;
+  | typeof CSM_DEPTH_STATE
+  | typeof PBR_COLOR_STATE
+  | typeof PBR_DEPTH_STATE;
 
 export interface PsoWarmupTraceIdentity {
   readonly buildCompatibilityDigest: string;
@@ -315,12 +394,16 @@ function createExpectedIdentity(): PsoWarmupTraceIdentity {
   });
   const entries = Object.freeze([
     entry,
-    ...[CSM_RECEIVER_STATE, CSM_DEPTH_STATE].map((state, index) =>
+    ...(
+      [
+        ["babylon-lite.standard-csm-receiver-msaa4", CSM_RECEIVER_STATE],
+        ["babylon-lite.standard-csm-depth", CSM_DEPTH_STATE],
+        ["babylon-lite.pbr-csm-receiver-msaa4", PBR_COLOR_STATE],
+        ["babylon-lite.pbr-csm-depth", PBR_DEPTH_STATE],
+      ] as const
+    ).map(([id, state], index) =>
       Object.freeze({
-        id:
-          index === 0
-            ? "babylon-lite.standard-csm-receiver-msaa4"
-            : "babylon-lite.standard-csm-depth",
+        id,
         kind: "render" as const,
         priority: index + 1,
         state,

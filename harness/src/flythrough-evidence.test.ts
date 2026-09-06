@@ -96,7 +96,7 @@ function validEvidence(): unknown {
       streamedPresentationFrameCount: 36_000,
     },
     scenarioId: FLYTHROUGH_D1_SCENARIO,
-    schemaVersion: 3,
+    schemaVersion: 4,
     state: "completed",
     streamingAtMeasurementEnd: streaming,
     streamingAtMeasurementStart: {

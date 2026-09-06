@@ -68,10 +68,10 @@ describe("streaming worker batch transaction wiring", () => {
     expect(streaming).toContain("[task.bytes, ...task.dependencies.map");
     expect(streaming).toContain('"kind" in dependency');
     expect(streaming).toContain("...new Set(");
-    expect(decode).toContain("dependencies.map((dependency)");
+    expect(decode).toContain("dependencies.flatMap((dependency)");
     for (const source of [streaming, decode]) {
       expect(source).toContain('dependency.format === "ktx2"');
-      expect(source).toContain("? dependency.rgba");
+      expect(source).toContain("dependency.mipmaps?.map((mip) => mip.rgba) ?? [dependency.rgba]");
       expect(source).toContain('dependency.kind !== "legacy-positions"');
       expect(source).toContain('dependency.kind === "indices"');
       expect(source).toContain("? dependency.indices");
@@ -188,7 +188,17 @@ describe("streaming worker batch transaction wiring", () => {
     const source = await workerSource();
     expect(source).toContain("preparedInstalledDistricts.get(districtId)");
     expect(source).toContain("preparedLegacyDistricts.get(districtId)");
-    expect(source).toContain("await openAccessHandlesWithoutCleanup(prepared.index.cells)");
+    const revisit = source.slice(
+      source.indexOf("if (prepared !== undefined)"),
+      source.indexOf("const entrypoint = manifest.gameContentEntrypoints.find"),
+    );
+    expect(revisit).toMatch(
+      /await openAccessHandlesWithoutCleanup\(\[\s*\.\.\.prepared.index.cells,\s*\.\.\.\(prepared.index.resources \?\? \[\]\),?\s*\]\)/,
+    );
+    expect(revisit).toContain("return prepared.index");
+    expect(source).toContain("parsePrivilegedStreamingProvisionPlan(");
+    expect(source).toContain("await removeStalePackages(packages)");
+    expect(source).toContain("await openAccessHandlesWithoutCleanup(packages)");
     const installedResolution = source.indexOf(
       "resolved?.();",
       source.indexOf("preparedInstalledDistricts"),

@@ -38,19 +38,19 @@ describe("PSO warmup registry", () => {
       await registry.request(entry.id, entry.stateDigest, () => undefined);
     await registry.finish();
 
-    expect({ compileCount, yieldCount }).toEqual({ compileCount: 1, yieldCount: 3 });
+    expect({ compileCount, yieldCount }).toEqual({ compileCount: 1, yieldCount: 5 });
     expect(registry.snapshot()).toMatchObject({
       cacheHitCount: 1,
-      cacheMissCount: 3,
-      compiledCount: 3,
-      deferredCount: 3,
+      cacheMissCount: 5,
+      compiledCount: 5,
+      deferredCount: 5,
       failureCount: 0,
       maximumCompileDurationMs: 4,
       queueHighWater: 1,
-      requestedCount: 4,
+      requestedCount: 6,
       state: "ready",
-      totalDurationMs: 10,
-      traceEntryCount: 3,
+      totalDurationMs: 14,
+      traceEntryCount: 5,
     });
     expect(registry.snapshot().entries.slice(0, 1)).toEqual([
       {
@@ -159,7 +159,7 @@ describe("PSO warmup registry", () => {
     for (const entry of PSO_WARMUP_PIPELINES.slice(1))
       await registry.request(entry.id, entry.stateDigest, () => undefined);
     await registry.finish();
-    expect(registry.snapshot()).toMatchObject({ compiledCount: 3, state: "ready" });
+    expect(registry.snapshot()).toMatchObject({ compiledCount: 5, state: "ready" });
   });
 
   it("fails closed when the observed compile boundary returns a different digest", async () => {

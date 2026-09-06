@@ -28,6 +28,94 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-187: Establish broad concept and behavior references before further asset iteration (2026-09-05, accepted)
+
+**Decision:** insert the [game-wide concept-art program](../assets/reference/concept-art-program.md)
+as the next creative stage, before further cobblestone modeling or asset iteration.
+Generate and curate extensive environment, asset, character and effects concepts,
+plus temporal boards and grounded references for every planned rendered physics
+behavior. Select coherent comparison targets with the human and link implementation
+briefs to them. Generated imagery is not measured physical evidence.
+
+**Context:** the human rejected the individual-stone previews as far below the
+endorsed courtyard artwork and requested a broad reference stage now. A single wide
+concept and isolated material studies have not supplied sufficient construction,
+assembly or behavior targets. Blender MCP setup is being handled separately.
+
+**Consequences:** the immediate small-patch art correction waits for reference
+coverage and selection. Technical installer/streaming closure can proceed separately.
+D-182's scene-driven implementation, D-181's milestone gate cadence, asset rights/QA
+and existing runtime budgets remain unchanged. Concepts for deferred features do not
+promote their implementation; excluded features remain excluded.
+
+**Reopen if:** the human changes the creative sequence or accepted references reveal
+a substantive conflict with the setting or implementation scope.
+
+## D-186: Admit immutable binary assets through manifests and the installed decode path (2026-09-05, accepted; resolves P-004)
+
+**Decision:** retain admitted binary objects outside normal git at
+`assets/library/objects/<sha256>.<extension>` with checked-in, versioned manifests
+binding hashes, sizes, class policy, source provenance and QA results. The build
+verifies every referenced object before packaging it into the existing immutable
+release/install store. This machine-local cache is not a remote durability promise;
+source scripts and exact public input hashes provide reconstruction for the first
+paving asset. A backed-up external store can supply the same hash contract later.
+No library object may be modified in place or admitted without its class QA.
+
+**Context:** the human accepted the scanned source and authorized in-game integration.
+Lite 1.12.0's default decoder discovery injects page scripts, but the existing
+decoder bootstrap avoids that branch. An actual Chrome module-worker compressed
+GLB load passed with the bootstrap, no DOM or CDN requests and no GPU validation
+errors. Keep meshopt/KTX2 work in the existing decode pool here to preserve its
+bounded scheduling/cache accounting, not because the loader cannot run in workers.
+Bind decoded geometry and role-tagged PBR textures in the render worker.
+Cell `pbrAssets` placements reference immutable geometry LODs and material resources.
+Versioned KTX2 decoding distinguishes sRGB base color from linear normal/ORM maps
+and retains authored mip chains. This extends asset contracts, not the renderer stack.
+
+**Consequences/reopen:** source density is not a shipping budget. Asset-class QA,
+ordinary renderer round-trip, exact material PSO registration and observed allocation/
+eviction remain required. Revisit storage when remote backup or collaboration needs
+make local reconstruction insufficient; revisit decode placement only with a verified
+worker-safe loader and measured benefit. Final scene artistic acceptance remains open.
+
+## D-185: Package procedural pathway instances and observe their shader states (2026-09-05, superseded by D-186 for paving; preview/validation retained)
+
+The rejected procedural paving renderer and descriptor were removed when the accepted
+scan replaced them. Its full source reconstruction was verified against the recorded
+dirty-tree digest before closure; evidence remains in the pathway result directory.
+The general preview ownership and actual GPU validation checks remain active.
+
+**Decision:** an optional `proceduralPathways` field in a streamed greybox cell carries
+version-1 pathway records: bottom/root positions, sizes, rotations, deterministic seeds,
+and linear colors for stones and plants, plus an optional sampled soil grid. Existing
+cells remain valid without the field. The ordinary build and worker decode validate
+the descriptor and its conservative cell
+bounds. Game code owns placement; the engine owns shared topology, WGSL deformation,
+lighting, GPU allocation, and release on eviction. This introduces no downloaded asset
+bytes or alternate renderer. It does not grant artistic acceptance of the material.
+
+**Consequences:** the installed warmup registry adds exact instanced stone color and
+CSM depth states to D-183's three states. The observer checks their composed shader
+sources and pipeline layouts before Ready; release compatibility changes accordingly.
+The shadow pass uses the same deformation with a separate sampler-free caster
+material. Lite 1.12.0's narrow `_shadowCasterMaterial` hook supplies that material;
+its inherited default view otherwise binds the depth attachment for reading (RE-049).
+The exact-pin integration and state proof must be revisited on renderer updates.
+Logical template, instance, material, plant geometry, setup and drawn-triangle
+counters accompany the ordinary frame
+telemetry. Logical allocation is not a measurement of physical GPU residency.
+Flythrough telemetry version 4 adds explicit `previewing` ownership for bounded
+camera/environment inspection of these same streamed cells. Preview cannot satisfy
+the standard preflight or start a qualified measurement; releasing it restores normal
+gameplay ownership. No benchmark thresholds or traversal requirements change.
+
+**Context/reopen:** the human selected irregular stone pathway structure and approved
+shader-generated variation to get real depth without storing a unique mesh for each
+stone. Reopen this compact format if authored shapes need additional parameters or
+collision/interaction geometry; requalify the exact states when shader or renderer
+layout changes. Visual quality and short runtime evidence remain in the M4.5 work note.
+
 ## D-184: Keep long traversal qualification out of routine plan steps (2026-09-05, accepted; refines D-181/D-182)
 
 **Decision:** intermediate fixes and feature integrations use the narrowest focused
@@ -12071,9 +12159,7 @@ a small portfolio site) judged negligible.
 
 - **P-003: Multiplayer topology** — pure P2P mesh vs. host-authoritative peer for the
   M7 exploration. Decide when M3 determinism results are in.
-- **P-004: Binary asset storage** — git LFS vs. external content store + manifest for
-  `assets/source/` and `assets/library/`. Decide when the first real (non-greybox)
-  assets exist (M5 at the latest).
+- **P-004: Binary asset storage** — resolved by D-186 (2026-09-05).
 - **P-006: Storage Buckets for saves vs. assets** — whether separating critical saves
   from replaceable assets into distinct buckets (with different eviction/durability
   characteristics) buys real protection beyond origin `persist()`, or is complexity

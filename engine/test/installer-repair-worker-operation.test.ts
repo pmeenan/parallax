@@ -7,6 +7,17 @@ import {
 } from "../src/index";
 
 describe("installer Repair worker telemetry observer", () => {
+  it("debits and restores exact cumulative credit after a retried Install", () => {
+    const controller = telemetryController(3, 30, 5, 50);
+    const credit = { ...exactCredit(3, 30), lifetimeResourceCount: 5, lifetimeVerifiedBytes: 50 };
+    expect(resolveInstallerRepairCompletionCredit(controller.snapshot(), credit)).toEqual(credit);
+    const observer = createInstallerRepairTransferObserver(controller, new Set(["repair"]), credit);
+    expect(observer.repairCompletionCreditRevoked("repair", 10)).toBe(true);
+    expect(controller.snapshot()).toMatchObject({ completedResourceCount: 4, verifiedBytes: 40 });
+    expect(() => observer.repairCompletionCreditRevoked("repair", 10)).toThrow();
+    observer.resourceComplete("repair", 10);
+    expect(resolveInstallerRepairCompletionCredit(controller.snapshot(), credit)).toEqual(credit);
+  });
   it("accumulates high-frequency download chunks without publishing a snapshot per chunk", () => {
     let snapshot: InstallerTransferTelemetrySnapshot = Object.freeze({
       ...idleInstallerTransferTelemetrySnapshot(1, 8 * 1024 * 1024),
@@ -118,6 +129,8 @@ function exactCredit(resourceCount: number, totalBytes: number) {
     releaseDigest: "a".repeat(64),
     resourceCount,
     totalBytes,
+    lifetimeResourceCount: resourceCount,
+    lifetimeVerifiedBytes: totalBytes,
   });
 }
 

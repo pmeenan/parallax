@@ -24,6 +24,6 @@ export default defineConfig({
     },
   ],
   test: {
-    exclude: ["**/dist/**", "**/node_modules/**"],
+    exclude: ["**/dist/**", "**/node_modules/**", "harness/results/**"],
   },
 });

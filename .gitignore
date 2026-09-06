@@ -13,3 +13,6 @@ harness/chrome/cft/
 
 # Machine-local absolute paths for pinned tools (see docs/workflow.md).
 .parallax-toolchain.local.json
+
+# Immutable binary library cache; checked-in manifests pin every admitted object (D-186).
+assets/library/objects/

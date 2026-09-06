@@ -143,6 +143,21 @@ export interface WorldMarkerSpec {
 }
 
 export interface GreyboxDistrictSpec {
+  readonly assetPlacements?: readonly {
+    readonly id: string;
+    readonly assetId: string;
+    readonly variantId?: string;
+    readonly baseColorFactor?: readonly [number, number, number];
+    readonly scale?: number;
+    readonly center: readonly [number, number];
+    readonly heightOffset: number;
+    /** Shared terrain sample for adjoining modules; defaults to each center. */
+    readonly heightAnchor?: readonly [number, number];
+    readonly rotationYRadians: number;
+    readonly rotationXRadians?: number;
+    readonly rotationZRadians?: number;
+    readonly lodDistancesMeters: readonly [number, number];
+  }[];
   readonly descriptorVersion: 1;
   readonly features: readonly FeatureRuleSpec[];
   readonly generator: Readonly<{ seed: number; version: number }>;
@@ -167,6 +182,15 @@ export interface GreyboxDistrictSpec {
   }>;
   readonly terrain: Readonly<{
     layers: readonly TerrainLayerSpec[];
+    /** Rectangular level ground with a smooth surrounding grading transition.
+     * Intersecting cells retain collision-grid resolution in every terrain LOD.
+     */
+    levelPads?: readonly Readonly<{
+      minimum: readonly [number, number];
+      maximum: readonly [number, number];
+      height: number;
+      transitionMeters: number;
+    }>[];
     materialId: string;
     roundingDecimalPlaces: number;
   }>;

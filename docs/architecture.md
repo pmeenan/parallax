@@ -730,7 +730,12 @@ during the installing page lifetime.
 
 Worker transfer counters are lifetime observability, so the controller captures an
 attempt baseline and renders only operation deltas; plan/reuse totals remain zero until
-the current attempt reaches its post-plan states. Terminal fail-closed worker or
+the current attempt reaches its post-plan states. Ready requires exact current-release
+final-verification totals, while lifetime completed resources and verified bytes may
+exceed one release after cancellation and retry. Repair authority separately captures
+the exact cumulative completion pair after successful Install and checks that pair
+before debiting and restoring a resource; cumulative totals alone never grant repair
+authority. Terminal fail-closed worker or
 runtime-boot errors disable retry and expose Reload, while recoverable transfer,
 integrity, quota, validator, manifest, and persistence failures retain Retry/Resume.
 
@@ -1226,6 +1231,80 @@ once and releases after its last consumer. Encoded/decoded bytes, decode time, c
 ownership, batching, and upload targets remain observable. D-148's scale qualifier uses
 this production path and its bounded representative corpus; it is not a literal whole-
 inventory materialization claim.
+
+D-186 adds cell-owned PBR asset placements to this same transport. Versioned KTX2
+descriptors bind color space and a complete mip chain; base color uploads as sRGB,
+normal and ORM maps as linear data. Three mesh LODs share maps and GPU geometry across
+placements. Compatible geometry/material placements share native Lite thin-instance
+groups, with one fixed-capacity matrix pool per LOD. Distance selection rebuckets
+instances with hysteresis; all three geometry LOD buffers remain resident together.
+Public dynamic instance counts use indirect draw arguments so cached render bundles
+observe LOD membership changes. Materials and group meshes release before
+their reference-counted dependencies. The privileged provisioning route preserves the
+same schema-v2 dependency graph but remains explicitly distinct from installed-release
+admission. Paving source GLBs remain QA/reconstruction artifacts; the installed game
+consumes admitted meshopt buffers and KTX2 maps through the decode pool.
+Canonical asset geometry uses glTF's right-handed coordinates. Before the authored
+placement transform, the renderer reflects local X, matching Lite 1.12's `loadGltf`
+root conversion into the left-handed game world. Optional X/Z Euler angles default
+to zero alongside the existing yaw; a shared pure matrix writer matches Lite's
+XYZ Euler order for packaging bounds and runtime instance transforms. This preserves admitted geometry,
+UVs and normals while producing the runtime's expected front-face orientation.
+Finite PBR modules use UVs in [0, 1] and clamp-to-edge trilinear/anisotropic sampling.
+The optional material `textureAddressMode` defaults to `clamp-to-edge`; periodic
+assets explicitly request `repeat` for all three maps. Material-local texture wrappers
+use the admitted material override or asset-wide sampler default when packaged, then
+share cached GPU storage while selecting a sampler, so shared bytes may serve both
+modes without duplicate uploads. Lite reference counts the underlying GPUTexture.
+Repeating modules still require validated color/height/normal seams at every LOD.
+Game authoring may specify a shared `heightAnchor` within the owning cell; packaging
+bakes its terrain height plus the authored offset into each ordinary runtime position,
+keeping adjoining modules on one plane. Larger footprints require terrain-clearance
+verification; a common anchor does not conform a plane to uneven terrain.
+Game-owned rectangular `terrain.levelPads` apply smoothstep grading after the
+base terrain's rounding. Both collision and render meshes consume the resulting
+height samples. Cells intersecting a pad's transition retain stride-one terrain at
+every LOD so distant rendering cannot discard the pad's defining vertices. D1's
+courtyard uses a level [0,16]m square at 18.97375m and a 32m transition, with unchanged
+outer samples at [-32,48]m on both axes. This affects four cells and retains 1,920
+additional surface triangles versus their former far LOD, excluding seam skirts.
+Staging reservations follow first-miss cache ownership: shared or resident dependency
+references add no decode buffers. Each concurrently prepared cell reserves its
+retained decoded outputs plus the largest single dependency's temporary decoded
+chain, because the decode worker awaits dependencies sequentially. Encoded views
+and cell JSON keep their conservative overlap allowances. Transfer lists move
+buffers rather than copying a second whole output cohort. The 128 MiB logical
+staging cap is unchanged; persistent decoder WASM heaps are separate CPU memory,
+not a claim that this staging count measures total process residency. The first
+individual-stone cold nine-cell projection is 117,408,096 bytes, versus the former
+156,716,168-byte sum that incorrectly duplicated every output chain. Evidence:
+`d1-individual-stones-2026-09-05/staging-reservation-proof.json`.
+
+The admitted individual-stone courtyard uses 153 rigid stones from eight shared
+variants, plus its authored substrate and joint-aware grass, centered at [6,6]m.
+The whole canonical RH scene is reflected once into the LH renderer, preserving
+stone/grass alignment. Source stone bottoms are 57mm below the shared terrain
+plane; 73mm nominal thickness leaves about 16mm exposed. A separate 24-stone
+diagnostic around [198,198]m fits rigid transforms to actual collision triangles
+using the admitted bottom polygons, without adding stone colliders or moving the
+ground. All 179 placements stay below the 200-stone/256-placement limits. Typed
+game content records the admitted candidate hash; runtime never reads source paths.
+Placements with matching variant resources and material tone share an instance
+group within each cell, with additional draw groups when they occupy different LODs.
+Telemetry reports placement/group/draw counts, triangles, matrix CPU bytes, actual
+native matrix/indirect GPU buffer bytes, LOD changes and setup time. The five-state
+warmup registry contains three Standard states and two native-instanced PBR states.
+The 0.015 m bias/slope-scale-2 contact candidate was rejected after installed dawn
+captures showed diagonal terrain acne. Its custom caster/bootstrap implementation
+was removed; the historical 0.12 m CSM bias is restored. Evidence remains under
+`d1-contact-shadow-candidate-2026-09-05` and `d1-contact-shadow-integration-2026-09-05`.
+
+A bounded shared-light calibration now scales hemispheric ambient by 0.25/0.88
+across all weather states, retaining sun values and time interpolation. Clear noon
+ambient is 0.25, overcast about 0.216, storm about 0.165; directional noon remains
+1/0.36/0.12. Both Standard and PBR use these same lights. This addresses ambient
+masking PBR directional response (its Lambert diffuse includes 1/PI); installed
+matched daylight/dawn/overcast comparison remains pending, not accepted quality.
 
 **Common vs. game-specific split (D-010):** every packaged resource is classified as
 *common* (engine code, shared asset packs/kits, models — shareable across published

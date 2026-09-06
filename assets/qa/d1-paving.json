@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "class": "d1-scanned-paving-2m",
+  "rationale": "Preserve scan relief on a 15.625 mm near grid, reduce the grid by four per tier; small original grass retains complete blades. Shared 2k color and normals retain 1024 texels/metre; lower-frequency roughness uses 1k. Runtime resource set fits the 16 MiB encoded resident cache.",
+  "stoneTriangles": [32768, 8192, 2048],
+  "grassTriangles": [7200, 3600, 1800],
+  "materials": 2,
+  "stoneWidthMetres": 2,
+  "textureWidths": {
+    "baseColor": 2048,
+    "normal": 2048,
+    "orm": 1024,
+    "grassBaseColor": 4,
+    "grassNormal": 4,
+    "grassOrm": 4
+  },
+  "maxRuntimeEncodedBytes": 16777216,
+  "maxResourceEncodedBytes": 8388608,
+  "grassUvException": "Original solid-color blades have no sampled image detail; their constant UVs are intentional. Duplicate back faces supply sidedness without an extra pipeline."
+}

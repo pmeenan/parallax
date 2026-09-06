@@ -25,6 +25,58 @@ import type {
 import { idleHybridUiWorkerTelemetry } from "../src/ui/hybrid-ui-contract";
 
 describe("flythrough service", () => {
+  it("keeps visual previews outside measurement preparation and releases ownership explicitly", async () => {
+    const render = renderHarness();
+    const service = createFlythroughService(render.service, streamingHarness().service, scenario, {
+      maximum: [120, 20, 20],
+      minimum: [0, 0, 0],
+    });
+    const request = {
+      observer: [6, 0, 6] as const,
+      headingRadians: 0,
+      camera: { beta: 1.2, heightMeters: 0.2, radiusMeters: 3 },
+      environment: {
+        timeOfDay: "daylight" as const,
+        timeOfDayPhase: 0.3,
+        weather: "clear" as const,
+      },
+    };
+    await service.previewScene(request);
+    expect(service.snapshot().state).toBe("previewing");
+    expect(service.snapshot().streamingAtMeasurementStart).toBeNull();
+    expect(() => service.start()).toThrow(/completed preflight/);
+    await service.previewScene({ ...request, headingRadians: 0.2 });
+    expect(render.checkpointCount()).toBe(2);
+    await expect(service.previewScene({ ...request, observer: [-1, 0, 6] })).rejects.toThrow(
+      /Invalid scene preview/,
+    );
+    await service.abort("Preview ended");
+    await service.reset();
+    expect(service.snapshot().state).toBe("idle");
+    service.dispose();
+  });
+  it("does not publish a stale preview after an explicit reset cancels its render", async () => {
+    const render = renderHarness({ deferFirstPreflight: true });
+    const service = createFlythroughService(render.service, streamingHarness().service, scenario, {
+      maximum: [120, 20, 20],
+      minimum: [0, 0, 0],
+    });
+    const pending = service.previewScene({
+      observer: [6, 0, 6],
+      headingRadians: 0,
+      camera: { beta: 1.2, heightMeters: 0.2, radiusMeters: 3 },
+      environment: { timeOfDay: "daylight", timeOfDayPhase: 0.3, weather: "clear" },
+    });
+    const rejected = expect(pending).rejects.toThrow(/cancelled/);
+    await Promise.resolve();
+    await service.abort("Preview ended");
+    await service.reset();
+    render.settleFirstPreflight();
+    await rejected;
+    expect(service.snapshot().state).toBe("idle");
+    expect(render.checkpointCount()).toBe(0);
+    service.dispose();
+  });
   it("waits for the exact final direct-port sequence and corresponding total settlement", async () => {
     vi.useFakeTimers();
     try {

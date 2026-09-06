@@ -1,6 +1,8 @@
 import {
+  createPbrMaterial,
   createStandardMaterial,
   type EngineContext,
+  isPbrMaterial,
   isStandardMaterial,
   type Mesh,
   type StandardMaterialProps,
@@ -9,6 +11,11 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import {
   createPsoWarmupTrace,
+  PBR_COLOR_STATE,
+  PBR_DEPTH_FRAGMENT_WGSL_SHA256,
+  PBR_DEPTH_STATE,
+  PBR_FRAGMENT_WGSL_SHA256,
+  PBR_VERTEX_WGSL_SHA256,
   PSO_WARMUP_PIPELINES,
   PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
 } from "./pso-warmup-contract";
@@ -34,10 +41,13 @@ export interface StandardOpaquePsoObservation {
   registerAll(
     meshes: readonly Mesh[],
     compile: () => void | Promise<void>,
+    pbrMeshes?: readonly Mesh[],
   ): Promise<ReadonlyMap<string, string>>;
 }
 
 interface InstrumentedGpuDevice {
+  pushErrorScope(filter: GPUErrorFilter): void;
+  popErrorScope(): Promise<GPUError | null>;
   createBindGroupLayout(descriptor: GPUBindGroupLayoutDescriptor): GPUBindGroupLayout;
   createPipelineLayout(descriptor: GPUPipelineLayoutDescriptor): GPUPipelineLayout;
   createRenderPipeline(descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
@@ -102,6 +112,7 @@ export function observeStandardOpaquePsoRegistration(
   const shaderModules = new WeakMap<object, string>();
   const restores: (() => void)[] = [];
   const observedStates: unknown[] = [];
+  const shaderValidation: Promise<readonly string[]>[] = [];
   let disposed = false;
 
   const restorePatchedMethods = (): readonly unknown[] => {
@@ -160,6 +171,18 @@ export function observeStandardOpaquePsoRegistration(
       }
       const module = createShaderModule(descriptor);
       shaderModules.set(module, digestText(descriptor.code));
+      shaderValidation.push(
+        module.getCompilationInfo().then(
+          (info) =>
+            info.messages
+              .filter((message) => message.type === "error")
+              .map(
+                (message) =>
+                  `${descriptor.label ?? "shader"}:${message.lineNum}:${message.linePos}: ${message.message}`,
+              ),
+          (error) => [`Shader compilation inspection failed: ${String(error)}`],
+        ),
+      );
       return module;
     }) as InstrumentedGpuDevice["createShaderModule"]);
 
@@ -183,7 +206,9 @@ export function observeStandardOpaquePsoRegistration(
         shaderModules,
       );
       if (!PSO_WARMUP_PIPELINES.some((entry) => canonicalEqual(state, entry.state))) {
-        throw new Error("PSO warmup observed Standard pipeline descriptor drift");
+        throw new Error(
+          `PSO warmup observed Standard pipeline descriptor drift: ${JSON.stringify(state)}`,
+        );
       }
       observedStates.push(state);
       return createRenderPipeline(descriptor);
@@ -205,11 +230,37 @@ export function observeStandardOpaquePsoRegistration(
     throwRestoreFailures(restorePatchedMethods());
   };
 
+  const compileValidated = async (compile: () => void | Promise<void>): Promise<void> => {
+    device.pushErrorScope("validation");
+    let compileError: unknown;
+    let failed = false;
+    try {
+      await compile();
+    } catch (error: unknown) {
+      failed = true;
+      compileError = error;
+    }
+    const validationError = await device.popErrorScope();
+    const messages = (await Promise.all(shaderValidation)).flat();
+    if (validationError !== null) messages.push(validationError.message);
+    if (messages.length > 0) {
+      const error = new Error(`PSO warmup GPU validation failed: ${messages.join("; ")}`);
+      if (failed)
+        throw new AggregateError(
+          [compileError, error],
+          `${String(compileError)}; ${error.message}`,
+        );
+      throw error;
+    }
+    if (failed) throw compileError;
+  };
+
   return Object.freeze({
     dispose,
     async registerAll(
       meshes: readonly Mesh[],
       compile: () => void | Promise<void>,
+      pbrMeshes: readonly Mesh[] = [],
     ): Promise<ReadonlyMap<string, string>> {
       if (disposed) throw new Error("PSO warmup observer is already disposed");
       const digests = new Map<string, string>();
@@ -219,10 +270,17 @@ export function observeStandardOpaquePsoRegistration(
           assertStandardOpaqueMaterial(mesh.material, mesh.name);
           assertGreyboxMeshFeatureKeyZero(mesh, true);
         }
+        for (const mesh of pbrMeshes) {
+          assertPbrOpaqueMaterial(mesh.material, mesh.name);
+          assertGreyboxMeshFeatureKeyZero(mesh, true, true);
+        }
         const start = observedStates.length;
-        await compile();
+        await compileValidated(compile);
         const states = observedStates.slice(start);
-        for (const entry of PSO_WARMUP_PIPELINES) {
+        const expectedEntries = PSO_WARMUP_PIPELINES.filter(
+          (_, index) => index < 3 || pbrMeshes.length > 0,
+        );
+        for (const entry of expectedEntries) {
           const matches = states.filter((state) => canonicalEqual(state, entry.state));
           if (matches.length !== 1)
             throw new Error(
@@ -230,7 +288,7 @@ export function observeStandardOpaquePsoRegistration(
             );
           digests.set(entry.id, digestValue(matches[0]));
         }
-        if (states.length !== PSO_WARMUP_PIPELINES.length)
+        if (states.length !== expectedEntries.length)
           throw new Error("PSO warmup observed unexpected pipelines");
       } catch (error: unknown) {
         try {
@@ -261,7 +319,7 @@ export function observeStandardOpaquePsoRegistration(
           assertGreyboxMeshFeatureKeyZero(mesh);
         }
         const observedCountBeforeCompile = observedStates.length;
-        await compile();
+        await compileValidated(compile);
         const observedCompileCount = observedStates.length - observedCountBeforeCompile;
         if (observedCompileCount !== 1) {
           throw new Error(
@@ -333,6 +391,35 @@ function assertStandardOpaqueMaterial(material: Mesh["material"], meshName: stri
   }
 }
 
+function assertPbrOpaqueMaterial(material: Mesh["material"], meshName: string): void {
+  if (
+    !isPbrMaterial(material) ||
+    Reflect.get(material, "_buildGroup") !== Reflect.get(createPbrMaterial(), "_buildGroup") ||
+    !material.baseColorTexture ||
+    !material.normalTexture ||
+    !material.ormTexture ||
+    !material.baseColorFactor ||
+    material.baseColorFactor[3] !== 1 ||
+    material.enableSpecularAA !== true ||
+    material.occlusionStrength !== 1 ||
+    material.doubleSided === true ||
+    material.alphaBlend === true ||
+    (material.alphaCutOff ?? 0) !== 0 ||
+    (material.alpha ?? 1) !== 1 ||
+    material.plugins !== undefined ||
+    material.emissiveTexture !== undefined ||
+    material.emissiveColor !== undefined ||
+    material.specGlossTexture !== undefined ||
+    material.gammaAlbedo === true ||
+    material.clearCoat !== undefined ||
+    material.sheen !== undefined ||
+    material.anisotropy !== undefined ||
+    material.subsurface !== undefined ||
+    Reflect.get(material, "_renderFeatures") !== undefined
+  )
+    throw new Error(`PSO warmup mesh ${meshName} is not the qualified opaque PBR surface`);
+}
+
 export function normalizePsoBindGroupLayoutDescriptor(
   descriptor: GPUBindGroupLayoutDescriptor,
 ): CapturedBindGroupLayout {
@@ -384,21 +471,27 @@ function normalizeObservedStandardPipeline(
     fragmentModuleSha256 === "3c1588e59ae59ac98bfd6f15e69f4f0335e5e71207262ef0d6a3c44ab13ae7de";
   const shadowDepth =
     fragmentModuleSha256 === "398f5ad7c1c86d2b49c9fd1eba0c481657bf2dfffabbe16c33e5e1cddd8703af";
+  const pbr =
+    vertexModuleSha256 === PBR_VERTEX_WGSL_SHA256 &&
+    (fragmentModuleSha256 === PBR_FRAGMENT_WGSL_SHA256 ||
+      fragmentModuleSha256 === PBR_DEPTH_FRAGMENT_WGSL_SHA256);
+  const pbrDepth = pbr && fragmentModuleSha256 === PBR_DEPTH_FRAGMENT_WGSL_SHA256;
   if (
-    vertexModuleSha256 !== STANDARD_VERTEX_WGSL_SHA256 ||
-    (!receiver && !shadowDepth && fragmentModuleSha256 !== STANDARD_FRAGMENT_WGSL_SHA256)
+    !pbr &&
+    (vertexModuleSha256 !== STANDARD_VERTEX_WGSL_SHA256 ||
+      (!receiver && !shadowDepth && fragmentModuleSha256 !== STANDARD_FRAGMENT_WGSL_SHA256))
   ) {
     throw new Error("PSO warmup observed composed Standard WGSL drift");
   }
   if (
     fragment === undefined ||
-    (shadowDepth
+    (shadowDepth || pbrDepth
       ? fragment.targets.length !== 0
       : fragment.targets.length !== 1 || fragment.targets[0] == null)
   ) {
     throw new Error("PSO warmup Standard pipeline must have one color target");
   }
-  const color = fragment.targets[0];
+  const color = fragment?.targets[0];
   const depth = descriptor.depthStencil;
   if (depth === undefined) {
     throw new Error("PSO warmup Standard pipeline must have depth-stencil state");
@@ -443,14 +536,20 @@ function normalizeObservedStandardPipeline(
       topology: primitive?.topology ?? "triangle-list",
       unclippedDepth: primitive?.unclippedDepth ?? false,
     },
-    shader: {
-      family: "standard",
-      fragmentEntryPoint: fragment.entryPoint ?? "main",
-      materialFeatureKey: shadowDepth ? 262144 : 0,
-      meshFeatureKey: receiver ? 256 : 0,
-      variantKey: receiver ? "1e" : "",
-      vertexEntryPoint: descriptor.vertex.entryPoint ?? "main",
-    },
+    shader: pbr
+      ? {
+          ...(pbrDepth ? PBR_DEPTH_STATE : PBR_COLOR_STATE).shader,
+          vertexEntryPoint: descriptor.vertex.entryPoint ?? "main",
+          fragmentEntryPoint: fragment?.entryPoint ?? "main",
+        }
+      : {
+          family: "standard",
+          fragmentEntryPoint: fragment?.entryPoint ?? "main",
+          materialFeatureKey: shadowDepth ? 262144 : 0,
+          meshFeatureKey: receiver ? 256 : 0,
+          variantKey: receiver ? "1e" : "",
+          vertexEntryPoint: descriptor.vertex.entryPoint ?? "main",
+        },
     vertexBuffers: Array.from(buffers, (buffer) => {
       if (buffer === null) throw new Error("PSO warmup Standard vertex layout cannot be null");
       return {
@@ -553,14 +652,25 @@ function assertOnlyKeys(input: object, allowed: readonly string[], label: string
   }
 }
 
-function assertGreyboxMeshFeatureKeyZero(mesh: Mesh, allowReceiver = false): void {
+function assertGreyboxMeshFeatureKeyZero(
+  mesh: Mesh,
+  allowReceiver = false,
+  requireThinInstances = false,
+): void {
+  if (
+    requireThinInstances &&
+    (!mesh.thinInstances ||
+      mesh.thinInstances.colors != null ||
+      Reflect.get(mesh.thinInstances, "_gpuCullingEnabled") === true)
+  )
+    throw new Error(`PSO warmup mesh ${mesh.name} requires uncolored CPU thin instances`);
   const gpu = recordProperty(mesh, "_gpu");
   if (
     (mesh.receiveShadows && !allowReceiver) ||
     mesh.skeleton != null ||
     mesh.vat != null ||
     mesh.morphTargets != null ||
-    mesh.thinInstances != null ||
+    (mesh.thinInstances != null && !requireThinInstances) ||
     gpu.tangentBuffer != null ||
     gpu.colorBuffer != null ||
     gpu.uv2Buffer != null ||

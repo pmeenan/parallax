@@ -164,6 +164,17 @@ export interface RenderFrameSample {
     gpuTaskFrameIndex: number | null;
     gpuTaskStatus: string;
     droppedGpuTasks: number;
+    readonly pbrAssets?: Readonly<{
+      residentPlacementCount: number;
+      residentGroupCount: number;
+      visibleDrawGroupCount: number;
+      instanceMatrixCpuBytes: number;
+      instanceMatrixGpuBytes: number;
+      instanceDrawArgsGpuBytes: number;
+      visibleTriangleCount: number;
+      lodChanges: number;
+      placementSetupMs: number;
+    }>;
   }>;
   readonly durationMs: number;
   /** Legacy bounded perceived/display index; not an individual applied light intensity. */

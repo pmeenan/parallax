@@ -790,10 +790,10 @@ function exactPsoSnapshot(): PsoWarmupTelemetrySnapshot {
   return {
     buildCompatibilityDigest: identity.buildCompatibilityDigest,
     cacheHitCount: 1,
-    cacheMissCount: 3,
-    compiledCount: 3,
+    cacheMissCount: identity.entries.length,
+    compiledCount: identity.entries.length,
     contract: "pso-warmup-telemetry@1",
-    deferredCount: 3,
+    deferredCount: identity.entries.length,
     entries: Object.freeze(
       identity.entries.map((entry, index) =>
         Object.freeze({
@@ -809,14 +809,14 @@ function exactPsoSnapshot(): PsoWarmupTelemetrySnapshot {
     failure: null,
     failureCount: 0,
     maximumCompileDurationMs: 1,
-    queueHighWater: 3,
+    queueHighWater: identity.entries.length,
     releaseDigest: null,
-    requestedCount: 4,
+    requestedCount: identity.entries.length + 1,
     schemaVersion: 1,
     source: "privileged-embedded",
     state: "ready",
     totalDurationMs: 2,
-    traceEntryCount: 3,
+    traceEntryCount: identity.entries.length,
     traceSha256: identity.sha256,
   };
 }

@@ -414,6 +414,8 @@ function transferObserver(
   plannedReusedResourceIds: Set<string>,
   plannedPartialBytes: Map<string, number>,
 ): InstallerTransferObserver {
+  const completionBaseline = telemetry.completedResourceCount;
+  const verifiedBaseline = telemetry.verifiedBytes;
   return Object.freeze({
     checkpoint: (bytes: number) =>
       update({ checkpointedBytes: safeAdd(telemetry.checkpointedBytes, bytes) }),
@@ -446,8 +448,8 @@ function transferObserver(
         return false;
       }
       if (
-        telemetry.completedResourceCount !== telemetry.resourceCount ||
-        telemetry.verifiedBytes !== telemetry.totalBytes ||
+        telemetry.completedResourceCount - completionBaseline !== telemetry.resourceCount ||
+        telemetry.verifiedBytes - verifiedBaseline !== telemetry.totalBytes ||
         telemetry.completedResourceCount === 0 ||
         telemetry.verifiedBytes < bytes
       ) {

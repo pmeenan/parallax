@@ -66,8 +66,15 @@ accepted them.
   module-worker fixture. Preserve global lookup as a compatibility path, but fail with a
   worker-specific diagnostic instead of referencing `document` when injection is absent.
 - **Regression fixture:** UP-001 and UP-002 fixtures plus meshoptimizer 1.2.0's pinned
-  85-byte vertex-buffer vector. Parallax telemetry schema v8 reports all three decodes.
-- **Status:** candidate patch; not filed.
+  85-byte vertex-buffer vector. On 2026-09-05, Chrome 152.0.7977.54 loaded a canonical
+  meshopt + KTX2 GLB through unpatched Lite's public `loadGltf` in a module worker
+  using the existing bootstrap: one entity, no GPU validation error, no CDN request.
+  This verifies asset loading, not visual acceptance or every glTF extension.
+  [Evidence and reconstruction](../harness/results/upstream-lite-loader-2026-09-05/summary.md).
+- **Status:** not filed. A [minimal diagnostic draft](../harness/results/upstream-lite-loader-2026-09-05/worker-diagnostic.patch)
+  adds actionable missing-global errors to three exact-pin loader sources. It has
+  not been exercised as a patched upstream build and does not implement the proposed
+  typed setters. The existing injected path needs no compatibility shim.
 
 The local `canonicalMeshoptLayoutErrors` gate is intentionally project policy rather
 than an upstream patch: Babylon Lite's loader explicitly supports only canonical

@@ -25,6 +25,8 @@ export interface InstallerRepairCompletionCredit {
   readonly releaseDigest: string;
   readonly resourceCount: number;
   readonly totalBytes: number;
+  readonly lifetimeResourceCount: number;
+  readonly lifetimeVerifiedBytes: number;
 }
 
 export interface InstallerRepairWorkerOperationInput {
@@ -142,8 +144,8 @@ export function createInstallerRepairTransferObserver(
         snapshot.activeReleaseDigest !== completionCredit.releaseDigest ||
         snapshot.resourceCount !== completionCredit.resourceCount ||
         snapshot.totalBytes !== completionCredit.totalBytes ||
-        snapshot.completedResourceCount !== snapshot.resourceCount ||
-        snapshot.verifiedBytes !== snapshot.totalBytes ||
+        snapshot.completedResourceCount !== completionCredit.lifetimeResourceCount ||
+        snapshot.verifiedBytes !== completionCredit.lifetimeVerifiedBytes ||
         snapshot.completedResourceCount === 0 ||
         snapshot.verifiedBytes < bytes
       ) {
@@ -201,8 +203,8 @@ export function resolveInstallerRepairCompletionCredit(
     snapshot.activeReleaseDigest !== retained.releaseDigest ||
     snapshot.resourceCount !== retained.resourceCount ||
     snapshot.totalBytes !== retained.totalBytes ||
-    snapshot.completedResourceCount !== retained.resourceCount ||
-    snapshot.verifiedBytes !== retained.totalBytes
+    snapshot.completedResourceCount !== retained.lifetimeResourceCount ||
+    snapshot.verifiedBytes !== retained.lifetimeVerifiedBytes
   ) {
     throw new InstallerTransferError(
       "validator",

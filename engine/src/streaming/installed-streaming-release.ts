@@ -5,6 +5,7 @@ import {
   canonicalStreamingCellArtifactIdentity,
   canonicalStreamingDistrictIndexResourceId,
 } from "./streaming-cell-identity";
+import { expectedStreamingDependencyDecodedBytes } from "./streaming-dependency-contract";
 import type {
   StreamingCellIndexEntry,
   StreamingDependencyIndexEntry,
@@ -235,8 +236,11 @@ export function parseStreamingDistrictIndex(
         (resourceId) =>
           typeof resourceId !== "string" ||
           !resourceIds.has(resourceId) ||
-          !isVersionedIndexResource(
-            resources.find((resource) => resource.resourceId === resourceId),
+          !(
+            isVersionedIndexResource(
+              resources.find((resource) => resource.resourceId === resourceId),
+            ) ||
+            isLinearTextureRoot(resources.find((resource) => resource.resourceId === resourceId))
           ),
       )
     ) {
@@ -364,8 +368,20 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
       (Object.keys(candidate.decode).sort().join(",") === "colorSpace,format,height,width" ||
         (Object.keys(candidate.decode).sort().join(",") ===
           "colorSpace,format,height,version,width" &&
-          candidate.decode.version === 1)) &&
-      candidate.decode.colorSpace === "srgb" &&
+          candidate.decode.version === 1) ||
+        (Object.keys(candidate.decode).sort().join(",") ===
+          "colorSpace,format,height,mipLevelCount,version,width" &&
+          candidate.decode.version === 2 &&
+          positiveSafeInteger(candidate.decode.mipLevelCount) &&
+          candidate.decode.mipLevelCount ===
+            Math.floor(
+              Math.log2(
+                Math.max(candidate.decode.width as number, candidate.decode.height as number),
+              ),
+            ) +
+              1)) &&
+      (candidate.decode.colorSpace === "srgb" ||
+        (candidate.decode.version !== undefined && candidate.decode.colorSpace === "linear")) &&
       candidate.decode.format === "rgba8" &&
       positiveSafeInteger(candidate.decode.height) &&
       positiveSafeInteger(candidate.decode.width) &&
@@ -374,16 +390,20 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
         STREAMING_DEPENDENCY_DECODED_MAX_BYTES &&
       (candidate.path ===
         `immutable/representative-streaming-ktx2-${candidate.sha256 as string}.ktx2` ||
-        (candidate.decode.version === 1 &&
+        ((candidate.decode.version === 1 || candidate.decode.version === 2) &&
           candidate.path === `immutable/streaming-texture-${candidate.sha256 as string}.ktx2`))
     ) {
       resource = Object.freeze({
         bytes: candidate.bytes as number,
         decode: Object.freeze({
-          colorSpace: "srgb",
+          colorSpace: candidate.decode.colorSpace as "srgb" | "linear",
           format: "rgba8",
           height: candidate.decode.height as number,
-          ...(candidate.decode.version === 1 ? { version: 1 as const } : {}),
+          ...(candidate.decode.version === 1
+            ? { version: 1 as const }
+            : candidate.decode.version === 2
+              ? { version: 2 as const, mipLevelCount: candidate.decode.mipLevelCount as number }
+              : {}),
           width: candidate.decode.width as number,
         }),
         dependencies: Object.freeze([...dependencyIds]),
@@ -501,6 +521,7 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
     } else {
       throw new Error("District dependency resource format is invalid");
     }
+    expectedStreamingDependencyDecodedBytes(resource);
     ids.add(resource.resourceId);
     paths.add(resource.path);
     hashes.add(resource.sha256);
@@ -549,7 +570,17 @@ function versionedVertexMatchesIndex(
 function isVersionedTextureResource(
   resource: StreamingDependencyIndexEntry | undefined,
 ): resource is StreamingKtx2DependencyIndexEntry {
-  return resource?.format === "ktx2" && resource.decode.version === 1;
+  return (
+    resource?.format === "ktx2" && (resource.decode.version === 1 || resource.decode.version === 2)
+  );
+}
+
+function isLinearTextureRoot(resource: StreamingDependencyIndexEntry | undefined): boolean {
+  return (
+    resource?.format === "ktx2" &&
+    resource.decode.version !== undefined &&
+    resource.decode.colorSpace === "linear"
+  );
 }
 
 function validateCellDependencyTopology(
@@ -560,6 +591,7 @@ function validateCellDependencyTopology(
 ): void {
   for (const rootId of roots) {
     const index = resources.find((resource) => resource.resourceId === rootId);
+    if (isLinearTextureRoot(index)) continue;
     if (!isVersionedIndexResource(index)) {
       throw new Error(`District cell ${String(cellId)} dependency root is not an index resource`);
     }

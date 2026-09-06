@@ -64,8 +64,8 @@ describe("streaming dependency contract", () => {
     expect(planStreamingCellMemoryReservation(entry, [texture, mesh])).toEqual({
       decodedBytes: 252,
       encodedBytes: 116,
-      stagingBytes: 168,
-      totalBytes: 536,
+      stagingBytes: 152,
+      totalBytes: 520,
     });
     expect(() =>
       planStreamingCellMemoryReservation(

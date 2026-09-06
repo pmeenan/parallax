@@ -144,6 +144,8 @@ describe("installer repair integration", () => {
         releaseDigest: staged.releaseDigest,
         resourceCount: resources.length,
         totalBytes,
+        lifetimeResourceCount: transfer.completedResourceCount,
+        lifetimeVerifiedBytes: transfer.verifiedBytes,
       },
     );
     await repairInstalledRelease({
@@ -788,6 +790,8 @@ describe("installer repair integration", () => {
           releaseDigest: staged.releaseDigest,
           resourceCount: opfsResources.length,
           totalBytes: parsed.summary.bytesByTarget.opfs,
+          lifetimeResourceCount: publicTransfer.completedResourceCount,
+          lifetimeVerifiedBytes: publicTransfer.verifiedBytes,
         },
       );
       const signal = new AbortController().signal;
@@ -1396,6 +1400,8 @@ function sharedRepairTelemetry(
             releaseDigest,
             resourceCount: resources.length,
             totalBytes,
+            lifetimeResourceCount: snapshot.completedResourceCount,
+            lifetimeVerifiedBytes: snapshot.verifiedBytes,
           }
         : null,
     ),

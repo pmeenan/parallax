@@ -19,6 +19,10 @@ export interface EnvironmentLightingSample {
 
 const ANIMATED_ENVIRONMENT_LIGHTING_PHASE_STEPS = 4_096;
 
+// Bounded shared-light calibration: scale ambient equally across weather states;
+// retain sun intensities, colors, and day/night interpolation.
+const AMBIENT_CALIBRATION = 0.25 / 0.88;
+
 const WEATHER = Object.freeze({
   clear: Object.freeze({
     ambient: 0.88,
@@ -67,7 +71,7 @@ export function sampleEnvironmentLighting(
   const highSun = smoothstep(0.04, 0.78, sunElevation);
   const horizonGlow = daylight * (1 - highSun);
   const sunIntensity = weatherProfile.direct * directDaylight * (0.2 + 0.8 * directElevation);
-  const ambientIntensity = weatherProfile.ambient * (0.12 + 0.88 * daylight);
+  const ambientIntensity = weatherProfile.ambient * AMBIENT_CALIBRATION * (0.12 + 0.88 * daylight);
   const skyDay = mixRgb(STORM_TINT, DAY_SKY, weatherProfile.saturation);
   const skyColor = mixRgb(NIGHT_SKY, skyDay, daylight);
   const groundDay = mixRgb(STORM_TINT, DAY_GROUND, weatherProfile.saturation);

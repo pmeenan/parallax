@@ -16,6 +16,8 @@ import type {
 import { streamingResourceCacheKey } from "./streaming-resource-key";
 
 const MSC_TRANSCODER_WASM_ARTIFACT = "__MSC_TRANSCODER_WASM_ARTIFACT__";
+const UASTC_RGBA_SRGB_WASM_ARTIFACT = "__UASTC_RGBA_SRGB_WASM_ARTIFACT__";
+const UASTC_RGBA_UNORM_WASM_ARTIFACT = "__UASTC_RGBA_UNORM_WASM_ARTIFACT__";
 
 export type { RepresentativeCompressedStreamingFixtures };
 export { representativeCompressedStreamingFixtures };
@@ -46,6 +48,14 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
   KTX2DecoderPackage.WASMMemoryManager.LoadBinariesFromCurrentThread = true;
   KTX2DecoderPackage.MSCTranscoder.WasmModuleURL = new URL(
     MSC_TRANSCODER_WASM_ARTIFACT,
+    import.meta.url,
+  ).href;
+  KTX2DecoderPackage.LiteTranscoder_UASTC_RGBA_SRGB.WasmModuleURL = new URL(
+    UASTC_RGBA_SRGB_WASM_ARTIFACT,
+    import.meta.url,
+  ).href;
+  KTX2DecoderPackage.LiteTranscoder_UASTC_RGBA_UNORM.WasmModuleURL = new URL(
+    UASTC_RGBA_UNORM_WASM_ARTIFACT,
     import.meta.url,
   ).href;
 
@@ -159,21 +169,45 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
         decoded.height !== dependency.descriptor.decode.height ||
         base.width !== dependency.descriptor.decode.width ||
         base.height !== dependency.descriptor.decode.height ||
-        base.data.byteLength !== expectedDecodedBytes
+        base.data.byteLength !== decoded.width * decoded.height * 4
       ) {
         throw new Error(`KTX2 dependency ${dependency.descriptor.resourceId} did not decode RGBA8`);
       }
       const rgba = base.data.slice();
+      const mipmaps =
+        dependency.descriptor.decode.version === 2
+          ? decoded.mipmaps.map((mip, level) => {
+              if (
+                mip.data === null ||
+                mip.width !== Math.max(1, Math.floor(decoded.width / 2 ** level)) ||
+                mip.height !== Math.max(1, Math.floor(decoded.height / 2 ** level)) ||
+                mip.data.byteLength !== mip.width * mip.height * 4
+              )
+                throw new Error("KTX2 decoded mip dimensions are invalid");
+              return Object.freeze({
+                width: mip.width,
+                height: mip.height,
+                rgba: level === 0 ? rgba.buffer : mip.data.slice().buffer,
+              });
+            })
+          : undefined;
+      if (
+        mipmaps !== undefined &&
+        (mipmaps.length !== dependency.descriptor.decode.mipLevelCount ||
+          mipmaps.reduce((sum, mip) => sum + mip.rgba.byteLength, 0) !== expectedDecodedBytes)
+      )
+        throw new Error("KTX2 decoded mip chain is incomplete");
       return Object.freeze({
         cacheKey: streamingResourceCacheKey(dependency.descriptor),
         descriptor: dependency.descriptor,
         decodeMs: performance.now() - startedAt,
-        decodedBytes: rgba.byteLength,
+        decodedBytes: expectedDecodedBytes,
         encodedBytes: dependency.bytes.byteLength,
         format: "ktx2" as const,
         height: decoded.height,
         resourceId: dependency.descriptor.resourceId,
         rgba: rgba.buffer,
+        ...(mipmaps === undefined ? {} : { mipmaps: Object.freeze(mipmaps) }),
         width: decoded.width,
       });
     },

@@ -30,10 +30,11 @@ export interface StreamingCellIndexEntry {
 export interface StreamingKtx2DependencyIndexEntry {
   readonly bytes: number;
   readonly decode: Readonly<{
-    readonly colorSpace: "srgb";
+    readonly colorSpace: "srgb" | "linear";
     readonly format: "rgba8";
     readonly height: number;
-    readonly version?: 1;
+    readonly version?: 1 | 2;
+    readonly mipLevelCount?: number;
     readonly width: number;
   }>;
   readonly dependencies: readonly string[];
@@ -317,6 +318,7 @@ export interface DecodedKtx2Dependency {
   readonly height: number;
   readonly resourceId: string;
   readonly rgba: ArrayBuffer;
+  readonly mipmaps?: readonly Readonly<{ width: number; height: number; rgba: ArrayBuffer }>[];
   readonly width: number;
 }
 

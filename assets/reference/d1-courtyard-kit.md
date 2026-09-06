@@ -1,7 +1,12 @@
 # D1 courtyard kit — draft v1
 
-**Status:** implementation brief; human artistic acceptance pending. No binary kit
-assets, activated binary QA, or runtime integration are claimed by this document.
+**Status:** implementation brief; human artistic acceptance pending. Paving has an
+admitted binary prototype and installed runtime path; the individual-stone correction
+below is paused after rejected source previews. Complete the
+[game-wide concept-art program](concept-art-program.md) and select its courtyard,
+paving, material and assembly targets before further modeling. Other kit pieces remain
+proposals. Exact active QA limits live in
+`assets/qa/`, and current implementation/evidence status lives in `docs/plan.md`.
 Visual reference: [paired sunny/gloomy courtyard](d1-courtyard-sunny-gloomy.png),
 endorsed by the human as the quality benchmark, not as finished runtime acceptance.
 The reference is an appearance target, not a replacement world layout. Follow
@@ -20,6 +25,26 @@ flat toy-like materials or simplified decorative substitutes. Preserve readable
 forms, restrained edge wear and saturated daylight; avoid uniformly brown/gray
 surfaces or ornament on every module. The proposed limits below must support this
 quality target; reconsider a limiting proposal rather than accept visibly cheap art.
+
+### First-asset correction: individual paving stones
+
+The repeated 2 m surface is superseded as the target strategy by a reusable stone
+library and controlled nonrepeating placement. First prove a 4×4 m courtyard section
+and terrain fitting on a slope. Individual outlines should read as quarried and worn,
+with broad relatively calm tops, localized pits/chips, irregular shoulders, and
+modest height differences. Avoid equally noisy surfaces, identical photographic
+stamps, continuous courses and random scattered boulders. Small infill stones close
+gaps; earthy joints contain varied fine aggregate and sparse low vegetation.
+Use original or rights-reviewed generated/photo-based material maps, targeting color
+without directional lighting; the first procedural-only surface failed evaluation.
+The [generated limestone surface](d1-paving-clean/single-surface-v1.md) is selected
+after comparison with the [worn-rock proof](d1-paving-clean/worn-rock-material.md).
+The generated color is not calibrated PBR data; authored geometry supplies macro
+relief and restrained original normals supply fine relief. Scan maps are excluded.
+Preserve stone geometry and transforms separately for shared runtime instancing;
+terrain fitting rotates/translates rigid stones instead of bending the complete patch.
+The first source library proposes eight variants, with actual limits declared in its
+QA configuration. Visual inspection in the installed renderer remains required.
 
 Sunny and gloomy views use the same geometry and material set. Lighting supplies
 the mood change; do not paint directional shadows or ambient darkness into albedo.
@@ -47,7 +72,10 @@ without interpenetrating decorative trim; avoid unique materials per instance.
 | Castle silhouette group | Existing castle footprint | Preserve authored location, moat clearance and recognizable towers |
 
 Place the first paving panel on a verified walkable village patch. Fit decorative
-geometry to existing terrain/collision; no new traversable raised surface. Choose
+geometry to terrain/collision; no new traversable raised surface. The periodic paving
+stage deliberately levels a local courtyard pad at the existing anchor elevation,
+updating visual terrain and collision together because the six-metre footprint spans
+120 mm of ground variation. Record the sample-grid extent in the stage evidence. Choose
 the courtyard footprint and world transforms from actual terrain and route data
 before assembly. A reference-image well does not relocate the existing village
 catacomb entrance. Collision-changing pieces require an explicit matching authored

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { createStreamingBatchBudget } from "../src/streaming/streaming-batch-budget";
 import {
   executeStreamingBatchCacheTransaction,
   planStreamingBatch,
+  streamingBatchDemandStagingBytes,
 } from "../src/streaming/streaming-batch-cache-transaction";
 import { expectedStreamingDependencyGpuBytes } from "../src/streaming/streaming-cache-correlation";
 import type {
@@ -36,6 +38,58 @@ const resources = Object.freeze([
 ]) satisfies readonly StreamingDependencyIndexEntry[];
 
 describe("streaming batch cache transaction", () => {
+  it("still rejects a cohort whose retained outputs exceed the unchanged staging cap", () => {
+    const large = Array.from({ length: 6 }, (_, index) => ({
+      bytes: 12,
+      format: "meshopt" as const,
+      path: "large.meshopt",
+      resourceId: `large-${index}`,
+      sha256: String(index).repeat(64),
+      dependencies: [],
+      decode: { count: 2_000_000, mode: "ATTRIBUTES" as const, stride: 12 as const },
+    }));
+    const entry: StreamingCellIndexEntry = {
+      bytes: 100,
+      cellId: "large",
+      coordinate: [0, 0],
+      path: "large.cell",
+      sha256: "d".repeat(64),
+      dependencies: large.map((r) => r.resourceId),
+    };
+    const bytes = streamingBatchDemandStagingBytes(
+      planStreamingBatch([entry], large, 1),
+      createStreamingResourceCache(),
+    );
+    expect(bytes).toBeGreaterThan(134_217_728);
+    expect(createStreamingBatchBudget().reserve(0, bytes, 134_217_728)).toBeNull();
+  });
+  it("reserves retained output plus per-cell decoder scratch only for first misses", () => {
+    const entry: StreamingCellIndexEntry = {
+      bytes: 100,
+      cellId: "a",
+      dependencies: ["mesh"],
+      coordinate: [0, 0],
+      path: "a.cell",
+      sha256: "c".repeat(64),
+    };
+    const plans = planStreamingBatch([entry, { ...entry, cellId: "b" }], resources, 1);
+    const cache = createStreamingResourceCache<DecodedStreamingDependency>();
+    // 800 JSON + 42 encoded dependency views + 52 retained output +36 peak scratch.
+    expect(streamingBatchDemandStagingBytes(plans, cache)).toBe(930);
+    for (const resource of resources) cache.acquire(resource);
+    expect(streamingBatchDemandStagingBytes(plans, cache)).toBe(800);
+    // Different cells with distinct work each retain their own peak scratch.
+    const separate = [
+      { ...entry, dependencies: ["texture"] },
+      { ...entry, cellId: "b" },
+    ];
+    expect(
+      streamingBatchDemandStagingBytes(
+        planStreamingBatch(separate, resources, 2),
+        createStreamingResourceCache(),
+      ),
+    ).toBe(946);
+  });
   it("executes installed first-nine miss/hit accounting and reverses a post-commit rejection", async () => {
     const entries = Object.freeze(
       Array.from({ length: 9 }, (_, index) =>

@@ -1,5 +1,14 @@
 import { createStandardMaterial, type EngineContext, type Mesh } from "@babylonjs/lite";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.hoisted(() => {
+  // The pinned low-level shader composer reads WebGPU's immutable stage flags at import.
+  Object.defineProperty(globalThis, "GPUShaderStage", {
+    configurable: true,
+    value: { VERTEX: 1, FRAGMENT: 2, COMPUTE: 4 },
+  });
+});
+
 import {
   createEmbeddedPsoWarmupTrace,
   createPsoWarmupTrace,
@@ -17,18 +26,51 @@ import {
   normalizePsoBindGroupLayoutDescriptor,
   observeStandardOpaquePsoRegistration,
 } from "../src/render/pso-warmup-babylon-observer";
+import { createStreamedPbrMaterial } from "../src/render/streamed-pbr-asset";
 
 describe("PSO warmup trace contract", () => {
+  it("rejects invalid GPU handles even when the pipeline descriptor matches exactly", async () => {
+    for (const mutation of ["gpu-validation", "shader-diagnostics"] as const) {
+      const boundary = await createBoundary(mutation);
+      await expect(boundary.register()).rejects.toThrow(/GPU validation failed.*injected/);
+      expect(boundary.device.createRenderPipeline).toBe(boundary.originalCreateRenderPipeline);
+    }
+  });
   it("observes all three pinned shipping pipelines and rejects an omitted depth pass", async () => {
     const complete = await createCsmBoundary();
     const observed = await complete.observation.registerAll([complete.mesh], complete.compile);
     expect([...observed]).toEqual(
-      createPsoWarmupTrace().entries.map((entry) => [entry.id, entry.stateDigest]),
+      createPsoWarmupTrace()
+        .entries.slice(0, 3)
+        .map((entry) => [entry.id, entry.stateDigest]),
     );
     const missing = await createCsmBoundary(true);
     await expect(missing.observation.registerAll([missing.mesh], missing.compile)).rejects.toThrow(
       /standard-csm-depth.*observed 0/,
     );
+  });
+  it("observes exact PBR surface and shadow pipelines", async () => {
+    const boundary = await createCsmBoundary();
+    const stone = await pbrBoundary(boundary.device);
+    const observed = await boundary.observation.registerAll([boundary.mesh], async () => {
+      boundary.compile();
+      stone.compile();
+    }, [stone.mesh]);
+    expect([...observed]).toEqual(
+      createPsoWarmupTrace().entries.map((entry) => [entry.id, entry.stateDigest]),
+    );
+  });
+  it("rejects missing PBR shadow pipelines and changed composed sources", async () => {
+    for (const mutation of ["missing-depth", "source"] as const) {
+      const boundary = await createCsmBoundary();
+      const stone = await pbrBoundary(boundary.device, mutation);
+      await expect(
+        boundary.observation.registerAll([boundary.mesh], async () => {
+          boundary.compile();
+          stone.compile();
+        }, [stone.mesh]),
+      ).rejects.toThrow(mutation === "source" ? /WGSL drift/ : /pbr-csm-depth.*observed 0/);
+    }
   });
   it("keeps bounded failure details idempotent at whitespace truncation boundaries", () => {
     for (let prefixLength = 0; prefixLength < 240; prefixLength += 1) {
@@ -422,6 +464,8 @@ describe("PSO warmup trace contract", () => {
 });
 
 type BoundaryMutation =
+  | "gpu-validation"
+  | "shader-diagnostics"
   | "color-target"
   | "depth-target"
   | "fragment-shader"
@@ -440,6 +484,8 @@ type BoundaryMutation =
   | "vertex-shader";
 
 interface FakeDevice {
+  pushErrorScope(filter: GPUErrorFilter): void;
+  popErrorScope(): Promise<GPUError | null>;
   createBindGroupLayout(descriptor: GPUBindGroupLayoutDescriptor): GPUBindGroupLayout;
   createPipelineLayout(descriptor: GPUPipelineLayoutDescriptor): GPUPipelineLayout;
   createRenderPipeline(descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
@@ -450,10 +496,15 @@ function createFakeDevice(): FakeDevice {
   let handle = 0;
   const objectHandle = <T extends object>(): T => ({ handle: handle++ }) as T;
   return {
+    pushErrorScope: () => undefined,
+    popErrorScope: async () => null,
     createBindGroupLayout: () => objectHandle<GPUBindGroupLayout>(),
     createPipelineLayout: () => objectHandle<GPUPipelineLayout>(),
     createRenderPipeline: () => objectHandle<GPURenderPipeline>(),
-    createShaderModule: () => objectHandle<GPUShaderModule>(),
+    createShaderModule: () => ({
+      ...objectHandle<GPUShaderModule>(),
+      getCompilationInfo: async () => ({ messages: [] }),
+    }),
   };
 }
 
@@ -483,6 +534,15 @@ async function createBoundary(mutation?: BoundaryMutation): Promise<{
   register(): Promise<string>;
 }> {
   const device = createFakeDevice();
+  if (mutation === "gpu-validation")
+    device.popErrorScope = async () => ({ message: "injected invalid pipeline" });
+  if (mutation === "shader-diagnostics")
+    device.createShaderModule = () =>
+      ({
+        getCompilationInfo: async () => ({
+          messages: [{ type: "error", lineNum: 1, linePos: 1, message: "injected shader error" }],
+        }),
+      }) as unknown as GPUShaderModule;
   const originalCreateRenderPipeline = device.createRenderPipeline;
   const engine = engineForDevice(device);
   const observation = observeStandardOpaquePsoRegistration(engine);
@@ -662,10 +722,12 @@ async function createCsmBoundary(omitDepth = false) {
   });
   return {
     observation,
+    device,
     mesh,
     compile: () => {
       for (const entry of createPsoWarmupTrace().entries.slice(0, omitDepth ? 2 : 3)) {
         const state = entry.state;
+        if (state.shader.family !== "standard") throw new Error("Expected Standard fixture");
         const composed = composer.composeStandardShader(
           state.shader.materialFeatureKey,
           state.shader.meshFeatureKey,
@@ -680,6 +742,104 @@ async function createCsmBoundary(omitDepth = false) {
           layout: device.createPipelineLayout({ bindGroupLayouts: groups }),
           vertex: {
             module: device.createShaderModule({ code: composed._vertexWGSL }),
+            entryPoint: "main",
+            buffers: composed._vertexBufferLayouts,
+          },
+          fragment: {
+            module: device.createShaderModule({ code: composed._fragmentWGSL }),
+            entryPoint: "main",
+            targets: state.colorTarget === null ? [] : [{ format: state.colorTarget.format }],
+          },
+          depthStencil: state.depthStencil,
+          multisample: state.multisample,
+          primitive: { topology: "triangle-list", cullMode: "back", frontFace: "ccw" },
+        });
+      }
+    },
+  };
+}
+
+async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "source") {
+  const texture = {} as import("@babylonjs/lite").Texture2D;
+  const material = createStreamedPbrMaterial(
+    { baseColor: texture, normal: texture, orm: texture },
+    {
+      baseColorFactor: [1, 1, 1],
+      roughnessFactor: 1,
+      metallicFactor: 0,
+      normalScale: 0.35,
+    },
+  );
+  const mesh = {
+    material,
+    name: "pbr",
+    _gpu: {},
+    receiveShadows: true,
+    thinInstances: {},
+  } as unknown as Mesh;
+  // These exact-pin source composers are the producer of the observed live WGSL.
+  // @ts-expect-error Pinned dependency implementation does not ship declarations.
+  const composer = await import("../node_modules/@babylonjs/lite/lib/material/pbr/pbr-compose.js");
+  const lights = await import(
+    // @ts-expect-error Pinned dependency implementation does not ship declarations.
+    "../node_modules/@babylonjs/lite/lib/material/pbr/fragments/multilight-wgsl.js"
+  );
+  const csm = await import(
+    // @ts-expect-error Pinned dependency implementation does not ship declarations.
+    "../node_modules/@babylonjs/lite/lib/material/pbr/fragments/pbr-csm-shadow-fragment.js"
+  );
+  const thin = await import(
+    // @ts-expect-error Exact-pin private shader fragment has no declarations.
+    "../node_modules/@babylonjs/lite/lib/shader/fragments/thin-instance-fragment.js"
+  );
+  const compose = composer.createPbrComposer({
+    _createThinInstanceFragment: thin.createThinInstanceFragment,
+    _multiLightWGSL: lights.MULTI_LIGHT_STRUCTS() + lights.COMPUTE_PBR_LIGHT,
+    _multiLightLoop: lights.getMultiLightLoop(),
+    _createPbrShadowFragment: csm.createPbrCsmShadowFragment,
+    _shadowLights: [{ lightIndex: 1 }],
+  }) as (
+    features: number,
+    features2: number,
+    meshFeatures: number,
+    sceneFeatures: number,
+    lightMode: number,
+  ) => {
+    _vertexWGSL: string;
+    _fragmentWGSL: string;
+    _meshBGLDescriptor: GPUBindGroupLayoutDescriptor;
+    _shadowBGLDescriptor?: GPUBindGroupLayoutDescriptor;
+    _vertexBufferLayouts: GPUVertexBufferLayout[];
+  };
+  const sceneLayout = device.createBindGroupLayout({
+    entries: [
+      { binding: 0, visibility: 3, buffer: { type: "uniform" } },
+      { binding: 1, visibility: 2, buffer: { type: "uniform" } },
+    ],
+  });
+  return {
+    mesh,
+    compile() {
+      for (const entry of createPsoWarmupTrace().entries.slice(3)) {
+        const state = entry.state;
+        const depth = state.colorTarget === null;
+        if (depth && mutation === "missing-depth") continue;
+        const composed = compose(
+          1 | (1 << 15) | (1 << 17),
+          (1 << 12) | (depth ? 1 << 15 : 0),
+          (depth ? 0 : 256) | 16,
+          0,
+          2,
+        );
+        const groups = [sceneLayout, device.createBindGroupLayout(composed._meshBGLDescriptor)];
+        if (composed._shadowBGLDescriptor)
+          groups.push(device.createBindGroupLayout(composed._shadowBGLDescriptor));
+        device.createRenderPipeline({
+          layout: device.createPipelineLayout({ bindGroupLayouts: groups }),
+          vertex: {
+            module: device.createShaderModule({
+              code: composed._vertexWGSL + (mutation === "source" ? "\n// drift" : ""),
+            }),
             entryPoint: "main",
             buffers: composed._vertexBufferLayouts,
           },

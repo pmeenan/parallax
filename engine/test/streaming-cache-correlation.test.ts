@@ -47,6 +47,43 @@ function snapshots(): readonly [StreamingResourceCacheTelemetry, StreamingResour
 }
 
 describe("streaming cache correlation", () => {
+  it("correlates and frees every uploaded mip instead of only the base texture", () => {
+    const baseTexture = descriptors[0];
+    if (baseTexture?.format !== "ktx2") throw new Error("Texture fixture is absent");
+    const descriptor: StreamingDependencyIndexEntry = {
+      ...baseTexture,
+      decode: {
+        colorSpace: "linear",
+        format: "rgba8",
+        height: 4,
+        width: 4,
+        version: 2,
+        mipLevelCount: 3,
+      },
+    };
+    const cpu = createStreamingResourceCache<object>();
+    const gpu = createStreamingResourceCache<object>();
+    const key = cpu.acquire(descriptor).key;
+    cpu.fulfill(key, {});
+    gpu.acquire(descriptor);
+    gpu.fulfill(key, {});
+    // Independent upload total: 4x4 + 2x2 + 1x1 texels, each RGBA8.
+    gpu.setOwnedBytes(key, 0, 84);
+    expect(expectedStreamingDependencyGpuBytes(descriptor)).toBe(84);
+    expect(compatibleStreamingCacheSnapshots(cpu.snapshot(), gpu.snapshot(), [descriptor])).toBe(
+      true,
+    );
+    const prior = gpu.snapshot();
+    gpu.setOwnedBytes(key, 0, 64);
+    expect(compatibleStreamingCacheSnapshots(cpu.snapshot(), gpu.snapshot(), [descriptor])).toBe(
+      false,
+    );
+    gpu.release(key);
+    expect(expectedStreamingEvictionFreedGpuBytes(7, prior, gpu.snapshot())).toBe(91);
+    expect(() => requireExactStreamingEvictionFreedGpuBytes(71, 7, prior, gpu.snapshot())).toThrow(
+      /inexact/,
+    );
+  });
   it("accepts exact authoritative identities and rejects forged aggregate or resource bytes", () => {
     const [cpu, gpu] = snapshots();
     expect(compatibleStreamingCacheSnapshots(cpu, gpu, descriptors)).toBe(true);

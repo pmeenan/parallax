@@ -1,3 +1,5 @@
+import { type PbrAssetPlacement, validatePbrAssetPlacements } from "./pbr-asset";
+
 export type WorldVec3 = readonly [number, number, number];
 
 /** Normalized solar phase: 0 dawn, 0.25 noon, 0.5 dusk, and 0.75 midnight. */
@@ -80,6 +82,7 @@ export interface GreyboxCollisionPayload {
 }
 
 export interface GreyboxCell {
+  readonly pbrAssets?: readonly PbrAssetPlacement[];
   readonly bounds: WorldBounds;
   readonly collision: GreyboxCollisionPayload;
   readonly coordinate: readonly [number, number];
@@ -275,6 +278,7 @@ export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorld
   let colliderCount = 0;
   let heightSampleCount = 0;
   for (const cell of district.cells) {
+    if (cell.pbrAssets !== undefined) validatePbrAssetPlacements(cell.pbrAssets, cell.bounds);
     assertUnique(cell.id, cellIds, "cell");
     cellsById.set(cell.id, cell);
     validateVec3(cell.bounds.minimum, `cell ${cell.id} bounds.minimum`);
