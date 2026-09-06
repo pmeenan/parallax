@@ -135,6 +135,10 @@ the engine decision and assume Unity). Never cite them as a source of truth.
     build outputs, tests, and routine checks. Keep the evidence in decisions, findings,
     results, and git history; see
     [docs/workflow.md](docs/workflow.md#close-experiments-cleanly).
+12. **Use local creative tools.** The Blender MCP server is available locally; use it
+    for 3D modeling. Generate images with the agent's image-generation capabilities
+    (`imagegen` in Codex; Nano Banana Pro in Antigravity), rather than pulling images
+    from the internet.
 
 ## Current status
 
