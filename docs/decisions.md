@@ -28,6 +28,38 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-188: Commit concept-art and reference originals in git (2026-09-05, accepted; scopes D-186 and the assets binary rule)
+
+**Decision:** generated concept images, contact sheets and their target records for
+the D-187 program are committed in git under `assets/reference/` at full resolution,
+with SHA-256 hashes recorded in the target records. D-186's ignored content-addressed
+`assets/library/objects/` store and checked-in manifests remain the path for admitted
+library binaries and reconstructable source binaries only; they do not apply to
+reference material. Third-party photographs and motion footage enter the repository
+the same way once rights review clears them; uncleared sources stay out of the repo
+with URL and hash recorded in the target record. No Git LFS or external mirror is
+introduced; adopting one is a new decision.
+
+**Context:** the [target catalog](../assets/reference/concept-art-catalog.md) holds
+about 300 targets, each needing several images at roughly 3 MB, so the program adds
+gigabytes to the repository. Existing practice already allowed reference images in git
+([d1-courtyard.md](../assets/reference/d1-courtyard.md)) but only for a handful of
+files, while the earlier lean-repository preference (raw harness data reverted in
+July 2026) pointed the other way. The human resolved it on 2026-09-05: the repository
+will carry large assets because a AAA-scope game needs them. Reference imagery is a
+record of creative decisions with no deterministic reconstruction path, and provenance,
+critique and rejected alternatives must stay beside the images they describe.
+
+**Consequences:** clone size grows by gigabytes; agents and CI may use shallow or
+partial clones. `assets/AGENTS.md` rule 6 is rescoped to library and source binaries.
+Reference material remains unloadable by engine/game code, does not bypass the QA gate,
+and does not establish rights clearance. Derived harness evidence keeps its existing
+lean handling; this entry covers creative assets only.
+
+**Reopen if:** repository size makes clones or hosting impractical, or the hosting
+provider's current repository or file-size limits are approached; then evaluate LFS or
+a mirrored store with checked-in hashes.
+
 ## D-187: Establish broad concept and behavior references before further asset iteration (2026-09-05, accepted)
 
 **Decision:** insert the [game-wide concept-art program](../assets/reference/concept-art-program.md)

@@ -1,6 +1,7 @@
 # Game concept art and visual targets
 
-**Status: next creative work, not yet generated or approved (2026-09-05).**
+**Status: initial [target catalog](concept-art-catalog.md) prepared; new concepts not
+yet generated or approved (2026-09-05).**
 D-187 inserts this stage now, before further cobblestone modeling or other asset
 iteration. The existing paired courtyard remains the endorsed quality anchor; the
 latest individual-stone previews were rejected. Technical installer/streaming closure
@@ -26,9 +27,10 @@ do not redesign geography to reproduce an attractive composition.
 
 ## Coverage inventory
 
-Create a catalog before generation. Give each subject a stable target ID, scope
-(current/deferred/excluded), source feature or game-design link, required views/states,
-and status (missing/draft/selected/approved/rejected). Expand every row below into
+Maintain the [target catalog](concept-art-catalog.md) before generation. Give each
+subject a stable target ID, scope (current/deferred/excluded), source feature or
+game-design link, required views/states, and status
+(missing/draft/selected/approved/rejected). Expand every row below into
 named targets; a row is a coverage family, not one image that completes the family.
 Map every visual feature and planned physics behavior to a target or an explicit
 not-applicable/excluded rationale. Unresolved subjects stay visibly missing.
@@ -55,10 +57,17 @@ not-applicable/excluded rationale. Unresolved subjects stay visibly missing.
    family. Reuse selected references in subsequent prompts to preserve the same place,
    construction, characters and scale across views and weather.
 3. Generate environment, asset and character sheets, then effect and physics boards.
-   Initial planning envelope: eight batches of roughly 6–12 images/sheets (48–96 total),
-   up to two generation/review passes and 90 minutes of active work per batch. Report
-   generation waiting separately. These are planning allowances, not an image quota
-   or a quality waiver; extend explicitly for named missing/failed targets.
+   There is no total image limit or fixed batch count (human direction, 2026-09-05).
+   Coverage, coherence and artistic usefulness determine the collection's size;
+   each target can require multiple alternatives, views, states and detail sheets.
+   Work in manageable batches, ordinarily 6–12 images/sheets, with up to two
+   generation/review passes and 90 minutes of active work per batch. Report generation
+   waiting separately. These local review allowances keep work inspectable; they do
+   not cap the program or waive quality. Extend a batch explicitly for named unresolved
+   targets, and schedule further batches for remaining catalog coverage. Expect the
+   program's size to follow from the catalog: about 300 targets, each needing several
+   images, implies on the order of a hundred or more reviewed batches. The whole
+   catalog is generated and reviewed before any asset iteration resumes.
 4. Curate contact sheets and a short critique: what each image establishes, physical
    inconsistencies, alternatives rejected, and remaining gaps. Seek human artistic
    selection in manageable batches; do not wait until dozens of inconsistent images
@@ -93,8 +102,8 @@ they cannot validate conservation, collision response or simulation stability.
 
 ## Catalog and comparison contract
 
-Store the catalog and approved briefs under `assets/reference/`; retain image originals
-and motion sources under the existing binary/provenance policy. Each target record has:
+Store the catalog, approved briefs, image originals and contact sheets in git under
+`assets/reference/` (D-188); motion sources follow their rights and size handling. Each target record has:
 
 - ID, subject, district/feature, scope and acceptance status; links to chosen images,
   alternatives and source footage, with durable file locations and hashes.
@@ -118,7 +127,8 @@ acceptance. Do not lower targets silently to match the implementation.
 
 ## Exit checklist
 
-- [ ] Coverage catalog reconciled against the game, effects and physics plans.
+- [x] Initial [coverage catalog](concept-art-catalog.md#coverage-reconciliation)
+      reconciled against the game, effects and physics plans; keep it current as scope changes.
 - [ ] Extensive coherent scene, asset and character references generated and curated.
 - [ ] Every planned effect/physics family has a temporal/behavior target; deferred and
   excluded subjects are labeled, and ungrounded physical assumptions remain explicit.

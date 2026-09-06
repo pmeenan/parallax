@@ -341,10 +341,12 @@ Use the bounded visual-work procedure in [workflow.md](workflow.md#bounded-visua
 
 0. **Concept art and comparison targets — next creative step (D-187).** Complete the
    [game-wide reference program](../assets/reference/concept-art-program.md) now,
-   before further cobblestone or other asset iteration. Generate extensive coherent
-   environment/asset/character concepts and effect/physics target sheets, including
-   temporal boards and grounded motion references. Review the coverage and select
-   targets with the human. Technical installer/streaming closure remains separate;
+   before further cobblestone or other asset iteration. The
+   [prioritized target catalog](../assets/reference/concept-art-catalog.md) holds the
+   initial coverage inventory; generation and artistic selection remain open. Generate
+   the entire catalog, with no total image cap, as coherent environment/asset/character
+   concepts and effect/physics target sheets, including temporal boards and grounded
+   motion references. Review the coverage and select targets with the human. Technical installer/streaming closure remains separate;
    Blender MCP setup is handled separately and does not block concept generation.
 1. **Finished daylight courtyard.** Establish the asset pipeline and material/shadow
    baseline with final-quality representative content.
@@ -369,8 +371,13 @@ and adjust the next work package. No unattended scheduled work is implied.
 above supersedes the previously proposed immediate small-patch art correction.
 Cobblestone modeling and further asset iteration stay paused until its reference
 review is complete. Existing technical admission is not artistic acceptance; the
-individual-stone previews remain rejected. This docs change schedules the generation
-stage; no new concepts have been generated or approved by this change.
+individual-stone previews remain rejected. The generation stage now has a prioritized
+target catalog reconciled against named gameplay content, the feature matrix and
+deferred research. No new concepts have been generated or approved. The whole catalog
+(about 300 targets, several images each) is generated and reviewed before asset
+iteration resumes; expect on the order of a hundred or more reviewed batches, with no
+total image cap. Concept originals are committed in git under `assets/reference/`
+(D-188).
 
 - [ ] Complete the [concept-art program and coverage/selection gate](../assets/reference/concept-art-program.md#exit-checklist)
       before resuming cobblestone iteration. Include the whole game's visual scope,

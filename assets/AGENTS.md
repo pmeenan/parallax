@@ -69,7 +69,9 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
    (relaxed visual checks, same structural ones), so the first final-art area (M4.5,
    D-182) and district expansion (M5) use the same asset boundary. The swap is a
    library substitution, not a code change.
-6. **Large binaries don't live in git.** D-186 resolves P-004 with immutable ignored
-   `library/objects/` bytes and checked-in manifests. Retain source binaries outside
-   normal git with reconstruction scripts and pinned input hashes; see the decision
-   for the machine-local durability limit.
+6. **Library and source binaries don't live in git; reference originals do.** D-186
+   resolves P-004 with immutable ignored `library/objects/` bytes and checked-in
+   manifests. Retain source binaries outside normal git with reconstruction scripts
+   and pinned input hashes; see the decision for the machine-local durability limit.
+   Concept-art and reference originals are committed under `reference/` with hashes in
+   their target records (D-188).
