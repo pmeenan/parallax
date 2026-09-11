@@ -8,6 +8,10 @@ import type { NpcDialogTelemetrySnapshot } from "../ai/npc-dialog-contract";
 import type { NpcDialogService } from "../ai/npc-dialog-service";
 import type { NpcKnowledgeTelemetrySnapshot } from "../ai/npc-knowledge-contract";
 import type { NpcKnowledgeService } from "../ai/npc-knowledge-service";
+import type {
+  SpatialAudioService,
+  SpatialAudioTelemetrySnapshot,
+} from "../audio/spatial-audio-contract";
 import type { BenchmarkReport, BenchmarkTelemetrySnapshot } from "../benchmark/benchmark-contract";
 import type { BenchmarkService } from "../benchmark/benchmark-service";
 import { isRuntimeIdentifier } from "../core/runtime-identifier";
@@ -60,9 +64,8 @@ import type { HybridUiService } from "../ui/hybrid-ui-service";
 import type { WasmThreadSpikeTelemetrySnapshot } from "../wasm/wasm-thread-spike-protocol";
 import type { WasmThreadSpikeService } from "../wasm/wasm-thread-spike-service";
 
-// Public telemetry v47 makes the applied directional-sun model, direction, and intensity
-// observable. v46 added scenario-owned district-swap prefetch evidence.
-export const TELEMETRY_SCHEMA_VERSION = 48;
+// v49 adds bounded spatial-audio resources, lifecycle, cache, and control-cost counters.
+export const TELEMETRY_SCHEMA_VERSION = 49;
 export const TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
 // The render worker publishes frame telemetry once per batch of this many rendered
 // frames, so an observed render.frameCount can trail the true rendered frame count by
@@ -97,6 +100,7 @@ export interface ParallaxTelemetrySnapshot {
   readonly benchmark: BenchmarkTelemetrySnapshot;
   readonly identity: ParallaxRuntimeIdentity;
   readonly gameplayInput: GameplayInputTelemetrySnapshot;
+  readonly spatialAudio: SpatialAudioTelemetrySnapshot;
   readonly hybridUi: HybridUiTelemetrySnapshot;
   readonly flythrough: FlythroughTelemetrySnapshot;
   readonly installedModelSource: InstalledModelSourceTelemetrySnapshot;
@@ -154,6 +158,7 @@ export function installTelemetryExport(
   wasmThreadSpikeService: WasmThreadSpikeService,
   simulationService: SimulationService,
   gameplayInputService: GameplayInputService,
+  spatialAudioService: SpatialAudioService,
   hybridUiService: HybridUiService,
   streamingService: WorldStreamingService,
   flythroughService: FlythroughService,
@@ -229,6 +234,7 @@ export function installTelemetryExport(
         wasmThreadSpikeService.snapshot(),
         simulationService.snapshot(),
         gameplayInputService.snapshot(),
+        spatialAudioService.snapshot(),
         hybridUiService.snapshot(),
         streamingService.snapshot(),
         flythroughService.snapshot(),
@@ -321,6 +327,7 @@ export function installTelemetryExport(
               wasmThreadSpikeService.snapshot(),
               simulationService.snapshot(),
               gameplayInputService.snapshot(),
+              spatialAudioService.snapshot(),
               hybridUiService.snapshot(),
               streamingService.snapshot(),
               flythroughService.snapshot(),
@@ -490,6 +497,7 @@ function snapshot(
   wasmThreadSpike: WasmThreadSpikeTelemetrySnapshot,
   simulation: SimulationTelemetrySnapshot,
   gameplayInput: GameplayInputTelemetrySnapshot,
+  spatialAudio: SpatialAudioTelemetrySnapshot,
   hybridUi: HybridUiTelemetrySnapshot,
   streaming: WorldStreamingTelemetrySnapshot,
   flythrough: FlythroughTelemetrySnapshot,
@@ -504,6 +512,7 @@ function snapshot(
     benchmark,
     flythrough,
     gameplayInput,
+    spatialAudio,
     hybridUi,
     identity,
     installedModelSource,

@@ -90,6 +90,21 @@ export type {
 } from "./assets/meshopt-layout";
 export { canonicalMeshoptLayoutErrors } from "./assets/meshopt-layout";
 export type {
+  AudioVector3,
+  SpatialAudioClip,
+  SpatialAudioLimits,
+  SpatialAudioListenerPose,
+  SpatialAudioRequest,
+  SpatialAudioService,
+  SpatialAudioTelemetrySnapshot,
+} from "./audio/spatial-audio-contract";
+export { SPATIAL_AUDIO_TELEMETRY_SCHEMA_VERSION } from "./audio/spatial-audio-contract";
+export { bindSpatialAudioLifecycle } from "./audio/spatial-audio-lifecycle";
+export {
+  createSpatialAudioService,
+  type SpatialAudioPlatform,
+} from "./audio/spatial-audio-service";
+export type {
   BenchmarkAttempt,
   BenchmarkAttemptMetrics,
   BenchmarkBrowserIdentity,
@@ -349,6 +364,7 @@ export {
   resolveOfflineShellRequestFailureTelemetry,
   resolveOfflineShellResource,
 } from "./offline-shell/shell-generation-store";
+export { gameplayCameraPose } from "./render/gameplay-camera";
 export {
   createEmbeddedPsoWarmupTrace,
   loadInstalledPsoWarmupTrace,

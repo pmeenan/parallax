@@ -5,6 +5,10 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./meshopt-layout": {
+      "types": "./dist/types/assets/meshopt-layout.d.ts",
+      "import": "./dist/types/assets/meshopt-layout.js"
+    },
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/engine.js"

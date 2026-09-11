@@ -1315,6 +1315,14 @@ and keeps the packaging honest.
 
 ## Rendering
 
+Animation source candidates use the offline `assets/qa/` gate described in
+[animation-import.md](../assets/qa/animation-import.md). It retains original GLBs,
+explicit clip/root-motion profiles, provenance and rig fingerprints. A separate
+engine-owned QA adapter loads the verified bytes with pinned Babylon Lite in a Chrome
+worker and checks skeleton/clip identity, with deterministic pose captures. This is
+not a source-file loading path for the ordinary game; character library admission,
+compressed packaging and gameplay presentation bindings remain pending.
+
 Babylon Lite's WebGPU-only core is treated as a scene/material/animation library —
 Parallax owns scheduling, streaming, memory, and the frame loop (D-078/D-080). Lite is
 the sole renderer: code inside `engine/` uses its data structures and APIs directly, with
@@ -1676,6 +1684,17 @@ character/crowd sample remains the simulation-step budget authority.
 D-143 identified no application-facing frame transaction or attributed presentation
 primitive between the DOM overlay and worker-owned WebGPU canvas; RE-047 keeps the
 request open without claiming an exhaustive Chrome capability audit.
+
+## Spatial audio
+
+The ordinary runtime owns the bounded `engine/audio` Web Audio service. Main-thread
+orchestration updates native panners; audio rendering stays in Web Audio. The game
+consumes existing semantic events and shares the render camera's listener geometry.
+Scene/authority/visibility changes clear voices, while a fixed-capacity PCM cache
+supports reuse. Public telemetry v49 includes its resource and lifecycle counters.
+The current bank is empty: final content, QA admission and installed encoded-audio
+loading remain open. See [spatial-audio.md](spatial-audio.md) for the service contract,
+focused Chrome verification and remaining M4.5 work.
 
 ## NPC AI
 

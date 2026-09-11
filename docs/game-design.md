@@ -18,6 +18,99 @@ A **medieval-era fantasy village on the shore**, with:
   surfacing in different parts of the world (castle, village, forest…). Each entrance is
   a hard-transition choke point.
 
+### Planned waterfront visual scope
+
+Approved geographic reference (Batch 074 v2, D-191): [shared site plan](../assets/reference/shared-site-plan.md)
+connects the village to the southern port and puts the principal agricultural route
+between the northern village gate and forest. It retains named anchors and documents
+differences from current greybox zoning. Expanded town quarters and multiple streets
+support the substantial port. Runtime migration remains pending; reference approval
+does not claim implemented terrain, navigation or harbor engineering.
+
+Human art direction (2026-09-06) distinguishes a modest straight timber fishing
+landing on the open sandy beach from a **substantial working port district** serving large
+merchant and fishing ships and provisioning the nearby castle. Plan cargo handling,
+fish landing, storage, a shoreward supply route and spaces for interactions with sailors,
+captains and pirates. Keep the grounded weathered medieval character; this is a working
+port, not a luxury waterfront. Human scale correction: multiple substantial piers,
+several large merchant/fishing ships, warehouses, merchant offices, tavern and inn
+form a developed port district; a handful of sheds around small docks is insufficient.
+Batch 009 A is human-selected for greater scale and scenario/interaction potential;
+carry its dense waterfront blocks into closer studies. B feels too small and village-like.
+Within that port, Batch 010 B's open hospitality courtyard is human-selected for
+story possibilities and chance encounters, with separate tavern and inn entrances.
+Batch 011 B's working waterfront is selected for varied port uses beyond fishing:
+repair, trade, fleet support and encounters share an open court and clear routes.
+Both Batch 012 merchant settings are selected: dedicated offices along the waterfront
+and a shared merchant courtyard coexist, linking cargo access with trade meetings.
+Tavern interior Batch 013 B is selected for connected seating rooms with quieter
+corners for secret meetings away from crowds, without committing new factions/quests.
+Inn arrival Batch 014 A is selected with combined barkeep/lodging-manager service at
+the open hall's counter, consistent with the genre. Distinct hospitality spaces can
+share management; this does not create a new named NPC or gameplay system.
+Private guest chamber Batch 015 A is selected for locked doors, private conversations,
+stealing and adventure opportunities. Separate room thresholds and privacy inform
+visual layouts; exact lock/theft systems remain subject to gameplay scope.
+Private-room corridor Batch 016 B is selected for the bend's extra hall privacy;
+carry interrupted sightlines into future layouts, with clearances still to validate.
+Supply yard Batch 017 A is selected: a substantial working port without making
+the port a fortress itself. Preserve the open street departure; full inland route
+alignment remains open.
+Dockside conversation Batch 018 A open quay and B sheltered warehouse recess are
+both selected as complementary examples. Include varied public and sheltered
+conversation spaces throughout the port rather than forcing one shared layout.
+Batch 019 sailor and captain costume directions are both accepted: practical
+weathered workwear and authority through useful gear, without later-era naval
+uniforms. Exact Skarn skin treatment and full character profiles remain open.
+Batch 020 pirate costume and broad merchant-vessel directions are both accepted.
+Retain practical seafarer clothing and substantial weathered cargo hulls; exact
+identity, rigging, draft and berth engineering remain open.
+Pirate presence is an interaction/character brief, not
+an automatic combat faction or new quest system.
+Batch 024 stone quay v1 and timber pier v11 are both human-accepted construction
+directions. Preserve the timber pier's proportions and distinct supports, with the
+ship moored alongside and a short ramp to open deck. The rejected enlarged-platform
+revision is not direction. Exact mooring, tide joints and foundations remain open.
+
+This expands planned reference coverage. Harbor location, berth dimensions, water
+depth, ship access and integration with the existing village/castle routes need layout
+validation before implementation. Existing district descriptors and transition edges
+remain authoritative. Large-ship concepts do not imply player sailing or transport.
+
+Batch 067 village forge and apothecary appearances are human-approved: supported
+open-front smithy with separate hot-work and public counter areas; modest herb
+shop with separate idle alembic bench. Skarn smith, Human apothecary and adult
+Wickfolk visitor are appearance proposals, not new named NPCs or role restrictions.
+Station engineering, metric clearances and interactions remain open.
+
+Batch 068 residential lane and hearth kitchen appearances are human-approved:
+related worn timber/plaster house variations with clear thresholds and a shared
+sitting recess; contained masonry hearth and separate food-preparation area.
+Full modular geometry, furniture, metric clearances and interactions remain open.
+
+Batch 069 square v2 and dock trader v1 are human-approved: large mature canopy
+tree with shaded timber seating, distinct gold-grooved physical waystone and open
+walking routes; separate salt/fish trade and iron/rope salvage dialogue setting.
+Waystone is not a teleport. Exact tree/bench layout and wider dock circulation
+remain open; incidental castle backdrop does not alter authored geography.
+
+Batch 070 gate v2 and crop lanes v1 are human-approved: village cobblestones cross
+the modest gateway threshold and gradually give way to the dirt field track;
+separate grain and herb plots have walking lanes toward the forest. Same-ground
+adult Human/Wickfolk workers illustrate the selected relative stature. Exact metrics,
+gate operation, harvest/growth and motion remain open.
+
+Batch 071 crop cellar v2 and forest edge v1 are human-approved. Cellar evidence
+uses gnawed storage, distinct golden grain, green and orange-red herb stores, and
+a sealed static collapsed passage. This does not create another catacomb entrance.
+Forest-edge rest area carries the approved gray/gold waystone beside a clear shaded
+trail. Close evidence, terrain metrics, interactions and motion remain open.
+
+Batch 072 clearing and ruin approach appearances are human-approved: natural open
+woodland ground around low stones supports planned circling/flanking, while the
+single existing forest entrance has a clear conversation approach and low-wall
+lookout recess. Full encounter dimensions, flank connectivity and motion stay open.
+
 ## D1 greybox scale and layout (D-090)
 
 The M1 playable surface is a 4,096 m × 4,096 m square centered at the world origin,
@@ -67,6 +160,21 @@ magic, a vein of science/alchemy, weapons, food, and crafting, with familiar
 tabletop-style mechanics (stats, abilities, loot). **Nothing may use D&D-protected
 names, creatures, or mechanics text** (licensing) — original names and our own rule
 implementations throughout.
+
+Concept-art direction (human correction, 2026-09-06): inhabited environments must
+visibly express this fantasy identity alongside grounded photoreal construction.
+Show varied playable folk and recognizable wizard/aetherworker, knight and thief/rogue
+loadouts in ordinary world life. These visual roles preserve the classless system;
+folk anatomy and costume choices remain concept proposals until selected. Existing
+flame-powered fixtures coexist with catalyst magic; historical human-only scenes do
+not satisfy the full populated-world brief.
+Batch 025 B is human-selected for more realistic playable-folk appearance: living
+slate-gray Skarn with pronounced mineral facial features and mature, small Wickfolk
+with pointed ears. Preserve photoreal skin and equipment. Exact stature, variations
+and everyday costumes remain open; shown loadouts are not folk-exclusive classes.
+In Batch 026, the human retains existing B's Wickfolk stature (roughly four-fifths
+Human height) over the smaller variant. Preserve this relative stature direction;
+exact metric heights and within-folk variation remain to establish.
 
 Structure: the normal AAA quest scaffolding — **high-level objectives** (a main arc)
 plus **side quests**, tracked in a journal (which also feeds the Summarizer-recap
@@ -211,6 +319,32 @@ science/alchemy vein is load-bearing, not flavor:
 - Catalysts and **tonics** are crafted at the alembic from **reagents** harvested in
   the world (gathering table below).
 
+Batch 030 B wand shape is human-selected: ashwood rod, wrapped grip, plain retaining
+bands and a visibly socketed crystal. This is equipment appearance direction;
+catalyst-tier variations and spell effect appearances remain separate selections.
+Batch 031 Emberlash and Frostbind appearances are human-approved: compact orange-
+gold ember projectile with sparse trailing embers, and a low localized ice-blue
+rime/flake/vapor burst with underlying ground readable. Existing spell targeting,
+damage, radius, duration and status contracts are unchanged; full motion/impact/
+status appearance profiles remain open.
+Batch 032 Aetherpulse appearance is human-approved: transparent violet-silver
+pressure front with paving refraction and restrained dust lift. Outward travel,
+disappearance and exact gameplay extent remain temporal/implementation work.
+Mendweave v2 is human-approved with readable thicker warm ivory-gold strands and
+matching wand emission. Catalyst emission must match the active spell palette.
+Batch 033 Wardlight and Ashwood Focus detail are human-approved: close transparent
+honey-white protective contour with matched wand light and nearby illumination;
+unlit mineral seated in a brass cup with inward retaining claws on the wrapped
+ashwood rod. Absorption/expiry/light measurement and full construction remain open.
+Batch 034 Glazed and Resonant Focus construction are human-approved: muted celadon
+ceramic sleeves for Glazed; dark ceramic and restrained brass inlay for Resonant,
+preserving the Ashwood rod family. These visual material choices do not change
+recipes. Full construction profiles remain open.
+Batch 035 active own-channel Resonant appearances are human-approved: orange-gold
+ember, icy blue frost and violet-silver aether, with readable mineral facets and
+local reflected light. These do not require permanent idle glow or restrict other
+spells; emission during casting follows the active spell's palette. Timing remains open.
+
 ### Progression — classless, loadout-driven
 
 - XP from quests, combat, and discovery. Level cap **10** for the slice. Each level
@@ -287,6 +421,92 @@ science/alchemy vein is load-bearing, not flavor:
   Roast (+1 Might), Tidebroth (+1 Attunement), Waybread (1 Health/s out of combat,
   5 min), Mulled Cordial (stamina regen +5/s). Other hearth buffs last 10 minutes;
   one food buff is active at a time.
+  Batch 036 Vigor and Stone Tonic appearances are human-approved: pear-shaped glass
+  with amber liquid and a leaf-mark clay tag for Vigor; squat celadon ceramic with
+  an impressed shield and stitched leather band for Stone. Hand-scale/handling
+  profiles remain open; these vessel choices do not change recipes or effects.
+  Batch 042 Bittergreen and Emberpetal plants are human-approved: a crinkled
+  broad-leaf rosette and copper-orange six-petal blooms over narrow subdued foliage.
+  Harvest forms, depletion and wind remain open; neither requires emission.
+  Batch 037 Clearing Draught and Aether Salts appearances are human-approved:
+  flattened pale-liquid flask with a droplet tag, and a broad jar of dry pale
+  mineral grains with a four-point mark. Use/handling profiles remain open.
+  Batch 038 oil pots and brushes are human-approved: round red clay/flame for
+  Emberdust, squared blue-gray/snow-crystal for Frostglass, each with a separate
+  oiling brush. Application, coated weapons and on-hit appearances remain open.
+  Batch 039 Hearthloaf and Waybread appearances are human-approved: round crusty
+  loaf with visible crumb, and compact savory travel breads in linen with a hemp
+  tie. Waybread preserves grain/game-meat/bittergreen ingredients; handling remains open.
+  Batch 040 Fisher's Stew and Tidebroth appearances are human-approved: thick
+  fish/bittergreen stew in warm earthenware and clearer fish broth in blue-gray
+  crockery. Tidebroth relic processing and serving/handling profiles remain open.
+  Batch 041 Hunter's Roast v3 is human-approved: irregular cooked joint and uneven
+  hand-carved slices on plain earthenware. Earlier smooth cuts were rejected.
+  Mulled Cordial's amber serving in a practical brown ceramic mug is also approved;
+  storage/handling remain open.
+  Orchard Preserve remains fruit preserve by human direction. Its implemented
+  grain/emberpetal recipe is a known mismatch: plan a fruit-based recipe correction
+  before implementation resumes. Exact fruit resource/source and costs remain to
+  be designed; this does not add an orchard region or change runtime recipes now.
+  Batch 043 fruit preserve jar v2 and harvested herb forms are human-approved:
+  thick red-gold fruit pulp in plain glass with a fitted cork; picked Bittergreen
+  leaves and six-petal Emberpetal flowers/petals match the selected growing plants.
+  Batch 044 mature wheat-like grain and ordinary ivory sea salt appearances are
+  human-approved. Cultivar, harvest/regrowth and salt source-node profiles remain open.
+  Batch 045 fresh silver fish and recovered wrought-iron hardware appearances are
+  human-approved. Species, source nodes and handling remain open.
+  Batch 046 cut grain heads/loose kernels and gathered timber (two round logs and
+  a coherent split half-log) are human-approved. Processing/handling remain open.
+  Batch 047 dimstone's dark rock with non-emissive blue-violet inclusions and worn
+  bronze relic fragments with geometric relief are human-approved. These establish
+  material appearances, not mineral composition, religion or relic processing.
+  Batch 048 Greymaw pelt (charcoal/silver coat, dark dorsal stripe, flexible hide)
+  and Skitterling venom sacs (intact amber-olive reservoirs) are human-approved.
+  Internal anatomy and storage presentation do not establish extraction mechanics.
+  Batch 049 hairless matte hide with a curled fibrous underside and six unbraided
+  dried sinew strips are human-approved. Preparation/handling remain open.
+  Batch 050 game meat v2 uses irregular lobed/tapering portions and an uneven
+  offcut; marks use one worn coin type with a tower face and bar reverse. Both
+  appearances are human-approved; no new prey, mint lore or denominations implied.
+  Batch 051 base axe v4 is human-approved: compact single-bit bearded head,
+  curved hardwood haft and inspectable top-end wedge attachment, shown flat with
+  head nearest camera and handle receding. Tempered upgrade/handling remain open.
+  Batch 051 base sword v2 is human-approved: straight tapered double-edged blade,
+  central fuller, plain guard, brown wrapped grip and disc pommel. The overhead
+  view resolves v1's apparent curvature; tempered variant/sheath/handling remain open.
+  Batch 052 tempered sword/axe v2 are human-approved. Shared readable upgrade cues:
+  oxblood grips and dark steel contrasted with bright edges. Sword adds dark fuller
+  and bright pommel rim; axe adds broad recessed chevron and warmer haft. Base
+  geometry stays consistent. Subtle polish-only v1 proposals were rejected.
+  Batch 053 base spear v2 and strung undrawn bow v1 are human-approved: modest
+  socketed leaf point with retaining pin on a straight wooden shaft; simple wooden
+  bow with plain leather grip and continuous string seated at both tips. Crafted
+  variants, handling and drawn/unstrung states remain open.
+  Batch 054 tempered spear and laminated bow appearances are human-approved:
+  spear retains small socketed head with dark steel/bright bevels, chestnut shaft
+  and oxblood grip; bow shows continuous contrasting wood layers and oxblood grip.
+  Draw performance, bond construction and handling still require further profiles.
+  Batch 055 cloth garb and leather jack appearances are human-approved: slate-blue
+  tunic with cream underlayer and cloth ties; stitched brown leather jack with
+  quilted lining and three wooden toggle closures. All-folk fit, reverse views and
+  movement remain open; tailor displays do not create equipment restrictions.
+  Batch 056 scale coat and reinforced buckler appearances are human-approved:
+  dark iron scales over lined leather with open armholes and skirt slit; wooden
+  buckler with iron rim, four reinforcing strips and domed boss. Rear construction,
+  all-folk fit and movement remain open.
+  Batch 057 forge-service appearances are human-approved: whetting leaves a narrow
+  clean honing strip on the existing blade; armor fitting draws a leather side
+  gusset snug with four pairs of eyelets and continuous lacing. These are maintenance
+  and fit details, not new gear tiers or magical finishes; operation and all-folk
+  fitting remain open.
+  Batch 058 sword scabbard and buckler reverse appearances are human-approved:
+  leather-covered tapered scabbard with iron throat/chape; single leather-wrapped
+  center grip across the buckler's hollow boss recess. Wearable suspension,
+  measured cavity/hand fit and motion remain open.
+  Batch 059 arrows/quiver and unstrung bow appearances are human-approved: straight
+  wooden arrows with natural feather vanes and socketed iron points, plain leather
+  quiver, and relaxed base stave with separate slack two-loop string. Wearable
+  suspension, drawn/flight states and measured elastic behavior remain open.
 - The recipe language is intentionally learnable without a wiki: each recipe has
   only two or three ingredients, its station states its purpose, and ingredient
   families point back to a place (fields feed hearth/alembic, forest feeds
@@ -406,6 +626,22 @@ a depleted fleeing pack cannot re-aggro merely because the player camps its home
 Drop tables per archetype live in `game/balance/` loot data: hides, pelts, sinew,
 venom sacs, relic fragments, marks, and rarity-gated gear; the boss drops a Mythic
 catalyst core plus the main-arc quest item.
+
+Batch 027 Burrow-gnawer and Greymaw appearance directions are human-accepted:
+stocky coarse-furred digging vermin with prominent incisors, and a grounded
+charcoal-coated wolf-like forest predator with pale muzzle. Full anatomy, scale
+and movement studies remain open; these add no new bestiary behaviors.
+
+Batch 028 Wayland brigand and Skitterling appearances are human-accepted: an
+attentive adult outlaw in repaired practical layers, and low mottled-chitin catacomb
+vermin with segmented body and short biting mouthparts. Skitterling leg topology
+requires a dedicated view; neither selection changes existing behaviors.
+
+Batch 029 warden designs are human-approved: enclosed weathered armor, mounted
+mineral core and maul, with heavier boss shoulders/forearms/skirt/weapon. Human
+approves boss v2's subtle red-brown armor hue to distinguish it from
+the charcoal-iron elite. Exact scale, phases and interior mechanism
+remain unresolved; appearance does not establish animated-armor lore.
 
 ### Quests and journal
 
@@ -532,6 +768,36 @@ with temporal boards, motion references and explicit behavior criteria where nee
 their coverage does not expand the implementation scope of deferred features.
 
 ## Weather, time, and light
+
+Batch 060 standalone courtyard sunny and dry-overcast appearances are human-approved:
+warm direct sunlight with cool readable shadows versus diffuse cloudy illumination
+retaining local material color. The matched major composition extends the endorsed
+anchor's vertical framing; it does not move authored geography or establish measured
+renderer/temporal performance. Runtime weather must keep geometry/materials invariant.
+Batch 061 dawn and dusk appearances are human-approved from the same courtyard
+camera: soft peach/blue morning light and richer amber/rose evening light, with
+opposing long shadows and readable dry surfaces. Exact solar coordinates and
+moving exposure/shadow behavior remain unmeasured.
+Batch 062 dry flame-lit night and active daytime rainstorm appearances are
+human-approved. Two candle lanterns provide localized amber pools amid cool night
+fill; rain darkens exposed surfaces and creates broken reflections and shallow
+puddles while shelter and traversal remain readable. Face lighting, runoff, rain
+occlusion in motion and lightning flash/recovery remain open.
+Batch 063 peak lightning and close wet-paving appearances are human-approved:
+distant offshore branching strike with scene detail retained during cool flash,
+and shallow transparent puddles among calmer worn limestone crowns. These do not
+add a combat hazard or validate flash timing/recovery, runoff or ripple simulation.
+Batch 064 torch-only catacomb comparison is human-approved against the reused
+Wardlight reference: same Skarn, pose and passage, mounted flame as the directional
+source, inactive crystal and no ward outline. Photometric/flicker/motion profiles
+remain open.
+Batch 065 combined torch/Wardlight appearance is human-approved: close transparent
+warm-gold ward/crystal light adds local fill alongside the distinct amber torch,
+preserving face, cloth and stone detail. Photometric and temporal profiles stay open.
+Batch 066 Human sunlight and mature Wickfolk lantern portraits are human-approved
+close appearance references: retained skin, plaster, steel and dark-cloth detail,
+bounded candle glow and unchanged folk identities. Calibrated/matched lighting and
+motion remain open; portrait framing does not establish stature.
 
 D-182 proves this direction first in one finished D1 courtyard/street with a castle
 silhouette, a rigged NPC and enemy, and a playable route to a catacomb entrance. Sunny

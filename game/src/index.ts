@@ -1,5 +1,7 @@
 import type { AppOwnedLlmFixtureSet, EngineIdentity } from "@parallax/engine";
 
+export { GAMEPLAY_AUDIO_LIMITS } from "./balance/audio";
+
 export type { M1BenchmarkUiCopy } from "./benchmark/m1-benchmark-mode";
 export {
   formatM1BenchmarkPreset,

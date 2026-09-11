@@ -5,6 +5,7 @@
     { "path": "./game" },
     { "path": "./app" },
     { "path": "./harness" },
+    { "path": "./assets" },
     { "path": "./tsconfig.tests.json" }
   ]
 }

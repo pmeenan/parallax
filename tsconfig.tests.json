@@ -24,5 +24,10 @@
     "vitest.config.ts"
   ],
   "exclude": ["**/dist/**", "**/node_modules/**", "harness/**/results/**"],
-  "references": [{ "path": "./engine" }, { "path": "./game" }, { "path": "./harness" }]
+  "references": [
+    { "path": "./engine" },
+    { "path": "./game" },
+    { "path": "./harness" },
+    { "path": "./assets" }
+  ]
 }

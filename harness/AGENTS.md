@@ -84,6 +84,12 @@ short (each gap in observability is itself a rough-edges finding — log it).
   evidence instead of a cost claim (the run itself still completes and retains its
   report). It is discovery evidence, not a budget or milestone gate; remove it when the
   lighting decision consumes the experiment.
+- `pnpm harness:spatial-audio` — focused native stereo/attenuation, activation and
+  voice/clip cleanup verification for audio changes; diagnostic, no budget verdict.
+  See `docs/spatial-audio.md` for scope and interpretation.
+- `pnpm harness:animation-import <candidate-directory|--fixture>` — source-candidate
+  integrity and pinned Babylon worker loading/pose captures; diagnostic, no admission
+  or budget verdict. See `assets/qa/animation-import.md`.
 - `pnpm harness:baseline:promote` — guarded offline baseline-store promotion utility,
   not a browser scenario or automatic post-run action.
 - `transition` — repeated D1↔D2 swaps against the transition contract.

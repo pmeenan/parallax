@@ -66,7 +66,7 @@ export const SMOKE_TRACE_QUIESCE_MS = 100;
 export const SMOKE_PRESENTATION_TRACE_COMPLETION_TIMEOUT_MS = 10_000;
 export const SMOKE_PRESENTATION_TRACE_LATE_OBSERVATION_MS = 10_000;
 export const SMOKE_TELEMETRY_GLOBAL_NAME = "__PARALLAX_TELEMETRY__";
-export const SMOKE_TELEMETRY_SCHEMA_VERSION = 48;
+export const SMOKE_TELEMETRY_SCHEMA_VERSION = 49;
 export const SMOKE_HYBRID_UI_TELEMETRY_SCHEMA_VERSION = 1;
 // v76 makes the applied directional-sun model and motion durable smoke evidence.
 export const SMOKE_REPORT_SCHEMA_VERSION = 77;

@@ -61,7 +61,16 @@ import {
   quantizeAnimatedEnvironmentLightingPhase,
   sampleEnvironmentLighting,
 } from "./environment-lighting";
+import {
+  GAMEPLAY_CAMERA_RADIUS,
+  GAMEPLAY_CAMERA_TARGET_HEIGHT,
+  gameplayCameraAlpha,
+  gameplayCameraBeta,
+} from "./gameplay-camera";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
+
+export { gameplayCameraAlpha, gameplayCameraBeta } from "./gameplay-camera";
+
 import { observeStandardOpaquePsoRegistration } from "./pso-warmup-babylon-observer";
 import {
   PSO_WARMUP_PIPELINES,
@@ -722,25 +731,12 @@ export function applyGameplayPresentation(
     mesh.rotation.y = entity.yawRadians;
   }
   renderer.camera.target.x = presentation.playerPosition[0];
-  renderer.camera.target.y = presentation.playerPosition[1] + 0.55;
+  renderer.camera.target.y = presentation.playerPosition[1] + GAMEPLAY_CAMERA_TARGET_HEIGHT;
   renderer.camera.target.z = presentation.playerPosition[2];
   renderer.camera.alpha = gameplayCameraAlpha(presentation.playerYawRadians);
   renderer.camera.beta = gameplayCameraBeta(presentation.cameraPitchRadians);
-  renderer.camera.radius = 9;
+  renderer.camera.radius = GAMEPLAY_CAMERA_RADIUS;
   renderer.camera.nearPlane = 0.1;
-}
-
-export function gameplayCameraAlpha(playerYawRadians: number): number {
-  // ArcRotate's horizontal offset is (cos(alpha), sin(alpha)) in X/Z. Simulation yaw
-  // zero faces +Z and positive yaw turns toward +X, so the camera uses its exact
-  // opposite vector.
-  return -playerYawRadians - Math.PI / 2;
-}
-
-export function gameplayCameraBeta(cameraPitchRadians: number): number {
-  // Keep the neutral view just above the horizon. A steeper downward default makes
-  // the 4 km terrain sheet cover the whole viewport and hides the sky/clear color.
-  return Math.max(0.35, Math.min(Math.PI - 0.35, Math.PI / 2 - 0.08 + cameraPitchRadians));
 }
 
 export interface GreyboxLightingSample {

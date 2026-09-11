@@ -13,6 +13,7 @@ import {
 import type { Page } from "playwright-core";
 import { validateInstallerSnapshotTelemetry } from "./installer-transfer-telemetry.js";
 import { validatePsoWarmupRenderTelemetryRelationship } from "./pso-warmup-telemetry.js";
+import { validateSpatialAudioTelemetry } from "./spatial-audio-telemetry.js";
 
 export async function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapshot> {
   const snapshot = await page.evaluate((globalName) => {
@@ -24,6 +25,7 @@ export async function readTelemetry(page: Page): Promise<ParallaxTelemetrySnapsh
   validateOfflineShellTelemetry(snapshot.offlineShell);
   validateSimulationTelemetry(snapshot.simulation);
   validateGameplayInputTelemetry(snapshot.gameplayInput);
+  validateSpatialAudioTelemetry(snapshot.spatialAudio);
   validatePsoWarmupRenderTelemetryRelationship(snapshot.render);
   validateInstallerTelemetrySelection(snapshot);
   return snapshot;

@@ -50,6 +50,11 @@ target IDs, with matched camera/light/scale and temporal or physical behavior re
 where applicable. A generated still is not a physics specification. This reference
 stage does not authorize implementation of every deferred rendering feature.
 
+Concept production follows the human-authorized [parallel review workflow](../assets/reference/concept-art-program.md#production-sequence-and-allowance)
+from Batch 013: up to two independent generation subagents, with both visual reviews
+and lead adjudication before any revision or dependent generation. Keep existing
+candidate/iteration allowances and human artistic choice boundaries.
+
 D-182 replaces D-180's open-ended convergence rule with agent-owned, bounded iteration.
 Before an experiment or visual work package, put a short brief in the active plan note:
 the scene/reference and cameras/states, the question, must-fix defects, an initial

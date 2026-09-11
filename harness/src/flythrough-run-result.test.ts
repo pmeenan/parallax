@@ -1,4 +1,4 @@
-import type { ParallaxTelemetrySnapshot } from "@parallax/engine";
+import { type ParallaxTelemetrySnapshot, TELEMETRY_SCHEMA_VERSION } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import {
   assembleFlythroughAttempt,
@@ -36,7 +36,9 @@ const heapEvidence = Object.freeze({
 describe("flythrough attempt assembly", () => {
   it("preserves a diagnostic snapshot without promoting a trace-failed result", () => {
     // Assembly preserves identity; it deliberately does not qualify raw telemetry.
-    const diagnosticTelemetry = { schemaVersion: 48 } as ParallaxTelemetrySnapshot;
+    const diagnosticTelemetry = {
+      schemaVersion: TELEMETRY_SCHEMA_VERSION,
+    } as ParallaxTelemetrySnapshot;
     const attempt = assembleFlythroughAttempt({
       browserErrors: [],
       diagnosticTelemetry,

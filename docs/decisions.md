@@ -28,6 +28,38 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-191: Bind D1 geographic art to the approved coastal town site plan (2026-09-09, accepted; reference-layout revision, runtime migration pending)
+
+**Decision:** Adopt [Batch 074 proposal 2](../assets/reference/shared-site-plan.md)
+as the shared geographic reference for D1 concept production. Keep central inland
+castle/complete moat and existing named anchors; expand the village into a substantial
+connected port town, broaden its southern waterfront, and put the main inland crop
+belt between the northern agricultural gate and forest. Retain secondary southern
+fields and a separate open beach/small fishing landing. Preserve multiple neighborhood
+streets, port routes and a complete dry-land circuit around the moat. Camera positions
+and bearings in the plan govern new wide views.
+
+**Context:** Batch073 passed local appearance checks but failed human geographic
+review: castle, field and waterfront scenes did not establish one coherent world.
+Current greybox zoning places fields between village and coast and does not express
+the requested inland gate→fields→forest sequence. Human approved the shared plan
+after enlarging its initially underscaled town to support the previously selected port.
+
+**Consequences:** The plan's relationships, scale reservations and camera contracts
+supersede conflicting incidental background geography in earlier illustrations.
+Architectural/material approvals remain valid. SVG street lines and house symbols
+are schematic, not literal grid streets, final parcels or building counts. Runtime
+descriptor remains the implemented baseline: future migration must deliberately
+update zones/routes and affected gameplay/harness consumers while preserving named
+anchors. This decision does not declare migration complete, validate harbor depth,
+bridge/moat engineering or alter D-187's concept-before-asset-iteration sequence.
+Replacement castle vistas require independent geographic consistency screening as
+well as construction/theme review and human artistic acceptance.
+
+**Reopen if:** Measured terrain, harbor access, traversal or human visual review
+requires a different footprint or route relationship; record the revision rather
+than allowing an attractive image to relocate features.
+
 ## D-190: Version creative originals through self-hosted Git LFS (2026-09-05, accepted; supersedes D-188 and completes D-189's repository migration)
 
 **Decision:** `.lfsconfig` points this repository at

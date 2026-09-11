@@ -2,6 +2,7 @@ import {
   authorizeAutomationGameplayInputLaunch,
   authorizeAutomationRuntimeLaunch,
   bindActiveInstalledRelease,
+  bindSpatialAudioLifecycle,
   createAppOwnedLlmSpikeService,
   createBenchmarkService,
   createBrowserBenchmarkPlatform,
@@ -16,6 +17,7 @@ import {
   createOpfsReleaseStore,
   createRenderService,
   createSimulationService,
+  createSpatialAudioService,
   createWasmThreadSpikeService,
   createWorldStreamingService,
   type InstallerService,
@@ -42,6 +44,7 @@ import {
   formatM1BenchmarkPreset,
   formatM1BenchmarkReport,
   formatM1BenchmarkStatus,
+  GAMEPLAY_AUDIO_LIMITS,
   GREYBOX_DISTRICT_SPECS,
   gameSimulationModuleUrl,
   identifyGame,
@@ -179,6 +182,9 @@ async function bootRuntimeAttempt(
   registerFailureCleanup(() => simulationService.dispose());
   const gameplayInputService = createGameplayInputService();
   registerFailureCleanup(() => gameplayInputService.dispose());
+  const spatialAudioService = createSpatialAudioService(GAMEPLAY_AUDIO_LIMITS);
+  registerFailureCleanup(() => spatialAudioService.dispose());
+  registerFailureCleanup(bindSpatialAudioLifecycle(spatialAudioService));
   const previewDistrict = GREYBOX_DISTRICT_SPECS[0];
   if (previewDistrict === undefined) throw new Error("Game build contains no greybox districts");
   const worldGenerationStartedAt = performance.now();
@@ -194,6 +200,7 @@ async function bootRuntimeAttempt(
     simulationService,
     streamingService,
     simulationWorld,
+    spatialAudioService,
   );
   registerFailureCleanup(() => gameplayRuntime.dispose());
   const gameUiRoot = document.querySelector("#game-ui");
@@ -313,6 +320,7 @@ async function bootRuntimeAttempt(
     wasmThreadSpikeService,
     simulationService,
     gameplayInputService,
+    spatialAudioService,
     gameUiService,
     streamingService,
     flythroughService,

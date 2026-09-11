@@ -33,7 +33,7 @@ engine/src/
   wasm/        Rust crates (one per module) + JS bindings                    ✅ (M0 threads proof)
   ai/          app-owned inference (D-074/D-096), knowledge service /       ✅
                retrieval context assembly (D-033), schema-constrained output
-  audio/       WebAudio graph + worklets
+  audio/       ✅ bounded WebAudio spatial graph/lifecycle; worklets remain future
   input/       ✅ keyboard/mouse capture → coalesced gameplay input frames
   sim/         ✅ fixed-timestep runtime, command/save contracts, snapshot SAB + interpolation
   ui/          ✅ typed hybrid DOM/render-worker presentation service (D-160/D-161)

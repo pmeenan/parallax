@@ -4,8 +4,10 @@ import type {
   SimulationCommand,
   SimulationService,
   SimulationWorldDefinition,
+  SpatialAudioService,
   WorldStreamingService,
 } from "@parallax/engine";
+import { createGameplayAudioController } from "../audio/gameplay-audio";
 import { GREYBOX_DISTRICT_SPECS } from "../world/district-registry";
 import {
   PARALLAX_WORLD_GRAPH,
@@ -44,7 +46,14 @@ export function createM3GameplayRuntime(
   simulationService: SimulationService,
   streamingService: WorldStreamingService,
   world: SimulationWorldDefinition,
+  audio: SpatialAudioService,
 ): M3GameplayRuntime {
+  const audioController = createGameplayAudioController(
+    audio,
+    simulationService,
+    streamingService,
+    world.id,
+  );
   let latestCameraPitchRadians = 0;
   let activeCanvas: HTMLCanvasElement | null = null;
   let disposed = false;
@@ -182,6 +191,7 @@ export function createM3GameplayRuntime(
     dispose(): void {
       if (disposed) return;
       disposed = true;
+      audioController.dispose();
       unsubscribeCanvas();
       unsubscribeEvents();
       unsubscribeSimulation();
@@ -220,8 +230,14 @@ export function createM3GameplayRuntime(
       return () => interactionListeners.delete(listener);
     },
     update(timestamp: number, scenarioOwned: boolean, interactiveEnabled: boolean): void {
-      if (disposed || scenarioOwned) return;
+      if (disposed) return;
       const presentation = simulationService.samplePresentation(timestamp);
+      audioController.update(
+        presentation,
+        latestCameraPitchRadians,
+        !scenarioOwned && interactiveEnabled && renderService.snapshot().state === "ready",
+      );
+      if (scenarioOwned) return;
       const player = presentation?.entities.find((entity) => entity.id === PLAYER_ENTITY_ID);
       if (presentation === null || player === undefined) return;
       const crowdEntities = presentation.entities.filter(

@@ -3,6 +3,7 @@ import { createAppOwnedLlmSpikeService } from "../src/ai/app-owned-llm-spike-ser
 import { createInstalledModelSource } from "../src/ai/installed-model-source";
 import { createNpcDialogService } from "../src/ai/npc-dialog-service";
 import { createNpcKnowledgeService } from "../src/ai/npc-knowledge-service";
+import { createSpatialAudioService } from "../src/audio/spatial-audio-service";
 import { createGameplayInputService } from "../src/input/gameplay-input-service";
 import { idleInstallerTransferTelemetrySnapshot } from "../src/install/installer-protocol";
 import {
@@ -43,6 +44,7 @@ describe("combined telemetry export", () => {
       createWasmThreadSpikeService(),
       createSimulationService(),
       createGameplayInputService({} as Document, {} as Window),
+      createSpatialAudioService({ maximumClips: 2, maximumPcmBytes: 1_024, maximumVoices: 2 }),
       {
         dispose: () => undefined,
         present: () => undefined,
@@ -168,6 +170,7 @@ describe("combined telemetry export", () => {
       benchmark: { state: "idle" },
       identity: { engineVersion: "test", gameVersion: "test" },
       gameplayInput: { state: "idle" },
+      spatialAudio: { state: "idle", activeVoices: 0, pcmBytes: 0 },
       hybridUi: { state: "idle" },
       installedModelSource: { state: "unavailable" },
       installStore: { schemaVersion: 3, state: "unavailable" },

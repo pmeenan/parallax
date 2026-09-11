@@ -3,6 +3,7 @@ packages:
   - engine
   - game
   - harness
+  - assets
 
 allowBuilds:
   esbuild: true

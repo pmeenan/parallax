@@ -10,6 +10,7 @@ import type {
   StreamingDistrictSwapTelemetry,
   WorldStreamingService,
 } from "@parallax/engine";
+import { createSpatialAudioService } from "@parallax/engine";
 import { describe, expect, it } from "vitest";
 import {
   createM3GameplayRuntime,
@@ -65,6 +66,7 @@ describe("M3 gameplay runtime", () => {
       },
     } as unknown as RenderService;
     const simulation = {
+      subscribeAuthorityChanges: () => () => undefined,
       enqueue: (command: SimulationCommand) => commands.push(command),
       samplePresentation: () => ({
         entities: [
@@ -86,6 +88,7 @@ describe("M3 gameplay runtime", () => {
       },
     } as unknown as SimulationService;
     const streaming = {
+      subscribe: () => () => undefined,
       setObservers: (next: (readonly [number, number, number])[]) => observers.push(next),
       snapshot: () => ({ districtId: streamingDistrictId, state: "streaming" }),
       swapDistrict: (options: Parameters<WorldStreamingService["swapDistrict"]>[0]) => {
@@ -104,7 +107,12 @@ describe("M3 gameplay runtime", () => {
         },
       ],
     } as unknown as SimulationWorldDefinition;
-    const runtime = createM3GameplayRuntime(input, render, simulation, streaming, world);
+    const audio = createSpatialAudioService({
+      maximumClips: 2,
+      maximumPcmBytes: 1_024,
+      maximumVoices: 2,
+    });
+    const runtime = createM3GameplayRuntime(input, render, simulation, streaming, world, audio);
 
     const initialCanvas = {} as HTMLCanvasElement;
     const replacementCanvas = {} as HTMLCanvasElement;

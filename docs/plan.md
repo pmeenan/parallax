@@ -367,6 +367,80 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
+**Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
+positional playback and clip memory, shared gameplay-camera listener geometry,
+semantic-event routing, and cleanup on district/authority/presentation changes. Use
+synthetic measurement signals only in focused tests; no sound asset is admitted and
+the concept-art gate stays open. Verify stereo orientation/attenuation in pinned
+Chrome, activation and resource lifecycle, and game-event integration. Allow two
+implementation/verification cycles within one two-hour work session. End with a
+tested service integrated into the ordinary runtime and explicit remaining content
+work; final SFX/ambience, acoustics, and artistic acceptance remain M4.5 work. Full
+physical smoke stays at milestone exit.
+
+Foundation implementation and focused Chrome verification are complete. The
+[service contract](spatial-audio.md)
+describes the empty shipped bank and remaining audio QA/content/installed-loading work.
+Pinned Chrome 152.0.7977.54 verified stereo handedness, listener rotation and the
+expected 10:1 amplitude ratio at 1 m versus 10 m. A forced-suspended native context
+resumed on a trusted click; 32 voices, capacity rejection and scene/disposal cleanup
+passed. The 120-frame zero-gain control window measured p50/p95/max
+0.105/0.220/0.290 ms (diagnostic submission cost only). The ordinary network-authorized
+runtime reached render/simulation/streaming readiness with telemetry v49, no audio
+content and no browser errors. Evidence:
+`harness/results/spatial-audio-2026-09-11T18-47-23-268Z/result.json`, binding artifact
+`eabe0ba8ef461d090db58e085dac46d1e67e74442f724c157980cb6f55101a70` and release
+`edfa1c9d7194de314a278cc189cc30e43f2d52301678076d67d7488471bb0875`.
+The installer-repair fixture is rebound under semantic contract v14; its verification
+rules and resource identities remain exact. The exact-artifact production replay passed:
+`harness/results/installer-repair-production-replay/installer-repair-production-replay-v4-2026-09-11T18-49-18-246Z.json`
+(SHA-256 `0e91f159c7f1b03a4dacedf4a66ce9ee993f6136ea99adc28045484bfecf6f12`).
+Build/repeatability, TypeScript, focused audio tests and the final full unit run passed
+(219 files; 2,674 passed, one skipped). Earlier source-identity test mismatches did not
+recur in the final full run. `pnpm check` reached lint and remains blocked by missing
+accessible titles in the concurrently authored
+`assets/reference/concepts/batch-074/d1-shared-site-plan-v1.svg` and `v2.svg`; these
+reference files were left untouched. No artistic or milestone acceptance is claimed.
+
+**Animation import/validation work brief (2026-09-11, human requested):** implement
+the source-candidate path while concept production continues. Use an original,
+procedural two-joint test fixture, not a new character asset. Answer whether exact
+GLB source bytes can pass Khronos validation, class-specific rig/skin/clip checks,
+and pinned Babylon Lite loading in a Chrome worker. Reject malformed data,
+incompatible rigs, broken loop endpoints and unintended root travel. Preserve source
+bytes and provenance in an immutable candidate report; library admission, compressed
+packaging, final NPC/enemy content and motion/artistic acceptance remain separate.
+Allow two implementation/verification cycles within a two-hour session. End with
+the usable import command, exercised rejection cases and retained worker evidence.
+No milestone smoke is due for this source-tool change.
+
+The first native probe exposed the lazy capture-service boundary; the corrected
+frame pump then loaded all clips but produced black captures. Retain the failed
+attempts. Extend by one bounded
+45-minute implementation/verification cycle to give the mathematical fixture an
+explicit matte material and explicit scene-camera binding, prove visible deformation
+and finish the source-tool checks. Source inspection identified the missing camera
+assignment in the diagnostic (the generic add helper did not register it).
+This corrects the diagnostic; it does not select character art or change runtime lighting.
+
+**Outcome:** the source import command, strict TypeScript QA package, compatibility
+fingerprint and pinned-loader worker check are implemented. Final evidence:
+`harness/results/animation-import-2026-09-11T19-31-00-835Z/result.json`
+(SHA-256 `ed5dc21e1100b7c386128ee712b610ed8129a87362803cfe632f36a5c779da55`).
+The exact fixture GLB `d6282c6d035577b5e6167351135af215ec2663ef84fb87b7073158c51a36fb93`
+loaded one mesh, two named joints and three clips in sandboxed Chrome 152.0.7977.54 /
+Babylon Lite 1.12.0. Twelve pose captures prove visible deformation, LINEAR progression,
+STEP timing and identical loop endpoint pixels, with no browser errors, external
+requests or source drift. Representative rest/midpoint captures were visually inspected.
+The standalone import command also passed. Build/repeatability, type checks and all
+2,697 unit tests passed (221 files; one skipped). Repository-wide `pnpm check` stops
+at the same two reference-SVG accessibility errors recorded above; new/changed source
+lint passes. Existing tool advisories found during dependency audit are triaged in
+[dependencies.md](dependencies.md), without a clean-audit claim. Shipped engine/WASM
+bytes are unchanged. [Usage and supported scope](../assets/qa/animation-import.md)
+document the still-pending character content, full admission/packaging and installed
+motion acceptance. All changes remain uncommitted.
+
 **Current creative priority (human direction, 2026-09-05):** the reference program
 above supersedes the previously proposed immediate small-patch art correction.
 Cobblestone modeling and further asset iteration stay paused until its reference
@@ -416,6 +490,263 @@ explicitly use GPT-6 Astra / low under human direction. No concept target is clo
       across four subjects, reviewed sequentially with GPT-6 Astra / low. Passage
       junction passed; arena B is human-selected for its carved-earth character. A's vent
       state was corrected; B vent details and C fill-light source remain open.
+      [Batch 005](../assets/reference/concept-art-batch-005-review.md): seven originals
+      across six entrance subjects reviewed with fresh GPT-6 Astra / low agents.
+      Castle/well pairs and corrected forest pair are all human-accepted. Forest
+      fork was corrected; stair/headroom, mechanisms and transition traversal remain open.
+      [Batch 006](../assets/reference/concept-art-batch-006-review.md): three south-shore
+      surface treatments passed sequential low reviews; A is human-selected for open
+      beach interactions and dock transitions.
+      Full water/weather/motion/assembly coverage remains open.
+      [Batch 007](../assets/reference/concept-art-batch-007-review.md): three working-dock
+      assemblies preserve selected open beach and passed sequential low reviews.
+      A is human-selected for the simple fishing landing; joinery, tide/foundation/load
+      and traversal remain open. Plan a separate substantial merchant/fishing port
+      supporting castle supplies and sailor/captain/pirate interaction contexts, with
+      placement/depth/berth validation before implementation and no inferred sailing mechanic.
+      [Harbor reference plan](../assets/reference/harbor-art-plan.md) adds 14 targets.
+      [Batch 008](../assets/reference/concept-art-batch-008-review.md) has five originals:
+      A/C passed fresh low reviews; B rejected after failed circulation correction.
+      Human rejected all Batch 008 layouts as underscaled; expand to a substantial
+      port district with multiple long piers, large ships, tavern, inn and merchant offices.
+      [Batch 009](../assets/reference/concept-art-batch-009-review.md): A is human-selected
+      for greater scale and interaction potential; B feels too small and village-like.
+      [Batch 010](../assets/reference/concept-art-batch-010-review.md) adds merchant
+      boarding v2 and two hospitality frontages, corrected for the human's fantasy-world
+      direction. B courtyard is human-selected for stories/chance encounters; anatomy and crowd coverage
+      remain open. Screen for varied folk, wizard/knight/rogue roles and catalyst magic.
+      [Batch 011](../assets/reference/concept-art-batch-011-review.md) has three originals:
+      fish-exchange A v2 and net-repair B v1 passed fresh low theme/quality reviews;
+      B human-selected for varied port uses beyond fishing. Adult folk/catalyst corrections retained.
+      [Batch 012](../assets/reference/concept-art-batch-012-review.md) has two office
+      frontage originals passing both low reviews; both waterfront offices and shared
+      merchant courtyard are human-selected as complementary settings.
+      Human workflow update: Batch 013 onward uses two independent generation lanes;
+      both reviews remain required before revision or dependent generation. Batch 012
+      finishes sequentially. See concept program for scheduling and provenance rules.
+      [Batch 013](../assets/reference/concept-art-batch-013-review.md) has four tavern
+      interior originals from two overlapping generation waves. Both reviews qualify
+      room layouts; B human-selected for secret meetings away from crowds. Crowd route/folk-scale gaps remain at the
+      two-pass boundary. Full interior/character profiles remain open.
+      [Batch 014](../assets/reference/concept-art-batch-014-review.md) has three inn
+      arrival originals; A selected for combined barkeep/lodging management.
+      Guest rooms, stair geometry and character metrics remain open.
+      [Batch 015](../assets/reference/concept-art-batch-015-review.md) has reviewed
+      private/shared guest-room proposals; A selected for locked doors/private conversations/theft; full
+      profiles remain open. Lanes dispatched independently but job calls did not overlap.
+      [Batch 016](../assets/reference/concept-art-batch-016-review.md) has three corridor
+      originals; corrected B bend selected for extra hall privacy. Prepared lanes
+      still showed no overlapping job interval; no speedup claimed.
+      [Batch 017](../assets/reference/concept-art-batch-017-review.md) has two reviewed
+      port-end supply-yard alternatives; A selected for port character without fortress treatment; full route open.
+      Generation calls overlapped by 27.066 seconds; no correction required.
+      [Batch 018](../assets/reference/concept-art-batch-018-review.md) has two reviewed
+      dockside conversation spaces; both selected as complementary examples; metrics/characters open.
+      Generation calls overlapped 11.605 seconds; no correction required.
+      [Batch 019](../assets/reference/concept-art-batch-019-review.md) has screened
+      complementary sailor/captain costumes, both human-accepted; anatomy/full
+      profiles remain open. Generation overlapped 99.920 seconds; no correction required.
+      [Batch 020](../assets/reference/concept-art-batch-020-review.md) has screened
+      pirate-costume/merchant-vessel directions, both human-accepted; full profiles and
+      engineering open. Generation overlapped 4.463 seconds; no correction required.
+      [Batch 021](../assets/reference/concept-art-batch-021-review.md) fishing vessel
+      screened; fixed cargo hoist human-rejected for lacking ship-transfer reach.
+      [Batch 022](../assets/reference/concept-art-batch-022.md) redesign adds a quay
+      crane, rotating winch and hand-power mechanical-advantage screening; engineering open.
+      V2 passed overall direction screening. [Batch 023](../assets/reference/concept-art-batch-023-review.md)
+      clarified crank after two detail passes each, but brake/auxiliary wheel and tackle
+      continuity remain blockers to exact-mechanism acceptance.
+      Human accepted Batch 023 visual direction; the listed mechanical blockers remain open.
+      [Batch 024](../assets/reference/concept-art-batch-024-review.md) stone-quay and
+      timber pier: human rejects widened pier v9; v8/v9 passes withdrawn. V4 pier
+      reference preserved in v11: ship moved closer and ramp landing corrected;
+      BOTH stone quay v1 and timber pier v11 are human-accepted. History is in KIT-038.
+      Exact motion/tide joints and foundations remain open.
+      [Batch 025](../assets/reference/concept-art-batch-025-review.md) provides
+      parallel Human/Skarn/Wickfolk direction proposals; B selected for realism.
+      [Batch 026](../assets/reference/concept-art-batch-026-review.md) compares existing
+      and smaller adult Wickfolk stature; existing B selected. Exact metric heights
+      and full character profiles remain open.
+      [Batch 027](../assets/reference/concept-art-batch-027-review.md) begins DIR-007
+      with Burrow-gnawer and Greymaw, both human-accepted; remaining four archetypes
+      and full comparative/motion profiles remain open.
+      [Batch 028](../assets/reference/concept-art-batch-028-review.md) adds brigand
+      and Skitterling appearances, both human-accepted; full profiles remain open.
+      [Batch 029](../assets/reference/concept-art-batch-029-review.md) proposes elite
+      and boss warden appearances; Hollow warden v1 and red-tinted boss v2 approved.
+      Scale/phase/motion profiles remain open.
+      [Batch 030](../assets/reference/concept-art-batch-030-review.md) proposes
+      catalyst/Aetherspark appearances; B wand shape selected. Effect/channel/tier/
+      timing coverage remains open.
+      [Batch 031](../assets/reference/concept-art-batch-031-review.md) proposes
+      Emberlash/Frostbind appearances, both approved; impact/status/timing remain open.
+      [Batch 032](../assets/reference/concept-art-batch-032-review.md) proposes
+      Aetherpulse/Mendweave appearances; Aetherpulse v1 and corrected Mendweave v2
+      approved. Temporal/full profiles remain open.
+      [Batch 033](../assets/reference/concept-art-batch-033-review.md) proposes
+      Wardlight and Ashwood Focus detail, both approved; lighting/full profiles remain open.
+      [Batch 034](../assets/reference/concept-art-batch-034-review.md) proposes Glazed
+      and Resonant Focus construction, both approved; attunements open.
+      [Batch 035](../assets/reference/concept-art-batch-035-review.md) proposes three
+      Resonant channel appearances; all approved, timing open.
+      [Batch 036](../assets/reference/concept-art-batch-036-review.md) proposes Vigor
+      and Stone Tonics; both approved, handling open.
+      [Batch 037](../assets/reference/concept-art-batch-037-review.md) proposes
+      Clearing Draught/Aether Salts; both approved, use open.
+      [Batch 038](../assets/reference/concept-art-batch-038-review.md) proposes
+      Emberdust/Frostglass Oil pots and applicators; both approved, application open.
+      [Batch 039](../assets/reference/concept-art-batch-039-review.md) proposes
+      Hearthloaf/Waybread; both approved, handling open.
+      [Batch 040](../assets/reference/concept-art-batch-040-review.md) proposes
+      Fisher's Stew/Tidebroth; both approved, handling open.
+      [Batch 041](../assets/reference/concept-art-batch-041-review.md) proposes
+      Hunter's Roast/Mulled Cordial; corrected roast v3 and cordial v1 approved,
+      handling open. Roast v1 rejected for overly clean cuts.
+      Planned content correction: retain fruit-based Orchard Preserve (human
+      direction); replace the current grain/emberpetal recipe after defining its
+      fruit resource/source and costs. Update gathering/economy coverage together;
+      no new orchard region or runtime change authorized by the concept alone.
+      [Batch 042](../assets/reference/concept-art-batch-042-review.md) proposes
+      Bittergreen/Emberpetal; both approved, harvest open.
+      [Batch 043](../assets/reference/concept-art-batch-043-review.md) proposes
+      Orchard Preserve v2/harvested herbs v1 approved; full profiles open.
+      [Batch 044](../assets/reference/concept-art-batch-044-review.md) proposes
+      mature grain/sea salt; both approved, full profiles open.
+      [Batch 045](../assets/reference/concept-art-batch-045-review.md) proposes
+      fresh fish/salvage iron; both approved; source/full profiles open.
+      [Batch 046](../assets/reference/concept-art-batch-046-review.md) proposes
+      harvested grain/timber; A v1/B v2 approved; full profiles open.
+      [Batch 047](../assets/reference/concept-art-batch-047-review.md) proposes
+      dimstone ore/relic fragments; both approved; venom/full profiles open.
+      [Batch 048](../assets/reference/concept-art-batch-048-review.md) proposes
+      Greymaw pelt/Skitterling venom sacs; both approved; full profiles open.
+      [Batch 049](../assets/reference/concept-art-batch-049-review.md) proposes
+      hide/sinew; both approved; meat/full profiles open.
+      [Batch 050](../assets/reference/concept-art-batch-050-review.md) proposes
+      game meat v2/marks v1; both approved; rarity/full profiles open.
+      [Batch 051](../assets/reference/concept-art-batch-051-review.md) proposes
+      base sword v2/axe v4 approved; upgrades/full profiles open.
+      [Batch 052](../assets/reference/concept-art-batch-052-review.md) proposes
+      tempered sword/axe v2 approved after v1 weak distinction rejected;
+      full profiles open.
+      [Batch 053](../assets/reference/concept-art-batch-053-review.md) proposes
+      base spear v2/bow v1 approved; upgrades/full profiles open.
+      [Batch 054](../assets/reference/concept-art-batch-054-review.md) proposes
+      tempered spear/laminated bow approved; full profiles open.
+      [Batch 055](../assets/reference/concept-art-batch-055-review.md) proposes
+      cloth garb v1/leather jack v3 approved; all-folk fit/full profiles open.
+      [Batch 056](../assets/reference/concept-art-batch-056-review.md) proposes
+      scale coat/reinforced buckler approved; reverse/handling/fit open.
+      [Batch 057](../assets/reference/concept-art-batch-057-review.md) proposes
+      whetting v2/armor fitting v1 approved; operation/all-folk fit open.
+      [Batch 058](../assets/reference/concept-art-batch-058-review.md) proposes
+      sword scabbard/buckler reverse v2 approved; suspension/hand sizing open.
+      [Batch 059](../assets/reference/concept-art-batch-059-review.md) proposes
+      arrows/quiver and unstrung bow approved; draw/suspension/handling open.
+      [Batch 060](../assets/reference/concept-art-batch-060-review.md) proposes
+      sunny v1/overcast v2 courtyard approved; measured/temporal profiles open.
+      [Batch 061](../assets/reference/concept-art-batch-061-review.md) proposes
+      dawn/dusk courtyard approved; solar/temporal/full profiles open.
+      [Batch 062](../assets/reference/concept-art-batch-062-review.md) proposes
+      night v2/rainstorm v1 approved; lamp/face/rain/flash/temporal open.
+      [Batch 063](../assets/reference/concept-art-batch-063-review.md) proposes
+      lightning v1/wet paving v2 approved; recovery/wetness/motion open.
+      [Batch 064](../assets/reference/concept-art-batch-064-review.md) proposes
+      torch-only v2 versus approved Wardlight; comparison approved, overlap/motion open.
+      [Batch 065](../assets/reference/concept-art-batch-065-review.md) proposes
+      torch/Wardlight overlap approved; photometric/flicker/motion open.
+      [Batch 066](../assets/reference/concept-art-batch-066-review.md) proposes
+      Human sunlight/Wickfolk lantern portraits approved; calibrated/motion open.
+      [Batch 067](../assets/reference/concept-art-batch-067-review.md) proposes
+      forge/apothecary v1 approved; station/interaction open.
+      [Batch 068](../assets/reference/concept-art-batch-068-review.md) proposes
+      residential lane/hearth kitchen v1 approved; full profiles open.
+      [Batch 069](../assets/reference/concept-art-batch-069-review.md) proposes
+      square/waystone v2 with requested canopy tree/shaded seating and dock trader v1,
+      both approved; full profiles open.
+      [Batch 070](../assets/reference/concept-art-batch-070-review.md) proposes
+      village gate v2 (cobble-to-dirt correction)/crop lanes v1,
+      both approved; full profiles open.
+      [Batch 071](../assets/reference/concept-art-batch-071-review.md) proposes
+      crop cellar v2 (crop color/readability)/forest edge v1,
+      both approved; full profiles open.
+      [Batch 072](../assets/reference/concept-art-batch-072-review.md) proposes
+      woodland clearing/ruin approach v1 approved; full profiles open.
+      [Batch 073](../assets/reference/concept-art-batch-073-review.md) proposes
+      castle silhouette/gate v1; human geography review requires silhouette correction
+      and village/fields/coast reconciliation before further wide vistas. Gate remains
+      unapproved local appearance; shared layout/full profiles open.
+      [Batch 074 shared site plan](../assets/reference/concept-art-batch-074-review.md)
+      proposes connected coastal village/port and northern crop belt, preserves named
+      anchors and fixes camera contracts. Independent screens and human selection
+      complete; D-191 adopts the reference. Descriptor migration remains pending.
+      V2 expands the underscaled town into several quarters with cross-streets,
+      port routes and a complete outer-moat circuit; human-approved.
+      [Batch 075](../assets/reference/concept-art-batch-075-review.md) replaces the
+      inconsistent vista with C1 v2 and C3 street v1, both human-approved after
+      geography/theme screens; exact gate/bridge and cart-route profiles remain open.
+      [Batch076](../assets/reference/concept-art-batch-076-review.md) coordinates C2
+      gate A v2 and moat-bank B v4; both human-approved after house elevation/terrace
+      and junction correction. Shared metric model and full cart circulation remain open.
+      [Batch077](../assets/reference/concept-art-batch-077-review.md) adds undercroft
+      utility approach and bridge-abutment detail, both human-approved.
+      [Batch078](../assets/reference/concept-art-batch-078-review.md) adds C4
+      northbound fields and C5 reverse castle vista; A v1/B v2 human-approved.
+      [Batch079](../assets/reference/concept-art-batch-079-review.md) adds shore-to-world
+      A v2 and northern mountain layers B v1, both human-approved.
+      [Batch080](../assets/reference/concept-art-batch-080-review.md) adds square
+      activity A v2 and ordinary chamber B v1, both human-approved.
+      [Batch081](../assets/reference/concept-art-batch-081-review.md) adds sentinel
+      space and Skitterling nest context, both human-approved.
+      [Batch082](../assets/reference/concept-art-batch-082-review.md) adds resource
+      context/dormant vent, both approved; floor/torch deviations recorded.
+      [Batch083](../assets/reference/concept-art-batch-083-review.md) adds matched
+      active/quenched vent details, both approved; warning/action
+      and full prepared arena remain open.
+      [Batch084](../assets/reference/concept-art-batch-084-review.md) adds warning
+      appearance approved; dousing v1 rejected for depth/reach, close v2 human-approved. Timing and full-arena phases remain open.
+      [Batch085](../assets/reference/concept-art-batch-085-review.md) opening-phase A
+      human-approved; clutch B v4 human-approved with disclosed material softness,
+      Bv5 rejected for paving/light drift; bounded recovery closed.
+      [Batch086](../assets/reference/concept-art-batch-086-review.md) active/prepared
+      final phase human-approved after matching vent positions/rims.
+      [Batch087](../assets/reference/concept-art-batch-087-review.md) wall family A v3
+      and oak corner B v2 human-approved after construction corrections.
+      [Batch088](../assets/reference/concept-art-batch-088-review.md) sloped terracotta
+      roof/eave studies human-approved, addressing rain-drainage clarification.
+      [Batch089](../assets/reference/concept-art-batch-089-review.md) foundations
+      and low garden walls human-approved; hidden/metric profiles open.
+      [Batch090](../assets/reference/concept-art-batch-090-review.md) door/window
+      details human-approved; keeper/reverse/kinematic profiles remain open.
+      [Batch091](../assets/reference/concept-art-batch-091-review.md) courtyard well
+      A v2 and village waystone B v1 both human-approved.
+      [Batch092](../assets/reference/concept-art-batch-092-review.md) stone A v1
+      approved; timber closed-door B v6 approved; full profiles open.
+      [Batch093](../assets/reference/concept-art-batch-093-review.md) castle wall walk
+      and bridge arch detail human-approved; full profiles open.
+      [Batch094](../assets/reference/concept-art-batch-094-review.md) catacomb arch
+      and stone steps human-approved; full profiles open.
+      [Batch095](../assets/reference/concept-art-batch-095-review.md) arena pillar
+      A v2 and forest wall B v1 human-approved; full profiles open.
+      [Batch096](../assets/reference/concept-art-batch-096-review.md) dock support
+      B v1 approved; A v6 matching pile joints approved; grain softness noted.
+      Berth/depth/ship engineering and role details remain open.
+      [Batch097](../assets/reference/concept-art-batch-097-review.md) forge A v3
+      and idle alembic B v1 human-approved; full profiles open.
+      [Batch098](../assets/reference/concept-art-batch-098-review.md) hearth A v2
+      and trader counter B v2 human-approved; full profiles open.
+      [Batch099](../assets/reference/concept-art-batch-099-review.md) table/seating
+      A v1 and containers B v1 human-approved; full profiles open.
+      [Batch100](../assets/reference/concept-art-batch-100-review.md) harvest tools
+      A v1 and wall torch B v2 human-approved; full profiles open.
+      [Batch101](../assets/reference/concept-art-batch-101-review.md) closed satchel
+      A v1 and Mythic core B v1 human-approved; full profiles open.
+      [Batch102](../assets/reference/concept-art-batch-102-review.md) forge sign A v3 (raised for headroom)
+      and gnawed stores B v1 human-approved; full profiles open.
+      [Batch103](../assets/reference/concept-art-batch-103-review.md) paving assembly
+      A v1 and earth edge B v1 human-approved; full profiles open.
+      [Batch104](../assets/reference/concept-art-batch-104-review.md) stone family
+      A v4 and plaster B v1 human-approved; full profiles open.
       Include the whole game's visual scope,
       all planned rendered effects and physics behavior targets, with deferred work
       labeled separately from current implementation obligations.
@@ -806,6 +1137,8 @@ was run; those remain milestone-scoped. Blender preview timing is not game perfo
 - [ ] Produce one rigged NPC and one enemy with locomotion, idle, and the encounter's
       combat animation through the same provenance and QA path. Use existing gameplay
       and Babylon animation; additional body types remain M5 expansion.
+      Source import/rig/skin/clip validation and pinned-worker diagnostics are now
+      implemented; character production and admission remain open.
 - [ ] Integrate the daylight area in the ordinary installed game, with moving near,
       mid, and vista cameras. Inspect material response, contact/cascade artifacts,
       foliage, character motion, and LOD transitions together. Human visual acceptance

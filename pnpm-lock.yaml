@@ -40,6 +40,15 @@ importers:
         specifier: 8.1.4
         version: 8.1.4(@types/node@24.13.3)(esbuild@0.28.1)
 
+  assets:
+    devDependencies:
+      '@parallax/engine':
+        specifier: workspace:*
+        version: link:../engine
+      gltf-validator:
+        specifier: 2.0.0-dev.3.10
+        version: 2.0.0-dev.3.10
+
   engine:
     dependencies:
       '@babylonjs/ktx2decoder':
@@ -86,6 +95,9 @@ importers:
       '@babylonjs/lite':
         specifier: 1.12.0
         version: 1.12.0
+      '@parallax/assets':
+        specifier: workspace:*
+        version: link:../assets
       '@parallax/engine':
         specifier: workspace:*
         version: link:../engine
@@ -1018,6 +1030,9 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
+  gltf-validator@2.0.0-dev.3.10:
+    resolution: {integrity: sha512-odJ4k0tRkGXiDGn78yDBg+fBbAIvBnXxh3RwAta0emSxGtyagFE8B4xELB1oYe3S5RD8Ci3uZAsZaascH2LAEQ==}
+
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
@@ -1891,6 +1906,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  gltf-validator@2.0.0-dev.3.10: {}
 
   hasown@2.0.4:
     dependencies:
