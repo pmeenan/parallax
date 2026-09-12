@@ -13,6 +13,13 @@ The reference is an appearance target, not a replacement world layout. Follow
 [game design](../../docs/game-design.md#art-direction), D-182, and the existing D1
 terrain, castle/moat footprint, village placement and catacomb entrances.
 
+Selected village direction: [DIR-002 B](targets/DIR-002.md#human-selection-and-binding-direction).
+The human endorses B's timber-led, weathered medieval character and quality; do not
+replace it with A's plaster treatment or C's pristine/high-end walls and gutter details.
+Village lanterns must use actual candle/oil flame, never electric fixtures. Carry these
+constraints into future reference and construction sheets; selection does not resume
+modeling before the program gate or approve unseen lamp construction.
+
 ## Visual target
 
 An inviting village courtyard: warm cream plaster framed by dark oak, terracotta

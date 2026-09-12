@@ -747,6 +747,10 @@ explicitly use GPT-6 Astra / low under human direction. No concept target is clo
       A v1 and earth edge B v1 human-approved; full profiles open.
       [Batch104](../assets/reference/concept-art-batch-104-review.md) stone family
       A v4 and plaster B v1 human-approved; full profiles open.
+      [Batch105](../assets/reference/concept-art-batch-105-review.md) oak A v5 (peg/joint correction)
+      and terracotta B v1 human-approved; full profiles open.
+      [Batch106](../assets/reference/concept-art-batch-106-review.md) iron A v1
+      and corrected leather B v2 pass review. Human selection/full profiles open.
       Include the whole game's visual scope,
       all planned rendered effects and physics behavior targets, with deferred work
       labeled separately from current implementation obligations.

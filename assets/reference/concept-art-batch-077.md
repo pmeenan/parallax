@@ -1,0 +1,26 @@
+# Batch077 — castle utility approach and crossing construction
+
+ENV-014 and ENV-013 detail coverage. Two independent generation lanes, two passes
+each, 60 minutes active. Both independent theme/quality screens and lead before
+revision/dependent generation. Human approval ends batch. No new wing, transition,
+water mechanics or runtime geometry. Stills do not prove engineering or navigation.
+
+## A exact prompt — undercroft approach
+
+Input: concepts/batch-005/und-003-castle-surface-v1.png, approved existing entrance.
+
+```text
+Project Parallax ENV-014: a route-supporting castle undercroft approach, one landscape 1536x1024 AAA photoreal medieval fantasy image. Use the supplied approved doorway image as the EXACT existing entrance character, not permission to add an entrance. Pull the camera back a little and to the left along the same dry path to reveal how a modest stone-paved utility approach reaches this doorway at the base of the castle's rough limestone retaining wall, embedded in the natural rocky hill. The SAME single pointed limestone arch doorway is in right-middle frame, with its iron-strapped timber door open against the left jamb, warm physical torch within, short landing and solid masonry back wall blocking a direct distant tunnel view; the existing route bends right inside beyond visibility. Do not create a second door, new wing, grand chamber, new catacomb branch or magic portal. Foreground path wide enough for two adults leads continuously to doorway, with a small dry side recess for two closed supply crates and a simple bench, never blocking route. Uphill castle retaining wall occupies right; low rough stone edge and planted natural rock slope on left; do not invent a view of coastline or village because this is a close utility approach on the castle island. Keep entrance surround, wall stone size, moss and natural rock proportions consistent with reference. One mature broad slate-gray mineral-skinned Skarn in simple practical medieval worker clothing standing off path by the crates gives human-sized doorway scale, and a Human traveler in worn cloak approaching at a distance, no modern tools or race/job restrictions, no new named NPC. Sunny exterior with cool shade and localized warm flame within arch, rich photoreal natural limestone and rugged vegetation, no glowing effects beyond real flame. Modest maintained access, not royal luxury or ruined impassable rubble. Camera at adult walking height; entire walkable path and threshold visible, believable grounded bodies and bearing stones. No text, banners, labels, UI or electric fixtures. A coherent wider approach to the SAME existing undercroft doorway; original fantasy with medieval material realism.
+```
+
+Output: concepts/batch-077/env-014-undercroft-approach-v1.png.
+
+## B exact prompt — bridge support and bank contact
+
+Input: concepts/batch-076/env-013-moat-bank-v4.png, human-approved.
+
+```text
+Project Parallax ENV-013 supplementary construction concept, one landscape 1536x1024 AAA photoreal. Use supplied approved bridge and moat-bank image as sole visual reference. A CLOSER LOW OBLIQUE VIEW OF THE SAME NEAR TOWN-SIDE MASONRY BRIDGE ABUTMENT AND FIRST TWO ARCHES, viewed from the dry planted outer-bank slope north of that bridge, above water level. This is a local construction study, not another world panorama. Preserve exact limestone arched bridge style: thick voussoir rings, solid spandrel walls, repeated sturdy masonry piers, continuous gently ascending cobbled deck and plain low stone parapets. Frame the nearest bank contact on right and the next two supported arch openings extending to left; farther bridge naturally continues out of frame left, not a broken bridge ending in water. Show the near abutment bedded into solid rock and stone retaining masonry of dry town bank, supporting the approach deck without an unsupported cantilever. A clear bit of cobbled bridge-entry apron visible above/right has an OPEN road mouth between separate parapet ends; NO wall across road, no planted barrier across entrance. Low town bank retaining wall returns alongside the opening, no merge that obstructs travel. House facade cropped high on right and roots/earth/stone bank contact establish supported inhabited dry land; do not lower waterside house roofs beneath street or invent a new footpath running through water. Moat water lies below arch springing, modest natural small ripples and believable reflected stone with visible darker damp band at ordinary waterline. Keep large enough arch openings and solid pier width like reference, no tiny fake holes, no levitating voussoirs, no new stairs/doors/drawbridge/canal or machinery. Weathered limestone, selective moss in shaded damp joints, brighter dry upper masonry, naturally irregular bank rocks and sparse plants that DO NOT hide abutment or first pier. Bright daylight, cool under-arch shadow but readable joints, high detail material study. No people needed in this cropped structural view, no ships, sea horizon, text, diagram labels or modern railings. Show continuous load path and dry bank-to-deck connection at concept level; not a measured engineering drawing or invented bridge redesign.
+```
+
+Output: concepts/batch-077/env-013-bridge-abutment-v1.png.

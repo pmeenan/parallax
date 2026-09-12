@@ -33,8 +33,8 @@ castle-vista cameras. The production well must keep the existing entrance access
 - Original tool output retained in the machine-local Codex generated-images directory.
 - Rights review: **pending**. Applicable OpenAI account/output terms must be recorded
   and reviewed before derived art ships publicly; no rights clearance is asserted here.
-  Internal visual direction only. Reference images are allowed in git under assets rules;
-  P-004 remains open for source/library binaries.
+  Internal visual direction only. Reference originals use Git LFS under D-190;
+  source/library storage follows `assets/storage.md` and D-186.
 
 ## Exact generation prompt
 

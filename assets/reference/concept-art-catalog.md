@@ -1,6 +1,63 @@
 # Concept-art target catalog
 
-**Status: initial inventory prepared, 2026-09-05; no new artwork generated.**
+**Status: inventory prepared; [Batch 001](concept-art-batch-001.md) generation and
+sequential subagent review completed for three sunny direction candidates, 2026-09-05.
+[B selected by the human](concept-art-batch-001-review.md), with flame-only lamps;
+matched overcast and detail coverage remain open.**
+
+[Batch 002 castle comparison](concept-art-batch-002-review.md): A's classic large
+round-tower silhouette is human-selected. Village facade and candle-lantern details have agent-reviewed drafts;
+full kit profiles and matched overcast correspondence remain open.
+[Batch 003](concept-art-batch-003-review.md) adds castle view drafts and reviewed
+human-selected catacomb B for its creepy reinforced-bedrock atmosphere.
+[Batch 004](concept-art-batch-004-review.md) has a reviewed passage-junction study and
+human-selected arena B, preserving its "carved out of the earth" character.
+[Batch 005](concept-art-batch-005-review.md) presents three reviewed entrance pairs;
+all three treatments are human-accepted; layout/transition validation remains open.
+[Batch 006](concept-art-batch-006-review.md) has three reviewed shoreline treatments
+with A human-selected for open beach interactions and dock transitions.
+[Batch 007](concept-art-batch-007-review.md) has three reviewed working-dock alternatives
+A is human-selected for a modest small-fishing-boat landing; open sand is preserved.
+A separate [village harbor plan](harbor-art-plan.md) covers large ships, castle supplies
+and sailor/captain/pirate interaction spaces. New targets are listed below.
+[Batch 008](concept-art-batch-008-review.md) was rejected by the human for insufficient
+port scale. Revised coverage explicitly includes tavern, inn and merchant offices.
+[Batch 009](concept-art-batch-009-review.md) has two screened substantial-port revisions;
+A is human-selected for greater scale and interaction potential; close building-role views remain open.
+[Batch 010](concept-art-batch-010-review.md) adds a corrected merchant berth and
+fantasy-populated hospitality alternatives; B courtyard is human-selected for stories
+and chance encounters.
+[Batch 011](concept-art-batch-011-review.md) adds reviewed large-fleet fish-exchange
+and net-repair waterfront alternatives; B is human-selected for varied port uses beyond fishing.
+[Batch 012](concept-art-batch-012-review.md) has reviewed merchant-office frontage
+settings; both waterfront offices and merchant courtyard are human-selected to coexist.
+[Batch 013](concept-art-batch-013-review.md) presents reviewed tavern-interior layout
+proposals; B connected rooms are human-selected for quieter secret meetings.
+Crowd/folk-scale gaps remain.
+[Batch 014](concept-art-batch-014-review.md) adds reviewed inn arrival-hall alternatives;
+A open hall is human-selected for combined barkeep/lodging management; metric/stair/character profiles remain open.
+[Batch 015](concept-art-batch-015-review.md) presents reviewed private/shared guest rooms
+with A private chamber human-selected for private-room adventure opportunities.
+[Batch 016](concept-art-batch-016-review.md) adds reviewed corridor proposals for
+individual room privacy; B bent corridor is human-selected for extra hall privacy.
+[Batch 017](concept-art-batch-017-review.md) adds screened port-end supply-yard
+alternatives; A open yard selected for port character without fortress treatment. Full route remains open.
+[Batch 018](concept-art-batch-018-review.md) adds reviewed dockside conversation
+spaces; both human-selected as complementary examples. Character/metric/full-profile coverage remains open.
+[Batch 019](concept-art-batch-019-review.md) adds screened sailor/captain costume
+directions, both human-accepted; anatomy, further variants and full profiles remain open.
+[Batch 020](concept-art-batch-020-review.md) adds screened pirate costume and merchant
+ship directions, both human-accepted; full profiles/ship engineering remain open.
+[Batch 021](concept-art-batch-021-review.md) fishing vessel screened; fixed cargo
+hoist rejected for lacking ship-transfer purpose. [Batch 022](concept-art-batch-022.md)
+replaces that subject with a quay crane and explicit hand-power/rotation requirements.
+[Batch 023](concept-art-batch-023-review.md) clarifies crank placement but retains
+brake/drive/tackle-topology blockers; mechanical-detail acceptance remains open.
+The human accepted Batch 023 visual direction, without closing those blockers.
+[Batch 024](concept-art-batch-024-review.md): widened pier v9 is human-rejected;
+v11 preserves the v4 pier while moving the ship closer and correcting the ramp
+landing. BOTH stone quay v1 and timber pier v11 are human-accepted;
+joints/tides/foundations/full profiles remain open; history is in KIT-038.
 The [endorsed courtyard](d1-courtyard.md) remains the quality anchor. This catalog
 turns the [concept-art program](concept-art-program.md) into individually named
 generation targets. There is **no total image cap or fixed number of batches**.
@@ -54,6 +111,7 @@ not newly authored lore, geography or mechanics.
 | WEB | [Web-native ambitions](../../docs/features.md#beyond-aaa-features-even-native-aaa-titles-dont-usually-ship) |
 | RB | [Rendering research backlog](../../docs/plan.md#rendering-research-backlog--promote-only-for-a-named-need) |
 | PR | [Concept and behavior reference program](concept-art-program.md) |
+| HP | [Human-directed village harbor plan](harbor-art-plan.md) and [waterfront scope](../../docs/game-design.md#planned-waterfront-visual-scope) |
 
 ### Output profiles and acceptance
 
@@ -83,8 +141,8 @@ needed. On first generation create a linked record at
 - Must-fix defects, critique, selection feedback and remaining views/states.
 - FX/MOT timing, reference footage, test conditions and grounded versus proposed values.
 
-Do not create empty record files for every target. Commit image originals and
-contact sheets in git under `assets/reference/` (D-188); record hashes in the target
+Do not create empty record files for every target. Version image originals and
+contact sheets through Git LFS under `assets/reference/` (D-190); record hashes in the target
 record. Motion footage and other third-party sources follow their own rights and size
 handling. Source images cannot silently become shipping textures. Missing motion
 footage is not satisfied by generated frame sequences.
@@ -94,14 +152,15 @@ footage is not satisfied by generated frame sequences.
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | DIR-001 | Existing courtyard quality anchor | P0 | C | AD | DIR | Existing image/provenance in d1-courtyard.md; endorsement is quality only, not metric layout or rights clearance | Endorsed anchor; rights pending |
-| DIR-002 | Coastal village world direction | P0 | C | AD,D1 | DIR | Distinct coherent alternatives using the courtyard's warm materials and credible lived-in construction | Missing |
-| DIR-003 | Castle and village architectural relationship | P0 | C | D1 | DIR | Hill, complete moat and village outside footprint; near skyline and distant silhouette | Missing |
-| DIR-004 | Catacomb visual language | P0 | C | D2 | DIR | Passage/arena construction alternatives; historical layering is proposed interpretation | Missing |
+| DIR-002 | Coastal village world direction | P0 | C | AD,D1 | DIR | B's timber-led weathered character selected; flame-only lamps; matched gloomy and construction details open | [Selected — B](targets/DIR-002.md) |
+| DIR-003 | Castle and village architectural relationship | P0 | C | D1 | DIR | A's classic large round keep selected; full moat/village separation retained; further views open | [Selected — A](targets/DIR-003.md) |
+| DIR-004 | Catacomb visual language | P0 | C | D2 | DIR | B's creepy reinforced-bedrock character selected; historical layering is proposed interpretation | [Selected — B](targets/DIR-004.md); arena/entrances open |
 | DIR-005 | World palette and material hierarchy | P0 | C | AD | DIR | Village/fields/forest/shore/underground palette in bright and gloomy states | Missing |
-| DIR-006 | Playable folk and costume language | P0 | C | AB | DIR | Human/Skarn/Wickfolk lineup with everyday and equipped silhouettes | Missing |
-| DIR-007 | Creature family and threat hierarchy | P0 | C | BE | DIR | All six archetypes at comparative scale; distinguish elite and boss | Missing |
-| DIR-008 | Aetherwork and alchemy language | P0 | C | MA,RC | DIR | Five damage channels, crafted catalysts and restrained emissive accents | Missing |
+| DIR-006 | Playable folk and costume language | P0 | C | AB | DIR | Human/Skarn/Wickfolk lineup with everyday and equipped silhouettes | [Existing B appearance and stature selected](targets/DIR-006.md); variations/full profiles open |
+| DIR-007 | Creature family and threat hierarchy | P0 | C | BE | DIR | All six archetypes at comparative scale; distinguish elite and boss | All six initial appearances accepted, including [wardens](targets/DIR-007-wardens.md); comparative scale/full profiles open |
+| DIR-008 | Aetherwork and alchemy language | P0 | C | MA,RC | DIR | Five damage channels, crafted catalysts and restrained emissive accents | [B wand selected](targets/DIR-008-aetherspark.md); effect/channel/tier/full profiles open |
 | DIR-009 | Interface visual language | P0 | C | FM | DIR,UI | Readable hierarchy and restrained world overlay | Missing |
+| DIR-010 | Shared D1 geography and reference cameras | P0 | C | D1,HP | DIR | Castle/moat, connected coastal village/port, inland fields/forest and fixed view directions | [Batch 074 v2 approved, D-191](shared-site-plan.md); runtime migration pending |
 
 ## D1 environments and landmarks
 
@@ -110,89 +169,89 @@ footage is not satisfied by generated frame sequences.
 | ENV-001 | Courtyard from playable route | P1 | C | AD,D1 | ENV | Well, castle silhouette and clear lane; do not move authored features to imitate anchor | Missing |
 | ENV-002 | Courtyard reverse and side views | P1 | C | AD | ENV | Same selected courtyard; resolve unseen construction consistently | Missing |
 | ENV-003 | Courtyard-to-village lane | P1 | C | D1 | ENV | Walking sequence, paving transitions and continuous sightlines | Missing |
-| ENV-004 | Village square and waystone | P2 | C | D1,DE | ENV | Rest landmark and everyday NPC activity | Missing |
-| ENV-005 | Residential street assembly | P2 | C | D1 | ENV | Reusable house variations, alleys and clear entrances | Missing |
-| ENV-006 | Forge frontage and work area | P2 | C | IT | ENV | NPC station, hot work and pedestrian separation | Missing |
-| ENV-007 | Apothecary and alembic work area | P2 | C | IT,QU | ENV | Reagent storage and crafted science | Missing |
-| ENV-008 | Hearth and food preparation area | P2 | C | IT | ENV | Utensils, fuel and working room | Missing |
-| ENV-009 | Dock trader and salvager setting | P2 | C | IT,QU | ENV | Fish/salt/salvage economy and dialogue framing | Missing |
-| ENV-010 | Village gates and field approach | P2 | C | D1 | ENV | Terrain transition and castle orientation | Missing |
-| ENV-011 | Castle distant silhouette | P1 | C | D1 | ENV | Village/field/forest/shore viewpoints, existing hill/moat footprint | Missing |
-| ENV-012 | Castle gate and waystone approach | P2 | C | D1,DE | ENV | Arrival route, moat crossing and gate clearance | Missing |
-| ENV-013 | Moat banks and crossing | P2 | C | D1 | ENV | Bank construction, bridge scale and waterline; simulation remains deferred | Missing |
-| ENV-014 | Castle approach to undercroft | P2 | C | D1,D2 | ENV | Route-supporting interior only, no invented playable wing | Missing |
-| ENV-015 | Fields and crop lanes | P2 | C | D1,IT | ENV | Harvestable grain/herbs within coherent field pattern | Missing |
-| ENV-016 | Gnawed crop cellar and collapsed tunnel | P2 | C | QU | ENV | Signs in the Fields evidence; static collapse, not destruction | Missing |
-| ENV-017 | Forest edge and waystone | P2 | C | D1,DE | ENV | Fields transition and navigable opening | Missing |
-| ENV-018 | Forest path and clearing | P2 | C | D1,BE | ENV | Greymaw circling/flank space and roots/ground contact | Missing |
-| ENV-019 | Forest ruins and brigand approach | P2 | C | D1,QU | ENV | Loot site; parley and ambush readability | Missing |
-| ENV-020 | South shoreline | P2 | C | D1,IT | ENV | Beach/rock/tide-edge assembly and gathering | Missing |
-| ENV-021 | Coastal docks and fishing edge | P2 | C | IT | ENV | Supported dock and working shore; no transport system | Missing |
-| ENV-022 | Mountain vista and atmospheric layers | P2 | C | D1 | ENV | Distant nonplayable mountains, coastline and castle orientation | Missing |
-| ENV-023 | Village-to-fields panoramic vista | P2 | C | D1,QU | ENV | Painter viewpoint candidate; authored landmark coordinates govern framing | Missing |
-| ENV-024 | Forest-to-castle panoramic vista | P2 | C | D1,QU | ENV | Second viewpoint candidate, canopy and distant silhouette | Missing |
-| ENV-025 | Shore-to-world panoramic vista | P2 | C | D1,QU | ENV | Third viewpoint candidate, no new discovery coordinates | Missing |
+| ENV-004 | Village square and waystone | P2 | C | D1,DE | ENV | Rest landmark and everyday NPC activity | [Batch 069 v2 canopy tree/seating approved](targets/ENV-004-009-square-trader.md); full profiles open |
+| ENV-005 | Residential street assembly | P2 | C | D1 | ENV | Reusable house variations, alleys and clear entrances | [Batch 068 v1 approved](targets/ENV-005-008-lane-hearth.md); full modular/interaction profile open |
+| ENV-006 | Forge frontage and work area | P2 | C | IT | ENV | NPC station, hot work and pedestrian separation | [Batch 067 v1 approved](targets/ENV-006-007-workshops.md); full station/interaction profile open |
+| ENV-007 | Apothecary and alembic work area | P2 | C | IT,QU | ENV | Reagent storage and crafted science | [Batch 067 v1 approved](targets/ENV-006-007-workshops.md); apparatus/interaction profile open |
+| ENV-008 | Hearth and food preparation area | P2 | C | IT | ENV | Utensils, fuel and working room | [Batch 068 v1 approved](targets/ENV-005-008-lane-hearth.md); cooking/interaction profile open |
+| ENV-009 | Dock trader and salvager setting | P2 | C | IT,QU | ENV | Fish/salt/salvage economy and dialogue framing | [Batch 069 v1 approved](targets/ENV-004-009-square-trader.md); full profiles open |
+| ENV-010 | Village gates and field approach | P2 | C | D1 | ENV | Terrain transition and castle orientation | [Batch 070 v2 paving transition approved](targets/ENV-010-015-gate-fields.md); full profiles open |
+| ENV-011 | Castle distant silhouette | P1 | C | D1 | ENV | Village/field/forest/shore viewpoints, existing hill/moat footprint | [Batch 075 C1 v2 approved](targets/ENV-011-031-connected-vistas.md); supersedes 073 geographic draft; full profiles open |
+| ENV-012 | Castle gate and waystone approach | P2 | C | D1,DE | ENV | Arrival route, moat crossing and gate clearance | [Batch076 A v2 approved](targets/ENV-012-013-gate-moat.md); replacement for old gate studies; full profiles open |
+| ENV-013 | Moat banks and crossing | P2 | C | D1 | ENV | Bank construction, bridge scale and waterline; simulation remains deferred | [Batch076 B v4 approved](targets/ENV-012-013-gate-moat.md); human house elevation/junction correction; full metric/engineering/circulation profiles open |
+| ENV-014 | Castle approach to undercroft | P2 | C | D1,D2 | ENV | Route-supporting approach/interior only, no invented playable wing | [Batch077 A v1 approved](targets/ENV-013-014-castle-details.md); hidden turn/interior and full profiles open |
+| ENV-015 | Fields and crop lanes | P2 | C | D1,IT | ENV | Harvestable grain/herbs within coherent field pattern | [Batch 070 v1 approved](targets/ENV-010-015-gate-fields.md); full profiles open |
+| ENV-016 | Gnawed crop cellar and collapsed tunnel | P2 | C | QU | ENV | Signs in the Fields evidence; static collapse, not destruction | [Batch 071 v2 colorful crops approved](targets/ENV-016-017-cellar-forest.md); full profiles open |
+| ENV-017 | Forest edge and waystone | P2 | C | D1,DE | ENV | Fields transition and navigable opening | [Batch 071 v1 approved](targets/ENV-016-017-cellar-forest.md); full profiles open |
+| ENV-018 | Forest path and clearing | P2 | C | D1,BE | ENV | Greymaw circling/flank space and roots/ground contact | [Batch 072 v1 approved](targets/ENV-018-019-clearing-ruins.md); full profiles open |
+| ENV-019 | Forest ruins and brigand approach | P2 | C | D1,QU | ENV | Loot site; parley and ambush readability | [Batch 072 v1 approved](targets/ENV-018-019-clearing-ruins.md); full profiles open |
+| ENV-020 | South shoreline | P2 | C | D1,IT | ENV | A's open sand/limestone supports interactions and dock transitions | [Selected — A](targets/ENV-020.md); full profile open |
+| ENV-021 | Coastal docks and fishing edge | P2 | C | IT | ENV | Selected simple straight timber landing for basic fishing boats; distinct from full harbor | [Selected — A](targets/ENV-021.md); full profile open |
+| ENV-022 | Mountain vista and atmospheric layers | P2 | C | D1 | ENV | Distant nonplayable mountains, coastline and castle orientation | [Batch079 B v1 approved](targets/ENV-022-025-horizons.md); full atmosphere/topography profiles open |
+| ENV-023 | Village-to-fields panoramic vista | P2 | C | D1,QU | ENV | Painter viewpoint candidate; authored landmark coordinates govern framing | [Batch078 A v1 approved](targets/ENV-023-024-northern-vistas.md); C4 landscape, no quest trigger change; full profiles open |
+| ENV-024 | Forest-to-castle panoramic vista | P2 | C | D1,QU | ENV | Second viewpoint candidate, canopy and distant silhouette | [Batch078 B v2 approved](targets/ENV-023-024-northern-vistas.md); C5 reverse, full profiles open |
+| ENV-025 | Shore-to-world panoramic vista | P2 | C | D1,QU | ENV | Third viewpoint candidate, no new discovery coordinates | [Batch079 A v2 approved](targets/ENV-022-025-horizons.md); open beach corrected, full profiles open |
 | ENV-026 | Finished five-minute route continuity | P1 | C | FM,D1,D2 | ENV | Courtyard/NPC/encounter/entrance sequence with common scale and kit | Missing |
-| ENV-027 | Village crowd and schedule composition | P2 | C | NP,FM | ENV | Working/resting/traversing NPCs, clear navigation and dialogue | Missing |
+| ENV-027 | Village crowd and schedule composition | P2 | C | NP,FM | ENV | Working/resting/traversing NPCs, clear navigation and dialogue | [Batch080 A v2 approved](targets/ENV-027-UND-008-activity-chamber.md); schedule/motion/full profiles open |
 
 ## D2 and all three transition pairs
 
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| UND-001 | Village-well entrance, surface side | P1 | C | D2 | ENV | Existing transition well accessible; decorative courtyard well does not create an edge | Missing |
-| UND-002 | Village passage arrival, underground side | P1 | C | D2 | ENV | Pair with UND-001, arrival heading and return legibility | Missing |
-| UND-003 | Castle-undercroft entrance, surface side | P2 | C | D2 | ENV | Undercroft context and full occlusion | Missing |
-| UND-004 | Castle passage arrival, underground side | P2 | C | D2 | ENV | Pair with UND-003, construction continuity | Missing |
-| UND-005 | Forest-ruin entrance, surface side | P2 | C | D2 | ENV | Vegetation/ruin threshold and clear movement | Missing |
-| UND-006 | Bent forest passage arrival, underground side | P2 | C | D2 | ENV | Pair with UND-005, retain bend and occlusion | Missing |
-| UND-007 | Catacomb passage assembly | P2 | C | D2 | ENV | Floor/wall/vault joins and narrow-route readability | Missing |
-| UND-008 | Catacomb chamber assembly | P2 | C | D2 | ENV | Room variations within authored traversable cells | Missing |
-| UND-009 | Warden sentinel encounter space | P2 | C | D2,BE | ENV | Maul/slam clearance and Exposed opening | Missing |
-| UND-010 | Skitterling nest area | P2 | C | BE | ENV | Clutch emergence, venom gathering and small-body visibility | Missing |
-| UND-011 | Relic and dimstone gathering context | P2 | C | IT,QU | ENV | Readable nodes without blanket emissive walls | Missing |
-| UND-012 | Warden Below arena establishing view | P2 | C | D2,BE | ENV | Authored four-cell arena, cover pillars and edge vents | Missing |
-| UND-013 | Arena combat views, three phases | P2 | C | BE | ENV | Same geometry across clutch/vent states, readable safe space | Missing |
-| UND-014 | Arena after optional vent preparation | P2 | C | QU | ENV,FX | Active versus quenched vents, no arena redesign | Missing |
+| UND-001 | Village-well entrance, surface side | P1 | C | D2 | ENV | Existing transition well accessible; decorative courtyard well does not create an edge | [Accepted entrance pair](targets/UND-001-002.md); construction/traversal open |
+| UND-002 | Village passage arrival, underground side | P1 | C | D2 | ENV | Pair with UND-001, arrival heading and return legibility | [Accepted entrance pair](targets/UND-001-002.md); construction/traversal open |
+| UND-003 | Castle-undercroft entrance, surface side | P2 | C | D2 | ENV | Undercroft context and full occlusion | [Accepted entrance pair](targets/UND-003-004.md); construction/traversal open |
+| UND-004 | Castle passage arrival, underground side | P2 | C | D2 | ENV | Pair with UND-003, construction continuity | [Accepted entrance pair](targets/UND-003-004.md); construction/traversal open |
+| UND-005 | Forest-ruin entrance, surface side | P2 | C | D2 | ENV | Vegetation/ruin threshold and clear movement | [Accepted entrance pair](targets/UND-005-006.md); construction/traversal open |
+| UND-006 | Bent forest passage arrival, underground side | P2 | C | D2 | ENV | Pair with UND-005, retain bend and occlusion | [Accepted entrance pair](targets/UND-005-006.md); construction/traversal open |
+| UND-007 | Catacomb passage assembly | P2 | C | D2 | ENV | Floor/wall/vault joins and narrow-route readability | [Draft junction](targets/UND-007.md); full profile open |
+| UND-008 | Catacomb chamber assembly | P2 | C | D2 | ENV | Room variations within authored traversable cells | [Batch080 B v1 approved](targets/ENV-027-UND-008-activity-chamber.md); metric/topology/full profiles open |
+| UND-009 | Warden sentinel encounter space | P2 | C | D2,BE | ENV | Maul/slam clearance and Exposed opening | [Batch081 A v1 approved](targets/UND-009-010-encounters.md); motion/clearance/recovery profiles open |
+| UND-010 | Skitterling nest area | P2 | C | BE | ENV | Clutch emergence, venom gathering and small-body visibility | [Batch081 B v1 approved](targets/UND-009-010-encounters.md); anatomy/motion/harvesting profiles open |
+| UND-011 | Relic and dimstone gathering context | P2 | C | IT,QU | ENV | Readable nodes without blanket emissive walls | [Batch082 A v1 approved](targets/UND-011-012-resources-vent.md); floor deviation recorded, interaction/full profiles open |
+| UND-012 | Warden Below arena establishing view | P2 | C | D2,BE | ENV | Authored four-cell arena, cover pillars and edge vents | [Selected — B](targets/UND-012.md); [Batch082 dormant vent approved](targets/UND-011-012-resources-vent.md); combat states open |
+| UND-013 | Arena combat views, three phases | P2 | C | BE | ENV | Same geometry across clutch/vent states, readable safe space | [Batch085 opening/clutch approved](targets/UND-013-boss-phases.md); [Batch086 phase three approved](targets/UND-013-014-final-phase.md); motion/timing open |
+| UND-014 | Arena after optional vent preparation | P2 | C | QU | ENV,FX | Active versus quenched vents, no arena redesign | [Batch083 local detail approved](targets/FX-015-UND-014-vent-states.md); [Batch084 dousing v2 approved](targets/FX-015-UND-014-warning-dousing.md); [Batch086 prepared arena approved](targets/UND-013-014-final-phase.md); motion/flags open |
 | UND-015 | Three entrance lighting transitions | P1 | C | D2,WL | LIGHT | Day/gloom/night to underground and return, full occlusion and no pop | Missing |
 
 ## Architecture and reusable props
 
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| KIT-001 | Limestone paving assembly | P1 | C | AD | KIT | 4 m patch, broken courses, infill, buried shoulders, earthy joints and sparse plants | Missing |
-| KIT-002 | Paving stone shape family | P1 | C | AD | KIT | Broad calm tops, localized chips, varied outlines; avoid pillows and uniform slabs | Missing |
-| KIT-003 | Paving slope and edge assembly | P1 | C | AD | KIT | Walking/grazing/top; rigid stones and continuous substrate, no floating plants | Missing |
-| KIT-004 | Courtyard well construction | P1 | C | AD | KIT | Rim/interior/base and bonds; proposed 2 m diameter and 1 m rim cue | Missing |
-| KIT-005 | Plaster wall bays | P1 | C | AD | KIT | Plain/window/door variants on existing 2 m by 3 m bay | Missing |
-| KIT-006 | Oak posts, beams and braces | P1 | C | AD | KIT | Joined frame, end grain and corner ownership | Missing |
-| KIT-007 | Limestone plinths and foundations | P1 | C | AD | KIT | Slope fit, corners, plaster contact and damp edge | Missing |
-| KIT-008 | Terracotta roof, ridge and eaves | P1 | C | AD | KIT | Existing 40-degree pitch, end caps, overlaps and drainage | Missing |
-| KIT-009 | Doors, thresholds and fittings | P1 | C | AD | KIT | 1 m by 2.25 m clear opening, hinges/latch/open state | Missing |
-| KIT-010 | Windows, shutters and reveals | P1 | C | AD | KIT | Inside/outside agreement, open/closed and glass interpretation | Missing |
-| KIT-011 | Low garden walls and coping | P1 | C | AD | KIT | Corners, terminals and planting contact | Missing |
-| KIT-012 | Stone stairs and landings | P2 | C | D1,D2 | KIT | Rise/run cues and credible foot placement | Missing |
-| KIT-013 | Timber stairs, rails and platforms | P2 | C | D1 | KIT | Supported joints and traversable clearance | Missing |
-| KIT-014 | Castle wall, tower and battlement kit | P2 | C | D1 | KIT | Near construction and far silhouette variation | Missing |
-| KIT-015 | Castle gate and bridge components | P2 | C | D1 | KIT | Select supported construction before detailing | Missing |
-| KIT-016 | Catacomb walls, vaults and arches | P2 | C | D2 | KIT | Ceiling junctions, corners and restrained static damage | Missing |
-| KIT-017 | Catacomb floors and stairs | P2 | C | D2 | KIT | Worn paths and readable height changes | Missing |
-| KIT-018 | Arena pillars and ember vents | P2 | C | BE | KIT | Cover silhouette and vent opening, intact geometry across phases | Missing |
-| KIT-019 | Forest ruin masonry | P2 | C | D1 | KIT | Standing/broken pieces and roots, static damage only | Missing |
-| KIT-020 | Dock decking and pilings | P2 | C | IT | KIT | Wet/dry/submerged zones and supported planks | Missing |
-| KIT-021 | Fences and field gates | P2 | C | D1 | KIT | Posts/ends/corners and track crossings | Missing |
-| KIT-022 | Forge station | P2 | C | IT | KIT | Hearth, anvil, bellows, tongs and work clearance | Missing |
-| KIT-023 | Alembic station | P2 | C | IT,MA | KIT | Vessels, tubing, heat source and reagent preparation | Missing |
-| KIT-024 | Hearth station | P2 | C | IT | KIT | Pot support, utensils, fuel and working posture | Missing |
-| KIT-025 | Market and trader furniture | P2 | C | IT | KIT | Counter, stock display and interaction clearance | Missing |
-| KIT-026 | Everyday furniture kit | P2 | C | PR,NP | KIT | Table/chair/bench/shelf/bed proposals, no new playable interiors | Missing |
-| KIT-027 | Containers and loose stores | P2 | C | IT | KIT | Crate/barrel/basket/sack, lids and loot-open states | Missing |
-| KIT-028 | Gathering and workshop tools | P2 | C | IT | KIT | Harvest/mining/woodwork/fishing, grip and scale | Missing |
-| KIT-029 | Torch, lantern and brazier fixtures | P1 | C | WL | KIT | Fuel/support/glass when selected, lit and extinguished | Missing |
-| KIT-030 | Waystone family | P2 | C | DE | KIT | Village/gate/forest/entrance contexts and rest states | Missing |
-| KIT-031 | Dropped material satchel | P2 | C | DE | KIT | Closed/open and grounded recoverable silhouette | Missing |
-| KIT-032 | Relics and boss catalyst core | P2 | C | BE,QU | KIT | Fragments, Mythic core and quest-item alternatives; distinct identities | Missing |
-| KIT-033 | Village signs and wayfinding | P2 | C | PR,IT | KIT | Original station/route symbols, no new faction semantics | Missing |
-| KIT-034 | Environmental story dressing | P2 | C | QU | KIT | Gnaw marks, looted stores, abandoned tools, sealed/opened-door evidence | Missing |
+| KIT-001 | Limestone paving assembly | P1 | C | AD | KIT | 4 m patch, broken courses, infill, buried shoulders, earthy joints and sparse plants | [Batch103 A v1 approved](targets/KIT-001-003-paving.md); full profiles open |
+| KIT-002 | Paving stone shape family | P1 | C | AD | KIT | Broad calm tops, localized chips, varied outlines; avoid pillows and uniform slabs | [Batch104 A v4 approved](targets/KIT-002-MAT-008-stones-plaster.md); full profiles open |
+| KIT-003 | Paving slope and edge assembly | P1 | C | AD | KIT | Walking/grazing/top; rigid stones and continuous substrate, no floating plants | [Batch103 B v1 approved](targets/KIT-001-003-paving.md); full profiles open |
+| KIT-004 | Courtyard well construction | P1 | C | AD | KIT | Rim/interior/base and bonds; proposed 2 m diameter and 1 m rim cue | [Batch091 A v2 approved](targets/KIT-004-030-well-waystone.md); full mechanism/metric profiles open |
+| KIT-005 | Plaster wall bays | P1 | C | AD | KIT | Plain/window/door variants on existing 2 m by 3 m bay | [Batch087 A v3 approved](targets/KIT-005-006-wall-oak.md); metric/section profiles open |
+| KIT-006 | Oak posts, beams and braces | P1 | C | AD | KIT | Joined frame, end grain and corner ownership | [Batch087 B v2 approved](targets/KIT-005-006-wall-oak.md); hidden joints/full profiles open |
+| KIT-007 | Limestone plinths and foundations | P1 | C | AD | KIT | Slope fit, corners, plaster contact and damp edge | [Batch089 A v1 approved](targets/KIT-007-011-foundations-walls.md); sections/metric profiles open |
+| KIT-008 | Terracotta roof, ridge and eaves | P1 | C | AD | KIT | Existing 40-degree pitch, end caps, overlaps and drainage | [Batch088 gable/hip eave studies approved](targets/KIT-008-roof-eaves.md); sections/fixings/drainage validation open |
+| KIT-009 | Doors, thresholds and fittings | P1 | C | AD | KIT | 1 m by 2.25 m clear opening, hinges/latch/open state | [Batch090 A v2 approved](targets/KIT-009-010-door-window.md); keeper/closed/reverse/kinematics open |
+| KIT-010 | Windows, shutters and reveals | P1 | C | AD | KIT | Inside/outside agreement, open/closed and glass interpretation | [Batch090 B v3 approved](targets/KIT-009-010-door-window.md); reverse/closed/drainage profiles open |
+| KIT-011 | Low garden walls and coping | P1 | C | AD | KIT | Corners, terminals and planting contact | [Batch089 B v1 approved](targets/KIT-007-011-foundations-walls.md); soil fill/drainage profiles open |
+| KIT-012 | Stone stairs and landings | P2 | C | D1,D2 | KIT | Rise/run cues and credible foot placement | [Batch092 A v1 approved](targets/KIT-012-013-stairs.md); full profiles open |
+| KIT-013 | Timber stairs, rails and platforms | P2 | C | D1 | KIT | Supported joints and traversable clearance | [Batch092 B v6 with doorway approved](targets/KIT-012-013-stairs.md); open-state/full profiles open |
+| KIT-014 | Castle wall, tower and battlement kit | P2 | C | D1 | KIT | Near construction and far silhouette variation | [Batch093 A v1 approved](targets/KIT-014-015-castle-bridge.md); full profiles open |
+| KIT-015 | Castle gate and bridge components | P2 | C | D1 | KIT | Select supported construction before detailing | [Batch093 B v1 approved](targets/KIT-014-015-castle-bridge.md); gate/full profiles open |
+| KIT-016 | Catacomb walls, vaults and arches | P2 | C | D2 | KIT | Ceiling junctions, corners and restrained static damage | [Batch094 A v1 approved](targets/KIT-016-017-catacomb-masonry.md); full profiles open |
+| KIT-017 | Catacomb floors and stairs | P2 | C | D2 | KIT | Worn paths and readable height changes | [Batch094 B v1 approved](targets/KIT-016-017-catacomb-masonry.md); full profiles open |
+| KIT-018 | Arena pillars and ember vents | P2 | C | BE | KIT | Cover silhouette and vent opening, intact geometry across phases | [Batch095 pillar A v2 approved](targets/KIT-018-019-pillar-ruin.md); vents082–086, full profiles open |
+| KIT-019 | Forest ruin masonry | P2 | C | D1 | KIT | Standing/broken pieces and roots, static damage only | [Batch095 B v1 approved](targets/KIT-018-019-pillar-ruin.md); full profiles open |
+| KIT-020 | Dock decking and pilings | P2 | C | IT | KIT | Wet/dry/submerged zones and supported planks | [Batch096 A v6 matching joints approved](targets/KIT-020-021-dock-fence.md); full profiles open |
+| KIT-021 | Fences and field gates | P2 | C | D1 | KIT | Posts/ends/corners and track crossings | [Batch096 B v1 approved](targets/KIT-020-021-dock-fence.md); open-state/full profiles open |
+| KIT-022 | Forge station | P2 | C | IT | KIT | Hearth, anvil, bellows, tongs and work clearance | [Batch097 A v3 approved](targets/KIT-022-023-forge-alembic.md); full profiles open |
+| KIT-023 | Alembic station | P2 | C | IT,MA | KIT | Vessels, tubing, heat source and reagent preparation | [Batch097 B v1 approved](targets/KIT-022-023-forge-alembic.md); operating states/full profiles open |
+| KIT-024 | Hearth station | P2 | C | IT | KIT | Pot support, utensils, fuel and working posture | [Batch098 A v2 approved](targets/KIT-024-025-hearth-trader.md); full profiles open |
+| KIT-025 | Market and trader furniture | P2 | C | IT | KIT | Counter, stock display and interaction clearance | [Batch098 B v2 approved](targets/KIT-024-025-hearth-trader.md); full profiles open |
+| KIT-026 | Everyday furniture kit | P2 | C | PR,NP | KIT | Table/chair/bench/shelf/bed proposals, no new playable interiors | [Batch099 A v1 approved](targets/KIT-026-027-furniture-containers.md); other furniture/full profiles open |
+| KIT-027 | Containers and loose stores | P2 | C | IT | KIT | Crate/barrel/basket/sack, lids and loot-open states | [Batch099 B v1 approved](targets/KIT-026-027-furniture-containers.md); opening/full profiles open |
+| KIT-028 | Gathering and workshop tools | P2 | C | IT | KIT | Harvest/mining/woodwork/fishing, grip and scale | [Batch100 A v1 approved](targets/KIT-028-029-tools-torch.md); other tools/full profiles open |
+| KIT-029 | Torch, lantern and brazier fixtures | P1 | C | WL | KIT | Fuel/support/glass when selected, lit and extinguished; flame-only village lamps | [Batch100 B v2 torch approved](targets/KIT-028-029-tools-torch.md); [candle study](targets/KIT-029.md); other coverage open |
+| KIT-030 | Waystone family | P2 | C | DE | KIT | Village/gate/forest/entrance contexts and rest states | [Batch091 village detail approved](targets/KIT-004-030-well-waystone.md); other contexts/rest-state profiles open |
+| KIT-031 | Dropped material satchel | P2 | C | DE | KIT | Closed/open and grounded recoverable silhouette | [Batch101 A v1 approved](targets/KIT-031-032-satchel-core.md); open/full profiles remain open |
+| KIT-032 | Relics and boss catalyst core | P2 | C | BE,QU | KIT | Fragments, Mythic core and quest-item alternatives; distinct identities | [Batch101 B v1 core approved](targets/KIT-031-032-satchel-core.md); quest alternatives/full profiles open |
+| KIT-033 | Village signs and wayfinding | P2 | C | PR,IT | KIT | Original station/route symbols, no new faction semantics | [Batch102 A v3 overhead clearance approved](targets/KIT-033-034-sign-stores.md); other signs/full profiles open |
+| KIT-034 | Environmental story dressing | P2 | C | QU | KIT | Gnaw marks, looted stores, abandoned tools, sealed/opened-door evidence | [Batch102 B v1 approved](targets/KIT-033-034-sign-stores.md); other evidence/full profiles open |
 
 ## Materials and surface assembly
 
@@ -205,16 +264,16 @@ footage is not satisfied by generated frame sequences.
 | MAT-005 | Castle dressed and rough stone | P2 | C | D1 | MAT | Block/mortar scale and distant pattern | Missing |
 | MAT-006 | Catacomb stone and damp masonry | P2 | C | D2 | MAT | Deposits, moisture and worn paths | Missing |
 | MAT-007 | Forest and shoreline rock | P2 | C | D1 | MAT | Natural fracture/erosion, distinct from quarry paving | Missing |
-| MAT-008 | Cream lime plaster | P1 | C | AD | MAT | Thickness, patching and timber contact | Missing |
-| MAT-009 | Dark structural oak | P1 | C | AD | MAT | Grain direction, end grain, joints and worn edges | Missing |
+| MAT-008 | Cream lime plaster | P1 | C | AD | MAT | Thickness, patching and timber contact | [Batch104 B v1 approved](targets/KIT-002-MAT-008-stones-plaster.md); full profiles open |
+| MAT-009 | Dark structural oak | P1 | C | AD | MAT | Grain direction, end grain, joints and worn edges | [Batch105 A v5 joint correction approved](targets/MAT-009-011-oak-tile.md); full profiles open |
 | MAT-010 | Weathered boards and dock timber | P2 | C | D1 | MAT | Splits, grain scale and salt/water line | Missing |
-| MAT-011 | Terracotta tile | P1 | C | AD | MAT | Face/edge/section, kiln variation and restrained moss | Missing |
+| MAT-011 | Terracotta tile | P1 | C | AD | MAT | Face/edge/section, kiln variation and restrained moss | [Batch105 B v1 approved](targets/MAT-009-011-oak-tile.md); full profiles open |
 | MAT-012 | Brick, clay and straw studies | P3 | D | RB | MAT | Separate samples and proposed assembly; no mandatory new kit | Missing |
-| MAT-013 | Forged iron and rust | P1 | C | AD,IT | MAT | Worked/handled/worn areas, no plastic highlights | Missing |
+| MAT-013 | Forged iron and rust | P1 | C | AD,IT | MAT | Worked/handled/worn areas, no plastic highlights | [Batch106 A v1 review passed; selection pending](targets/MAT-013-017-iron-leather.md); full profiles open |
 | MAT-014 | Weapon steel and armor scale | P2 | C | IT | MAT | Polished/worked areas and overlap | Missing |
 | MAT-015 | Alchemy glaze, glass and crystal | P2 | C | MA,IT | MAT | Thickness, transmission and crafted joins | Missing |
 | MAT-016 | Cloth weave and seams | P2 | C | IT,AB | MAT | Garment-distance weave, folds and stitching | Missing |
-| MAT-017 | Leather and hide | P2 | C | IT | MAT | Stretched/folded/worn, straps and seams | Missing |
+| MAT-017 | Leather and hide | P2 | C | IT | MAT | Stretched/folded/worn, straps and seams | [Batch106 B v2 review passed; selection pending](targets/MAT-013-017-iron-leather.md); full profiles open |
 | MAT-018 | Paving joint soil and aggregate | P1 | C | AD | MAT | Recessed discontinuous joints, avoid pale uniform grout | Missing |
 | MAT-019 | Packed soil and field earth | P2 | C | D1 | MAT | Compacted path versus tilled crop bed | Missing |
 | MAT-020 | Gravel and soil-to-stone transitions | P2 | C | D1 | MAT | Size distribution and burial, no floating scatter | Missing |
@@ -231,9 +290,9 @@ footage is not satisfied by generated frame sequences.
 | VEG-001 | Courtyard joint plants | P1 | C | AD | KIT | Low varied tufts rooted in soil; broad leaves rather than spikes | Missing |
 | VEG-002 | Courtyard shrubs | P1 | C | AD | KIT | Leaf detail and clump silhouette, retain route clearance | Missing |
 | VEG-003 | Meadow and verge grasses | P2 | C | D1 | KIT | Species/height variation, patch edges and seed heads | Missing |
-| VEG-004 | Grain crop | P2 | C | IT | KIT | Mature/harvested/regrown states and density | Missing |
-| VEG-005 | Bittergreen | P2 | C | IT | KIT | Original herb, harvested/depleted state | Missing |
-| VEG-006 | Emberpetal | P2 | C | IT | KIT | Distinct original flower, no mandatory emission | Missing |
+| VEG-004 | Grain crop | P2 | C | IT | KIT | Mature/harvested/regrown states and density | [Batch 044 mature crop approved](targets/VEG-004-ITEM-029-grain-salt.md); harvest/regrowth/full profile open |
+| VEG-005 | Bittergreen | P2 | C | IT | KIT | Original herb, harvested/depleted state | [Batch 042 approved](targets/VEG-005-006-herbs.md); harvest/full profile open |
+| VEG-006 | Emberpetal | P2 | C | IT | KIT | Distinct original flower, no mandatory emission | [Batch 042 approved](targets/VEG-005-006-herbs.md); harvest/full profile open |
 | VEG-007 | Forest canopy tree family | P2 | C | D1 | KIT | Trunk/branch/root/leaves and near/far silhouettes | Missing |
 | VEG-008 | Forest understory and litter | P2 | C | D1 | KIT | Sapling/fern/deadwood proposals, clear paths | Missing |
 | VEG-009 | Coastal vegetation | P2 | C | D1 | KIT | Wind-shaped shrub and shore-grass placement | Missing |
@@ -244,11 +303,17 @@ footage is not satisfied by generated frame sequences.
 
 ## Characters and creatures
 
+Cross-cutting population direction: inhabited environment concepts must show the
+original fantasy world's varied folk and wizard/knight/rogue silhouettes where
+appropriate (human correction, 2026-09-06). CHAR-001–003 anatomy and role/loadout
+selection remain open; environment drafts do not canonize incidental pointed ears,
+skin traits or new species. A human-only historical crowd is incomplete coverage.
+
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | CHAR-001 | Human playable folk | P1 | C | AB | CHAR | Body/face variation and martial/caster/hybrid loadouts | Missing |
 | CHAR-002 | Skarn playable folk | P2 | C | AB | CHAR | Sturdy stone-blooded identity; literal rock skin requires selection | Missing |
-| CHAR-003 | Wickfolk playable folk | P2 | C | AB | CHAR | Small quick body, scale and equipment fit | Missing |
+| CHAR-003 | Wickfolk playable folk | P2 | C | AB | CHAR | Small quick body, scale and equipment fit | [Existing B appearance and stature selected](targets/DIR-006-stature.md); metric heights/variations/full profiles open |
 | CHAR-004 | Village conversational NPC | P1 | C | NP | CHAR | Speaking/listening/emotion and daily work; first rig candidate | Missing |
 | CHAR-005 | Smith and forge worker | P2 | C | IT | CHAR | Protective clothing and work poses | Missing |
 | CHAR-006 | Apothecary and alembic worker | P2 | C | IT,QU | CHAR | Practical alchemy equipment and reagent handling | Missing |
@@ -257,12 +322,12 @@ footage is not satisfied by generated frame sequences.
 | CHAR-009 | Dock salvager / reluctant witness | P2 | C | QU | CHAR | Work wear and guarded/cooperative expressions | Missing |
 | CHAR-010 | Field and forest workers | P2 | C | NP,IT | CHAR | Shared costume kit with harvesting/carrying variants | Missing |
 | CHAR-011 | Quest role costume variants | P2 | C | QU | CHAR | Bounty/hunt/reliquary/vista roles; reuse authored NPC identities, no invented roster | Missing |
-| CHAR-012 | Burrow-gnawer | P1 | C | BE | CHAR | Field vermin, bite and pack flee silhouettes; first enemy rig candidate | Missing |
-| CHAR-013 | Greymaw | P2 | C | BE | CHAR | Predator anatomy, lunge/pounce and circling | Missing |
-| CHAR-014 | Wayland brigand | P2 | C | BE | CHAR | Sword/block/dodge plus parley/yield | Missing |
-| CHAR-015 | Skitterling | P2 | C | BE | CHAR | Original swarm anatomy, bite/nest emergence and venom cue | Missing |
-| CHAR-016 | Hollow warden | P2 | C | BE | CHAR | Armored sentinel, maul/slam and clear Exposed opening | Missing |
-| CHAR-017 | The Warden Below | P2 | C | BE | CHAR | Distinct boss silhouette, all phases, unchanged wind-up readability | Missing |
+| CHAR-012 | Burrow-gnawer | P1 | C | BE | CHAR | Field vermin, bite and pack flee silhouettes; first enemy rig candidate | [Appearance accepted](targets/DIR-007-field-forest.md); full profiles open |
+| CHAR-013 | Greymaw | P2 | C | BE | CHAR | Predator anatomy, lunge/pounce and circling | [Appearance accepted](targets/DIR-007-field-forest.md); full profiles open |
+| CHAR-014 | Wayland brigand | P2 | C | BE | CHAR | Sword/block/dodge plus parley/yield | [Appearance accepted](targets/DIR-007-brigand-skitterling.md); full profiles open |
+| CHAR-015 | Skitterling | P2 | C | BE | CHAR | Original swarm anatomy, bite/nest emergence and venom cue | [Appearance accepted](targets/DIR-007-brigand-skitterling.md); leg topology/full profiles open |
+| CHAR-016 | Hollow warden | P2 | C | BE | CHAR | Armored sentinel, maul/slam and clear Exposed opening | [Appearance accepted](targets/DIR-007-wardens.md); full profiles open |
+| CHAR-017 | The Warden Below | P2 | C | BE | CHAR | Distinct boss silhouette, all phases, unchanged wind-up readability | [Red-tinted v2 approved](targets/DIR-007-wardens.md); full profiles open |
 | CHAR-018 | Face, skin and eye baseline | P1 | C | FM,NP | CHAR,LIGHT | Conversational distance, varied skin tones and credible gaze | Missing |
 | CHAR-019 | Hair and fur baseline | P2 | C | FM,BE | CHAR,LIGHT | Hair clumps/strand silhouette and greymaw fur | Missing |
 | CHAR-020 | Advanced skin, eye and hair response | P3 | D | FM | LIGHT | Backlit skin, cornea/wetline and hair/fur response; no technique mandate | Missing |
@@ -272,37 +337,37 @@ footage is not satisfied by generated frame sequences.
 
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ITEM-001 | Sword / Tempered Sword | P2 | C | IT | KIT | Grip/blade/sheath and crafted upgrade delta | Missing |
-| ITEM-002 | Axe / Tempered Axe | P2 | C | IT | KIT | Head/haft assembly and upgrade delta | Missing |
-| ITEM-003 | Spear / Tempered Spear | P2 | C | IT | KIT | Point/socket/shaft and reach | Missing |
-| ITEM-004 | Bow / Laminated Bow | P2 | C | IT | KIT | Strung/unstrung/drawn, arrows and quiver | Missing |
-| ITEM-005 | Cloth garb | P2 | C | IT | KIT | Layers/seams and all-folk fit | Missing |
-| ITEM-006 | Leather jack | P2 | C | IT | KIT | Flexible joints and body fit | Missing |
-| ITEM-007 | Scale Coat | P2 | C | IT | KIT | Scale attachment/overlap and mobility | Missing |
-| ITEM-008 | Reinforced Buckler | P2 | C | IT | KIT | Front/back/grip and reinforcement | Missing |
-| ITEM-009 | Weapon Whetting | P2 | C | IT | KIT | Before/after edge and station tool, no magical upgrade implied | Missing |
-| ITEM-010 | Armor Fitting | P2 | C | IT | KIT | Adjusted straps/fit and station detail | Missing |
-| ITEM-011 | Ashwood Focus | P2 | C | MA,IT | KIT | Accessible base catalyst, held scale | Missing |
-| ITEM-012 | Glazed Focus | P2 | C | MA,IT | KIT | Craft/material upgrade language | Missing |
-| ITEM-013 | Resonant Focus | P2 | C | MA,IT | KIT | Ember/frost/aether attunement variants, common construction | Missing |
-| ITEM-014 | Vigor Tonic | P2 | C | IT | KIT | Vessel/liquid/closure and inventory silhouette | Missing |
-| ITEM-015 | Stone Tonic | P2 | C | IT | KIT | Distinct container; no petrification implied | Missing |
-| ITEM-016 | Clearing Draught | P2 | C | IT,QU | KIT | Consumable and vent-dousing context | Missing |
-| ITEM-017 | Emberdust Oil | P2 | C | IT | KIT | Applicator, oil and coated weapon | Missing |
-| ITEM-018 | Frostglass Oil | P2 | C | IT | KIT | Distinct from Emberdust in shape/material | Missing |
-| ITEM-019 | Aether Salts | P2 | C | IT | KIT | Container and crystalline dose | Missing |
-| ITEM-020 | Hearthloaf | P2 | C | IT | KIT | Whole/cut and starter-satchel context | Missing |
-| ITEM-021 | Fisher's Stew | P2 | C | IT | KIT | Vessel, ingredients and serving | Missing |
-| ITEM-022 | Orchard Preserve | P2 | C | IT | KIT | Jar/fruit texture; no new orchard region implied | Missing |
-| ITEM-023 | Hunter's Roast | P2 | C | IT | KIT | Cooked food and serving | Missing |
-| ITEM-024 | Tidebroth | P2 | C | IT | KIT | Distinct ingredients/color from stew | Missing |
-| ITEM-025 | Waybread | P2 | C | IT | KIT | Travel portion and wrapping | Missing |
-| ITEM-026 | Mulled Cordial | P2 | C | IT | KIT | Flask/cup and warm serving | Missing |
-| ITEM-027 | Harvested grain, bittergreen and emberpetal | P2 | C | IT | KIT | Loose/stacked forms matching VEG-004–006 | Missing |
-| ITEM-028 | Timber, meat, hides, pelts and sinew | P2 | C | IT,BE | KIT | Gathered/drop forms matching source creatures | Missing |
-| ITEM-029 | Fish, sea salt and salvage iron | P2 | C | IT | KIT | Shore node and inventory forms | Missing |
-| ITEM-030 | Dimstone ore, relic fragments and venom sacs | P2 | C | IT | KIT | Underground node/drop forms distinguishable from dressing | Missing |
-| ITEM-031 | Marks and loot rarity language | P2 | C | IT | KIT,UI | Currency and Common/Fine/Exceptional/Mythic, redundant cues | Missing |
+| ITEM-001 | Sword / Tempered Sword | P2 | C | IT | KIT | Grip/blade/sheath and crafted upgrade delta | [Batch 051 base v2 approved](targets/ITEM-001-002-sword-axe.md); [Batch 052 tempered v2 approved](targets/ITEM-001-002-tempered.md); [Batch 058 sheath approved](targets/ITEM-001-008-scabbard-reverse.md); suspension/full profile open |
+| ITEM-002 | Axe / Tempered Axe | P2 | C | IT | KIT | Head/haft assembly and upgrade delta | [Batch 051 base v4 approved](targets/ITEM-001-002-sword-axe.md); [Batch 052 tempered v2 approved](targets/ITEM-001-002-tempered.md); full profile open |
+| ITEM-003 | Spear / Tempered Spear | P2 | C | IT | KIT | Point/socket/shaft and reach | [Batch 053 base v2 approved](targets/ITEM-003-004-spear-bow.md); [Batch 054 tempered approved](targets/ITEM-003-004-crafted.md); handling/full profile open |
+| ITEM-004 | Bow / Laminated Bow | P2 | C | IT | KIT | Strung/unstrung/drawn, arrows and quiver | [Batch 053 strung base v1 approved](targets/ITEM-003-004-spear-bow.md); [Batch 054 laminated approved](targets/ITEM-003-004-crafted.md); [Batch 059 arrows/quiver/unstrung approved](targets/ITEM-004-arrows-unstrung.md); draw/suspension/full profile open |
+| ITEM-005 | Cloth garb | P2 | C | IT | KIT | Layers/seams and all-folk fit | [Batch 055 v1 approved](targets/ITEM-005-006-garb-jack.md); all-folk fit/full profile open |
+| ITEM-006 | Leather jack | P2 | C | IT | KIT | Flexible joints and body fit | [Batch 055 v3 approved](targets/ITEM-005-006-garb-jack.md); all-folk fit/full profile open |
+| ITEM-007 | Scale Coat | P2 | C | IT | KIT | Scale attachment/overlap and mobility | [Batch 056 v1 approved](targets/ITEM-007-008-scale-buckler.md); all-folk fit/reverse/mobility open |
+| ITEM-008 | Reinforced Buckler | P2 | C | IT | KIT | Front/back/grip and reinforcement | [Batch 056 front approved](targets/ITEM-007-008-scale-buckler.md); [Batch 058 reverse v2 approved](targets/ITEM-001-008-scabbard-reverse.md); hand sizing/handling/full profile open |
+| ITEM-009 | Weapon Whetting | P2 | C | IT | KIT | Before/after edge and station tool, no magical upgrade implied | [Batch 057 v2 approved](targets/ITEM-009-010-whetting-fitting.md); operation/full profile open |
+| ITEM-010 | Armor Fitting | P2 | C | IT | KIT | Adjusted straps/fit and station detail | [Batch 057 v1 approved](targets/ITEM-009-010-whetting-fitting.md); all-folk/operation/full profile open |
+| ITEM-011 | Ashwood Focus | P2 | C | MA,IT | KIT | Accessible base catalyst, held scale | [Construction approved](targets/DIR-008-wardlight-focus.md); full profiles open |
+| ITEM-012 | Glazed Focus | P2 | C | MA,IT | KIT | Craft/material upgrade language | [Batch 034 construction approved](targets/DIR-008-catalyst-upgrades.md); full profile open |
+| ITEM-013 | Resonant Focus | P2 | C | MA,IT | KIT | Ember/frost/aether attunement variants, common construction | [Batch 034 construction approved](targets/DIR-008-catalyst-upgrades.md); [Batch 035 channels approved](targets/DIR-008-resonant-channels.md), timing/full profile open |
+| ITEM-014 | Vigor Tonic | P2 | C | IT | KIT | Vessel/liquid/closure and inventory silhouette | [Batch 036 approved](targets/DIR-008-tonics.md); handling/full profile open |
+| ITEM-015 | Stone Tonic | P2 | C | IT | KIT | Distinct container; no petrification implied | [Batch 036 approved](targets/DIR-008-tonics.md); handling/full profile open |
+| ITEM-016 | Clearing Draught | P2 | C | IT,QU | KIT | Consumable and vent-dousing context | [Batch 037 approved](targets/DIR-008-clearing-salts.md); use/full profile open |
+| ITEM-017 | Emberdust Oil | P2 | C | IT | KIT | Applicator, oil and coated weapon | [Batch 038 approved](targets/DIR-008-weapon-oils.md); application/full profile open |
+| ITEM-018 | Frostglass Oil | P2 | C | IT | KIT | Distinct from Emberdust in shape/material | [Batch 038 approved](targets/DIR-008-weapon-oils.md); application/full profile open |
+| ITEM-019 | Aether Salts | P2 | C | IT | KIT | Container and crystalline dose | [Batch 037 approved](targets/DIR-008-clearing-salts.md); handling/full profile open |
+| ITEM-020 | Hearthloaf | P2 | C | IT | KIT | Whole/cut and starter-satchel context | [Batch 039 approved](targets/ITEM-020-025-breads.md); handling/full profile open |
+| ITEM-021 | Fisher's Stew | P2 | C | IT | KIT | Vessel, ingredients and serving | [Batch 040 approved](targets/ITEM-021-024-broths.md); handling/full profile open |
+| ITEM-022 | Orchard Preserve | P2 | C | IT | KIT | Jar/fruit texture; no new orchard region implied | [Batch 043 v2 approved](targets/ITEM-022-027-preserve-harvest.md); full profile open; fruit recipe correction planned |
+| ITEM-023 | Hunter's Roast | P2 | C | IT | KIT | Cooked food and serving | [Batch 041 v3 carving correction approved](targets/ITEM-023-026-roast-cordial.md); v1 human-rejected, handling/full profile open |
+| ITEM-024 | Tidebroth | P2 | C | IT | KIT | Distinct ingredients/color from stew | [Batch 040 approved](targets/ITEM-021-024-broths.md); handling/full profile open |
+| ITEM-025 | Waybread | P2 | C | IT | KIT | Travel portion and wrapping | [Batch 039 approved](targets/ITEM-020-025-breads.md); handling/full profile open |
+| ITEM-026 | Mulled Cordial | P2 | C | IT | KIT | Flask/cup and warm serving | [Batch 041 approved](targets/ITEM-023-026-roast-cordial.md); storage/handling/full profile open |
+| ITEM-027 | Harvested grain, bittergreen and emberpetal | P2 | C | IT | KIT | Loose/stacked forms matching VEG-004–006 | [Batch 043 herbs approved](targets/ITEM-022-027-preserve-harvest.md); [Batch 046 grain approved](targets/ITEM-027-028-grain-timber.md); full profile open |
+| ITEM-028 | Timber, meat, hides, pelts and sinew | P2 | C | IT,BE | KIT | Gathered/drop forms matching source creatures | [Batch 046 timber v2 approved](targets/ITEM-027-028-grain-timber.md); [Batch 048 pelt approved](targets/ITEM-028-030-pelt-venom.md); [Batch 049 hide/sinew approved](targets/ITEM-028-hide-sinew.md); [Batch 050 meat v2 approved](targets/ITEM-028-031-meat-marks.md); full profiles open |
+| ITEM-029 | Fish, sea salt and salvage iron | P2 | C | IT | KIT | Shore node and inventory forms | [Batch 044 salt approved](targets/VEG-004-ITEM-029-grain-salt.md); [Batch 045 fish/salvage approved](targets/ITEM-029-fish-salvage.md); source/full profile open |
+| ITEM-030 | Dimstone ore, relic fragments and venom sacs | P2 | C | IT | KIT | Underground node/drop forms distinguishable from dressing | [Batch 047 ore/relics approved](targets/ITEM-030-ore-relics.md); [Batch 048 venom sacs approved](targets/ITEM-028-030-pelt-venom.md); source/full profiles open |
+| ITEM-031 | Marks and loot rarity language | P2 | C | IT | KIT,UI | Currency and Common/Fine/Exceptional/Mythic, redundant cues | [Batch 050 marks approved](targets/ITEM-028-031-meat-marks.md); rarity/full profiles open |
 | ITEM-032 | Non-elemental affix presentation | P2 | C | IT | KIT,UI | Keen, Weighted, Bulwark, Attuned, Light, Bracing, Nimble; restrained details/icons | Missing |
 | ITEM-033 | Elemental affix presentation | P2 | C | IT | KIT,FX | Emberbound/Frostbound/Venombound, equipped and on-hit | Missing |
 
@@ -310,13 +375,13 @@ footage is not satisfied by generated frame sequences.
 
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| LIGHT-001 | Courtyard sunny versus overcast | P1 | C | AD,WL | LIGHT | Warm direct/cool open shadows and material readability | Missing |
-| LIGHT-002 | Courtyard dawn and dusk | P1 | C | WL | LIGHT | Low sun, terrain/stone contact and long shadows | Missing |
-| LIGHT-003 | Courtyard night with local lights | P1 | C | WL | LIGHT | Fire/lantern pools, faces and navigable darkness | Missing |
-| LIGHT-004 | Courtyard approaching and active storm | P1 | C | WL | LIGHT | Pre-rain versus wet state labeled separately, flash recovery | Missing |
+| LIGHT-001 | Courtyard sunny versus overcast | P1 | C | AD,WL | LIGHT | Warm direct/cool open shadows and material readability | [Batch 060 sunny v1/overcast v2 approved](targets/LIGHT-001-courtyard.md); measured/temporal/full profile open |
+| LIGHT-002 | Courtyard dawn and dusk | P1 | C | WL | LIGHT | Low sun, terrain/stone contact and long shadows | [Batch 061 dawn/dusk v1 approved](targets/LIGHT-002-courtyard.md); temporal/measured/full profile open |
+| LIGHT-003 | Courtyard night with local lights | P1 | C | WL | LIGHT | Fire/lantern pools, faces and navigable darkness | [Batch 062 night v2 approved](targets/LIGHT-003-004-courtyard.md); lamp/face/motion/full profile open |
+| LIGHT-004 | Courtyard approaching and active storm | P1 | C | WL | LIGHT | Pre-rain versus wet state labeled separately, flash recovery | [Batch 062 active rain v1 approved](targets/LIGHT-003-004-courtyard.md); approaching/flash/temporal profile open |
 | LIGHT-005 | Shadows at all distances | P1 | C | FM | LIGHT | Shallow paving contact, foliage and castle; moving sun/camera | Missing |
-| LIGHT-006 | Interior torch and Wardlight | P1 | C | WL,AB | LIGHT | Same passage with each source and overlap | Missing |
-| LIGHT-007 | Baseline exposure, grading and bloom | P1 | C | FM | LIGHT | Skin/plaster/fire highlight retention and controlled emissive spread | Missing |
+| LIGHT-006 | Interior torch and Wardlight | P1 | C | WL,AB | LIGHT | Same passage with each source and overlap | [Wardlight appearance approved](targets/DIR-008-wardlight-focus.md); [Batch 064 torch comparison approved](targets/LIGHT-006-torch-wardlight.md); [Batch 065 overlap approved](targets/LIGHT-006-overlap.md); photometric/motion open |
+| LIGHT-007 | Baseline exposure, grading and bloom | P1 | C | FM | LIGHT | Skin/plaster/fire highlight retention and controlled emissive spread | [Batch 066 Human daylight/Wickfolk lantern approved](targets/LIGHT-007-faces.md); matched/calibrated/motion/full profile open |
 | LIGHT-008 | Fine-detail and edge stability | P1 | C | FM | LIGHT,MOT | Moving paving/roof/foliage/highlights; no shimmer/ghost trails | Missing |
 | LIGHT-009 | Distant aerial perspective | P2 | C | D1,WL | LIGHT | Castle/mountain separation without graywashed foreground | Missing |
 | LIGHT-010 | Dynamic indirect light and color bleed | P3 | D | RB | LIGHT | Sun/torch/emissive bounce, moving occluders and leakage failures | Missing |
@@ -339,7 +404,7 @@ footage is not satisfied by generated frame sequences.
 | WATER-002 | Shore break, foam and retreat | P3 | D | RB | FX,MOT | Sand/rock contact, foam lifetime and receding flow | Missing |
 | WATER-003 | Moat water | P2 | C | D1,RB | MAT,MOT | Authored moat appearance: bank/pier contact, reflections, ripples and waterline; static appearance committed, simulation deferred | Missing |
 | WATER-004 | Lake appearance study | P3 | D | RB | MAT,MOT | Research reference only; no authored D1 lake added | Missing |
-| WATER-005 | Puddles and wet streets | P2 | C | WL,RB | MAT,MOT | Storm-scene wet courtyard for LIGHT-004: shallow edges, broken reflections and dry-to-wet progression; wetness technique selection deferred | Missing |
+| WATER-005 | Puddles and wet streets | P2 | C | WL,RB | MAT,MOT | Storm-scene wet courtyard for LIGHT-004: shallow edges, broken reflections and dry-to-wet progression; wetness technique selection deferred | [Batch 062 broad wet appearance approved](targets/LIGHT-003-004-courtyard.md); [Batch 063 detail v2 approved](targets/WEATHER-003-WATER-005.md); transition/motion profiles open |
 | WATER-006 | Object splash and ripple | P3 | D | PR | FX,MOT | Source size/speed, impact/cavity/splash/settling | Missing |
 | WATER-007 | Wake and buoyancy reference | P3 | D | PR,FM | MOT | Floating object and optional rowboat study; no playable vehicle | Missing |
 | WATER-008 | Underwater appearance candidate | P3 | D | PR | LIGHT,MOT | Optional camera study, no swim/dive mechanic | Missing |
@@ -348,9 +413,9 @@ footage is not satisfied by generated frame sequences.
 
 | ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| WEATHER-001 | Rain near player and in distance | P2 | C | WL | FX | Streak/drop scale and occlusion on bright/night backgrounds | Missing |
+| WEATHER-001 | Rain near player and in distance | P2 | C | WL | FX | Streak/drop scale and occlusion on bright/night backgrounds | [Batch 062 daytime broad appearance approved](targets/LIGHT-003-004-courtyard.md); near/far/night/occlusion/motion open |
 | WEATHER-002 | Rain surface impacts and runoff | P3 | D | RB | FX,MOT | Tile/stone/soil/water responses and drainage continuity | Missing |
-| WEATHER-003 | Signature lightning strike | P1 | C | WL | FX,LIGHT | Sky/scene flash, shadows and exposure recovery; no new combat hazard | Missing |
+| WEATHER-003 | Signature lightning strike | P1 | C | WL | FX,LIGHT | Sky/scene flash, shadows and exposure recovery; no new combat hazard | [Batch 063 peak flash v1 approved](targets/WEATHER-003-WATER-005.md); timing/recovery/temporal profile open |
 | WEATHER-004 | Clear-to-storm-to-clear progression | P2 | C | WL | LIGHT,MOT | Sky/light/wind/rain timeline; wetness and advanced wind use deferred targets | Missing |
 | WEATHER-005 | Ground mist and coastal fog | P3 | D | RB | FX,MOT | Density/height/drift and multi-distance silhouettes | Missing |
 
@@ -363,16 +428,16 @@ footage is not satisfied by generated frame sequences.
 | ABIL-003 | Piercing Lunge | P2 | C | AB | FX,MOT | Gap-closing thrust/contact, no teleport appearance | Missing |
 | ABIL-004 | Ironset Stance | P2 | C | AB | FX,MOT | Planted/held/released/exhausted and slowed movement | Missing |
 | ABIL-005 | Steady Loose | P2 | C | AB | FX,MOT | Draw/hold/full charge/release and arrow readability | Missing |
-| ABIL-006 | Emberlash | P2 | C | AB | FX | Catalyst cast, ember bolt/impact and keen Burning | Missing |
-| ABIL-007 | Frostbind | P2 | C | AB | FX | Burst extent/onset and Chilled application | Missing |
-| ABIL-008 | Aetherpulse | P2 | C | AB | FX | Force-wave expansion, impact and stagger | Missing |
-| ABIL-009 | Mendweave | P2 | C | AB | FX | Healing over time/completion and Envenomed suppression | Missing |
-| ABIL-010 | Wardlight | P1 | C | AB | FX,LIGHT | Lantern-strength light, absorb hit, break and expiry | Missing |
+| ABIL-006 | Emberlash | P2 | C | AB | FX | Catalyst cast, ember bolt/impact and keen Burning | [Appearance approved](targets/DIR-008-ember-frost.md); impact/status/timing open |
+| ABIL-007 | Frostbind | P2 | C | AB | FX | Burst extent/onset and Chilled application | [Appearance approved](targets/DIR-008-ember-frost.md); metric extent/status/timing open |
+| ABIL-008 | Aetherpulse | P2 | C | AB | FX | Force-wave expansion, impact and stagger | [Appearance approved](targets/DIR-008-force-healing.md); temporal/full profiles open |
+| ABIL-009 | Mendweave | P2 | C | AB | FX | Healing over time/completion and Envenomed suppression | [Readable matched-color v2 approved](targets/DIR-008-force-healing.md); temporal/full profiles open |
+| ABIL-010 | Wardlight | P1 | C | AB | FX,LIGHT | Lantern-strength light, absorb hit, break and expiry | [Appearance approved](targets/DIR-008-wardlight-focus.md); absorb/break/expiry/light proof open |
 | ABIL-011 | Forager's Eye | P2 | C | AB | FX,UI | Node shimmer at authored distance, no scenery-wide glow | Missing |
 | ABIL-012 | Wellspring | P2 | C | AB | UI | Passive regeneration cue; world particles optional | Missing |
 | ABIL-013 | Quiet Tread | P2 | C | AB | UI,MOT | Passive movement cue, no invisibility/stealth system | Missing |
 | ABIL-014 | Tinker's Thrift | P2 | C | AB | UI | Ingredient savings and salvage payoff | Missing |
-| ABIL-015 | Aetherspark | P2 | C | MA | FX | Zero-cost bolt, less forceful appearance than paid spells | Missing |
+| ABIL-015 | Aetherspark | P2 | C | MA | FX | Zero-cost bolt, less forceful appearance than paid spells | [Appearance proposals](targets/DIR-008-aetherspark.md); selection/timing/full profiles open |
 
 ## Gameplay VFX
 
@@ -392,7 +457,7 @@ footage is not satisfied by generated frame sequences.
 | FX-012 | Warden maul and slam | P2 | C | BE | FX,MOT | Warning/active/recovery and dodged-slam opening | Missing |
 | FX-013 | Boss aether lance | P2 | C | BE | FX | Wind-up/projectile, pillar cover and resist/hit | Missing |
 | FX-014 | Boss clutch summon | P2 | C | BE | FX | Phase-two transition and readable emerging skitterlings | Missing |
-| FX-015 | Boss ember vents | P2 | C | BE | FX | One-second warning, Burning zone and quenched variant | Missing |
+| FX-015 | Boss ember vents | P2 | C | BE | FX | One-second warning, Burning zone and quenched variant | [Batch083 active/quenched stills approved](targets/FX-015-UND-014-vent-states.md); [Batch084 warning approved](targets/FX-015-UND-014-warning-dousing.md); timing/hazard extent open |
 | FX-016 | Boss enrage and break opening | P2 | C | BE | FX,MOT | Faster recovery, no faster wind-up | Missing |
 | FX-017 | Gathering and node depletion/regrowth | P2 | C | IT | FX | Harvest/collect/depleted/restored across plant/wood/ore/shore | Missing |
 | FX-018 | Forge crafting feedback | P2 | C | IT | FX | Hammer/heat/sparks and finished item | Missing |
@@ -592,3 +657,25 @@ Choose the first NPC/enemy pairing and optional underwater/rowboat/cinematic stu
 at their batch reviews. Unspecified dimensions remain proposed scale cues until
 bound to authored world/kit data or explicitly selected. A generated still does
 not settle physical behavior or authorize additional gameplay.
+
+## Village harbor expansion — human direction 2026-09-06
+
+Scope C here is committed reference coverage, not implemented gameplay or revised
+world coordinates. [Harbor plan](harbor-art-plan.md) defines sequence and layout gates.
+
+| ID | Target | Priority | Scope | Source | Profile | Particulars | Status |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| ENV-028 | Substantial port district composition | P2 | C | HP | ENV | Multiple long piers, large ships, cargo yards and complete support district | [A human-selected](targets/ENV-028-batch-009.md); full profiles open |
+| ENV-029 | Merchant berth and warehouse apron | P2 | C | HP | ENV | Gangway, cargo handoff and separated conversation/loading space | [v2 construction draft screened](targets/ENV-029.md); fantasy population and full profiles open |
+| ENV-030 | Fleet landing, repair and mixed port work | P2 | C | HP | ENV | Nets, maintenance, trade, wet/dry paths and large hull access; varied uses beyond fishing | [B human-selected](targets/ENV-030.md); full profiles open |
+| ENV-031 | Harbor-to-castle supply route | P2 | C | HP,D1 | ENV | Staging and authored village/castle connection; no hill/moat relocation | [Port-end A selected](targets/ENV-031.md); [Batch 075 C3 approved](targets/ENV-011-031-connected-vistas.md); continuous cart route remains open |
+| ENV-032 | Dockside sailor/captain/pirate interactions | P2 | C | HP,NP | ENV,UI | Readable conversation groups and walkable work edge; no new faction/quest implied | [A and B selected to coexist](targets/ENV-032.md); metric/character/full profiles open |
+| ENV-033 | Port tavern and inn district | P2 | C | HP | ENV | Distinct tavern social frontage, substantial lodging inn and pedestrian street away from loading | [B courtyard selected](targets/ENV-033.md); [B tavern selected](targets/ENV-033-batch-013.md); A arrival hall/private chamber and [B corridor selected](targets/ENV-033-batch-016.md); crowd/folk/full profiles open |
+| ENV-034 | Merchant offices and port business frontage | P2 | C | HP | ENV | Multiple merchant offices overlooking working waterfront, clear entrances and yard links | [A and B human-selected](targets/ENV-034.md); both coexist; full profiles open |
+| CHAR-022 | Sailor work and conversation references | P2 | C | HP | CHAR | Original medieval coastal clothing, rope/cargo handling and dialogue poses | [Costume accepted](targets/CHAR-022-023.md); anatomy/full profiles open |
+| CHAR-023 | Ship captain references | P2 | C | HP | CHAR | Practical authority and navigation/work clothing; no later-era default costume | [Costume accepted](targets/CHAR-022-023.md); variants/full profiles open |
+| CHAR-024 | Pirate visitor references | P2 | C | HP | CHAR | Original grounded medieval identity, guarded/cooperative interaction; no automatic combat faction | [Costume accepted](targets/CHAR-024-KIT-035.md); identity/full profiles open |
+| KIT-035 | Large merchant ship references | P2 | C | HP | KIT | Hull/rig/sail silhouettes, gangway and berth fit; dimensions proposed, no player sailing | [Silhouette accepted](targets/CHAR-024-KIT-035.md); engineering/full profiles open |
+| KIT-036 | Large fishing ship references | P2 | C | HP | KIT | Working deck, hull/rig, gear and landing interface; no transport implementation inferred | [Direction screened](targets/KIT-036-037.md); human review/engineering/full profiles open |
+| KIT-037 | Harbor cargo-handling assemblies | P2 | C | HP | KIT | Useful ship-to-quay reach, manual mechanical advantage, landing/swing space, carts/containers | [Crane direction screened](targets/KIT-037-quay-crane.md); human review and [mechanism blockers](targets/KIT-037-mechanism-details.md) open; fixed hoist rejected |
+| KIT-038 | Harbor quay, piles and gangways | P2 | C | HP | KIT | Scale/depth/tide relationships and supported joints; engineering verification remains open | [Stone quay v1 and timber pier v11 accepted](targets/KIT-038.md); joints/tides/foundations/full profiles open |

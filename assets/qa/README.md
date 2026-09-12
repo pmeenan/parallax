@@ -41,6 +41,11 @@ than waiting for M5. The pipeline is planned, not implemented by this documentat
 
 ## First representative art and animation (M4.5, planned)
 
+The [animation source import and validation path](animation-import.md) is implemented:
+Khronos GLB validation, rig/skin/clip policy, immutable candidate receipts and pinned
+Babylon worker import/capture checks. It is a pre-admission tool; actual NPC/enemy
+content, full character-class QA and installed motion acceptance remain pending.
+
 Start from sunny/gloomy reference sheets and a small D1 modular kit. Apply the asset
 class budgets, scale, UV/texel-density, material, provenance/rights, LOD, and compressed
 export checks in `../AGENTS.md`; round-trip the accepted outputs through the actual

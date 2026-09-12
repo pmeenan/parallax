@@ -44,6 +44,8 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
   buffer view references buffer 0. The QA implementation must call the engine's
   `canonicalMeshoptLayoutErrors` validator (D-089).
 - LOD chain present and within reduction targets for streamable classes.
+- Skeletal source candidates: the bounded rig/skin/clip import profile and pinned
+  worker roundtrip in `qa/animation-import.md`; full character admission remains separate.
 - Procedural greybox world data: the D-090 schema validator plus deterministic-generation,
   exact-cell-coverage, collision-seam, mixed-LOD-skirt, landmark, N-district packaging,
   and visible-output physical-smoke checks

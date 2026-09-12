@@ -1,0 +1,25 @@
+{
+  "name": "@parallax/assets",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./animation": {
+      "types": "./dist/qa/animation-validation.d.ts",
+      "import": "./dist/qa/animation-validation.js"
+    },
+    "./animation-candidate": {
+      "types": "./dist/qa/animation-candidate.d.ts",
+      "import": "./dist/qa/animation-candidate.js"
+    },
+    "./animation-fixture": {
+      "types": "./dist/qa/animation-fixture.d.ts",
+      "import": "./dist/qa/animation-fixture.js"
+    }
+  },
+  "devDependencies": {
+    "@parallax/engine": "workspace:*",
+    "gltf-validator": "2.0.0-dev.3.10"
+  }
+}

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="1180" viewBox="0 0 1400 1180">
+<defs>
+ <pattern id="forest" width="38" height="34" patternUnits="userSpaceOnUse"><rect width="38" height="34" fill="#668769"/><circle cx="10" cy="12" r="10" fill="#4e7256"/><circle cx="27" cy="27" r="11" fill="#587c5f"/></pattern>
+ <pattern id="crop" width="13" height="13" patternUnits="userSpaceOnUse"><rect width="13" height="13" fill="#d6bd75"/><path d="M0 4H13 M0 10H13" stroke="#b69751" stroke-width="2"/></pattern>
+ <pattern id="town" width="29" height="27" patternUnits="userSpaceOnUse"><rect width="29" height="27" fill="#e7c8a4"/><rect x="4" y="4" width="15" height="12" rx="2" fill="#b77859"/><path d="M3 4L11 0L20 4" fill="#845442"/></pattern>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#803e83"/></marker>
+ <style>text{font-family:Arial,sans-serif;fill:#273b35}.title{font-size:32px;font-weight:700}.sub{font-size:16px;fill:#53665b}.label{font-size:17px;font-weight:700;paint-order:stroke;stroke:#f5f0df;stroke-width:4px;stroke-linejoin:round}.small{font-size:14px}.side{font-size:17px}.heading{font-size:20px;font-weight:700}.road{fill:none;stroke:#f3e3c1;stroke-width:10;stroke-linejoin:round}.edge{fill:none;stroke:#947d59;stroke-width:13;stroke-linejoin:round}.cam{fill:none;stroke:#803e83;stroke-width:3;marker-end:url(#arrow)}.anchor{fill:#fff7e6;stroke:#3c5145;stroke-width:2}.proposal{stroke:#bb5d32;stroke-width:3;stroke-dasharray:8 5}</style>
+</defs>
+<rect width="1400" height="1180" fill="#f7f3e9"/>
+<text x="55" y="54" class="title">One coastal settlement • one shared geography</text>
+<text x="55" y="86" class="sub">D1 SITE PLAN · PROPOSAL 1 · North = +z · Existing anchors retained · Not a runtime map</text>
+<rect x="59" y="159" width="902" height="902" fill="#cbd3ab" stroke="#859179" stroke-width="2"/>
+<rect x="60" y="160" width="900" height="281" fill="url(#forest)"/>
+<text x="450" y="219" class="label">NORTHERN FOREST</text>
+<text x="407" y="248" class="label">Mountains beyond playable boundary ↑</text>
+<rect x="235" y="445" width="550" height="55" fill="url(#crop)" class="proposal"/>
+<text x="338" y="478" class="label">NEW MAIN INLAND CROP BELT</text>
+<rect x="180" y="790" width="125" height="146" fill="url(#crop)"/>
+<rect x="640" y="800" width="216" height="135" fill="url(#crop)"/>
+<text x="650" y="866" class="label">Secondary fields</text>
+<path d="M330 508H415V525H605V508H682V748H618V786H330Z" fill="url(#town)"/>
+<path d="M323 742H422V948H323Z" fill="url(#town)" class="proposal"/>
+<rect x="301" y="912" width="165" height="48" fill="url(#town)" class="proposal"/>
+<text x="216" y="735" class="label">VILLAGE CORE</text>
+<text x="115" y="776" class="label">Connected coastal extension</text>
+<path d="M304 771H346" stroke="#bb5d32" stroke-width="2"/>
+<rect x="426" y="526" width="168" height="168" rx="14" fill="#6f9da5" stroke="#476f77" stroke-width="2"/>
+<rect x="482" y="582" width="56" height="56" rx="8" fill="#7b8466" stroke="#ebdfbf" stroke-width="7"/>
+<circle cx="510" cy="610" r="14" fill="#a89c80" stroke="#4c5144" stroke-width="3"/>
+<text x="465" y="568" class="label">FULL MOAT</text>
+<text x="459" y="714" class="label">HILL CASTLE</text>
+<path class="edge" d="M370 943V765L404 713L482 638 M404 713V631 M610 638H650V505H510V441"/>
+<path class="road" d="M370 943V765L404 713L482 638 M404 713V631 M610 638H650V505H510V441"/>
+<path d="M426 690L490 630" stroke="#665e50" stroke-width="15"/><path d="M426 690L490 630" stroke="#dfd0af" stroke-width="9"/>
+<path class="edge" d="M404 631V517H510V505 M510 441L583 390L651 328 M370 765L369 779L274 830"/>
+<path class="road" d="M404 631V517H510V505 M510 441L583 390L651 328 M370 765L369 779L274 830"/>
+<rect x="60" y="948" width="900" height="112" fill="#86b3bc"/>
+<path d="M60 948H960" stroke="#e2d3a3" stroke-width="12"/>
+<path d="M300 945H470" stroke="#6f7262" stroke-width="12"/>
+<path d="M324 948V1018 M366 948V1028 M408 948V1018 M450 948V1000" stroke="#7e6d53" stroke-width="9"/>
+<path d="M339 970Q356 991 339 1010Q322 991 339 970 M383 980Q400 1001 383 1020Q366 1001 383 980 M425 967Q442 988 425 1007Q408 988 425 967" fill="#f4e6c5" stroke="#655d50" stroke-width="2"/>
+<text x="296" y="896" class="label">WORKING PORT</text>
+<path d="M587 948H774" stroke="#ead8a4" stroke-width="24"/>
+<path d="M730 948V982" stroke="#836b4f" stroke-width="6"/>
+<text x="595" y="920" class="label">OPEN BEACH</text>
+<text x="638" y="1008" class="label">Small fishing landing</text>
+<text x="115" y="1032" class="label">SOUTHERN SEA</text>
+<circle cx="369" cy="631" r="6" class="anchor"/><text x="246" y="620" class="label">Village square</text>
+<circle cx="397" cy="638" r="5" class="anchor"/><text x="252" y="657" class="small">Well entrance</text>
+<circle cx="517" cy="603" r="4" class="anchor"/>
+<circle cx="510" cy="441" r="6" class="anchor"/><text x="503" y="421" class="label">Forest-edge waystone</text>
+<circle cx="651" cy="328" r="6" class="anchor"/><text x="667" y="331" class="label">Forest ruin entrance</text>
+<circle cx="369" cy="779" r="5" class="anchor"/><text x="82" y="845" class="small">Existing southern farm junction retained</text>
+<circle cx="510" cy="500" r="5" fill="#bb5d32"/><text x="690" y="524" class="small">New farm gate</text>
+<path d="M688 519H657L516 501" stroke="#65715a" fill="none"/>
+<circle cx="268" cy="467" r="13" fill="#803e83"/><text x="257" y="472" fill="white" style="fill:white;font:bold 12px Arial">C1</text><path class="cam" d="M282 482L363 530"/>
+<circle cx="387" cy="733" r="13" fill="#803e83"/><text x="376" y="738" style="fill:white;font:bold 12px Arial">C2</text><path class="cam" d="M397 719L427 690"/>
+<circle cx="378" cy="929" r="13" fill="#803e83"/><text x="367" y="934" style="fill:white;font:bold 12px Arial">C3</text><path class="cam" d="M384 914L404 866"/>
+<circle cx="510" cy="502" r="13" fill="#803e83"/><text x="499" y="507" style="fill:white;font:bold 12px Arial">C4</text><path class="cam" d="M510 488V454"/>
+<circle cx="510" cy="441" r="13" fill="#803e83"/><text x="499" y="446" style="fill:white;font:bold 12px Arial">C5</text><path class="cam" d="M510 426V391"/>
+<path d="M100 268V204L91 221M100 204L109 221" fill="none" stroke="#263e34" stroke-width="4"/><text x="91" y="191" class="heading">N</text>
+<path d="M90 1100H200" stroke="#273b35" stroke-width="4"/><path d="M90 1094V1106M200 1094V1106" stroke="#273b35" stroke-width="2"/><text x="111" y="1124" class="small">500 m</text>
+<text x="240" y="1103" class="sub">4,096 m square · coast at z ≈ −1,536 m</text>
+<text x="240" y="1130" class="sub">Buildings, piers, roads and bank shapes are schematic reservations.</text>
+<path d="M1000 155V1120" stroke="#ddd5c3"/>
+<text x="1030" y="180" class="heading">What changes</text>
+<text x="1030" y="219" class="side">1. Village reaches the coast.</text>
+<text x="1030" y="247" class="small">Connected streets continue into a</text><text x="1030" y="269" class="small">substantial merchant/fishing port.</text>
+<text x="1030" y="313" class="side">2. Main fields move inland.</text>
+<text x="1030" y="341" class="small">North gate → crops → forest.</text><text x="1030" y="363" class="small">Secondary southern plots remain.</text>
+<text x="1030" y="411" class="heading">What stays anchored</text>
+<text x="1030" y="449" class="side">Central castle + complete moat</text><text x="1030" y="480" class="side">Village square + well entrance</text><text x="1030" y="511" class="side">Forest edge + ruin entrance</text><text x="1030" y="542" class="side">Southern shore / northern forest</text>
+<text x="1030" y="599" class="heading">Camera rules</text>
+<text x="1030" y="637" class="side">C1 · Fields → castle → coast</text><text x="1030" y="665" class="small">Elevated variant shows town continuity.</text>
+<text x="1030" y="705" class="side">C2 · Bridge → gate</text><text x="1030" y="733" class="small">Coastal town is behind the camera.</text>
+<text x="1030" y="773" class="side">C3 · Port → inland castle</text><text x="1030" y="801" class="small">Sea is behind the camera.</text>
+<text x="1030" y="841" class="side">C4 · Gate → fields → forest</text><text x="1030" y="869" class="small">Castle is behind the camera.</text>
+<text x="1030" y="896" class="small">C5 · Forest edge → north into woods</text>
+<path d="M1030 919H1072" stroke="#bb5d32" stroke-width="3" stroke-dasharray="8 5"/><text x="1085" y="924" class="small">Proposed zoning change</text>
+<circle cx="1037" cy="956" r="6" class="anchor"/><text x="1060" y="961" class="small">Retained authored anchor</text>
+<text x="1030" y="1022" class="heading">Review before vista generation</text>
+<text x="1030" y="1054" class="small">Runtime geography is not changed.</text><text x="1030" y="1078" class="small">Harbor engineering remains unvalidated.</text><text x="1030" y="1102" class="small">SVG coordinates govern this drawing.</text>
+</svg>
