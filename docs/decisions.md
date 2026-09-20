@@ -28,6 +28,116 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-195: Accept the concept collection and review supplementary profiles per production subject (2026-09-20, accepted; amends D-187 sequence)
+
+**Decision:** Accept the selected324-target reference collection as the concept
+direction baseline and resume the small paving proof. Move remaining supplementary
+static profiles into each asset, scene or UI production package. The human approved
+the [collection handoff](../assets/reference/concept-art-collection-review.md) and
+this proposed sequence explicitly. D-187's collection-selection prerequisite is met;
+unfinished profile evidence and production quality are not declared complete.
+
+**Consequences:** Before each production package, list selected source images,
+unresolved static views/choices, dimensions and applicable QA limits. Resolve those
+choices through bounded detail art or model/implementation previews, with independent
+quality/consistency screens, lead inspection and human artistic selection before
+accepting the result. This includes hidden joints, fitted views, material light/
+wetness/grazing comparisons, character details, environment connections and UI states.
+If a distinct appearance needs art before modeling, generate that specific reference.
+Approved quality is never lowered to match implementation. D-192–194's explicit
+motion/courtyard/shore obligations remain binding. Rights, library QA, performance,
+route and milestone gates remain unchanged; deferred features are not promoted.
+
+**Context:** The collection has extensive individually selected appearances, while
+remaining generic profiles mostly require coherent geometry, material and usable-
+state evidence. Requiring all such paintings before any asset production delayed
+the first finished-area proof without establishing reliable physical correspondence.
+Begin with a bounded4×4m paving assembly before library expansion.
+
+**Reopen if:** Per-subject review exposes missing direction, inconsistent references
+or a need for additional concept comparison before the next implementation step.
+
+## D-194: Review matched shore lighting during asset production (2026-09-20, accepted; scoped amendment to D-187)
+
+**Decision:** Defer DIR-005's remaining sunny/overcast shore comparison to shore
+asset production. Retain approved113 dark rock,112 pale sand,114 wet-rock appearance
+and138/139 coastal water as appearance authorities. The human explicitly accepted
+this deferral after approving the seven displayed Batch189 subjects.
+
+**Context:** Both withheld189 shore relights preserved broad geometry but introduced
+artificial engraved surface detail. Neither is approved. Repeated image edits are
+not required to complete the concept-stage disposition for this comparison.
+
+**Consequences:** At first shore assembly/material production, capture the same
+geometry, camera and dry materials in sunny and diffuse-overcast light; compare
+the wet state separately. Preserve natural surfaces and dark-rock/pale-sand contrast.
+Both independent visual screens, lead inspection and human artistic acceptance
+remain required. The [production handoff](../assets/reference/shore-lighting-production-proposal.md)
+retains the criteria. D-193 remains courtyard-specific; this exception covers the
+shore comparison only. Other concept coverage, rights, asset QA, route and runtime
+requirements are unchanged. The whole-collection review is not automatically closed.
+
+**Reopen if:** Shore production exposes a specific unresolved appearance choice or
+cannot retain the approved material identities across light/wetness states.
+
+## D-193: Review matching courtyard views during asset production (2026-09-19, accepted; scoped amendment to D-187)
+
+**Decision:** Defer Batch188's matching finished courtyard views until courtyard
+asset production. Use the human-approved Batch187 footprint and screened Batch188
+sampled-terrain shared scene as geometry references, with existing approved village,
+well, kit, material and lighting art as appearance references. The deferred views
+are a documented concept-stage disposition, not a remaining prerequisite painting
+queue or an assertion of finished visual acceptance.
+
+**Context:** Three arrival-painting attempts failed to preserve the separate stair
+entrance and shared geometry. After reviewing the alternatives, the human explicitly
+chose to defer the views until asset production rather than create another textured
+reference scene first. Evidence: [Batch188](../assets/reference/concept-art-batch-188-review.md).
+
+**Consequences:** During scoped courtyard production, capture arrival, reverse and
+south approach in daylight and dry overcast, plus arrival and reverse at night,
+from the same scene. Preserve approved layout, separate accessible stair entrance,
+registered scale, openings and flame-only lighting. Both independent agent screens,
+lead inspection and human artistic acceptance remain required. ENV-001/002/003 and
+the courtyard portion of ENV-026 carry these production obligations; full-route
+traversal, engineering, rights, asset QA and other concept obligations remain open.
+Rejected Batch188 paintings never become layout authorities. This exception does
+not waive other static references or declare the full concept program complete.
+
+**Reopen if:** Production reveals a specific unresolved appearance choice requiring
+new art, or the shared layout cannot support the intended route and entrance.
+
+## D-192: Review motion per effect with generated models and effects (2026-09-17, accepted; amends D-187 motion prerequisite)
+
+**Decision:** Remove the blanket requirement to generate motion artwork or temporal
+boards for every behavior before model/effect production. Assess each effect or motion
+family individually: generate a still or board when it resolves an open appearance,
+silhouette, onset/impact shape or artistic choice; otherwise specify the intended
+behavior and review animated model/effect previews with suitable grounded references
+when that subject is produced. Timing, weight, contact, settling and physics require
+motion evidence; a generated still cannot validate them.
+
+**Context:** After 508 retained concept images, the human approved larger review
+packets but explicitly retained artistic judgment over appearance, lighting and
+motion. The human then agreed to move motion review to the per-effect/model stage
+rather than require blanket motion artwork in advance.
+
+**Consequences:** Each motion-bearing target records whether additional artwork is
+needed and why, or links its motion-review obligation to its model/effect production
+brief. A documented later motion-review obligation satisfies that part of the concept
+stage disposition; it does not mark motion quality complete. Human approval remains
+required for the actual animated appearance and behavior, following independent agent
+screening. Grounded evidence, relevant quality/performance checks and failure-case
+coverage remain required where applicable. Existing approved appearance references,
+non-motion concept coverage, rights/asset QA, and milestone gates remain unchanged.
+The rest of D-187's concept-before-asset-iteration sequence remains in force; this
+amendment does not authorize arbitrary asset work before its appearance gate or
+silently exclude deferred features from the reference catalog.
+
+**Reopen if:** Per-effect production exposes an appearance ambiguity that needs a
+board, or motion review reveals missing reference coverage. Add the specific needed
+reference rather than reinstating a blanket artwork requirement.
+
 ## D-191: Bind D1 geographic art to the approved coastal town site plan (2026-09-09, accepted; reference-layout revision, runtime migration pending)
 
 **Decision:** Adopt [Batch 074 proposal 2](../assets/reference/shared-site-plan.md)
@@ -154,7 +264,7 @@ lean handling; this entry covers creative assets only.
 provider's current repository or file-size limits are approached; then evaluate LFS or
 a mirrored store with checked-in hashes.
 
-## D-187: Establish broad concept and behavior references before further asset iteration (2026-09-05, accepted)
+## D-187: Establish broad concept and behavior references before further asset iteration (2026-09-05, accepted; amended by D-192 for motion, D-193 for courtyard views and D-194 for shore lighting)
 
 **Decision:** insert the [game-wide concept-art program](../assets/reference/concept-art-program.md)
 as the next creative stage, before further cobblestone modeling or asset iteration.

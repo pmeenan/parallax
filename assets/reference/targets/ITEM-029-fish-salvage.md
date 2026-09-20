@@ -43,3 +43,5 @@ LFS pointers verified. Independent lanes dispatched; calls did not overlap.
 Combined wait 47.853 seconds in a 69.343-second first-start/last-end window;
 preparation/review separate, no speedup claimed. One pass each within two-pass/
 60-minute active allowance. Links, whitespace and original integrity checked.
+
+Source direction2026-09-19: human selected fishing/hunting. [Batch186 source proposals](RESOURCE-sources-186.md) retain these approved inventory appearances; source method/wildlife appearance await selection and later gameplay integration. Established monster drops remain unchanged.

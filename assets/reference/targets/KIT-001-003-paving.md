@@ -27,7 +27,8 @@ Two independent quality/theme GPT-6 Astra/low reviews plus lead actual-image
 inspection precede dependent work. One pass each within two-pass/60-minute
 allowances. Observed call brackets do not overlap; no speedup claimed.
 These appearances supplement endorsed source context. KIT-002 individual shape
-family remains open, as do metric sections, calibrated material maps, terrain
+family was subsequently selected in [104 A4](KIT-002-MAT-008-stones-plaster.md).
+Metric sections, calibrated material maps, terrain
 fitting, motion and runtime artistic acceptance.
 
 Final independent theme review PASS both: A calm limestone/earth/infill matches

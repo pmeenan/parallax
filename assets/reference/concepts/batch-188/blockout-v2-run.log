@@ -1,0 +1,15 @@
+00:02.266  blend            | Read blend: "D:\src\parallax\assets\reference\concepts\batch-188\courtyard-layout.blend"
+00:09.516  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-a-v2.png'
+Reloading external rigs...
+Reloading external metarigs...
+Info: Saved as "courtyard-layout-v2.blend"
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-a-v2.png
+00:16.703  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-b-v2.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-b-v2.png
+00:24.047  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-c-v2.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-c-v2.png
+00:31.797  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-overview-v2.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-overview-v2.png
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit

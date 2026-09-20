@@ -1,0 +1,3 @@
+# Batch187 F — existing candle-lantern rereview
+
+Existing original [002 lanternv2](concepts/batch-002/kit-029-candle-lantern-v2.png), no generation or modification. Original provenance and limitations in [KIT029](targets/KIT-029.md). SHA256998855d2d6dd9b574438b1daa2d9b525823cfe417211d8081d84eb7eeda827bd. Both independent current Astra-low quality178/theme178 and root actual-view PASS: candle/wick/flame/holder, glazing, open accessdoor, hinges, hangingring/bracedwallbracket and weatheredmaterial family coherent. Re-present for explicit humanappearance selection. No thermal/rain/load/closedstate/fastenerengineering validation.

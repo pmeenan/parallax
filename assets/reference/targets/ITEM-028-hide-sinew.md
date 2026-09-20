@@ -42,3 +42,5 @@ LFS pointers verified. Independent lanes with approximately 17.8 seconds overlap
 call brackets. Combined tool wait 73.683 seconds across approximately 56.6 seconds
 first-start/last-end elapsed; A bracket precision limits exact overlap. Preparation,
 copy and review separate. One pass each within two-pass/60-minute active allowance.
+
+Source direction2026-09-19: human selected fishing/hunting. [Batch186 source proposals](RESOURCE-sources-186.md) retain these approved inventory appearances; source method/wildlife appearance await selection and later gameplay integration. Established monster drops remain unchanged.

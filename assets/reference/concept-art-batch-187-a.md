@@ -1,0 +1,11 @@
+# Courtyard layout proposal — Batch187 A
+
+Human-approved on 2026-09-19. The active plan explicitly names a village-well courtyard (docs/plan.md reference/kit brief2026-09-05), so placement is reconciled at existing village-well transition(-512,-128), not the castle-origin paving test pad. D191 anchors remain fixed. No runtime terrain/collision/marker changes here.
+
+Authored vector drawing: [layout](concepts/batch-187/village-well-courtyard-plan-v1.svg). This is a native deterministic diagram, not an imagegen painting. Court reservation48x48m x[-540,-492],z[-170,-122]. Four perimeter building reservations;6m east-west lane and6m south spur. Workingwell(-522,-139), entrance(-512,-128), proposedstairs x[-514,-510],z[-138,-128]. House1x[-540,-527]z[-136,-122];House2x[-506,-492]z[-136,-122];House3x[-540,-528]z[-170,-159];House4x[-505,-492]z[-170,-159]. Footprints define one reusable layout proposal, not validated building dimensions.
+
+A camera(-534,-154) looks northeast toward well/stair; B(-498,-145) reverses toward well; C(-518,-164) approaches from south. These are horizontal planning locations only; elevations/FOV/sightlines need blockout. Castle stays east-northeast beyond moat; do not invent a bridge or watercrossing to get the view. Square(-640,-96) with its selected canopytree stays separate; hearth(-528,-96) and westbank gate(-416,-96) unchanged. Local exits connect toward existingstreetnetwork, not straight roads through all parcels. Earth bank is the retained005 visual motif, not a surveyed height claim.
+
+Both independent quality178/theme178 checked SVG scale, anchor arithmetic and unblocked routes: PASS. Root actual-viewed approved005well and rendered SVG using bundled sharp: labels legible, no clipping, circulation clear. Preview is a scratch render; SVG remains authoritative. Headlessbrowser preview stalled and was stopped only for the task-specific profile; no game finding inferred. No publicrights claim or runtime acceptance. Human approved this layout on2026-09-19; terrain/stairrun/castlevisibility/traversal remain shared3Dblockout work.
+
+Approval2026-09-19: A sharedlayout, B1 door, C1 shutters, D1 crate, E2 satchel and F existing002 lanternv2 all explicitly approved. E1 stays rejected. Engineering/runtime requirements remain open.

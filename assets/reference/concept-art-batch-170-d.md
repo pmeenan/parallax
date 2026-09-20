@@ -1,0 +1,13 @@
+# Batch170 D — clay/straw assembly proposal
+
+Fresh built-in generation, no image inputs. Exact prompt saved before call. Deferred MAT012 appearance proposal only, not a validated construction specification or required new kit. Rights pending.
+
+```text
+One landscape1536x1024 highly realistic medieval material/construction concept specimen under broad soft daylight. A small complete rectangular rough oak frame, wider than tall, securely resting with its whole broad bottom rail flat on a heavy plain stone workbench. Show every frame edge and its contact shadow, generous margins. Inside the frame upright slender wooden staves carry flexible thin hazel-like rods woven horizontally, clearly alternating OVER and UNDER the upright staves, coherent basket-like interlacing. Left half remains bare woven rods; right half is covered in a thick earthy muted brown clay-and-short-straw daub layer, with a ragged diagonal transition showing actual clay adhesion around and between the weave, not a paper layer. On right the daub has a hand-smoothed quiet surface with a few shallow marks and sparse visible embedded short golden straw fibers, small shrinkage cracks only. No foam, concrete, white plaster, loose floating straw or protruding nails. Top/bottom rails visibly meet separate side timbers in simple mortise/tenon-like joints; modest wooden pegs ONLY at genuine rail/post joints where they can join the two pieces, no random decorative dowels. Staves fit inside the frame, rods do not pass impossibly through solid wood. This is an unadorned portable material sample, not a whole wall or building. No roof, door, captions, labels, rulers, people, tools or medieval diorama background. Plain softly defocused workshop backdrop. Materials detailed but calm, naturally worn oak grain and dense earthy daub, no synthetic repeated noise. Three-quarter almost-front view with sufficient angle to show frame thickness and firm bench support.
+```
+
+## Native receipt
+
+Source: C:/Users/patme/.codex/generated_images/01a0744d-934b-7233-9464-19d574b3e48f/exec-7753defb-0a53-4f30-a5ba-59914ec5056c.png
+Output: assets/reference/concepts/batch-170/mat-012-clay-straw-assembly-v1.png
+Source/output equal SHA256 0F788C370DDEBB6E8864B443C74820E7BE749488EAB1509F6F956ABB41755F7F; 3139407 bytes,1536x1024. Native copy only. Prompt saved 2026-09-17T21:05:16.810Z, tool return 2026-09-17T21:06:04.540Z; tool 22.7seconds. Model/seed unavailable. Root actual view: frame grounded, pegs at real rail/post joints, clay/weave transition readable. Some short rod ends warrant independent continuity screening; not an engineering specification. Human approval and rights review pending.

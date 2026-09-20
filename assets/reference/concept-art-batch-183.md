@@ -1,0 +1,11 @@
+# Batch183 — six reverse loadout views and two gear-overflow notices
+
+Eight meaningful candidates before human review. A Human martial reverse, B Human aetherwork reverse, C Skarn martial reverse, D Skarn aetherwork reverse, E Wickfolk martial reverse, F Wickfolk aetherwork reverse. Approved131 A1/B2,132 A2/B2,133 A2/B2 fronts remain identity/outfit authorities. Six independent rear three-quarter full-body views extend missing garment back/shoulder/hem and equipment suspension references, not duplicate front-fit portraits. No new named characters, classes or folk restrictions. Hidden construction is proposed for human choice; no measured metric or rig claim.
+
+G ordinary gear overflow notice: illustrative Common Sword auto-salvaged for17marks, base price35 floorhalf. H guaranteed Mythic Resonant Focus receipt with explicit replacement of unequipped Common Sword and17marks compensation. Illustrative eligible inventory state, not new guaranteed drop content; no equipped item eviction. Use same approved181 notice family; exact text/rules in receipts. No change to loot mechanics.
+
+Root A/B/G/H, generator lane C/D/E/F. Each one initial plus one targeted correction,25active minutes per subject,140active minutes packet excluding tool/review waits. Both independent GPT-6 Astra low quality/theme actual-image screens and root before revision/dependent work; pair comparisons to original fronts required. Present all eight together after checks; never stop for individual approvals. If a required candidate fails its bound, report unresolved explicitly rather than accept to fill quota. Exact prompts before native builtin imagegen, actual-view refs, untouched copies/source hashes/bytes/dimensions/timing. No commit, library admission or rights clearance. Model/seed unavailable.
+
+## Bounded extension for D
+
+D1/D2 both independently rejected: editing the patterned rear preserves unwanted surface. Authorize one fresh reverse generation using only approved front132 as identity input, with calm solid wool construction specified positively; no failed rear image input. Maximum one further pass and15active minutes, within packet140active minutes. Expected payoff is removing edit-target texture anchoring while retaining folk/outfit/gear identity. If still material-mismatched, retain unresolved and exclude from acceptance. No silent allowance reset.

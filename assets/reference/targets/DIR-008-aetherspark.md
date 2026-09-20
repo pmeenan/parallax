@@ -58,3 +58,8 @@ Both GPT-6 Astra/low reference-comparison reviews pass A v2: detached bolt and
 compact open mount, identity/pose/grip/materials preserved, no new visible blocker.
 Root agrees. Manufacture/motion remain unvalidated. Markdown links/whitespace
 and source verification complete; originals retained, changes uncommitted.
+## Focused bolt selection recheck after Batch182
+
+2026-09-18: existing030 B rod v1 re-viewed by root and independent GPT-6 Astra low quality178/theme178. Both PASS the compact detached silver-blue bolt appearance, sparse dotted trail and matching catalyst glow; coherent hand/socket/rod. This is a re-presentation of existing native art, not a new generation or repeat wand-shape decision. Human bolt appearance selection remains pending. Effect is visually restrained; a still cannot prove zero cost, relative damage, flight trajectory or timing. Bolt trajectory differs from rod shaft angle, so this is not an aiming/launch-path reference. Existing source provenance remains unchanged, hydrated SHA-256 and staged LFS pointer reverified. No runtime/library admission or commit.
+
+Human approval (2026-09-18): existing030B silver-blue Aetherspark bolt appearance approved following focused re-presentation. Prior wand-shape approval retained. Timing, aiming/trajectory and full effect profiles remain open.

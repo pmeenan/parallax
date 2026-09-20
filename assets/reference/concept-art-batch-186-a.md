@@ -1,0 +1,15 @@
+# Batch186 A — shore fishing source
+
+## Exact prompt
+Create a photoreal grounded medieval fantasy game concept, landscape single image. References: first image is approved fresh fish morphology/color only; second is open sandy shore material and atmosphere only, not a map or camera to copy; third is approved folk anatomy, use the SMALL ADULT WICKFOLK on the RIGHT as anatomy inspiration, not the outfits of others. Show one mature adult pointed-ear Wickfolk fisher, about 1.35m tall, in simple worn wool tunic, practical trousers and leather boots, standing securely on firm open beach beside a low dark rock, side-three-quarter view with entire body and both hands visible. Fisher holds one plain long tapered wooden fishing pole with two hands, gently angled over water; a single fine but visible natural-colored line attaches at its TIP and descends into shallow sea. No reel, no metal rod guides, no modern fishing gear, no duplicated cords, no impossible line floating unattached. Rod kept within image. Empty open woven catch basket on dry sand nearby. Sea extends naturally beyond with subtle ripples and restrained hints of a few silver fish underwater, no airborne fish or oversized fish. Beach remains spacious; no new pier or ship or castle geography. Believable weight, joints, feet contacting sand, natural face, mature adult proportions not a child. Bright readable coastal daylight, rich weathered tactile materials, natural colors and photographic detail matching project refs. Small restrained fantasy identity comes from the Wickfolk anatomy, no glow or magical fishing. No text, labels, UI, panels or watermark. This is a proposed source-interaction appearance, not a motion frame or equipment engineering diagram.
+
+## Native provenance
+Source: C:/Users/patme/.codex/generated_images/01a0744d-934b-7233-9464-19d574b3e48f/exec-6eb68805-4fc1-4155-a8c1-cb8d27ff6c53.png
+Project: assets/reference/concepts/batch-186/item-029-shore-fishing-v1.png
+SHA256 79d743768c021d5f42c2e9ee8d7240866a6e5028db9d2029a8b008b048e4e46e; 3103703 bytes; 1536 x 1024. Source/project equality and staged LFS pointer verified. Builtin imagegen; model/seed unavailable; rights pending public shipping.
+Input actual-viewed: batch-045/item-029-fresh-fish-v1.png SHA256 38c4ee9777817cb623ce564168df7b5607386356b62b1db66934ff03aeb12b0a
+Input actual-viewed: batch-006/env-020-a-sand-v1.png SHA256 be5633c9e42593e8358a131b664dfaea46831282faf51c7c1fcf01a467f098c8
+Input actual-viewed: batch-025/dir-006-b-folk-v1.png SHA256 5475b96ff97d8df8a1a1c727e094d391895a8e8ff8e16c4eeba00dc18943dec9
+UTC call bracket: 2026-09-19T15:59:27.783Z to 2026-09-19T16:00:20.176Z.
+Root actual-view: complete adult body, two-hand pole grip, visible tip-attached line entering water, supported basket and feet. Source presentation pass; no exact scale/map or tackle-motion validation.
+Both independent screens quality178/theme178 PASS before B generation; adult anatomy, tip-attached line, period materials and source readability. Human selection pending.

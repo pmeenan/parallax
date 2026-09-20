@@ -1,0 +1,104 @@
+D:\src\parallax\assets\source\d1-paving\proof_20260920_v2.py:23: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m=bpy.data.materials.new(name);m.use_nodes=True
+GEOMETRY 1/85
+GEOMETRY 2/85
+GEOMETRY 3/85
+GEOMETRY 4/85
+GEOMETRY 5/85
+GEOMETRY 6/85
+GEOMETRY 7/85
+GEOMETRY 8/85
+GEOMETRY 9/85
+GEOMETRY 10/85
+GEOMETRY 11/85
+GEOMETRY 12/85
+GEOMETRY 13/85
+GEOMETRY 14/85
+GEOMETRY 15/85
+GEOMETRY 16/85
+GEOMETRY 17/85
+GEOMETRY 18/85
+GEOMETRY 19/85
+GEOMETRY 20/85
+GEOMETRY 21/85
+GEOMETRY 22/85
+GEOMETRY 23/85
+GEOMETRY 24/85
+GEOMETRY 25/85
+GEOMETRY 26/85
+GEOMETRY 27/85
+GEOMETRY 28/85
+GEOMETRY 29/85
+GEOMETRY 30/85
+GEOMETRY 31/85
+GEOMETRY 32/85
+GEOMETRY 33/85
+GEOMETRY 34/85
+GEOMETRY 35/85
+GEOMETRY 36/85
+GEOMETRY 37/85
+GEOMETRY 38/85
+GEOMETRY 39/85
+GEOMETRY 40/85
+GEOMETRY 41/85
+GEOMETRY 42/85
+GEOMETRY 43/85
+GEOMETRY 44/85
+GEOMETRY 45/85
+GEOMETRY 46/85
+GEOMETRY 47/85
+GEOMETRY 48/85
+GEOMETRY 49/85
+GEOMETRY 50/85
+GEOMETRY 51/85
+GEOMETRY 52/85
+GEOMETRY 53/85
+GEOMETRY 54/85
+GEOMETRY 55/85
+GEOMETRY 56/85
+GEOMETRY 57/85
+GEOMETRY 58/85
+GEOMETRY 59/85
+GEOMETRY 60/85
+GEOMETRY 61/85
+GEOMETRY 62/85
+GEOMETRY 63/85
+GEOMETRY 64/85
+GEOMETRY 65/85
+GEOMETRY 66/85
+GEOMETRY 67/85
+GEOMETRY 68/85
+GEOMETRY 69/85
+GEOMETRY 70/85
+GEOMETRY 71/85
+GEOMETRY 72/85
+GEOMETRY 73/85
+GEOMETRY 74/85
+GEOMETRY 75/85
+GEOMETRY 76/85
+GEOMETRY 77/85
+GEOMETRY 78/85
+GEOMETRY 79/85
+GEOMETRY 80/85
+GEOMETRY 81/85
+GEOMETRY 82/85
+GEOMETRY 83/85
+GEOMETRY 84/85
+GEOMETRY 85/85
+D:\src\parallax\assets\source\d1-paving\proof_20260920_v2.py:193: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world=bpy.data.worlds.new("Natural daylight");scene.world.use_nodes=True
+00:55.719  render           | Saved: 'D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\walking-daylight.png'
+Info: Packed 1 file(s)
+Info: Saved as "source.blend"
+READY D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\walking-daylight.png
+01:12.625  render           | Saved: 'D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\walking-overcast.png'
+READY D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\walking-overcast.png
+01:34.609  render           | Saved: 'D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\oblique-assembly.png'
+READY D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\oblique-assembly.png
+01:55.406  render           | Saved: 'D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\grazing-detail.png'
+READY D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\grazing-detail.png
+02:13.000  render           | Saved: 'D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\top-packing.png'
+READY D:\src\parallax\harness\results\d1-paving-proof-2026-09-20\cycle2\top-packing.png
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit

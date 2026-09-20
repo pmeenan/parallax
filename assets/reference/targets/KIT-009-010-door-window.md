@@ -71,3 +71,7 @@ generation metadata, local links and git diff --check verified. No runtime tests
 modeling, library admission or commits. A two passes, B two plus one recorded extension.
 Initial calls did not overlap by reported times; no parallel-call speedup claimed.
 Human artistic approval recorded for final pair.
+
+[Batch187](../concept-art-batch-187-review.md) supplies screened construction views or existing-lantern rereview. Both independent screens/root pass selected candidates; human selection pending. Prior approvals retained; concealed/metric/kinematic/production requirements remain open.
+
+Batch187 approval2026-09-19: human approved all six subjects: shared village-welllayout, B1closeddoor, C1closedshutters, D1opencrate, E2opensatchel and original002lanternv2. These no longer await artisticselection. Further courtyard views use the selected footprint; runtime/metric/motion obligations remain open.

@@ -35,3 +35,7 @@ appearance references with natural projection occlusion, not fully separated
 construction plates. No confirmed intersection, floating foot or broken joint.
 This records the narrower demonstrated scope rather than claiming exact prompt
 compliance. Human selection complete; hidden-construction/metric profiles remain open.
+
+[Batch187](../concept-art-batch-187-review.md) supplies screened construction views or existing-lantern rereview. Both independent screens/root pass selected candidates; human selection pending. Prior approvals retained; concealed/metric/kinematic/production requirements remain open.
+
+Batch187 approval2026-09-19: human approved all six subjects: shared village-welllayout, B1closeddoor, C1closedshutters, D1opencrate, E2opensatchel and original002lanternv2. These no longer await artisticselection. Further courtyard views use the selected footprint; runtime/metric/motion obligations remain open.

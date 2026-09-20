@@ -2,10 +2,17 @@
 
 **Status:** implementation brief; human artistic acceptance pending. Paving has an
 admitted binary prototype and installed runtime path; the individual-stone correction
-below is paused after rejected source previews. Complete the
-[game-wide concept-art program](concept-art-program.md) and select its courtyard,
-paving, material and assembly targets before further modeling. Other kit pieces remain
-proposals. Exact active QA limits live in
+below resumes under accepted D-195 after rejected source previews. The
+[game-wide concept-art program](concept-art-program.md) and its selected courtyard,
+paving, material and assembly targets now supply the approved baseline. Other kit pieces remain
+proposals. D-193 defers matching finished courtyard views into asset production;
+their absence no longer blocks the concept-stage disposition. Other program gates
+remain applicable. Use the [approved layout and shared scene](concept-art-batch-188-review.md)
+for geometry and existing selected art for appearance. Production must deliver eight
+matching captures: arrival/reverse/south approach in daylight and dry overcast, and
+arrival/reverse at night. Both independent screens, lead inspection and human
+artistic acceptance remain required before closing that visual outcome.
+Exact active QA limits live in
 `assets/qa/`, and current implementation/evidence status lives in `docs/plan.md`.
 Visual reference: [paired sunny/gloomy courtyard](d1-courtyard-sunny-gloomy.png),
 endorsed by the human as the quality benchmark, not as finished runtime acceptance.
@@ -17,15 +24,25 @@ Selected village direction: [DIR-002 B](targets/DIR-002.md#human-selection-and-b
 The human endorses B's timber-led, weathered medieval character and quality; do not
 replace it with A's plaster treatment or C's pristine/high-end walls and gutter details.
 Village lanterns must use actual candle/oil flame, never electric fixtures. Carry these
-constraints into future reference and construction sheets; selection does not resume
-modeling before the program gate or approve unseen lamp construction.
+constraints into future reference and construction sheets. D-195 closes the collection
+gate and resumes bounded production; unseen lamp construction still needs review.
+
+## Selected production reference bundle
+
+The [collection handoff](concept-art-collection-review.md#first-production-proof--selected-reference-bundle)
+links the exact approved paving assembly, individual stone family, edge, limestone,
+joint soil, plants and lighting originals, plus the approved footprint/shared scene.
+These supersede generic early proposals where the selected appearance differs.
+Full-profile sequencing is approved by D-195 as described in that handoff;
+the small paving proof may proceed; no runtime acceptance is implied.
 
 ## Visual target
 
 An inviting village courtyard: warm cream plaster framed by dark oak, terracotta
 roofs, pale limestone paving and a modest limestone well. Shrubs soften building
-bases without obscuring the route. A hilltop castle remains legible beyond the
-village roofline. Target AAA-quality photorealistic, movie-style scenery: convincing
+bases without obscuring the route. Castle visibility must follow the shared site
+plan and actual camera occlusion; do not add or relocate a castle to reproduce the
+older appearance benchmark. Target AAA-quality photorealistic, movie-style scenery: convincing
 construction, physically credible material response, natural surface variation and
 rich lighting. Readability and bright daylight do not authorize cartoon proportions,
 flat toy-like materials or simplified decorative substitutes. Preserve readable

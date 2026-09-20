@@ -1,0 +1,3 @@
+# Batch184 H — existing fishing vessel
+
+No generation: re-present existing [021 vessel](concepts/batch-021/kit-036-fishing-v1.png) after fresh independent GPT-6 Astra low quality/theme actual-image screens plus root. All pass scoped hull/working-deck appearance: continuous weathered hull, single mast and furled sail, modest aft shelter, manual net/basket/fishing work. Review does not certify rigging, gangway clearance, seaworthiness, machinery or incidental skyline. Original provenance in [KIT036/037 target](targets/KIT-036-037.md). No native bytes changed or duplicated; human selection pending.

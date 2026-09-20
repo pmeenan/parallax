@@ -115,3 +115,5 @@ Production: Batch074, deterministic authored SVG so compass, anchors and routes
 cannot drift during image generation. Two review/revision passes, 60 minutes active;
 independent geography/quality and theme/consistency screens plus lead inspection.
 Raster export is only a deterministic rendering of the SVG; no external imagery.
+
+Local courtyard refinement2026-09-19: human approved [Batch187 footprint](concept-art-batch-187-a.md) at the existing village-well transition(-512,-128), with separate workingwell and four perimeter buildings. This refines local reference geometry without moving D191 town/castle/moat/shore anchors. Proposed elevations, stair geometry, camera visibility and runtime placement remain unvalidated; castle-origin paving pad is a prototype, not this courtyard.

@@ -1,0 +1,16 @@
+D:\src\parallax\assets\reference\concepts\batch-188\blockout.py:22: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes=True
+D:\src\parallax\assets\reference\concepts\batch-188\blockout.py:27: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m=bpy.data.materials.new(name);m.diffuse_color=(*rgb,1);m.use_nodes=True
+00:12.110  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-a.png'
+Info: Saved as "courtyard-layout.blend"
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-a.png
+00:19.078  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-b.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-b.png
+00:26.360  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-c.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-c.png
+00:31.219  render           | Saved: 'D:\src\parallax\assets\reference\concepts\batch-188\blockout-overview.png'
+READY D:\src\parallax\assets\reference\concepts\batch-188\blockout-overview.png
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit

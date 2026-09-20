@@ -1,5 +1,17 @@
 # D1 paving — individual limestone source
 
+**Current2026-09-20:** D-195 accepts the concept collection and resumes the
+[small assembled proof](proof-2026-09-20.md). New work uses a sibling source script
+and separate result directory with explicitly verified Blender5.2.1. The historical
+5.1.2 scripts and prior source evidence below are preserved. The old full assembly
+was rejected for uniform pale slabs, exposed shoulders, flat joints and weak plants;
+an `accepted-hero-final` folder name does not grant assembly acceptance. Export and
+library expansion wait for a viable new source proof and their separate gates.
+The initial two-cycle proof has finished without a viable appearance match; see the
+brief for rejected evidence and the proposed isolated stone/joint follow-up.
+
+## Historical individual source
+
 Current work uses original, closed individual stone meshes and the accepted
 [generated single limestone surface](../../reference/d1-paving-clean/limestone-single-surface-v1.png).
 `individual.py` assembles eight hero-derived variants from `stone_geometry.py` into

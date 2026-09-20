@@ -339,15 +339,11 @@ These are checkpoints within M4.5, not additional milestones or full-smoke gates
 Each uses focused validation, representative captures, and measured combined costs.
 Use the bounded visual-work procedure in [workflow.md](workflow.md#bounded-visual-and-research-work).
 
-0. **Concept art and comparison targets — next creative step (D-187).** Complete the
-   [game-wide reference program](../assets/reference/concept-art-program.md) now,
-   before further cobblestone or other asset iteration. The
-   [prioritized target catalog](../assets/reference/concept-art-catalog.md) holds the
-   initial coverage inventory; generation and artistic selection remain open. Generate
-   the entire catalog, with no total image cap, as coherent environment/asset/character
-   concepts and effect/physics target sheets, including temporal boards and grounded
-   motion references. Review the coverage and select targets with the human. Technical installer/streaming closure remains separate;
-   Blender MCP setup is handled separately and does not block concept generation.
+0. **Concept direction collection — accepted2026-09-20 (D-195).** The
+   [selected collection](../assets/reference/concept-art-collection-review.md) supplies
+   the production baseline. Supplementary static views/choices are listed and reviewed
+   per production subject; motion/courtyard/shore obligations follow D-192–194.
+   This closes the collection prerequisite, not unfinished profile or runtime acceptance.
 1. **Finished daylight courtyard.** Establish the asset pipeline and material/shadow
    baseline with final-quality representative content.
 2. **The same area at night and in a storm.** Establish dynamic local lighting,
@@ -441,19 +437,17 @@ bytes are unchanged. [Usage and supported scope](../assets/qa/animation-import.m
 document the still-pending character content, full admission/packaging and installed
 motion acceptance. All changes remain uncommitted.
 
-**Current creative priority (human direction, 2026-09-05):** the reference program
-above supersedes the previously proposed immediate small-patch art correction.
-Cobblestone modeling and further asset iteration stay paused until its reference
-review is complete. Existing technical admission is not artistic acceptance; the
-individual-stone previews remain rejected. The generation stage now has a prioritized
-target catalog reconciled against named gameplay content, the feature matrix and
-deferred research. The human selected Batch 001's B for village character and quality,
-with flame-only lamps; matched gloomy and detail views remain open. The whole catalog
-(about 300 targets, several images each) is generated and reviewed before asset
-iteration resumes; expect on the order of a hundred or more reviewed batches, with no
-total image cap. Concept originals are versioned through Git LFS under `assets/reference/`
-(D-190), with metadata and original-byte hashes in ordinary Git. The shared plex
-service is live; see [asset storage](../assets/storage.md).
+**Current creative priority (human approval2026-09-20, D-195):** resume the
+[bounded4×4m paving proof](../assets/source/d1-paving/proof-2026-09-20.md) against
+selected103/104/108/116 references. The collection baseline is accepted; each
+production package retains its unresolved profile views and human artistic gate.
+The initial two-cycle proof is now complete with no viable visual result: contact
+improved, but the limestone material and worn shoulders still miss the selected target.
+Further full-assembly tuning is deferred; the proposed next package isolates one
+stone and soil joint before repeating it. Paving acceptance remains open.
+Old individual-stone assembly previews remain rejected despite historical folder
+names. No library expansion or runtime visual acceptance follows from concept approval.
+Creative originals remain in Git LFS under D-190; rights/QA and milestone gates stand.
 
 Completed direction-selection brief: [Batch 001 — coastal village direction](../assets/reference/concept-art-batch-001.md)
 addressed DIR-002 with three sunny/overcast alternatives (six initially planned images), up to
@@ -750,7 +744,165 @@ explicitly use GPT-6 Astra / low under human direction. No concept target is clo
       [Batch105](../assets/reference/concept-art-batch-105-review.md) oak A v5 (peg/joint correction)
       and terracotta B v1 human-approved; full profiles open.
       [Batch106](../assets/reference/concept-art-batch-106-review.md) iron A v1
-      and corrected leather B v2 pass review. Human selection/full profiles open.
+      and corrected leather B v2 human-approved. Full profiles open.
+      [Batch107](../assets/reference/concept-art-batch-107-review.md) dock timber A v2
+      and canvas B v1 human-approved. Full profiles open.
+      [Batch108](../assets/reference/concept-art-batch-108-review.md) limestone A v1
+      and joint soil B v1 human-approved. Full profiles open.
+      [Batch109](../assets/reference/concept-art-batch-109-review.md) field earth A v1
+      and gravel B v2 human-approved. Full profiles open.
+      [Batch110](../assets/reference/concept-art-batch-110-review.md) armor A v3
+      and glass B v1 human-approved. Full profiles open.
+      [Batch111](../assets/reference/concept-art-batch-111-review.md) castle masonry A v4
+      face correction and catacomb B v1 human-approved;
+      full profiles open.
+      [Batch112](../assets/reference/concept-art-batch-112-review.md) sand A v1
+      and lichen B v3 human-approved. Full profiles open.
+      [Batch113](../assets/reference/concept-art-batch-113-review.md) dark shore rock A v2
+      and moss B v1 human-approved. Full profiles open.
+      [Batch114](../assets/reference/concept-art-batch-114-review.md) matched wet shore
+      rock v2 human-approved. Dynamic wetness/full profiles open.
+      [Batch115](../assets/reference/concept-art-batch-115-review.md) buff and gray
+      limestone v3 studies human-approved; full profiles open.
+      [Batch116](../assets/reference/concept-art-batch-116-review.md) red limestone
+      A3 and courtyard joint plants B1 pass both reviews and lead inspection;
+      both human-approved; full profiles open.
+      [Batch117](../assets/reference/concept-art-batch-117-review.md) courtyard shrubs
+      and meadow/verge grasses pass both reviews and lead inspection;
+      both human-approved; full profiles open.
+      [Batch118](../assets/reference/concept-art-batch-118-review.md) canopy tree and
+      forest understory: B1 human-approved, A2 human-rejected as synthetic;
+      replacement A3 human-approved; full profiles open.
+      [Batch119](../assets/reference/concept-art-batch-119-review.md) coastal vegetation
+      and forest rock pass both reviews and root inspection; both human-approved, full profiles open.
+      [Batch120](../assets/reference/concept-art-batch-120-review.md) ceramic glaze
+      and shore salt proposal: B3 human-approved; A3 fails glaze
+      realism after its named extension. Glaze gap and full profiles remain open.
+      [Batch121](../assets/reference/concept-art-batch-121-review.md) glaze surface-only
+      sample and dormant crystal detail pass both screens/root and are human-approved; full profiles open.
+      [Batch122](../assets/reference/concept-art-batch-122-review.md) weapon steel
+      and garment cloth A1/B2 pass both screens/root and are human-approved; full profiles open.
+      [Batch123](../assets/reference/concept-art-batch-123-review.md) courtyard and forest
+      ground extent A2/B2 pass both screens/root and are human-approved; temporal/full profiles open.
+      [Batch124](../assets/reference/concept-art-batch-124-review.md) street ground and
+      grass wind key poses A1/B2 pass both screens/root and are human-approved; temporal/full profiles open.
+      [Batch125](../assets/reference/concept-art-batch-125-review.md) shrub/tree wind
+      key poses: A2 shrub approved, B2 tree human-rejected as artificial; full-size B3
+      replacement appearance accepted; generated recovery rejected. Screened calm/gust/reused-calm settled endpoint human-approved. Intermediate recovery and matched
+      tree states and combined temporal/full profiles open.
+      [Batch126](../assets/reference/concept-art-batch-126-review.md) Mara Venn and
+      Skarn smith appearances A1/B2 pass both screens/root and are human-approved; full profiles open.
+      [Batch127](../assets/reference/concept-art-batch-127-review.md) apothecary and
+      hearth keeper appearances A1/B2 pass both screens/root and are human-approved.
+      [Batch128](../assets/reference/concept-art-batch-128-review.md) dock trader and
+      salvager A1/B2 pass both screens/root and are human-approved; full profiles open.
+      [Batch129](../assets/reference/concept-art-batch-129-review.md) Human/Wickfolk
+      field-worker A3/B4 farmer-costume corrections pass both screens/root and are human-approved; full profiles open.
+      [Batch130](../assets/reference/concept-art-batch-130-review.md) forest/harvest
+      carrying variants A2/B2 pass both screens/root and are human-approved; motion profiles open.
+      [Batch131](../assets/reference/concept-art-batch-131-review.md) Human player
+      loadout variation A1/B2 passes both screens/root and is human-approved. CHAR-011 quest persona assignments still open.
+      [Batch132](../assets/reference/concept-art-batch-132-review.md) Skarn player
+      variation screened; full profiles open.
+      A2/B2 pass both independent screens/root and are human-approved.
+      [Batch133](../assets/reference/concept-art-batch-133-review.md) adult Wickfolk
+      player variation A2/B2 passes both screens/root and is human-approved; metrics/full profiles open.
+      [Batch134](../assets/reference/concept-art-batch-134-review.md) Human/Skarn close
+      faces reviewed: facial quality/theme pass, root accepts wider crop despite framing
+      screen failure. Both human-approved on 2026-09-15; Wickfolk and motion/lighting range open.
+      [Batch135](../assets/reference/concept-art-batch-135.md) Wickfolk neutral face in
+      review: v1 passes both independent screens/root, one pass used; human-approved on 2026-09-15.
+      [Batch136](../assets/reference/concept-art-batch-136.md) Greymaw fur close view
+      reviewed; reuse134/135 for hair. Both independent screens/root PASS, one pass used;
+      human-approved on 2026-09-15. Motion/full profiles open.
+      [Batch137](../assets/reference/concept-art-batch-137-review.md) overcast pair
+      rejected/deferred after three passes each: persistent synthetic surfaces,
+      DIR-005 quality still open. [Batch138](../assets/reference/concept-art-batch-138.md)
+      fresh calm/chop water v1 pair passes both independent screens/root, one pass
+      each; both human-approved on 2026-09-15. Storm/motion/full profiles remain open.
+      [Batch139](../assets/reference/concept-art-batch-139-review.md) storm sea/moat
+      edge v1 pair passes both independent screens/root, one pass each; both
+      human-approved on 2026-09-15. Static appearance only, full water profiles open.
+      [Batch140](../assets/reference/concept-art-batch-140-review.md) sand break/retreat
+      v1 pair passes both independent screens/root, one pass each; both human-approved
+      on 2026-09-15. Deferred effect appearance only, not matched motion.
+      [Batch141](../assets/reference/concept-art-batch-141-review.md) dark rock/surf v2
+      passes both independent screens/root, two passes used; human-approved on 2026-09-15.
+      Distant landmarks removed, minor fine texture drift; still appearance only.
+      [Batch142](../assets/reference/concept-art-batch-142-review.md) clear/overcast
+      skies v1 pair passes both independent screens/root, one pass each; both human-approved
+      on 2026-09-15. Full sky profiles open.
+      [Batch143](../assets/reference/concept-art-batch-143-review.md) storm sky v1
+      passes both independent screens/root, one pass used; human-approved on 2026-09-15.
+      Motion/celestial/horizon profiles open.
+      [Batch144](../assets/reference/concept-art-batch-144-review.md) moonlit sky v1
+      passes both independent screens/root, one pass used; human-approved on 2026-09-15.
+      Slightly larger moon/full cloud bands retained; celestial/horizon/motion open.
+      [Batch145](../assets/reference/concept-art-batch-145-review.md) HUD grouped/split
+      v1 pair reviewed, B split human-selected on 2026-09-15. B passes both screens; root accepts
+      A height deviation for layout choice, content/readability pass. Runtime unchanged.
+      [Batch146](../assets/reference/concept-art-batch-146-review.md) Mara ready v1
+      passes both independent screens/root, one pass used; human-approved on 2026-09-15.
+      Runtime/full conversation states open.
+      [Batch147](../assets/reference/concept-art-batch-147-review.md) waiting/fallback
+      v1 pair passes both independent screens/root, one pass each; both human-approved
+      on 2026-09-16. Static appearance only; runtime/further states remain open.
+      [Batch148](../assets/reference/concept-art-batch-148.md) longer reply fixture reviewed; both independent screens/root PASS, human-approved on 2026-09-16; two passes/30 active minutes, independent screens/root before revision
+      and human approval to close. Runtime/localization/fullstates open.
+      [Batch149](../assets/reference/concept-art-batch-149.md) close NPC/distant waystone marker v1 pair passes both independent screens/root; both human-approved on 2026-09-16; two lanes, two passes/30 active minutes each, both screens/root before revision and human approval to close. Runtime/full states open.
+      [Batch150](../assets/reference/concept-art-batch-150-review.md) gathering/entrance marker v3 pair passes both independent screens/root; v1/v2 rejected for surface artifacts, named one-pass fresh-background extension succeeds, root B generation fallback after agent thread limit. Both human-approved on 2026-09-16 with mineral prompt E · Mine; runtime/full states open.
+      [Batch151](../assets/reference/concept-art-batch-151-review.md) Greymaw soft-target/pounce v1 pair passes both independent screens/root; both human-approved on 2026-09-16; two lanes, two passes/30 active minutes each, both screens/root before revisions and human approval to close. Runtime/full states open.
+      [Batch152](../assets/reference/concept-art-batch-152-review.md) Hollow Warden Exposed v1 passes both independent screens/root; human-approved on 2026-09-16; one lane two passes/30 active minutes, both screens/root before revision and human approval to close. Runtime/full states open.
+      [Batch153](../assets/reference/concept-art-batch-153-review.md) boss phase v2 reviewed: visual quality passes, exact tick geometry fails; root submits layout-only with explicit deviation, human layout-approved on2026-09-16; one lane two passes/30 active minutes, both screens/root before revision and human approval to close. Isolated UI fixture; runtime/full phases open.
+      [Batch154](../assets/reference/concept-art-batch-154-review.md) inventory/equipment v3 paper doll and item thumbnails pass both independent screens/root; human-approved on2026-09-16; one lane two passes/30 active minutes, both screens/root before revision and human approval to close. Runtime/full inventory states open.
+      [Batch155](../assets/reference/concept-art-batch-155-review.md) equipped Fine sword/affix v2 passes both independent screens/root; human-approved on2026-09-16; one lane two passes/30 active minutes, both screens/root before revision and human approval to close. Runtime/full inventory states open.
+      [Batch156](../assets/reference/concept-art-batch-156-review.md) Hearthloaf ready/missing v1 pair passes both independent screens/root; both human-approved on2026-09-16; two lanes two passes/30 active minutes each, both screens/root before revision and human approval to close. Runtime/full crafting states open.
+      [Batch157](../assets/reference/concept-art-batch-157-review.md) Tinker's Thrift v3 passes both independent screens/root; human-approved on2026-09-16; v1/v2 surface failures resolved by named fresh whole-loaf extension; one lane two passes/30 active minutes, both screens/root before revision and human approval to close. Runtime/full crafting states open.
+      [Batch158](../assets/reference/concept-art-batch-158-review.md) Forge v1/Alembic v3 pass both independent Astra-low screens and root; both human-approved on 2026-09-16. Alembic v1/v2 rejected for herb identity; one fresh-pass/15-minute extension resolved it. Runtime/full crafting states open.
+[Batch159](../assets/reference/concept-art-batch-159-review.md) vendor Buy v1/Sell v1 pass both independent Astra-low reviews and root; both human-approved on 2026-09-16. One generation pass each; full unavailable-action/list/accessibility states remain open.
+[Batch160](../assets/reference/concept-art-batch-160-review.md) insufficient-funds/equipped-item trade v1 screens pass both independent Astra-low reviews and root; both human-approved on 2026-09-16. One pass each; other unavailable/full-list/accessibility states remain open.
+[Batch161](../assets/reference/concept-art-batch-161-review.md) illustrated Attributes v3/Abilities v2 pass both independent Astra-low reviews and root; both human-approved on 2026-09-16. V1 superseded, Attributes v2 rejected for overlap/anatomical heart. Full browser/respec/runtime states remain open.
+[Batch162](../assets/reference/concept-art-batch-162-review.md) reshape open B v2 and closed B v3 human-approved; assignment A v1 approved in Batch165; full browser/other-state/runtime coverage remains open.
+[Batch163](../assets/reference/concept-art-batch-163-review.md) main/side quest journal v1 previews pass both independent Astra-low reviews/root; both human-approved on 2026-09-17. One pass each; history/full-list/preparation/runtime coverage remains open.
+[Batch164](../assets/reference/concept-art-batch-164-review.md) journal history/preparation v1 previews pass both independent Astra-low reviews/root; both human-approved on 2026-09-17. One pass each; full navigation/state/runtime coverage remains open.
+[Batch165](../assets/reference/concept-art-batch-165-review.md) eight-candidate packet human-approved on 2026-09-17: seven new UI010/UI011/FX024 notices and now-approved162A assignment. All PASS both independent Astra-low screens/root. D/G v2 correct background artifacts; other new candidates v1. Motion implementation review per D192.
+[Batch166](../assets/reference/concept-art-batch-166-review.md) eight combat-condition appearance candidates human-approved on2026-09-17. A/C/D/E/F/G/H v1 and corrected B Chilled v2 PASS both independent Astra-low screens/root. Motion validation remains production work under D192.
+[Batch167](../assets/reference/concept-art-batch-167-review.md) seven fire/atmosphere images human-approved on2026-09-17 after both independent screens/root PASS; hearth Bv2 fixes framing. Heat-refraction still rejected; specific animated production review under D192 replaces further still attempts. Advanced effects remain deferred research.
+[Batch168](../assets/reference/concept-art-batch-168-review.md) five voice-conversation UI states D–H human-approved. Batch169 corrected creation A1/B1/C2 passed joint layout/content/stature screens and is human-approved; prior168 screens missed cross-image layout drift. No runtime feature claims.
+[Batch170](../assets/reference/concept-art-batch-170-review.md) eight deferred material studies human-approved. A1/B1/C2/D1/E1/F1/G1/H1 pass both independent screens/root; straw framing corrected. No new mandatory kit, snow biome or motion/implementation approval.
+
+[Batch185](../assets/reference/concept-art-batch-185-review.md) supplies six matched entrance exterior overcast/night states and day/overcast fantasy merchant-berth population. A–F v1 human-approved; G1/H1 boarding geometry rejected despite prior passes. Latest G4/H3 direct deck boarding, removable gangplank bearing ends, close-alongside fenders and visible mooring are human-approved. Batch185 appearance selection complete. G2/H2 endpoints and G3 wide berth were rejected. Hidden entrance continuity and full engineering/production profiles remain open.
+
+[Batch184](../assets/reference/concept-art-batch-184-review.md) adds seven static references (garment reverse construction, Skarn/Wickfolk cloth and scale fits, moat-pier water contact) and re-presents existing021 fishing vessel in one eight-subject packet. All eight human-approved; full production profiles remain open.
+
+[Batch183](../assets/reference/concept-art-batch-183-review.md) restores an eight-subject human packet: six rear loadout views plus ordinary/Mythic gear-overflow notices. A1/B2/C1/G1/H1 pass both Astra-low screens/root; D3/E2/F2 retained disclosed material mismatches after bounded corrections. All eight are now human-approved, including those three; no further texture correction pending. Full static/fit/motion profiles open. Previously presented030B Aetherspark bolt is human-approved; trajectory/timing remain implementation obligations.
+
+[Batch182](../assets/reference/concept-art-batch-182-review.md) depleted shore-salt appearance passed both independent Astra-low screens/root and is human-approved. Remaining-reference audit identifies unresolved source-node/bolt/cinematic choices and required static views/fit/lighting; D192 does not waive those profiles. No program-completion claim.
+
+[Batch181](../assets/reference/concept-art-batch-181-review.md) all five rarity/loot/overflow/anchor/fire appearance candidates v1 passed both independent Astra-low screens/root and are human-approved. Fire uses a documented bounded new interior-flame approach after180 failed eave filaments. Completion audit separates remaining appearance choices from production motion/state obligations; no program-completion claim.
+
+[Batch180](../assets/reference/concept-art-batch-180-review.md) proposes consumable activation/food feedback, boss lance charge/projectile and intact-building fire. Seven consumable/lance candidates A2/B1/C1/D1/E1/F1/G1 passed both independent quality/theme screens and root and are human-approved. Two fire attempts fail root/quality despite theme passes and remain rejected; fire appearance gap retained. No runtime motion or full-profile closure.
+
+[Batch179](../assets/reference/concept-art-batch-179-review.md) corrected ordinary/keen pair A1/B1 passes both Astra-low screens/root: actual lower-edge contact and coherent fullarm view. Distal-tipprojection framing variance explicitly accepted; A2 airgap rejected. Both179 candidates human-approved; approved178C–H stand. Motion/gameplay production obligations remain.
+
+[Batch178](../assets/reference/concept-art-batch-178-review.md) physical contact/guard/material-impact packet revised after human rejection: wood F3 and soil H2 now show penetration and pass both screens/root; A/B cutting-edge strike remains unresolved after rejected anatomy/contact corrections. C/D/E/G v1 plus F3/H2 human-approved; A/B remain unapproved. Ordinary/keen, deflected/caught, open guard with Exposed and wood/stone/soil arrow contact. Pose/scale/contact-angle limitations explicit; timing, motion, arrow guard response and full effect profiles remain open.
+
+[Batch177](../assets/reference/concept-art-batch-177-review.md) completes proposed matching ability cards and adds grain/ore/relic/timber/shore-salvage depletion appearances; all eight final candidates passed both Astra-low screens/root and are human-approved. Redundant available-timber F rejected for split geometry; approved046v2 reused. Boss audit reconciles accepted085/086 phase appearances to remaining impact/onset/opening/lance and production-motion obligations, avoiding duplicate arena paintings.
+
+[Batch176](../assets/reference/concept-art-batch-176-review.md) eight illustrated ability cards passed both Astra-low screens/root for scoped UI use; all eight human-approved. D2 restores Frostbind cost; G2 removes Wardlight's misleading physical lantern. Shared layout screened jointly. H is generic gathering symbolism, explicitly not exact Bittergreen identity. Motion/gameplay cues and Wellspring/Tinker's Thrift matching cards remain open.
+
+[Batch175](../assets/reference/concept-art-batch-175-review.md) eight gathering/ability-reference candidates passed both Astra-low screens/root; all eight human-approved. Shared card layout jointly reviewed; two boot-sole corrections, ore image retained for shimmer placement only with original082 material authority. Crafting/weather/overlap partial coverage reconciled to specific remaining production and cue-selection obligations, not full completion.
+
+[Batch174](../assets/reference/concept-art-batch-174-review.md) eight deferred lighting/character-response/residue candidates passed both Astra-low screens/root; all eight human-approved. Mara identity retained against original126. Frost accepted by screens for material appearance only: cropped newer termination remains open. SDR highlight study makes no HDR claim; full temporal/optical profiles remain open.
+
+[Batch173](../assets/reference/concept-art-batch-173-review.md) eight deferred water/rain/lighting first passes passed both Astra-low screens and root; all eight human-approved. Lake, underwater, splash, runoff, indirect light, two-flame overlap, optional focus and glass/leaf layering are appearance studies with explicit remaining motion/continuity/coverage obligations.
+
+[Batch172](../assets/reference/concept-art-batch-172-review.md) eight affix, optional UI and effect candidates passed both Astra-low screens/root and are human-approved. Controller background corrected once; other first passes passed. Existing route/lighting coverage reconciled without closing continuity or production gates.
+
+[Batch171](../assets/reference/concept-art-batch-171-review.md) eight optional UI studies passed both screens/root and are human-approved: accessibility scale pair, recap ready/unavailable, photo, highlights, companion dialogue and scenic views. Paired layouts checked; exact scaling/runtime behavior remain open. Eight additional motion-only companion catalog targets now have explicit later production-review obligations under D192; no animation approval or appearance waiver.
+
+
+[Motion dispositions](../assets/reference/motion-production-dispositions.md) now bind all25 MOT targets to per-model/effect animated review under D192; no blanket motionboards required and no motion quality claimed complete.
       Include the whole game's visual scope,
       all planned rendered effects and physics behavior targets, with deferred work
       labeled separately from current implementation obligations.
@@ -1318,7 +1470,7 @@ per-row experiment is required to keep a topic deferred.
 | Atmosphere | Volumetric clouds, god rays, and richer aerial perspective when the selected vista/storm needs them |
 | Terrain/material generation | Extend deterministic instruction-set terrain and generated stone/wood/brick/mud/clay/straw; compare install/runtime generation with baking when representative content makes the byte/compute trade-off meaningful |
 | Vegetation/wind | District-scale instancing, LOD, and richer shared wind when density expansion reveals cost or visual deficiencies |
-| Water/reflections | Ocean/lake/moat, wet streets/puddles, SSR/probes; select for a water/wetness scene, and cost simulation separately |
+| Water/reflections | Ocean/lake/moat, wet streets/puddles, SSR/probes; select for a water/wetness scene, and cost simulation separately. See the [water/ocean research lead](#waterocean-research-lead) below |
 | Dynamic surfaces | Cosmetic mud tracks/footprints, wetness/snow blending, and sim-queryable friction classification when a chosen encounter needs them; destruction remains excluded |
 | Fire/smoke | Movie-quality torches through burning buildings, wind-driven plumes and emissive lighting; extend beyond the initial fire only for an authored showcase |
 | VFX substrate and magic | Shared GPU particles/volumetrics, gas/steam/mist, electrical arcs, trails, frost/ember responses; grow from selected effects, never build the whole library first |
@@ -1326,6 +1478,24 @@ per-row experiment is required to keep a topic deferred.
 | Transparency/decals | OIT, puddle edges, moss, wear and mud where demonstrated sorting or dressing needs justify them |
 | GPU-driven rendering | Compute culling/occlusion and indirect draws when representative density identifies a bottleneck; qualify any required pinned interop and document encountered platform gaps |
 | Texture residency | Virtual texturing or finer residency streaming when the real material working set exceeds the selected streaming approach's measured capacity |
+
+#### Water/ocean research lead
+
+Retain [Brandon DeRosier's (@algebrandon) beach-demo thread](https://x.com/algebrandon/status/2099481040540897553)
+(2026-09-14; supplied by the human) for the future water work package. The opening
+post describes a Flutter Scene prototype coupling an FFT ocean spectrum to a
+shallow-water solver in the surf zone, with breaking waves and water color derived
+from published ocean-optics tables. The opening post was retrieved through
+[FxTwitter](https://api.fxtwitter.com/algebrandon/status/2099481040540897553);
+replies, video behavior, implementation sources, and performance remain unverified.
+
+When a selected water/shoreline scene promotes this work, revisit the full thread
+and any linked code/papers, identify the optics tables, and assess the approach for
+Parallax's Babylon Lite/WebGPU stack. Questions to carry into the bounded brief:
+offshore-to-shore coupling, breaking/foam and shoreline interaction, optical
+appearance, and simulation cost measured separately from rendering. This is a
+deferred research lead; no technique has been adopted or capability demonstrated
+in Parallax by retaining it.
 
 ## M5 — District 1 art and density expansion  `pending`
 
@@ -1344,7 +1514,7 @@ backlog topic to conclude.
       D1 traversal/LOD conditions at 12 m/s without regressing applicable M1/M2 budgets.
 - [ ] Promote only rendering backlog work needed by observed density, content, or
       selected showcase requirements; measure it in the integrated scene.
-- [ ] Resolve cinematics/scripted-camera scope before entering M6 (D-141).
+- [x] Resolve optional epilogue framing: human selected normal gameplay/dialogue on 2026-09-19; no dedicated scripted-camera sequence. Other cinematic work needs a separate named scene requirement (D-141 scope disposition).
 - [ ] Exit: D1 fully art-passed with human visual acceptance, all applicable budgets
       green, install size within budget, and one exact-candidate milestone-exit smoke.
 
@@ -1408,3 +1578,33 @@ exploration.)*
 - **Harness evolution:** new system → new metrics, same change.
 - **Chrome coordination:** findings that suggest browser changes (e.g., shippable PSO
   caches, COS code-cache work) tracked in rough-edges.md with status.
+
+Concept-art progress audit2026-09-17: [inventory and workflow correction](../assets/reference/concept-art-progress-2026-09-17.md). Restore planned6–12-image human review packets while preserving two-lane generation, independent screens and bounded iteration. Remaining118 missing targets plus partial-profile gaps require finite closure planning; no scope change or milestone closure.
+
+Human confirmation2026-09-17: next concept review packets target8–12 images; all appearance, lighting and motion artistic decisions remain with the human after independent agent screening. Motion change subsequently accepted as D-192: boards only where needed for appearance decisions; animated evidence and human acceptance during relevant model/effect production. Other D187/catalog requirements remain unchanged.
+
+Resource-source selection2026-09-19: fish uses fishing; game meat, hides and sinew use hunting. [Source brief disposition](../assets/reference/targets/REMAINING-choices-after-185.md). Current generic nodes remain implemented behavior; source art and subsequent acquisition integration must reconcile handling, yields, cooldowns and saves before gameplay changes. No runtime change in this art packet.
+
+[Batch186](../assets/reference/concept-art-batch-186-review.md) fishing/hunting source proposals: all fourv1 passed both independent screens/root; all four appearances human-approved on 2026-09-19. Existing inventory art retained. Optional epilogue cinematic-art gap closed by human normal-gameplay/dialogue framing choice; source acquisition implementation remains separate.
+
+Batch186 approval2026-09-19: human approved all four v1 images (shore fishing, landed catch, live deer-like prey, hunting recovery). Plain-pole fishing and this unnamed animal appearance are selected. Existing inventory art retained; acquisition implementation and full production evidence remain open.
+
+[Batch187](../assets/reference/concept-art-batch-187-review.md) six-subject packet human-approved: shared village-well courtyard footprint, four construction states and existing lantern. Original reference brief already locates courtyard at village well; proposed layout preserves transition/square/D191 anchors and does not move castle-origin prototype or change runtime terrain. Reverse art follows layout selection; shared blockout still must prove heights, sightlines and traversal.
+
+Batch187 approval2026-09-19: human approved all six subjects: shared village-welllayout, B1closeddoor, C1closedshutters, D1opencrate, E2opensatchel and original002lanternv2. These no longer await artisticselection. Further courtyard views use the selected footprint; runtime/metric/motion obligations remain open.
+
+Batch188 outcome2026-09-19: shared sampled-terrain Blender layout passed both independent screens/root, but all three arrival paintings failed required geometry correspondence. A3 improved building framing but replaced the separate stair trench with a solid masonry form; both Astra-low reviewers and root reject it as a registered scene source. B–H were not generated. Painting retries stopped at the documented allowance. [Method result and two concrete next-work choices](../assets/reference/concept-art-batch-188-review.md): recommended textured reference-only shared scene, or human-approved deferral of matching finished views into production. Historical choice pending at this point; superseded by the D-193 human decision below.
+Human decision2026-09-19 — D-193: matching Batch188 courtyard views are deferred to asset production. The approved187 footprint and screened188 shared scene supply geometry; existing approved art supplies appearance. Produce the eight matching camera/light captures during courtyard production, with both independent screens, lead inspection and human artistic acceptance. This resolves the workflow choice and concept-stage disposition for these views, not their finished acceptance. No further painting retry or separate textured reference phase is scheduled. Other concept/route/QA obligations remain open. See [accepted disposition](../assets/reference/concept-art-batch-188-review.md).
+
+
+2026-09-19 final-coverage reconciliation: [current audit](../assets/reference/concept-art-progress-2026-09-19.md) records324 targets with coverage/dispositions and no explicit Missing rows. [Per-effect production briefs](../assets/reference/effect-production-dispositions.md) schedule live cues under D-192; character identity records reconcile later approved baselines. Batch189 addresses remaining palette and UND-007 selection. Whole-collection review, rights and production acceptance remain open.
+
+
+Batch189: [seven-image review](../assets/reference/concept-art-batch-189-review.md) passed both independent Astra-low screens/root and awaits human selection. Two new field-light studies, four approved forest/underground references reused for palette consolidation, and existing004 passage study. Both shore relights failed engraved surface fidelity and are withheld; that single paired-light gap remains open. Four native attempts retained, bringing the measured concepts image inventory to709 files (including rejected candidates and authored renders).
+
+
+Human approval2026-09-20: all seven displayed189 subjects A–G approved: new field sunny/overcast pair, existing forest sunny/overcast palette pair, existing underground torch/Wardlight comparison, and004 passage construction study. Both withheld189 shore relights remain rejected; this approval does not cover them or defer their outstanding paired-light requirement. Full production and whole-collection acceptance remain separate.
+Human decision2026-09-20 — D-194: defer the remaining shore sunny/overcast comparison to asset production. Approved rock/sand/wetness/water references remain binding; both rejected189 relights remain unselected. First shore assembly/material production must deliver matched dry sunny/overcast captures and a separate wet-state comparison, followed by both independent screens, lead inspection and human artistic acceptance. No further prerequisite shore painting is scheduled. This closes the scheduling decision, not finished visual acceptance or whole-collection review. See [accepted shore production handoff](../assets/reference/shore-lighting-production-proposal.md).
+
+
+2026-09-20 collection handoff: [final reference review](../assets/reference/concept-art-collection-review.md) assembles the324-target corpus, accepted189 palette/passage selections, D-192–194 dispositions and exact first-paving reference bundle. Both bounded coverage audits find no new named painting to commission automatically, but unfulfilled static profile requirements remain in D-187. Human decision is required to move those supplementary views/details into per-subject production review with explicit preflight and artistic acceptance. Modeling remains paused pending that sequencing choice; no full-program or runtime completion claimed.

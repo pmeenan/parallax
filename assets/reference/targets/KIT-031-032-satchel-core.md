@@ -33,3 +33,7 @@ Final independent theme review PASS both: satchel attachments/closure and mundan
 craft coherent; core tabs retain center, aged metal and localized light avoid modern
 machinery. Lead agrees with both independent passes. No must-fix found; human
 selection complete; hidden construction and temporal profiles still open.
+
+[Batch187](../concept-art-batch-187-review.md) supplies screened construction views or existing-lantern rereview. Both independent screens/root pass selected candidates; human selection pending. Prior approvals retained; concealed/metric/kinematic/production requirements remain open.
+
+Batch187 approval2026-09-19: human approved all six subjects: shared village-welllayout, B1closeddoor, C1closedshutters, D1opencrate, E2opensatchel and original002lanternv2. These no longer await artisticselection. Further courtyard views use the selected footprint; runtime/metric/motion obligations remain open.

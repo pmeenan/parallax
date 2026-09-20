@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="960" viewBox="0 0 1320 960">
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#267b85"/></marker><style>text{font-family:Segoe UI,Arial,sans-serif;fill:#243839} .small{font-size:15px}.label{font-size:18px}.note{font-size:19px}.title{font-size:31px;font-weight:650}.house{fill:#bd9770;stroke:#705744;stroke-width:2}.road{fill:none;stroke:#d9cfae;stroke-width:48;stroke-linejoin:round}.view{stroke:#267b85;stroke-width:2;stroke-dasharray:6 5;marker-end:url(#arrow)}</style></defs>
+<rect width="1320" height="960" fill="#faf8f0"/>
+<text x="56" y="56" class="title">Village-well courtyard — shared layout proposal</text>
+<text x="56" y="88" class="note">Batch 187 · layout for approval before reverse-view artwork · north is up</text>
+<text x="56" y="126" class="small">One local court in the existing west town. All footprints below are proposed; existing world anchors stay fixed.</text>
+<rect x="120" y="220" width="384" height="384" rx="2" fill="#e8e2cd" stroke="#9b957d" stroke-width="2" stroke-dasharray="7 5"/>
+<path d="M52 452 H630 M296 452 V672" class="road"/>
+<rect x="120" y="220" width="104" height="112" class="house"/><text x="172" y="267" text-anchor="middle" class="label">House 1</text><text x="172" y="292" text-anchor="middle" class="small">upper west</text>
+<rect x="392" y="220" width="112" height="112" class="house"/><text x="448" y="267" text-anchor="middle" class="label">House 2</text><text x="448" y="292" text-anchor="middle" class="small">upper east</text>
+<rect x="120" y="516" width="96" height="88" class="house"/><text x="168" y="554" text-anchor="middle" class="label">House 3</text><text x="168" y="578" text-anchor="middle" class="small">lower west</text>
+<rect x="400" y="516" width="104" height="88" class="house"/><text x="452" y="554" text-anchor="middle" class="label">House 4</text><text x="452" y="578" text-anchor="middle" class="small">lower east</text>
+<path d="M228 240 Q306 210 386 240" fill="none" stroke="#93a581" stroke-width="25"/>
+<text x="307" y="193" text-anchor="middle" class="small">Earth-bank visual motif / planting</text>
+<rect x="328" y="268" width="32" height="80" fill="#afa38d" stroke="#695f4e" stroke-width="2"/>
+<path d="M328 280 H360 M328 292 H360 M328 304 H360 M328 316 H360 M328 328 H360 M328 340 H360" stroke="#776c5a"/>
+<circle cx="344" cy="268" r="7" fill="#ae513a"/>
+<text x="367" y="361" class="small">Stairs</text>
+<circle cx="264" cy="356" r="10" fill="#d1c4a2" stroke="#675d48" stroke-width="3"/>
+<text x="242" y="390" class="label">Well</text>
+<rect x="181" y="353" width="39" height="12" rx="2" fill="#816248"/><text x="162" y="388" class="small">Bench</text>
+<text x="54" y="419" class="label">To square</text><text x="484" y="419" class="label">To bank street</text>
+<text x="317" y="650" class="label">To lower-town lanes</text>
+<path d="M168 476 L319 331 M456 404 L286 362 M296 556 L278 396" class="view"/>
+<circle cx="168" cy="476" r="12" fill="#267b85"/><text x="168" y="482" text-anchor="middle" style="fill:white;font-size:16px">A</text>
+<circle cx="456" cy="404" r="12" fill="#267b85"/><text x="456" y="410" text-anchor="middle" style="fill:white;font-size:16px">B</text>
+<circle cx="296" cy="556" r="12" fill="#267b85"/><text x="296" y="562" text-anchor="middle" style="fill:white;font-size:16px">C</text>
+<path d="M574 290 V222" stroke="#243839" stroke-width="3"/><path d="M566 234 L574 220 L582 234" fill="none" stroke="#243839" stroke-width="3"/><text x="574" y="205" text-anchor="middle" class="label">N</text>
+<path d="M120 705 H200 M120 700 V710 M200 700 V710" stroke="#243839" stroke-width="3"/><text x="120" y="737" class="small">10 m proposed scale · court envelope 48 × 48 m</text>
+<text x="712" y="196" style="font-size:23px;font-weight:650">What this fixes</text>
+<text x="712" y="238" class="note">• One well and one separate stair entrance.</text>
+<text x="712" y="273" class="note">• Four stable perimeter building footprints.</text>
+<text x="712" y="308" class="note">• A clear 6 m east–west through route.</text>
+<text x="712" y="343" class="note">• A south exit into the wider town network.</text>
+<text x="712" y="378" class="note">• A, B and C reuse the same layout.</text>
+<text x="712" y="433" style="font-size:23px;font-weight:650">What stays separate</text>
+<text x="712" y="474" class="note">The village square and its canopy tree remain</text>
+<text x="712" y="501" class="note">128 m west and 32 m north of the entrance.</text>
+<text x="712" y="545" class="note">The castle stays inland, east–northeast.</text>
+<text x="712" y="572" class="note">No new bridge or route across the moat.</text>
+<text x="712" y="616" class="note">The castle-origin paving pad remains a test</text>
+<text x="712" y="643" class="note">prototype, not this village courtyard.</text>
+<rect x="56" y="775" width="1208" height="139" rx="12" fill="#eaf0eb"/>
+<text x="80" y="809" class="label">Fixed entrance anchor: (−512, −128). Proposed court: x −540…−492, z −170…−122.</text>
+<text x="80" y="843" class="label">A: arrival / well view · B: reverse view · C: south-lane connection. Camera positions are proposals.</text>
+<text x="80" y="877" class="small">Terrain heights, stair run, castle visibility and the five-minute traversal require a shared 3D blockout; this plan does not prove them.</text>
+</svg>

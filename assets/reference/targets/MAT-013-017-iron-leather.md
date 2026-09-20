@@ -1,7 +1,7 @@
 # MAT-013 / MAT-017 — forged iron and worn leather
 
 Status: Batch106 A v1 and B v2 pass both independent reviews and lead inspection;
-human selection pending.
+both human-approved.
 [Exact prompts, references and receipts](../concept-art-batch-106.md).
 Built-in OpenAI imagegen; seed unavailable. Original project inputs and outputs
 retained unchanged. Rights/terms review pending public shipping. No library admission.

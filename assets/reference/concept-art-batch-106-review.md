@@ -1,6 +1,6 @@
 # Batch106 — forged iron and worn leather
 
-Human selection pending. Independent quality/theme GPT-6 Astra/low reviews and
+A v1 and B v2 both human-approved. Independent quality/theme GPT-6 Astra/low reviews and
 lead actual-image inspection pass A v1 and corrected B v2.
 
 ## A — forged iron

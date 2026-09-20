@@ -52,3 +52,5 @@ LFS pointers verified. Initial independent calls overlap approximately 32 second
 90.794 seconds combined wait across approximately 58.7 seconds first-start/last-end
 elapsed (A whole-second bracket). Total image wait 124.122 seconds with correction;
 preparation/review separate. A two passes/B one within two-pass/60-minute allowance.
+
+Source direction2026-09-19: human selected fishing/hunting. [Batch186 source proposals](RESOURCE-sources-186.md) retain these approved inventory appearances; source method/wildlife appearance await selection and later gameplay integration. Established monster drops remain unchanged.

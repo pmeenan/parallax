@@ -61,7 +61,9 @@ both selected as complementary examples. Include varied public and sheltered
 conversation spaces throughout the port rather than forcing one shared layout.
 Batch 019 sailor and captain costume directions are both accepted: practical
 weathered workwear and authority through useful gear, without later-era naval
-uniforms. Exact Skarn skin treatment and full character profiles remain open.
+uniforms. Apply the later approved025/132/134 living slate-gray Skarn baseline;
+the sailor's stronger stone-like texture is not a separate skin authority.
+Sailor-specific facial integration and full production profiles remain open.
 Batch 020 pirate costume and broad merchant-vessel directions are both accepted.
 Retain practical seafarer clothing and substantial weathered cargo hulls; exact
 identity, rigging, draft and berth engineering remain open.
@@ -515,6 +517,12 @@ spells; emission during casting follows the active spell's palette. Timing remai
   the result before confirmation. Tinker's Thrift visibly reduces each common
   ingredient by one (minimum one), rather than hiding the saving in an end-of-craft
   roll.
+- Selected resource-source direction (2026-09-19): fish comes from fishing, and
+  game meat, hides and sinew come from hunting. These are prospective acquisition
+  requirements; the current generic collectible nodes do not yet implement them.
+  Establish coherent animal/source handling and the fishing interaction before
+  changing node rewards, cooldowns or save semantics. Source concepts may propose
+  prey and tackle appearances; they do not implicitly add a minigame or new yields.
 - Surface gathering nodes regrow after five minutes of simulation time. A harvested
   node's cooldown and first-harvest bit are deterministic saved state; Forager's Eye
   adds one item at the node and supplies the presentation shimmer, so its value is
@@ -663,7 +671,9 @@ remain unresolved; appearance does not establish animated-armor lore.
   early descent — the existing recipe put to a second use, not a new item; **5. The Forest
   Throat** — brigands are looting the disturbed vaults under the forest entrance
   (defeat, or parley via validated dialog intent); **6. The Warden Below** — the boss,
-  and a sealing choice epilogue at the castle (defeat / talk).
+  and a sealing choice epilogue at the castle (defeat / talk). The epilogue uses
+  normal gameplay/dialogue framing (human selection 2026-09-19), without a dedicated
+  scripted-camera sequence.
 - **Eight side quests**, each tagged to the system it exercises: A Bounty of Teeth
   (gnawer cull — combat), The Greymaw Alpha (elite hunt — pack AI), The Smith's
   Commission (craft a tempered weapon — forge), Cold Larder (fisher's stew chain —

@@ -1,0 +1,20 @@
+# Batch186 C — hunting source proposal
+
+Maximum2passes/25active minutes. Native builtin imagegen skill, model/seed unavailable. Actual-viewed approved072 forest clearing,049 hide and050 meat; only072 supplied to generation (environment role).049/050 remain inventory appearance authorities, not animal anatomical references. Source is unnamed ordinary deer-like herbivore proposal, no new species/mechanics accepted. Rights pending publicshipping; no runtime/library admission. Both screens/root before revision or dependentD.
+
+## Pass1 exact prompt persisted before call
+
+```text
+Use case: stylized-concept. Project Parallax hunting-source APPEARANCE PROPOSAL. Supplied image is the approved forest clearing environment reference, preserving its grounded sunlit deciduous woodland, open earth clearing, mossy rocks, ferns and natural palette. Create one AAA photoreal landscape image of ONE living unnamed deer-like forest herbivore in this clearing. Ordinary believable adult deer anatomy, no magical traits: lean but healthy warm tawny-brown short fur, slightly darker back, pale underside and inner ears, natural dark moist nose and calm dark eyes, two upright natural ears, short tail, NO antlers in this individual. Full animal visible from nose through tail to all four complete cloven hooves. Near side-profile with only slight front three-quarter angle, head gently alert, neck naturally connected to chest, four distinct anatomically attached legs staggered enough to count and trace without fusion. Weight-bearing hooves make convincing contact with dry earth; shoulder, chest, belly, hip, hock and fetlock transitions realistic. Animal occupies central roughly half of frame width, enough detail to judge anatomy but forest clearing still recognizable. No people, hunter, weapon, wound, blood, carcass, hide sheet, meat, tools, armor, collar or tack. Natural sunlight/open shade, irregular subtle coat variation, not decorative spots or embossed textures. No giant scale or fantastical extra appendages, glowing eyes, runes, or new named species. No text/UI/insets. This is proposed wildlife appearance to support future coherent hunting source for meat/hide/sinew; do not depict inventory goods growing in forest, harvesting rules, timed regeneration or new combat mechanics. Local forest context only, not a new location or exact metric placement.
+```
+
+## Pass1 native provenance and actual inspection
+Native source C:/Users/patme/.codex/generated_images/01a0b595-bc30-74c1-9025-6bb518f67e6b/exec-6ff658ed-3f6b-4f32-8f92-82ffabb88547.png
+Project copy D:/src/parallax/assets/reference/concepts/batch-186/item-028-hunting-source-v1.png
+UTC call 2026-09-19T16:01:37.504Z to 2026-09-19T16:02:04.109Z.
+Sole generation input SHA256 92d017224a0c2d384c256b859f37ab10d21533d25d0508490b8c2c6212151c79.
+Native/project SHA256 e726088f4e98f5d7f526c1b38ca3d8385d9a950c4d192bba36b7aefb3904547c; equality True. PNG 1536 x 1024; 3630523 bytes. Copied unchanged, model/seed unavailable.
+Actual generated image viewed: complete living antlerless deer-like animal, four traceable legs and grounded hooves, natural ears/head/tail, approved clearing family retained. Exact age/species/metric scale and dynamic joint behavior not established. Source appearance proposal only. Both independent screens/root pending, no dependentD or revision before gate. Active preparation/inspection/copy under4minutes, providerwait separately26.6seconds.
+Root actual-view: complete live deer-like herbivore, four separately traceable legs with grounded hooves, credible coat/ears/muzzle and body proportions. Unnamed wildlife appearance proposal only; exact scale/species and wildlife behavior unselected.
+Independent theme178 PASS: four attached grounded legs, natural coat/anatomy and woodland family. Exact species/age/scale remain proposals.
+Independent quality178 PASS: four distinct legs and grounded hooves, head/ears/neck/coat/tail natural, woodland match. Both screens/root complete before dependent D dispatch; human selection pending.

@@ -1,0 +1,12 @@
+# Batch187 D — opened crate
+
+## Exact prompt
+Edit approved reference storage-container scene. Focus on its EXACT wooden crate on the LEFT; keep its same weathered oak plank count/proportions, corner posts, square iron nails and modest medieval handmade construction. Show this crate OPEN and EMPTY, at a slightly higher three-quarter camera angle so the full interior, bottom boards, four wall thicknesses and upper rim are clearly readable. The crate is a plain storage box with a REMOVABLE LOOSE WOODEN LID, not a hinged treasure chest: lift the existing flat planked lid off completely and lay it separately on the cobblestones immediately beside the crate with its UNDERSIDE facing upward. Lid must fit the full opening and have two modest transverse timber battens fixed to the planks with credible visible nails; complete separate silhouette, no floating/hinged attachment, no extra lid. Box rim and corners consistently assembled, plausible thickness, bottom supported on ground, no holes through bottom. Keep grounded weathered wood, understated iron corrosion, correct contact shadows. Compose crate and detached lid as the two main objects with barrel/sack/basket from original only softly in far background if space permits; do not obstruct view. Preserve sunny coastal merchant-yard materials but do not invent distant port geography. Empty interior only: no coins, goods, glow, game labels or magical treasure. Photoreal grounded game construction reference, landscape single scene, no panels or text. Appearance proposal, not measured joinery validation.
+
+## Native provenance
+Source: C:/Users/patme/.codex/generated_images/01a0744d-934b-7233-9464-19d574b3e48f/exec-7d6bdd89-4597-4e8e-a871-2038299a669b.png
+Project: assets/reference/concepts/batch-187/kit-027-open-crate-v1.png
+UTC 2026-09-19T19:40:15.869Z to 2026-09-19T19:40:45.158Z
+SHA256 27dd95a74213ef780b7bf137dabf51b5e7f48ed112eb74efb06feedf6d1df22c; 3488790 bytes; 1536 x 1024. Native equality and staged LFS pointer verified; original unchanged. Builtin imagegen, model/seed unavailable, rights pending publicshipping.
+Actual-view input: assets/reference/concepts/batch-099/kit-027-storage-containers-v1.png SHA256 4fe76727376239ddb4dc4863a7972f1ab97f34cf4d7ba8422d7f24230b723d44
+Both independent quality178/theme178 and root actual-image screens PASS. Visible construction and material family retained; metric fit/engagement/kinematics/hidden construction remain production evidence. Human selection pending.
