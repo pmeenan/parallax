@@ -1,0 +1,11 @@
+{
+  "soilConnectedComponents": 1,
+  "soilBoundaryEdges": 4,
+  "soilNonmanifoldInteriorEdges": 0,
+  "soilFiniteCoordinates": true,
+  "soilFacesAreaBelow1e14M2": 0,
+  "soilFaces": 65904,
+  "soilVertices": 32955,
+  "sourceSha256": "94b392cd18cc309dc9c70a0376c9c5f4a6f0694525c1c9e74268c269c6eb5f3c",
+  "scope": "Focused geometric evidence; no UV, texture, engine, rights or visual acceptance test."
+}

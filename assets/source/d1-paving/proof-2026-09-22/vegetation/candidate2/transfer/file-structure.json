@@ -1,0 +1,31 @@
+{
+  "embeddedBuffers": true,
+  "embeddedImages": [
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    {
+      "mimeType": "image/png",
+      "dimensions": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    }
+  ],
+  "standardBaseColorAndNormalPresent": true,
+  "noFullValidatorClaim": true
+}

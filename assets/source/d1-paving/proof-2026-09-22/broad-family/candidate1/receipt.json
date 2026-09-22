@@ -1,0 +1,144 @@
+{
+  "createdUtc": "2026-09-22T20:12:13.202905+00:00",
+  "blender": "5.2.1 LTS",
+  "buildSeconds": 13.536761199997272,
+  "totalSeconds": 37.25575120002031,
+  "stones": [
+    {
+      "name": "Broad source A",
+      "seed": 923101,
+      "dimensionsM": [1.085162878036499, 0.7248499989509583, 0.08250577002763748],
+      "scale": [1.0, 1.0, 1.0],
+      "triangles": 921600
+    },
+    {
+      "name": "Broad source B",
+      "seed": 923149,
+      "dimensionsM": [0.7660312652587891, 0.7254558801651001, 0.08240721374750137],
+      "scale": [1.0, 1.0, 1.0],
+      "triangles": 665600
+    },
+    {
+      "name": "Broad source C",
+      "seed": 923207,
+      "dimensionsM": [0.9044969081878662, 0.5475555658340454, 0.08258575946092606],
+      "scale": [1.0, 1.0, 1.0],
+      "triangles": 601200
+    },
+    {
+      "name": "Broad source D",
+      "seed": 923269,
+      "dimensionsM": [0.9440945386886597, 0.5497018098831177, 0.08246377110481262],
+      "scale": [1.0, 1.0, 1.0],
+      "triangles": 626000
+    }
+  ],
+  "minimumAABBClearanceM": 0.008645206689834595,
+  "views": [
+    ["oblique", [1.95, -2.65, 2.85], [-0.17, -0.06, 0.065], 52, [-3, -4, 6]],
+    ["opposing-light", [1.95, -2.65, 2.85], [-0.17, -0.06, 0.065], 52, [3, 4, 6]],
+    ["walking", [-0.15, -1.05, 1.7], [-0.15, 0.1, 0.065], 40, [-3, -4, 6]],
+    ["reverse", [-2.05, 2.4, 2.6], [-0.17, -0.06, 0.065], 52, [-3, -4, 6]],
+    ["grazing", [0.05, -1.55, 0.32], [-0.12, -0.18, 0.071], 48, [-3, -4, 6]]
+  ],
+  "physicalScales": {
+    "surfaceGridM": 0.002,
+    "oldFineDetailPeriodM": 0.45,
+    "broadNoisePerMetre": 7.5,
+    "marginNoisePerMetre": 67
+  },
+  "inputs": [
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-21/stone/candidate3/resolved_build.py",
+      "bytes": 16435,
+      "sha256": "46ecca6e8e5a033c479ed4a5891b3c969eac7a6add23583712885d2552eb8795"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/surface-study-2026-09-21/cycle11/source.blend",
+      "bytes": 53944720,
+      "sha256": "1a08b0646a4cbd63bb5247a5a3b1747085cf295316029919d95b1f20ade56018"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-21/family-contact2/source.blend",
+      "bytes": 289837571,
+      "sha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-21/family-contact2/resolved.py",
+      "bytes": 9690,
+      "sha256": "566c672e664db3c391e9e51271f05902da1640dd44b374f9f446c9f893491f22"
+    },
+    {
+      "path": "D:/src/parallax/assets/reference/concepts/batch-103/kit-001-paving-assembly-v1.png",
+      "bytes": 4037945,
+      "sha256": "2b80a6def3617e1a858b576cc9bb7767fe5ddebae6a2bf2918489a5914c86876"
+    },
+    {
+      "path": "D:/src/parallax/assets/reference/concepts/batch-108/mat-001-cream-limestone-v1.png",
+      "bytes": 3652076,
+      "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4"
+    },
+    {
+      "path": "D:/src/parallax/assets/reference/concepts/batch-104/kit-002-stone-family-v4.png",
+      "bytes": 3664594,
+      "sha256": "a307c0e9c2fba6d25dc77ff47fd9f76da4b733e64e25640f38fd64c11fca42eb"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/gray.png",
+      "bytes": 2484634,
+      "sha256": "64a57db9c5bf6969777c1bea563559a5c4a7826f00584913d4f39b918b94f51b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/grazing.png",
+      "bytes": 2198171,
+      "sha256": "046d1bd9ab93fc745c83542832983cbd66e8ea5a648b0909f579a6c27dfffb6e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/oblique.png",
+      "bytes": 2671802,
+      "sha256": "ed9605ecf3890cebd40157bfcbcc9dda90146edbe6367df969bb9f43538203b2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/opposing-light.png",
+      "bytes": 2733813,
+      "sha256": "c20c455d157e21d1ccf410f77384854076eff73608ee7322df6379c4577488ae"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/reverse.png",
+      "bytes": 2727931,
+      "sha256": "0a544c78443371f0afd447990deadfea339d41badb6e692aa556ecfa89029d5a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/source.blend",
+      "bytes": 83606213,
+      "sha256": "173a77a00fa007365240972ea90c177fa9fd6fc17a305ed9bd1c4fb6581bcd3f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/unlit.png",
+      "bytes": 2695625,
+      "sha256": "e8eadb1619be28bf34d63fb3712e7a457cd8c6f0a3cb0e27f85f311c028ef376"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/walking.png",
+      "bytes": 2473030,
+      "sha256": "c2a5adc6ca2852e26088fecd88c464a877449631e9aa4aa5ca24bdedcbe1157e"
+    }
+  ],
+  "buildScript": {
+    "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/invalid-preflight-build.py",
+    "bytes": 13241,
+    "sha256": "0959d87bde755983ba168aa8099fd871f7e7719c1ca11e51bfb0015722282cff"
+  },
+  "sourceOnly": true,
+  "rightsReviewed": false,
+  "limitations": [
+    "New material is provisional and needs visual selection",
+    "Microstructure still derives from synthetic inputs",
+    "Four-piece source sample; no eight-variant library, LODs, compression or runtime result",
+    "Conservative AABB clearance is not triangle-level contact proof",
+    "Accepted vegetation intentionally not copied into a material sample"
+  ],
+  "disposition": "Invalid precision preflight; excluded from artistic candidates."
+}

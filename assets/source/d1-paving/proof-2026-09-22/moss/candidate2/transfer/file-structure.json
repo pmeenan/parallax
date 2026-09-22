@@ -1,0 +1,17 @@
+{
+  "vertexColors": [
+    {
+      "attribute": "COLOR_0",
+      "count": 21580,
+      "uniqueColors": 1316,
+      "componentType": 5123,
+      "normalized": true,
+      "rgbMin": 0.0041809719996948195,
+      "rgbMax": 0.08291752498664835
+    }
+  ],
+  "embeddedBuffers": true,
+  "images": 0,
+  "textures": 0,
+  "noFullValidatorClaim": true
+}

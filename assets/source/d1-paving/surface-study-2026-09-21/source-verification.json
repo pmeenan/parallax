@@ -1,0 +1,57 @@
+{
+  "diskBlendLoad": "pass",
+  "blender": "5.2.1 LTS",
+  "activeScene": "Complete limestone study cycle11",
+  "objects": 4,
+  "scenes": [
+    "Complete limestone study cycle11"
+  ],
+  "images": [
+    {
+      "name": "Authored mineral plateau field cycle11",
+      "size": [
+        1254,
+        1254
+      ],
+      "packed": true,
+      "hasData": true
+    },
+    {
+      "name": "limestone-albedo-v1.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "packed": true,
+      "hasData": true
+    },
+    {
+      "name": "limestone-height-v1.png",
+      "size": [
+        1254,
+        1254
+      ],
+      "packed": true,
+      "hasData": true
+    }
+  ],
+  "compiledScripts": [
+    "assembly.py",
+    "bake.py",
+    "build.py",
+    "capture.py",
+    "save_standalone.py",
+    "verify_portable.py",
+    "cycle1\\build.py",
+    "cycle10\\build.py",
+    "cycle11\\build.py",
+    "cycle2\\build.py",
+    "cycle3\\build.py",
+    "cycle4\\build.py",
+    "cycle5\\build.py",
+    "cycle6\\build.py",
+    "cycle7\\build.py",
+    "cycle8\\build.py",
+    "cycle9\\build.py"
+  ]
+}

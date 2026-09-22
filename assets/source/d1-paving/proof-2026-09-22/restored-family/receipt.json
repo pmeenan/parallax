@@ -1,0 +1,610 @@
+{
+  "createdUtc": "2026-09-22T11:48:25.237640+00:00",
+  "seconds": 30.267845400027,
+  "tool": "5.2.1 LTS",
+  "author": "Codex paver_refinement agent",
+  "scene": "Restored cycle11 material family",
+  "materialRestoration": "A original cycle11 material unchanged; B/C copies with existing remapped height/macro and exact family2 remap of original raw albedo. No normalized chromatic modulation reused.",
+  "roles": [
+    {
+      "object": "Family B",
+      "seed": 787,
+      "height": "Family B nonlinear relief",
+      "macro": "Family B nonlinear mineral regions",
+      "albedo": "Family B original cycle11 albedo remap linear",
+      "albedoLinearPixelsSha256": "9a10aeee7a7dcec24373b169096e0a36b6483604c31cc9c55b49858bd5f21762",
+      "colorSpace": "Non-Color"
+    },
+    {
+      "object": "Family C",
+      "seed": 829,
+      "height": "Family C nonlinear relief",
+      "macro": "Family C nonlinear mineral regions",
+      "albedo": "Family C original cycle11 albedo remap linear",
+      "albedoLinearPixelsSha256": "f7b7e39176dc3c826f689be90e30ef7432ee091440dfdbcb68a513b9eba8c0fa",
+      "colorSpace": "Non-Color"
+    }
+  ],
+  "geometryBefore": {
+    "Family A": {
+      "coordinatesSha256": "370fa4e613e96fd2323c677668eac2500f97b79c43f0f0408b35dd3cbf5d5639",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999874830245972,
+          -0.004999978933483362,
+          0.0,
+          -0.2070000022649765
+        ],
+        [
+          0.004999978933483362,
+          0.9999874830245972,
+          0.0,
+          -0.16500000655651093
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Family B": {
+      "coordinatesSha256": "a6a472e6102b3f2c2b6284122f36055649fcb60f0227a0c41b0ae995c4263d28",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999279975891113,
+          0.011999712325632572,
+          0.0,
+          0.16099999845027924
+        ],
+        [
+          -0.011999712325632572,
+          0.9999279975891113,
+          0.0,
+          -0.17299999296665192
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0010000000474974513
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Family C": {
+      "coordinatesSha256": "41164c7b22022a9e2ebaa4cc81dc9b3329316de1274e6bb67de61f2b59a5b2db",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999679923057556,
+          -0.007999914698302746,
+          0.0,
+          -0.07199999690055847
+        ],
+        [
+          0.007999914698302746,
+          0.9999679923057556,
+          0.0,
+          0.1289999932050705
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.0005000000237487257
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Compacted recessed matrix": {
+      "coordinatesSha256": "fda460d6400a6e0c6392255a07d625285b96119bb908fb2ac299bffd30b9e41d",
+      "loopVertexSha256": "ae1a7e932cfcc8d68a0786354fc21a18e23b6a53fea71c29fba0bf1be8de01ab",
+      "vertices": 641601,
+      "polygons": 640000,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Distant ground": {
+      "coordinatesSha256": "9aed1b80054a12061c71d8d27240f55976e973df37b5e637b5f74fedf8bf7dd9",
+      "loopVertexSha256": "baed642339816affb3fe8719792d0e4ce82f12db72b7373d244eaa65445800fe",
+      "vertices": 4,
+      "polygons": 1,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Embedded mixed aggregate": {
+      "coordinatesSha256": "7aeabeae83681eb35597494a1f9e6157001d13dff956e720bf56009c12ca8f28",
+      "loopVertexSha256": "e3b06a51a272a41a0fb93dab0a8cbbb42bf99fb77f8dbe9fd5824d85dc7f0bb2",
+      "vertices": 1148196,
+      "polygons": 2187040,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  "geometryAfter": {
+    "Family A": {
+      "coordinatesSha256": "370fa4e613e96fd2323c677668eac2500f97b79c43f0f0408b35dd3cbf5d5639",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999874830245972,
+          -0.004999978933483362,
+          0.0,
+          -0.2070000022649765
+        ],
+        [
+          0.004999978933483362,
+          0.9999874830245972,
+          0.0,
+          -0.16500000655651093
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Family B": {
+      "coordinatesSha256": "a6a472e6102b3f2c2b6284122f36055649fcb60f0227a0c41b0ae995c4263d28",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999279975891113,
+          0.011999712325632572,
+          0.0,
+          0.16099999845027924
+        ],
+        [
+          -0.011999712325632572,
+          0.9999279975891113,
+          0.0,
+          -0.17299999296665192
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0010000000474974513
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Family C": {
+      "coordinatesSha256": "41164c7b22022a9e2ebaa4cc81dc9b3329316de1274e6bb67de61f2b59a5b2db",
+      "loopVertexSha256": "15b01d3a0469fefe2e503246a7a11ce54f632a05fc0212357cdfc29deff512e9",
+      "vertices": 865282,
+      "polygons": 865280,
+      "matrixWorld": [
+        [
+          0.9999679923057556,
+          -0.007999914698302746,
+          0.0,
+          -0.07199999690055847
+        ],
+        [
+          0.007999914698302746,
+          0.9999679923057556,
+          0.0,
+          0.1289999932050705
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          -0.0005000000237487257
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Compacted recessed matrix": {
+      "coordinatesSha256": "fda460d6400a6e0c6392255a07d625285b96119bb908fb2ac299bffd30b9e41d",
+      "loopVertexSha256": "ae1a7e932cfcc8d68a0786354fc21a18e23b6a53fea71c29fba0bf1be8de01ab",
+      "vertices": 641601,
+      "polygons": 640000,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Distant ground": {
+      "coordinatesSha256": "9aed1b80054a12061c71d8d27240f55976e973df37b5e637b5f74fedf8bf7dd9",
+      "loopVertexSha256": "baed642339816affb3fe8719792d0e4ce82f12db72b7373d244eaa65445800fe",
+      "vertices": 4,
+      "polygons": 1,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    },
+    "Embedded mixed aggregate": {
+      "coordinatesSha256": "7aeabeae83681eb35597494a1f9e6157001d13dff956e720bf56009c12ca8f28",
+      "loopVertexSha256": "e3b06a51a272a41a0fb93dab0a8cbbb42bf99fb77f8dbe9fd5824d85dc7f0bb2",
+      "vertices": 1148196,
+      "polygons": 2187040,
+      "matrixWorld": [
+        [
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ]
+    }
+  },
+  "geometryAndTransformsUnchanged": true,
+  "views": [
+    [
+      "oblique",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "reverse-light",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        1,
+        0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "walking",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "overcast",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      70,
+      3,
+      0.5
+    ],
+    [
+      "joint-detail",
+      [
+        0.24,
+        -0.36,
+        0.33
+      ],
+      [
+        -0.025,
+        -0.01,
+        0.066
+      ],
+      58,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ]
+  ],
+  "unlitDiagnostic": "joint-detail camera; only stone Base Color graphs temporarily routed to emission; reset before source save",
+  "inputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact2\\source.blend",
+      "sha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e",
+      "bytes": 289837571
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\cycle11\\source.blend",
+      "sha256": "1a08b0646a4cbd63bb5247a5a3b1747085cf295316029919d95b1f20ade56018",
+      "bytes": 53944720
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family\\build_family2.py",
+      "sha256": "051c3a3c8a497e0f9f4eddabd82e4be2870cede8269c171656b73b3622c2cfc3",
+      "bytes": 7208
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\restored-family\\build.py",
+      "sha256": "706ba8cbe1f2ec6b79c6b707b6fe6e2a3bbb43172544f9f2a937cc53a9060b39",
+      "bytes": 7708
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\inputs\\limestone-albedo-v1.png",
+      "sha256": "33795ea58fa0fd7544c17e168f7fd2e08fc21aa6f347ece822109bdb261f314a",
+      "bytes": 3466833
+    }
+  ],
+  "rightsReviewed": false,
+  "sourceOnly": true,
+  "artisticAcceptance": false,
+  "limitations": [
+    "Original generated albedo retains embedded pore lighting",
+    "Source geometry not changed; exposed smooth sidewall band remains possible",
+    "No new library admission, game or performance evidence"
+  ],
+  "files": [
+    {
+      "name": "basecolor-unlit.png",
+      "sha256": "6550ac0ffee71478cc881816423c02230d1f85ccdff349002b73359a380ab137",
+      "bytes": 3245714
+    },
+    {
+      "name": "joint-detail.png",
+      "sha256": "38e9813b53a8576a4f1f9d8de49e3f711c6b6f41cf58a4f8a490f3a84f1a74a4",
+      "bytes": 3259858
+    },
+    {
+      "name": "oblique.png",
+      "sha256": "24db75cc84da13c6779d45149c0919d18fa2743918ad42c4a17da2488cbbc9bd",
+      "bytes": 3672204
+    },
+    {
+      "name": "overcast.png",
+      "sha256": "e7ee7be34e557a0b597feb77f2c59a5375f254a33b612a3d9d1b76d12351afce",
+      "bytes": 3433162
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "7106039daaf41e7e13d469710cdf436bcddb5c55d0f0770a074db2bbd3967487",
+      "bytes": 3592093
+    },
+    {
+      "name": "source.blend",
+      "sha256": "3e5de2f09d3aeaa3613ed10135d2ad550c928efe2ebf516661a43a781ee2fa9b",
+      "bytes": 335518382
+    },
+    {
+      "name": "walking.png",
+      "sha256": "27122410ebccfdd7bfa15352ef089b66ccb1191eba59ed617fd118dcd46217d2",
+      "bytes": 3646433
+    }
+  ],
+  "colorSpaceVerification": {
+    "nativeFixture": "Known RGB128 byte PNG loaded as sRGB in isolated Blender5.2.1",
+    "pixelsObserved": 0.501960813999176,
+    "expectedEncoded": 0.5019607843137255,
+    "expectedLinear": 0.21586050011389926,
+    "appliedCorrection": "Explicit standard sRGB decode on RGB before exact remap; alpha unchanged; float Non-Color packed destination",
+    "earlyInvalidCaptureSet": "Overwritten after confirmed input encoding correction; not a separate artistic candidate"
+  }
+}

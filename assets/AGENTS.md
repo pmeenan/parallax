@@ -58,6 +58,7 @@ reference/  →  generation (Blender agents)  →  qa gate  →  library/  →  
    never load from `source/` or `reference/`.
 2. **Reference before generation.** No generation run without a reference sheet + kit
    spec to work from; consistency comes from shared inputs, enforcement from the gate.
+   For authored 3D assets, read and follow the [production workflow](production-workflow.md).
 3. **Library assets are immutable** — fixes produce a new content-addressed version;
    packaging manifests pin versions.
 4. **Track provenance** in asset metadata: generating agent/model, reference sheets

@@ -1,0 +1,13 @@
+# Moss cycle 1 screen
+
+Verdict: viable source moss interpretation for human review and representative transfer. The new construction materially resolves the failed smooth-ribbon identity. It reads as low, dense living growth in the joint, with a close-view simplification caveat. No mandatory second artistic cycle is warranted by these captures alone.
+
+Read moss-brief.md and inspected all six actual candidate1 captures: close, close-opposing, close-unlit, close-gray, walking and overview. Reference context is the previously viewed VEG-001 courtyard ecology, not a claim of matching an anatomical moss reference. Approved leaf color, paving material/light/contact and unrelated layout are excluded from this judgment.
+
+The close view establishes many small leafy shoots with dark interior depth, varied tips and a broken fringe. Soil remains exposed around and within parts of the colony; it is no longer a smooth green surface or a collection of pebbles. The low patch occupies a plausible sheltered stone-side pocket. I do not see conspicuous floating roots, a continuous unsupported slab or growth spreading across the paving top in the supplied view. Images alone cannot establish every shoot's support or clearance.
+
+Opposing light produces an appropriately darker sheltered portion and changing shoot shadows. Unlit and gray retain the irregular construction, supporting actual small geometry rather than a painted moss impression. Muted olive/green is restrained. At walking distance the colony reads as a fine textured low patch distinctly below the surrounding larger plants; overview is too distant for anatomical quality judgment and should not substitute for the close evidence.
+
+The concrete residual is the close-view leaf construction: many straight-edged diamond/triangular leaflets on visible thin stalks give the extreme close-up a miniature hedge or papery shard character. The colony also has a fairly crisp outer footprint despite its serrated fringe. These are visible simplifications, but materially less severe than the previous failed ribbons and do not erase the living-growth identity at walking distance. If a second cycle is selected after the other screen, target only a less abrupt density taper at a few fringes and slightly less uniform angular leaflets; do not add density indiscriminately or reopen approved surrounding work.
+
+Proceeding to representative export/reimport is reasonable, with actual retention inspection still required. The reported 681,469 scene triangles remain below the source scene ceiling; substantial plant-class excess and eventual bake/reduction remain separate production work. No full QA, runtime, rights or human acceptance is inferred from this native screen.

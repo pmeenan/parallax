@@ -1,0 +1,11 @@
+# Broken-joint layout candidate2 — independent final-cycle screen
+
+**Verdict:** the continuous warp slightly softens straight edges but does not materially resolve the lane-like joint pattern. Stop this technique at the two-cycle boundary; retain candidate2 as evidence, not an accepted final layout.
+
+I inspected the six actual candidate2 renders (top-packing, neutral-gray top, sunny-oblique, opposing-light, overcast, walking) against candidate1 and KIT-001. The gray top removes mineral texture as a distraction: long connected seams and the same rectangular, orthogonal packing remain legible, especially through the middle and broad cross-field courses. Walking view has a modestly more uneven edge contour, yet the pavers still read as rows of similarly sized modules. The shared sinusoidal bend is somewhat regular itself, rather than the varied outlines and local infill of KIT-001. This is a small cosmetic improvement over candidate1, not a convincing break of its layout cadence.
+
+I see no obvious stone intersection, exposed void, floating stone, torn earth, or new lighting-specific artifact in these stills. Joint/soil contact appears comparable to candidate1 under sunny, opposing and overcast light. The receipt's 7.92 mm post-warp separation figure is an analytic lower bound for the continuous map applied to the prior conservative bounds; it is not a measured triangle-pair clearance of the rendered meshes. These views support apparent contact, not a full geometric or production QA verdict.
+
+The receipt records the unchanged 111 stones, 547,740 scene triangles, 16-cell topological longest seam, and original material digest. The source SHA-256 and all six PNG hashes match their recorded values. Warp changes seam shape, not adjacency; repeated pale mineral landmarks from only three stone identities remain plainly visible. The scene still contains provisional plants, so it provides no leaf-color or moss judgment and no integrated-patch acceptance.
+
+The next layout method should alter adjacency and local slab proportions/outline variation, then inspect top, gray, and walking views before vegetation transfer. Further amplitude tuning of this same global warp is unlikely to remove the connected paths without adding a more conspicuous periodic bend.

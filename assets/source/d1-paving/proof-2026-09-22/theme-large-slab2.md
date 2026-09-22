@@ -1,0 +1,11 @@
+# Large-slab study candidate2: independent final theme screen
+
+**Outcome:** candidate2 is the clearer broad-slab composition of the two native cycles, but it remains a layout diagnostic rather than a KIT-001 artistic match. The two-cycle allowance ends here; further rectangular merging is unlikely to resolve the most conspicuous remaining defect.
+
+Inspected the actual top-packing, sunny-oblique, opposing-light, overcast, walking and plant-contact renders against candidate1 and KIT-001 Batch103. The largest plates are now spread more evenly through the middle and right instead of concentrating as strongly in the upper-left and lower-left. The walking view has a calmer broad-slab cadence, and small pieces work more often as infill among the larger stones. The receipt records 58 stones versus 61 and the same 14-cell longest seam; neither count by itself establishes visual fit.
+
+Size zoning is improved, not eliminated. A compact belt of narrow rectangles remains in the left-middle and lower-middle, while several very broad, straight-edged plates still stand out as a separate scale class. Top and oblique views retain conspicuous orthogonal alignments and open earth wedges at some junctions. KIT-001 uses broader worn outlines and more organically mixed infill, so this patch still reads as a composed rectangular tiling when seen as a whole.
+
+Repeated mineral landmarks are now the strongest visual limit. The same high-contrast pale islands and enlarged mottling recur across large slabs in all three lighting views and are especially obvious at walking scale. Balanced use of three source families cannot supply the unique wear patterns suggested by KIT-001; the receipt explicitly treats enlarged XY grain and limited identities as source-only limitations. Further tile rearrangement would move the stamps, not remove them.
+
+Retain this as the best supported slab-proportion study for comparison, with no whole-patch or human artistic acceptance. The next high-value work is distinct large-slab material/shape sources at the intended physical scale, then an integrated render with the approved leaf color and moss. The current receipt identifies provisional older plants, so this screen does not evaluate that integration, production QA, or runtime cost.

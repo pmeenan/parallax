@@ -1,0 +1,118 @@
+{
+  "finishedUtc": "2026-09-20T22:33:19.378548+00:00",
+  "capture": "Direct Blender Cycles PNG; no crop, paintover, texture or bump.",
+  "cameras": [
+    {
+      "name": "oblique",
+      "location": [
+        0.53,
+        -0.62,
+        0.48
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "type": "PERSP",
+      "lensOrOrtho": 55
+    },
+    {
+      "name": "reverse",
+      "location": [
+        -0.55,
+        0.58,
+        0.43
+      ],
+      "target": [
+        0,
+        0,
+        0.04
+      ],
+      "type": "PERSP",
+      "lensOrOrtho": 55
+    },
+    {
+      "name": "top",
+      "location": [
+        0,
+        0,
+        0.9
+      ],
+      "target": [
+        0,
+        0,
+        0
+      ],
+      "type": "ORTHO",
+      "lensOrOrtho": 0.55
+    },
+    {
+      "name": "grazing",
+      "location": [
+        0.4,
+        -0.65,
+        0.145
+      ],
+      "target": [
+        0,
+        0,
+        0.04
+      ],
+      "type": "PERSP",
+      "lensOrOrtho": 55
+    },
+    {
+      "name": "walking-scale",
+      "location": [
+        0,
+        -0.68,
+        1.65
+      ],
+      "target": [
+        0,
+        0.04,
+        0
+      ],
+      "type": "PERSP",
+      "lensOrOrtho": 45
+    }
+  ],
+  "files": [
+    {
+      "name": "grazing.png",
+      "bytes": 1231479,
+      "sha256": "3ef75ec1af84040677025cb58fabb3e33338d099934a851aa96a7273db89e713"
+    },
+    {
+      "name": "metrics.json",
+      "bytes": 1020,
+      "sha256": "1d49d56a53ac67f542a4d5328322915aceb77096ef11aae17dc93ea0734a53d1"
+    },
+    {
+      "name": "oblique.png",
+      "bytes": 1175228,
+      "sha256": "eb19ff08d9bfbedd1cfba96820201ae35ad04ea5236c8f477f261dc0927aa238"
+    },
+    {
+      "name": "reverse.png",
+      "bytes": 1157788,
+      "sha256": "81d9589c151d96991784b040fde3918c32f3d6cbbc63bc9976f5e99a39cb01bc"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 13851457,
+      "sha256": "082397a7e19b8530488805a1eebd60296bdab631a8b7d5495cb2292cb3d58631"
+    },
+    {
+      "name": "top.png",
+      "bytes": 1150262,
+      "sha256": "7c2f001e3f6edaf4859c4e3bf4f8d9b24e32b0356c8425b6ec90891754a2aa2a"
+    },
+    {
+      "name": "walking-scale.png",
+      "bytes": 1080190,
+      "sha256": "3f9a1d223ce84183b6db35702ac85619e9dd0a2bea30c47d808e694264679f27"
+    }
+  ]
+}

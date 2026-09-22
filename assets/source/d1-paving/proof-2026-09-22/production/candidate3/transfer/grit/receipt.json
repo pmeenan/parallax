@@ -1,0 +1,49 @@
+{
+  "subject": "grit",
+  "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+  "triangles": 30721,
+  "meshes": 1,
+  "materials": 4,
+  "textures": 0,
+  "bytes": 746608,
+  "sha256": "2bed5ba3546a3bee820a5e57363076fd67e0979feaa43f907e138f1eccd90aa7",
+  "exportSeconds": 0.029940900043584406,
+  "importSeconds": 0.037057199981063604,
+  "pixelDelta": {
+    "mean": 2.6484201498533366e-7,
+    "p99": 0.0,
+    "maximum": 0.003921583294868469
+  },
+  "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+  "notQualified": [
+    "Runtime material sharing",
+    "Current class budgets",
+    "Compression and LODs",
+    "Engine loader",
+    "Rights",
+    "Library admission"
+  ],
+  "knownDifference": null,
+  "files": [
+    {
+      "name": "native.blend",
+      "bytes": 806780,
+      "sha256": "2469732f055e7e4895f54c177a61ccba0c8d7918ef624e7b7080effeb6979aed"
+    },
+    {
+      "name": "native.png",
+      "bytes": 1559552,
+      "sha256": "43856f38a08f93ccec4e15090b0337f89b0f1bcc74eab9296ff6ac4e16bfb3f5"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 1559447,
+      "sha256": "8282465a345d730530c5aea0ab800f02c5baaf30f62cad184d5a96e4ea0f95aa"
+    },
+    {
+      "name": "representative.glb",
+      "bytes": 746608,
+      "sha256": "2bed5ba3546a3bee820a5e57363076fd67e0979feaa43f907e138f1eccd90aa7"
+    }
+  ]
+}

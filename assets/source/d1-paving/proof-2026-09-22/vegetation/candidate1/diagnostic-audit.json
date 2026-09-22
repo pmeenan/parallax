@@ -1,0 +1,162 @@
+{
+  "plants": {
+    "Fine grass tuft 4": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Fine grass tuft 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Small seedling 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 40
+    },
+    "Small seedling 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 40
+    },
+    "Small seedling 2 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 30
+    },
+    "Low moss in protected joints": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 720
+    },
+    "Broadleaf weed 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 440
+    },
+    "Broadleaf weed 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 440
+    },
+    "Fine grass tuft 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Broadleaf weed 1 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Broadleaf weed 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 440
+    },
+    "Fine grass tuft 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Broadleaf weed 0 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Small seedling 1 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 30
+    },
+    "Broadleaf weed 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 440
+    },
+    "Small seedling 4 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 30
+    },
+    "Broadleaf weed 3 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Fine grass tuft 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Small seedling 4": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 40
+    },
+    "Small seedling 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 40
+    },
+    "Broadleaf weed 2 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 60
+    },
+    "Small seedling 3 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 30
+    },
+    "Small seedling 0 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 30
+    },
+    "Small seedling 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 40
+    }
+  },
+  "mapNodes": [
+    {
+      "image": "leaf-basecolor",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "sRGB",
+      "outputsLinked": true
+    },
+    {
+      "image": "leaf-roughness",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "Non-Color",
+      "outputsLinked": true
+    },
+    {
+      "image": "leaf-normal",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "Non-Color",
+      "outputsLinked": true
+    }
+  ],
+  "inputSourceHashUnchanged": true,
+  "normalMapStrength": 0.6000000238418579,
+  "scope": "Geometry/map linkage audit only; no full QA, botanical acceptance, or complete collision test."
+}

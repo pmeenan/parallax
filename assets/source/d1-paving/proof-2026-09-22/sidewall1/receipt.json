@@ -1,0 +1,773 @@
+{
+  "createdUtc": "2026-09-22T11:01:10.785811+00:00",
+  "tool": "5.2.1 LTS",
+  "seconds": 26.08613220002735,
+  "author": "Codex paver_refinement agent",
+  "baseline": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact2\\source.blend",
+  "baselineSha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e",
+  "changes": [
+    {
+      "object": "Family A",
+      "verticesChanged": 88401,
+      "maxDisplacementM": 0.004896402359008789,
+      "meanChangedDisplacementM": 0.0008971485658548772,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.12067732638484384,
+          "halfSpanM": 0.016958268125934973,
+          "depthM": 0.002238672126687094,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.060694612173545916,
+          "halfSpanM": 0.014310452941480931,
+          "depthM": 0.0030582648138238787,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.01120763990446847,
+          "halfSpanM": 0.021848265404721692,
+          "depthM": 0.002302017963223613,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.04215317967680376,
+          "halfSpanM": 0.01762167093312287,
+          "depthM": 0.0030751555194022577,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.09553180159590109,
+          "halfSpanM": 0.014454186401557715,
+          "depthM": 0.0025314463770577866,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.1250351908887079,
+          "halfSpanM": 0.019541800265878442,
+          "depthM": 0.0027795236894912426,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.11490053272389103,
+          "halfSpanM": 0.028813981624333393,
+          "depthM": 0.0037518355855480834,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.06278323409551174,
+          "halfSpanM": 0.024436528490865497,
+          "depthM": 0.004293355524924296,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.008026615440091377,
+          "halfSpanM": 0.026430468653216153,
+          "depthM": 0.0034038199367102634,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.041531918878611684,
+          "halfSpanM": 0.024058804914266374,
+          "depthM": 0.004897347437394813,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.09103626880317284,
+          "halfSpanM": 0.020552251636539117,
+          "depthM": 0.003461451437938674,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.1297377219042992,
+          "halfSpanM": 0.027262227928855787,
+          "depthM": 0.004440731100123803,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.15530920393635608,
+          "halfSpanM": 0.021488809065106713,
+          "depthM": 0.002306118559717116,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.08547602721062335,
+          "halfSpanM": 0.022067904053112344,
+          "depthM": 0.002148551604730496,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.01339148224015599,
+          "halfSpanM": 0.01674798757463376,
+          "depthM": 0.002718541053473696,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.04737894714221395,
+          "halfSpanM": 0.014201334472443693,
+          "depthM": 0.0017275527902626056,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.12308137548266102,
+          "halfSpanM": 0.024778110217671373,
+          "depthM": 0.002148622842864729,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.17177310312510138,
+          "halfSpanM": 0.018291911268044685,
+          "depthM": 0.0031858629303081754,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.15085065330196643,
+          "halfSpanM": 0.02483081998489032,
+          "depthM": 0.00309324062384457,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.09159310340050605,
+          "halfSpanM": 0.017380879575729893,
+          "depthM": 0.0021706468863311812,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.018750494459846962,
+          "halfSpanM": 0.014399647734439053,
+          "depthM": 0.002051213696381748,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.050335307068893505,
+          "halfSpanM": 0.016268892222663527,
+          "depthM": 0.0025034004513444525,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.11812205749908557,
+          "halfSpanM": 0.015552180003868925,
+          "depthM": 0.0027577072152311644,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.1644192791527658,
+          "halfSpanM": 0.022619742217370304,
+          "depthM": 0.0021060479215322947,
+          "priorityJointEdge": false
+        }
+      ]
+    },
+    {
+      "object": "Family B",
+      "verticesChanged": 114516,
+      "maxDisplacementM": 0.00487944483757019,
+      "meanChangedDisplacementM": 0.0008619451546110213,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.11192689438393497,
+          "halfSpanM": 0.02345879430095695,
+          "depthM": 0.0033194764636844502,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.06714611888371656,
+          "halfSpanM": 0.02488910211734334,
+          "depthM": 0.00488209239849793,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.0178156684758682,
+          "halfSpanM": 0.02089571088655398,
+          "depthM": 0.0036487243865347247,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.033958581541745844,
+          "halfSpanM": 0.020405144100303352,
+          "depthM": 0.0038058151270618833,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.0894437499913206,
+          "halfSpanM": 0.02924450746595365,
+          "depthM": 0.004793114770249682,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.11697427832728793,
+          "halfSpanM": 0.019389052389601903,
+          "depthM": 0.005085137933250986,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.10676792943535332,
+          "halfSpanM": 0.02318809537859708,
+          "depthM": 0.0020945250069373594,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.06622363496115923,
+          "halfSpanM": 0.019172038424901266,
+          "depthM": 0.0027407772962837963,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.012070010559857822,
+          "halfSpanM": 0.020461683140249924,
+          "depthM": 0.002209665022361082,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.04136851019048924,
+          "halfSpanM": 0.014803645252687556,
+          "depthM": 0.002344242856757047,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.08525844699206343,
+          "halfSpanM": 0.018530530951608358,
+          "depthM": 0.00238488080101135,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.12337958994232681,
+          "halfSpanM": 0.020057317608873967,
+          "depthM": 0.0026494819875717158,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.11118877985141357,
+          "halfSpanM": 0.018469990443678315,
+          "depthM": 0.0027929474421048628,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.06722326784972694,
+          "halfSpanM": 0.015631421723106057,
+          "depthM": 0.002054944353439354,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.013101213432825762,
+          "halfSpanM": 0.02288874045856101,
+          "depthM": 0.0019031640300897247,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.034690831447476624,
+          "halfSpanM": 0.019978229890820848,
+          "depthM": 0.0023610666340856115,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.09066044963104179,
+          "halfSpanM": 0.01781533197436281,
+          "depthM": 0.001907731176656877,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.13252235356166972,
+          "halfSpanM": 0.024924555512865217,
+          "depthM": 0.0017042772250051698,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.12227657630724205,
+          "halfSpanM": 0.024306735093035214,
+          "depthM": 0.002859262036591817,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.06068215566742037,
+          "halfSpanM": 0.020596510701653904,
+          "depthM": 0.002084128739588045,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.019194212894072433,
+          "halfSpanM": 0.015780155428259533,
+          "depthM": 0.003111519812196085,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.04068023242503206,
+          "halfSpanM": 0.017264037947029794,
+          "depthM": 0.002777394851845522,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.09222991201684211,
+          "halfSpanM": 0.016118997776872167,
+          "depthM": 0.0022534797306214536,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.12306081327854487,
+          "halfSpanM": 0.0180471806790429,
+          "depthM": 0.0026105919325471187,
+          "priorityJointEdge": false
+        }
+      ]
+    },
+    {
+      "object": "Family C",
+      "verticesChanged": 80710,
+      "maxDisplacementM": 0.00494084507226944,
+      "meanChangedDisplacementM": 0.0008965570596046746,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.09783200105823492,
+          "halfSpanM": 0.02486906968786618,
+          "depthM": 0.0030360944014899568,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.04842992046922419,
+          "halfSpanM": 0.016680349443968925,
+          "depthM": 0.0030428967080219768,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": -0.013232323254883424,
+          "halfSpanM": 0.015266129217928604,
+          "depthM": 0.0024474053604074306,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.03073019366239013,
+          "halfSpanM": 0.018127001122559404,
+          "depthM": 0.003189019855234727,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.07118589207693075,
+          "halfSpanM": 0.01653878283565023,
+          "depthM": 0.0018358735626049344,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": -1,
+          "centerM": 0.1012415550289746,
+          "halfSpanM": 0.023805634749016154,
+          "depthM": 0.0025666227062885708,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.09706714440450041,
+          "halfSpanM": 0.014267374606413754,
+          "depthM": 0.001917304442868997,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.05715185605329258,
+          "halfSpanM": 0.023799974423731753,
+          "depthM": 0.0024487443310817307,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": -0.007462379921091512,
+          "halfSpanM": 0.018123516189098333,
+          "depthM": 0.0031054168390711925,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.03119382298029348,
+          "halfSpanM": 0.019958015114775688,
+          "depthM": 0.0029388801304540213,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.08050435552162805,
+          "halfSpanM": 0.02110740567734222,
+          "depthM": 0.002473566390845547,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "centerM": 0.10196370629850539,
+          "halfSpanM": 0.024233598693053686,
+          "depthM": 0.0027258741219395766,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.19958098403862698,
+          "halfSpanM": 0.021205864922837533,
+          "depthM": 0.003989541551074579,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.10838761267663541,
+          "halfSpanM": 0.02227702474057485,
+          "depthM": 0.004527510092900021,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": -0.027297891539864935,
+          "halfSpanM": 0.018772873090311955,
+          "depthM": 0.0051863620222726056,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.07210698610549125,
+          "halfSpanM": 0.03067033697229229,
+          "depthM": 0.003812587264616385,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.15537614968649516,
+          "halfSpanM": 0.02927146866072561,
+          "depthM": 0.004683623419811439,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "centerM": 0.21562813476671505,
+          "halfSpanM": 0.018607194344317003,
+          "depthM": 0.003910070279851832,
+          "priorityJointEdge": true
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.19754334319707512,
+          "halfSpanM": 0.0159308254907138,
+          "depthM": 0.001858340973187917,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.10814440982682236,
+          "halfSpanM": 0.016169401764053345,
+          "depthM": 0.0030853612580353253,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": -0.02655622901813766,
+          "halfSpanM": 0.02269441383630888,
+          "depthM": 0.0018514069972849078,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.06691211633279055,
+          "halfSpanM": 0.014778730088488562,
+          "depthM": 0.002936629827093042,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.159183024006321,
+          "halfSpanM": 0.016226947914501622,
+          "depthM": 0.0023876603245037414,
+          "priorityJointEdge": false
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "centerM": 0.21658746795093814,
+          "halfSpanM": 0.024652316352368198,
+          "depthM": 0.003075997597103434,
+          "priorityJointEdge": false
+        }
+      ]
+    }
+  ],
+  "nonStoneGeometryUnchanged": {
+    "Compacted recessed matrix": "fda460d6400a6e0c6392255a07d625285b96119bb908fb2ac299bffd30b9e41d",
+    "Distant ground": "9aed1b80054a12061c71d8d27240f55976e973df37b5e637b5f74fedf8bf7dd9",
+    "Embedded mixed aggregate": "7aeabeae83681eb35597494a1f9e6157001d13dff956e720bf56009c12ca8f28"
+  },
+  "materialChanges": "None; external loaded height packed for standalone recovery",
+  "views": [
+    [
+      "oblique",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "reverse-light",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        1,
+        0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "walking",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "overcast",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      70,
+      3,
+      0.5
+    ],
+    [
+      "joint-detail",
+      [
+        0.24,
+        -0.36,
+        0.33
+      ],
+      [
+        -0.025,
+        -0.01,
+        0.066
+      ],
+      58,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ]
+  ],
+  "grayDiagnostic": "same joint-detail camera/light; clay override only",
+  "scope": "One sidewall candidate; no soil raising, no library/runtime/artistic acceptance",
+  "rightsReviewed": false,
+  "inputLineage": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family\\candidate2\\receipt.json",
+  "scriptSha256": "697cdba46ad803f72f3f81c2301ea9433afd80aaa9e698750b03245871f35936",
+  "files": [
+    {
+      "name": "diagnostic-gray.png",
+      "sha256": "eed4aae40e5145f4b19a628bee38d03887b8c7725be33b83d0df61b83b5097cd",
+      "bytes": 2091943
+    },
+    {
+      "name": "joint-detail.png",
+      "sha256": "8d491cc92ceee479f1f4712b9ffea9446d4b9a765f843c317518cda35d4845dc",
+      "bytes": 2841420
+    },
+    {
+      "name": "oblique.png",
+      "sha256": "d5bb92025d7e0c36c36a5821ca88a2ce6f600e14a8748e13d1abe574fbf89900",
+      "bytes": 3556009
+    },
+    {
+      "name": "overcast.png",
+      "sha256": "a1080882e986cf3cdbf48fba1c9c3b8a5dea288fc769b2cdb1ee65d91d71487f",
+      "bytes": 3246034
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "5ace869ff1704fdf60609062392940b1865f1a467b7eb8cec96e32f5e45847d2",
+      "bytes": 3485845
+    },
+    {
+      "name": "source.blend",
+      "sha256": "889ad564e9b75e87ee4c00c56a65a9c20addc82280c225d18dcab1d5cb77e40d",
+      "bytes": 289835760
+    },
+    {
+      "name": "walking.png",
+      "sha256": "79e91c2fd154c3d6fa5e2fa3d20f6908101b1e43b0ef1b96b181f9245ed19f9a",
+      "bytes": 3489420
+    }
+  ]
+}

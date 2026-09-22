@@ -1,0 +1,152 @@
+{
+  "seconds": 22.964843499998096,
+  "subjects": [
+    {
+      "subject": "leaf",
+      "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+      "triangles": 656,
+      "meshes": 2,
+      "materials": 2,
+      "textures": 3,
+      "bytes": 2465328,
+      "sha256": "a52a2fdc72ccc956ec405de9a89aea2fde63dcd83e10821c33d1b9f559ed4e2b",
+      "exportSeconds": 0.2243976999889128,
+      "importSeconds": 0.04473580000922084,
+      "pixelDelta": {
+        "mean": 0.0001720567961456254,
+        "p99": 0.003921568393707275,
+        "maximum": 0.043137259781360626
+      },
+      "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+      "notQualified": [
+        "Runtime material sharing",
+        "Current class budgets",
+        "Compression and LODs",
+        "Engine loader",
+        "Rights",
+        "Library admission"
+      ],
+      "knownDifference": "Native leaf 2.5% subsurface is not represented by standard glTF",
+      "files": [
+        {
+          "name": "native.blend",
+          "bytes": 2872332,
+          "sha256": "d85074cd67e16c3d1759532efe9042a4d7883606a99676011ca3d05c7380791a"
+        },
+        {
+          "name": "native.png",
+          "bytes": 1730230,
+          "sha256": "06e1f27abcb2c4387826fa77c922467bfef539a73f55dada73fa48c9573e3676"
+        },
+        {
+          "name": "reimport.png",
+          "bytes": 1712732,
+          "sha256": "c8bbf59a3161038df0648b2b3e0392e73f317ec3d096dbded15795f0152bf53e"
+        },
+        {
+          "name": "representative.glb",
+          "bytes": 2465328,
+          "sha256": "a52a2fdc72ccc956ec405de9a89aea2fde63dcd83e10821c33d1b9f559ed4e2b"
+        }
+      ]
+    },
+    {
+      "subject": "moss",
+      "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+      "triangles": 7800,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 0,
+      "bytes": 472396,
+      "sha256": "f87e3c5fb5a29fc5602b11f884eb461ef6a10012f1bb8d484166a43ec0f256de",
+      "exportSeconds": 0.011501399974804372,
+      "importSeconds": 0.031103999994229525,
+      "pixelDelta": {
+        "mean": 9.442606824450195e-5,
+        "p99": 0.003921568393707275,
+        "maximum": 0.0156862735748291
+      },
+      "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+      "notQualified": [
+        "Runtime material sharing",
+        "Current class budgets",
+        "Compression and LODs",
+        "Engine loader",
+        "Rights",
+        "Library admission"
+      ],
+      "knownDifference": null,
+      "files": [
+        {
+          "name": "native.blend",
+          "bytes": 364380,
+          "sha256": "8e10096053b5b75c32ade544f4128244a1abb7d69b7d9a37a90d390da8950bc7"
+        },
+        {
+          "name": "native.png",
+          "bytes": 2216942,
+          "sha256": "4e3bda234a3fa1c9f7a9df7482b88e08a26638d9afaee2935552031910340042"
+        },
+        {
+          "name": "reimport.png",
+          "bytes": 2217564,
+          "sha256": "a31380514036e6e9fcacb597790135397c47d1389cd75c9d720ddbb6c42179cf"
+        },
+        {
+          "name": "representative.glb",
+          "bytes": 472396,
+          "sha256": "f87e3c5fb5a29fc5602b11f884eb461ef6a10012f1bb8d484166a43ec0f256de"
+        }
+      ]
+    },
+    {
+      "subject": "grit",
+      "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+      "triangles": 30721,
+      "meshes": 1,
+      "materials": 4,
+      "textures": 0,
+      "bytes": 746608,
+      "sha256": "2bed5ba3546a3bee820a5e57363076fd67e0979feaa43f907e138f1eccd90aa7",
+      "exportSeconds": 0.029940900043584406,
+      "importSeconds": 0.037057199981063604,
+      "pixelDelta": {
+        "mean": 2.6484201498533366e-7,
+        "p99": 0.0,
+        "maximum": 0.003921583294868469
+      },
+      "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+      "notQualified": [
+        "Runtime material sharing",
+        "Current class budgets",
+        "Compression and LODs",
+        "Engine loader",
+        "Rights",
+        "Library admission"
+      ],
+      "knownDifference": null,
+      "files": [
+        {
+          "name": "native.blend",
+          "bytes": 806780,
+          "sha256": "2469732f055e7e4895f54c177a61ccba0c8d7918ef624e7b7080effeb6979aed"
+        },
+        {
+          "name": "native.png",
+          "bytes": 1559552,
+          "sha256": "43856f38a08f93ccec4e15090b0337f89b0f1bcc74eab9296ff6ac4e16bfb3f5"
+        },
+        {
+          "name": "reimport.png",
+          "bytes": 1559447,
+          "sha256": "8282465a345d730530c5aea0ab800f02c5baaf30f62cad184d5a96e4ea0f95aa"
+        },
+        {
+          "name": "representative.glb",
+          "bytes": 746608,
+          "sha256": "2bed5ba3546a3bee820a5e57363076fd67e0979feaa43f907e138f1eccd90aa7"
+        }
+      ]
+    }
+  ]
+}

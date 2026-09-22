@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "status": "retained-native-reduction-not-admitted",
+  "generatingAgent": "OpenAI Codex",
+  "tool": "Blender 5.2.1 LTS 9e2066aef7ef",
+  "source": {
+    "path": "assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/source.blend",
+    "bytes": 38608111,
+    "sha256": "c5778d6d17cede747e546d6b4792d7db73f01e31b59bb399e69441b297feea20"
+  },
+  "candidate": {
+    "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/source.blend",
+    "bytes": 37143811,
+    "sha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421"
+  },
+  "humanApprovedSource": "proof-2026-09-22/cobble-results.md approval dated 2026-09-22",
+  "newHumanApproval": false,
+  "runtimeQA": false,
+  "libraryAdmission": false,
+  "references": [
+    "KIT-001 batch103 with human smaller-stone direction",
+    "KIT-002 batch104",
+    "MAT-001/MAT-018 batch108",
+    "VEG-001 batch116"
+  ],
+  "lineage": [
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/cobble-study/provenance.json",
+      "bytes": 2997,
+      "sha256": "1a41ba13ddd8f2f1ba91ec1eeac298031b86fad0d1615879ac8510501c39edc7"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/receipt.json",
+      "bytes": 187680,
+      "sha256": "3491e3330158579f8bba8325d94e2521abcfec9bf42cdae9bd876f0cfb10d32f"
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/provenance.json",
+      "bytes": 23973,
+      "sha256": "6f594acf7a6c0cad9d51077349e875888c66286fa4f49e152e85fcb0cbbf54b6"
+    }
+  ],
+  "generation": "Existing authored geometry and previously generated limestone surfaces reused; no new image generation or paid provider job",
+  "rightsReview": {
+    "scope": "public-build",
+    "status": "pending",
+    "note": "Source visual approval does not clear inherited reference/input/output rights"
+  },
+  "policy": "assets/qa/d1-stone-variants.json unchanged; ground/vegetation/material conformance remains unmet",
+  "builders": [
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/build.py",
+      "bytes": 12167,
+      "sha256": "8ce57cb96bdf37e91d00120a98e0e913ac99f5d38b9fd4aed5621d9f4a027140"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/verify.py",
+      "bytes": 7254,
+      "sha256": "855f66a7a6bd4319972720aa8eebd8a944a4b77352c46f3fd0cd856e85ccf044"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/transfer.py",
+      "bytes": 5894,
+      "sha256": "9c3e73915aee2ddb6afdbd47ae4e38d08593e014eca392997f407837f4069b6e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/finalize.py",
+      "bytes": 4235,
+      "sha256": "1b1da0681fefb00be6de7a16d96deacce269537547f0132e33a4fa045eb509ff"
+    }
+  ]
+}

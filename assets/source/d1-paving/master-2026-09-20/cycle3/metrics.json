@@ -1,0 +1,30 @@
+{
+  "startedUtc": "2026-09-20T22:42:00.381845+00:00",
+  "blender": "5.2.1 LTS",
+  "vertices": 666236,
+  "faces": 666234,
+  "triangles": 1332468,
+  "nonManifoldEdges": 0,
+  "volumeM3": 0.00823059325442782,
+  "dimensionsM": [
+    0.39279401302337646,
+    0.2938254773616791,
+    0.07800000160932541
+  ],
+  "minimumZAndSupportHeightM": 0.0020000000949949026,
+  "controlMeshFaces": 152,
+  "controlShoulderSegments": 27,
+  "compoundShoulderPatches": 10,
+  "sideFractureJunctions": 11,
+  "voxelSizeM": 0.0007,
+  "materials": 1,
+  "maps": 0,
+  "authoring": "Explicitly connected planar fracture mesh; unequal shoulder widths/elevations, shared compound patches and side junctions; upper ridge wear only. No convex hull, cutters or displacement noise.",
+  "scope": "One authorized extension cycle; source geometry only, not exported, admitted or runtime accepted.",
+  "references": [
+    "batch-104/kit-002-stone-family-v4.png",
+    "batch-108/mat-001-cream-limestone-v1.png",
+    "batch-103/kit-001-paving-assembly-v1.png"
+  ],
+  "rightsReview": "Internal authored geometry; existing catalog reference rights lineage. No public shipping clearance asserted."
+}

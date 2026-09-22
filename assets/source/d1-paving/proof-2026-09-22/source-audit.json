@@ -1,0 +1,160 @@
+{
+  "blender": "5.2.1 LTS",
+  "source": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact2\\source.blend",
+  "cameraDOF": false,
+  "images": [
+    {
+      "object": "Family A",
+      "node": "Image Texture",
+      "image": "limestone-height-v1.png",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": false,
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact2\\..\\..\\surface-study-2026-09-21\\inputs\\limestone-height-v1.png",
+      "exists": true,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family A",
+      "node": "Image Texture.001",
+      "image": "Authored mineral plateau field cycle103",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family A",
+      "node": "Image Texture.002",
+      "image": "Paving candidate3 compressed chromatic mineral variation",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family B",
+      "node": "Image Texture",
+      "image": "Family B nonlinear relief",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family B",
+      "node": "Image Texture.001",
+      "image": "Family B nonlinear mineral regions",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family B",
+      "node": "Image Texture.002",
+      "image": "Family B nonlinear chromatic variation",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family C",
+      "node": "Image Texture",
+      "image": "Family C nonlinear relief",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family C",
+      "node": "Image Texture.001",
+      "image": "Family C nonlinear mineral regions",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    },
+    {
+      "object": "Family C",
+      "node": "Image Texture.002",
+      "image": "Family C nonlinear chromatic variation",
+      "source": "FILE",
+      "size": [
+        1254,
+        1254
+      ],
+      "loaded": true,
+      "packed": true,
+      "path": "",
+      "exists": false,
+      "linkedOutputs": [
+        "Color"
+      ]
+    }
+  ]
+}

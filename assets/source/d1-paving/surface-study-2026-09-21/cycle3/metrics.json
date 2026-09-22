@@ -1,0 +1,20 @@
+{
+  "createdUtc": "2026-09-21T18:50:44.006316+00:00",
+  "buildSeconds": 14.161372900009155,
+  "version": "5.2.1 LTS",
+  "cycle": 3,
+  "seed": 713,
+  "vertices": 863437,
+  "triangles": 1726870,
+  "dimensionsM": [
+    0.4143217206001282,
+    0.31164711713790894,
+    0.08444312959909439
+  ],
+  "references": [
+    "batch-104/kit-002-stone-family-v4.png",
+    "batch-108/mat-001-cream-limestone-v1.png",
+    "batch-103/kit-001-paving-assembly-v1.png"
+  ],
+  "scope": "Original source authoring study; no library admission or runtime acceptance"
+}

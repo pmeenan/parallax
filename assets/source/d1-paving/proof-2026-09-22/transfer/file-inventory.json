@@ -1,0 +1,250 @@
+{
+  "files": [
+    {
+      "name": "a\\basecolor.png",
+      "bytes": 5181874,
+      "sha256": "00779108c9cbe5c9798c0f71d220a160e3fc2c66df1dbee76a046245faf19c07"
+    },
+    {
+      "name": "a\\high-source-opposing.png",
+      "bytes": 2109249,
+      "sha256": "6e5837015c89a9fc2479e38c6efbac3e5bf0f712a9e05fee0b21168bad74caa3"
+    },
+    {
+      "name": "a\\high-source.png",
+      "bytes": 2150001,
+      "sha256": "daaff58db92bb9736e0a84d5074c8ebaf338de99608739e7a6670a788a13cff7"
+    },
+    {
+      "name": "a\\limestone.glb",
+      "bytes": 10157440,
+      "sha256": "a5bbde7a3536e1063c58437b8780e07d77a22d89d861d7912b1a568e95c2ff0c"
+    },
+    {
+      "name": "a\\native-low.png",
+      "bytes": 2120524,
+      "sha256": "b5598674d2e39b610a48562e5cd0ca7c354e3c04cf2de41535628104226a92b7"
+    },
+    {
+      "name": "a\\normal.png",
+      "bytes": 4026604,
+      "sha256": "4013159e0b51905bd7ef544982fb5bd244ebad2b2a082a40f12860f4c1527161"
+    },
+    {
+      "name": "a\\portable.blend",
+      "bytes": 10265059,
+      "sha256": "3466ec941bb5dcf4346d0c8f4bcd3eab08e12727a66d780104c3007ac37aa881"
+    },
+    {
+      "name": "a\\receipt.json",
+      "bytes": 2066,
+      "sha256": "13d0e08e24d33139757a4ad740b92594e14fc8d4f2d2431dcde2056304aac777"
+    },
+    {
+      "name": "a\\reimport-opposing.png",
+      "bytes": 2085443,
+      "sha256": "2b68a7e827833f5e2a0a9bad69495a9eb2123c3e8f9a15a95fed9d6599280b23"
+    },
+    {
+      "name": "a\\reimport.png",
+      "bytes": 2120852,
+      "sha256": "1e9f40de57cd647a64da93d2f6d2f042c70ff66402066de796bf312588b0eb81"
+    },
+    {
+      "name": "a\\resolved_bake.py",
+      "bytes": 5174,
+      "sha256": "9a0004c9d391e12cc5fa77ffebbf6ee0d50dae781a74d483b3fb93a382f04072"
+    },
+    {
+      "name": "a\\resolved_verify.py",
+      "bytes": 4671,
+      "sha256": "52b37fb5852eab542f329fe19a7171af8ec05cfd30df2f68aadf2d5ea0fdce91"
+    },
+    {
+      "name": "a\\roughness.png",
+      "bytes": 868179,
+      "sha256": "bf308079b496b6739361f9e6609852893bcd2b6b9f4fa178d4847a62a031e9e5"
+    },
+    {
+      "name": "a\\verification.json",
+      "bytes": 3457,
+      "sha256": "dfa6318d9eec538004b3711c38ac1bd5a9daa3ad0bfc6b179f729f916c17977a"
+    },
+    {
+      "name": "a-comparison.png",
+      "bytes": 1492674,
+      "sha256": "6d2f3621bf1b7d2bc07510b361274373110be78d9bcc5e7e610cf079add849ce"
+    },
+    {
+      "name": "author-results.md",
+      "bytes": 3407,
+      "sha256": "0faedb47f11ff5b1d87576690e770a925b1ce69bf2d03004cb431cc13f977f58"
+    },
+    {
+      "name": "b\\basecolor.png",
+      "bytes": 5295763,
+      "sha256": "c5b0d9403279a33ce502a8125935359126925b0285e6d1dd98e34a192ab93feb"
+    },
+    {
+      "name": "b\\high-source-opposing.png",
+      "bytes": 1936256,
+      "sha256": "eb6609b6a956df6b6e89ddb2409f1d738dbe76b163a73f0621cc80de0db1c7d3"
+    },
+    {
+      "name": "b\\high-source.png",
+      "bytes": 1976014,
+      "sha256": "1226b2d9cef1f697a9dea26fd3c5a6185fea9fc8db69dbc632456265f188ea2e"
+    },
+    {
+      "name": "b\\limestone.glb",
+      "bytes": 10502016,
+      "sha256": "399d746174db0751ef63fed9b6782fb028a69f3c7871748c36186af932918d8f"
+    },
+    {
+      "name": "b\\native-low.png",
+      "bytes": 1962424,
+      "sha256": "0484f85339bc4edb47cabab5b2fbb97406645f0087401b449a0dfcb02525b06a"
+    },
+    {
+      "name": "b\\normal.png",
+      "bytes": 4179040,
+      "sha256": "5015c94f6f2cdb05e8d63c421072d39ce5225e05ee9230dd5d30a429cd2372b5"
+    },
+    {
+      "name": "b\\portable.blend",
+      "bytes": 10621330,
+      "sha256": "505836e521db69e7d65f5c67c9a1c954de3eb82ed64b06666edd50bb2c105660"
+    },
+    {
+      "name": "b\\receipt.json",
+      "bytes": 2065,
+      "sha256": "4ce46337fe5edcf12f573e3b8148e4fb5057d0d7a499f4902db83a5949a829bb"
+    },
+    {
+      "name": "b\\reimport-opposing.png",
+      "bytes": 1921944,
+      "sha256": "26ed1a9f82fdc27460ad414dfc3cc74c2e18d546ed1df7d89f30114538ebc894"
+    },
+    {
+      "name": "b\\reimport.png",
+      "bytes": 1962790,
+      "sha256": "714bbe1e3cc2de14301d21424716fb7778b99bca56a49e0ab87325b4162a9445"
+    },
+    {
+      "name": "b\\resolved_bake.py",
+      "bytes": 5174,
+      "sha256": "110f0be4982bfc048fb0cd52bd1507e388b481cd93067276b46794c48d137be8"
+    },
+    {
+      "name": "b\\resolved_verify.py",
+      "bytes": 4671,
+      "sha256": "5db91c907a3cfac5b37c0be4ff2db766f6bf445170c05863d79a2772af5ce638"
+    },
+    {
+      "name": "b\\roughness.png",
+      "bytes": 946541,
+      "sha256": "1bd899a3ecb13f1a54e427f08e6adda41847e74e2ef1810f87cebee39a64687d"
+    },
+    {
+      "name": "b\\verification.json",
+      "bytes": 3461,
+      "sha256": "9bd4fec2fb19c0217416bced7145f0c5f4ac4834e77850cf4450fcf6a5644fbe"
+    },
+    {
+      "name": "b-comparison.png",
+      "bytes": 1252261,
+      "sha256": "956cea10d3f786ae6e7788454d9d4ea36ff84602e92272ba32fd40fd3075a153"
+    },
+    {
+      "name": "build.py",
+      "bytes": 6150,
+      "sha256": "3c97b38be56bc0ff3b9c1368eabd64fb7fdb37574e4c5cc6bfc1b2865bdc5a17"
+    },
+    {
+      "name": "c\\basecolor.png",
+      "bytes": 5553736,
+      "sha256": "64922fdee241fceafe5650161e1476065fcb3b20b3386f14de9a6e2e6f738af4"
+    },
+    {
+      "name": "c\\high-source-opposing.png",
+      "bytes": 2133067,
+      "sha256": "8d009f0490fa841bc638c649bf55fe2e5dc87f87240a593655015eb336a0b742"
+    },
+    {
+      "name": "c\\high-source.png",
+      "bytes": 2199567,
+      "sha256": "8f7385adaa391694cb613f7f972384021e298c7400a2884ac30f641958f4448e"
+    },
+    {
+      "name": "c\\limestone.glb",
+      "bytes": 10957176,
+      "sha256": "ff79f669d6a6f04004317b7daf713406fc072c7f5b9b0473762bd38fac75b84f"
+    },
+    {
+      "name": "c\\native-low.png",
+      "bytes": 2177001,
+      "sha256": "6e3e5d30c4846132a1299757d76043f4289663547afe960d57c40f24a7a3cde6"
+    },
+    {
+      "name": "c\\normal.png",
+      "bytes": 4362678,
+      "sha256": "6985b311df765943af8d47b3163ffaba2cde875aa9c3cbc6f71848e6f768f0b0"
+    },
+    {
+      "name": "c\\portable.blend",
+      "bytes": 11075806,
+      "sha256": "9a203de77a24a5b247a719091e4b39858987e4d975f87f0c1a3cc3b452317ce0"
+    },
+    {
+      "name": "c\\receipt.json",
+      "bytes": 2064,
+      "sha256": "f66c73944f732c3c12646f900ff2fc94ae8528ee76f99d06bfcf579999c09fa7"
+    },
+    {
+      "name": "c\\reimport-opposing.png",
+      "bytes": 2108632,
+      "sha256": "845ce7ec60fe1d93934fe8d0d44ed82a505def8067ebf4801f1b201c081c07c1"
+    },
+    {
+      "name": "c\\reimport.png",
+      "bytes": 2177098,
+      "sha256": "2651dfbb295a97b488916508b2501a39c3ee66ca1dfc8f439b4bf767e06e4941"
+    },
+    {
+      "name": "c\\resolved_bake.py",
+      "bytes": 5174,
+      "sha256": "6f05e34e347e8cfb6a572d80c5f121c70d4ed8954ce244228c519d0aaceb2d27"
+    },
+    {
+      "name": "c\\resolved_verify.py",
+      "bytes": 4671,
+      "sha256": "1781f6e07370b5bbf409c2e89b93a907a7379724b4aa42600988fe6c45bc152a"
+    },
+    {
+      "name": "c\\roughness.png",
+      "bytes": 959032,
+      "sha256": "2e477ea30229fd0fe648f8e04d1abfd7c4fda4a399bbfcf8f80ac07b21e525eb"
+    },
+    {
+      "name": "c\\verification.json",
+      "bytes": 3463,
+      "sha256": "df3c8d344d5a531ffbacd758d2e2d22182a83a5b6067016dd17ac5b6369bb2fd"
+    },
+    {
+      "name": "c-comparison.png",
+      "bytes": 1551774,
+      "sha256": "5797cba95de7a1c7d5747bb0662826367a764c819ddcd4e11525a1297b4b3d6d"
+    },
+    {
+      "name": "finalize.py",
+      "bytes": 1520,
+      "sha256": "90923f6d4eda84d6a40d04690773ba8a1a1f82ead55882eb7fd4c4d30e11f7b8"
+    },
+    {
+      "name": "results.json",
+      "bytes": 12241,
+      "sha256": "bc2004dae803178e01ce97b562c085a0b5cc859b8b04395d929d69bb481e90e1"
+    }
+  ],
+  "method": "SHA256; inventory excludes itself. Review sheets are mechanical resize and labels only."
+}

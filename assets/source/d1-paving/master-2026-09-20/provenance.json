@@ -1,0 +1,52 @@
+{
+  "author": "Codex fresh_stone subagent, inheriting primary agent settings; no explicit author-model override",
+  "reviewers": "Two independent Astra-low screens and lead actual-image inspection",
+  "tool": "Native Blender 5.2.1 LTS via live MCP",
+  "references": [
+    {
+      "path": "assets/reference/concepts/batch-104/kit-002-stone-family-v4.png",
+      "sha256": "a307c0e9c2fba6d25dc77ff47fd9f76da4b733e64e25640f38fd64c11fca42eb"
+    },
+    {
+      "path": "assets/reference/concepts/batch-108/mat-001-cream-limestone-v1.png",
+      "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4"
+    },
+    {
+      "path": "assets/reference/concepts/batch-103/kit-001-paving-assembly-v1.png",
+      "sha256": "2b80a6def3617e1a858b576cc9bb7767fe5ddebae6a2bf2918489a5914c86876"
+    }
+  ],
+  "scripts": [
+    {
+      "path": "build_master_cycle1.py",
+      "sha256": "120d65688eeeea54805cedbab3b444438e4ecb850738a7c76068b15468c13256"
+    },
+    {
+      "path": "build_master_cycle2.py",
+      "sha256": "4580ad00b830fc36997dac23a6d2087b0e96995d3aa41c555080b04cb04c0794"
+    },
+    {
+      "path": "build_master_cycle3.py",
+      "sha256": "c536920f32866540a8665a05b16899985a4f1085c54974f957ffd11921464315"
+    },
+    {
+      "path": "render_comparison.py",
+      "sha256": "76452e101d5ee7d71ded3d84333918a3e3a96cb7085e7c34e6aba37655192fcd"
+    },
+    {
+      "path": "render_master_cycle1.py",
+      "sha256": "7ea2d281934212b8edcb316885e6ccf635e0ff7c94dde213ebe2034f98f5cb47"
+    },
+    {
+      "path": "render_master_cycle2.py",
+      "sha256": "596bb660c2227332550c9d7c25885faca62347cf902bf4b6484533cc244cdb80"
+    },
+    {
+      "path": "render_master_cycle3.py",
+      "sha256": "80b83778d200a2ed4ba301989f875fc2e7910e18b5e81f6633373ea5320b72fd"
+    }
+  ],
+  "status": "All three geometry candidates rejected",
+  "rights": "Internal authored source; reference provenance remains in catalog; public-shipping clearance not asserted",
+  "storage": "19 original PNG/BLEND objects locally hash-verified against LFS pointers and uploaded to configured shared LFS endpoint; no Git refs changed"
+}

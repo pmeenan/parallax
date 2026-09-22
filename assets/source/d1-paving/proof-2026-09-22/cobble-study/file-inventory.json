@@ -1,0 +1,160 @@
+{
+  "scope": "Source appearance proof; full QA/admission/rights/runtime acceptance incomplete",
+  "files": [
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/build.py",
+      "bytes": 14084,
+      "sha256": "3fa204e1e1405ffb29308849245c79e58b3c142e86ad8c7b87e60e6b3720f289"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/build-snapshot.py",
+      "bytes": 14084,
+      "sha256": "3fa204e1e1405ffb29308849245c79e58b3c142e86ad8c7b87e60e6b3720f289"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/consumed-layout.txt",
+      "bytes": 15603,
+      "sha256": "6ed005af4187055ffaf8ce951bfd93f78f23f9a594f722c734d663e9def5b885"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/gray.png",
+      "bytes": 2230590,
+      "sha256": "c902947a1a6dea90b913e0abdfcaa8a2db59156efff167348754e36c914308b7"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/grazing.png",
+      "bytes": 3443679,
+      "sha256": "d7587dca209b93367981e8a22bba62b5b94e462d5980fdf2c3a484e816f51f4a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/moss-contact.png",
+      "bytes": 3111078,
+      "sha256": "d7ceedf154f7eb712eec759c0188f37e54f7f5be360b989dd5c86f2fbf127bc2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/native-verification.json",
+      "bytes": 5646,
+      "sha256": "4f2b295a7f545aa40a4fc5db7a20e81e9e78c88f74e5e0425212af1e7810330e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/opposing-light.png",
+      "bytes": 4062916,
+      "sha256": "060f8fad1425de3187fe88de330bf819572704336c40982e4196c7dbd3f3e4a8"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/overcast.png",
+      "bytes": 3842515,
+      "sha256": "9103ee58597021921caaf27710b73c5949fe9229f5f11a7e16b386d6e72d89dd"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/plant-contact.png",
+      "bytes": 3825377,
+      "sha256": "1245f51c307ea9590e04f1eb2b9d14bbbe3ee0b9a0e5af1bc83e5f9a7fc27ee7"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/receipt.json",
+      "bytes": 187680,
+      "sha256": "3491e3330158579f8bba8325d94e2521abcfec9bf42cdae9bd876f0cfb10d32f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/resolved-bootstrap.py",
+      "bytes": 7690,
+      "sha256": "9f8ff93c33371df6b85174a4105e57e6f78eb35435a4b3ce81a408e3e2f0f8c9"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/resolved-transfer.py",
+      "bytes": 4639,
+      "sha256": "49355c3527ea48a2b180408eb0dd526eb2b5678d9d7952edb671c8397107be6d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/reverse.png",
+      "bytes": 4043803,
+      "sha256": "c5db8c311d5081f541a473352bf1dc5defd1588dde83639619ab6571a57fb6d6"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/source.blend",
+      "bytes": 38608111,
+      "sha256": "c5778d6d17cede747e546d6b4792d7db73f01e31b59bb399e69441b297feea20"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/sunny-oblique.png",
+      "bytes": 4041546,
+      "sha256": "fed914d3cd3d341fffd8e4efa4122fbe4887d2ac8940112ad1b6d266567ca7f9"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/top-packing.png",
+      "bytes": 4493533,
+      "sha256": "d8789eeda45b7d8fd43e2ce9763d9f51348c3d66d371e4342f22151598312da5"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/transfer/native.blend",
+      "bytes": 511258,
+      "sha256": "fec09bae50e8a23398b3dc15ce2078e3de31ca2f09b7f76ec6b3ebd317ce1a22"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/transfer/native.png",
+      "bytes": 2235576,
+      "sha256": "9c5a9845867380b8f07fc50460882b8536d14aa92c763eaac4f0373890c6c364"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/transfer/receipt.json",
+      "bytes": 1443,
+      "sha256": "5425782ff47d6db22f5e7ba0dd7448553361129514e54291843316fed126864d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/transfer/reimport.png",
+      "bytes": 2236261,
+      "sha256": "b2ab2f2700067828004ac101ef0c30630085aa85cac7b725777b32d11dec8f23"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/transfer/representative-moss.glb",
+      "bytes": 592504,
+      "sha256": "2a9bd0005b1a9eb796572fb630691aad7cfce2305b83e0bff7b46294e82fa8d2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/unlit.png",
+      "bytes": 5088430,
+      "sha256": "64226042ad61b6f9a09c315f7515c83f34c056557d17221f63235bf9a022bb76"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/walking.png",
+      "bytes": 5271718,
+      "sha256": "7b97c288b01821600d07ccec6092d501f2c3f45551cb9a739b648538bd255e4d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/finalize.py",
+      "bytes": 4482,
+      "sha256": "c3c5cce2bf197424aaf8a1b7c227eb5e456ad7157de331fb821b56eb3caa7ad1"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/layout-preflight.json",
+      "bytes": 8221,
+      "sha256": "c30d6986659132bfce47af16c056497f9ae7340f084e087fcb59d643e3847856"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/layout.json",
+      "bytes": 8845,
+      "sha256": "df781ea91d22aed058d1c3c0c9f74bcec31f777f3dfa5de799f3ea4f99d7ca84"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/layout.py",
+      "bytes": 3719,
+      "sha256": "baacaf1ebdab9e90022a6bc341cd49c7aec42301ed67ff6578e517b20ab8c485"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/provenance.json",
+      "bytes": 2997,
+      "sha256": "1a41ba13ddd8f2f1ba91ec1eeac298031b86fad0d1615879ac8510501c39edc7"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/transfer.py",
+      "bytes": 517,
+      "sha256": "787c6520109e472c6318dbe7afe52323a8ce0276107a93ec8f218878ff35658f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/verify.py",
+      "bytes": 4353,
+      "sha256": "cfd0edf20cd00486025de896d4749039efadc7e87b89988b89a0104c8dcc358a"
+    }
+  ]
+}

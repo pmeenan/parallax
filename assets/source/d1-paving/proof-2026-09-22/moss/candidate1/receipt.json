@@ -1,0 +1,407 @@
+{
+  "source": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\leaf-color\\candidate2\\source.blend",
+  "sourceSha256": "ce87022690f941b09cd4741b6215e31272beee748b375058c70c29a4ca2c1db4",
+  "seed": 922801,
+  "seconds": 47.85099370003445,
+  "nonmossGeometryAttributesTransformsUnchanged": true,
+  "nonmossMaterialsUnchanged": true,
+  "nonmossHashes": {
+    "Paver 000 C": "2025e9929f87b7d510b9630a72936ad99cdf1ca6ebe5773c0c6d7298edc740cb",
+    "Paver 001 B": "c5ea0d57c00400c58b63ae238d85c0851197cadf3e84d5a4228b83f081a7d438",
+    "Paver 002 A": "2fefee658f79868d3dceeff12e57a19a1a5c94b51445b1e353b46d4ba4d270a3",
+    "Paver 003 A": "20540c7ae35cc5bfe8b164f0e0bc0c5f7e23f82e403b9b4bd359d85dd1243121",
+    "Paver 004 A": "9a96ce85bc7fcb608b6fd389fa79bab1829627c0a8e1de29fea169e8c57b4ebd",
+    "Paver 005 B": "c4d6f973647410f507e23409378301068f6bf73167704e5cd26059594ed07188",
+    "Paver 006 C": "88695ceb7a6a694800c88ef06719f3bd3be896c39bc953bb5261feb56709f1cb",
+    "Paver 007 C": "4ee748406c45275e68f3e46780adf19e0da19e76dca537c4ecff4a4e2a9bbd19",
+    "Paver 008 B": "0f8d674dab4ca8983da92246e9260d2bd50282256e05aef825897b9239a78091",
+    "Paver 009 A": "a2a354bb3fa2a8b37f5002b8561966fd7be2620077203beb5d49a63def5bc279",
+    "Paver 010 B": "bb10fe4a20d13dda4925f5e4ca3842fd386b611d46367e05d761cc28b5f2c1b0",
+    "Paver 011 B": "2a46c4bc0713872b1930ec1ceba8332985da7dd07305ade285ca920d5479ae14",
+    "Paver 012 A": "68ea8a441ef58046936ce6d720d99be7afa7373fcc61297d1135be86e0a64a1b",
+    "Paver 013 B": "0665e2afc8d9a534feb3e92884623515586cc6674b05301ca66a3e8d6166d3de",
+    "Paver 014 B": "975336fa8744b971654beae77d94c875c1baca2b5b1d39ff62994648eeae9b61",
+    "Paver 015 B": "9921f31c5aab166c8f47f8e754eaa8d1ab589bcd9c738b71ec929a27ea6ae76e",
+    "Paver 016 A": "75d27ef8a9512259eacca2f0bb28c37df37b7e1f92cf0b69641abb4b681824f6",
+    "Paver 017 A": "9bcc478c60c6e6900ed1552420108415f44c9938e7fceb37209a11e705bb776b",
+    "Paver 018 A": "71a646a4b8f6a69393136d5b07407515ac849d759772831a7bc397ddcc4e9233",
+    "Paver 019 C": "378587f5b4f8df47c59d72b494d60854509e939588f6073903b52354603b4a3f",
+    "Paver 020 B": "96f6f5745c488deab0b88b4fbeb66e349f55d5926708205785b5d5e46d49eab6",
+    "Paver 021 C": "2f589d29636ee88d67fb79c46bfe0381e0cea1b262dfca5bde8a0cbc2aed998e",
+    "Paver 022 C": "6fa72583e06cf34f1a764a80e5b106bcf46df0e5b996773b02d94776e123b62c",
+    "Paver 023 B": "5238444686595a32f6b73b5b47667db2f50e5851e8a81fef9d986a93cfae8f10",
+    "Paver 024 A": "f069ae6a3e7b6c3866befe4ae30f59e3e19ba60527df16a51f8b07da679fe3e7",
+    "Paver 025 C": "0892fb87355361aa167d3a42d24e1d080f5ac279f3f20ddf975de891a5b3f9a4",
+    "Paver 026 C": "b45cf814a8d6c2dd0a9c31c5a1fdd6fe6caebd2f7e73450c317242caa4765beb",
+    "Paver 027 A": "603caa117cb008b808ff28194b1dd752290c00403e3554d87f9056143bb2879f",
+    "Paver 028 A": "908620b68d12ef5d1b6f337f3c9972c890ca1f585288e582a86401dc261be47d",
+    "Paver 029 B": "eaec3dad55123acac4c6cfa1f57f52b29789e3ccb00ca400680604cae43f8b84",
+    "Paver 030 A": "4da0f38c9dbf6ebdaa011bc2190ceb8986b924c6db7eaabc19da4b9a7ee93197",
+    "Paver 031 C": "7bdd1d451dfdd06284ceae4abd9fe01320d11207ae3d01bc3c00e249eec4c15b",
+    "Paver 032 A": "1e828a933c88fd8352ca04f9d531255782b0e3cd2fc9e4890b11b9993bcc9e65",
+    "Paver 033 C": "b8fc60b6964ec944ce4cf8c628e77526b85d108e6d2c773281dbfb54a25386ad",
+    "Paver 034 C": "c372eea093d6a1467c3682a6624f0fd23246617d6373f6815054c603791eb854",
+    "Paver 035 A": "18d3048d37965fbb6ae816ec043ba2cb976194bfef38482d966faa0f171c438f",
+    "Paver 036 A": "b77981c4cbb19a3efb0156c2da8d124e2d532fb784b546ee2940acb77f795be0",
+    "Paver 037 C": "ade6e6407c4bde793b965a972c52bd22072f26777b1667baded88289aeb4190d",
+    "Paver 038 B": "e346cb87ebda20b39060749d5fae783a9d16664c93ec4863b2757a8c0f919095",
+    "Paver 039 B": "04ff34bb4cbd84bb5f2781bbb51a56c1f7efb6a67b751cd48363315b9b3d6009",
+    "Paver 040 A": "a1a85d459cd9a7b91b37c8220488f60ce5a5259091f440f8dd67748e2ec020d6",
+    "Paver 041 C": "75a8ed0d6274380289a1dffef500d65b3577936f5ba2f7845a46965c491e1f53",
+    "Paver 042 A": "cec2b1e9cfed01dc0fb18b5029fe5c2af58779e286e3265258c1af3e52b5a893",
+    "Paver 043 C": "3443721cbed301f66b1f1ff3eeb70002a772e5c06331dab3c2ff3d8d6de67924",
+    "Paver 044 A": "c4d0886208c4aba9ef9df1947944405ad7bc97631f285a99dd7fb52e455226ff",
+    "Paver 045 C": "25d1031103fcb08ad69b18d3b3d1d5b0a142964e12a974f982e9b187d20d1248",
+    "Paver 046 A": "5406bdfd572e2b21e3627d112359d2f07aec69dfcf02960f0a1a50e499ea7a4c",
+    "Paver 047 A": "1e0d8675c7de40c57c1b82ac885baf826f34024056da25821c218e33d6500d90",
+    "Paver 048 B": "a7c0e813448c50fb2d28e6facef9ff0026b4f2c27343ffda11448b032ba1f20f",
+    "Paver 049 A": "86f842acaad65d17e45dfe186671540335010778d9b226602f70ba0b8eade64f",
+    "Paver 050 A": "d844d4f8199fcea951d45e29450e58e57ae54f20c1f605e7d90f53e4969935f1",
+    "Paver 051 A": "5ebf74b0199194097013c43fe6e16e86bb298e4d62e33ae6bec59cb0fbeeea3e",
+    "Paver 052 C": "ee6175d072d1b3a4694dd3178d9bd491d4aa9c6997c77594b580c5d96451ea3e",
+    "Paver 053 B": "16e445774f034b01ac092a40a184fb4a65e6b38b5e89b699914456a0752b8843",
+    "Paver 054 A": "efc51253df192e3a1ab7feb7c1a17943b931a8e05a69122cb84f0a727827b27c",
+    "Paver 055 B": "cb8903bfbd8b8b42d665fb94564760cd75b896f75351be8734620574e29b452c",
+    "Paver 056 C": "ab47c999c9b6ba9979d220726c9d94ac09a9c020e9fbe88c0522630c04222d58",
+    "Paver 057 B": "327235037e2c25234a1dbb38a0c45df78da50ad7b91a0f3d4798d3b034de3b92",
+    "Paver 058 B": "721e01e08ade3ff15e60e870b39e1a0a4224c151d770b948b1701bbfed513c86",
+    "Paver 059 A": "44040446fc376d7adbfcf252e2c0f86d5440236242176becf2cc14137e6b47a8",
+    "Paver 060 B": "e96cbebb48c5bb6e10056000b2ef86d0355b11efb9720d850f788bba17d4d30d",
+    "Paver 061 A": "37cbca0ea67e1029e6c0ddae7f4f39682265f4db55eb1cb49065e3f95d4f28a3",
+    "Paver 062 C": "441d75c45ae4953b4225907a6068a8b4c1a7c217ac36ae9f34992bd15ae849a2",
+    "Paver 063 C": "ef7f3862d5576712727bd62111bb61493d7cadb12369e3e36472f0c223fb5522",
+    "Paver 064 C": "994694ca3368436eb552a8ca4a4f0b8a3b48d5ba69fabd816faae79850cec398",
+    "Paver 065 A": "a956a38af52eefe2b724a26657e12ccc522acd1905d347d4ac8dcd2530ce4a8e",
+    "Paver 066 B": "7b9e1f6c3c3245fbc46d31e764bba516ac560794a96a4a362dd16be104fa2e74",
+    "Paver 067 A": "1cb3eb0c7a41685d38d788b279c482956e66be629c551fd85f46184587369ba3",
+    "Paver 068 B": "5edd93f9d2c65b4052cbbb02d247c21673829395930e919e9d1b251c4e1e8ab5",
+    "Paver 069 A": "f097b88bbb0e8ede3ea56e1993383de5e8ee94f86e0f4b969ff48d03eeed0551",
+    "Paver 070 C": "e7a89e4ad2dfe505c9bd91a608bf81025a9e748057c83c5120723602ded92b37",
+    "Paver 071 A": "1b2fc8abe2dac3b2c84291900cdf2a9f6b5525b48ade00930edc42069dd14836",
+    "Paver 072 C": "c7e61442e886064bf325f0e15554102c8ea45d4646810ba9c61fb68bee745bc4",
+    "Paver 073 B": "55341a756a435c744988f76811102e9beee5ea6c3d202eadb697a1e1fec4fccd",
+    "Paver 074 A": "ef55f03852a6043fb0af4b85a9a859a3c1fc31aff27ada8b6b15e18b7ccf8032",
+    "Paver 075 C": "56382f105cd668ae5eaa8bd110848233df4b0755f8cac306f3a462317bd35f1e",
+    "Paver 076 B": "d52783c10e4b7c2ec385d35c41f85b82748bcdaa0cbcad1694ee1ca7b1283683",
+    "Paver 077 A": "4039b0adf454ad70372072bd3ce014f30c4485de082257a057894ac8d569d946",
+    "Paver 078 A": "985aa2f0718286027ccd9078d2be5b403af45e47579007b4fcb2261f48213b13",
+    "Paver 079 C": "0f334610646a105ee4d148acb1ce914d884b9cf3de9206165f5b14e02a8f14b3",
+    "Paver 080 B": "60db61ac0d9d5830cb1de2ef5d851368312a4851a2c42c7a9dfeaaf0b9a3d30d",
+    "Paver 081 A": "af35983396019739c32d6ef96ca8a4d6dc9862eab80d85082da3ce1d775d41ea",
+    "Paver 082 A": "b0f165523419520e4b77415c33f981862151088fda6364a8d2a2fc8ee08af591",
+    "Paver 083 A": "1376c8a32914a7fb9cea36ef598989800a89a89a1be35324e964124c945a9a9a",
+    "Paver 084 A": "470140dbc9150843adedb16412d7ed38a132b512aca983924f0b8e3270d82efd",
+    "Paver 085 C": "388caa38dda576ed680f1c45d217a63b4485bbd34aa3a09756adcb49b86d79c4",
+    "Paver 086 A": "26484268276443229b9e87baa57885d4dbe3d5b39006efe6270156e22be04b46",
+    "Paver 087 C": "93177b5d2bf206b34adb057873513b2e63349be7ca8611e34c75c54d2212b165",
+    "Paver 088 A": "fcf24f8a3a85f93bc5bd0b9f2d13cef56f573805be932432680f4c17aada901f",
+    "Paver 089 A": "3176258e599540116d8e80038dbfced441bd23c79ab1ebd41efc59c1a5e5d603",
+    "Paver 090 A": "beed9d0b419881c3caf62586a84196267f9b22bb03702e153e4b5b6a9a26c8cf",
+    "Paver 091 C": "39e50ecfb08a1583600cb9c773afaa2a382f3f1d353575813452c0207754e989",
+    "Paver 092 A": "5faf6b91af613d5f33eb0e84f43b01cd98b30cd12eabcd265aa7e6c613790858",
+    "Paver 093 B": "c1ad682e99c6ff209bcb7750c5ed2285cb01fb9825c63e4072189e3dc838c58c",
+    "Paver 094 B": "17055aa9ac3482ad577ce21970105f7f229d18621470fcc2d7760ef9027e6bb3",
+    "Paver 095 B": "9298468d45964a3d74c952a12c2f3c6d576832e0ca12dfb94a9cf4207a199e41",
+    "Paver 096 A": "5cdbfad849ece17de8bb4f875c1d656c75df31e3a0ae105ac5d9a48986f21d34",
+    "Paver 097 B": "5183fd86bb40af5f21b0783c4c0dcc49048d940c3eea6d2582cad6a6cfa491ee",
+    "Paver 098 B": "f882b272a66b0c43c2b528606912e89cbfbdb58e0651bce52bcd7d33169d3b00",
+    "Paver 099 A": "ea120cf2a61a19a5d9563d748c98de7c9566d874f72ba11e673d128accc948e9",
+    "Paver 100 A": "202192ae40d7a3b50d27221afc2ea41e64520a3573f4322d78692903bbbe9e22",
+    "Paver 101 A": "79a08e8dd44319d876560d6b5d9ced587f6a5b8513445ea99a787c93c20dbf4a",
+    "Paver 102 A": "ef46df60ba02036d3dcaf8003cde6fb5bf248d2c13f675d03f19d4672c7b957c",
+    "Paver 103 A": "3dcb68f31906a09c208d80c783551f83ddd40190cd5453c47f0f38fbc7ea6761",
+    "Paver 104 A": "a726f9cf74652b9d1f9c75c8c66760849a4039179418514131c572272223a3a7",
+    "Paver 105 A": "f9b0ae34562ac5b10fc3c8c5418307ab8ca1f240c531b8aa7529d9fc7a429da4",
+    "Paver 106 A": "b1b6dcf265df4264f4ed06890fff5b0b9b674fad8d6edf50080100c242aa3236",
+    "Paver 107 C": "18c86ea3974b397e211c2971c187aa69dd51bb140aa1608a70276eccda2c6b5a",
+    "Paver 108 C": "49e04993c5bb6a05de77cc82d7c215bb0e20667d7e75d53ccc9f1d8dbea65ac0",
+    "Paver 109 A": "0f1130972bda5c34e5ca804b1ec38120c0fcd03638b54de0c3adc88cf411ec08",
+    "Paver 110 A": "73cc54f76af3149850acf751a09899d1505a26097403b675bf9851e7f90d02f3",
+    "Paver 111 A": "fbc87d9333e64bb4861daaeedd66012144a5060179cc49096dbb01293ec0d1c3",
+    "Paver 112 B": "e2dd6790f4c9c4fd7353d8cbd9b8c24739a364fd498943f795a0d8920a3ff645",
+    "Paver 113 B": "8e5d02736c487b7768e23b0c5975a69d270e31d11940d07604d8c9a75d4fddac",
+    "Paver 114 A": "c497d803a5a7344e08653d6cf9e37d89b0cc9db1af96cb879a29542eae804a1f",
+    "Paver 115 C": "60a1e665ecf79c7f94226c71e8c5fbab5b7a063c05b2d79e5d18a6f03b6a1220",
+    "Paver 116 C": "aae6083fcd68616aa091c31329f1688f8c9625d7c980f9ee9ea88d757880332d",
+    "Paver 117 C": "7b064fabd82b1e2ff337a61651ac8975591fa9421373ba3b67f7320a547fb8e6",
+    "Paver 118 C": "c78cd0891468c7e4711bca12cc7e141c544fc2f9bbd086c40c174c3492fe173c",
+    "Paver 119 C": "7a94e07ccb3213b0f712e3472b1ead8a5522f26553bb4ef2258e3f61e959d394",
+    "Paver 120 A": "01dd8ed91998e683b70876ad587d51eb83ec7c7e65d66aea38c75ee316f9e6ef",
+    "Paver 121 A": "1162a2aff791899755bd81c5e5dacf97d12d9ed61bcaa44ce09a864c11d71bb3",
+    "Paver 122 A": "af66d40dbfcc47fc437a0f925d5021dba5883717062dbbdb92668e9b6686afc8",
+    "Paver 123 C": "f41a597647a7d6255336c562502bb659718e45cb61fecbf2713d27af73e8dafb",
+    "Paver 124 A": "8ebafd157109c0450e3bb0c340c28565eef189fcfea923cd7da80365b6a5c53f",
+    "Paver 125 B": "e4d94e9d89e5b17f52be2a9746c62080d94bc695e9b8dd06b91327e203cb0001",
+    "Paver 126 B": "76bdb512ba293105c729a467b71a34b12d5cda5ab3c73836a7e6a1fbf6ea8a85",
+    "Paver 127 B": "af47468397ac2349b27239c1de7ddad1f7befb3d2614ab37a00aa994f89cc626",
+    "Paver 128 B": "121c6e293786ee538f07228e0e1d5283dc976508ed79844e094f72c325079d6f",
+    "Paver 129 B": "212378f94fd133a6d7163dd418091685d2d2785002c0927e4f79e4d707016dae",
+    "Paver 130 A": "aeaba07aba527a6304a4a490fd93db5fa17d78454269b7ce7fead4ef433341f6",
+    "Continuous adaptive compacted earth": "57732688c8ef92ff1f123553a2bd482ed9a3e0ea3f419293ef841065ecdbbc4c",
+    "Sparse embedded aggregate": "5c60901b987f9d51341fcf1b7ff798aea0a68eedcbeda2b45a8ed5d3f2590fd7",
+    "Broadleaf weed 0": "6808429f5fd722866178f54df48efde82ea72c1af2d9addc4838fed9752b4113",
+    "Broadleaf weed 0 petioles": "b40a940eb578fdf1782cca2d86717acf7b18963a8ba16c9dcb0271aaa433a40e",
+    "Broadleaf weed 1": "30670453d7aecc051fd58db167e088eca10ad6e49e355d396dc3eb07e1fcf093",
+    "Broadleaf weed 1 petioles": "95aef34669cd8f85575881b7aeef490007d4a1f91b2fa3e31270fe7dce81a9ee",
+    "Broadleaf weed 2": "2d4f25098edd98e947ce008565bae998c661a7fe81e80157877f9b1f894c15e2",
+    "Broadleaf weed 2 petioles": "d0a21f619987fd62816037dcc6d29dc41b5fa5257911da06ac3264563e2e2d8d",
+    "Broadleaf weed 3": "f0be2ecb84ab5f77997adacbbcc01ea2ca796843a8e896f14a60a473d2303ff3",
+    "Broadleaf weed 3 petioles": "bc41e4b4e68626186b7bbaecc25c35a9cda1eca30d96b2ba92bcd30a4b7f711b",
+    "Small seedling 0": "77ded3b7551e2287e50b952105e4cf1d2d35760c5033bd9a8177cad84bfa3c3f",
+    "Small seedling 0 petioles": "141a29429d8c9dc7c9cf5d85af200de7b5d5f597d0574668f15336d0b9408daf",
+    "Small seedling 1": "b32dfbae071502616358e197ea9b6d06a406573fd4393d530d6e2d1494e6f396",
+    "Small seedling 1 petioles": "89b2eb67bd5adac336e6610b2dd3c373d7fa90772d6d601f2d9b35834100707b",
+    "Small seedling 2": "ad771ddf4fd80ede040aa3a9a28c60a963b2a881129382666f416327513cccfc",
+    "Small seedling 2 petioles": "cd53ed6a5c4b93e26cdfab1af12d099d8c8ddf2392f76b20c265667f3695200b",
+    "Small seedling 3": "8c7b2c26d9d17e9365c97db371ca5fa45c016de3b46093aadc4728bc393a4939",
+    "Small seedling 3 petioles": "e4b2d1cc7cf53d30ebc02f5c20c33d1c9eb61297b876ed0a1edca0bd8a334b32",
+    "Small seedling 4": "39e14c082f580e5157d466047a52c15bb05a1e117d48ce8c98e7a6edba0f81f9",
+    "Small seedling 4 petioles": "f75199226679afaff1548131dda9a821d883374e27e36e466155f26b575ef9c7",
+    "Bowed uneven grass 0": "4b977fe3f0f75b3d8cb93287fc3e13fcbddd36b3b8c9cdab8b9c22c516c51bef",
+    "Bowed uneven grass 1": "d86a06a34cf2b33f44048bfa8d1f146616bd1c3cfd5f8b82281ded1b0d690d5b",
+    "Bowed uneven grass 2": "f0dfb64b6067ddd43e22544d2f815542c4e3bf4e4ed282ef5bf70eeceb77432b",
+    "Bowed uneven grass 3": "d2144d98690cb89422fe0c935265e7f80602e8447a268ba90d8ce319337e4c52",
+    "Bowed uneven grass 4": "d70489cc79c3aa353f60872d15f141a57a0c8bd7a72a46e4c32f7246cac7a3a3"
+  },
+  "materialHashes": {
+    "Baked limestone standard PBR.004": "c9c53b1e5c88094d4d27913b91dc9c7f65138efd46ccf2c0cd485ac4c82152d1",
+    "Baked limestone standard PBR.002": "f491ed4c869241f0d0acfe8f377576bce6c75c0ecf081c068a3dc05aadd32030",
+    "Baked limestone standard PBR": "350a6b4994d4b65676fb2d2a8b2479e8b81030ca7daf014fe88025b80324c8d7",
+    "Compacted mixed earth contact1": "611d5c3278c6342a16f7ea6ba2211a7c91e52e354569b15c296191f5cd8000f6",
+    "Sparse pale embedded grit": "b6bd1b285a2fc051c0dfeabafc2634eee65ec1404608223bd4bcc42b8558b18b",
+    "Sparse pale embedded grit.001": "b6bd1b285a2fc051c0dfeabafc2634eee65ec1404608223bd4bcc42b8558b18b",
+    "Sparse pale embedded grit.002": "b6bd1b285a2fc051c0dfeabafc2634eee65ec1404608223bd4bcc42b8558b18b",
+    "Sparse pale embedded grit.003": "b6bd1b285a2fc051c0dfeabafc2634eee65ec1404608223bd4bcc42b8558b18b",
+    "Authored joint weed color normal roughness": "f2c4af4e95036581cd24f787a2cd4e22b0a6be0104a485d28220b512e4800979",
+    "Living short petioles": "25bfc12a380f479aa0f2ebcfb06917739b7060262d4209dddc4b0f8fdc53fa37",
+    "Muted joint grass": "25bfc12a380f479aa0f2ebcfb06917739b7060262d4209dddc4b0f8fdc53fa37",
+    "Subdued old grass blade": "25bfc12a380f479aa0f2ebcfb06917739b7060262d4209dddc4b0f8fdc53fa37",
+    "Fresh grass blade": "25bfc12a380f479aa0f2ebcfb06917739b7060262d4209dddc4b0f8fdc53fa37"
+  },
+  "colonies": [
+    {
+      "name": "Leafy moss colony 0",
+      "center": [
+        -0.14670388877391816,
+        -0.0006196223944425483,
+        0.06273916363716125
+      ],
+      "shoots": 390,
+      "clearanceAtCenterM": 0.00656853985751936,
+      "triangles": 13260,
+      "rootDepthM": 0.00012,
+      "maximumShootHeightM": 0.004476271569728851
+    },
+    {
+      "name": "Leafy moss colony 1",
+      "center": [
+        -0.7134632468223572,
+        0.3281654417514801,
+        0.06509986519813538
+      ],
+      "shoots": 353,
+      "clearanceAtCenterM": 0.004637777805328369,
+      "triangles": 12002,
+      "rootDepthM": 0.00012,
+      "maximumShootHeightM": 0.004656106233596802
+    },
+    {
+      "name": "Leafy moss colony 2",
+      "center": [
+        0.14368277788162231,
+        1.076711893081665,
+        0.06351009011268616
+      ],
+      "shoots": 301,
+      "clearanceAtCenterM": 0.004130139946937561,
+      "triangles": 10234,
+      "rootDepthM": 0.00012,
+      "maximumShootHeightM": 0.0044768452644348145
+    },
+    {
+      "name": "Leafy moss colony 3",
+      "center": [
+        -1.28573739528656,
+        1.1799521446228027,
+        0.06598725914955139
+      ],
+      "shoots": 390,
+      "clearanceAtCenterM": 0.005504965782165527,
+      "triangles": 13260,
+      "rootDepthM": 0.00012,
+      "maximumShootHeightM": 0.00475127249956131
+    }
+  ],
+  "sceneTriangles": 681469,
+  "mossTriangles": 48756,
+  "supportHeightRangeM": [
+    -0.0001447051763534546,
+    0.00475127249956131
+  ],
+  "stoneVertexViolations": 0,
+  "rejectedShootCandidates": 0,
+  "views": [
+    {
+      "name": "close",
+      "eye": [
+        -0.10170388221740723,
+        -0.05561962351202965,
+        0.1597391664981842
+      ],
+      "target": [
+        -0.14670388400554657,
+        -0.0006196224130690098,
+        0.0647391602396965
+      ],
+      "lens": 55,
+      "mode": "full",
+      "opposing": false
+    },
+    {
+      "name": "close-opposing",
+      "eye": [
+        -0.10170388221740723,
+        -0.05561962351202965,
+        0.1597391664981842
+      ],
+      "target": [
+        -0.14670388400554657,
+        -0.0006196224130690098,
+        0.0647391602396965
+      ],
+      "lens": 55,
+      "mode": "full",
+      "opposing": true
+    },
+    {
+      "name": "close-unlit",
+      "eye": [
+        -0.10170388221740723,
+        -0.05561962351202965,
+        0.1597391664981842
+      ],
+      "target": [
+        -0.14670388400554657,
+        -0.0006196224130690098,
+        0.0647391602396965
+      ],
+      "lens": 55,
+      "mode": "unlit",
+      "opposing": false
+    },
+    {
+      "name": "close-gray",
+      "eye": [
+        -0.10170388221740723,
+        -0.05561962351202965,
+        0.1597391664981842
+      ],
+      "target": [
+        -0.14670388400554657,
+        -0.0006196224130690098,
+        0.0647391602396965
+      ],
+      "lens": 55,
+      "mode": "gray",
+      "opposing": false
+    },
+    {
+      "name": "walking",
+      "eye": [
+        -0.04670388251543045,
+        -0.380619615316391,
+        0.914739191532135
+      ],
+      "target": [
+        -0.14670388400554657,
+        -0.0006196224130690098,
+        0.0647391602396965
+      ],
+      "lens": 55,
+      "mode": "full",
+      "opposing": false
+    },
+    {
+      "name": "overview",
+      "eye": [
+        4.400000095367432,
+        -5.5,
+        5.699999809265137
+      ],
+      "target": [
+        0.0,
+        0.0,
+        0.05999999865889549
+      ],
+      "lens": 50.0,
+      "mode": "full",
+      "opposing": false
+    }
+  ],
+  "sourceOnly": true,
+  "rightsReviewed": false,
+  "reference": "batch-116/veg-001-courtyard-joint-plants-v1.png; moss morphology is original authored extension, not a depicted species",
+  "limits": [
+    "Plant4000tri target exceeded by explicit source microgeometry",
+    "No runtime validation, baking or LOD",
+    "Conservative stone footprint vertex tests; no full triangle collision solver"
+  ],
+  "files": [
+    {
+      "name": "build.py",
+      "bytes": 10209,
+      "sha256": "0cf5a1bb3eac2b5d677576d3ba3e9321aa70963e86b8f0eef7d9e92739d2a606"
+    },
+    {
+      "name": "capture-repair.py",
+      "bytes": 2303,
+      "sha256": "66d047b2dd9f5ec3ff48f54c88bf63a7ed56a434aa5ea6472ab48d96c435ff98"
+    },
+    {
+      "name": "close-gray.png",
+      "bytes": 12623162,
+      "sha256": "46639a01461479cedb29f3defa4a78bc50cd69155d76778d8bca5c090cb6cff8"
+    },
+    {
+      "name": "close-opposing.png",
+      "bytes": 12035861,
+      "sha256": "25afc4c082cf477cea0a61524b81fc5b7f4fb67cbb506379546bdce364f5633b"
+    },
+    {
+      "name": "close-unlit.png",
+      "bytes": 12519421,
+      "sha256": "2e1843d9eb09ea62a622f834c7447d6bc609bb4bc21b04bff26d50f215d61235"
+    },
+    {
+      "name": "close.png",
+      "bytes": 12601382,
+      "sha256": "582b47901ea33e73e7e4225cd45b1980a18b35cdb6513d591db0852b64025bf1"
+    },
+    {
+      "name": "contact-sheet.jpg",
+      "bytes": 253050,
+      "sha256": "cec2522ea502fe591cf46d3603be955d92b610f05357e1bbacaf447cb98882e1"
+    },
+    {
+      "name": "overview.png",
+      "bytes": 14511431,
+      "sha256": "37ea15e22d00a108f5d795aab7d9aac293de05b53ee349c9bba4b4cd0a18f6af"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 41358321,
+      "sha256": "68340228638c500978fa4f1e497b48825690532f34357b237d2c4e65a965c0ec"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 14579894,
+      "sha256": "8abf5c5a08c878c03b31b45af7fbd74798f5acdf07d3cfa8bde4a82aae723d00"
+    }
+  ],
+  "diagnosticCameraNearPlaneRepair": {
+    "originalM": 0.10000000149011612,
+    "closeCaptureM": 0.001,
+    "sourceCameraUnchanged": true,
+    "reason": "Macro camera inherited0.1m clip plane intersected foreground stones; capture-only correction, no art revision"
+  }
+}

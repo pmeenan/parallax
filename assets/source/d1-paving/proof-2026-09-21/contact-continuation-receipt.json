@@ -1,0 +1,46 @@
+{
+  "files": [
+    {
+      "sha256": "85c28555c6105974d1e3806188e31da1161ba90520992e18a578be1f323df89a",
+      "path": "family/candidate2/source.blend",
+      "bytes": 220036624
+    },
+    {
+      "sha256": "566c672e664db3c391e9e51271f05902da1640dd44b374f9f446c9f893491f22",
+      "path": "family-contact2/resolved.py",
+      "bytes": 9690
+    },
+    {
+      "sha256": "fd36de8b66486c1c3a7fc353f732417da5ed68fa4c19fb2c07be48a92abf519e",
+      "path": "profile_contact.py",
+      "bytes": 3921
+    },
+    {
+      "sha256": "17bee02cdcc21843965188a596b853eaab21102a54fd08c7f0984d41f69baa1c",
+      "path": "profile_contact2.py",
+      "bytes": 711
+    },
+    {
+      "sha256": "99f728253a7353e076672f0486f166a1b8de192d86c87dfbe4f911fcb98fdf27",
+      "path": "diagnose_contact.py",
+      "bytes": 1782
+    },
+    {
+      "sha256": "505ee9547234d4c39fa1cef83c5c95c47e0611c6a1c870ae45992f2a035dfe6e",
+      "path": "profile-contact2/diagnostic-gray.png",
+      "bytes": 2112630
+    },
+    {
+      "sha256": "672f9195ab9ddddd1ed51454af8185bae13e07c9d2125afd7fe80faed3214ad4",
+      "path": "profile-contact2/diagnostic-regions.png",
+      "bytes": 1726216
+    }
+  ],
+  "visualReviewReasoning": "low",
+  "rightsReviewed": false,
+  "author": "Codex",
+  "outcome": "Two fitted-contact candidates screened; profile2 rejected; diagnostics identify shadowed sidewall, not a continuous void. No full-patch or runtime pass.",
+  "verifiedReceiptFiles": 12,
+  "sourceOnly": true,
+  "visualReviewModel": "gpt-6-astra"
+}

@@ -1,0 +1,168 @@
+{
+  "tool": "5.2.1 LTS",
+  "seconds": 70.85832410003059,
+  "scene": "Paving proof family candidate2",
+  "objects": [
+    {
+      "name": "Family A",
+      "material": "Family A candidate3 mineral material",
+      "dimensionsM": [
+        0.4062465727329254,
+        0.30688390135765076,
+        0.08242341876029968
+      ],
+      "seed": 713,
+      "triangles": 1730560
+    },
+    {
+      "name": "Family B",
+      "material": "Family B candidate3 mineral material",
+      "dimensionsM": [
+        0.3067311644554138,
+        0.2933093309402466,
+        0.08211959898471832
+      ],
+      "seed": 787,
+      "triangles": 1730560
+    },
+    {
+      "name": "Family C",
+      "material": "Family C candidate3 mineral material",
+      "dimensionsM": [
+        0.5159910321235657,
+        0.256402850151062,
+        0.08239900320768356
+      ],
+      "seed": 829,
+      "triangles": 1730560
+    }
+  ],
+  "views": [
+    [
+      "oblique",
+      [
+        0.79,
+        -1.0,
+        0.94
+      ],
+      [
+        -0.04,
+        -0.04,
+        0.045
+      ],
+      [
+        -1,
+        -1,
+        2
+      ],
+      50
+    ],
+    [
+      "reverse-light",
+      [
+        0.79,
+        -1.0,
+        0.94
+      ],
+      [
+        -0.04,
+        -0.04,
+        0.045
+      ],
+      [
+        1,
+        1,
+        2
+      ],
+      50
+    ],
+    [
+      "walking",
+      [
+        0,
+        -0.75,
+        1.65
+      ],
+      [
+        0,
+        0,
+        0.04
+      ],
+      [
+        -1,
+        -1,
+        2
+      ],
+      45
+    ],
+    [
+      "top",
+      [
+        -0.03,
+        -0.03,
+        1.5
+      ],
+      [
+        -0.03,
+        -0.03,
+        0.04
+      ],
+      [
+        -1,
+        -1,
+        2
+      ],
+      48
+    ]
+  ],
+  "derivation": "A candidate3 control; B/C bounded nonlinear field warps (0.015/0.006 amplitudes) and aligned smooth-mask recombination of two retained input zones at unchanged spot scale, with independent geometry seeds/dimensions. Residual candidate3 source lighting remains.",
+  "limitations": [
+    "Residual source lighting inherited from candidate3",
+    "No contact/soil, portable bake, full QA or game claim",
+    "Rights review remains open"
+  ],
+  "inputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\candidate3\\resolved_build.py",
+      "sha256": "46ecca6e8e5a033c479ed4a5891b3c969eac7a6add23583712885d2552eb8795",
+      "bytes": 16435
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\candidate3\\provenance.json",
+      "sha256": "3ae2ddcc3ced9d884f13b183cad2ad36ff2d0b114ef0b4a4f8f291a9ce0ceb6e",
+      "bytes": 3615
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family\\build_family2.py",
+      "sha256": "051c3a3c8a497e0f9f4eddabd82e4be2870cede8269c171656b73b3622c2cfc3",
+      "bytes": 7208
+    }
+  ],
+  "outputs": [
+    {
+      "path": "oblique.png",
+      "sha256": "2786c2ea98b9b9ced3320205ed69776e5521317439eb4f9e992d04f844bd0b76",
+      "bytes": 2710423
+    },
+    {
+      "path": "reverse-light.png",
+      "sha256": "d737bb1e1cc5244102ac69f2cbec96f0934e3d2bc6a438412922f37a2346be74",
+      "bytes": 2728076
+    },
+    {
+      "path": "source.blend",
+      "sha256": "85c28555c6105974d1e3806188e31da1161ba90520992e18a578be1f323df89a",
+      "bytes": 220036624
+    },
+    {
+      "path": "top.png",
+      "sha256": "79832f385d466cdbbe4cfb563bb43e8352047b7ae46e19adc87a219e12d2ad88",
+      "bytes": 2873374
+    },
+    {
+      "path": "walking.png",
+      "sha256": "26abd4a5f9344a865ac7740ae646395fc6ebaa31b3e2b53a207af0901771214d",
+      "bytes": 2636525
+    }
+  ]
+}

@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "root": "assets/source/d1-paving/proof-2026-09-22/production",
+  "files": [
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/build.py",
+      "bytes": 12167,
+      "sha256": "8ce57cb96bdf37e91d00120a98e0e913ac99f5d38b9fd4aed5621d9f4a027140"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/build-snapshot.py",
+      "bytes": 10913,
+      "sha256": "757bcedda2b86db413f4b0b9b70a4f8f52a538fc69b2dba3f4b9460e4bf2162d"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/gray.png",
+      "bytes": 2220040,
+      "sha256": "cf6796ae1de7b3bc5265cb8befb4a9debc024beeaf664c2b56b0f0361ed6225a"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/grazing.png",
+      "bytes": 3443486,
+      "sha256": "ca776bab22f01ceee873b5530f6ed11d931b568c34deeba5ddbcca890d95faa3"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/moss-contact.png",
+      "bytes": 2899626,
+      "sha256": "0a13f4ea1ec87fb4e172bdbc1561183e71c9ed6c9f7c2f8812e187451e0f019e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/opposing-light.png",
+      "bytes": 4070086,
+      "sha256": "13fa5cee270e083ea0748ff0b58fa0e57d4093f74de378a57f979dc805defe0e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/overcast.png",
+      "bytes": 3852654,
+      "sha256": "5e473ba02069c9ee51133c49ea8f596a13c515561a431c09736c19821d0ee8d2"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/plant-contact.png",
+      "bytes": 3819542,
+      "sha256": "da06824db72672d13a492cc4138af52d94deba47fe1a56af519db0398cd3f221"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/receipt.json",
+      "bytes": 23533,
+      "sha256": "346cd80a47c63ec108fe0de7ea909967edf294761a3cd5ce93b6ca1c47758e75"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/reverse.png",
+      "bytes": 4051524,
+      "sha256": "6ccc043d32968d28beeef3d6005cbdb4a67a074ac5e68656fd7ebcee209d7aa9"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/source.blend",
+      "bytes": 35187300,
+      "sha256": "c7612d7a3ab09ee6dbb2acf690a90de8194ed8bf99e1d3375a45cb7fe6dd1f74"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/sunny-oblique.png",
+      "bytes": 4051493,
+      "sha256": "58858717ae280eee8a555b844d5549a2c25d5bc85b4ea657e884dc556c781bde"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/top-packing.png",
+      "bytes": 4497596,
+      "sha256": "b4902dec85bc96124d12f01d3db0a5f4afcf04d6c47981529609419f25f1e37f"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/unlit.png",
+      "bytes": 5084264,
+      "sha256": "810483d2c401fbe499db95d1e599b320b903653a8d7fbd2e3d778d8e28145e67"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate1/walking.png",
+      "bytes": 5269272,
+      "sha256": "00866a31d1764189e837633d3bc55d6dc919e872b7b3f95e00ddbd8fe2cbda9d"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/build-snapshot.py",
+      "bytes": 11757,
+      "sha256": "6c09efcbbadfc4151f3650acca5896ba324d5f3c877ad5d14cab3a2f26463fd3"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/gray.png",
+      "bytes": 2227228,
+      "sha256": "20863a6d149d3c53ddf12da946d6c397ab9de17a7c60db203040fbffda61c95e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/grazing.png",
+      "bytes": 3443344,
+      "sha256": "17b1cf6c52142e03f83fa5b36a20258cf350e5063621ac82aabab749519dc832"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/moss-contact.png",
+      "bytes": 3090573,
+      "sha256": "6e5a820cc195993ad9441e4fcc3ab0f0665f99b1276a19b66b0bdf0fbad64509"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/native-verification.json",
+      "bytes": 36021,
+      "sha256": "10d5904facb30e920075c68f45c20dd689bcad2bc0455257c4c2107e5e2ff707"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/opposing-light.png",
+      "bytes": 4062364,
+      "sha256": "8f6f0afecd899ecc2209497e9f89a135de68b2ad3bd093274dbfe42f11dba2aa"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/overcast.png",
+      "bytes": 3842465,
+      "sha256": "f5cf886bae4cf49437b1ee8a0b9eafdf9c820aaac6a1412a2fb98b519884e03b"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/plant-contact.png",
+      "bytes": 3824094,
+      "sha256": "affdf60609f637b9b50a41886ed963a8ca1bcf4e91226ffaacb2039520297206"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/receipt.json",
+      "bytes": 37441,
+      "sha256": "acf7518c2cb8ea77796bfeb9da25cc3faefdc8e8219798b4a0a7f97a057f90bf"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/reverse.png",
+      "bytes": 4042631,
+      "sha256": "a453fa902340d0008278a83e9f05ed99771909e111af4c882ebfcb1eb9205578"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/source.blend",
+      "bytes": 36725569,
+      "sha256": "f78e5706b46b11fca657b43e91130400438976e6aeb21b67dc7f8be20c7e9203"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/sunny-oblique.png",
+      "bytes": 4040036,
+      "sha256": "ad39e02d70d42af748438b3b9b88550d8451e170a3b8cd320e74b862ad946d9c"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/top-packing.png",
+      "bytes": 4489920,
+      "sha256": "093dc2545bdc28dcd37975eaebbd6bcba37c9a129ee82468d9870c00eaf64007"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/unlit.png",
+      "bytes": 5087046,
+      "sha256": "b2db52365acc940b1468077d1cc9528e45f7d684cc8f3cafa342bab510860934"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate2/walking.png",
+      "bytes": 5273301,
+      "sha256": "739ee5e812bf173de8eeba0cd85ec7b03b1d67d662d89efc06bdc2bc27729d51"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/build-snapshot.py",
+      "bytes": 12167,
+      "sha256": "8ce57cb96bdf37e91d00120a98e0e913ac99f5d38b9fd4aed5621d9f4a027140"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/gray.png",
+      "bytes": 2229512,
+      "sha256": "d1338afdfc0509bbfa47642799575828bc24ccfa051a1438746805690f5bf82d"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/grazing.png",
+      "bytes": 3443922,
+      "sha256": "89c83fc04b78c63b6e331b159609a23b1f18ac0cd1801df3721ee017e4bfa85b"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/moss-contact.png",
+      "bytes": 3101463,
+      "sha256": "be04ae96003156ed49b54666fcf65fb05cd3b32427cd34b6052ad7d796af239e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/native-verification.json",
+      "bytes": 36325,
+      "sha256": "a62ae4b4380a88eec51a2804cf69a6c209c99d8f4e5586393a61dcd0ac11cdd2"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/opposing-light.png",
+      "bytes": 4063059,
+      "sha256": "669c9254b99301bcd53039fa9ebb3554c5f5723d32f0d2587afe77df3e710b37"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/overcast.png",
+      "bytes": 3842954,
+      "sha256": "c81080048f549f0534eed012f493f770dfac76c1427e75e5acde57d8f410c9be"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/plant-contact.png",
+      "bytes": 3826868,
+      "sha256": "5ebf2719631b5ce8d40a4c439d0e8e726d7fc379b76610c6fd6522a58c66d316"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/receipt.json",
+      "bytes": 37481,
+      "sha256": "21d23f72f904cf2e9561b492ea5c3ea49d1fabd61bae237d2a81c7d90b397fb0"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/reverse.png",
+      "bytes": 4043317,
+      "sha256": "9efac629df6f72a23fcde3ba7d5067e889da5cd2f11400fcde5bb0e9e4d89260"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/source.blend",
+      "bytes": 37143811,
+      "sha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/sunny-oblique.png",
+      "bytes": 4041560,
+      "sha256": "78e57302ff92fb52e972d5a5251564cd775a42059afae3b2daa7005a4abb63e4"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/top-packing.png",
+      "bytes": 4492115,
+      "sha256": "ea457c9e52e6480d8ee53eb7d210399ef4a0b2e45c15e53360b584eab591f333"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/grit/native.blend",
+      "bytes": 806780,
+      "sha256": "2469732f055e7e4895f54c177a61ccba0c8d7918ef624e7b7080effeb6979aed"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/grit/native.png",
+      "bytes": 1559552,
+      "sha256": "43856f38a08f93ccec4e15090b0337f89b0f1bcc74eab9296ff6ac4e16bfb3f5"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/grit/receipt.json",
+      "bytes": 1401,
+      "sha256": "2a007e2594789129f60a576d8fc6d366b8f731a23eb3474d9c20c2569ad6048c"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/grit/reimport.png",
+      "bytes": 1559447,
+      "sha256": "8282465a345d730530c5aea0ab800f02c5baaf30f62cad184d5a96e4ea0f95aa"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/grit/representative.glb",
+      "bytes": 746608,
+      "sha256": "2bed5ba3546a3bee820a5e57363076fd67e0979feaa43f907e138f1eccd90aa7"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/leaf/native.blend",
+      "bytes": 2872332,
+      "sha256": "d85074cd67e16c3d1759532efe9042a4d7883606a99676011ca3d05c7380791a"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/leaf/native.png",
+      "bytes": 1730230,
+      "sha256": "06e1f27abcb2c4387826fa77c922467bfef539a73f55dada73fa48c9573e3676"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/leaf/receipt.json",
+      "bytes": 1477,
+      "sha256": "e5ba97dd7881a56ec3674773eb7340af727870244f5aaec4192150fbfcfe43e8"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/leaf/reimport.png",
+      "bytes": 1712732,
+      "sha256": "c8bbf59a3161038df0648b2b3e0392e73f317ec3d096dbded15795f0152bf53e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/leaf/representative.glb",
+      "bytes": 2465328,
+      "sha256": "a52a2fdc72ccc956ec405de9a89aea2fde63dcd83e10821c33d1b9f559ed4e2b"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/moss/native.blend",
+      "bytes": 364380,
+      "sha256": "8e10096053b5b75c32ade544f4128244a1abb7d69b7d9a37a90d390da8950bc7"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/moss/native.png",
+      "bytes": 2216942,
+      "sha256": "4e3bda234a3fa1c9f7a9df7482b88e08a26638d9afaee2935552031910340042"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/moss/receipt.json",
+      "bytes": 1414,
+      "sha256": "0afd388cdb7cf8701525a5ee9f8d8d1cebebace2be0983078bf48d5e6a6908f4"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/moss/reimport.png",
+      "bytes": 2217564,
+      "sha256": "a31380514036e6e9fcacb597790135397c47d1389cd75c9d720ddbb6c42179cf"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/moss/representative.glb",
+      "bytes": 472396,
+      "sha256": "f87e3c5fb5a29fc5602b11f884eb461ef6a10012f1bb8d484166a43ec0f256de"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/transfer/summary.json",
+      "bytes": 4939,
+      "sha256": "039229b9404abbb121ebf4ff270bbf6049c3c58716e80bcc5f4246a4674f931a"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/unlit.png",
+      "bytes": 5087695,
+      "sha256": "31110d7ee66824b824092fd4d373615e179c72c89b8454cfbae6cd83da5c9d82"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/candidate3/walking.png",
+      "bytes": 5274471,
+      "sha256": "80d6198f58c480d83f3f6848efd3bbc26111e29268762de4075f868bf4cde283"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/finalize.py",
+      "bytes": 4235,
+      "sha256": "1b1da0681fefb00be6de7a16d96deacce269537547f0132e33a4fa045eb509ff"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/provenance.json",
+      "bytes": 2794,
+      "sha256": "4ec774a3dd6b6308a0935e4a1fab985339f26fd993f9deebec9a80e4d398b312"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/quality-candidate1.md",
+      "bytes": 2499,
+      "sha256": "69c513ca8cb15caf73865ff37c68c54b855fbb02adf40f7de62e5b84ecd6810a"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/quality-candidate2.md",
+      "bytes": 2613,
+      "sha256": "03de641fa1656dd25a56f9ab7bfe4d8f1f2e04a7f979520fa2bf60c2e21a90f8"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/quality-candidate3.md",
+      "bytes": 2782,
+      "sha256": "f4a31288b90ab25bddeecb2c55a098998ea675846684667fa56b5de7c002f4bb"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/theme-candidate1.md",
+      "bytes": 3003,
+      "sha256": "8ca595ba646ac848c96f8216ada3980d8d2935dd9a678e59139a6fedf3a2da03"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/theme-candidate2.md",
+      "bytes": 3391,
+      "sha256": "abeee7021578abd699ca7e5c21378c1c2f24ccb1c767740077e43a1e9ea1e8bf"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/theme-candidate3.md",
+      "bytes": 3190,
+      "sha256": "17226e472d196c23ba26699982a76a736d9f0f5e74eb2021d55f1a12c6092a5e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/transfer.py",
+      "bytes": 5894,
+      "sha256": "9c3e73915aee2ddb6afdbd47ae4e38d08593e014eca392997f407837f4069b6e"
+    },
+    {
+      "path": "assets/source/d1-paving/proof-2026-09-22/production/verify.py",
+      "bytes": 7254,
+      "sha256": "855f66a7a6bd4319972720aa8eebd8a944a4b77352c46f3fd0cd856e85ccf044"
+    }
+  ],
+  "verification": "Declared candidate/transfer file hashes, original source hash, reopened-source receipt and GLB containers checked; Python sources compile",
+  "limits": "Inventory integrity is not production asset QA or runtime acceptance"
+}

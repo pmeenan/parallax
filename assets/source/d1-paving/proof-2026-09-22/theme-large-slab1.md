@@ -1,0 +1,13 @@
+# Large-slab study candidate1: independent theme screen
+
+**Screen outcome:** the slab-scale direction is stronger than the earlier 111-stone layout, but the native result is still a diagnostic, not an artistic selection or a full KIT-001 match.
+
+Inspected the actual top-packing, sunny-oblique, opposing-light, overcast, walking and plant-contact renders against the approved KIT-001 Batch103 assembly and the large-slab brief. The 61-stone field has a more plausible broad-slab cadence at walking height, with fewer brick-like subdivisions and some small infill between major stones. The joins remain legible and interrupted. The receipt's 14-cell longest seam meets the brief's no-worse-than-16 target, but that number alone does not settle the composition.
+
+In top and oblique views, the distribution is uneven: a few very large, near-rectangular plates anchor the upper-left, center and lower-left while narrow strips and small rectangles accumulate through the middle and right. The result reads as separate size zones rather than KIT-001's more interleaved broad slabs and occasional infill. Several long, straight alignments still cross local groups. The large pieces are also too cleanly rectangular compared with the reference's varied worn outlines, even though individual edge wear and earth contact remain visible.
+
+The enlarged mineral pattern now dominates the largest slabs. Pale islands recur at recognizable scale and shape across the field and remain conspicuous in sunny, opposing, overcast and walking views. This is the expected limitation of scaling three source identities, not proof of a new stone family. The reported A/B/C counts are balanced (20/20/21), yet balanced placement does not conceal repeated markings or the enlarged grain. The stone surface remains recognizably limestone under all shown lights.
+
+**Highest-value layout correction for the second bounded cycle:** distribute medium and large slabs more evenly, replacing some contiguous narrow-strip clusters while preserving rare small infill and the interrupted seam result. A further global warp or simply enlarging more of the same source stone would not address the observed size-zone and repeated-marking problems. After the layout question, author distinct large-slab surface identities at their intended physical scale; that is a separate material criterion.
+
+The receipt identifies the scene's plants as provisional older sources, despite the brief naming approved leaf color and moss. These captures can screen paving composition but cannot establish an integrated approved-vegetation result. No source, QA, runtime or human-art acceptance follows from this review.

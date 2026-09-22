@@ -1,0 +1,62 @@
+{
+  "blender": "5.2.1 LTS",
+  "seconds": 21.623844699992333,
+  "views": [["walking", [0.15, -1.1, 1.65], 47], ["grazing", [1.25, -1.55, 0.2], 52]],
+  "inputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\candidate2\\source.blend",
+      "sha256": "e9cb127d9923e9c53a75c959ea00c0cf158fdde447b2e88a9499ed7702860a1b"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\portable.blend",
+      "sha256": "20dc7409539e711670959d4daac045e0f4c474c136297058cac51cec4ab5b230"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\limestone.glb",
+      "sha256": "9e7701fe09f50ee18a9d4654b981cfd32341f6a2f052b69ef7c2bccb32df405c"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\walking-high.png",
+      "bytes": 2717402,
+      "sha256": "9e83f3534c1d6fde71e09c1ce0a2e48cbc7ec7eeee99b83767020da8a855ae2c"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\walking-low.png",
+      "bytes": 2642662,
+      "sha256": "857666caa4afa0d6428619de0166cf2b3e135f158f1e34bd654f0254f745734f"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\walking-import.png",
+      "bytes": 2642636,
+      "sha256": "726649c83a7cfe454b7bf079af091c701c7424d49bde76ce298e2f835288dcd8"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\grazing-high.png",
+      "bytes": 1727257,
+      "sha256": "c9fdd720f2953900fe2de9acf3250d3216355c608b9cd36b8f0504d819404c77"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\grazing-low.png",
+      "bytes": 1690711,
+      "sha256": "06d9991a495c388755bdc0dac6f8070d6d63b7a36aaf9203686337f9237f6720"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer-explicit-object\\a\\grazing-import.png",
+      "bytes": 1690832,
+      "sha256": "1a07e8894b7d2e248f69c5bb679fe816c1a5bcf5d585cf282d134158174251fc"
+    }
+  ],
+  "loadedPixelMeanAbsoluteDeltas": {
+    "walking": {
+      "sourceToReduced": 0.05003662034869194,
+      "reducedToImported": 8.115468972391682e-7
+    },
+    "grazing": {
+      "sourceToReduced": 0.011532663367688656,
+      "reducedToImported": 1.3739105497734272e-6
+    }
+  },
+  "limitation": "Raster deltas include silhouette/shadow changes; no perceptual or performance verdict."
+}

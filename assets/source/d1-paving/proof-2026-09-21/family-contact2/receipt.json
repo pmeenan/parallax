@@ -1,0 +1,156 @@
+{
+  "createdUtc": "2026-09-21T21:09:09.628306+00:00",
+  "seconds": 53.82083990005776,
+  "baseline": "family source plus contact3 recipe",
+  "stoneChanges": "screened family; contact-only integration",
+  "soilNominalHeightM": 0.064,
+  "aggregateCount": 27338,
+  "soilTriangles": 1280000,
+  "views": [
+    [
+      "oblique",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "reverse-light",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        1,
+        0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "walking",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "overcast",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      70,
+      3,
+      0.5
+    ],
+    [
+      "joint-detail",
+      [
+        0.24,
+        -0.36,
+        0.33
+      ],
+      [
+        -0.025,
+        -0.01,
+        0.066
+      ],
+      58,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ]
+  ],
+  "sourceOnly": true,
+  "runtimeQA": false,
+  "rightsReviewed": false,
+  "files": [
+    {
+      "name": "joint-detail.png",
+      "bytes": 2829129,
+      "sha256": "95fb9186b2c36ce5a3ed3ba121015d6b3a9aba0230fd6f66f3b65b39dfdfa1dc"
+    },
+    {
+      "name": "oblique.png",
+      "bytes": 3553934,
+      "sha256": "809133ae15203bc25c295fc06dec2ff5f4773c5cbf89c3ea436b9d7c68a3e8de"
+    },
+    {
+      "name": "overcast.png",
+      "bytes": 3244994,
+      "sha256": "2819d94ab3c97f396f5d41bd030ccb323b0931bb06bc29f50c5d43bcf615d0f9"
+    },
+    {
+      "name": "reverse-light.png",
+      "bytes": 3487514,
+      "sha256": "c59911cb0f78e80ebf9175a9678604858d0d19adbc2d203b06b4bf3fad047870"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 289837571,
+      "sha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 3489087,
+      "sha256": "e69bd024f4bb1638a8456ee43da318d8e2536807d86e8c3e69a9c7f3276f7324"
+    }
+  ]
+}

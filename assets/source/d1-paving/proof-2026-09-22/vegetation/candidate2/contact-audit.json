@@ -1,0 +1,120 @@
+{
+  "cameraLightingPreserved": true,
+  "originalSettings": {
+    "camera": {
+      "location": [
+        4.400000095367432,
+        -5.5,
+        5.699999809265137
+      ],
+      "rotation": [
+        0.8956010937690735,
+        -1.2007038918682156e-08,
+        0.6747409701347351
+      ],
+      "lens": 50.0
+    },
+    "lights": {
+      "Patch area light": {
+        "location": [
+          -3.0,
+          -4.0,
+          6.0
+        ],
+        "rotation": [
+          0.6996854543685913,
+          -6.460372681260651e-09,
+          -0.6435011625289917
+        ],
+        "energy": 2200.0,
+        "size": 1.0
+      }
+    },
+    "world": [
+      [
+        "Background",
+        "[bpy.data.worlds['Patch world'].node_tree.nodes[\"Background\"].inputs[0].default_value, 0.2199999988079071, 0.0]"
+      ],
+      [
+        "World Output",
+        "[]"
+      ]
+    ]
+  },
+  "currentSettings": {
+    "camera": {
+      "location": [
+        4.400000095367432,
+        -5.5,
+        5.699999809265137
+      ],
+      "rotation": [
+        0.8956010937690735,
+        -1.2007038918682156e-08,
+        0.6747409701347351
+      ],
+      "lens": 50.0
+    },
+    "lights": {
+      "Patch area light": {
+        "location": [
+          -3.0,
+          -4.0,
+          6.0
+        ],
+        "rotation": [
+          0.6996854543685913,
+          -6.460372681260651e-09,
+          -0.6435011625289917
+        ],
+        "energy": 2200.0,
+        "size": 1.0
+      }
+    },
+    "world": [
+      [
+        "Background",
+        "[bpy.data.worlds['Patch world'].node_tree.nodes[\"Background\"].inputs[0].default_value, 0.2199999988079071, 0.0]"
+      ],
+      [
+        "World Output",
+        "[]"
+      ]
+    ]
+  },
+  "moss": {
+    "Low connected moss cushion 0": {
+      "vertices": 133,
+      "minimumAboveActualSoilM": -0.0002500005066394806,
+      "maximumAboveActualSoilM": 0.0007499977946281433,
+      "verticesAtOrBelowSoil": 52,
+      "verticesBelowStoneTopAtSameXY": 0,
+      "triangles": 216
+    },
+    "Low connected moss cushion 1": {
+      "vertices": 133,
+      "minimumAboveActualSoilM": -0.00024999678134918213,
+      "maximumAboveActualSoilM": 0.0007499977946281433,
+      "verticesAtOrBelowSoil": 52,
+      "verticesBelowStoneTopAtSameXY": 0,
+      "triangles": 216
+    },
+    "Low connected moss cushion 2": {
+      "vertices": 133,
+      "minimumAboveActualSoilM": -0.0002500005066394806,
+      "maximumAboveActualSoilM": 0.0007499977946281433,
+      "verticesAtOrBelowSoil": 52,
+      "verticesBelowStoneTopAtSameXY": 0,
+      "triangles": 216
+    },
+    "Low connected moss cushion 3": {
+      "vertices": 133,
+      "minimumAboveActualSoilM": -0.00024999678134918213,
+      "maximumAboveActualSoilM": 0.0007499977946281433,
+      "verticesAtOrBelowSoil": 52,
+      "verticesBelowStoneTopAtSameXY": 0,
+      "triangles": 216
+    }
+  },
+  "interpretation": "Thin connected source cushions; intended boundaries seat below soil. Visibility/organic moss appearance require visual judgment, not inferred from these counts."
+}

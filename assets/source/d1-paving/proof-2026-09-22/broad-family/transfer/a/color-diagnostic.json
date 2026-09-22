@@ -1,0 +1,43 @@
+{
+  "blender": "5.2.1 LTS",
+  "seconds": 12.7541267000488,
+  "views": [["walking-albedo", [0.15, -1.1, 1.65], 47]],
+  "inputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\candidate2\\source.blend",
+      "sha256": "e9cb127d9923e9c53a75c959ea00c0cf158fdde447b2e88a9499ed7702860a1b"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer\\a\\portable.blend",
+      "sha256": "04105287556842416af6443f36cfa1a2a25fd3202b02674e1f60742359b6b272"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer\\a\\limestone.glb",
+      "sha256": "e6513dd687bd38a5fa1556c00204275f5c443c95078f5b17534ed29fe0c701ef"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer\\a\\walking-albedo-high.png",
+      "bytes": 2652878,
+      "sha256": "85e4d68a67116e0b6138708049850fbdc19d1418c464b3abb25fc18ed5c5e0b8"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer\\a\\walking-albedo-low.png",
+      "bytes": 2565461,
+      "sha256": "0e08bd156dcea1bba3d0ec571e8d296d59fa88ad571e6cdaf43b3f052424ba64"
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\transfer\\a\\walking-albedo-import.png",
+      "bytes": 2565246,
+      "sha256": "ce78068ae49ce3a2f44658ba19e8af0756c1d62e12298daa4c042566decf7332"
+    }
+  ],
+  "loadedPixelMeanAbsoluteDeltas": {
+    "walking-albedo": {
+      "sourceToReduced": 0.050330206751823425,
+      "reducedToImported": 4.4662311893262086e-7
+    }
+  },
+  "limitation": "Raster deltas include silhouette/shadow changes; no perceptual or performance verdict."
+}

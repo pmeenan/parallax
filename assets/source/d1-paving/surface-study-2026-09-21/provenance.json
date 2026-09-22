@@ -1,0 +1,579 @@
+{
+  "createdUtc": "2026-09-21T19:37:36.119749+00:00",
+  "author": "Codex root agent, GPT-6 family; exact backend model not independently verified",
+  "tool": "Live Blender MCP with native Blender5.2.1 LTS, Cycles OptiX, AgX",
+  "references": [
+    {
+      "path": "assets/reference/concepts/batch-104/kit-002-stone-family-v4.png",
+      "sha256": "a307c0e9c2fba6d25dc77ff47fd9f76da4b733e64e25640f38fd64c11fca42eb",
+      "bytes": 3664594
+    },
+    {
+      "path": "assets/reference/concepts/batch-108/mat-001-cream-limestone-v1.png",
+      "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4",
+      "bytes": 3652076
+    },
+    {
+      "path": "assets/reference/concepts/batch-103/kit-001-paving-assembly-v1.png",
+      "sha256": "2b80a6def3617e1a858b576cc9bb7767fe5ddebae6a2bf2918489a5914c86876",
+      "bytes": 4037945
+    }
+  ],
+  "generatedInputs": [
+    {
+      "role": "Artist-interpreted scalar relief input; not calibrated height",
+      "tool": "Host image_gen.imagegen; backend model not reported",
+      "image": {
+        "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/limestone-height-v1.png",
+        "sha256": "caf2c576a6809485b776fb0ffa0f9fa03ef1a4bf67a04f148ae25ae59deda9cb",
+        "bytes": 3516907
+      },
+      "prompt": {
+        "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/height-prompt.txt",
+        "sha256": "0deab3f3d13dbd125525c9940fea71cc2e0e689a8fdbe394571cde155fb8fbfd",
+        "bytes": 1767
+      },
+      "references": [
+        {
+          "path": "assets/reference/concepts/batch-108/mat-001-cream-limestone-v1.png",
+          "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4",
+          "bytes": 3652076
+        }
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "seed": "not reported"
+    },
+    {
+      "role": "Provisional color source retaining apparent illumination",
+      "tool": "Host image_gen.imagegen; backend model not reported",
+      "image": {
+        "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/limestone-albedo-v1.png",
+        "sha256": "33795ea58fa0fd7544c17e168f7fd2e08fc21aa6f347ece822109bdb261f314a",
+        "bytes": 3466833
+      },
+      "prompt": {
+        "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/albedo-prompt.txt",
+        "sha256": "184b503cd11f71afb29fd3d7cb67464760d0432ea6f0e847ab252961a11b305f",
+        "bytes": 1433
+      },
+      "references": [
+        {
+          "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/limestone-height-v1.png",
+          "sha256": "caf2c576a6809485b776fb0ffa0f9fa03ef1a4bf67a04f148ae25ae59deda9cb",
+          "bytes": 3516907
+        },
+        {
+          "path": "assets/reference/concepts/batch-108/mat-001-cream-limestone-v1.png",
+          "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4",
+          "bytes": 3652076
+        }
+      ],
+      "seed": "not reported"
+    }
+  ],
+  "historicalInput": {
+    "path": "assets/reference/d1-paving-clean/limestone-single-surface-v1.png",
+    "sha256": "238a6280665ce29d202b5024050c8152836b3ca6641c6af10c404dfcb25cdfc1",
+    "bytes": 3086613
+  },
+  "rights": {
+    "rightsReviewedForPublicShipping": false,
+    "origin": "Project-generated reference and new host-generated inputs, original Blender code and geometry",
+    "terms": "Provider output-use terms and reference provenance require project rights review before public shipping; this record makes no new license assertion"
+  },
+  "selectedCycle": 11,
+  "geometrySeeds": [
+    713,
+    729,
+    751
+  ],
+  "reviews": {
+    "quality": "Independent agent: strongest reviewed source; embedded color shading, busy detail and straight side structure remain",
+    "consistency": "Independent agent: strongest source; shared material pattern lineage and clean sample-like joints remain",
+    "lead": "Retain as improved experimental authoring/bake baseline; selected artistic reference and installed-game acceptance remain open"
+  },
+  "validation": {
+    "sourceDiskRead": "pass; packed images verified",
+    "portable": "portable-cycle11/verification.json",
+    "fullLibraryQA": "not run",
+    "humanArtisticAcceptance": "pending",
+    "runtimeAcceptance": "not run"
+  },
+  "storage": "Retained creative binaries prepared in local LFS; no upload, Git commit or Git ref push claimed",
+  "intermediateBlendArchive": "C:/Users/patme/.codex/tmp/paving-study-2026-09-21-intermediates; archive.json records moved bytes",
+  "files": [
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly/oblique.png",
+      "sha256": "e74fe148d6c0094c3ad3278b3c2840dee775feb16fa1c0676fbd953dc1bf3bc0",
+      "bytes": 3256887
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly/receipt.json",
+      "sha256": "6f23faafc374e5876e5c6949e76249f999fe29205c43bf32f58ed30faa55da48",
+      "bytes": 1611
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly/reverse-light.png",
+      "sha256": "e9ad1c0a000dc1ddffabb34adf10830d62df3c89dbbfdcbabd30347aa10fbb6e",
+      "bytes": 3301341
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly/reverse.png",
+      "sha256": "2e5c286a20c4e5d421443958fabb2213012e9eddccebcf651ab7939b37c057a7",
+      "bytes": 3277039
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly/walking.png",
+      "sha256": "6fab4f09e0e664e41a1f15e5c135eef50778ff32d094678f46eb22a1d0351bb1",
+      "bytes": 3410719
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/oblique.png",
+      "sha256": "bfd153aa811c6fa437aa6888c79387266a750d244fc887b62103f4e265a8ad42",
+      "bytes": 3438330
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/receipt.json",
+      "sha256": "b3072ae9737f2996424db25557f1df78bdd5ecdbabef891a1cedb432b61c7e57",
+      "bytes": 1687
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/reverse-light.png",
+      "sha256": "cf9580f4781b9106b26638c16b4a400830c3685d1ee42ea628e2495e50658460",
+      "bytes": 3466518
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/reverse.png",
+      "sha256": "f21488a6857235bc22518080d73643205868a41dea05808b640b7b166cd53aa1",
+      "bytes": 3471259
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/source.blend",
+      "sha256": "b1db1e6a27da3142ff2d1e0a87d0fa068de7c165fe19ec84f09f8ac361a1aa47",
+      "bytes": 144989069
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly-cycle11/walking.png",
+      "sha256": "c2a54075ee5f443fdebe82ba3e76c2b84c341782d6763af0952a372297971a99",
+      "bytes": 3556923
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/assembly.py",
+      "sha256": "9ad31c39dba8a8561dfff7b69c90b7a794562da202a46dbfa1e8179672286aab",
+      "bytes": 5177
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/bake.py",
+      "sha256": "0fbb101ca243b646e82207f784794f0ca8e5092c384f0a66335259d57209c36c",
+      "bytes": 5087
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/build.py",
+      "sha256": "5d88c3bce7d11cd617479fe91501490ba68ccf4461e40093a5fa0f5a8a625abe",
+      "bytes": 13865
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/capture.py",
+      "sha256": "699c3d48b2d9047254fdf2b1e8693d70c035fdb1e225ccc3f3343909a85b2332",
+      "bytes": 3559
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle1/build.py",
+      "sha256": "0d41000c2d0ddb0f4e206f019a6c356586da4f533929f757f96896ffb98a083b",
+      "bytes": 10286
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle1/metrics.json",
+      "sha256": "537787741b8be706eecec8debfba9bd47c03e358d0807e808d607976fd61198f",
+      "bytes": 542
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle1/oblique.png",
+      "sha256": "015eb41a7c09c4973ead6979d35e6d69f85cf99cedf523649a2f543d1d3f292c",
+      "bytes": 1281478
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/build.py",
+      "sha256": "e4b878158eda4ad5bd03a64aaeae709c4975d3be151ab0bfe2a9277b592ec69a",
+      "bytes": 13879
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/captures.json",
+      "sha256": "dfe58312828fccded1cde14bc70cb33f1119c2f771c24ef83106a077f8998eb5",
+      "bytes": 2740
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/gray.png",
+      "sha256": "1810ba73cc063e865b1d44baf7d9172a2bc8342d4183ce5316e66dcd0ae019eb",
+      "bytes": 2128292
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/grazing.png",
+      "sha256": "1343f8f85d452eba0bf4e57fe308ea069cce7a0cba21d5d44bfc07f166f05ef0",
+      "bytes": 2323245
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/metrics.json",
+      "sha256": "eed193c89119d6847e250434470f3adcef98673f6d46f87ba204029b61aafb62",
+      "bytes": 543
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/oblique.png",
+      "sha256": "047e2426da7bde34328e6e2b3820b3cf6c2d562cfb258ecefddeef91f2614023",
+      "bytes": 2457813
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/reverse-light.png",
+      "sha256": "9dad8a82c7b3703faf967853131c64a2de49c0f7bb5122109dd615d6312e535f",
+      "bytes": 2487480
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/reverse-view.png",
+      "sha256": "26f91cad79b86b087b3ba5cbeb440291dda3810aded27e714e7d12f63a438111",
+      "bytes": 2463025
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle10/walking.png",
+      "sha256": "d6888ca23c54f2faf627f23d46ceddf459f7b9973b48e808e1e86f121f2d10f7",
+      "bytes": 2076797
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/basecolor-unlit.png",
+      "sha256": "54923805593c2aa9edd2aec4ab0bb9d464c414dbfb3652716cb3261308e6d110",
+      "bytes": 2601557
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/build.py",
+      "sha256": "8f3ce47d2657d309d5c1adc15376f4d4296e2c78380ca05abe9388612335735b",
+      "bytes": 13864
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/captures.json",
+      "sha256": "f23081eb061a73276fbb778863c42dec3510455d26d9862b72dac906b3e1e21c",
+      "bytes": 3225
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/gray.png",
+      "sha256": "83c28bc7c935c10bcd157d84d49db1d441c1825f46942f93b63051074fdc912a",
+      "bytes": 2128671
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/grazing.png",
+      "sha256": "bab3071f159c77c66fab9cfd7d49b4aaae474c57e2acfcce321ff5eed7eace23",
+      "bytes": 2292115
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/metrics.json",
+      "sha256": "77be857e3e685557705ad47ba8949915544cc33ad401cf184139cd18bb8604b4",
+      "bytes": 543
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/oblique.png",
+      "sha256": "0c656a92f0711031873bc59ebba8f3a0a626cbddd01b53c55656fb7fa92993ee",
+      "bytes": 2563963
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/reverse-light.png",
+      "sha256": "321ab1d1096f6a72dfb47a0cc1a85c311beb58d48134d249e459bb9016ee4ac7",
+      "bytes": 2599341
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/reverse-view.png",
+      "sha256": "fcd5dec75eb8381f07ca4f9555837024091aa00b1e23076990ac1a7980f04dd8",
+      "bytes": 2560722
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/source.blend",
+      "sha256": "1a08b0646a4cbd63bb5247a5a3b1747085cf295316029919d95b1f20ade56018",
+      "bytes": 53944720
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle11/walking.png",
+      "sha256": "c833ab4ead9995052ee95f5ea1b65fe235cc151de1f03f96fa7d89fa7a5702bd",
+      "bytes": 2139239
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle2/build.py",
+      "sha256": "1ff9742c4717e2fb5a91afae77ab372460d3a706a7889ced73155b0454deb495",
+      "bytes": 11166
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle2/metrics.json",
+      "sha256": "b5d2c7768a0c53abbe388f73d3423b4764b9272bdb9c96f984787bc56ddd0157",
+      "bytes": 542
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle2/oblique.png",
+      "sha256": "1cdfddad4a3d0ed52974441a7d4171d8a47c3e370dc9c7dd869deae1e32683b7",
+      "bytes": 1345101
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle3/build.py",
+      "sha256": "275264f21f69a49663ed616b3fa5865766ff46b8e19225430f44a576b680bd84",
+      "bytes": 12659
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle3/metrics.json",
+      "sha256": "4eadc83d88be0399e231cbfb5633710f992fb0b274efecbfbe6b41e57cfb8f5f",
+      "bytes": 544
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle3/oblique.png",
+      "sha256": "b16ae6fbde24dd8d80ee08abb93c53533db94525a5e53146f25bc7525aa02d7d",
+      "bytes": 2795256
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle4/build.py",
+      "sha256": "35971f6bf2bbcd024686aeb93f009ad0415d16690bdd52d457478561df02ddfb",
+      "bytes": 13270
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle4/metrics.json",
+      "sha256": "7ed42fe030339e47197569116868391cdd9041dd1ab9f40a72a6b3e4d9c1a856",
+      "bytes": 543
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle4/oblique.png",
+      "sha256": "f81b7b5eaedf620feafddd298832019168471c9acb4a2c4c329f1d91d3b0be0e",
+      "bytes": 2684003
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle5/build.py",
+      "sha256": "4c2cf17fce5473ddb36aa0d87b4a283697b3da81b3e75583af1ce7f5c1baef5a",
+      "bytes": 14322
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle5/metrics.json",
+      "sha256": "04b30e5c7c36e86cd44a96702b62bb85703d306c011e07f0acab665895d17228",
+      "bytes": 544
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle5/oblique.png",
+      "sha256": "f85568c1c03d1c02e4f5102ef660a2c2fc814f181154aba5e716fc3fa2b69b65",
+      "bytes": 2356144
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle6/build.py",
+      "sha256": "9dd649fc704a8dc89c053249baac106ad165d47c585336ad53064da5614c47fe",
+      "bytes": 14449
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle6/metrics.json",
+      "sha256": "d70e97e48b52467f8dbeaca10d9f45fe2eeff413ad91dfc802f45ceea336b51a",
+      "bytes": 544
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle6/oblique.png",
+      "sha256": "95ea4e412b64770e5c64196bebe58a3e58a3a595788d76258739ee7d0e7ba2f2",
+      "bytes": 2424716
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle7/build.py",
+      "sha256": "b3cb89b0befdae10c2764a2911dcf7d63ca322b34c6651771077372330c88c3b",
+      "bytes": 14701
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle7/metrics.json",
+      "sha256": "faa76d5056ba4fa274ab7995cab2dbdf32e760a056eed44bd33fa49b04ce2372",
+      "bytes": 543
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle7/oblique.png",
+      "sha256": "3a40fc6a86229f666f3d8929ff3c592b1adc23cd1930ff7999faa17bfcdcfaa6",
+      "bytes": 2578841
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/build.py",
+      "sha256": "e9daa4473f6885b1e1543df28fbb055b883712bc6a04e23850298da44fa8b92a",
+      "bytes": 15104
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/captures.json",
+      "sha256": "5938f4bcb897824d88d53897997af8c40e4d971eadecf6fbfb8a23b624d562e8",
+      "bytes": 2740
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/gray.png",
+      "sha256": "b71ecb34c58feced8ec88d67440dab3f2c41e0403e12f818aa28935afe028dd3",
+      "bytes": 2156669
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/grazing.png",
+      "sha256": "632cdf2bc8ae20c6ec85edf296c7da0b48d1a195bd0dcfa41240ff6321911302",
+      "bytes": 2433245
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/metrics.json",
+      "sha256": "6c71e1cd43d30c29741e04140fc21fcfffbb8c9248f3759bfd64b322f6b98298",
+      "bytes": 544
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/oblique.png",
+      "sha256": "67f592b36687588e5a459e4f5216951d471306c705b7c4c6fee71331c139e0fe",
+      "bytes": 2584225
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/reverse-light.png",
+      "sha256": "7551679b6ba0be5f69c3288d95f2af8201af734d93ac11450c5dbaf1a76342b9",
+      "bytes": 2615319
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/reverse-view.png",
+      "sha256": "bb7b2baaa95d204747a1acf8708eeb212a18bf5cf94406846854e01950ec2661",
+      "bytes": 2594097
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle8/walking.png",
+      "sha256": "de3daab1e7daa557e42111715b5aba20bccaf69b61ee91c99447aaa7b37e0419",
+      "bytes": 2093214
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle9/build.py",
+      "sha256": "614ab5db2f433dd76b849d63c3f7c22d20dea36a0908d81d472233e8bc309925",
+      "bytes": 13665
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle9/metrics.json",
+      "sha256": "ba15176c0c497d466628d984da3612ee185d3ece465e9f8bcac83244860c655a",
+      "bytes": 543
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/cycle9/oblique.png",
+      "sha256": "7988668887e9f0f8778038a6c5c9a8458efe1ecd720f3e9ef19352e3474dde25",
+      "bytes": 1348895
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/albedo-prompt.txt",
+      "sha256": "184b503cd11f71afb29fd3d7cb67464760d0432ea6f0e847ab252961a11b305f",
+      "bytes": 1433
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/height-prompt.txt",
+      "sha256": "0deab3f3d13dbd125525c9940fea71cc2e0e689a8fdbe394571cde155fb8fbfd",
+      "bytes": 1767
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/limestone-albedo-v1.png",
+      "sha256": "33795ea58fa0fd7544c17e168f7fd2e08fc21aa6f347ece822109bdb261f314a",
+      "bytes": 3466833
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/inputs/limestone-height-v1.png",
+      "sha256": "caf2c576a6809485b776fb0ffa0f9fa03ef1a4bf67a04f148ae25ae59deda9cb",
+      "bytes": 3516907
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/basecolor.png",
+      "sha256": "4ac006bdfeb43d1c0541cb3c09e94ff2db3c729305438ad7ce7c3b8db369e8ba",
+      "bytes": 5749482
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/glb-inspection.json",
+      "sha256": "4290cb5656bae3da3cf55e2e2484378a5b536184579d5a0a349504ac422510b5",
+      "bytes": 113
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/limestone.glb",
+      "sha256": "ba87e4910117fb709652baaecc67b23951e9de9cebad69ef7a8d9e63be86b9df",
+      "bytes": 11182308
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/native-low.png",
+      "sha256": "f125632c561ef0b4df6f933631fefef49941627c678359a928c49ad0af3d16bb",
+      "bytes": 2532784
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/normal.png",
+      "sha256": "a77f4c9b24e3151f468a388663bb2e7fb5e7fc463f3252ba304d82659aa510ba",
+      "bytes": 4463379
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/portable.blend",
+      "sha256": "64b10dd1941af5b4eb9f4c6307307d8cad121b8132128118c847d0e47f64da19",
+      "bytes": 11292222
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/receipt.json",
+      "sha256": "cec33073e8fecec57e5bc07406746c46a3e360045ef593bb3e8f761285cbd7fe",
+      "bytes": 1769
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/reimport.png",
+      "sha256": "d04686a1f0d30162a44a8577bea1d39d31f54310b9fd67d629775d75907802de",
+      "bytes": 2532497
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable/roughness.png",
+      "sha256": "d10e069b7bc2b11858e69b9605f7882ebeca200eecd26c662f386d1648ab2b14",
+      "bytes": 890102
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/basecolor.png",
+      "sha256": "bfa672984286deb1261c4d2cd9802e4f2cfe3d5e300f6a705f3f29ec213b1404",
+      "bytes": 4971213
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/limestone.glb",
+      "sha256": "ddfbdd74f860f9c102d609cfbb3c00af725140f6ec79fcfcbd403f28529a8fbe",
+      "bytes": 9912844
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/native-low.png",
+      "sha256": "c3bbcb28fba29d18649d2a25d3be9cd8d2695370d8b06c8a7324aff496bcb189",
+      "bytes": 2512081
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/normal.png",
+      "sha256": "89b0b77bfe7c222f5a280c84b345c0344f4fe1a207d5df88614caafa9df3fc97",
+      "bytes": 4035449
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/portable.blend",
+      "sha256": "7267d5603807c69587f70d3b8781453dd80c8aae73e6bdf361be602505503140",
+      "bytes": 10039964
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/receipt.json",
+      "sha256": "3885033cc16388583097e3b88ca43f109723001221312f8a3424811d7b058e3f",
+      "bytes": 1732
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/reimport.png",
+      "sha256": "eaeec04c949749cdef17d131fb078802f29e09a6d6bbb454535d9a20ee896434",
+      "bytes": 2512539
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/roughness.png",
+      "sha256": "a536df1e9210c62da2c5342d2c263837e2a43adc28a3ce9bae0e52b0454a4888",
+      "bytes": 826738
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/portable-cycle11/verification.json",
+      "sha256": "23ea19a2d5ae505b8f6a7c1144a08bdaaae896b63ad85282d77423a8346b38da",
+      "bytes": 1183
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/save_standalone.py",
+      "sha256": "41bf3972315d2af6856b5f4170a51de5ba1e4acdfd7e26cacdd3df85659b7b93",
+      "bytes": 2930
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/source-verification.json",
+      "sha256": "a49da9352da0a89f774c102ea96583b87fed20ee4eb444052d3bdccb067355c1",
+      "bytes": 1079
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/standalone-packaging.json",
+      "sha256": "9cdf631e6b70d0c9550593861a7721482cf0d2c9e673837c8ae94dbca0bab669",
+      "bytes": 1094
+    },
+    {
+      "path": "assets/source/d1-paving/surface-study-2026-09-21/verify_portable.py",
+      "sha256": "32d6d1e6eaf8810a74a8a10c3721499381581e6f47d2e4b8a036cb68a85593ea",
+      "bytes": 4469
+    }
+  ]
+}

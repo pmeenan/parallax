@@ -1,0 +1,57 @@
+{
+  "createdUtc": "2026-09-21T20:31:53.478458+00:00",
+  "blender": "5.2.1 LTS",
+  "source": "../stone/candidate3/source.blend",
+  "triangles": 3900,
+  "vertices": 1952,
+  "dimensionsM": [
+    0.40625935792922974,
+    0.3067268431186676,
+    0.08253064751625061
+  ],
+  "materials": 1,
+  "bakeSeconds": {
+    "basecolor": 5.064496600010898,
+    "normal": 5.001623399963137,
+    "roughness": 1.4286628999980167
+  },
+  "totalSeconds": 39.26692590001039,
+  "scope": "Source transfer proof only; no runtime or library acceptance",
+  "knownLimitations": [
+    "Generated albedo is not physically measured and may retain illumination",
+    "Roughness is authored from scalar field, not measured",
+    "No KTX2, meshopt, LOD chain or engine QA in this proof"
+  ],
+  "files": [
+    {
+      "name": "basecolor.png",
+      "sha256": "b93433f932070c1fe3757bca837c22b9ca6514b9c872cf730136ee0ec98598bd",
+      "bytes": 3876891
+    },
+    {
+      "name": "limestone.glb",
+      "sha256": "c9fdb26f21a029d58420c5119aa66f5ee4d4cd0bd3d078aa1fd8fd8ed792c4d6",
+      "bytes": 8406340
+    },
+    {
+      "name": "native-low.png",
+      "sha256": "3e1ea49796d17e12a6c183ed51c8131b965a9ccf3043c39a310128f1bcfd0337",
+      "bytes": 2302564
+    },
+    {
+      "name": "normal.png",
+      "sha256": "afc0c1394280185cdf8db45dfd30a69c50499cbd66f3923762432f9e1b06ea09",
+      "bytes": 3772333
+    },
+    {
+      "name": "portable.blend",
+      "sha256": "d26fb55eebe535b6a3da97d182ecdd196bd18e79d76c22204f2ebdfc3ecb6ad1",
+      "bytes": 8513606
+    },
+    {
+      "name": "roughness.png",
+      "sha256": "30e3bdbaeaf1ddb9be02b5f1d8659920808408560e79de4d51428cfd3ebca51e",
+      "bytes": 677195
+    }
+  ]
+}

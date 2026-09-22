@@ -1,5 +1,90 @@
 # D1 paving — individual limestone source
 
+**Latest human approval (2026-09-22):** the reduced smaller-cobblestone proof
+`production/candidate3` is the approved visual baseline. It preserves the previously
+approved `cobble-study/candidate1` stone artwork/layout, integrated leaves/moss and
+volumetric grit. Preserve this reduced appearance through production delivery.
+The larger-slab and broad-family studies below are diagnostic evidence;
+the earlier 111/131-stone patches are comparisons rather than the selected result.
+
+The [smaller-stone result](proof-2026-09-22/cobble-results.md) now combines 137 earlier
+stones with the approved leaves and moss. Its longest modeled joint is 10 cells
+(previous mixed layout: 16), with residual long alignments and repeated mineral
+patterns still visible. The human approved the presented result with those
+disclosed limits; further appearance refinement is optional backlog work.
+Saved-source artwork checks and a fresh fitted-moss transfer pass. Ground and
+vegetation exceed their production targets; production optimization, full QA,
+rights review and installed-game verification remain open.
+
+The human-approved [production reduction proof](proof-2026-09-22/production-results.md)
+is `production/candidate3`: ground triangles fall 58.4%, plants 40.6%, with all stone
+artwork/placements unchanged. Strict-budget collapse was rejected for visible
+damage; the retained source preserves leafy moss and volumetric grit and passes
+representative leaf/moss/grit Blender transfers. It still exceeds the old ground
+and vegetation class limits. Next: shared materials, LODs and measured compressed
+resource/runtime costs before deliberate class calibration and QA admission.
+The game asset and production ceilings are unchanged.
+
+**Current 2026-09-22:** the [latest continuation](proof-2026-09-22/results.md)
+rejected two sidewall revisions. A matched control found that the earlier material
+normalization washed out cycle11's mineral detail. The restored family, including a
+verified sRGB transfer correction, is retained after both independent screens with
+the earlier geometry and distinct remaps. The human approved the soil-to-stone edge
+on 2026-09-22; preserve that contact. The subsequent
+[moving-light test](proof-2026-09-22/relighting-results.md) demonstrated no directional
+conflict; both reviewers support preserving the material and advancing delivery and
+repetition tests. Intrinsic albedo remains uncertified, rather than a proven blocker.
+The [current transfer](proof-2026-09-22/transfer-results.md) provides three freshly
+baked/reimported 3,900-triangle stones with conditional visual passes. The human
+approved lighting. The [4 m patch study](proof-2026-09-22/patch-results.md) now retains
+131 stones with continuous soil and eight plant groups for human review. Repeated
+mineral identities, long joints and simplified foliage remain unmet appearance
+criteria after two cycles; source ground cost also exceeds the production target.
+Raw resource sizes and a small C shading artifact still need delivery correction.
+The subsequent [vegetation revision](proof-2026-09-22/vegetation-results.md) adds
+leaf color/normal detail, smoother rosettes, seedlings and bowed grass. Moss remains
+rejected as green ribbons; plant geometry/maps exceed current production targets.
+The two-cycle result and representative weed transfer are retained for human review.
+The [subsequent color refinement](proof-2026-09-22/leaf-color-results.md) adds clearer
+within-leaf variation and leaf-age tints, with verified representative export retention.
+Both screens support human color review; geometry and relief are preserved.
+The human approved that leaf-color refinement. The following
+[moss study](proof-2026-09-22/moss-results.md) retains a low leafy colony in place of
+the rejected ribbons, with representative Blender transfer verified. The human accepted
+its appearance on 2026-09-22. Stone repetition and long-joint correction remain open.
+The following [bounded layout study](proof-2026-09-22/layout-results.md) reduced
+the longest modeled joint from 28 to 16 planning cells. Both native screens still
+find regular long runs and repeated mineral landmarks; the global-warp trial is
+closed without adoption. The approved leaf/moss have not been integrated into
+the new layout.
+The next [larger-slab study](proof-2026-09-22/large-slab-results.md) reduced the
+field to 58 stones and the longest modeled joint to 14 cells. Candidate2 is a
+provisional layout base only: the three reused mineral sources are visibly magnified
+and repeated on the broad slabs, some narrow-strip clusters and straight joints
+remain, and the approved leaf/moss are not yet integrated. Both independent
+screens and lead inspected the native result; whole-patch acceptance remains open.
+The [broad source family study](proof-2026-09-22/broad-family-results.md) now retains
+four stones constructed at their physical size. Candidate2 reduces obvious repeated
+large landmarks, but dense warped mineral patterns remain a fidelity problem.
+Matched walking/grazing comparisons also expose source-to-bake color differences
+despite a consistent 3,900-triangle export/reimport. The source and three transfer
+diagnostics remain provisional/failed evidence; no new asset is admitted or installed.
+The previous [three-stone/contact proof](proof-2026-09-21/results.md)
+applies the complete-asset workflow to cycle11: revised mineral color, three shapes
+and surface identities, compacted soil contact, and three independently baked/reimported
+3900-triangle stones. This is a bounded source study for human review, not paving
+acceptance. Earlier contact reservations and uncertain source lighting remain documented;
+the human's latest edge approval supersedes those contact appearance reservations.
+Two fitted-soil trials also failed to close the contact appearance. Neutral/semantic
+diagnostics show much of the long dark band is an exposed shadowed stone sidewall;
+raising soil alone reintroduces bevel clipping. Retain the earlier family-contact2
+geometry and soil placement now approved for the small-sample edge appearance.
+The [overall continuation](paving-proof-followup-2026-09-21.md) still requires the
+4 m assembly acceptance, production packaging, QA/admission and installed-game verification.
+Develop shape and material together; the gray-only gate below is historical.
+
+## Earlier proof status
+
 **Current2026-09-20:** D-195 accepts the concept collection and resumes the
 [small assembled proof](proof-2026-09-20.md). New work uses a sibling source script
 and separate result directory with explicitly verified Blender5.2.1. The historical

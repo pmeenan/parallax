@@ -1,0 +1,27 @@
+{
+  "startedUtc": "2026-09-20T22:31:48.580646+00:00",
+  "blender": "5.2.1 LTS",
+  "vertices": 412458,
+  "faces": 412456,
+  "triangles": 824912,
+  "nonManifoldEdges": 0,
+  "volumeM3": 0.008243429972118224,
+  "voxelSizeM": 0.0009,
+  "authoring": "Revised asymmetric quarry blank; 16 clustered shallow flake losses, regionally worn shoulders, dense source relief, restrained broad top wear.",
+  "seed": 920,
+  "materials": 1,
+  "maps": 0,
+  "references": [
+    "batch-104/kit-002-stone-family-v4.png",
+    "batch-108/mat-001-cream-limestone-v1.png",
+    "batch-103/kit-001-paving-assembly-v1.png"
+  ],
+  "scope": "High resolution neutral geometry proof; not exported, QA-admitted or runtime accepted.",
+  "rightsReview": "Internal authored geometry; reference rights lineage retained in concept catalog; public-shipping clearance not asserted.",
+  "dimensionsM": [
+    0.3961578905582428,
+    0.29930782318115234,
+    0.07971344888210297
+  ],
+  "minimumZAndSupportHeightM": 0.00111302244476974
+}

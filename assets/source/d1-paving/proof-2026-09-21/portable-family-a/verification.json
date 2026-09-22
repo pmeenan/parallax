@@ -1,0 +1,42 @@
+{
+  "checkedUtc": "2026-09-21T20:56:20.440314+00:00",
+  "glbSha256": "9b342fbee0f96a0ad38c1b996eb75566285f2acbe354229d6637b421c36cf1a8",
+  "glbBytes": 8405804,
+  "scenes": 1,
+  "meshes": 1,
+  "materials": 1,
+  "textures": 3,
+  "triangles": 3900,
+  "extensions": [],
+  "closedManifold": true,
+  "finiteCoordinates": true,
+  "finiteUVsWithinUnitSquare": true,
+  "sampledSourceToLowDistanceM": {
+    "samples": 8653,
+    "median": 0.0001544548140373081,
+    "p95": 0.0005366757395677269,
+    "maximum": 0.003594540525227785
+  },
+  "nativeVsReimportLoadedPixelDelta": {
+    "meanAbsolute": 4.091775167580636e-07,
+    "p99": 0.0,
+    "maximum": 0.003921598196029663
+  },
+  "checked": [
+    "Actual GLB header/length and embedded buffer",
+    "One mesh, material and scene; 3900 triangles",
+    "Standard basecolor, roughness and tangent normal channels",
+    "Native fresh-scene import and render",
+    "Finite UV/position and closed manifold mesh"
+  ],
+  "notChecked": [
+    "Full glTF validator",
+    "UV overlap/inversion",
+    "LOD chain",
+    "KTX2 and meshopt",
+    "Babylon/WebGPU render",
+    "In-game performance",
+    "Rights clearance",
+    "Human artistic acceptance"
+  ]
+}

@@ -1,0 +1,114 @@
+{
+  "checkedUtc": "2026-09-22T12:31:44.897119+00:00",
+  "glbSha256": "ff79f669d6a6f04004317b7daf713406fc072c7f5b9b0473762bd38fac75b84f",
+  "glbBytes": 10957176,
+  "scenes": 1,
+  "meshes": 1,
+  "materials": 1,
+  "textures": 3,
+  "triangles": 3900,
+  "extensions": [],
+  "importSeconds": 0.014607299992348999,
+  "closedManifold": true,
+  "finiteCoordinates": true,
+  "finiteUVsWithinUnitSquare": true,
+  "sampledSourceToLowDistanceM": {
+    "samples": 8653,
+    "median": 0.00015496650303248316,
+    "p95": 0.0005554619361646471,
+    "maximum": 0.004013626370579004
+  },
+  "nativeVsReimportLoadedPixelDelta": {
+    "meanAbsolute": 1.0362202829128364e-06,
+    "p99": 0.0,
+    "maximum": 0.003921627998352051
+  },
+  "checked": [
+    "Actual GLB header/length and embedded buffer",
+    "One mesh, material and scene; 3900 triangles",
+    "Standard basecolor, roughness and tangent normal channels",
+    "Native fresh-scene import and render",
+    "Finite UV/position and closed manifold mesh"
+  ],
+  "notChecked": [
+    "Full glTF validator",
+    "UV overlap/inversion",
+    "LOD chain",
+    "KTX2 and meshopt",
+    "Babylon/WebGPU render",
+    "In-game performance",
+    "Rights clearance",
+    "Human artistic acceptance"
+  ],
+  "member": "C",
+  "memberTotalSeconds": 36.948572999972384,
+  "resource8MiBCeilingPassed": false,
+  "rightsReviewed": false,
+  "files": [
+    {
+      "name": "basecolor.png",
+      "bytes": 5553736,
+      "sha256": "64922fdee241fceafe5650161e1476065fcb3b20b3386f14de9a6e2e6f738af4"
+    },
+    {
+      "name": "high-source-opposing.png",
+      "bytes": 2133067,
+      "sha256": "8d009f0490fa841bc638c649bf55fe2e5dc87f87240a593655015eb336a0b742"
+    },
+    {
+      "name": "high-source.png",
+      "bytes": 2199567,
+      "sha256": "8f7385adaa391694cb613f7f972384021e298c7400a2884ac30f641958f4448e"
+    },
+    {
+      "name": "limestone.glb",
+      "bytes": 10957176,
+      "sha256": "ff79f669d6a6f04004317b7daf713406fc072c7f5b9b0473762bd38fac75b84f"
+    },
+    {
+      "name": "native-low.png",
+      "bytes": 2177001,
+      "sha256": "6e3e5d30c4846132a1299757d76043f4289663547afe960d57c40f24a7a3cde6"
+    },
+    {
+      "name": "normal.png",
+      "bytes": 4362678,
+      "sha256": "6985b311df765943af8d47b3163ffaba2cde875aa9c3cbc6f71848e6f768f0b0"
+    },
+    {
+      "name": "portable.blend",
+      "bytes": 11075806,
+      "sha256": "9a203de77a24a5b247a719091e4b39858987e4d975f87f0c1a3cc3b452317ce0"
+    },
+    {
+      "name": "receipt.json",
+      "bytes": 2064,
+      "sha256": "f66c73944f732c3c12646f900ff2fc94ae8528ee76f99d06bfcf579999c09fa7"
+    },
+    {
+      "name": "reimport-opposing.png",
+      "bytes": 2108632,
+      "sha256": "845ce7ec60fe1d93934fe8d0d44ed82a505def8067ebf4801f1b201c081c07c1"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 2177098,
+      "sha256": "2651dfbb295a97b488916508b2501a39c3ee66ca1dfc8f439b4bf767e06e4941"
+    },
+    {
+      "name": "resolved_bake.py",
+      "bytes": 5174,
+      "sha256": "6f05e34e347e8cfb6a572d80c5f121c70d4ed8954ce244228c519d0aaceb2d27"
+    },
+    {
+      "name": "resolved_verify.py",
+      "bytes": 4671,
+      "sha256": "1781f6e07370b5bbf409c2e89b93a907a7379724b4aa42600988fe6c45bc152a"
+    },
+    {
+      "name": "roughness.png",
+      "bytes": 959032,
+      "sha256": "2e477ea30229fd0fe648f8e04d1abfd7c4fda4a399bbfcf8f80ac07b21e525eb"
+    }
+  ]
+}

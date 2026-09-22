@@ -1,0 +1,185 @@
+{
+  "files": [
+    {
+      "name": "author-results.md",
+      "bytes": 3968,
+      "sha256": "dbe853360efcfd6afcf4ae2ba72d1f2cf14596a2473edfad95b1350cff799698"
+    },
+    {
+      "name": "build.py",
+      "bytes": 19259,
+      "sha256": "6526252ea943ff94da944615f13318d4fe312e90a6c0fdde551e4407c4382683"
+    },
+    {
+      "name": "close-geometry.png",
+      "bytes": 13621315,
+      "sha256": "f4d4638aa08ae84e8e23e0184b7c3005095ab4921634733fce1020b5ac21556e"
+    },
+    {
+      "name": "close-gray.png",
+      "bytes": 13699225,
+      "sha256": "86da7fe81588ad15dbe54c45d77720d90088d0745614df4f733ebdad3b15ee24"
+    },
+    {
+      "name": "close-opposing.png",
+      "bytes": 13688218,
+      "sha256": "3cf7e28babe56d72f03ea95142aea5cf373bc0e4ba60e7eeed3de0ad43c1ce82"
+    },
+    {
+      "name": "close-unlit.png",
+      "bytes": 13686989,
+      "sha256": "3431881451980da1144b11ef633fc6bcc31ca2f64c01eaa4b0c19a99e398d6ee"
+    },
+    {
+      "name": "close.png",
+      "bytes": 13738437,
+      "sha256": "85028ed17d57c75312385cbed5427dbc4cbc372ba4415fd459c30289f8b6ac30"
+    },
+    {
+      "name": "contact-audit.json",
+      "bytes": 3147,
+      "sha256": "e8c619b2e7f2b62c7b4aa5c1d8a9b76230bc88693e0043a54f1893d881ab0490"
+    },
+    {
+      "name": "contact_audit.py",
+      "bytes": 2375,
+      "sha256": "285c197d23de34ba7071e70b4140042269ae804f4ba79a2ac31ca16e186b431f"
+    },
+    {
+      "name": "diagnostic-audit.json",
+      "bytes": 4450,
+      "sha256": "f55cc06141427eb33cda396526b6b06987bd9fced559590bde32dd60bdbeb9c5"
+    },
+    {
+      "name": "diagnostics.py",
+      "bytes": 2108,
+      "sha256": "7d715107433c47ff5d4349fea0f3005b6d81e2de5cad9e924546ff1cfd845377"
+    },
+    {
+      "name": "freeze.py",
+      "bytes": 1445,
+      "sha256": "48e6029d72d74120754db1e95170cce80fa638929e73e5354e98dd9587ba21c8"
+    },
+    {
+      "name": "grass-detail.png",
+      "bytes": 13224936,
+      "sha256": "d18f0852949e663d58214bfd303ccffdce965fa099c73d6a5937215f180c4ce0"
+    },
+    {
+      "name": "leaf-basecolor.png",
+      "bytes": 1162052,
+      "sha256": "c85db5c136a5069bacedf846bdaa73aec501edd3bf4799fe6303904e9db88bed"
+    },
+    {
+      "name": "leaf-height.png",
+      "bytes": 490488,
+      "sha256": "771cbae4d19a28833facb3958f69f263a2ad6df25b5be5e3330d9196ff32987a"
+    },
+    {
+      "name": "leaf-normal.png",
+      "bytes": 1198527,
+      "sha256": "ca6e78bf307c84aba1e0a2e72657214b727f6229d8b59e7ad8a55f6cf59f293a"
+    },
+    {
+      "name": "leaf-roughness.png",
+      "bytes": 389480,
+      "sha256": "b2847d92ff2ace9bee54e6e61d2d1aa9051a00bbd6b386c463c047afa24bee3d"
+    },
+    {
+      "name": "moss-basecolor.png",
+      "bytes": 1253570,
+      "sha256": "a951e26654df907b85f264a9556894e148058debfe6426b8d74649bf14d535c2"
+    },
+    {
+      "name": "moss-detail.png",
+      "bytes": 12956209,
+      "sha256": "ea080d3d4d90c5f98cbea8ff5dcd18ac90679e32472b275e7e679d3f04d94429"
+    },
+    {
+      "name": "moss-height.png",
+      "bytes": 672027,
+      "sha256": "e77b0e68fa35617d9345db7edd1cd586fb3ecd4d839c7c840ceb279454182c57"
+    },
+    {
+      "name": "moss-normal.png",
+      "bytes": 1515126,
+      "sha256": "d77e7aa5c685833765eff7c9ad6ed87ae241590dcd0073e3fbac9e90ea3ecb6f"
+    },
+    {
+      "name": "moss-pocket-2.png",
+      "bytes": 12557170,
+      "sha256": "f76ac2c7082194f0f954eb8b94532e4363e169570b91b21e0b8370f3b138cd9f"
+    },
+    {
+      "name": "moss-pocket-3.png",
+      "bytes": 12700280,
+      "sha256": "de7e7cb6b161f8eec321a0596748babeb7e19aba4a0106a6baff0eb304a38046"
+    },
+    {
+      "name": "moss_views.py",
+      "bytes": 824,
+      "sha256": "51cf0a8d63348ba4955d0a9d6d2af1a261030c56890c4476e4852e93620885e7"
+    },
+    {
+      "name": "overview.png",
+      "bytes": 14511371,
+      "sha256": "32e9967e2b49b495a915137dad2ea4b3118e50795d2144866396f8c3a55694e4"
+    },
+    {
+      "name": "prepare.py",
+      "bytes": 9074,
+      "sha256": "d4f4e44335c6ee230e7e22e23045bf7dfa75765a1fbec77d7d95b31e87d729ab"
+    },
+    {
+      "name": "receipt.json",
+      "bytes": 104063,
+      "sha256": "b35e00c843878b243f1875ba4728a91d1c3050f69f3210fa4f534eced0802281"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 39867526,
+      "sha256": "04b251ce03a7da9eb2f16ec0df4bf5f5fe964da469dffec733ef713ef9b86297"
+    },
+    {
+      "name": "transfer\\file-structure.json",
+      "bytes": 530,
+      "sha256": "3905c01bd69844b00a4bce2843c2507762f14b4a9b83d0dbfcfe2e6b16371382"
+    },
+    {
+      "name": "transfer\\native.blend",
+      "bytes": 2838742,
+      "sha256": "4b580d191fe41e3b08df0f7648494d2ed1f2250ac864ca0f9d4e0962c16fb0a7"
+    },
+    {
+      "name": "transfer\\native.png",
+      "bytes": 1731196,
+      "sha256": "8bc4f4163d969d38ae361c038122d96ef5e87de9c7ac8a6f08fc4abc3e9179c6"
+    },
+    {
+      "name": "transfer\\receipt.json",
+      "bytes": 1505,
+      "sha256": "571d2c0632ee698b7a37815d27f02df55b10be9973a1803cd80158a73b303bee"
+    },
+    {
+      "name": "transfer\\reimport.png",
+      "bytes": 1711312,
+      "sha256": "1f16569770623867b8b4f8b6416bc923e80ec103a62638310981304185ebac2e"
+    },
+    {
+      "name": "transfer\\representative-weed.glb",
+      "bytes": 2444100,
+      "sha256": "a2f52d0e57a8cc2c0f08f7d4a7fb232d711ada593edef08ad901a496c67b7520"
+    },
+    {
+      "name": "transfer.py",
+      "bytes": 4482,
+      "sha256": "b384f48e14801e87ae6a04c87340452826aa18803f0c672380e3399093951220"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 15007635,
+      "sha256": "49a8f0b9406514d35ccc7df16f25b7163c27de14eb92f512bd79f36a3aaf93ca"
+    }
+  ],
+  "scope": "Frozen source evidence inventory; excludes itself"
+}

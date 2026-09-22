@@ -1,0 +1,67 @@
+{
+  "createdUtc": "2026-09-22T12:31:40.812709+00:00",
+  "blender": "5.2.1 LTS",
+  "source": "../../restored-family/source.blend",
+  "triangles": 3900,
+  "vertices": 1952,
+  "dimensionsM": [
+    0.5158873796463013,
+    0.2562359571456909,
+    0.08250156790018082
+  ],
+  "materials": 1,
+  "bakeSeconds": {
+    "basecolor": 1.592251900001429,
+    "normal": 1.4798751000198536,
+    "roughness": 0.6290299000102095
+  },
+  "totalSeconds": 21.840798699995503,
+  "scope": "Source transfer proof only; no runtime or library acceptance",
+  "knownLimitations": [
+    "Generated albedo is not physically measured and may retain illumination",
+    "Roughness is authored from scalar field, not measured",
+    "No KTX2, meshopt, LOD chain or engine QA in this proof"
+  ],
+  "files": [
+    {
+      "name": "basecolor.png",
+      "sha256": "64922fdee241fceafe5650161e1476065fcb3b20b3386f14de9a6e2e6f738af4",
+      "bytes": 5553736
+    },
+    {
+      "name": "high-source-opposing.png",
+      "sha256": "8d009f0490fa841bc638c649bf55fe2e5dc87f87240a593655015eb336a0b742",
+      "bytes": 2133067
+    },
+    {
+      "name": "high-source.png",
+      "sha256": "8f7385adaa391694cb613f7f972384021e298c7400a2884ac30f641958f4448e",
+      "bytes": 2199567
+    },
+    {
+      "name": "limestone.glb",
+      "sha256": "ff79f669d6a6f04004317b7daf713406fc072c7f5b9b0473762bd38fac75b84f",
+      "bytes": 10957176
+    },
+    {
+      "name": "native-low.png",
+      "sha256": "6e3e5d30c4846132a1299757d76043f4289663547afe960d57c40f24a7a3cde6",
+      "bytes": 2177001
+    },
+    {
+      "name": "normal.png",
+      "sha256": "6985b311df765943af8d47b3163ffaba2cde875aa9c3cbc6f71848e6f768f0b0",
+      "bytes": 4362678
+    },
+    {
+      "name": "portable.blend",
+      "sha256": "9a203de77a24a5b247a719091e4b39858987e4d975f87f0c1a3cc3b452317ce0",
+      "bytes": 11075806
+    },
+    {
+      "name": "roughness.png",
+      "sha256": "2e477ea30229fd0fe648f8e04d1abfd7c4fda4a399bbfcf8f80ac07b21e525eb",
+      "bytes": 959032
+    }
+  ]
+}

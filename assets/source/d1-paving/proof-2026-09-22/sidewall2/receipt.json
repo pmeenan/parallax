@@ -1,0 +1,329 @@
+{
+  "createdUtc": "2026-09-22T11:18:25.810317+00:00",
+  "tool": "5.2.1 LTS",
+  "seconds": 24.691076299990527,
+  "author": "Codex lead; adapted retained first-candidate script",
+  "baseline": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact2\\source.blend",
+  "baselineSha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e",
+  "changes": [
+    {
+      "object": "Family A",
+      "verticesChanged": 219544,
+      "maxDisplacementM": 0.02528269775211811,
+      "meanChangedDisplacementM": 0.008607028052210808,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        }
+      ]
+    },
+    {
+      "object": "Family B",
+      "verticesChanged": 248487,
+      "maxDisplacementM": 0.024768128991127014,
+      "meanChangedDisplacementM": 0.008313818834722042,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        }
+      ]
+    },
+    {
+      "object": "Family C",
+      "verticesChanged": 224494,
+      "maxDisplacementM": 0.023751122877001762,
+      "meanChangedDisplacementM": 0.00822038110345602,
+      "topInteriorUnchanged": true,
+      "features": [
+        {
+          "axis": 0,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 0,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": -1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        },
+        {
+          "axis": 1,
+          "sign": 1,
+          "maximumRecessionM": 0.018,
+          "transitionWidthM": 0.041,
+          "exposedHeightRangeM": [
+            0.055,
+            0.08
+          ],
+          "variation": "broad metric shoulder-width variation"
+        }
+      ]
+    }
+  ],
+  "nonStoneGeometryUnchanged": {
+    "Compacted recessed matrix": "fda460d6400a6e0c6392255a07d625285b96119bb908fb2ac299bffd30b9e41d",
+    "Distant ground": "9aed1b80054a12061c71d8d27240f55976e973df37b5e637b5f74fedf8bf7dd9",
+    "Embedded mixed aggregate": "7aeabeae83681eb35597494a1f9e6157001d13dff956e720bf56009c12ca8f28"
+  },
+  "materialChanges": "None; external loaded height packed for standalone recovery",
+  "views": [
+    [
+      "oblique",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "reverse-light",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        1,
+        0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "walking",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "overcast",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      70,
+      3,
+      0.5
+    ],
+    [
+      "joint-detail",
+      [
+        0.24,
+        -0.36,
+        0.33
+      ],
+      [
+        -0.025,
+        -0.01,
+        0.066
+      ],
+      58,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ]
+  ],
+  "grayDiagnostic": "same joint-detail camera/light; clay override only",
+  "scope": "One sidewall candidate; no soil raising, no library/runtime/artistic acceptance",
+  "rightsReviewed": false,
+  "inputLineage": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family\\candidate2\\receipt.json",
+  "scriptSha256": "4fb9beba84414e21f0061eb7e0398209ac0c27de717aa4857397d05d9bf84fd9",
+  "files": [
+    {
+      "name": "diagnostic-gray.png",
+      "sha256": "ffe7ed1443fd545eac43f4c728ea43627a607d2b4f43a8dae3c39ae2cfbc1636",
+      "bytes": 2117731
+    },
+    {
+      "name": "joint-detail.png",
+      "sha256": "7fca909fc85f81aed8a21a84492b02db3df355c4ad4e873b1fd30235132ca897",
+      "bytes": 2962065
+    },
+    {
+      "name": "oblique.png",
+      "sha256": "1bbf7dd667a08456217bb6e78b89ffee69a15d4c373ca73ea0f905c114cfffc5",
+      "bytes": 3565379
+    },
+    {
+      "name": "overcast.png",
+      "sha256": "01b31c9b968448dec3c65211281e7e64215afbf119e68e59e9185e9453f6c256",
+      "bytes": 3243763
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "54f7872e03c3557d48905795e1d21099b69b3db04ab1d4dd9ddf45255b5cdbbe",
+      "bytes": 3480239
+    },
+    {
+      "name": "source.blend",
+      "sha256": "fe90c2ff0a87eaf8eedf3fca78d862f8a8d987dfb869bf772aa1e840cd919342",
+      "bytes": 289817936
+    },
+    {
+      "name": "walking.png",
+      "sha256": "0c657359e9e853ae85973786e35fdefa12e69c8a4790c4d851145ff627defbc3",
+      "bytes": 3476295
+    }
+  ]
+}

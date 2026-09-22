@@ -1,0 +1,58 @@
+{
+  "createdUtc": "2026-09-21T19:11:58.661100+00:00",
+  "blender": "5.2.1 LTS",
+  "source": "cycle8/source.blend",
+  "triangles": 3900,
+  "vertices": 1952,
+  "dimensionsM": [
+    0.4060158133506775,
+    0.30691081285476685,
+    0.08255462348461151
+  ],
+  "materials": 1,
+  "bakeSeconds": {
+    "basecolor": 1.9297115000081249,
+    "normal": 1.7556790999951772,
+    "roughness": 0.7219632999622263
+  },
+  "totalSeconds": 35.276595500006806,
+  "scope": "Source transfer proof only; no runtime or library acceptance",
+  "knownLimitations": [
+    "Generated albedo is not physically measured and may retain illumination",
+    "Roughness is authored from scalar field, not measured",
+    "No KTX2, meshopt, LOD chain or engine QA in this proof"
+  ],
+  "files": [
+    {
+      "name": "basecolor.png",
+      "sha256": "4ac006bdfeb43d1c0541cb3c09e94ff2db3c729305438ad7ce7c3b8db369e8ba",
+      "bytes": 5749482
+    },
+    {
+      "name": "limestone.glb",
+      "sha256": "ba87e4910117fb709652baaecc67b23951e9de9cebad69ef7a8d9e63be86b9df",
+      "bytes": 11182308
+    },
+    {
+      "name": "native-low.png",
+      "sha256": "f125632c561ef0b4df6f933631fefef49941627c678359a928c49ad0af3d16bb",
+      "bytes": 2532784
+    },
+    {
+      "name": "normal.png",
+      "sha256": "a77f4c9b24e3151f468a388663bb2e7fb5e7fc463f3252ba304d82659aa510ba",
+      "bytes": 4463379
+    },
+    {
+      "name": "portable.blend",
+      "sha256": "64b10dd1941af5b4eb9f4c6307307d8cad121b8132128118c847d0e47f64da19",
+      "bytes": 11292222
+    },
+    {
+      "name": "roughness.png",
+      "sha256": "d10e069b7bc2b11858e69b9605f7882ebeca200eecd26c662f386d1648ab2b14",
+      "bytes": 890102
+    }
+  ],
+  "exportCorrection": "Explicit active scene scope excludes selected objects in other open scenes"
+}

@@ -1,0 +1,63 @@
+{
+  "createdUtc": "2026-09-22T20:22:24.036426+00:00",
+  "blender": "5.2.1 LTS",
+  "source": "../../candidate2/source.blend",
+  "triangles": 3900,
+  "vertices": 1952,
+  "dimensionsM": [1.0895276069641113, 0.7299798727035522, 0.08230211585760117],
+  "materials": 1,
+  "bakeSeconds": {
+    "basecolor": 1.7258740999968722,
+    "normal": 1.6724055000231601,
+    "roughness": 0.6171581000089645
+  },
+  "totalSeconds": 15.44503469998017,
+  "scope": "Source transfer proof only; no runtime or library acceptance",
+  "knownLimitations": [
+    "Generated albedo is not physically measured and may retain illumination",
+    "Roughness is authored from scalar field, not measured",
+    "No KTX2, meshopt, LOD chain or engine QA in this proof"
+  ],
+  "files": [
+    {
+      "name": "basecolor.png",
+      "sha256": "22aa769df08df339b7ef9dcf209eb9419552534b73a189d454b77e0dace281fd",
+      "bytes": 5640999
+    },
+    {
+      "name": "high-source-opposing.png",
+      "sha256": "b84d9c6b40c4fd2feb1e420328fe660ff057923f808e8c6b4968c124d9c286c6",
+      "bytes": 2243118
+    },
+    {
+      "name": "high-source.png",
+      "sha256": "2d0799a79b5ff2c4a1f5085f4780e04e7829441130ac3131f3aefc9fe978a9a9",
+      "bytes": 2289277
+    },
+    {
+      "name": "limestone.glb",
+      "sha256": "e6513dd687bd38a5fa1556c00204275f5c443c95078f5b17534ed29fe0c701ef",
+      "bytes": 10977740
+    },
+    {
+      "name": "native-low.png",
+      "sha256": "6046afef2ad4e61a3546f8d3526580db935f3648d293b5a6fea7f91adfe84a38",
+      "bytes": 2254968
+    },
+    {
+      "name": "normal.png",
+      "sha256": "614cd793e87e074052e16bcdcf7a563b903f11471dbcb60f9eb18b524300bfc1",
+      "bytes": 4426851
+    },
+    {
+      "name": "portable.blend",
+      "sha256": "04105287556842416af6443f36cfa1a2a25fd3202b02674e1f60742359b6b272",
+      "bytes": 11077863
+    },
+    {
+      "name": "roughness.png",
+      "sha256": "3ea26ebe319a68f87f0587e8a980ca6246f5a5f689edb1376e132a9c46611727",
+      "bytes": 829858
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "startedUtc": "2026-09-20T22:21:18.581098+00:00",
+  "blender": "5.2.1 LTS",
+  "vertices": 411980,
+  "faces": 411978,
+  "triangles": 823956,
+  "nonManifoldEdges": 0,
+  "volumeM3": 0.008151204780174962,
+  "voxelSizeM": 0.0009,
+  "authoring": "Fresh convex quarried blank, 13 local angular fractures, dense remesh, restrained wear and 6 shallow local pits.",
+  "seed": 920,
+  "materials": 1,
+  "maps": 0,
+  "references": [
+    "batch-104/kit-002-stone-family-v4.png",
+    "batch-108/mat-001-cream-limestone-v1.png",
+    "batch-103/kit-001-paving-assembly-v1.png"
+  ],
+  "scope": "High resolution neutral geometry proof; not exported, QA-admitted or runtime accepted.",
+  "rightsReview": "Internal authored geometry; reference rights lineage retained in concept catalog; public-shipping clearance not asserted.",
+  "dimensionsM": [
+    0.3949989676475525,
+    0.2978339195251465,
+    0.07862795144319534
+  ],
+  "minimumZAndSupportHeightM": 0.0019523123046383262
+}

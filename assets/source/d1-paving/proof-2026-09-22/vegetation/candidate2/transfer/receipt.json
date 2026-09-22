@@ -1,0 +1,48 @@
+{
+  "seconds": 8.38367210002616,
+  "exportSeconds": 0.5887473000329919,
+  "importSeconds": 0.13292920001549646,
+  "triangles": 1016,
+  "meshes": 2,
+  "materials": 2,
+  "textures": 3,
+  "bytes": 2444100,
+  "sha256": "a2f52d0e57a8cc2c0f08f7d4a7fb232d711ada593edef08ad901a496c67b7520",
+  "extensions": [],
+  "nativeReimportPixelDelta": {
+    "mean": 0.0001730160875013098,
+    "p99": 0.003921568393707275,
+    "max": 0.05882353335618973
+  },
+  "scope": "Representative Blender transfer only; no runtime/QA/art acceptance",
+  "notChecked": [
+    "Full glTF validator",
+    "Engine roundtrip",
+    "Compression/LOD",
+    "Production4pixel texture-class conformance",
+    "Rights clearance"
+  ],
+  "knownDifference": "Native2.5percent subsurface shader may not transfer into standard glTF; no material tuning done to hide differences",
+  "files": [
+    {
+      "name": "native.blend",
+      "bytes": 2838742,
+      "sha256": "4b580d191fe41e3b08df0f7648494d2ed1f2250ac864ca0f9d4e0962c16fb0a7"
+    },
+    {
+      "name": "native.png",
+      "bytes": 1731196,
+      "sha256": "8bc4f4163d969d38ae361c038122d96ef5e87de9c7ac8a6f08fc4abc3e9179c6"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 1711312,
+      "sha256": "1f16569770623867b8b4f8b6416bc923e80ec103a62638310981304185ebac2e"
+    },
+    {
+      "name": "representative-weed.glb",
+      "bytes": 2444100,
+      "sha256": "a2f52d0e57a8cc2c0f08f7d4a7fb232d711ada593edef08ad901a496c67b7520"
+    }
+  ]
+}

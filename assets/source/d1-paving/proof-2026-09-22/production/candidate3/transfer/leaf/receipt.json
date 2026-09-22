@@ -1,0 +1,49 @@
+{
+  "subject": "leaf",
+  "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+  "triangles": 656,
+  "meshes": 2,
+  "materials": 2,
+  "textures": 3,
+  "bytes": 2465328,
+  "sha256": "a52a2fdc72ccc956ec405de9a89aea2fde63dcd83e10821c33d1b9f559ed4e2b",
+  "exportSeconds": 0.2243976999889128,
+  "importSeconds": 0.04473580000922084,
+  "pixelDelta": {
+    "mean": 0.0001720567961456254,
+    "p99": 0.003921568393707275,
+    "maximum": 0.043137259781360626
+  },
+  "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+  "notQualified": [
+    "Runtime material sharing",
+    "Current class budgets",
+    "Compression and LODs",
+    "Engine loader",
+    "Rights",
+    "Library admission"
+  ],
+  "knownDifference": "Native leaf 2.5% subsurface is not represented by standard glTF",
+  "files": [
+    {
+      "name": "native.blend",
+      "bytes": 2872332,
+      "sha256": "d85074cd67e16c3d1759532efe9042a4d7883606a99676011ca3d05c7380791a"
+    },
+    {
+      "name": "native.png",
+      "bytes": 1730230,
+      "sha256": "06e1f27abcb2c4387826fa77c922467bfef539a73f55dada73fa48c9573e3676"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 1712732,
+      "sha256": "c8bbf59a3161038df0648b2b3e0392e73f317ec3d096dbded15795f0152bf53e"
+    },
+    {
+      "name": "representative.glb",
+      "bytes": 2465328,
+      "sha256": "a52a2fdc72ccc956ec405de9a89aea2fde63dcd83e10821c33d1b9f559ed4e2b"
+    }
+  ]
+}

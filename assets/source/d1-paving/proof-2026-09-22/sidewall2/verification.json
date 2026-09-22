@@ -1,0 +1,75 @@
+{
+  "scope": "Full finite-coordinate check and deterministic maximum20000 edited baseline triangles per stone; degeneracy threshold cross-product norm1e-14m2. Not a full self-intersection test.",
+  "sourceSha256": "fe90c2ff0a87eaf8eedf3fca78d862f8a8d987dfb869bf772aa1e840cd919342",
+  "objects": [
+    {
+      "object": "Family A",
+      "allCoordinatesFinite": true,
+      "boundsLocalM": [
+        [
+          -0.2027486115694046,
+          -0.14985212683677673,
+          -0.0017560175620019436
+        ],
+        [
+          0.20074650645256042,
+          0.1538519710302353,
+          0.0806673988699913
+        ]
+      ],
+      "topologyVertexAndFaceCountsUnchanged": true,
+      "editedTriangles": 443024,
+      "sampledEditedTriangles": 20000,
+      "sampleNormalFlips": 0,
+      "minimumSampleNormalCosine": 0.28644259861643184,
+      "sampleBaselineDegenerates": 0,
+      "sampleCandidateDegenerates": 0
+    },
+    {
+      "object": "Family B",
+      "allCoordinatesFinite": true,
+      "boundsLocalM": [
+        [
+          -0.15140731632709503,
+          -0.14243084192276,
+          -0.0016383395995944738
+        ],
+        [
+          0.15332409739494324,
+          0.1441504955291748,
+          0.08048126101493835
+        ]
+      ],
+      "topologyVertexAndFaceCountsUnchanged": true,
+      "editedTriangles": 500742,
+      "sampledEditedTriangles": 20000,
+      "sampleNormalFlips": 0,
+      "minimumSampleNormalCosine": 0.3724559493414389,
+      "sampleBaselineDegenerates": 0,
+      "sampleCandidateDegenerates": 0
+    },
+    {
+      "object": "Family C",
+      "allCoordinatesFinite": true,
+      "boundsLocalM": [
+        [
+          -0.25710174441337585,
+          -0.12887153029441833,
+          -0.0016804358456283808
+        ],
+        [
+          0.2543106973171234,
+          0.12703369557857513,
+          0.08071856945753098
+        ]
+      ],
+      "topologyVertexAndFaceCountsUnchanged": true,
+      "editedTriangles": 452978,
+      "sampledEditedTriangles": 20000,
+      "sampleNormalFlips": 0,
+      "minimumSampleNormalCosine": 0.28491292762829507,
+      "sampleBaselineDegenerates": 0,
+      "sampleCandidateDegenerates": 0
+    }
+  ]
+}

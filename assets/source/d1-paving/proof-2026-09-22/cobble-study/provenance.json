@@ -1,0 +1,65 @@
+{
+  "agent": "Codex",
+  "model": "Exact runtime model identifier unavailable",
+  "humanDirection": "Earlier smaller slabs looked better, more like cobblestone; proceed with arrangement and variation while retaining approved contact, lighting, leaves and moss.",
+  "generation": "Original deterministic local layout and placement, existing authored Blender meshes/materials; no new generated images, external inputs, provider calls or paid jobs.",
+  "blender": {
+    "version": "5.2.1 LTS",
+    "build": "9e2066aef7ef"
+  },
+  "referenceIds": [
+    "KIT-001 batch103, size superseded by current human direction",
+    "KIT-002 batch104",
+    "MAT-001/MAT-018 batch108",
+    "VEG-001 batch116"
+  ],
+  "retainedRightsLineage": "../../surface-study-2026-09-21/provenance.json and existing referenced source packages retain image prompts, model/rights notes; no new rights approval is implied.",
+  "rightsReviewed": false,
+  "assetAdmission": false,
+  "artisticAcceptance": false,
+  "sources": [
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/layout-study/candidate1/build.py",
+      "bytes": 16791,
+      "sha256": "0ecfc8f32624700448abbadb2903c3b0f0bb5ceea3adc16ec2b01e8dddfbd47b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/cobble-study/candidate1/consumed-layout.txt",
+      "bytes": 15603,
+      "sha256": "6ed005af4187055ffaf8ce951bfd93f78f23f9a594f722c734d663e9def5b885"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/moss/candidate1/source.blend",
+      "bytes": 41358321,
+      "sha256": "68340228638c500978fa4f1e497b48825690532f34357b237d2c4e65a965c0ec"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-21/family-contact2/resolved.py",
+      "bytes": 9690,
+      "sha256": "566c672e664db3c391e9e51271f05902da1640dd44b374f9f446c9f893491f22"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-21/family-contact2/source.blend",
+      "bytes": 289837571,
+      "sha256": "9dd272ac327c877931f2694b94cdd3ac700649a5aa54a9658654f990d979ad5e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/transfer/a/portable.blend",
+      "bytes": 10265059,
+      "sha256": "3466ec941bb5dcf4346d0c8f4bcd3eab08e12727a66d780104c3007ac37aa881"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/transfer/b/portable.blend",
+      "bytes": 10621330,
+      "sha256": "505836e521db69e7d65f5c67c9a1c954de3eb82ed64b06666edd50bb2c105660"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/transfer/c/portable.blend",
+      "bytes": 11075806,
+      "sha256": "9a203de77a24a5b247a719091e4b39858987e4d975f87f0c1a3cc3b452317ce0"
+    }
+  ],
+  "layoutSeed": 922931,
+  "vegetationPlacementSeed": 922932,
+  "changes": "Local whole-stone retiling; rigid plant relocation; rigid per-shoot moss fitting with preserved shapes/topology/colors/material maps."
+}

@@ -1,0 +1,100 @@
+{
+  "files": [
+    {
+      "name": "author-results.md",
+      "bytes": 2861,
+      "sha256": "15e0688457e6254df9e2823e8b488a92a3b4c766542a409a002143c42322c2b3"
+    },
+    {
+      "name": "build.py",
+      "bytes": 9717,
+      "sha256": "ce1d661b077f8668d951f2f7a1e17a3feaf2b045325dcff83df96b360e0f88b9"
+    },
+    {
+      "name": "close-opposing.png",
+      "bytes": 13692413,
+      "sha256": "037fac8567f5e120c599806311efd688b56097501009d7194ffffa5399c948fe"
+    },
+    {
+      "name": "close-unlit.png",
+      "bytes": 13708451,
+      "sha256": "77703a47da0b89c93e014c8227405c8c40c0dbd25d1c3e54899481c7c375d01b"
+    },
+    {
+      "name": "close.png",
+      "bytes": 13741808,
+      "sha256": "ae659edf18368516b926a276dcf486b431ddcf7a36a066f5cd4c1a57577fd963"
+    },
+    {
+      "name": "freeze.py",
+      "bytes": 2693,
+      "sha256": "e8c0265a5804ed02e1706402d3a6d8f13f9afcefb24bf5d93893f2e6024241af"
+    },
+    {
+      "name": "leaf-basecolor.png",
+      "bytes": 1187878,
+      "sha256": "2d2f7749d5447e563b2f31b0b1d83ae48ff9223318445fdb0ee5b134a1e4984b"
+    },
+    {
+      "name": "overview.png",
+      "bytes": 14511537,
+      "sha256": "d1e62cb5f2bbd424968cc58bd70935db2e9cfbf847b9fb8983940778b38cef12"
+    },
+    {
+      "name": "prepare.py",
+      "bytes": 2110,
+      "sha256": "9b27cf1c4d3199a237acfbc055301ce31d77e049cab6cd5c2965219c1c4ac1c7"
+    },
+    {
+      "name": "receipt.json",
+      "bytes": 30031,
+      "sha256": "ba3439a99f0c5a0e76ad79ef8e683aba810b80156a7a2d50cffc1679850f925a"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 39901469,
+      "sha256": "ce87022690f941b09cd4741b6215e31272beee748b375058c70c29a4ca2c1db4"
+    },
+    {
+      "name": "transfer/file-structure.json",
+      "bytes": 802,
+      "sha256": "6ef06dba6baf24a80fb1a6f02ad06a82db17850a4d98ad7bbd3b45b685e96bdb"
+    },
+    {
+      "name": "transfer/native.blend",
+      "bytes": 2868483,
+      "sha256": "37c4597e6fb6ac4962454b4355b78722b0e01b5234527a7730fc28c2ebafb1c8"
+    },
+    {
+      "name": "transfer/native.png",
+      "bytes": 1730260,
+      "sha256": "5bbea5b17c96bec8a452dc09a3376a5e91cc27e6c58dbe64c0c18daac871452a"
+    },
+    {
+      "name": "transfer/receipt.json",
+      "bytes": 1506,
+      "sha256": "cdab89fe523f6b8b8ba3325c86ee4f9f630d9f03ce71b7d0f5741e6edfa56fe2"
+    },
+    {
+      "name": "transfer/reimport.png",
+      "bytes": 1710966,
+      "sha256": "c63d0cb08d729ad9adc87a8bea87c0ba13984f71ad929de336b1051905b4fc75"
+    },
+    {
+      "name": "transfer/representative-weed.glb",
+      "bytes": 2473960,
+      "sha256": "156b835015fe16bd80400a17515bf6aedbfa1bb3661d481548d709e196be0c29"
+    },
+    {
+      "name": "transfer.py",
+      "bytes": 4614,
+      "sha256": "1660ab0d1422d3380142a913eefbc607c7f10292a7449f9539da8c0c20f20ca3"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 15007703,
+      "sha256": "b1629ca9f377b226871857c079f275974568076fbc9809ca90f9a9bae614273e"
+    }
+  ],
+  "scope": "Frozen source evidence inventory; excludes itself"
+}

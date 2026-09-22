@@ -1,0 +1,556 @@
+{
+  "scope": "Retained native candidates and failed source-to-bake diagnostics, not admitted assets.",
+  "nativeRecordedIdentitiesChecked": 50,
+  "files": [
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/build.py",
+      "bytes": 13598,
+      "sha256": "731570f846f92c5a933ec554c539b7e45fa5be3a508cfa591b8b1c1c80dabf98"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/build2.py",
+      "bytes": 2039,
+      "sha256": "eb9a37028b68e4d4b29ad9cf5e449fb8bc55f995e7bd021d089d39065b50e823"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/gray.png",
+      "bytes": 2484634,
+      "sha256": "64a57db9c5bf6969777c1bea563559a5c4a7826f00584913d4f39b918b94f51b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/grazing.png",
+      "bytes": 2198171,
+      "sha256": "046d1bd9ab93fc745c83542832983cbd66e8ea5a648b0909f579a6c27dfffb6e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/oblique.png",
+      "bytes": 2671802,
+      "sha256": "ed9605ecf3890cebd40157bfcbcc9dda90146edbe6367df969bb9f43538203b2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/opposing-light.png",
+      "bytes": 2733813,
+      "sha256": "c20c455d157e21d1ccf410f77384854076eff73608ee7322df6379c4577488ae"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/receipt.json",
+      "bytes": 5802,
+      "sha256": "0c6a99ea73c2e109b60ab5dea26e2f316c9b8a6714b9ddbee90e69185965ea65"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/reverse.png",
+      "bytes": 2727931,
+      "sha256": "0a544c78443371f0afd447990deadfea339d41badb6e692aa556ecfa89029d5a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/source.blend",
+      "bytes": 83606213,
+      "sha256": "173a77a00fa007365240972ea90c177fa9fd6fc17a305ed9bd1c4fb6581bcd3f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/unlit.png",
+      "bytes": 2695625,
+      "sha256": "e8eadb1619be28bf34d63fb3712e7a457cd8c6f0a3cb0e27f85f311c028ef376"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1/walking.png",
+      "bytes": 2473030,
+      "sha256": "c2a5adc6ca2852e26088fecd88c464a877449631e9aa4aa5ca24bdedcbe1157e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/gray.png",
+      "bytes": 2471742,
+      "sha256": "e91206b70091168444d79728fa0846b7faad0d769b3179eebec47e010b041ccd"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/grazing.png",
+      "bytes": 2225325,
+      "sha256": "24f7187578262074377c2cd513baef2c656def4316b36ee6c535b88be79cfcf8"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/oblique.png",
+      "bytes": 2673845,
+      "sha256": "3262c15dcd61befd37d0401c7e7c00a6ca10d4d74facd5d787149417ddb3b844"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/opposing-light.png",
+      "bytes": 2738189,
+      "sha256": "42494a7b610d804a4f4929a79f9c99c429bf6c505808c4c2a6ea98170c33457e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/receipt.json",
+      "bytes": 5781,
+      "sha256": "7ecc94d0aab20a88da26655be5a74239f4d4eb8e446a7377851ffbd2062d9bde"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/reverse.png",
+      "bytes": 2732548,
+      "sha256": "6bd3f5ef84f6b59ed2988f58a967b28dc9d7d1837e230353fe311f41c7d5ab0d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/source.blend",
+      "bytes": 83603068,
+      "sha256": "ef508f1b417ca25950bc8e68cbc75dff6aadd42aa2d51eebb0f57f2e8b58f26b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/unlit.png",
+      "bytes": 2708908,
+      "sha256": "f1e18f150de2c2a490af9cc010177547c6bbc588807dfdece24ff1eac49e00ff"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate1-corrected/walking.png",
+      "bytes": 2561867,
+      "sha256": "b9533d3a952da2bd240fba825a6ecb12bc32dea05c0a311ff86242701e017555"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/gray.png",
+      "bytes": 2470374,
+      "sha256": "bd65af6de45db2b2de1b8b03607be6f65a72ed7e04fe4387dac47ee7d6596846"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/grazing.png",
+      "bytes": 2586447,
+      "sha256": "afdce618389bda6af41a833eb47668c23bd1595f5789b8baa10e5e8fdafb36e2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/oblique.png",
+      "bytes": 3059853,
+      "sha256": "e41ebfe157327ea2c13655e119d00befc1593438ec725f16ad92bac25a4e49ca"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/opposing-light.png",
+      "bytes": 3075546,
+      "sha256": "768315a525e3327ba2078d2e4736eb57492d641155e813abb357057a978fc213"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/receipt.json",
+      "bytes": 6226,
+      "sha256": "fb6cf9d24683b396cbe61b12b84251525f6e8375a9a94f3f480489a819fa1c58"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/resolved-build.py",
+      "bytes": 14468,
+      "sha256": "898e07c1d7dcb68f5be373063f7cbe7ddae1a5bd058b76cef1d861bcc972eea7"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/reverse.png",
+      "bytes": 3116575,
+      "sha256": "6abe70178522bf8598175d164f65fb7c976d28bdc3d8b4f11aebeaab2118c28f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/source.blend",
+      "bytes": 83599907,
+      "sha256": "e9cb127d9923e9c53a75c959ea00c0cf158fdde447b2e88a9499ed7702860a1b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/unlit.png",
+      "bytes": 3039796,
+      "sha256": "3ffcb61cd62ad7b9546ce7b16c649f8f04cdf669e580fc2687c7244fd1612cd0"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/candidate2/walking.png",
+      "bytes": 3494404,
+      "sha256": "0d30ad4579de71822a9527de3ec6e8feff3086cfb294ef44ee03b03c30e8a351"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/finalize.py",
+      "bytes": 4584,
+      "sha256": "c809fe18c261ef2af50bb4ddefc9f1d2b095bb30a793d9b25b6a0b36165e7d19"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/invalid-preflight-build.py",
+      "bytes": 13241,
+      "sha256": "0959d87bde755983ba168aa8099fd871f7e7719c1ca11e51bfb0015722282cff"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/material2.py",
+      "bytes": 2646,
+      "sha256": "50dd175d06f2a5b9077fb701d4c7596b5aad4b3c1c6981daee3673774ad0afb2"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/provenance.json",
+      "bytes": 1483,
+      "sha256": "0aa1ea90efe2ef06fbb3234211bfbe0f18c10924fbfa2971f098d60e570872b4"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/basecolor.png",
+      "bytes": 5640999,
+      "sha256": "22aa769df08df339b7ef9dcf209eb9419552534b73a189d454b77e0dace281fd"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/color-diagnostic.json",
+      "bytes": 1838,
+      "sha256": "bfd7043fa5e81fe6a1b317ea1301aa905811c5c076749bc19b78e26bc2ffb83b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/grazing-high.png",
+      "bytes": 1727282,
+      "sha256": "a89b362d1047c6cd366b1a1518209b76dbe5efae0224121aa60968c2f9c44773"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/grazing-import.png",
+      "bytes": 1690745,
+      "sha256": "054c8fbc9039468ecb366baf95ba81c73cb26dae907693f4c886eef8127d1720"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/grazing-low.png",
+      "bytes": 1690971,
+      "sha256": "3d82d843672b5accd15071614c432a891a4c71ddc1e757075431c3957b1903ea"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/high-source-opposing.png",
+      "bytes": 2243118,
+      "sha256": "b84d9c6b40c4fd2feb1e420328fe660ff057923f808e8c6b4968c124d9c286c6"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/high-source.png",
+      "bytes": 2289277,
+      "sha256": "2d0799a79b5ff2c4a1f5085f4780e04e7829441130ac3131f3aefc9fe978a9a9"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/limestone.glb",
+      "bytes": 10977740,
+      "sha256": "e6513dd687bd38a5fa1556c00204275f5c443c95078f5b17534ed29fe0c701ef"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/matched-views.json",
+      "bytes": 2694,
+      "sha256": "8334df35bf9849b266489d348fd98bf083f1071b40d926673fca9fee8a268c71"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/native-low.png",
+      "bytes": 2254968,
+      "sha256": "6046afef2ad4e61a3546f8d3526580db935f3648d293b5a6fea7f91adfe84a38"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/normal.png",
+      "bytes": 4426851,
+      "sha256": "614cd793e87e074052e16bcdcf7a563b903f11471dbcb60f9eb18b524300bfc1"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/portable.blend",
+      "bytes": 11077863,
+      "sha256": "04105287556842416af6443f36cfa1a2a25fd3202b02674e1f60742359b6b272"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/receipt.json",
+      "bytes": 1976,
+      "sha256": "993dfb4234bbeeb18308c91cddd0502a261502c7c1d79567420df296171d203a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/reimport-opposing.png",
+      "bytes": 2209226,
+      "sha256": "de3b4ba0980a00679a8d78d53735cfde5cecc3a40babe2afeac8d26e8260228c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/reimport.png",
+      "bytes": 2254518,
+      "sha256": "5b7c3c699b9e5d6e7239f6cd52728307440485ac73036e1e6957bcf24da22256"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/resolved_bake.py",
+      "bytes": 5186,
+      "sha256": "e01776eecf5173af224bea141243f6b54dde48760d61c6ec1454737deefc93a3"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/resolved_verify.py",
+      "bytes": 4688,
+      "sha256": "5cf194a7dbf66fd9836a3d58e31d6d1bfb7d3e362bc4c4b6aa9ade757e037c0c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/roughness.png",
+      "bytes": 829858,
+      "sha256": "3ea26ebe319a68f87f0587e8a980ca6246f5a5f689edb1376e132a9c46611727"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/verification.json",
+      "bytes": 5248,
+      "sha256": "289653865679fdde80c9151947a144fbd3b80dbc9572bc75efada7dd62d6af8a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-albedo-high.png",
+      "bytes": 2652878,
+      "sha256": "85e4d68a67116e0b6138708049850fbdc19d1418c464b3abb25fc18ed5c5e0b8"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-albedo-import.png",
+      "bytes": 2565246,
+      "sha256": "ce78068ae49ce3a2f44658ba19e8af0756c1d62e12298daa4c042566decf7332"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-albedo-low.png",
+      "bytes": 2565461,
+      "sha256": "0e08bd156dcea1bba3d0ec571e8d296d59fa88ad571e6cdaf43b3f052424ba64"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-high.png",
+      "bytes": 2717530,
+      "sha256": "08a336a8c530ad36f567c49dcd8e6a073096faf4e5f07ac218d6725e068eff89"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-import.png",
+      "bytes": 2642917,
+      "sha256": "f68e8fd15cbce21ccf8e43dcaf0ed1e425ce552e41f0dc3859dbf2fc3522fb14"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/a/walking-low.png",
+      "bytes": 2642631,
+      "sha256": "51c50db69f6c52703a14ffd483ab7d03f4e2326c0f5ee345c94d70fbcc8a6d26"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer/results.json",
+      "bytes": 7308,
+      "sha256": "494ae9c02c4b8cd19391d196eaade6e18872c169b161e9a9e81e61ac38d8950b"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-color-diagnostic.py",
+      "bytes": 1055,
+      "sha256": "642785abb3e38a14c2457412df1122891f4a3ea868c4e8bac30055efbdb91080"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/basecolor.png",
+      "bytes": 5641002,
+      "sha256": "3492ca1c8301e5a1b0e7edb7bfc0162d64a124a27af9e60120298b115be50811"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/grazing-high.png",
+      "bytes": 1727257,
+      "sha256": "c9fdd720f2953900fe2de9acf3250d3216355c608b9cd36b8f0504d819404c77"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/grazing-import.png",
+      "bytes": 1690832,
+      "sha256": "1a07e8894b7d2e248f69c5bb679fe816c1a5bcf5d585cf282d134158174251fc"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/grazing-low.png",
+      "bytes": 1690711,
+      "sha256": "06d9991a495c388755bdc0dac6f8070d6d63b7a36aaf9203686337f9237f6720"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/high-source-opposing.png",
+      "bytes": 2243173,
+      "sha256": "8fbc97bd83b44c594c7865b7e9e01cc11817d2547a0bf7e1028aa58f56139ace"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/high-source.png",
+      "bytes": 2289098,
+      "sha256": "e16410843e0c9a09dc70e9d7319cde0b6f8e437fc47eef04cc95280e00ef4abf"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/limestone.glb",
+      "bytes": 10977740,
+      "sha256": "9e7701fe09f50ee18a9d4654b981cfd32341f6a2f052b69ef7c2bccb32df405c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/matched-views.json",
+      "bytes": 2824,
+      "sha256": "e96a48d351629fad478ba9bd6825776463846b9efbbca3c4a6e71b9aea46ed27"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/native-low.png",
+      "bytes": 2254958,
+      "sha256": "79161d4c8f1011a288a3b4e1deba754f7d3c18b15c043b7c54997caca27bee2c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/normal.png",
+      "bytes": 4426851,
+      "sha256": "f6548efebc26f61e745a16b4d997797c0bd8209bb88502ba5a3d9d0f0627a41c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/portable.blend",
+      "bytes": 11078000,
+      "sha256": "20dc7409539e711670959d4daac045e0f4c474c136297058cac51cec4ab5b230"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/receipt.json",
+      "bytes": 1975,
+      "sha256": "ef2b8f943e97166015661e7f5288c0370a988388892f83a261860720a762b74d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/reimport-opposing.png",
+      "bytes": 2209129,
+      "sha256": "e596e50d1d052bdba3ceebec359a3ac0bbbe066447dc0ebfcfeaffc376f90215"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/reimport.png",
+      "bytes": 2254557,
+      "sha256": "345ce82a3f1b26d8dccbcdc110b2e9798e133f3c0786eb985718b948317909fb"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/resolved_bake.py",
+      "bytes": 5202,
+      "sha256": "0060ff962f99cf29ee177fb0de64a4d20244e3d908ddc73a80562cf06f31ee0d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/resolved_verify.py",
+      "bytes": 4704,
+      "sha256": "6497120aefce8ece8502730ef043af0bbe06d7adb429be62b7f04e9e2852a4ef"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/roughness.png",
+      "bytes": 829858,
+      "sha256": "9703697341d8485a54c1f71354db4685f0fa1ca032a2b8cfc34522d47bcbec11"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/verification.json",
+      "bytes": 4605,
+      "sha256": "92fae612d952160014ba94a73fe22744086818a75359c2a7b056f5aedd271de6"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/walking-high.png",
+      "bytes": 2717402,
+      "sha256": "9e83f3534c1d6fde71e09c1ce0a2e48cbc7ec7eeee99b83767020da8a855ae2c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/walking-import.png",
+      "bytes": 2642636,
+      "sha256": "726649c83a7cfe454b7bf079af091c701c7424d49bde76ce298e2f835288dcd8"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/a/walking-low.png",
+      "bytes": 2642662,
+      "sha256": "857666caa4afa0d6428619de0166cf2b3e135f158f1e34bd654f0254f745734f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object/results.json",
+      "bytes": 5955,
+      "sha256": "14f5b8d7b78f698f1fb6e6aad61ab1d9be848deffa727de626c1e517b6a9d97c"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-explicit-object.py",
+      "bytes": 796,
+      "sha256": "e6d7890f693ef8ec60ac78bc835bcac74a4956788b53b1c85815ef436e7170d8"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-resolved.py",
+      "bytes": 6250,
+      "sha256": "ca67d6a03766b5fd7a195f55aaaf2e9d48a263aac7126df0d17118c4937894c9"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/basecolor.png",
+      "bytes": 5544443,
+      "sha256": "707a16624471cf91815194f970948d099075efcafae5e15d5a6e6fd524e9399f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/grazing-high.png",
+      "bytes": 1727491,
+      "sha256": "9398fef3f95dcb6474ead439edd87de6ef2aa91ba4519aa0edd0d2424853f3ad"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/grazing-import.png",
+      "bytes": 1688164,
+      "sha256": "b5f100d5b9acc952b108de344712cd2fec1980b1f42a9a9487e46cd2d6958068"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/grazing-low.png",
+      "bytes": 1688189,
+      "sha256": "c7e4668e43654ec8d61955b98dde1bd95c12d19cb950e16eaa93006e35dfa0d4"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/high-source-opposing.png",
+      "bytes": 2243117,
+      "sha256": "e8d1f2357b918dae967f71fd0b0762040b7cb55d8f9cdc1b17fce8ea70b1e8ec"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/high-source.png",
+      "bytes": 2289235,
+      "sha256": "7d5efa3f6bd4d5e71f928f6594a7eaf47ca4541073fbb61b754bb37019f4e42e"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/limestone.glb",
+      "bytes": 10847060,
+      "sha256": "f998c45bc6fbfc748c67a47c0bc5fa367391952ddb04af995c96deaec4aec638"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/matched-views.json",
+      "bytes": 2799,
+      "sha256": "8464955b2a301706474686378f300d75bd81fe1a98fff2c53bfb94495428d5a6"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/native-low.png",
+      "bytes": 2252325,
+      "sha256": "072d4a09204a78ce99da01ba19302ba8c01cd184726ca498ebeb886e794f69f4"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/normal.png",
+      "bytes": 4426857,
+      "sha256": "f2e9a186410b1c1f606a6478ad76fc888b3c01836cd5707aa27b9f203484cc0f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/portable.blend",
+      "bytes": 10945999,
+      "sha256": "10b65185ebd9764c4530c14dee67b9f741d230b7082abee5786d7d7db492e672"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/receipt.json",
+      "bytes": 1976,
+      "sha256": "d7d6b5fb799925c7680c0797718a27900522d84cda13bc34d8431324cc0feeb9"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/reimport-opposing.png",
+      "bytes": 2204755,
+      "sha256": "d9beac00b92b2e5ad27ca97e97da26b6a8669740d8ae3138fb43b0cebc1509a6"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/reimport.png",
+      "bytes": 2252477,
+      "sha256": "ef77d4bcfe1cfafae8dc7523ec8bf8673d73093ce69b6f11173c3dcae5a9d109"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/resolved_bake.py",
+      "bytes": 5955,
+      "sha256": "aeb1b843fa02fcdcf10dc7eea686c70de7b068386e6350183b7fda707baeab1d"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/resolved_verify.py",
+      "bytes": 4701,
+      "sha256": "f13c57baa7d163f22a4268e9da5c51e8d8f9385365d20ca0b9a162bcbd413398"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/roughness.png",
+      "bytes": 794585,
+      "sha256": "baf7004f0af02695dcd48f3f514a2ea8a8da42c6e1e248a2290446ecffd6987f"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/verification.json",
+      "bytes": 4606,
+      "sha256": "28c2dd418c333a60af67b9d96f4a877d7ea9932640a6e8cf420a1cc7b5fc989a"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/walking-high.png",
+      "bytes": 2717613,
+      "sha256": "e08cf1df4c3f956db41449c6f18199a8b40e6ecdd59a3b3a9afd47448186df29"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/walking-import.png",
+      "bytes": 2633189,
+      "sha256": "2c3447e7084717e880b2c663268d063656bdfea206c905f31ca57d6a585b8a80"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/a/walking-low.png",
+      "bytes": 2633634,
+      "sha256": "3d7a2c3d2a6b379df6586772a63c384648e77e5a2902b3f67d1a93cdfa7f0b84"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field/results.json",
+      "bytes": 5955,
+      "sha256": "994c1dcc0c218515aa19ed76fd410cbcb375d29fd9b1334fc01482695a8a6593"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-target-field.py",
+      "bytes": 1675,
+      "sha256": "1c78f63e1f1a88677db656a8e0088b14e82409c854e72adab684955ded6fb877"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer-views.py",
+      "bytes": 3196,
+      "sha256": "34b070ec4b0f3cecf69f0e70e108edac2daf845488eb008802498aa11a5eb9f5"
+    },
+    {
+      "path": "D:/src/parallax/assets/source/d1-paving/proof-2026-09-22/broad-family/transfer.py",
+      "bytes": 2422,
+      "sha256": "3a23c11cca88fe53f0dc6546410acc67641c7fbe0f9bd8bbd80870367ba5b8ac"
+    }
+  ]
+}

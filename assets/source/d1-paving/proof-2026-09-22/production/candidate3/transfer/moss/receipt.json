@@ -1,0 +1,49 @@
+{
+  "subject": "moss",
+  "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+  "triangles": 7800,
+  "meshes": 1,
+  "materials": 1,
+  "textures": 0,
+  "bytes": 472396,
+  "sha256": "f87e3c5fb5a29fc5602b11f884eb461ef6a10012f1bb8d484166a43ec0f256de",
+  "exportSeconds": 0.011501399974804372,
+  "importSeconds": 0.031103999994229525,
+  "pixelDelta": {
+    "mean": 9.442606824450195e-5,
+    "p99": 0.003921568393707275,
+    "maximum": 0.0156862735748291
+  },
+  "scope": "Representative standard GLB / fresh Blender import only; neutral floor is not rooting evidence",
+  "notQualified": [
+    "Runtime material sharing",
+    "Current class budgets",
+    "Compression and LODs",
+    "Engine loader",
+    "Rights",
+    "Library admission"
+  ],
+  "knownDifference": null,
+  "files": [
+    {
+      "name": "native.blend",
+      "bytes": 364380,
+      "sha256": "8e10096053b5b75c32ade544f4128244a1abb7d69b7d9a37a90d390da8950bc7"
+    },
+    {
+      "name": "native.png",
+      "bytes": 2216942,
+      "sha256": "4e3bda234a3fa1c9f7a9df7482b88e08a26638d9afaee2935552031910340042"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 2217564,
+      "sha256": "a31380514036e6e9fcacb597790135397c47d1389cd75c9d720ddbb6c42179cf"
+    },
+    {
+      "name": "representative.glb",
+      "bytes": 472396,
+      "sha256": "f87e3c5fb5a29fc5602b11f884eb461ef6a10012f1bb8d484166a43ec0f256de"
+    }
+  ]
+}

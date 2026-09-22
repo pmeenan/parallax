@@ -1,0 +1,169 @@
+{
+  "source": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\broad-family\\candidate2\\source.blend",
+  "sourceSha256": "e9cb127d9923e9c53a75c959ea00c0cf158fdde447b2e88a9499ed7702860a1b",
+  "sourceFileUnchanged": true,
+  "tool": "5.2.1 LTS",
+  "totalSeconds": 31.39828960003797,
+  "rightsReviewed": false,
+  "scope": "Early source-only transfer; no library/engine/full QA acceptance. No compression, LOD or shared material conformance completed.",
+  "members": [
+    {
+      "checkedUtc": "2026-09-22T20:36:12.694609+00:00",
+      "glbSha256": "f998c45bc6fbfc748c67a47c0bc5fa367391952ddb04af995c96deaec4aec638",
+      "glbBytes": 10847060,
+      "scenes": 1,
+      "meshes": 1,
+      "materials": 1,
+      "textures": 3,
+      "triangles": 3900,
+      "extensions": [],
+      "importSeconds": 0.05142179998802021,
+      "closedManifold": true,
+      "finiteCoordinates": true,
+      "finiteUVsWithinUnitSquare": true,
+      "sampledSourceToLowDistanceM": {
+        "samples": 4609,
+        "median": 0.00021292961901053786,
+        "p95": 0.0008071879739873107,
+        "maximum": 0.0026275331620126963
+      },
+      "nativeVsReimportLoadedPixelDelta": {
+        "meanAbsolute": 8.299292062474706e-7,
+        "p99": 0.0,
+        "maximum": 0.00784313678741455
+      },
+      "checked": [
+        "Actual GLB header/length and embedded buffer",
+        "One mesh, material and scene; 3900 triangles",
+        "Standard basecolor, roughness and tangent normal channels",
+        "Native fresh-scene import and render",
+        "Finite UV/position and closed manifold mesh"
+      ],
+      "notChecked": [
+        "Full glTF validator",
+        "UV overlap/inversion",
+        "LOD chain",
+        "KTX2 and meshopt",
+        "Babylon/WebGPU render",
+        "In-game performance",
+        "Rights clearance",
+        "Human artistic acceptance"
+      ],
+      "member": "A",
+      "memberTotalSeconds": 30.077427499985788,
+      "resource8MiBCeilingPassed": false,
+      "rightsReviewed": false,
+      "files": [
+        {
+          "name": "basecolor.png",
+          "bytes": 5544443,
+          "sha256": "707a16624471cf91815194f970948d099075efcafae5e15d5a6e6fd524e9399f"
+        },
+        {
+          "name": "grazing-high.png",
+          "bytes": 1727491,
+          "sha256": "9398fef3f95dcb6474ead439edd87de6ef2aa91ba4519aa0edd0d2424853f3ad"
+        },
+        {
+          "name": "grazing-import.png",
+          "bytes": 1688164,
+          "sha256": "b5f100d5b9acc952b108de344712cd2fec1980b1f42a9a9487e46cd2d6958068"
+        },
+        {
+          "name": "grazing-low.png",
+          "bytes": 1688189,
+          "sha256": "c7e4668e43654ec8d61955b98dde1bd95c12d19cb950e16eaa93006e35dfa0d4"
+        },
+        {
+          "name": "high-source-opposing.png",
+          "bytes": 2243117,
+          "sha256": "e8d1f2357b918dae967f71fd0b0762040b7cb55d8f9cdc1b17fce8ea70b1e8ec"
+        },
+        {
+          "name": "high-source.png",
+          "bytes": 2289235,
+          "sha256": "7d5efa3f6bd4d5e71f928f6594a7eaf47ca4541073fbb61b754bb37019f4e42e"
+        },
+        {
+          "name": "limestone.glb",
+          "bytes": 10847060,
+          "sha256": "f998c45bc6fbfc748c67a47c0bc5fa367391952ddb04af995c96deaec4aec638"
+        },
+        {
+          "name": "matched-views.json",
+          "bytes": 2799,
+          "sha256": "8464955b2a301706474686378f300d75bd81fe1a98fff2c53bfb94495428d5a6"
+        },
+        {
+          "name": "native-low.png",
+          "bytes": 2252325,
+          "sha256": "072d4a09204a78ce99da01ba19302ba8c01cd184726ca498ebeb886e794f69f4"
+        },
+        {
+          "name": "normal.png",
+          "bytes": 4426857,
+          "sha256": "f2e9a186410b1c1f606a6478ad76fc888b3c01836cd5707aa27b9f203484cc0f"
+        },
+        {
+          "name": "portable.blend",
+          "bytes": 10945999,
+          "sha256": "10b65185ebd9764c4530c14dee67b9f741d230b7082abee5786d7d7db492e672"
+        },
+        {
+          "name": "receipt.json",
+          "bytes": 1976,
+          "sha256": "d7d6b5fb799925c7680c0797718a27900522d84cda13bc34d8431324cc0feeb9"
+        },
+        {
+          "name": "reimport-opposing.png",
+          "bytes": 2204755,
+          "sha256": "d9beac00b92b2e5ad27ca97e97da26b6a8669740d8ae3138fb43b0cebc1509a6"
+        },
+        {
+          "name": "reimport.png",
+          "bytes": 2252477,
+          "sha256": "ef77d4bcfe1cfafae8dc7523ec8bf8673d73093ce69b6f11173c3dcae5a9d109"
+        },
+        {
+          "name": "resolved_bake.py",
+          "bytes": 5955,
+          "sha256": "aeb1b843fa02fcdcf10dc7eea686c70de7b068386e6350183b7fda707baeab1d"
+        },
+        {
+          "name": "resolved_verify.py",
+          "bytes": 4701,
+          "sha256": "f13c57baa7d163f22a4268e9da5c51e8d8f9385365d20ca0b9a162bcbd413398"
+        },
+        {
+          "name": "roughness.png",
+          "bytes": 794585,
+          "sha256": "baf7004f0af02695dcd48f3f514a2ea8a8da42c6e1e248a2290446ecffd6987f"
+        },
+        {
+          "name": "walking-high.png",
+          "bytes": 2717613,
+          "sha256": "e08cf1df4c3f956db41449c6f18199a8b40e6ecdd59a3b3a9afd47448186df29"
+        },
+        {
+          "name": "walking-import.png",
+          "bytes": 2633189,
+          "sha256": "2c3447e7084717e880b2c663268d063656bdfea206c905f31ca57d6a585b8a80"
+        },
+        {
+          "name": "walking-low.png",
+          "bytes": 2633634,
+          "sha256": "3d7a2c3d2a6b379df6586772a63c384648e77e5a2902b3f67d1a93cdfa7f0b84"
+        }
+      ],
+      "sourceToBakeVisualFidelityPassed": false,
+      "visualLimit": "Matched walking/grazing captures show source-to-bake mineral differences; low/import agreement is a separate check."
+    }
+  ],
+  "sourceToBakeVisualFidelityPassed": false,
+  "productionClassLimits": {
+    "class": "individual-stone-variants",
+    "classFile": "assets/qa/d1-stone-variants.json",
+    "sourceDimensionsExceedCurrentWidthBounds": true,
+    "fullAdmissionRun": false
+  }
+}

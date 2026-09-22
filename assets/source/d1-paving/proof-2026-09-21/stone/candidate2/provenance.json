@@ -1,0 +1,69 @@
+{
+  "author": "Codex paver_refinement agent; exact model not independently verified",
+  "tool": "5.2.1 LTS",
+  "seconds": 37.02543770003831,
+  "scene": "Paving proof stone candidate2",
+  "object": "Paving proof stone candidate2 master",
+  "material": "Original limestone correlated surface cycle102 seed713",
+  "changes": [
+    "Remove generated photographic albedo from reflectance",
+    "Baseline20-pass mineral classification; darker warm gray and cream reflectance; no photographic pore lighting",
+    "Restored baseline side relief; three localized corner losses",
+    "Attenuate fine geometric relief by42percent on worn plateaus; retain low broad relief",
+    "Reduce and regionally control bump"
+  ],
+  "limitations": [
+    "Synthetic scalar input is artist interpreted, not calibrated height",
+    "Reflectance classification can retain large source-region structure; visual screen required",
+    "No portable export or library QA yet"
+  ],
+  "rightsReviewedForShipping": false,
+  "baselineProvenance": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\provenance.json",
+  "inputs": [
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\build.py",
+      "sha256": "5d88c3bce7d11cd617479fe91501490ba68ccf4461e40093a5fa0f5a8a625abe",
+      "bytes": 13865
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\cycle11\\source.blend",
+      "sha256": "1a08b0646a4cbd63bb5247a5a3b1747085cf295316029919d95b1f20ade56018",
+      "bytes": 53944720
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\inputs\\limestone-height-v1.png",
+      "sha256": "caf2c576a6809485b776fb0ffa0f9fa03ef1a4bf67a04f148ae25ae59deda9cb",
+      "bytes": 3516907
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\provenance.json",
+      "sha256": "6f594acf7a6c0cad9d51077349e875888c66286fa4f49e152e85fcb0cbbf54b6",
+      "bytes": 23973
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\build_candidate2.py",
+      "sha256": "1216fa82ee5ea3b8ddfb538a880f5923dc23a23ab526d6e5581e78a1b873efd7",
+      "bytes": 6386
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\candidate2\\resolved_build.py",
+      "sha256": "b9c6eac41cd8f3e0d2f23a196b33f1a1bc786aaa5c2a64a9aff9217934381fa8",
+      "bytes": 14783
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\candidate2\\resolved_capture.py",
+      "sha256": "7a4cc2feea2a657b239425686458ca698ad7101d7beb3c76e3d8380b09de96c8",
+      "bytes": 3653
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\reference\\concepts\\batch-104\\kit-002-stone-family-v4.png",
+      "sha256": "a307c0e9c2fba6d25dc77ff47fd9f76da4b733e64e25640f38fd64c11fca42eb",
+      "bytes": 3664594
+    },
+    {
+      "path": "D:\\src\\parallax\\assets\\reference\\concepts\\batch-108\\mat-001-cream-limestone-v1.png",
+      "sha256": "7ff22400d6c057ea057faf4ccfe603d36a081935aee48fe4403678709f238fd4",
+      "bytes": 3652076
+    }
+  ]
+}

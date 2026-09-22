@@ -50,6 +50,11 @@ target IDs, with matched camera/light/scale and temporal or physical behavior re
 where applicable. A generated still is not a physics specification. This reference
 stage does not authorize implementation of every deferred rendering feature.
 
+For authored 3D assets, follow the [asset production workflow](../assets/production-workflow.md):
+one complete representative asset, joint shape/material iteration, early gray/unlit/
+relighting diagnostics, export verification and a small family/contact check before
+broad replication. Asset-specific experiments do not establish artistic acceptance.
+
 Concept production follows the human-authorized [parallel review workflow](../assets/reference/concept-art-program.md#production-sequence-and-allowance)
 from Batch 013: up to two independent generation subagents, with both visual reviews
 and lead adjudication before any revision or dependent generation. Keep existing

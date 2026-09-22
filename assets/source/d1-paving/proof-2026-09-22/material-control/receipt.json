@@ -1,0 +1,26 @@
+{
+  "geometryAndPlacement": "unchanged family-contact2",
+  "changedMaterial": "Family A only; original cycle11 material; B/C unchanged controls",
+  "scope": "Matched diagnostic, not a new accepted candidate or clean albedo claim",
+  "sourceMaterial": "D:\\src\\parallax\\assets\\source\\d1-paving\\surface-study-2026-09-21\\cycle11\\source.blend",
+  "sourceOnly": true,
+  "rightsReviewed": false,
+  "files": [
+    {
+      "name": "joint-detail.png",
+      "sha256": "a8a804bb3e33a8a9b09977c4f47ce1e778c3a07625df2474ef6659d0a939f5e7"
+    },
+    {
+      "name": "oblique.png",
+      "sha256": "daf6b09e90626809ec09ea6f48224bcace718113697272938b9336055076541c"
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "46f5ab8c6a52624e9c3feeffa815714471c202ff0f7df78ee725ff78478ff4de"
+    },
+    {
+      "name": "source.blend",
+      "sha256": "eb4e53684434e79cb4bfe466b592a32d21ef6d9f0eaa445cdda0022892e9f716"
+    }
+  ]
+}

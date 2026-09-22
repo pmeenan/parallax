@@ -1,0 +1,193 @@
+{
+  "source": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\cobble-study\\candidate1\\source.blend",
+  "sourceSha256": "c5778d6d17cede747e546d6b4792d7db73f01e31b59bb399e69441b297feea20",
+  "stoneChecks": [
+    {
+      "family": "A",
+      "placements": 68,
+      "geometryUvUnchanged": true,
+      "materialsPackedMapsUnchanged": true
+    },
+    {
+      "family": "B",
+      "placements": 44,
+      "geometryUvUnchanged": true,
+      "materialsPackedMapsUnchanged": true
+    },
+    {
+      "family": "C",
+      "placements": 25,
+      "geometryUvUnchanged": true,
+      "materialsPackedMapsUnchanged": true
+    }
+  ],
+  "plantChecks": [
+    {
+      "name": "Small seedling 4 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 4",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 3 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 3",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 2 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 2",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 1 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 1",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 0 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Small seedling 0",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Leafy moss colony 3",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0.0
+    },
+    {
+      "name": "Leafy moss colony 2",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 1.4901161193847656e-8
+    },
+    {
+      "name": "Leafy moss colony 1",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 5.960464477539063e-8
+    },
+    {
+      "name": "Leafy moss colony 0",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 2.9336661100387573e-8
+    },
+    {
+      "name": "Broadleaf weed 3 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 3",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 2 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 2",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 1 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 1",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 0 petioles",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Broadleaf weed 0",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Bowed uneven grass 4",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Bowed uneven grass 3",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Bowed uneven grass 2",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Bowed uneven grass 1",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    },
+    {
+      "name": "Bowed uneven grass 0",
+      "topologyUvColorUnchanged": true,
+      "materialsPackedMapsUnchanged": true,
+      "relativeShootMaximumErrorM": 0
+    }
+  ],
+  "maximumRootDepthErrorM": 2.6020852139652106e-18,
+  "sceneTriangles": 706013,
+  "finiteVertices": true,
+  "fullQA": false,
+  "scope": "Focused saved-source preservation/support checks; no full triangle collisions, engine or artistic acceptance"
+}

@@ -1,0 +1,76 @@
+{
+  "blender": "5.2.1 LTS",
+  "source": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-22\\layout-study\\candidate1\\source.blend",
+  "sourceSha256": "b9d42e7290b7566fd18d6a7c5dcb898048ec6534e5b08efc4cd3a8f32405072e",
+  "seconds": 37.854093400004786,
+  "warp": {
+    "dx": "0.013 sin(2\u03c0y/0.72 + 0.3) + 0.0035 sin(2\u03c0y/0.23 + 1.1)",
+    "dy": "0.012 sin(2\u03c0x/0.79 + 1.4) + 0.003 sin(2\u03c0x/0.27 + 0.6)",
+    "displacementLipschitzUpperBound": 0.2090600908367121,
+    "priorConservativeStoneSeparationM": 0.010009527206420898,
+    "postWarpSeparationLowerBoundM": 0.007916934539414005
+  },
+  "warpedVertices": 280239,
+  "triangles": 547740,
+  "stoneCount": 111,
+  "layoutLongestSeamCellsUnchanged": 16,
+  "originalMaterialDigestUnchanged": "21aaaf07bb11af1c46908dfbe3357219074f772b6eaa9d4720b07819db48dfc6",
+  "views": [
+    "top-packing",
+    "sunny-oblique",
+    "opposing-light",
+    "overcast",
+    "walking",
+    "top-packing-gray"
+  ],
+  "sourceOnly": true,
+  "rightsReviewed": false,
+  "limitations": [
+    "The warp changes seam shape, not stone adjacency or repeated mineral identities",
+    "Plants remain provisional older layout-study plants; accepted color and moss are absent",
+    "Conservative post-warp separation is an analytic lower bound, not a triangle-pair distance measurement",
+    "No production LOD/compression, full QA, engine import or human artistic acceptance"
+  ],
+  "files": [
+    {
+      "name": "opposing-light.png",
+      "bytes": 4054370,
+      "sha256": "caecbb14e931b3420c8a214e875ab34cc503b900805046b39ce08c89c1141d2a"
+    },
+    {
+      "name": "overcast.png",
+      "bytes": 3833672,
+      "sha256": "c2c8d13ea1041c024cfadf1a3cd82355d441cd5c1e5fcd88e59f2b510a54134c"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 37577723,
+      "sha256": "4743d28585a3b48515d9fe68e4888d380bca1fabe31f530c4dc30ad28fe05b6f"
+    },
+    {
+      "name": "sunny-oblique.png",
+      "bytes": 4029114,
+      "sha256": "429b453698cfeac2680fa35a59e9842dc4012971c3b030f8d58ca2718f5a5178"
+    },
+    {
+      "name": "top-packing-gray.png",
+      "bytes": 2122384,
+      "sha256": "16fb36f95694e8b978afd0ceb2d118bc940a98f352179b81bc52687537c54a7b"
+    },
+    {
+      "name": "top-packing.png",
+      "bytes": 4487326,
+      "sha256": "e66d5ccd5748629479f7284ddd3a161233695d80ed7b6dfcd4cb8cdf65d0bbf0"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 5220431,
+      "sha256": "704d98372de3db47ca59a2fb3a95f3584c2f38654068952bbf08a68d4b6eee84"
+    },
+    {
+      "name": "warp.py",
+      "bytes": 6687,
+      "sha256": "de863b7fa131e92f6e7a68cdaf45d8d741e6cc55df8fa66b0ec46618ea93d9a2"
+    }
+  ]
+}

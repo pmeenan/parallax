@@ -1,0 +1,177 @@
+{
+  "plants": {
+    "Small seedling 1 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 120
+    },
+    "Low connected moss cushion 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 216
+    },
+    "Small seedling 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 144
+    },
+    "Small seedling 4": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 144
+    },
+    "Small seedling 4 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 120
+    },
+    "Low connected moss cushion 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 216
+    },
+    "Broadleaf weed 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 816
+    },
+    "Small seedling 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 144
+    },
+    "Bowed uneven grass 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 105
+    },
+    "Bowed uneven grass 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 105
+    },
+    "Bowed uneven grass 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 105
+    },
+    "Broadleaf weed 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 816
+    },
+    "Broadleaf weed 2 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 200
+    },
+    "Bowed uneven grass 4": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 105
+    },
+    "Low connected moss cushion 1": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 216
+    },
+    "Broadleaf weed 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 816
+    },
+    "Small seedling 2": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 144
+    },
+    "Small seedling 3 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 120
+    },
+    "Broadleaf weed 1 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 200
+    },
+    "Small seedling 0": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 144
+    },
+    "Broadleaf weed 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 816
+    },
+    "Low connected moss cushion 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 216
+    },
+    "Bowed uneven grass 3": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 105
+    },
+    "Broadleaf weed 3 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 200
+    },
+    "Small seedling 0 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 120
+    },
+    "Small seedling 2 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 120
+    },
+    "Broadleaf weed 0 petioles": {
+      "finiteCoordinates": true,
+      "facesAreaBelow1e14M2": 0,
+      "triangles": 200
+    }
+  },
+  "mapNodes": [
+    {
+      "image": "leaf-basecolor",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "sRGB",
+      "outputsLinked": true
+    },
+    {
+      "image": "leaf-roughness",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "Non-Color",
+      "outputsLinked": true
+    },
+    {
+      "image": "leaf-normal",
+      "size": [
+        512,
+        512
+      ],
+      "hasData": true,
+      "isFloat": true,
+      "colorSpace": "Non-Color",
+      "outputsLinked": true
+    }
+  ],
+  "inputSourceHashUnchanged": true,
+  "normalMapStrength": 0.6000000238418579,
+  "scope": "Geometry/map linkage audit only; no full QA, botanical acceptance, or complete collision test."
+}

@@ -1,0 +1,110 @@
+{
+  "files": [
+    {
+      "name": "author-results.md",
+      "bytes": 3228,
+      "sha256": "cfb9f4f792dbeba7e4a8171e7658340f10ee8ee7a7e06afd7de75118a6bf3454"
+    },
+    {
+      "name": "build.py",
+      "bytes": 11160,
+      "sha256": "1cd5cee75e12fee200ac06765bfc0dd10dc8b39843465f028420f355b1e7f786"
+    },
+    {
+      "name": "close-gray.png",
+      "bytes": 12596679,
+      "sha256": "9482e85dfb049f9acd29be7c01399454e9fb063f6e392617d29cd07d15855dc4"
+    },
+    {
+      "name": "close-opposing.png",
+      "bytes": 11986001,
+      "sha256": "8d2bfdf3ef860626ca3861450ff071ebca3fc8f57feb93405f4d22b2eee82126"
+    },
+    {
+      "name": "close-unlit.png",
+      "bytes": 12551589,
+      "sha256": "9f4785f8daecabb16024a443d9a3ade08f56686e222c66a269a51c658343ab8f"
+    },
+    {
+      "name": "close.png",
+      "bytes": 12575242,
+      "sha256": "4b2f72e84cd72307041a4028ac0087c0731b12ff053dbfbffd195ecad4797c10"
+    },
+    {
+      "name": "contact-sheet.jpg",
+      "bytes": 351245,
+      "sha256": "da8fd2321d18c4ed9655f87cc6dea647a8fece078aa1621f5084e9911d9817fa"
+    },
+    {
+      "name": "freeze.py",
+      "bytes": 2331,
+      "sha256": "36927433544968d8585dc577ce165078a3acdd56151bc794e073f31fd23b577e"
+    },
+    {
+      "name": "overview.png",
+      "bytes": 14510479,
+      "sha256": "4108b3a6bd2c4eaac1d2bc662d400a6ad9afef8f537f6594976f71cc1cf0c93e"
+    },
+    {
+      "name": "prepare-transfer.py",
+      "bytes": 1012,
+      "sha256": "7caefd2a37dd2191a52464040da662567c46b86a4f0d6fe34fb01178873098b6"
+    },
+    {
+      "name": "prepare.py",
+      "bytes": 2304,
+      "sha256": "38895c34b72eed38018d9db1090dad3c44c9cbf01ba708a2d87f73f5517d6f34"
+    },
+    {
+      "name": "receipt.json",
+      "bytes": 21652,
+      "sha256": "47de9b61e8ae48a964c5424b5af172d0aa69ecc62c75aaf78e687c7f734d5514"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 42607845,
+      "sha256": "d3209e4268b49efd7098223ebb63626249d0d8092b468b6b5c8a0ceca25093a1"
+    },
+    {
+      "name": "transfer/file-structure.json",
+      "bytes": 358,
+      "sha256": "26f3dd00e513c17da274520c51fe69605d2251280dc603be7eb2d9fa764310cd"
+    },
+    {
+      "name": "transfer/native.blend",
+      "bytes": 760912,
+      "sha256": "238efec0132d383169f3e555922bdf0d945940e0c1426f7b27cb42ce4150e1ec"
+    },
+    {
+      "name": "transfer/native.png",
+      "bytes": 2215462,
+      "sha256": "459188ad770729bb4735d8f212d50c1923d41ae3f92ff8217fa179206b7fdc18"
+    },
+    {
+      "name": "transfer/receipt.json",
+      "bytes": 1493,
+      "sha256": "bba69f45862423ef1cbb5c9f85e9389f342e8d6c765d200297417872e1c44cd4"
+    },
+    {
+      "name": "transfer/reimport.png",
+      "bytes": 2215423,
+      "sha256": "a9983017b1aa9b8b7e79f736882058a46d737ae848d4a89324cddaab0787af6f"
+    },
+    {
+      "name": "transfer/representative-moss.glb",
+      "bytes": 832232,
+      "sha256": "9083f60802f5d26d4f524f6281f392fb51d6391811a21cf58ac188527f8a4326"
+    },
+    {
+      "name": "transfer.py",
+      "bytes": 4607,
+      "sha256": "9c4811e995af84833b8a0c97a349bd65441f10e277460fe279d88dc54e17999b"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 14577853,
+      "sha256": "0b869f490458df8afe52f0ce8763d13bedb89439d4054f599d5e5568d4613269"
+    }
+  ],
+  "scope": "Final bounded source evidence; excludes itself"
+}

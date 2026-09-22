@@ -1,0 +1,179 @@
+{
+  "verifiedUtc": "2026-09-21T21:06:41.732861+00:00",
+  "baseline": "family/candidate2 plus contact-cycle3 recipe",
+  "saveRecovery": "Blender wrote source.blend@ but failed final rename; copied unchanged to source.blend and verified in a fresh process.",
+  "sourceReopened": true,
+  "usedMaterialFileImagesPacked": false,
+  "externalImages": [
+    {
+      "name": "limestone-height-v1.png",
+      "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family-contact1\\..\\..\\surface-study-2026-09-21\\inputs\\limestone-height-v1.png",
+      "loaded": false,
+      "exists": true
+    }
+  ],
+  "reopenedRenderDeltaMean": 5.527471330424305e-06,
+  "reopenedRenderDeltaMax": 0.011764705181121826,
+  "reopenedRenderDeltaP99": 0.0,
+  "views": [
+    [
+      "oblique",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "reverse-light",
+      [
+        0.73,
+        -0.98,
+        1.1
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      50,
+      [
+        1,
+        0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "walking",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ],
+    [
+      "overcast",
+      [
+        0.05,
+        -0.4,
+        1.7
+      ],
+      [
+        -0.04,
+        -0.015,
+        0.065
+      ],
+      52,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      70,
+      3,
+      0.5
+    ],
+    [
+      "joint-detail",
+      [
+        0.24,
+        -0.36,
+        0.33
+      ],
+      [
+        -0.025,
+        -0.01,
+        0.066
+      ],
+      58,
+      [
+        -1,
+        -0.9,
+        1.5
+      ],
+      145,
+      0.5,
+      0.22
+    ]
+  ],
+  "soilNominalHeightM": 0.068,
+  "meshTriangles": {
+    "Family A": 1730560,
+    "Family B": 1730560,
+    "Family C": 1730560,
+    "Compacted recessed matrix": 1280000,
+    "Distant ground": 2,
+    "Embedded mixed aggregate": 2187040
+  },
+  "sourceOnly": true,
+  "runtimeQA": false,
+  "rightsReviewed": false,
+  "files": [
+    {
+      "name": "joint-detail.png",
+      "bytes": 2875286,
+      "sha256": "1c05dea46847b54ef375ad06fffaaec2feb28bb92dfc074d7267c92abe9aa2e8"
+    },
+    {
+      "name": "oblique.png",
+      "bytes": 3563818,
+      "sha256": "4ce246b8fcce07855cf35ac650e190657ef6c370afcb1618ed368f4b4e9cddf1"
+    },
+    {
+      "name": "overcast.png",
+      "bytes": 3243801,
+      "sha256": "4f7e7505531030005b6e748387bed2c2514e88d7b60b27be2e586e3c85586af3"
+    },
+    {
+      "name": "reopened-joint-detail.png",
+      "bytes": 2874965,
+      "sha256": "ffd07e2fd63a15d48a23b4a798a3b9bdc207c733839a9a4bf149219ef6400ed0"
+    },
+    {
+      "name": "reverse-light.png",
+      "bytes": 3492469,
+      "sha256": "312addc592e567d0432305bb755e3b310b1b4bd70fa07b957059ef8fae5f3e2a"
+    },
+    {
+      "name": "source.blend",
+      "bytes": 289807210,
+      "sha256": "1faeb21a7b65d398df58d3b83ae8104cac88a5d0e72948f00836a73a0cdee25b"
+    },
+    {
+      "name": "walking.png",
+      "bytes": 3487186,
+      "sha256": "65549fa5308e2308a5da13eaef72fff5ae977b7ee35a9814b3b93cd798c8681c"
+    }
+  ]
+}

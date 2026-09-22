@@ -1,0 +1,563 @@
+{
+  "seed": 922931,
+  "grid": [28, 28],
+  "fieldMetres": [4, 4],
+  "proposalLimit": 6000,
+  "validRetilings": 5439,
+  "acceptedRetilings": 3338,
+  "beforeLongestInternalSeamCells": 16,
+  "longestInternalSeamCells": 10,
+  "longSeamPenalty": 3759,
+  "stoneCount": 137,
+  "seconds": 6.975473299971782,
+  "tiles": [
+    {
+      "family": "C",
+      "grid": [0, 0, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [2, 0, 4, 2]
+    },
+    {
+      "family": "B",
+      "grid": [6, 0, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [8, 0, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [10, 0, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [12, 0, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [14, 0, 3, 2]
+    },
+    {
+      "family": "C",
+      "grid": [17, 0, 4, 2]
+    },
+    {
+      "family": "C",
+      "grid": [21, 0, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [23, 0, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [25, 0, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [2, 2, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [4, 2, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [6, 2, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [14, 2, 2, 3]
+    },
+    {
+      "family": "C",
+      "grid": [16, 2, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [18, 2, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [25, 2, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [12, 3, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [0, 4, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [4, 4, 4, 2]
+    },
+    {
+      "family": "B",
+      "grid": [8, 4, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [10, 4, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [18, 4, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [20, 4, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [22, 4, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [24, 4, 2, 4]
+    },
+    {
+      "family": "B",
+      "grid": [26, 4, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [2, 5, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [12, 5, 4, 2]
+    },
+    {
+      "family": "B",
+      "grid": [0, 6, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [4, 6, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [7, 6, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [9, 6, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [16, 6, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [18, 6, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [22, 6, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [26, 6, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [2, 7, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [12, 7, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [14, 7, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [20, 7, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [0, 8, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [4, 8, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [6, 8, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [8, 8, 4, 2]
+    },
+    {
+      "family": "B",
+      "grid": [16, 8, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [22, 8, 4, 2]
+    },
+    {
+      "family": "B",
+      "grid": [26, 8, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [18, 9, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [0, 10, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [3, 10, 3, 2]
+    },
+    {
+      "family": "C",
+      "grid": [8, 10, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [10, 10, 3, 2]
+    },
+    {
+      "family": "C",
+      "grid": [13, 10, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [15, 10, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [20, 10, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [23, 10, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [25, 10, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [0, 12, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [3, 12, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [6, 12, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [10, 12, 3, 2]
+    },
+    {
+      "family": "C",
+      "grid": [15, 12, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [17, 12, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [19, 12, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [21, 12, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [25, 12, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [23, 13, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [0, 14, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [2, 14, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [4, 14, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [8, 14, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [10, 14, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [13, 14, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [25, 14, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [6, 15, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [17, 15, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [19, 15, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [22, 15, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [0, 16, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [2, 16, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [10, 16, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [12, 16, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [14, 16, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [25, 16, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [17, 17, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [19, 17, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [21, 17, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [23, 17, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [0, 18, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [4, 18, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [7, 18, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [9, 18, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [14, 18, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [25, 18, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [2, 19, 2, 3]
+    },
+    {
+      "family": "C",
+      "grid": [12, 19, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [21, 19, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [0, 20, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [4, 20, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [6, 20, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [8, 20, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [10, 20, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [14, 20, 2, 3]
+    },
+    {
+      "family": "C",
+      "grid": [16, 20, 2, 4]
+    },
+    {
+      "family": "A",
+      "grid": [18, 20, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [23, 20, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [26, 20, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [0, 22, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [3, 22, 3, 2]
+    },
+    {
+      "family": "C",
+      "grid": [6, 22, 2, 4]
+    },
+    {
+      "family": "C",
+      "grid": [18, 22, 4, 2]
+    },
+    {
+      "family": "A",
+      "grid": [22, 22, 2, 3]
+    },
+    {
+      "family": "C",
+      "grid": [24, 22, 2, 4]
+    },
+    {
+      "family": "B",
+      "grid": [8, 23, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [10, 23, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [13, 23, 3, 2]
+    },
+    {
+      "family": "A",
+      "grid": [26, 23, 2, 3]
+    },
+    {
+      "family": "B",
+      "grid": [0, 24, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [2, 24, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [4, 24, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [16, 24, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [18, 24, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [20, 24, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [8, 25, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [10, 25, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [12, 25, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [14, 25, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [22, 25, 2, 3]
+    },
+    {
+      "family": "A",
+      "grid": [0, 26, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [3, 26, 2, 2]
+    },
+    {
+      "family": "A",
+      "grid": [5, 26, 3, 2]
+    },
+    {
+      "family": "B",
+      "grid": [16, 26, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [18, 26, 2, 2]
+    },
+    {
+      "family": "B",
+      "grid": [20, 26, 2, 2]
+    },
+    {
+      "family": "C",
+      "grid": [24, 26, 4, 2]
+    }
+  ]
+}

@@ -1,0 +1,181 @@
+{
+  "capturedUtc": "2026-09-21T16:05:46.125792-04:00",
+  "native": "Blender Cycles OPTIX, 128 samples, AgX; no image edits",
+  "views": [
+    {
+      "name": "oblique",
+      "camera": [
+        0.51,
+        -0.59,
+        0.48
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        -0.6,
+        -0.5,
+        0.9
+      ],
+      "gray": false
+    },
+    {
+      "name": "reverse-light",
+      "camera": [
+        0.51,
+        -0.59,
+        0.48
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        0.6,
+        0.5,
+        0.9
+      ],
+      "gray": false
+    },
+    {
+      "name": "reverse-view",
+      "camera": [
+        -0.51,
+        0.59,
+        0.43
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        -0.6,
+        -0.5,
+        0.9
+      ],
+      "gray": false
+    },
+    {
+      "name": "grazing",
+      "camera": [
+        0.44,
+        -0.58,
+        0.18
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        -0.65,
+        -0.2,
+        0.22
+      ],
+      "gray": false
+    },
+    {
+      "name": "gray",
+      "camera": [
+        0.51,
+        -0.59,
+        0.48
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        -0.6,
+        -0.5,
+        0.9
+      ],
+      "gray": true
+    },
+    {
+      "name": "walking",
+      "camera": [
+        0,
+        -0.65,
+        1.65
+      ],
+      "target": [
+        0,
+        0,
+        0.02
+      ],
+      "key": [
+        -0.6,
+        -0.5,
+        0.9
+      ],
+      "gray": false
+    },
+    {
+      "name": "basecolor-unlit",
+      "camera": [
+        0.51,
+        -0.59,
+        0.48
+      ],
+      "target": [
+        0,
+        0,
+        0.035
+      ],
+      "key": [
+        -0.6,
+        -0.5,
+        0.9
+      ],
+      "gray": "UNLIT"
+    }
+  ],
+  "files": [
+    {
+      "name": "basecolor-unlit.png",
+      "sha256": "e3f6335ac897b09fced30e9d8265c803c40cda87ed9aeafd00f80525ef78eead",
+      "bytes": 1985153
+    },
+    {
+      "name": "gray.png",
+      "sha256": "574c60f10a153acdbb49a7d3eb9567a9a08f27cc08eeb44e759d2227f5e48a12",
+      "bytes": 1970218
+    },
+    {
+      "name": "grazing.png",
+      "sha256": "6eef55220f707226d5add29efc8ca255dac33c8d275f87c2ce0392523983a961",
+      "bytes": 1994228
+    },
+    {
+      "name": "oblique.png",
+      "sha256": "bfb55f8774c7f539b32b06aa746f0254b98496e8cc5130aa24890d9a829985c6",
+      "bytes": 2039959
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "da8d39e0360481e8640059175a313e8ae3c0dc9795a301f547120593a8b7297d",
+      "bytes": 2081377
+    },
+    {
+      "name": "reverse-view.png",
+      "sha256": "3925be3c197e735b969a090719fa27114a125565508ddee029fe12ec64ef7751",
+      "bytes": 2061065
+    },
+    {
+      "name": "source.blend",
+      "sha256": "b60654e37b4de3e8042d30a906253b23e1e3075150fb37daa232dc25c27ae38b",
+      "bytes": 46897716
+    },
+    {
+      "name": "walking.png",
+      "sha256": "1440f42b86d80282b934f2a202944b9730d3efce5e2c92d8dd36d6c9fdfc4a9d",
+      "bytes": 1963590
+    }
+  ]
+}

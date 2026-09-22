@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "assetId": "d1-paving-broad-source-study-2026-09-22",
+  "scope": "Provisional native source and failed transfer diagnostics; no library admission",
+  "author": "Codex agent; exact runtime model identifier unavailable",
+  "tool": "Blender 5.2.1 LTS, build 9e2066aef7ef, Cycles and local OptiX",
+  "authorization": "Human continuation of the paving proof on 2026-09-22",
+  "brief": "../broad-family-brief.md",
+  "result": "../broad-family-results.md",
+  "references": [
+    "KIT-001 Batch103 paving assembly v1",
+    "KIT-002 Batch104 stone family v4",
+    "MAT-001 Batch108 cream limestone v1"
+  ],
+  "referenceHashes": "candidate2/receipt.json inputs",
+  "inheritedGenerationProvenance": "../../surface-study-2026-09-21/provenance.json",
+  "inheritedPrompts": [
+    "../../surface-study-2026-09-21/inputs/albedo-prompt.txt",
+    "../../surface-study-2026-09-21/inputs/height-prompt.txt"
+  ],
+  "generation": "Local scripted mesh/material authoring; no new image generation, scan, download or paid provider job",
+  "seeds": [923101, 923149, 923207, 923269],
+  "rightsReviewed": false,
+  "rightsDisposition": "Input references and synthetic images inherit the prior source provenance and terms; no new rights clearance asserted",
+  "artisticAcceptance": false,
+  "sourceToBakeVisualFidelityPassed": false,
+  "productionQA": false,
+  "publiclyPublished": false,
+  "binaryStorage": "Existing Git LFS attributes apply; working-tree originals retained locally"
+}

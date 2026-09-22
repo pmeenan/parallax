@@ -1,0 +1,14 @@
+00:11.296  cycles           | WARNING HIPEW initialization failed: Error opening HIP dynamic library
+00:15.859  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\oblique.png'
+00:19.593  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\reverse-light.png'
+00:23.250  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\reverse-view.png'
+00:26.812  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\grazing.png'
+00:30.453  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\gray.png'
+00:33.937  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\walking.png'
+00:38.593  render           | Saved: 'D:\src\parallax\assets\source\d1-paving\proof-2026-09-21\stone\candidate1\basecolor-unlit.png'
+00:38.968  reports          | WARNING Path 'C:\Program Files\Blender Foundation\Blender 5.2\5.2\datafiles\assets\brushes\essentials_brushes-gp_draw.blend' cannot be made relative for Material 'Dots Stroke'
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+00:38.968  reports          | WARNING Path 'C:\Program Files\Blender Foundation\Blender 5.2\5.2\datafiles\assets\brushes\essentials_brushes-gp_draw.blend' cannot be made relative for Material 'Material'
+Info: Saved as "source.blend"
+
+Blender quit

@@ -1,0 +1,13 @@
+# Vegetation candidate1 — first-pass author screen
+
+Original authored512-square basecolor, tangent normal, height and roughness maps add curved primary/secondary/tertiary vein detail and restrained variation. The native shader uses the saved normal and roughness images; gray is a **gray relief control retaining the normal map**, not pure geometry. Unlit disconnects surface lighting for plants only. The surrounding approved stone/soil remains normally lit in both controls.
+
+Four broadleaf weeds, five seedlings, five grass tufts and four moss pockets cluster around a subset of joints, leaving most joints bare. Plant geometry totals3370 triangles, scene630174. Original nonplant coordinates, topology, transforms and material-node signatures match before/after; source hash unchanged. Saved source restores original patch camera and approved lighting. Six main renders plus grass-detail and moss-detail are native Blender5.2.1 evidence. Build/capture31.62 seconds.
+
+Author inspected close color, gray relief, overview, grass detail and moss detail. Leaf venation is visible and responds through the normal map, but the leaves still have angular tips/edges, stiff stems and overly upright grouped blades. Grass reads as narrow simple blades with weak species distinction. Moss currently reads as discrete green granules rather than a convincing continuous low cushion. These are first-pass shortcomings, not accepted results. No second art cycle or delivery export began before independent screens.
+
+All plant coordinates are finite and audited faces have positive area. Map nodes load float source images, correct native color-space roles, and connected outputs; normal-map strength0.6. These focused checks do not establish natural appearance, full collision freedom or runtime compatibility.
+
+External map encoding defect found after capture: Blender image.save wrote the generated linear basecolor float values directly into an sRGB-tagged PNG (Pillow center sample6/14/2). Native packed float rendering is the current visual evidence, but this external basecolor file must be explicitly sRGB-encoded and reloaded before portable use. Do not treat the candidate1 external color map as a verified delivery texture. Normal, height and roughness are intentionally linear Non-Color data.
+
+Source reference: VEG-001 batch116, actual image inspected. Original textures are native procedural authoring, not generated paintovers, downloaded imagery or photographic illumination.512-square maps explicitly exceed the production grass4-pixel map ceiling; no config/budget change is made. RightsReviewed=false. No library admission, full QA, engine validation or public upload.

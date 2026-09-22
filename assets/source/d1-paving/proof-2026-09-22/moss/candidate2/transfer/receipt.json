@@ -1,0 +1,48 @@
+{
+  "seconds": 10.313342699955683,
+  "exportSeconds": 0.1843415999901481,
+  "importSeconds": 0.07158170000184327,
+  "triangles": 23400,
+  "meshes": 1,
+  "materials": 1,
+  "textures": 0,
+  "bytes": 832232,
+  "sha256": "9083f60802f5d26d4f524f6281f392fb51d6391811a21cf58ac188527f8a4326",
+  "extensions": [],
+  "nativeReimportPixelDelta": {
+    "mean": 5.8340145187685266e-05,
+    "p99": 0.003921568393707275,
+    "max": 0.05098039656877518
+  },
+  "scope": "Representative Blender transfer only; no runtime/QA/art acceptance",
+  "notChecked": [
+    "Full glTF validator",
+    "Engine roundtrip",
+    "Compression/LOD",
+    "Production4pixel texture-class conformance",
+    "Rights clearance"
+  ],
+  "knownDifference": "No intentional shader mismatch; explicit MossColor exported as COLOR_0. No texture maps used for moss.",
+  "files": [
+    {
+      "name": "native.blend",
+      "bytes": 760912,
+      "sha256": "238efec0132d383169f3e555922bdf0d945940e0c1426f7b27cb42ce4150e1ec"
+    },
+    {
+      "name": "native.png",
+      "bytes": 2215462,
+      "sha256": "459188ad770729bb4735d8f212d50c1923d41ae3f92ff8217fa179206b7fdc18"
+    },
+    {
+      "name": "reimport.png",
+      "bytes": 2215423,
+      "sha256": "a9983017b1aa9b8b7e79f736882058a46d737ae848d4a89324cddaab0787af6f"
+    },
+    {
+      "name": "representative-moss.glb",
+      "bytes": 832232,
+      "sha256": "9083f60802f5d26d4f524f6281f392fb51d6391811a21cf58ac188527f8a4326"
+    }
+  ]
+}

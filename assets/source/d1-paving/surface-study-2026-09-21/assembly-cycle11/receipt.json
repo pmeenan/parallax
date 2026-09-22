@@ -1,0 +1,66 @@
+{
+  "createdUtc": "2026-09-21T19:25:34.155723+00:00",
+  "native": "Blender Cycles 128 samples AgX; no paintover",
+  "stones": [
+    {
+      "name": "Paver A.001",
+      "seed": 713,
+      "dimensionsM": [
+        0.40624457597732544,
+        0.3068822920322418,
+        0.08242341876029968
+      ],
+      "triangles": 1730560
+    },
+    {
+      "name": "Paver B.001",
+      "seed": 729,
+      "dimensionsM": [
+        0.30912017822265625,
+        0.29181841015815735,
+        0.08215600997209549
+      ],
+      "triangles": 1730560
+    },
+    {
+      "name": "Paver C.001",
+      "seed": 751,
+      "dimensionsM": [
+        0.5158156156539917,
+        0.2532120943069458,
+        0.08231120556592941
+      ],
+      "triangles": 1730560
+    }
+  ],
+  "soilElevationM": 0.061,
+  "scope": "Three source variants and contact proof; no runtime acceptance",
+  "files": [
+    {
+      "name": "oblique.png",
+      "sha256": "bfd153aa811c6fa437aa6888c79387266a750d244fc887b62103f4e265a8ad42",
+      "bytes": 3438330
+    },
+    {
+      "name": "reverse-light.png",
+      "sha256": "cf9580f4781b9106b26638c16b4a400830c3685d1ee42ea628e2495e50658460",
+      "bytes": 3466518
+    },
+    {
+      "name": "reverse.png",
+      "sha256": "f21488a6857235bc22518080d73643205868a41dea05808b640b7b166cd53aa1",
+      "bytes": 3471259
+    },
+    {
+      "name": "source.blend",
+      "sha256": "b1db1e6a27da3142ff2d1e0a87d0fa068de7c165fe19ec84f09f8ac361a1aa47",
+      "bytes": 144989069
+    },
+    {
+      "name": "walking.png",
+      "sha256": "c2a54075ee5f443fdebe82ba3e76c2b84c341782d6763af0952a372297971a99",
+      "bytes": 3556923
+    }
+  ],
+  "standalonePackagingUtc": "2026-09-21T19:36:56.064028+00:00"
+}

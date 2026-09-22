@@ -1,0 +1,20 @@
+{
+  "method": "Pillow12.3 contact-sheet resize/labels and GIF resized sequential frames only; GIF palette quantization; individual native frames unchanged",
+  "files": [
+    {
+      "name": "close-sheet.png",
+      "sha256": "ef46888368f8187623fe0bf738909fdb050f2655496bbab4745adb7f86fb9f70",
+      "bytes": 2901564
+    },
+    {
+      "name": "walking-sheet.png",
+      "sha256": "cd75dd2f4bf4fa1d188035e6ad292e75faf38c7b4d2a44f5c83cdf11aff89444",
+      "bytes": 3042397
+    },
+    {
+      "name": "close-light-orbit.gif",
+      "sha256": "c107389cb61ea19af73f6a807c6f4343b76e16598e41e123c449e4b23dd74453",
+      "bytes": 4067827
+    }
+  ]
+}

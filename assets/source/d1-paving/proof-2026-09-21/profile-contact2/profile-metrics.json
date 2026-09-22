@@ -1,0 +1,11 @@
+{
+  "inwardTopProbeM": 0.012,
+  "profileSamples": 2304,
+  "collarTriangles": 23040,
+  "nominalTopClearanceM": 0.005,
+  "sampledTopClearanceMinimumM": 0.0050000000000000044,
+  "contactHeightMinM": 0.06546607136726379,
+  "contactHeightMaxM": 0.07351873935237198,
+  "method": "horizontal sidewall ray, local inward top probe, outer blend to existing soil",
+  "limitations": "Sampled collar construction is not a watertight collision proof."
+}
