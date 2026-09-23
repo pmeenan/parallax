@@ -18,10 +18,6 @@
   ],
   "scope": "High resolution neutral geometry proof; not exported, QA-admitted or runtime accepted.",
   "rightsReview": "Internal authored geometry; reference rights lineage retained in concept catalog; public-shipping clearance not asserted.",
-  "dimensionsM": [
-    0.3961578905582428,
-    0.29930782318115234,
-    0.07971344888210297
-  ],
+  "dimensionsM": [0.3961578905582428, 0.29930782318115234, 0.07971344888210297],
   "minimumZAndSupportHeightM": 0.00111302244476974
 }

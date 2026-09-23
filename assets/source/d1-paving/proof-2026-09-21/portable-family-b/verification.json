@@ -18,8 +18,8 @@
     "maximum": 0.002349153161048889
   },
   "nativeVsReimportLoadedPixelDelta": {
-    "meanAbsolute": 4.840686074203404e-07,
-    "p99": 0.0,
+    "meanAbsolute": 4.840686074203404e-7,
+    "p99": 0,
     "maximum": 0.003921598196029663
   },
   "checked": [

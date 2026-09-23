@@ -4,11 +4,7 @@
   "source": "../family/candidate2/source.blend",
   "triangles": 3900,
   "vertices": 1952,
-  "dimensionsM": [
-    0.5158873796463013,
-    0.2562359571456909,
-    0.08250156790018082
-  ],
+  "dimensionsM": [0.5158873796463013, 0.2562359571456909, 0.08250156790018082],
   "materials": 1,
   "bakeSeconds": {
     "basecolor": 4.970048000046518,

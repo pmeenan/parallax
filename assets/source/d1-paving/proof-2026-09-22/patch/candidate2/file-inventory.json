@@ -12,8 +12,8 @@
     },
     {
       "name": "geometry-audit.json",
-      "bytes": 408,
-      "sha256": "071e15e30c640d053bde7827b1c3dee0d3a1e2e555cb78d6a43de88d8c02dfa7"
+      "bytes": 397,
+      "sha256": "5af335a273064228ad523d939370e55cae65d26d064ff1cd9264f7af4d3bb517"
     },
     {
       "name": "opposing-light.png",
@@ -37,8 +37,8 @@
     },
     {
       "name": "receipt.json",
-      "bytes": 93500,
-      "sha256": "0721a19327f1b2e3b95cd9945f25efbb7edaea9a209d51e5bd3fc182de92f1d3"
+      "bytes": 63140,
+      "sha256": "2e7c8d30b60c0d97c63c788c338579885b1dbfa7a6ea591f1443b300305379ec"
     },
     {
       "name": "source.blend",

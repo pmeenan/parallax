@@ -1,25 +1,9 @@
 {
   "plants": {
-    "Fine grass tuft 4": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 60
-    },
-    "Fine grass tuft 1": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 60
-    },
-    "Small seedling 2": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 40
-    },
-    "Small seedling 0": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 40
-    },
+    "Fine grass tuft 4": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 60 },
+    "Fine grass tuft 1": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 60 },
+    "Small seedling 2": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 40 },
+    "Small seedling 0": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 40 },
     "Small seedling 2 petioles": {
       "finiteCoordinates": true,
       "facesAreaBelow1e14M2": 0,
@@ -30,36 +14,16 @@
       "facesAreaBelow1e14M2": 0,
       "triangles": 720
     },
-    "Broadleaf weed 2": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 440
-    },
-    "Broadleaf weed 0": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 440
-    },
-    "Fine grass tuft 3": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 60
-    },
+    "Broadleaf weed 2": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 440 },
+    "Broadleaf weed 0": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 440 },
+    "Fine grass tuft 3": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 60 },
     "Broadleaf weed 1 petioles": {
       "finiteCoordinates": true,
       "facesAreaBelow1e14M2": 0,
       "triangles": 60
     },
-    "Broadleaf weed 3": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 440
-    },
-    "Fine grass tuft 0": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 60
-    },
+    "Broadleaf weed 3": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 440 },
+    "Fine grass tuft 0": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 60 },
     "Broadleaf weed 0 petioles": {
       "finiteCoordinates": true,
       "facesAreaBelow1e14M2": 0,
@@ -70,11 +34,7 @@
       "facesAreaBelow1e14M2": 0,
       "triangles": 30
     },
-    "Broadleaf weed 1": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 440
-    },
+    "Broadleaf weed 1": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 440 },
     "Small seedling 4 petioles": {
       "finiteCoordinates": true,
       "facesAreaBelow1e14M2": 0,
@@ -85,21 +45,9 @@
       "facesAreaBelow1e14M2": 0,
       "triangles": 60
     },
-    "Fine grass tuft 2": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 60
-    },
-    "Small seedling 4": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 40
-    },
-    "Small seedling 3": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 40
-    },
+    "Fine grass tuft 2": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 60 },
+    "Small seedling 4": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 40 },
+    "Small seedling 3": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 40 },
     "Broadleaf weed 2 petioles": {
       "finiteCoordinates": true,
       "facesAreaBelow1e14M2": 0,
@@ -115,19 +63,12 @@
       "facesAreaBelow1e14M2": 0,
       "triangles": 30
     },
-    "Small seedling 1": {
-      "finiteCoordinates": true,
-      "facesAreaBelow1e14M2": 0,
-      "triangles": 40
-    }
+    "Small seedling 1": { "finiteCoordinates": true, "facesAreaBelow1e14M2": 0, "triangles": 40 }
   },
   "mapNodes": [
     {
       "image": "leaf-basecolor",
-      "size": [
-        512,
-        512
-      ],
+      "size": [512, 512],
       "hasData": true,
       "isFloat": true,
       "colorSpace": "sRGB",
@@ -135,10 +76,7 @@
     },
     {
       "image": "leaf-roughness",
-      "size": [
-        512,
-        512
-      ],
+      "size": [512, 512],
       "hasData": true,
       "isFloat": true,
       "colorSpace": "Non-Color",
@@ -146,10 +84,7 @@
     },
     {
       "image": "leaf-normal",
-      "size": [
-        512,
-        512
-      ],
+      "size": [512, 512],
       "hasData": true,
       "isFloat": true,
       "colorSpace": "Non-Color",

@@ -2,32 +2,16 @@
   "cameraLightingPreserved": true,
   "originalSettings": {
     "camera": {
-      "location": [
-        4.400000095367432,
-        -5.5,
-        5.699999809265137
-      ],
-      "rotation": [
-        0.8956010937690735,
-        -1.2007038918682156e-08,
-        0.6747409701347351
-      ],
-      "lens": 50.0
+      "location": [4.400000095367432, -5.5, 5.699999809265137],
+      "rotation": [0.8956010937690735, -1.2007038918682156e-8, 0.6747409701347351],
+      "lens": 50
     },
     "lights": {
       "Patch area light": {
-        "location": [
-          -3.0,
-          -4.0,
-          6.0
-        ],
-        "rotation": [
-          0.6996854543685913,
-          -6.460372681260651e-09,
-          -0.6435011625289917
-        ],
-        "energy": 2200.0,
-        "size": 1.0
+        "location": [-3, -4, 6],
+        "rotation": [0.6996854543685913, -6.460372681260651e-9, -0.6435011625289917],
+        "energy": 2200,
+        "size": 1
       }
     },
     "world": [
@@ -35,40 +19,21 @@
         "Background",
         "[bpy.data.worlds['Patch world'].node_tree.nodes[\"Background\"].inputs[0].default_value, 0.2199999988079071, 0.0]"
       ],
-      [
-        "World Output",
-        "[]"
-      ]
+      ["World Output", "[]"]
     ]
   },
   "currentSettings": {
     "camera": {
-      "location": [
-        4.400000095367432,
-        -5.5,
-        5.699999809265137
-      ],
-      "rotation": [
-        0.8956010937690735,
-        -1.2007038918682156e-08,
-        0.6747409701347351
-      ],
-      "lens": 50.0
+      "location": [4.400000095367432, -5.5, 5.699999809265137],
+      "rotation": [0.8956010937690735, -1.2007038918682156e-8, 0.6747409701347351],
+      "lens": 50
     },
     "lights": {
       "Patch area light": {
-        "location": [
-          -3.0,
-          -4.0,
-          6.0
-        ],
-        "rotation": [
-          0.6996854543685913,
-          -6.460372681260651e-09,
-          -0.6435011625289917
-        ],
-        "energy": 2200.0,
-        "size": 1.0
+        "location": [-3, -4, 6],
+        "rotation": [0.6996854543685913, -6.460372681260651e-9, -0.6435011625289917],
+        "energy": 2200,
+        "size": 1
       }
     },
     "world": [
@@ -76,10 +41,7 @@
         "Background",
         "[bpy.data.worlds['Patch world'].node_tree.nodes[\"Background\"].inputs[0].default_value, 0.2199999988079071, 0.0]"
       ],
-      [
-        "World Output",
-        "[]"
-      ]
+      ["World Output", "[]"]
     ]
   },
   "moss": {

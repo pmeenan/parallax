@@ -28,7 +28,7 @@ still follows the project QA boundary. This is reference-only documentation.
 Verified final artifacts: PNG 1400×1180, SHA-256
 770f65b648b52f6299738face953a6eb09d78d6964d720b5e17abf5408535505;
 hydrated original matches staged Git LFS pointer. SVG SHA-256
-2917e09d56b8e93cd975cf1a7b051c3211c57fdb42cf6e4c8ca773bed8c8410e.
+87feb30fbcd852fbe48325b7d06a4690b70ca6c8f12b0b457e1308a9a0f1b658.
 Local links and git diff --check pass. No commits or runtime changes.
 
 ## Human scale correction — proposal 2
@@ -49,6 +49,6 @@ V2 is authored SVG rasterized with sharp, no imagegen edits or third-party asset
 Geography recheck passes corrected field connection. Final v2 PNG 1400×1180,
 SHA-256 993dd60514d16b36f8309d1a150cb955ec53e124ecd309c6544acf5b9022f1a8;
 hydrated bytes match staged LFS pointer. SVG SHA-256
-371aeb1a26ecec47a6bfa51c1e876d7b10d9afdbc8100f2a97b772616016ba0f.
+4ab533d9a8e932cd0643f6d87beab7e9f6f0009268682ba8c992a42dc7384faf.
 Links and git diff --check pass. Source SVG is final authority, not the scratch
 transformation script used to start this revision.

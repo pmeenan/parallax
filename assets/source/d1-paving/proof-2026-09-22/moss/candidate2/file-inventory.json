@@ -57,8 +57,8 @@
     },
     {
       "name": "receipt.json",
-      "bytes": 21652,
-      "sha256": "47de9b61e8ae48a964c5424b5af172d0aa69ecc62c75aaf78e687c7f734d5514"
+      "bytes": 20714,
+      "sha256": "beb1b3d5db2cee3e92af082a9fe4d180be89df75fd85910f14b1a20b3817c4be"
     },
     {
       "name": "source.blend",
@@ -67,8 +67,8 @@
     },
     {
       "name": "transfer/file-structure.json",
-      "bytes": 358,
-      "sha256": "26f3dd00e513c17da274520c51fe69605d2251280dc603be7eb2d9fa764310cd"
+      "bytes": 341,
+      "sha256": "d3e7a72d8fa64ad29522cba35968acffedf8f85b1b64049a5f0550b62ab5a566"
     },
     {
       "name": "transfer/native.blend",
@@ -82,8 +82,8 @@
     },
     {
       "name": "transfer/receipt.json",
-      "bytes": 1493,
-      "sha256": "bba69f45862423ef1cbb5c9f85e9389f342e8d6c765d200297417872e1c44cd4"
+      "bytes": 1446,
+      "sha256": "f28275490b540f7999deebd187398c9ccb0c95d6fd1c52a4e83158992ec8af80"
     },
     {
       "name": "transfer/reimport.png",

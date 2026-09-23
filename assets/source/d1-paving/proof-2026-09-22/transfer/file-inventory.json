@@ -37,8 +37,8 @@
     },
     {
       "name": "a\\receipt.json",
-      "bytes": 2066,
-      "sha256": "13d0e08e24d33139757a4ad740b92594e14fc8d4f2d2431dcde2056304aac777"
+      "bytes": 1983,
+      "sha256": "c904b726738a940ec24cb4fd83630006dd69e56808e130ba8185b270d3e1f765"
     },
     {
       "name": "a\\reimport-opposing.png",
@@ -67,8 +67,8 @@
     },
     {
       "name": "a\\verification.json",
-      "bytes": 3457,
-      "sha256": "dfa6318d9eec538004b3711c38ac1bd5a9daa3ad0bfc6b179f729f916c17977a"
+      "bytes": 3340,
+      "sha256": "60afba615181c3b0d1261c44c954f9a32c562d577de2a63046f7481417368568"
     },
     {
       "name": "a-comparison.png",
@@ -117,8 +117,8 @@
     },
     {
       "name": "b\\receipt.json",
-      "bytes": 2065,
-      "sha256": "4ce46337fe5edcf12f573e3b8148e4fb5057d0d7a499f4902db83a5949a829bb"
+      "bytes": 1982,
+      "sha256": "ac0ee1e21c2277f0ac49582be709456269f1a6e616055de3335875edaa69aee2"
     },
     {
       "name": "b\\reimport-opposing.png",
@@ -147,8 +147,8 @@
     },
     {
       "name": "b\\verification.json",
-      "bytes": 3461,
-      "sha256": "9bd4fec2fb19c0217416bced7145f0c5f4ac4834e77850cf4450fcf6a5644fbe"
+      "bytes": 3344,
+      "sha256": "c593d8f7dc49383708f8a242ece5d39eb829f16187444dfc61c775e5c0337ccd"
     },
     {
       "name": "b-comparison.png",
@@ -197,8 +197,8 @@
     },
     {
       "name": "c\\receipt.json",
-      "bytes": 2064,
-      "sha256": "f66c73944f732c3c12646f900ff2fc94ae8528ee76f99d06bfcf579999c09fa7"
+      "bytes": 1981,
+      "sha256": "6280c0a5b05118f955d22f730b46d9364b71b4e54a9092f44577c8c11883db60"
     },
     {
       "name": "c\\reimport-opposing.png",
@@ -227,8 +227,8 @@
     },
     {
       "name": "c\\verification.json",
-      "bytes": 3463,
-      "sha256": "df3c8d344d5a531ffbacd758d2e2d22182a83a5b6067016dd17ac5b6369bb2fd"
+      "bytes": 3349,
+      "sha256": "96924a21cebb687c9b6454f6e634689e477ab63f31a7800913fd3331c7c74683"
     },
     {
       "name": "c-comparison.png",
@@ -242,8 +242,8 @@
     },
     {
       "name": "results.json",
-      "bytes": 12241,
-      "sha256": "bc2004dae803178e01ce97b562c085a0b5cc859b8b04395d929d69bb481e90e1"
+      "bytes": 11882,
+      "sha256": "6023e427fbcdf34d8a8f37cea974c972751212783e6fe5c82ac1eee4e93b2318"
     }
   ],
   "method": "SHA256; inventory excludes itself. Review sheets are mechanical resize and labels only."

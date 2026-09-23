@@ -11,6 +11,13 @@ history, not a delivery input. Review found clamped displacement seams in the ap
 snapshot; the builder is corrected, while boundary-normal and installed tiling checks
 remain delivery work. See the photoreal result's known limits.
 
+**Metadata formatting cleanup (2026-09-23):** retained JSON now follows Biome formatting.
+Parsed measurements, verdicts and artwork are unchanged; dependent SHA-256 and byte-count
+records now identify the reformatted files. Original serializations and identities remain
+in Git at `e8de418ecf85e9dd4ad04a4531723dff8fc8dc43`. This is a metadata maintenance pass,
+not a new generation, measurement or acceptance. Earlier lint-blocked handoffs are
+historical; see the current [plan status](../../../docs/plan.md).
+
 The [smaller-stone result](proof-2026-09-22/cobble-results.md) now combines 137 earlier
 stones with the approved leaves and moss. Its longest modeled joint is 10 cells
 (previous mixed layout: 16), with residual long alignments and repeated mineral

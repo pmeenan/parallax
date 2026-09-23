@@ -1,30 +1,9 @@
 {
   "embeddedBuffers": true,
   "embeddedImages": [
-    {
-      "mimeType": "image/png",
-      "dimensions": [
-        512,
-        512
-      ],
-      "format": "PNG"
-    },
-    {
-      "mimeType": "image/png",
-      "dimensions": [
-        512,
-        512
-      ],
-      "format": "PNG"
-    },
-    {
-      "mimeType": "image/png",
-      "dimensions": [
-        512,
-        512
-      ],
-      "format": "PNG"
-    }
+    { "mimeType": "image/png", "dimensions": [512, 512], "format": "PNG" },
+    { "mimeType": "image/png", "dimensions": [512, 512], "format": "PNG" },
+    { "mimeType": "image/png", "dimensions": [512, 512], "format": "PNG" }
   ],
   "vertexColors": [
     {
@@ -34,7 +13,7 @@
       "componentType": 5123,
       "normalized": true,
       "rgbMin": 0.31145189593347067,
-      "rgbMax": 1.0,
+      "rgbMax": 1,
       "uniqueColors": 178
     }
   ],

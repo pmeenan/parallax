@@ -4,11 +4,7 @@
   "source": "cycle8/source.blend",
   "triangles": 3900,
   "vertices": 1952,
-  "dimensionsM": [
-    0.4060158133506775,
-    0.30691081285476685,
-    0.08255462348461151
-  ],
+  "dimensionsM": [0.4060158133506775, 0.30691081285476685, 0.08255462348461151],
   "materials": 1,
   "bakeSeconds": {
     "basecolor": 1.9297115000081249,

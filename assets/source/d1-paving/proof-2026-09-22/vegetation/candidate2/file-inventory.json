@@ -37,8 +37,8 @@
     },
     {
       "name": "contact-audit.json",
-      "bytes": 3147,
-      "sha256": "e8c619b2e7f2b62c7b4aa5c1d8a9b76230bc88693e0043a54f1893d881ab0490"
+      "bytes": 2663,
+      "sha256": "b1a9c27da48d32d07b3c4d9696dbbcfdead6a2ea696cb45a204ba47788604404"
     },
     {
       "name": "contact_audit.py",
@@ -47,8 +47,8 @@
     },
     {
       "name": "diagnostic-audit.json",
-      "bytes": 4450,
-      "sha256": "f55cc06141427eb33cda396526b6b06987bd9fced559590bde32dd60bdbeb9c5"
+      "bytes": 4003,
+      "sha256": "005ded6b7be23ead9a3146dbe1cbc0a7c1083e9543f9cdaafa80162fc9f1fa0f"
     },
     {
       "name": "diagnostics.py",
@@ -132,8 +132,8 @@
     },
     {
       "name": "receipt.json",
-      "bytes": 104063,
-      "sha256": "b35e00c843878b243f1875ba4728a91d1c3050f69f3210fa4f534eced0802281"
+      "bytes": 66534,
+      "sha256": "d6782d0f35c2b05dd424501d16a6c840b76cb7a20211ec09a2339ba45031ad6a"
     },
     {
       "name": "source.blend",
@@ -142,8 +142,8 @@
     },
     {
       "name": "transfer\\file-structure.json",
-      "bytes": 530,
-      "sha256": "3905c01bd69844b00a4bce2843c2507762f14b4a9b83d0dbfcfe2e6b16371382"
+      "bytes": 361,
+      "sha256": "f36d4c71291e9f410318c6db9f760be4b806bc1e6de69df5da520c2a410a15a0"
     },
     {
       "name": "transfer\\native.blend",
@@ -157,8 +157,8 @@
     },
     {
       "name": "transfer\\receipt.json",
-      "bytes": 1505,
-      "sha256": "571d2c0632ee698b7a37815d27f02df55b10be9973a1803cd80158a73b303bee"
+      "bytes": 1457,
+      "sha256": "b54f5c277681e06ce74977e962981b831db6bb5589d09fb62e3606785323d932"
     },
     {
       "name": "transfer\\reimport.png",

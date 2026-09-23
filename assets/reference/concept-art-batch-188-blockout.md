@@ -47,4 +47,4 @@ Key finding: fixed1.7m cameras plus assumed2m descent obscure much of the entran
 
 All five assigned creative binaries staged under existing LFS attributes; scene pointer verified. Source script SHA256 c74bfe23ddae133dd2284ccbbc3ef2877dddd3313188f3bc89a892c6b9276d1a. No image-generation model/seed applies.
 
-Final verification: all five LFS index SHA256 pointers match native binaries; all four PNG header dimensions1536x1024. Input187-a SHA25632a72c47bd8e83bf2fc77aba9a2db1d8f132abe92e113951e6048fc6c1ed01d5; SVG SHA256091a38ec9a5790c03a011a9066c677ae6ab9373a0afa51554cf1dc88b14f2ec8.
+Final verification: all five LFS index SHA256 pointers match native binaries; all four PNG header dimensions1536x1024. Input187-a SHA25632a72c47bd8e83bf2fc77aba9a2db1d8f132abe92e113951e6048fc6c1ed01d5; SVG SHA256281d4390924628bc4d63f80bb562004941eea2c937ceec57f26a5c5fbdebed69.

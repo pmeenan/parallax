@@ -4,76 +4,36 @@
   "cameras": [
     {
       "name": "oblique",
-      "location": [
-        0.53,
-        -0.62,
-        0.48
-      ],
-      "target": [
-        0,
-        0,
-        0.035
-      ],
+      "location": [0.53, -0.62, 0.48],
+      "target": [0, 0, 0.035],
       "type": "PERSP",
       "lensOrOrtho": 55
     },
     {
       "name": "reverse",
-      "location": [
-        -0.55,
-        0.58,
-        0.43
-      ],
-      "target": [
-        0,
-        0,
-        0.04
-      ],
+      "location": [-0.55, 0.58, 0.43],
+      "target": [0, 0, 0.04],
       "type": "PERSP",
       "lensOrOrtho": 55
     },
     {
       "name": "top",
-      "location": [
-        0,
-        0,
-        0.9
-      ],
-      "target": [
-        0,
-        0,
-        0
-      ],
+      "location": [0, 0, 0.9],
+      "target": [0, 0, 0],
       "type": "ORTHO",
       "lensOrOrtho": 0.55
     },
     {
       "name": "grazing",
-      "location": [
-        0.4,
-        -0.65,
-        0.145
-      ],
-      "target": [
-        0,
-        0,
-        0.04
-      ],
+      "location": [0.4, -0.65, 0.145],
+      "target": [0, 0, 0.04],
       "type": "PERSP",
       "lensOrOrtho": 55
     },
     {
       "name": "walking-scale",
-      "location": [
-        0,
-        -0.68,
-        1.65
-      ],
-      "target": [
-        0,
-        0.04,
-        0
-      ],
+      "location": [0, -0.68, 1.65],
+      "target": [0, 0.04, 0],
       "type": "PERSP",
       "lensOrOrtho": 45
     }
@@ -86,8 +46,8 @@
     },
     {
       "name": "metrics.json",
-      "bytes": 991,
-      "sha256": "f51278df3e4f51671658b6e831dd11bc3c60887c287eba389135e9aeab8effd8"
+      "bytes": 948,
+      "sha256": "6a95bad26cc34e20d048595ed4a0414427350e3d597cef709fd4b6dc42fb5bd0"
     },
     {
       "name": "oblique.png",

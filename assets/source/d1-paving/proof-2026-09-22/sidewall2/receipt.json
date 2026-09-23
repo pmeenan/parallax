@@ -18,10 +18,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -29,10 +26,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -40,10 +34,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -51,10 +42,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         }
       ]
@@ -71,10 +59,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -82,10 +67,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -93,10 +75,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -104,10 +83,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         }
       ]
@@ -124,10 +100,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -135,10 +108,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -146,10 +116,7 @@
           "sign": -1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         },
         {
@@ -157,10 +124,7 @@
           "sign": 1,
           "maximumRecessionM": 0.018,
           "transitionWidthM": 0.041,
-          "exposedHeightRangeM": [
-            0.055,
-            0.08
-          ],
+          "exposedHeightRangeM": [0.055, 0.08],
           "variation": "broad metric shoulder-width variation"
         }
       ]
@@ -173,112 +137,25 @@
   },
   "materialChanges": "None; external loaded height packed for standalone recovery",
   "views": [
-    [
-      "oblique",
-      [
-        0.73,
-        -0.98,
-        1.1
-      ],
-      [
-        -0.04,
-        -0.015,
-        0.065
-      ],
-      50,
-      [
-        -1,
-        -0.9,
-        1.5
-      ],
-      145,
-      0.5,
-      0.22
-    ],
+    ["oblique", [0.73, -0.98, 1.1], [-0.04, -0.015, 0.065], 50, [-1, -0.9, 1.5], 145, 0.5, 0.22],
     [
       "reverse-light",
-      [
-        0.73,
-        -0.98,
-        1.1
-      ],
-      [
-        -0.04,
-        -0.015,
-        0.065
-      ],
+      [0.73, -0.98, 1.1],
+      [-0.04, -0.015, 0.065],
       50,
-      [
-        1,
-        0.9,
-        1.5
-      ],
+      [1, 0.9, 1.5],
       145,
       0.5,
       0.22
     ],
-    [
-      "walking",
-      [
-        0.05,
-        -0.4,
-        1.7
-      ],
-      [
-        -0.04,
-        -0.015,
-        0.065
-      ],
-      52,
-      [
-        -1,
-        -0.9,
-        1.5
-      ],
-      145,
-      0.5,
-      0.22
-    ],
-    [
-      "overcast",
-      [
-        0.05,
-        -0.4,
-        1.7
-      ],
-      [
-        -0.04,
-        -0.015,
-        0.065
-      ],
-      52,
-      [
-        -1,
-        -0.9,
-        1.5
-      ],
-      70,
-      3,
-      0.5
-    ],
+    ["walking", [0.05, -0.4, 1.7], [-0.04, -0.015, 0.065], 52, [-1, -0.9, 1.5], 145, 0.5, 0.22],
+    ["overcast", [0.05, -0.4, 1.7], [-0.04, -0.015, 0.065], 52, [-1, -0.9, 1.5], 70, 3, 0.5],
     [
       "joint-detail",
-      [
-        0.24,
-        -0.36,
-        0.33
-      ],
-      [
-        -0.025,
-        -0.01,
-        0.066
-      ],
+      [0.24, -0.36, 0.33],
+      [-0.025, -0.01, 0.066],
       58,
-      [
-        -1,
-        -0.9,
-        1.5
-      ],
+      [-1, -0.9, 1.5],
       145,
       0.5,
       0.22

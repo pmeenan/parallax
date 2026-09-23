@@ -1,73 +1,18 @@
 {
   "blender": "5.2.1 LTS",
   "created_utc": "2026-09-19T20:34:45.369430+00:00",
-  "world_origin": [
-    -516,
-    -146
-  ],
+  "world_origin": [-516, -146],
   "house_footprints": [
-    [
-      "House1",
-      -540,
-      -527,
-      -136,
-      -122
-    ],
-    [
-      "House2",
-      -506,
-      -492,
-      -136,
-      -122
-    ],
-    [
-      "House3",
-      -540,
-      -528,
-      -170,
-      -159
-    ],
-    [
-      "House4",
-      -505,
-      -492,
-      -170,
-      -159
-    ]
+    ["House1", -540, -527, -136, -122],
+    ["House2", -506, -492, -136, -122],
+    ["House3", -540, -528, -170, -159],
+    ["House4", -505, -492, -170, -159]
   ],
   "cameras": {
-    "a": {
-      "blender_location": [
-        -18.0,
-        -8.0,
-        1.7000000476837158
-      ],
-      "hfov_degrees": 65.00000067042492
-    },
-    "b": {
-      "blender_location": [
-        18.0,
-        1.0,
-        1.7000000476837158
-      ],
-      "hfov_degrees": 65.00000067042492
-    },
-    "c": {
-      "blender_location": [
-        -2.0,
-        -18.0,
-        1.7000000476837158
-      ],
-      "hfov_degrees": 65.00000067042492
-    },
-    "overview": {
-      "blender_location": [
-        42.0,
-        -60.0,
-        50.0
-      ],
-      "hfov_degrees": null
-    }
+    "a": { "blender_location": [-18, -8, 1.7000000476837158], "hfov_degrees": 65.00000067042492 },
+    "b": { "blender_location": [18, 1, 1.7000000476837158], "hfov_degrees": 65.00000067042492 },
+    "c": { "blender_location": [-2, -18, 1.7000000476837158], "hfov_degrees": 65.00000067042492 },
+    "overview": { "blender_location": [42, -60, 50], "hfov_degrees": null }
   },
   "shared_scene_objects": 59,
   "provisional_elevations": true

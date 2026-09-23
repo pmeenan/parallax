@@ -6,11 +6,7 @@
   "triangles": 1332468,
   "nonManifoldEdges": 0,
   "volumeM3": 0.00823059325442782,
-  "dimensionsM": [
-    0.39279401302337646,
-    0.2938254773616791,
-    0.07800000160932541
-  ],
+  "dimensionsM": [0.39279401302337646, 0.2938254773616791, 0.07800000160932541],
   "minimumZAndSupportHeightM": 0.0020000000949949026,
   "controlMeshFaces": 152,
   "controlShoulderSegments": 27,

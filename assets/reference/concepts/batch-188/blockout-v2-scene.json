@@ -1,7 +1,7 @@
 {
   "blender": "5.2.1 LTS",
   "completed_utc": "2026-09-19T20:49:22.760908+00:00",
-  "terrain_sha256": "ad2edf0191568c0c8652c7ba5f171688e381129575b3fc46b982c869a04c187a",
+  "terrain_sha256": "ea41c7854f514165669ac93bc4a860a299486b9f9db0ca07f51b49130c4816da",
   "house_floor_heights": {
     "House1": 1.3050000000000002,
     "House2": 1.3599999999999999,
@@ -11,18 +11,9 @@
   "stair_top": 1.24,
   "stair_bottom": -0.8500000000000001,
   "cameras": {
-    "A": {
-      "world_eye_y": 3.009999990463257,
-      "hfov_deg": 65.00000067042492
-    },
-    "B": {
-      "world_eye_y": 2.9800000190734863,
-      "hfov_deg": 65.00000067042492
-    },
-    "C": {
-      "world_eye_y": 3.1500000953674316,
-      "hfov_deg": 65.00000067042492
-    }
+    "A": { "world_eye_y": 3.009999990463257, "hfov_deg": 65.00000067042492 },
+    "B": { "world_eye_y": 2.9800000190734863, "hfov_deg": 65.00000067042492 },
+    "C": { "world_eye_y": 3.1500000953674316, "hfov_deg": 65.00000067042492 }
   },
   "note": "Front6markers+1lamp; other3faces2uppermarkers each. Markers are not openings. Far eastern road end clipped1m to supplied sample bound; approved court layout unchanged."
 }

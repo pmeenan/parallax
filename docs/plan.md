@@ -333,6 +333,16 @@ a named visual deficiency, capability demonstration, or platform limitation. Dyn
 lighting, worker ownership, deterministic simulation, asset QA, and install/streaming
 contracts remain binding.
 
+**Repository lint cleanup (2026-09-23):** all 117 outstanding diagnostics are resolved:
+114 JSON formatting fixes (including the ignored machine-local tool registry) and
+accessible titles for three SVG reference plans. Retained asset metadata preserves its
+measurements; hash/size references were refreshed for the new serialization. Earlier
+handoff reports describing lint blockers are historical. Physical smoke remains deferred
+to M4.5 exit; this cleanup changes no runtime code or artwork.
+`pnpm check` passes build/repeatability, lint (757 files) and unit tests (221 files;
+2,697 passed, one existing skip). A separate data comparison verifies that only formatting
+and dependent file identities changed across the 121 affected JSON files.
+
 ### Delivery sequence
 
 These are checkpoints within M4.5, not additional milestones or full-smoke gates.
@@ -393,10 +403,11 @@ rules and resource identities remain exact. The exact-artifact production replay
 (SHA-256 `0e91f159c7f1b03a4dacedf4a66ce9ee993f6136ea99adc28045484bfecf6f12`).
 Build/repeatability, TypeScript, focused audio tests and the final full unit run passed
 (219 files; 2,674 passed, one skipped). Earlier source-identity test mismatches did not
-recur in the final full run. `pnpm check` reached lint and remains blocked by missing
+recur in the final full run. At that handoff, `pnpm check` reached lint and was blocked by missing
 accessible titles in the concurrently authored
-`assets/reference/concepts/batch-074/d1-shared-site-plan-v1.svg` and `v2.svg`; these
-reference files were left untouched. No artistic or milestone acceptance is claimed.
+`assets/reference/concepts/batch-074/d1-shared-site-plan-v1.svg` and `v2.svg`.
+The repository lint cleanup above resolves those diagnostics. No artistic or milestone
+acceptance is claimed.
 
 **Animation import/validation work brief (2026-09-11, human requested):** implement
 the source-candidate path while concept production continues. Use an original,

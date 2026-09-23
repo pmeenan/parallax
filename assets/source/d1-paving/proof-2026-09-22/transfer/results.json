@@ -28,8 +28,8 @@
         "maximum": 0.003594540525227785
       },
       "nativeVsReimportLoadedPixelDelta": {
-        "meanAbsolute": 8.80991422036459e-07,
-        "p99": 0.0,
+        "meanAbsolute": 8.80991422036459e-7,
+        "p99": 0,
         "maximum": 0.00784313678741455
       },
       "checked": [
@@ -91,8 +91,8 @@
         },
         {
           "name": "receipt.json",
-          "bytes": 2066,
-          "sha256": "13d0e08e24d33139757a4ad740b92594e14fc8d4f2d2431dcde2056304aac777"
+          "bytes": 1983,
+          "sha256": "c904b726738a940ec24cb4fd83630006dd69e56808e130ba8185b270d3e1f765"
         },
         {
           "name": "reimport-opposing.png",
@@ -142,8 +142,8 @@
         "maximum": 0.002349153161048889
       },
       "nativeVsReimportLoadedPixelDelta": {
-        "meanAbsolute": 7.965687132127641e-07,
-        "p99": 0.0,
+        "meanAbsolute": 7.965687132127641e-7,
+        "p99": 0,
         "maximum": 0.003921627998352051
       },
       "checked": [
@@ -205,8 +205,8 @@
         },
         {
           "name": "receipt.json",
-          "bytes": 2065,
-          "sha256": "4ce46337fe5edcf12f573e3b8148e4fb5057d0d7a499f4902db83a5949a829bb"
+          "bytes": 1982,
+          "sha256": "ac0ee1e21c2277f0ac49582be709456269f1a6e616055de3335875edaa69aee2"
         },
         {
           "name": "reimport-opposing.png",
@@ -256,8 +256,8 @@
         "maximum": 0.004013626370579004
       },
       "nativeVsReimportLoadedPixelDelta": {
-        "meanAbsolute": 1.0362202829128364e-06,
-        "p99": 0.0,
+        "meanAbsolute": 0.0000010362202829128364,
+        "p99": 0,
         "maximum": 0.003921627998352051
       },
       "checked": [
@@ -319,8 +319,8 @@
         },
         {
           "name": "receipt.json",
-          "bytes": 2064,
-          "sha256": "f66c73944f732c3c12646f900ff2fc94ae8528ee76f99d06bfcf579999c09fa7"
+          "bytes": 1981,
+          "sha256": "6280c0a5b05118f955d22f730b46d9364b71b4e54a9092f44577c8c11883db60"
         },
         {
           "name": "reimport-opposing.png",

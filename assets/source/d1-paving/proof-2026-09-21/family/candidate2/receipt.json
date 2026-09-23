@@ -6,114 +6,30 @@
     {
       "name": "Family A",
       "material": "Family A candidate3 mineral material",
-      "dimensionsM": [
-        0.4062465727329254,
-        0.30688390135765076,
-        0.08242341876029968
-      ],
+      "dimensionsM": [0.4062465727329254, 0.30688390135765076, 0.08242341876029968],
       "seed": 713,
       "triangles": 1730560
     },
     {
       "name": "Family B",
       "material": "Family B candidate3 mineral material",
-      "dimensionsM": [
-        0.3067311644554138,
-        0.2933093309402466,
-        0.08211959898471832
-      ],
+      "dimensionsM": [0.3067311644554138, 0.2933093309402466, 0.08211959898471832],
       "seed": 787,
       "triangles": 1730560
     },
     {
       "name": "Family C",
       "material": "Family C candidate3 mineral material",
-      "dimensionsM": [
-        0.5159910321235657,
-        0.256402850151062,
-        0.08239900320768356
-      ],
+      "dimensionsM": [0.5159910321235657, 0.256402850151062, 0.08239900320768356],
       "seed": 829,
       "triangles": 1730560
     }
   ],
   "views": [
-    [
-      "oblique",
-      [
-        0.79,
-        -1.0,
-        0.94
-      ],
-      [
-        -0.04,
-        -0.04,
-        0.045
-      ],
-      [
-        -1,
-        -1,
-        2
-      ],
-      50
-    ],
-    [
-      "reverse-light",
-      [
-        0.79,
-        -1.0,
-        0.94
-      ],
-      [
-        -0.04,
-        -0.04,
-        0.045
-      ],
-      [
-        1,
-        1,
-        2
-      ],
-      50
-    ],
-    [
-      "walking",
-      [
-        0,
-        -0.75,
-        1.65
-      ],
-      [
-        0,
-        0,
-        0.04
-      ],
-      [
-        -1,
-        -1,
-        2
-      ],
-      45
-    ],
-    [
-      "top",
-      [
-        -0.03,
-        -0.03,
-        1.5
-      ],
-      [
-        -0.03,
-        -0.03,
-        0.04
-      ],
-      [
-        -1,
-        -1,
-        2
-      ],
-      48
-    ]
+    ["oblique", [0.79, -1, 0.94], [-0.04, -0.04, 0.045], [-1, -1, 2], 50],
+    ["reverse-light", [0.79, -1, 0.94], [-0.04, -0.04, 0.045], [1, 1, 2], 50],
+    ["walking", [0, -0.75, 1.65], [0, 0, 0.04], [-1, -1, 2], 45],
+    ["top", [-0.03, -0.03, 1.5], [-0.03, -0.03, 0.04], [-1, -1, 2], 48]
   ],
   "derivation": "A candidate3 control; B/C bounded nonlinear field warps (0.015/0.006 amplitudes) and aligned smooth-mask recombination of two retained input zones at unchanged spot scale, with independent geometry seeds/dimensions. Residual candidate3 source lighting remains.",
   "limitations": [
@@ -129,8 +45,8 @@
     },
     {
       "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\stone\\candidate3\\provenance.json",
-      "sha256": "3ae2ddcc3ced9d884f13b183cad2ad36ff2d0b114ef0b4a4f8f291a9ce0ceb6e",
-      "bytes": 3615
+      "sha256": "5c2bb7268f3188d32b48083e8404f9d7cb3715497a85fa657a7a7383fe595874",
+      "bytes": 3541
     },
     {
       "path": "D:\\src\\parallax\\assets\\source\\d1-paving\\proof-2026-09-21\\family\\build_family2.py",

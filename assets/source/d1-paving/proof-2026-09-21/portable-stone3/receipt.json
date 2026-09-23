@@ -4,11 +4,7 @@
   "source": "../stone/candidate3/source.blend",
   "triangles": 3900,
   "vertices": 1952,
-  "dimensionsM": [
-    0.40625935792922974,
-    0.3067268431186676,
-    0.08253064751625061
-  ],
+  "dimensionsM": [0.40625935792922974, 0.3067268431186676, 0.08253064751625061],
   "materials": 1,
   "bakeSeconds": {
     "basecolor": 5.064496600010898,

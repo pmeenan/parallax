@@ -19,8 +19,8 @@
     "maximum": 0.004013626370579004
   },
   "nativeVsReimportLoadedPixelDelta": {
-    "meanAbsolute": 1.0362202829128364e-06,
-    "p99": 0.0,
+    "meanAbsolute": 0.0000010362202829128364,
+    "p99": 0,
     "maximum": 0.003921627998352051
   },
   "checked": [
@@ -82,8 +82,8 @@
     },
     {
       "name": "receipt.json",
-      "bytes": 2064,
-      "sha256": "f66c73944f732c3c12646f900ff2fc94ae8528ee76f99d06bfcf579999c09fa7"
+      "bytes": 1981,
+      "sha256": "6280c0a5b05118f955d22f730b46d9364b71b4e54a9092f44577c8c11883db60"
     },
     {
       "name": "reimport-opposing.png",

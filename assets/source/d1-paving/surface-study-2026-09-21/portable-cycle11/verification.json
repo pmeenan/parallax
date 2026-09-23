@@ -35,8 +35,8 @@
     "Human artistic acceptance"
   ],
   "nativeVsReimportLoadedPixelDelta": {
-    "meanAbsolute": 1.2425108479874325E-06,
-    "p99": 0.0,
+    "meanAbsolute": 0.0000012425108479874325,
+    "p99": 0,
     "maximum": 0.003921598196029663
   }
 }

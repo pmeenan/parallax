@@ -6,11 +6,7 @@
   "seed": 713,
   "vertices": 225282,
   "triangles": 450560,
-  "dimensionsM": [
-    0.40400436520576477,
-    0.30448031425476074,
-    0.08318040519952774
-  ],
+  "dimensionsM": [0.40400436520576477, 0.30448031425476074, 0.08318040519952774],
   "references": [
     "batch-104/kit-002-stone-family-v4.png",
     "batch-108/mat-001-cream-limestone-v1.png",

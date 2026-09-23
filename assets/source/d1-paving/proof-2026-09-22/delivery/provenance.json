@@ -186,7 +186,7 @@
   "lineage": {
     "path": "assets/source/d1-paving/proof-2026-09-22/production/provenance.json",
     "bytes": 2794,
-    "sha256": "4ec774a3dd6b6308a0935e4a1fab985339f26fd993f9deebec9a80e4d398b312"
+    "sha256": "fe8f9e9c6236bbce21bcf65ef8ae39b3f168009c427bab36613c7311e6281235"
   },
   "newGeneration": "none; local Blender material consolidation and LOD export only",
   "references": ["KIT-001/002/003", "MAT-001/018", "VEG-001", "LIGHT-001/002"],

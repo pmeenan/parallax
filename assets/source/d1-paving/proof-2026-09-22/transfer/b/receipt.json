@@ -4,11 +4,7 @@
   "source": "../../restored-family/source.blend",
   "triangles": 3900,
   "vertices": 1952,
-  "dimensionsM": [
-    0.3067939877510071,
-    0.29300346970558167,
-    0.08209075033664703
-  ],
+  "dimensionsM": [0.3067939877510071, 0.29300346970558167, 0.08209075033664703],
   "materials": 1,
   "bakeSeconds": {
     "basecolor": 1.6086489000008442,
