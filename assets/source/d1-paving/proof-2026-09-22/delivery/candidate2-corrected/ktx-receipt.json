@@ -1,0 +1,112 @@
+{
+  "encoder": {
+    "archiveSha256": "1d4598a290ccb654d6a33c074c4ca96f0c5ccef99e042323eaa4d1230d4de63d",
+    "jsSha256": "96422b4d0d0de173b9796711379b1525585aa03f8f662ad7794f2dd088da32c7",
+    "version": "4.4.2",
+    "wasmSha256": "839d8f70377b03e41a73f18ffc3839f87418079792cef4d82aae824a8241c7f0"
+  },
+  "mode": "UASTC without RDO + Zstd 9; full mip chains",
+  "maps": [
+    {
+      "name": "delivery-earth-grit-basecolor",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 13426450,
+      "sha256": "da834a974bc35f2e36a47790a175dfd38984606e6bcaddcc1890097f32fd1654",
+      "decodedSha256": "3b234c9311059dbc7b07bebbe703f4698bc9630f7f22396769e411367621c0b5",
+      "meanChannelByteError": 0.18412776291370392,
+      "maximumChannelByteError": 3,
+      "encodeAndDecodeMs": 4602.242200000001
+    },
+    {
+      "name": "delivery-earth-grit-normal",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 18530236,
+      "sha256": "72389f78c1651a1de4af0d7cb23132cf36a4eedcf6c3850f704f3d0abdc95602",
+      "decodedSha256": "ab844609d66c6abe0f642bac65a459a5903b84d3193df479cc819956fbbb539e",
+      "meanChannelByteError": 3.0225503742694855,
+      "maximumChannelByteError": 117,
+      "encodeAndDecodeMs": 5724.4391000000005
+    },
+    {
+      "name": "delivery-earth-grit-orm",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 3181,
+      "sha256": "6510403d158120562504c0bbcf31a2175d2903af53a2b86c76c9ad6e4792d67c",
+      "decodedSha256": "1546e4af76bf5e79edea0ac1ecd55540fc9c84638cfe70b5d30d3a490986884f",
+      "meanChannelByteError": 0,
+      "maximumChannelByteError": 0,
+      "encodeAndDecodeMs": 711.0288
+    },
+    {
+      "name": "delivery-limestone-basecolor",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 11481077,
+      "sha256": "79b040da80a9854d0aed103ecca66e1f85adb6238cfb470325394172d52cd827",
+      "decodedSha256": "b5abc938b3d3bb466fc98b1f862d90600ab44af23208e895685b56375be441f2",
+      "meanChannelByteError": 0.2567308247089386,
+      "maximumChannelByteError": 12,
+      "encodeAndDecodeMs": 2929.4745000000003
+    },
+    {
+      "name": "delivery-limestone-normal",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 10463259,
+      "sha256": "52c774d27ea8a281c47a0367a068e8c8bbb84fe3117012b53ba2303cc9532f07",
+      "decodedSha256": "95ad1737c505cd43c5dd0a57a88fb637dc875205d875ce1fc39954ae503fc5ab",
+      "meanChannelByteError": 0.35945452749729156,
+      "maximumChannelByteError": 114,
+      "encodeAndDecodeMs": 4563.535399999999
+    },
+    {
+      "name": "delivery-limestone-orm",
+      "width": 4096,
+      "levels": 13,
+      "bytes": 9275071,
+      "sha256": "c05c588c8b3d6a0497d5bf5ffa673b55630b14c6443a15a3278e0da1663ba1e3",
+      "decodedSha256": "f2d585dfdfdc1731fa40393992d2a595b8cd57179de42f70aed0e501682ce527",
+      "meanChannelByteError": 0.01655474305152893,
+      "maximumChannelByteError": 10,
+      "encodeAndDecodeMs": 3189.9699
+    },
+    {
+      "name": "delivery-plants-basecolor",
+      "width": 1024,
+      "levels": 11,
+      "bytes": 242367,
+      "sha256": "968a2356209e7e8e9205909fc054631f48271264500deb7a2904077211d44b60",
+      "decodedSha256": "f52dc14ad5cd6ec541d089bf59b7a2855e5d886d412c9e723cfe53b9ee5105e4",
+      "meanChannelByteError": 0.046755313873291016,
+      "maximumChannelByteError": 3,
+      "encodeAndDecodeMs": 107.36160000000018
+    },
+    {
+      "name": "delivery-plants-normal",
+      "width": 1024,
+      "levels": 11,
+      "bytes": 226661,
+      "sha256": "a78f35bb5085b3712e657efabc4050347ba0da9da53007315f5b11c0ec1bc19a",
+      "decodedSha256": "5d8248249ab40aa3ed193034096af35058c7efd9185fc9d9ccb672ebf807911f",
+      "meanChannelByteError": 0.06196403503417969,
+      "maximumChannelByteError": 20,
+      "encodeAndDecodeMs": 105.87159999999858
+    },
+    {
+      "name": "delivery-plants-orm",
+      "width": 1024,
+      "levels": 11,
+      "bytes": 70139,
+      "sha256": "ff4f5c4bf7e142a20bf67e1027824729d197ac6dc18eb0171f7c022f7b2c70f9",
+      "decodedSha256": "8996d8e1789c4b365c07e0d67e368f724007e8aba36b0814600c863750da8dae",
+      "meanChannelByteError": 0.0007345676422119141,
+      "maximumChannelByteError": 1,
+      "encodeAndDecodeMs": 78.58659999999873
+    }
+  ],
+  "totalBytes": 63718441,
+  "scope": "Source texture compression diagnostic; BC7 GPU appearance and atlas-tail mips still need runtime inspection"
+}

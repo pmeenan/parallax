@@ -28,6 +28,35 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-196: Script-first procedural authoring and rapid preview iteration for 3D assets (2026-09-22, accepted; amends D-182's cycle default for authored assets)
+
+**Decision:** Author 3D assets with a seeded, headless Blender build script that generates
+geometry, delivery-resolution material fields, scatter, scene, captures, source and receipt,
+following [the production workflow](../assets/production-workflow.md) and
+[authoring handbook](../assets/procedural-authoring.md). Generated images are comparison
+references, not texture inputs, unless a brief justifies an exception. Inside a time-boxed
+package (default: one work session), scripted preview passes do not count as D-182
+implementation/capture/evaluation cycles. The cycle allowance (default two) counts
+full-quality candidate handoffs. D-195's independent screens, lead inspection and human
+selection, and all rights, QA, budget and delivery gates, are unchanged.
+
+**Context:** From 2026-09-20 to 2026-09-22, more than a dozen two-cycle paving packages
+refined generated-image stone material, studio-lit captures and bake transfer. The human
+remained dissatisfied with the realism. A single-session procedural rebuild, with seven preview
+passes of one to two minutes each, produced the paving the human approved on 2026-09-22 and
+asked to be the method for future assets. Counting fast scripted previews as expensive
+cycles had encouraged stopping after two flawed iterations. Authoring the delivery maps
+directly also removes the bake step that failed the earlier soil-grain delivery.
+
+**Consequences:** `docs/workflow.md` and the asset workflow documents point to this method. The
+paving builder is the reference implementation. Its method is proven on ground surfaces only;
+each new asset class records its adaptations.
+
+**Reopen if:** preview loops stop converging within their time box; an asset class
+(characters, rigs, animation) cannot be authored this way; delivery measurements show the
+authored representation cannot meet class budgets; or human review rejects results
+produced by this method.
+
 ## D-195: Accept the concept collection and review supplementary profiles per production subject (2026-09-20, accepted; amends D-187 sequence)
 
 **Decision:** Accept the selected324-target reference collection as the concept

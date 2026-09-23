@@ -1,0 +1,142 @@
+{
+  "createdUtc": "2026-09-23T01:03:40.677350+00:00",
+  "blender": "5.2.1 LTS",
+  "args": {
+    "out": "candidate1",
+    "res": 4096,
+    "grid": 200,
+    "subdiv": 3,
+    "samples": 256,
+    "views": "walking,walking-matched,overview,close,joint,grazing,overcast,top,gray,unlit",
+    "scale": 1.0,
+    "seed": 11,
+    "save_blend": true,
+    "force": false,
+    "sunk": 1.0,
+    "skyk": 1.0
+  },
+  "seconds": 148.5,
+  "tileMetres": 4.0,
+  "texelMillimetres": 0.9765625,
+  "meshSpacingMillimetres": 2.5,
+  "stones": 183,
+  "gritInstances": 29204,
+  "gritVariants": 24,
+  "plantSites": 24,
+  "plantTriangles": 19204,
+  "groundQuads": 2560000,
+  "heightRangeMetres": [-0.020721200853586197, 0.01158055942505598],
+  "references": [
+    "KIT-001 batch103 A",
+    "KIT-003 batch103 B",
+    "MAT-001 batch108 A",
+    "MAT-018 batch108 B",
+    "VEG-001 batch116 B1"
+  ],
+  "sourceOnly": true,
+  "runtimeQA": false,
+  "rightsReviewed": false,
+  "artisticAcceptance": false,
+  "files": [
+    {
+      "path": "close.png",
+      "bytes": 2729558,
+      "sha256": "dd5cb9cea72dfc923fb8772c4e68cea9c6de47f101f996e19004305ba15348bc"
+    },
+    {
+      "path": "gray.png",
+      "bytes": 4382339,
+      "sha256": "4701cae62d2e697d3686faea330ad697d61c78c60d677ceae7f804be1c96c782"
+    },
+    {
+      "path": "grazing.png",
+      "bytes": 3168174,
+      "sha256": "c20dafacd116df3063af069506da6c1f0aa8cebb219abcb16c5a14ab61219eb3"
+    },
+    {
+      "path": "joint.png",
+      "bytes": 2540428,
+      "sha256": "5978bfa9574349778bb1b03ff7b59f0c751baeb0a670d8dfc6f5f68e564a64ea"
+    },
+    {
+      "path": "layout.json",
+      "bytes": 136300,
+      "sha256": "d604f0b05c313802275b4c69d5fdeba02da8d2d6d4350b833db7ab4b76d68ac2"
+    },
+    {
+      "path": "overcast.png",
+      "bytes": 3036643,
+      "sha256": "16980d66a30342004bf9b419cd8a9b3ab69493e85ed87f6867594c4badcd6350"
+    },
+    {
+      "path": "overview.png",
+      "bytes": 3265946,
+      "sha256": "b7f13a385f8757cb4ab8978d21b1d1c2395c5ab9072fe626b16cf9c551518867"
+    },
+    {
+      "path": "source.blend",
+      "bytes": 2997850,
+      "sha256": "8c8d5dd1bb309910b25fcdf154c87bc78bb3c8d1097924278ba40261e0de898b"
+    },
+    {
+      "path": "top.png",
+      "bytes": 5262311,
+      "sha256": "8c7941b06d29a6ce9d6922af4f9b6d11475e8457feedf0d39c35c820e879e370"
+    },
+    {
+      "path": "unlit.png",
+      "bytes": 4744386,
+      "sha256": "178f4916e275c4d7e396fc0b06e469707a3d27a68744bf8ddf30ba572ffdeddf"
+    },
+    {
+      "path": "walking-matched.png",
+      "bytes": 4950879,
+      "sha256": "00d8f863b2d34bdc5875dcb09fbced6a7ea1390bd765c68aa7fe453d1fd14d98"
+    },
+    {
+      "path": "walking.png",
+      "bytes": 3350522,
+      "sha256": "915f0e9b03e08267a4cc20d37ac4210b6133dfe7d13219ddc30abd3da0b8d1db"
+    },
+    {
+      "path": "maps/albedo.png",
+      "bytes": 32981986,
+      "sha256": "80d749ace6b9945c99f3b0485b5a7fff1f1b47b890425c2ac04e040573af0471"
+    },
+    {
+      "path": "maps/grass.png",
+      "bytes": 3744,
+      "sha256": "4b68af97757ae5c09cee97f915b404165a08c1aab5cc2bbe5834709ad20eb057"
+    },
+    {
+      "path": "maps/height.png",
+      "bytes": 32248757,
+      "sha256": "ab4b0f53f60ab65d46cf9e634a8afa64f9a1fc843fca9771a6e105ae661650da"
+    },
+    {
+      "path": "maps/leaf0.png",
+      "bytes": 56990,
+      "sha256": "15b92e42d7a41aa93ad19c42efbad04288f3e4039b746b8ba7279147d01b0952"
+    },
+    {
+      "path": "maps/leaf1.png",
+      "bytes": 59719,
+      "sha256": "622c11a9a8e125f6cf1c6ecc1e51e5ea74f3890964a22f070772ea8ff2e5db6a"
+    },
+    {
+      "path": "maps/leaf2.png",
+      "bytes": 62979,
+      "sha256": "7aeae008c9a393a6423704d7686bfd1935bae479d5e594609e26a03168626419"
+    },
+    {
+      "path": "maps/normal.png",
+      "bytes": 34074133,
+      "sha256": "e45a186027d45f46f4bec4389bbf25c12503cba9782db4c9ad7645f028694a7b"
+    },
+    {
+      "path": "maps/roughness.png",
+      "bytes": 8085993,
+      "sha256": "d6e191d37eb96bd3f71ce117bbf2639af2c94910454319e765fba865ec52102c"
+    }
+  ]
+}

@@ -437,11 +437,32 @@ bytes are unchanged. [Usage and supported scope](../assets/qa/animation-import.m
 document the still-pending character content, full admission/packaging and installed
 motion acceptance. All changes remain uncommitted.
 
-**Latest human approval (2026-09-22):** the reduced smaller-cobblestone proof
-`production/candidate3` is approved as the visual baseline, following the earlier
-approval of its `cobble-study/candidate1` source. Preserve its stone scale, layout,
-contact, lighting, leaf color, moss and volumetric grit through production delivery.
-This supersedes the larger-slab direction below; the 111/131-stone studies are
+**Latest human approval (2026-09-22):** the procedural, periodic
+[photoreal paving rebuild](../assets/source/d1-paving/proof-2026-09-22/photoreal-results.md)
+`photoreal/candidate1` is the visual baseline. It supersedes `production/candidate3` and
+keeps its smaller cobble scale, with a new layout, stones, joints, grit and plants.
+D-196 makes its script-first method the standing
+[asset production workflow](../assets/production-workflow.md). Next: a bounded delivery
+package for this source. Scope: decimated heightfield LODs plus the authored
+albedo/normal/roughness/height maps as KTX2, runtime grit/plant instancing, export
+validation, installed Babylon/WebGPU inspection and measured costs against the class
+budgets. Rights, QA and admission remain open. Review found up to 4.083 mm open
+position seams in candidate1's clamped displacement. The corrected builder wraps
+the height map; preserve the approved snapshot as evidence and qualify rebuilt
+boundary positions, boundary normals and grazing-light joins before delivery.
+
+*Superseded baseline history:* `production/candidate3` had been approved after
+`cobble-study/candidate1`. Its [shared-resource and LOD delivery proof](../assets/source/d1-paving/proof-2026-09-22/delivery-brief.md):
+two cycles in a two-hour active session, preserving approved LOD0 appearance while
+measuring exports and compression. Existing QA ceilings and runtime acceptance stay open.
+Its [two-cycle result](../assets/source/d1-paving/proof-2026-09-22/delivery-results.md)
+retains three shared materials, explicit LODs and exact meshopt roundtrips, but fails
+soil-grain fidelity before export. Leaf/grit colors are corrected and survive import;
+both independent screens reject the remaining soil mismatch. Shared KTX2 maps cost
+63,718,441 bytes; no budget change or admission is justified. Next isolate soil bake
+evaluation versus physical sampling in a small contact coupon before runtime work.
+That soil-bake follow-up is moot for the photoreal source, whose maps are authored at
+delivery resolution. This history supersedes the larger-slab direction below; the 111/131-stone studies are
 earlier comparisons. The broad-family
 source and failed bake controls remain diagnostic evidence, not delivery inputs.
 

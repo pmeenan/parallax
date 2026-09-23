@@ -1,7 +1,12 @@
 # Paving asset creation workflow — tested 2026-09-21
 
-The reusable process is part of the project's [standing production workflow](../../production-workflow.md).
-This document retains the paving-specific recipe, evidence and unresolved limitations.
+**Historical (superseded 2026-09-22, D-196):** the approved paving is the procedural
+[photoreal rebuild](proof-2026-09-22/photoreal-results.md). Its script-first method is now
+the [standing production workflow](../../production-workflow.md), with techniques in the
+[authoring handbook](../../procedural-authoring.md). The generated-image stone material and
+bake-transfer recipe below are retained as evidence only. They include the
+"next comparison" proposal, which the human resolved by choosing the photoreal method.
+Do not follow them for new work.
 
 Status: a substantially improved, editable stone and successful source-to-GLB transfer;
 not final reference matching or game acceptance. Cycle 11 is the best source from this

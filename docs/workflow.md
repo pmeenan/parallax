@@ -50,10 +50,12 @@ target IDs, with matched camera/light/scale and temporal or physical behavior re
 where applicable. A generated still is not a physics specification. This reference
 stage does not authorize implementation of every deferred rendering feature.
 
-For authored 3D assets, follow the [asset production workflow](../assets/production-workflow.md):
-one complete representative asset, joint shape/material iteration, early gray/unlit/
-relighting diagnostics, export verification and a small family/contact check before
-broad replication. Asset-specific experiments do not establish artistic acceptance.
+For authored 3D assets, follow the [asset production workflow](../assets/production-workflow.md)
+and its [authoring handbook](../assets/procedural-authoring.md) (D-196). Build the asset with a
+seeded headless Blender script against a per-scale reference breakdown. Iterate in rapid
+previews under calibrated sun and sky, with gray/unlit diagnostics. Hand off a full-quality
+candidate with independent screens and a matched before/after, then run delivery as a
+separate package. Asset-specific experiments do not establish artistic acceptance.
 
 Concept production follows the human-authorized [parallel review workflow](../assets/reference/concept-art-program.md#production-sequence-and-allowance)
 from Batch 013: up to two independent generation subagents, with both visual reviews
@@ -65,7 +67,8 @@ Before an experiment or visual work package, put a short brief in the active pla
 the scene/reference and cameras/states, the question, must-fix defects, an initial
 allowance, and the decision that ends the work. Default to at most two implementation/
 capture/evaluation cycles for an initial experiment; a cycle makes a concrete change,
-captures it, and evaluates it. Also state a finite work-session or elapsed-effort limit
+captures it, and evaluates it. For authored assets, scripted preview passes inside the
+package's time box do not count as cycles; full-quality candidate handoffs do (D-196). Also state a finite work-session or elapsed-effort limit
 appropriate to that package so a cycle cannot hide an unlimited implementation task.
 These are planning limits, not runtime performance budgets.
 

@@ -1,0 +1,83 @@
+{
+  "scope": "Blender captures only; no GPU BC7, moving LOD or engine evidence",
+  "comparisons": [
+    {
+      "label": "shared-vs-control-walking",
+      "meanLoadedRgbDifference": 0.0010545088443905115,
+      "p99": 0.00784313678741455,
+      "maximum": 0.2980392277240753
+    },
+    {
+      "label": "shared-vs-control-plant-contact",
+      "meanLoadedRgbDifference": 0.003572322428226471,
+      "p99": 0.027451008558273315,
+      "maximum": 0.3686274588108063
+    },
+    {
+      "label": "shared-vs-control-moss-contact",
+      "meanLoadedRgbDifference": 0.007118778768926859,
+      "p99": 0.04313725233078003,
+      "maximum": 0.5882353186607361
+    },
+    {
+      "label": "shared-vs-control-grazing",
+      "meanLoadedRgbDifference": 0.0006530036334879696,
+      "p99": 0.00784313678741455,
+      "maximum": 0.32156866788864136
+    },
+    {
+      "label": "reimport-walking",
+      "meanLoadedRgbDifference": 9.082546057470609e-6,
+      "p99": 0.0,
+      "maximum": 0.4941176772117615
+    },
+    {
+      "label": "reimport-plant-contact",
+      "meanLoadedRgbDifference": 1.3644799764733762e-5,
+      "p99": 0.0,
+      "maximum": 0.00784313678741455
+    },
+    {
+      "label": "reimport-moss-contact",
+      "meanLoadedRgbDifference": 3.9982787711778656e-5,
+      "p99": 0.003921568393707275,
+      "maximum": 0.01176472008228302
+    },
+    {
+      "label": "reimport-grazing",
+      "meanLoadedRgbDifference": 4.0221630115411244e-6,
+      "p99": 0.0,
+      "maximum": 0.011764705181121826
+    },
+    {
+      "label": "ktx-walking",
+      "meanLoadedRgbDifference": 0.0011769080301746726,
+      "p99": 0.00784313678741455,
+      "maximum": 0.6313725709915161
+    },
+    {
+      "label": "ktx-plant-contact",
+      "meanLoadedRgbDifference": 0.002870561322197318,
+      "p99": 0.0156862735748291,
+      "maximum": 0.21568630635738373
+    },
+    {
+      "label": "ktx-moss-contact",
+      "meanLoadedRgbDifference": 0.0030315336771309376,
+      "p99": 0.01568630337715149,
+      "maximum": 0.14901959896087646
+    },
+    {
+      "label": "lod1",
+      "meanLoadedRgbDifference": 0.0007358622387982905,
+      "p99": 0.019607841968536377,
+      "maximum": 0.34117648005485535
+    },
+    {
+      "label": "lod2",
+      "meanLoadedRgbDifference": 0.00028440303867682815,
+      "p99": 0.011764705181121826,
+      "maximum": 0.3137255012989044
+    }
+  ]
+}

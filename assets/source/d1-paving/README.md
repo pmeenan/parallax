@@ -1,11 +1,15 @@
 # D1 paving — individual limestone source
 
-**Latest human approval (2026-09-22):** the reduced smaller-cobblestone proof
-`production/candidate3` is the approved visual baseline. It preserves the previously
-approved `cobble-study/candidate1` stone artwork/layout, integrated leaves/moss and
-volumetric grit. Preserve this reduced appearance through production delivery.
-The larger-slab and broad-family studies below are diagnostic evidence;
-the earlier 111/131-stone patches are comparisons rather than the selected result.
+**Latest human approval (2026-09-22):** the procedural, periodic
+[photoreal rebuild](proof-2026-09-22/photoreal-results.md) `photoreal/candidate1` is the
+approved visual baseline. Its seeded [builder](proof-2026-09-22/photoreal/build.py) is
+the reference implementation of the standing
+[asset production workflow](../../production-workflow.md) (D-196). It supersedes
+`production/candidate3`. Everything below documents the earlier generated-image/bake
+lineage (candidate3, the cobble, larger-slab and broad-family studies) and is diagnostic
+history, not a delivery input. Review found clamped displacement seams in the approved
+snapshot; the builder is corrected, while boundary-normal and installed tiling checks
+remain delivery work. See the photoreal result's known limits.
 
 The [smaller-stone result](proof-2026-09-22/cobble-results.md) now combines 137 earlier
 stones with the approved leaves and moss. Its longest modeled joint is 10 cells

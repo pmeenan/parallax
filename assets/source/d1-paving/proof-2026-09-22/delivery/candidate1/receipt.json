@@ -1,0 +1,46 @@
+{
+  "blender": "5.2.1 LTS",
+  "sourceSha256": "61a22f7efdb3ef0f665cfbb7983e15674561034acf91c487b0dc6bcb068dd421",
+  "lod0GeometryUnchanged": true,
+  "lods": [
+    {
+      "lod": 0,
+      "bytes": 60496288,
+      "sha256": "22234d40cd55cacec36ef2519c76c3b65272e1e328d65ce624363faf8ec168bc",
+      "uniqueTriangles": 92901,
+      "placedTriangles": 615501,
+      "meshes": 32,
+      "materials": 3,
+      "colorPrimitives": 27
+    },
+    {
+      "lod": 1,
+      "bytes": 58588644,
+      "sha256": "c523cfaabdae70b04647f30c6f3072f87ecfbcbec2c1337e04620a9e53bf1abc",
+      "uniqueTriangles": 46323,
+      "placedTriangles": 307623,
+      "meshes": 32,
+      "materials": 3,
+      "colorPrimitives": 27
+    },
+    {
+      "lod": 2,
+      "bytes": 57416092,
+      "sha256": "9b183dfc553218b0628616e64d589a30c6f9f5ccdbb70f1d06ed2c804cdd8a8e",
+      "uniqueTriangles": 18382,
+      "placedTriangles": 122902,
+      "meshes": 32,
+      "materials": 3,
+      "colorPrimitives": 27
+    }
+  ],
+  "seconds": 109.65199579996988,
+  "limits": [
+    "source proof only",
+    "no class recalibration",
+    "no engine or installed proof",
+    "no rights/admission",
+    "leaf subsurface omitted in standard glTF",
+    "LOD transition/mip behavior unqualified"
+  ]
+}
