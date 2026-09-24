@@ -28,6 +28,52 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-197: Suspend self-imposed asset and streaming size caps while M4.5 measures real costs (2026-09-24, accepted; human direction)
+
+**Decision:** for representative M4.5 content, suspend the size and count caps set for the
+greybox world. They become recorded measurements, not rejections:
+- the streaming constants: 8 MiB encoded and 32 MiB decoded per dependency, 16 MiB resident
+  encoded and 128 MiB batch staging (the structural 3×3 resident-cell window is not a cap)
+- 256 PBR placements per cell, and the packager's stone and near-triangle ceilings
+- the per-class QA triangle, texture-width and resource-size ceilings
+
+Delivery chooses the representation that best preserves the approved look. Examples are
+4096² maps at 1024 texels/m, and lossless normal maps where block compression visibly
+degrades shading.
+
+**Unchanged:**
+- WebGPU device limits and physical memory.
+- The player-visible budgets in [budgets.md](budgets.md): present intervals, maximum hitch,
+  zero gameplay pipeline compiles, main-thread long tasks, cell-load time and JS heap.
+- The D-181 exit smoke.
+- QA structural checks: validity, finite geometry, UVs, mip chains, meshopt layout,
+  provenance and the rights flag.
+- The reference → QA → library boundary.
+
+**Context:** the photoreal paving delivery measured one 4 m module at 61 MB of runtime
+resources and 210 MB of RGBA8 GPU textures. The caps it exceeds date from M2, when the
+greybox world was a few MB of content. The human confirmed they are project caps, not
+platform limits, and directed that quality come first until the overall tradeoffs are known.
+Two measurements support this: 2048² maps were visibly softer at 4K, and UASTC left 24% of
+normal-map texels more than 5° off
+([delivery result](../assets/source/d1-paving/proof-2026-09-24/delivery-results.md)).
+
+**Consequences:**
+- The first change that needs it converts each listed cap to telemetry, together with the
+  tests that assert rejection. The smoke evidence currently rejects resident encoded bytes
+  above 16 MiB. Relaxing that check changes a harness evidence contract, so it is reviewed
+  as one.
+- D-182's integrated measurements record total memory, install size, decode and upload
+  cost, and frame cost.
+
+**Reopen if:** calibrate replacement allocations from combined-scene measurements, through a
+new entry, before M4.5 exits. Reopen sooner if any of these happens:
+- a player-visible budget fails
+- device memory pressure or eviction appears
+- install size becomes a problem
+
+---
+
 ## D-196: Script-first procedural authoring and rapid preview iteration for 3D assets (2026-09-22, accepted; amends D-182's cycle default for authored assets)
 
 **Decision:** Author 3D assets with a seeded, headless Blender build script that generates

@@ -45,6 +45,12 @@ target and existing thresholds remain unchanged by D-182. CPU submission and GPU
 are pipelined and must not be summed as a frame budget. GPU execution headroom does not
 prove physical presentation, and logical allocations do not prove resident memory.
 
+D-197 suspends the greybox-era asset and streaming size caps for representative M4.5
+content: per-dependency encoded/decoded sizes, resident encoded bytes, batch staging,
+per-cell placements and per-class QA ceilings. Record those quantities
+as measurements until the combined-scene numbers support replacement allocations. The
+player-visible rows below stay binding.
+
 This is an early integration planning requirement, not a new mandatory metric set or
 extra physical-smoke gate. Unsupported/invalid evidence retains its state, and existing
 qualification limits below remain in force. Focused combined-scene measurements guide

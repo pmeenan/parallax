@@ -1,0 +1,508 @@
+{
+  "scenario": "photoreal-paving-delivery@1",
+  "candidate": "candidate2",
+  "sourceReceiptSha256": "11d0e23ad7eb7d705e1f7a0527a58feb16f21f8d4bb87248d555c961be1a9a04",
+  "stageReceipts": {
+    "pack": "d19509a84bfe91135a96abf91268c8b89caf0d05d0dfd2d1501da4b5893fa35d",
+    "validation": "955b9b3e277380cc5b55957f1baed66ee7928f2414dc81f63a7ac5111113faed",
+    "maps": "33bf2562864f2fbe6805891d43d51d4f17c8b67c0a91fc99b58c03cdc7e58928"
+  },
+  "pebbleGeometryMinimumMm": 9.0,
+  "pebbleGeometryInstances": 3927,
+  "pebbles": 29204,
+  "pebbleMapCoverageFraction": 0.03058,
+  "geometry": [
+    {
+      "part": "ground",
+      "lod": 0,
+      "vertices": 93575,
+      "triangles": 180748,
+      "meshoptBytes": 1501556,
+      "rawBytes": 5163376,
+      "simplifierErrorMm": 0.991,
+      "grid": 1600,
+      "steepestFaceDegrees": 89.58
+    },
+    {
+      "part": "pebbles",
+      "lod": 0,
+      "vertices": 439248,
+      "triangles": 251328,
+      "meshoptBytes": 8876226,
+      "rawBytes": 17071872,
+      "instances": 3927
+    },
+    {
+      "part": "plants",
+      "lod": 0,
+      "vertices": 26734,
+      "triangles": 38408,
+      "meshoptBytes": 619196,
+      "rawBytes": 1316384
+    },
+    {
+      "part": "ground",
+      "lod": 1,
+      "vertices": 17259,
+      "triangles": 31316,
+      "meshoptBytes": 282568,
+      "rawBytes": 928080,
+      "simplifierErrorMm": 3.0,
+      "grid": 800,
+      "steepestFaceDegrees": 85.7
+    },
+    {
+      "part": "pebbles",
+      "lod": 1,
+      "vertices": 37142,
+      "triangles": 21216,
+      "meshoptBytes": 792766,
+      "rawBytes": 1443136,
+      "instances": 884
+    },
+    {
+      "part": "plants",
+      "lod": 1,
+      "vertices": 11910,
+      "triangles": 13442,
+      "meshoptBytes": 283709,
+      "rawBytes": 542424
+    },
+    {
+      "part": "ground",
+      "lod": 2,
+      "vertices": 2869,
+      "triangles": 4936,
+      "meshoptBytes": 49449,
+      "rawBytes": 151040,
+      "simplifierErrorMm": 5.992,
+      "grid": 200,
+      "steepestFaceDegrees": 74.58
+    },
+    {
+      "part": "plants",
+      "lod": 2,
+      "vertices": 4780,
+      "triangles": 3780,
+      "meshoptBytes": 115899,
+      "rawBytes": 198320
+    }
+  ],
+  "textures": [
+    {
+      "role": "ground-basecolor",
+      "width": 4096,
+      "height": 4096,
+      "runtimeBytes": 22370144,
+      "format": "uastc",
+      "zstdBytes": 19711060,
+      "rgba8DecodedBytes": 89478484,
+      "bc7LogicalBytes": 22369621,
+      "level0MeanAbsError": 0.732,
+      "level0MaxAbsError": 42,
+      "sha256": "8067dc2cc1c784ec409f50cb4c49f50275d2e94b504cf83c9b5e1e85d67bce7d"
+    },
+    {
+      "role": "ground-normal",
+      "width": 4096,
+      "height": 4096,
+      "runtimeBytes": 46248820,
+      "format": "rgba8-zstd19",
+      "zstdBytes": 46248820,
+      "rgba8DecodedBytes": 89478484,
+      "bc7LogicalBytes": 22369621,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "sha256": "471895b6c426ca9fa8ce701c4e9273361345a7240bb786fe9d210183d2010863"
+    },
+    {
+      "role": "ground-orm",
+      "width": 2048,
+      "height": 2048,
+      "runtimeBytes": 5592896,
+      "format": "uastc",
+      "zstdBytes": 3680470,
+      "rgba8DecodedBytes": 22369620,
+      "bc7LogicalBytes": 5592405,
+      "level0MeanAbsError": 0.067,
+      "level0MaxAbsError": 3,
+      "sha256": "9d7e0ea6ba9441be929fdab4052be312711d6dfe80812bbf5fde469297f73b57"
+    },
+    {
+      "role": "plant-basecolor",
+      "width": 1024,
+      "height": 512,
+      "runtimeBytes": 699536,
+      "format": "uastc",
+      "zstdBytes": 254487,
+      "rgba8DecodedBytes": 2796204,
+      "bc7LogicalBytes": 699051,
+      "level0MeanAbsError": 0.153,
+      "level0MaxAbsError": 4,
+      "sha256": "714518fa1a2ae11b6ee5cf3ed3ea8f22983de14711423aeb6bfb3a0927028b11"
+    },
+    {
+      "role": "plant-normal",
+      "width": 1024,
+      "height": 512,
+      "runtimeBytes": 699536,
+      "format": "uastc",
+      "zstdBytes": 209898,
+      "rgba8DecodedBytes": 2796204,
+      "bc7LogicalBytes": 699051,
+      "level0MeanAbsError": 0.216,
+      "level0MaxAbsError": 15,
+      "sha256": "c1c3bd52064656e5e9dd2953380e5346bebb88d41092fc8d83a3266ab4ef5b94"
+    },
+    {
+      "role": "plant-orm",
+      "width": 1024,
+      "height": 512,
+      "runtimeBytes": 699536,
+      "format": "uastc",
+      "zstdBytes": 1017,
+      "rgba8DecodedBytes": 2796204,
+      "bc7LogicalBytes": 699051,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "sha256": "3b0a90c2e48d39f59e5b027845c0742f926375084987e458311856b35de4c4cd"
+    },
+    {
+      "role": "pebble-normal",
+      "width": 4,
+      "height": 4,
+      "runtimeBytes": 304,
+      "format": "uastc",
+      "zstdBytes": 319,
+      "rgba8DecodedBytes": 84,
+      "bc7LogicalBytes": 21,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "sha256": "52ae10f961b28be82aff464e1754b432e7aa320c09e23fba507f6b2481059a86"
+    },
+    {
+      "role": "pebble-orm",
+      "width": 4,
+      "height": 4,
+      "runtimeBytes": 304,
+      "format": "uastc",
+      "zstdBytes": 319,
+      "rgba8DecodedBytes": 84,
+      "bc7LogicalBytes": 21,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "sha256": "dc5c319af746474747745edcbf3b2732e7c34a138f8a16d0407a1ad40e95abbc"
+    }
+  ],
+  "glb": [
+    {
+      "lod": 0,
+      "bytes": 100116820,
+      "sha256": "1b47259284d27a77d8a6f90c3c452a8b4c35813ebe7273f2eed22b03772c8a96",
+      "validatorErrors": 0,
+      "validatorWarnings": 3
+    },
+    {
+      "lod": 1,
+      "bytes": 79478816,
+      "sha256": "54534320179cf29b1498af9a88eca1021617ac529149ff6040df3efb81d55ff2",
+      "validatorErrors": 0,
+      "validatorWarnings": 3
+    },
+    {
+      "lod": 2,
+      "bytes": 76913752,
+      "sha256": "3f0f66bd48743e30b06a69d49e1162329edebe14872b6931131192666235c429",
+      "validatorErrors": 0,
+      "validatorWarnings": 2
+    }
+  ],
+  "validator": "2.0.0-dev.3.10",
+  "chrome": {
+    "browser": {
+      "version": "152.0.7977.54",
+      "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+    },
+    "renderer": {
+      "package": "@babylonjs/lite",
+      "version": "1.12.0"
+    },
+    "adapter": {
+      "vendor": "nvidia",
+      "architecture": "lovelace"
+    },
+    "lodBoundaries": {
+      "ground": [12, 32],
+      "pebbles": [6, 12],
+      "plants": [8, 24]
+    },
+    "runs": {
+      "chrome1": {
+        "sha256": "df77673cc0a5a07aa960ac3d8994fd472e2ddfbacff958907d3831eb3ec29077",
+        "textureGpuBytes": 209715368,
+        "uploadMs": 1868,
+        "browserErrors": 0,
+        "externalRequests": 0,
+        "views": [
+          {
+            "view": "walking",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "walking-matched",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "overview",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "close",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "joint",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "grazing",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "overcast",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "join",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "mid-lod0",
+            "visibleTriangles": 91744380,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "mid-mixed",
+            "visibleTriangles": 11348616,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "walking-4k-mixed",
+            "visibleTriangles": 11348616,
+            "drawCalls": 43,
+            "gpuFrameMs": {
+              "p50": 4.949,
+              "p95": 6.731
+            }
+          }
+        ]
+      },
+      "chrome-cost": {
+        "sha256": "04e73c906c844a6af1157f76cee7a6a70936237cd458add0288105180e010cfb",
+        "textureGpuBytes": 209715368,
+        "uploadMs": 1818,
+        "browserErrors": 0,
+        "externalRequests": 0,
+        "views": [
+          {
+            "view": "walking-4k-mixed",
+            "visibleTriangles": 11348616,
+            "drawCalls": 43,
+            "gpuFrameMs": {
+              "p50": 4.802,
+              "p95": 4.893
+            }
+          },
+          {
+            "view": "close-4k",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "4k-ground-only",
+            "visibleTriangles": 7459536,
+            "drawCalls": 23,
+            "gpuFrameMs": {
+              "p50": 3.39,
+              "p95": 3.559
+            }
+          },
+          {
+            "view": "4k-no-plants",
+            "visibleTriangles": 9558288,
+            "drawCalls": 31,
+            "gpuFrameMs": {
+              "p50": 4.332,
+              "p95": 4.445
+            }
+          },
+          {
+            "view": "close",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "4k-empty",
+            "visibleTriangles": 0,
+            "drawCalls": 11,
+            "gpuFrameMs": {
+              "p50": 0.202,
+              "p95": 0.223
+            }
+          }
+        ]
+      },
+      "chrome-tex2048": {
+        "sha256": "71c659b9cfe5c488daee4da764d66c05858de69127a0636359b6e3288bad0d44",
+        "textureGpuBytes": 75497640,
+        "uploadMs": 1043,
+        "browserErrors": 0,
+        "externalRequests": 0,
+        "views": [
+          {
+            "view": "walking-4k-mixed",
+            "visibleTriangles": 11348616,
+            "drawCalls": 43,
+            "gpuFrameMs": {
+              "p50": 4.602,
+              "p95": 4.857
+            }
+          },
+          {
+            "view": "close-4k",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          }
+        ]
+      },
+      "chrome-diag2": {
+        "sha256": "bbfbddd213c7818c470dcd7b0dde21226e6bd391a7a08c6609bb61f35a5b221d",
+        "textureGpuBytes": 209715368,
+        "uploadMs": 1825,
+        "browserErrors": 0,
+        "externalRequests": 0,
+        "views": [
+          {
+            "view": "wm-game",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "wm-sun-only",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "wm-ambient-only",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "wm-flat-normal",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "wm-bright",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "grazing-bright",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "grazing-bright-flat-normal",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          }
+        ]
+      },
+      "chrome-rim": {
+        "sha256": "29de7d972a0d77cca5e78df1d3bdbf9399f8a6fbbe2257ec94dd5f9f84667efc",
+        "textureGpuBytes": 209715368,
+        "uploadMs": 1757,
+        "browserErrors": 0,
+        "externalRequests": 0,
+        "views": [
+          {
+            "view": "close-ambient-only",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "close-ambient-only-flat-normal",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "close-sun-only",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          },
+          {
+            "view": "close-sun-only-flat-normal",
+            "visibleTriangles": 5645808,
+            "drawCalls": 0,
+            "gpuFrameMs": null
+          }
+        ]
+      }
+    }
+  },
+  "retained": {
+    "chrome/close.png": "43a92a556ae16aaee24c091b990cdd11673e572dddf92a6da5a9941a79410341",
+    "chrome/join.png": "dafc7f12b044dccaa0cc3043df4f224cd1ecf9fe213e3c9a2e934dad755a6231",
+    "chrome/joint.png": "e7da755dc009cb5654818586f9f3175b5feb6967728bfb20ab2f256f20525ef6",
+    "chrome/mid-mixed-lod.png": "2cd8b7e6244437c7e445ce0dcede386c2ebcf9bd6f8b343b69452417bc75eab5",
+    "chrome/rim-diagnostic.png": "322efa46569e462f56d4b5f97b33a2eacd9b8bdf2be3183fa98a7956993a6751",
+    "chrome/texture-4096-vs-2048.png": "47be094316da34b4c688d547606244e2cf75204122813976d520613b5da49961",
+    "chrome/walking-4k-mixed-crop.png": "f5b0e1ed314bfd30f462a5ef3aa2d06a1e25a7193d4f0e1db6dc4a2c50a8e45a",
+    "chrome/walking-matched-bright-diagnostic.png": "1aa086c4fcdf923f3c3b1e6cd2ae7f3cd863e3756c21dd65a38b60a5f84475e3",
+    "chrome/walking-matched.png": "c50e46b98900b95b103274960c2e1df705371a821523013be054f4ddd15d8eb0",
+    "compare-walking-matched-crop.png": "2b6c7f7de888b795c276534f5570d40a323c7bfc8f35364795134992c42365d1",
+    "compare-walking-matched.png": "c75359541bc833a544c0c2046d37f4cae51a2ad4234978fa5a7c8fc39892147e",
+    "import/close-coincident-plants-diagnostic.png": "7dde2da0b4332662da8427ccbf3251e61b37485da222c8a81884baf6aa9b731d",
+    "import/close.png": "f2c7ca21c65233bdee3c692e7194a919db232fbfbf3ac299ec619877ab2fe736",
+    "import/gray.png": "e88c1fbeb8779e8b055186146f66608147297b1e8da8e28abb470e49461cd903",
+    "import/grazing.png": "959629db7c8a4ad024dbcc6098ca8f911938d02dd12fcbec3005373589ba3d9d",
+    "import/join.png": "744fcc8b95a6936e4231f620af3babf7885a9530e09178e4833c5633b8d6490c",
+    "import/joint-default-terminator-diagnostic.png": "2c556332ed7719f5a94eb0a717b07956895a7e8db9c2d0a02fdb9ce62cd55866",
+    "import/joint.png": "ace5d2f7466a6db1ff4ea06174b0ea8cb3c162482622d0857bb63c9825e50b16",
+    "import/walking-matched.png": "72ca002910957fecd107b82612eafb4d958625959de8452b9099da479788bcb7",
+    "import/walking-mixed-lod.png": "c38ea9c6f8204bb118dc9ed2e9d018e6f846f8f93ced10b3e9c6ffc6ebe44857"
+  },
+  "budgetAuthority": "none: source-package inspection; costs are isolated-preview diagnostics"
+}

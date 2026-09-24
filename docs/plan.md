@@ -461,6 +461,32 @@ budgets. Rights, QA and admission remain open. Review found up to 4.083 mm open
 position seams in candidate1's clamped displacement. The corrected builder wraps
 the height map; preserve the approved snapshot as evidence and qualify rebuilt
 boundary positions, boundary normals and grazing-light joins before delivery.
+**Active (2026-09-24):** the [delivery package brief](../assets/source/d1-paving/proof-2026-09-24/delivery-brief.md)
+tests a periodic 4 m module in candidate1's views and in pinned-Chrome Babylon Lite:
+- border-locked decimated LODs with flat normals and a full-height normal map
+- 4096² repeat-addressed maps
+- an atlased plant mesh
+- large pebbles instanced, the rest drawn into the maps
+
+Allowance: two candidate handoffs within 4 active hours. The package measures costs
+against the current class and streaming limits; it neither changes those limits nor
+admits the asset.
+
+**Outcome:** [delivery candidate 2](../assets/source/d1-paving/proof-2026-09-24/delivery-results.md)
+used both handoffs.
+- **Look.** It matches the approved look through fresh import and pinned Chrome.
+- **Candidate 1.** The screens found folded decimation triangles, which candidate 2 prevents
+  by construction.
+- **Cost.** 88.8 MB of runtime resources and 210 MB of RGBA8 textures. At 4K the isolated
+  GPU time is 4.8 ms p50.
+- **Engine gaps.** The largest remaining gaps are in the engine: lighting balance, no ambient
+  occlusion, no small-scale shadows, and an install path that rejects the maps.
+
+The human directed that engine work proceed alongside assets, and that self-imposed caps
+not limit quality (D-197). The next package is the
+[installation brief](../assets/source/d1-paving/proof-2026-09-24/install-brief.md), then
+lighting/AO, then small-scale shadows. RE-050 records Chrome's missing zstd Compression
+Streams. Human review of the delivered look is pending.
 
 *Superseded baseline history:* `production/candidate3` had been approved after
 `cobble-study/candidate1`. Its [shared-resource and LOD delivery proof](../assets/source/d1-paving/proof-2026-09-22/delivery-brief.md):

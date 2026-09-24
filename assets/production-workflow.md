@@ -91,7 +91,10 @@ boundary in [AGENTS.md](AGENTS.md).
    - measured costs against the class budgets
    - rights review, QA and library admission
 
-   Source approval makes no runtime, budget or QA claim.
+   Source approval makes no runtime, budget or QA claim. The handbook's
+   [delivery section](procedural-authoring.md#delivery-tested-on-the-photoreal-paving-2026-09-24)
+   records the tested decimation, map and inspection methods. D-197 suspends the old size caps
+   while real costs are measured.
 
 ## Iteration allowance (D-196)
 

@@ -166,6 +166,38 @@ Derive every secondary layer from the primary fields; don't hand-place anything.
 - **Saving:** load maps from disk before saving with `relative_remap=True`. The `.blend` then
   references `//maps/...` and stays small. Pack images only for standalone exchange files.
 
+## Delivery (tested on the photoreal paving, 2026-09-24)
+
+The [delivery package](source/d1-paving/proof-2026-09-24/delivery-results.md) turned the approved
+paving into runtime LODs, maps and GLBs. Its scripts are the reference for surface assets. These
+lessons generalize:
+
+- **Decimate on the source's own grid.** Sample the height field at the source's mesh spacing
+  (2.5 mm), not a coarser one: a 5 mm grid lost the depth of 1–2.8 cm joints.
+- **Periodic tiles.** Lock every border vertex. Opposite edges then keep identical vertex sets,
+  and heights sampled from the wrapped field match exactly.
+- **Squash height before simplifying.** meshoptimizer rejects a single collapse that flips a
+  face, but successive collapses can fold steep sidewalls over (1,142 downward faces).
+  Simplify a copy with height × 0.02 and the absolute error × 0.02. Then assert that no face
+  points down.
+- **Flat vertex normals plus a full-height normal map.** Every LOD then shades identically, and
+  there is no boundary-normal seam. Lite's derivative tangent frame reads this correctly on
+  heightfields. Cycles self-shadows steep flat-normal faces, so fresh-import checks set a
+  shadow-terminator geometry offset of 1.0 on the ground. Keep one default-offset render as a
+  diagnostic. Explicit plant back faces (the opaque, back-face-culled runtime needs them) are
+  coincident copies that darken Cycles renders by about 30%, so render one face per pair.
+- **Small scatter goes into the maps.** Render the scatter top-down in Cycles: albedo, normal
+  and a one-sample height pass. Composite it where it sits above the ground. Keep only the large
+  pieces as geometry, and colour them from the same base-colour map through planar UVs with
+  their true normals. Normal-mapped geometry needs a normal that roughly matches its surface:
+  Lite's frame degenerates on near-vertical faces.
+- **Formats.** UASTC is fine for albedo (0.7/255 mean error) but moves 24% of normal texels by
+  more than 5°. Ship normals losslessly (RGBA8 + zstd) and measure in Chrome.
+- **Inspect in pinned Chrome.** Use the package's `chrome-preview.mjs`, which runs the
+  production material, sampler, instancing, lighting and CSM code on the decoded bytes.
+- **Screens.** Fresh subagent screens caught folded triangles that lead inspection had
+  missed. Run both screens on every handoff.
+
 ## Beyond ground surfaces (untested guidance)
 
 This method is proven only on a tileable ground surface. For masonry faces, a heightfield on

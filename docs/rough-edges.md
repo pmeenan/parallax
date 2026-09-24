@@ -85,6 +85,31 @@ COS APIs exist):
 
 ## Findings
 
+## RE-050: Compression Streams have no zstd (or Brotli) decoder for OPFS-resident assets
+
+- **Date / Chrome version:** 2026-09-24; Chrome for Testing Stable 152.0.7977.54, Windows 11,
+  RTX 4080 SUPER.
+- **Layer:** other (Compression Streams).
+- **Status:** open.
+- **What we expected / What happened:** we wanted the browser's native decoder for
+  zstd-supercompressed KTX2 levels that are stored at rest in OPFS. In a document,
+  constructing `DecompressionStream` succeeds for `gzip`, `deflate` and `deflate-raw`, and
+  throws for `zstd` and `brotli`. In a module worker, the `zstd` constructor also threw.
+  The same build sends `Accept-Encoding: gzip, deflate, br, zstd` and transparently
+  decoded a zstd-encoded `fetch` body from a local server. The decoders ship, but Compression
+  Streams do not expose them.
+- **Repro:** construct `new DecompressionStream("zstd")` in a page and in a worker on the
+  pinned build. The probe that found it fed each level of a zstd-supercompressed RGBA8 KTX2
+  (the photoreal paving normal map, 44 MiB) through the stream.
+- **Impact on Parallax:** installed assets live in OPFS and are read from there at every
+  launch. Download-time HTTP content encoding cannot stand in for at-rest supercompression.
+  The paving delivery therefore keeps a user-space zstd wasm decoder; the render worker
+  already pins one for KTX2. That adds a wasm module and a copy for every supercompressed
+  resource. [Delivery result](../assets/source/d1-paving/proof-2026-09-24/delivery-results.md).
+- **Proposed improvement:** add `zstd`, and ideally `brotli`, to Compression Streams in
+  both windows and workers. Formats Chrome already decodes for HTTP would then serve at-rest
+  game assets without a second, app-shipped decoder.
+
 ## RE-049: Shader shadow views can bind the depth attachment as a receiver texture
 
 - **Date / Chrome version:** 2026-09-05; Chrome for Testing Stable 152.0.7977.54,

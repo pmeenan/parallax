@@ -1,5 +1,12 @@
 # D1 paving — individual limestone source
 
+**Delivery (2026-09-24):** [delivery candidate 2](proof-2026-09-24/delivery-results.md) turns the
+approved photoreal source into a periodic 4 m runtime module: fold-free decimated LODs, 4096²
+maps with a lossless normal, and drawn-in plus 3D pebbles and plants. It preserves the approved
+look through fresh import and pinned-Chrome rendering, and awaits human review. Installing it in
+the game is the next engine package ([brief](proof-2026-09-24/install-brief.md)); D-197 suspends
+the old size caps. Rights, class QA and admission remain open.
+
 **Latest human approval (2026-09-22):** the procedural, periodic
 [photoreal rebuild](proof-2026-09-22/photoreal-results.md) `photoreal/candidate1` is the
 approved visual baseline. Its seeded [builder](proof-2026-09-22/photoreal/build.py) is
