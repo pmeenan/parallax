@@ -21,6 +21,126 @@ describe("render-recovery result schema", () => {
     expect(() => validateRenderRecoveryReportContract(invalidReport())).not.toThrow();
   });
 
+  it("validates the structure of a retained render-recovery@2 recovered view", () => {
+    const value = invalidReport();
+    const clearColorRgb = [84, 167, 241];
+    const view = {
+      canvas: {
+        clearColorRgb,
+        height: 64,
+        pngSha256: "a".repeat(64),
+        visiblePixelCount: 2_048,
+        visiblePixelRatio: 0.5,
+        width: 64,
+      },
+      render: {
+        cameraPosition: [0, 100, -104],
+        cameraTarget: [0, 40, 0],
+        checkpointId: "visual-preview",
+        clearColorDistanceThreshold: 24,
+        clearColorRgb,
+        elapsedMs: 0,
+        environment: { id: "visual-preview", startMs: 0, endMs: 1 },
+        environmentPhaseId: "visual-preview",
+        height: 64,
+        previewVisibleMeshCount: 0,
+        rgbaSha256: "b".repeat(64),
+        sampledPixelCount: 4_096,
+        streamedVisibleMeshCount: 24,
+        visiblePixelCount: 2_600,
+        visiblePixelRatio: 2_600 / 4_096,
+        width: 64,
+      },
+      request: {
+        camera: { beta: Math.PI / 3, heightMeters: 28, radiusMeters: 120 },
+        environment: { timeOfDay: "daylight", timeOfDayPhase: 0.25, weather: "clear" },
+        headingRadians: 0,
+        observer: [128, 12, 0],
+      },
+      residentCellIds: ["cell-a"],
+    };
+    const withView = (recoveredView: unknown) => ({
+      ...value,
+      attempts: value.attempts.map((attempt, index) =>
+        index === 0 ? { ...attempt, partial: { ...attempt.partial, recoveredView } } : attempt,
+      ),
+    });
+    expect(() => validateRenderRecoveryReportContract(withView(view))).not.toThrow();
+    expect(() => validateRenderRecoveryReportContract(withView({ ...view, extra: 1 }))).toThrow(
+      /recovered view fields are invalid/,
+    );
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withView({ ...view, render: { ...view.render, rgbaSha256: "x" } }),
+      ),
+    ).toThrow(/RGBA digest/);
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withView({ ...view, canvas: { ...view.canvas, visiblePixelRatio: 0.183 } }),
+      ),
+    ).toThrow();
+  });
+
+  it("accepts current dependency-pipeline streaming fields and validates them when present", () => {
+    const withDependencies = (extra: Record<string, unknown>) => {
+      const telemetry = streamingLatestTelemetry();
+      return reportWithLatestTelemetry({
+        ...telemetry,
+        streaming: { ...telemetry.streaming, ...extra },
+      });
+    };
+    const cache = { acquireCount: 0, hitCount: 0, missCount: 0, releaseCount: 0 };
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withDependencies({
+          dependencyCache: cache,
+          dependencyDecodeFailureCount: 0,
+          dependencyDecodedBytes: 16,
+          dependencyEncodedBytesRead: 8,
+          dependencyGpuCache: cache,
+          dependencyReadCount: 1,
+          dependencyUploadBytes: 16,
+          dependencyUploadCount: 1,
+          psoWarmupGameplayOverlapCount: 0,
+        }),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      validateRenderRecoveryReportContract(withDependencies({ dependencyReadCount: -1 })),
+    ).toThrow(/dependencyReadCount is invalid/);
+    expect(() =>
+      validateRenderRecoveryReportContract(withDependencies({ unexpectedCounter: 1 })),
+    ).toThrow(/fields are invalid/);
+
+    const dependencyTiming = {
+      dependencyCount: 3,
+      dependencyDecodeMs: 2.8,
+      dependencyDecodedBytes: 2976,
+      dependencyEncodedBytes: 1029,
+      dependencyReadMs: 0.02,
+      dependencyUploadBytes: 2976,
+      dependencyUploadMs: 0.28,
+    };
+    const withSample = (sample: Record<string, unknown>) =>
+      withDependencies({ cellLoadSampleCount: 1, cellLoadSamples: [sample] });
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withSample({ ...streamingCellLoadSample(), ...dependencyTiming }),
+      ),
+    ).not.toThrow();
+    const { dependencyUploadMs: _omitted, ...partialTiming } = dependencyTiming;
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withSample({ ...streamingCellLoadSample(), ...partialTiming }),
+      ),
+    ).toThrow(/dependency timing is invalid/);
+    expect(() =>
+      validateRenderRecoveryReportContract(
+        withSample({ ...streamingCellLoadSample(), ...dependencyTiming, dependencyReadMs: -1 }),
+      ),
+    ).toThrow(/dependency timing is invalid/);
+  });
+
   it("keeps environment eligibility independent from failed recovery evidence", () => {
     const value = invalidReport();
     const { actual, pin, reference } = eligibleEnvironment();
@@ -1068,13 +1188,14 @@ function invalidReport() {
         elapsedMs: null,
         initial: null,
         latestTelemetry: null,
-        visibleCanvas: null,
+        recoveredView: null,
       },
       profileLineage: { history: ["fresh"], id: `independent-fresh-${id}` },
       result: null,
       state: "invalid",
     })),
     chromePin: {
+      browserRevision: "@24072c1aa400ec4a89dc738b6b6acd12a8589b6f",
       channel: "stable",
       downloads: { win64: "https://example.invalid/chrome.zip" },
       executableSha256: { win64: "c".repeat(64) },
@@ -1120,12 +1241,12 @@ function invalidReport() {
     },
     mandatoryMetricSet: {
       metrics: RENDER_RECOVERY_MANDATORY_METRICS,
-      version: 5,
+      version: 6,
     },
     passed: false,
     releaseDigest: "b".repeat(64),
     runFailure: null,
-    scenario: "render-recovery@1",
+    scenario: "render-recovery@2",
     schemaVersion: RENDER_RECOVERY_REPORT_SCHEMA_VERSION,
     source: { commit: "b".repeat(40), dirtyTreeDigest: null },
   };
@@ -1706,7 +1827,7 @@ function readyRenderWorkerFields() {
         ktx2: "preinstalled-global",
         meshopt: "preinstalled-global",
       },
-      versions: { draco: "1.5.7", ktx2: "9.17.0", meshopt: "1.2.0" },
+      versions: { draco: "1.5.7", ktx2: "9.27.1", meshopt: "1.2.0" },
     },
     decoderFixtures: {
       draco: { durationMs: 1, faces: 1 },

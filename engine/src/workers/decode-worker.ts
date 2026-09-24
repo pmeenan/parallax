@@ -66,7 +66,7 @@ async function decodeRequest(request: DecodeWorkerRequest): Promise<void> {
       response,
       dependencies.flatMap((dependency) =>
         dependency.format === "ktx2"
-          ? (dependency.mipmaps?.map((mip) => mip.rgba) ?? [dependency.rgba])
+          ? (dependency.mipmaps?.map((mip) => mip.data) ?? [dependency.data])
           : dependency.kind !== "legacy-positions"
             ? dependency.kind === "indices"
               ? dependency.indices

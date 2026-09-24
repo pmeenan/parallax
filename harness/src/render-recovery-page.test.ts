@@ -26,11 +26,26 @@ describe("render-recovery page-realm operations", () => {
       residentCellIds: Object.freeze(["moved"]),
       workerGeneration: 1,
     }) as StreamingRecoveryCheckpoint;
+    const previewEvidence = Object.freeze({ checkpointId: "visual-preview" });
+    const calls: string[] = [];
+    const resetFlythrough = vi.fn(async () => {
+      calls.push("reset");
+    });
+    const previewScene = vi.fn(async () => {
+      calls.push("preview");
+      return previewEvidence;
+    });
+    const endScenePreview = vi.fn(async () => {
+      calls.push("end");
+    });
     let snapshot = recoverySnapshot();
     const telemetry = {
+      endScenePreview,
       exerciseRenderRecovery,
       exerciseRenderRecoveryAtBoundary: vi.fn().mockResolvedValue(checkpoint),
       prepareFlythrough,
+      previewScene,
+      resetFlythrough,
       snapshot: () => snapshot,
       startFlythrough,
     } as unknown as ParallaxTelemetryExport;
@@ -68,6 +83,24 @@ describe("render-recovery page-realm operations", () => {
     expect(prepareFlythrough).toHaveBeenCalledOnce();
     expect(startFlythrough).toHaveBeenCalledOnce();
     expect(exerciseRenderRecovery).toHaveBeenCalledWith("worker-crash");
+
+    const viewRequest = Object.freeze({
+      camera: Object.freeze({ beta: Math.PI / 3, heightMeters: 28, radiusMeters: 120 }),
+      environment: Object.freeze({
+        timeOfDay: "daylight" as const,
+        timeOfDayPhase: 0.25,
+        weather: "clear" as const,
+      }),
+      headingRadians: 0,
+      observer: Object.freeze([0, 12, 0] as const),
+    });
+    await expect(
+      detachedAction({ kind: "verify-recovered-view", request: viewRequest }),
+    ).resolves.toEqual({ evidence: previewEvidence, snapshot });
+    expect(previewScene).toHaveBeenCalledWith(viewRequest);
+    await detachedAction({ kind: "end-recovered-view" });
+    // The failed flythrough is cleared before the preview takes the camera.
+    expect(calls).toEqual(["reset", "preview", "end"]);
 
     snapshot = {
       ...snapshot,
@@ -204,7 +237,7 @@ describe("render-recovery page-realm operations", () => {
 
     expect(waitCalls).toHaveLength(6);
     expect(synchronousWaitCalls).toHaveLength(waitCalls.length);
-    expect(evaluateCalls).toHaveLength(3);
+    expect(evaluateCalls).toHaveLength(5);
     expect(detachedActionCalls).toHaveLength(evaluateCalls.length);
   });
 });

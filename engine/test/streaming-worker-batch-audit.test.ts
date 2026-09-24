@@ -71,7 +71,7 @@ describe("streaming worker batch transaction wiring", () => {
     expect(decode).toContain("dependencies.flatMap((dependency)");
     for (const source of [streaming, decode]) {
       expect(source).toContain('dependency.format === "ktx2"');
-      expect(source).toContain("dependency.mipmaps?.map((mip) => mip.rgba) ?? [dependency.rgba]");
+      expect(source).toContain("dependency.mipmaps?.map((mip) => mip.data) ?? [dependency.data]");
       expect(source).toContain('dependency.kind !== "legacy-positions"');
       expect(source).toContain('dependency.kind === "indices"');
       expect(source).toContain("? dependency.indices");

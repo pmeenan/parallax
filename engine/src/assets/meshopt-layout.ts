@@ -14,7 +14,7 @@ export interface MeshoptDocumentLayout {
   readonly bufferViews?: readonly MeshoptBufferView[];
 }
 
-/** Reports violations of the canonical single-buffer shape supported by Babylon Lite 1.12.0. */
+/** Reports violations of the canonical single-buffer shape supported by Babylon Lite (1.12.0–1.31.1). */
 export function canonicalMeshoptLayoutErrors(document: MeshoptDocumentLayout): readonly string[] {
   const errors: string[] = [];
   if ((document.buffers?.length ?? 0) !== 1) {

@@ -183,7 +183,7 @@ representative-workload boundaries below. It is not a literal 100 GiB disk-write
 | Scale surface | Accepted evidence | Claim boundary |
 | --- | --- | --- |
 | Install architecture floor | A deterministic generated ≥100 GiB document is accepted by the production install-manifest parser. Its production summary supplies exact resource count and bytes; the manifest-byte SHA-256 supplies release identity. Manifest comparisons describe a one-resource update and a source rotation without materializing resource bodies. | Proves the parser, summary arithmetic, and manifest-level identity/change descriptions are size-independent. It executes no transfer, resume, integrity, update, cleanup, or eviction mechanism at 100 GiB. Those actual mechanisms are supported only by their separate bounded M2 physical qualifiers. |
-| Representative streaming | Model: 165,505,371,388 bytes / 71,680 resources. **Current (2026-09-24, D-198 baseline):** `scale-streaming-v1-2026-09-24T16-46-51-030Z` JSON/Markdown SHA-256: `89e7791ba320490befb307b385d72218a9338faf3816f6e2c0d0db96864598ea` / `f03c416ff4c4f034b470512f9834ed2b12af437c0f4eb14901afa05b3e5af07c`. The run installed 2,755,619,864 bytes / 375 resources. The D1 runtime binds its index, its 256 cells and all 47 index dependencies (29 production paving, 18 generated): 135,051,695 bytes / 304 resources. Traversal cell-load p95 was 1.795 ms. The earlier `scale-streaming-v1-2026-08-01T11-18-11-203Z` run (2,623,040,066 bytes; `e2a2028b548e27934ea5a6365cb4f9ce690dca8b7a9bcf5cf8b4fb2dbd5833b2` / `243c31b2e430cc7db720257b8d2b592ed7ab6ff0611bffef38ac73ccd1def910`) predates D2 and D1's asset dependencies. | Proves the accepted realistic encoding, entropy, distribution, dependency, decode, and upload workload. It does not materialize the whole modeled inventory. |
+| Representative streaming | Model: 165,505,371,388 bytes / 71,680 resources. **Current (2026-09-24, D-198 baseline, BC7 textures per D-199):** `scale-streaming-v1-2026-09-24T17-32-12-608Z` JSON/Markdown SHA-256: `a8aa08ddca0c0efee672e84c1e67263e5a8a87c0e249f0b19ed88edf032543b3` / `91bbd7fbf657bbdcb341b6eef2db3d6291b86a010da55ee5c2df1219829c8021`. The run installed 2,688,510,976 bytes / 375 resources. The D1 runtime binds its index, its 256 cells and all 47 index dependencies (29 production paving, 18 generated): 67,942,807 bytes / 304 resources. Traversal cell-load p95 was 2.235 ms. The earlier RGBA8-paving run `scale-streaming-v1-2026-09-24T16-46-51-030Z` bound 135,051,695 bytes, with a p95 of 1.795 ms. The earlier `scale-streaming-v1-2026-08-01T11-18-11-203Z` run (2,623,040,066 bytes; `e2a2028b548e27934ea5a6365cb4f9ce690dca8b7a9bcf5cf8b4fb2dbd5833b2` / `243c31b2e430cc7db720257b8d2b592ed7ab6ff0611bffef38ac73ccd1def910`) predates D2 and D1's asset dependencies. | Proves the accepted realistic encoding, entropy, distribution, dependency, decode, and upload workload. It does not materialize the whole modeled inventory. |
 | Quota/capacity | Current Chromium defaults make the temporary pool 80% of total disk and a storage key 75% of that pool (nominally 60% of total disk). On the local 1,998,819,684,352-byte C: volume that is approximately 1.199 TB before storage pressure/free-space effects. | This is source-backed planning evidence, not a capacity guarantee or admission authority. Chromium's reported static quota is the privacy-shaped `usage + 10 GiB`; separately qualified bounded writes remain resumable and must handle `QuotaExceededError`. |
 
 The Storage Standard leaves quota policy implementation-defined and requires only a
@@ -411,7 +411,7 @@ Definitions the harness implements; budgets above are meaningless without them.
   D-115 subsequently accepts those measurements as explicit unsupported M1 coverage
   gaps, not passing checks. No threshold, validity deadline, or 10% repeatability rule
   changed.
-- **`render-recovery@1` qualification (D-104):** three independent fresh-profile
+- **`render-recovery@2` qualification (D-104):** three independent fresh-profile
   attempts use the app's real `GPUDevice.destroy()` and silent render-worker `close()`
   diagnostic paths. Before injection, each attempt completes flythrough preflight and
   then requires at least 96 m of direct render-to-streaming observer movement to a
@@ -423,7 +423,19 @@ Definitions the harness implements; budgets above are meaningless without them.
   three first recoveries must reach ready within 30,000 ms with render/streaming
   generation 2, a fresh completed SAB workload, restored decoder/world evidence, the
   exact checkpoint observer, resident IDs, and observer sequences, and a visibly
-  non-blank canvas. Ready means both replacement render first-frame readiness and
+  rendered recovered residency. Since `render-recovery@2` (2026-09-24) that last check no
+  longer reads the gameplay-owned canvas. Recovery invalidates the running flythrough, after
+  which gameplay (M3) takes the camera to the player. So the harness resets the failed
+  flythrough and previews the exact pre-fault observer through a fixed view: the
+  flythrough-d1 camera, heading 0, clear daylight. It then requires all of:
+  - the readback's camera position, target and environment match the fixed view, rebuilt
+    independently from the pre-fault observer (within float32 rounding);
+  - the render worker's own readback shows streamed meshes and no preview meshes, with
+    consistent sampled and visible pixel counts;
+  - the readback and a later compositor screenshot of the same fixed view both cover 0.35 to <0.999 of
+    the canvas against the preview clear colour;
+  - residency is unchanged.
+  Ready means both replacement render first-frame readiness and
   replacement streaming hydration have completed. A fresh generation may hydrate the
   exact nine-cell checkpoint without recording redundant loads or proactive evictions;
   those counters may therefore be zero after recovery while resource, rejection, SAB,
@@ -441,20 +453,16 @@ Definitions the harness implements; budgets above are meaningless without them.
   flythrough. Only pinned Chrome on a registered physical console qualifies; other
   environments are invalid/advisory under the standing environment rules. Registered
   physical-console report
-  `render-recovery-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-26-52-162Z.json`
+  `render-recovery-2-d98b6c89e579-dev-01-showcase-2026-09-24T20-32-36-884Z.json`
   qualifies this contract on artifact
-  `7f6f65d9c6fdb6e187ebaccbf547456ae3d767842a9613524034cc527ba1a0a1`:
-  environment, evidence, and all three bounded-recovery checks passed. First recovery
-  completed in 2,332.244 ms for device loss, 5,617.312 ms for silent worker crash, and
-  2,332.155 ms before the exhaustion attempt's required terminal second fault. Each
-  restored generation 2 with the exact nine-cell checkpoint and 87.502799% visible
-  canvas; the second exhaustion fault retained restart count one and ended with render
-  `exhausted` and streaming `failed`. Final same-artifact D-097 report
-  `smoke-1-7f6f65d9c6fd-dev-01-showcase-2026-07-25T16-36-37-999Z.json`
-  then passed schema v37 / metric set v20 across six core runs, all three facets, and
-  30/30 evaluated checks with no core-run failure. Warm repeat 3 retained a complete,
-  readable, lossless trace after 5,315.897 ms, valid under D-094's unchanged ten-second
-  routine-smoke deadline.
+  `d98b6c89e579937e3b0528e1d53e3532ae616b834c482c2ac81a3d03f38901b4` (Lite 1.31.1): the
+  environment, evidence and bounded-recovery facets and the report contract all passed. First
+  recovery completed in 2,883 ms for device loss, 6,116 ms for silent worker crash, and
+  2,917 ms before the exhaustion attempt's required terminal second fault. Each recovered view
+  drew 24 streamed meshes, covering 86.36% of the render worker's readback and 91.59% of the
+  compositor screenshot. The exhaustion attempt ended with render `exhausted` and streaming
+  `failed`. It supersedes the July `render-recovery@1` qualification
+  on artifact `7f6f65d9…`.
 - **SAB transport evidence (D-057):** each `smoke@1` core launch runs 100,000
   deterministic main→render-worker→main records through paired fixed SPSC rings during
   warm-up. The mandatory metric is measured only when every echo returns in order with

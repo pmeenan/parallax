@@ -1,9 +1,11 @@
 import type {
+  FlythroughCheckpointRenderEvidence,
   ParallaxTelemetryExport,
   ParallaxTelemetrySnapshot,
   RenderRecoveryProbeKind,
   StreamingRecoveryCheckpoint,
 } from "@parallax/engine";
+import type { RenderRecoveryViewRequest } from "./render-recovery-evidence.js";
 
 export type RenderRecoveryWaitRequest =
   | Readonly<{
@@ -47,12 +49,23 @@ export type RenderRecoveryActionRequest =
   | Readonly<{
       readonly kind: "exercise-at-boundary";
       readonly probe: RenderRecoveryProbeKind;
+    }>
+  | Readonly<{
+      readonly kind: "verify-recovered-view";
+      readonly request: RenderRecoveryViewRequest;
+    }>
+  | Readonly<{
+      readonly kind: "end-recovered-view";
     }>;
 
 export type RenderRecoveryPageResult =
   | undefined
   | Readonly<{
       readonly checkpoint: StreamingRecoveryCheckpoint;
+      readonly snapshot: ParallaxTelemetrySnapshot;
+    }>
+  | Readonly<{
+      readonly evidence: FlythroughCheckpointRenderEvidence;
       readonly snapshot: ParallaxTelemetrySnapshot;
     }>;
 
@@ -184,6 +197,9 @@ export async function evaluateRenderRecoveryPage(
     "startFlythrough",
     "exerciseRenderRecovery",
     "exerciseRenderRecoveryAtBoundary",
+    "resetFlythrough",
+    "previewScene",
+    "endScenePreview",
   ]) {
     if (typeof Reflect.get(candidate, method) !== "function") {
       throw new Error(`Parallax telemetry page method ${method} is unavailable`);
@@ -203,5 +219,14 @@ export async function evaluateRenderRecoveryPage(
       const checkpoint = await telemetry.exerciseRenderRecoveryAtBoundary(request.probe);
       return { checkpoint, snapshot: telemetry.snapshot() };
     }
+    case "verify-recovered-view": {
+      // Recovery failed the active flythrough; clear it so the preview can own the camera.
+      await telemetry.resetFlythrough();
+      const evidence = await telemetry.previewScene(request.request);
+      return { evidence, snapshot: telemetry.snapshot() };
+    }
+    case "end-recovered-view":
+      await telemetry.endScenePreview();
+      return;
   }
 }

@@ -24,9 +24,10 @@ import {
 import type { PbrAssetPlacement } from "../src/world/pbr-asset";
 import { writePbrAssetMatrix } from "../src/world/pbr-asset-transform";
 
-function fixture() {
+function fixture(features: readonly string[] = ["texture-compression-bc"]) {
   const texture = { createView: vi.fn(() => ({})), destroy: vi.fn() };
   const device = {
+    features: new Set(features),
     createTexture: vi.fn((_descriptor: unknown) => texture),
     createSampler: vi.fn((_descriptor: unknown) => ({})),
     queue: { writeTexture: vi.fn((..._args: unknown[]) => {}) },
@@ -129,7 +130,8 @@ describe("installed PBR surface upload", () => {
     const { engine, device, texture } = fixture();
     const base = uploadStreamedPbrTexture(
       engine,
-      [{ width: 1, height: 1, rgba: new ArrayBuffer(4) }],
+      [{ width: 1, height: 1, data: new ArrayBuffer(4) }],
+      "rgba8",
       false,
     ).texture;
     const periodic = withPbrTextureAddressMode(engine, base, "repeat");
@@ -178,9 +180,9 @@ describe("installed PBR surface upload", () => {
     const levels = [4, 2, 1].map((width) => ({
       width,
       height: width,
-      rgba: new ArrayBuffer(width * width * 4),
+      data: new ArrayBuffer(width * width * 4),
     }));
-    const uploaded = uploadStreamedPbrTexture(engine, levels, true);
+    const uploaded = uploadStreamedPbrTexture(engine, levels, "rgba8", true);
     expect(uploaded.gpuBytes).toBe(84);
     expect(device.createTexture.mock.calls[0]?.[0]).toMatchObject({
       format: "rgba8unorm-srgb",
@@ -202,13 +204,60 @@ describe("installed PBR surface upload", () => {
     releaseTexture(uploaded.texture);
     expect(texture.destroy).toHaveBeenCalledOnce();
     const linear = fixture();
-    uploadStreamedPbrTexture(linear.engine, levels, false);
+    uploadStreamedPbrTexture(linear.engine, levels, "rgba8", false);
     expect(linear.device.createTexture.mock.calls[0]?.[0]).toMatchObject({ format: "rgba8unorm" });
+  });
+  it("uploads BC7 mip chains as whole block rows and requires the BC feature", () => {
+    const { engine, device } = fixture();
+    const levels = [8, 4, 2, 1].map((width) => ({
+      width,
+      height: width,
+      data: new ArrayBuffer(Math.ceil(width / 4) ** 2 * 16),
+    }));
+    const uploaded = uploadStreamedPbrTexture(engine, levels, "bc7", true);
+    expect(uploaded.gpuBytes).toBe(64 + 16 + 16 + 16);
+    expect(device.createTexture.mock.calls[0]?.[0]).toMatchObject({
+      format: "bc7-rgba-unorm-srgb",
+      mipLevelCount: 4,
+      size: { width: 8, height: 8 },
+    });
+    expect(device.queue.writeTexture.mock.calls.map((call) => [call[2], call[3]])).toEqual([
+      [
+        { bytesPerRow: 32, rowsPerImage: 2 },
+        { width: 8, height: 8 },
+      ],
+      ...[4, 2, 1].map(() => [
+        { bytesPerRow: 16, rowsPerImage: 1 },
+        { width: 4, height: 4 },
+      ]),
+    ]);
+    const linear = fixture();
+    uploadStreamedPbrTexture(linear.engine, levels, "bc7", false);
+    expect(linear.device.createTexture.mock.calls[0]?.[0]).toMatchObject({
+      format: "bc7-rgba-unorm",
+    });
+    const rgbaSized = levels.map((level) => ({
+      ...level,
+      data: new ArrayBuffer(level.width * level.width * 4),
+    }));
+    expect(() => uploadStreamedPbrTexture(engine, rgbaSized, "bc7", true)).toThrow(
+      "mip dimensions or byte length",
+    );
+    const noBc = fixture([]);
+    expect(() => uploadStreamedPbrTexture(noBc.engine, levels, "bc7", true)).toThrow(
+      "texture-compression-bc",
+    );
+    expect(noBc.device.createTexture).not.toHaveBeenCalled();
   });
   it("rejects a missing final mip before allocating GPU memory", () => {
     const { engine, device } = fixture();
     expect(() =>
-      uploadStreamedPbrTexture(engine, [{ width: 2, height: 2, rgba: new ArrayBuffer(16) }], false),
+      uploadStreamedPbrTexture(
+        engine,
+        [{ width: 2, height: 2, data: new ArrayBuffer(16) }],
+        "rgba8",
+        false,
+      ),
     ).toThrow("complete authored mip chain");
     expect(device.createTexture).not.toHaveBeenCalled();
   });
@@ -218,7 +267,12 @@ describe("installed PBR surface upload", () => {
       throw new Error("upload failed");
     });
     expect(() =>
-      uploadStreamedPbrTexture(engine, [{ width: 1, height: 1, rgba: new ArrayBuffer(4) }], false),
+      uploadStreamedPbrTexture(
+        engine,
+        [{ width: 1, height: 1, data: new ArrayBuffer(4) }],
+        "rgba8",
+        false,
+      ),
     ).toThrow("upload failed");
     expect(texture.destroy).toHaveBeenCalledOnce();
   });

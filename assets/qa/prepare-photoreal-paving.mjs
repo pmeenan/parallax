@@ -91,9 +91,16 @@ for (const texture of pack.textures) {
     colorSpace: srgb ? "srgb" : "linear",
     encoding,
   };
+  // GPU residency: UASTC transcodes to BC7 (16 bytes per 4 × 4 block), RGBA8 uploads as is.
+  const bc7Bytes = Array.from({ length: levels }, (_, level) => {
+    const w = Math.max(1, width >> level);
+    const h = Math.max(1, height >> level);
+    return Math.ceil(w / 4) * Math.ceil(h / 4) * 16;
+  }).reduce((sum, value) => sum + value, 0);
   measurements.textures[texture.role] = {
     encodedBytes: bytes.length,
     rgba8DecodedBytes: texture.rgba8DecodedBytes,
+    gpuBytes: encoding === "uastc" ? bc7Bytes : texture.rgba8DecodedBytes,
   };
 }
 for (const material of Object.values(config.materials))
@@ -311,6 +318,10 @@ const runtime = resources.filter((r) => !r.file.endsWith(".glb"));
 measurements.runtimeEncodedBytes = runtime.reduce((sum, r) => sum + r.bytes, 0);
 measurements.rgba8DecodedTextureBytes = Object.values(measurements.textures).reduce(
   (sum, t) => sum + t.rgba8DecodedBytes,
+  0,
+);
+measurements.gpuTextureBytes = Object.values(measurements.textures).reduce(
+  (sum, t) => sum + t.gpuBytes,
   0,
 );
 const candidate = {

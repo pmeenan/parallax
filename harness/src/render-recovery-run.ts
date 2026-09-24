@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type {
+  FlythroughCheckpointRenderEvidence,
   ParallaxTelemetrySnapshot,
   RenderRecoveryProbeKind,
   StreamingRecoveryCheckpoint,
@@ -32,10 +33,7 @@ import {
   type WebGpuAdapterIdentity,
   type WindowsHostIdentity,
 } from "./environment.js";
-import {
-  analyzeGreyboxRenderedOutput,
-  type GreyboxRenderedOutputEvidence,
-} from "./greybox-rendered-output.js";
+import { analyzeGreyboxRenderedOutput } from "./greybox-rendered-output.js";
 import { launchAfterPhysicalConsoleDisplayWake } from "./physical-console-preflight.js";
 import {
   captureRecoveryBoundary,
@@ -43,6 +41,8 @@ import {
   type MeasuredRenderRecoveryEnvironment,
   type RenderRecoveryAttempt,
   type RenderRecoveryBoundary,
+  type RenderRecoveryVerifiedView,
+  type RenderRecoveryViewRequest,
   type UnfinalizedMeasuredRenderRecoveryAttempt,
 } from "./render-recovery-evidence.js";
 import {
@@ -69,6 +69,7 @@ import {
   RENDER_RECOVERY_RESIDENT_CELL_COUNT,
   RENDER_RECOVERY_SCENARIO,
   RENDER_RECOVERY_TELEMETRY_SCHEMA_VERSION,
+  RENDER_RECOVERY_VERIFICATION_VIEW,
 } from "./runs/render-recovery.js";
 import { parseQualityTier, QUALITY_TIER_PROFILES } from "./runs/smoke.js";
 import { readSourceIdentity } from "./source-identity.js";
@@ -124,7 +125,7 @@ interface PartialCapture {
   environment: MeasuredRenderRecoveryEnvironment | null;
   initial: RenderRecoveryBoundary | null;
   latestTelemetry: ParallaxTelemetrySnapshot | null;
-  visibleCanvas: GreyboxRenderedOutputEvidence | null;
+  recoveredView: RenderRecoveryVerifiedView | null;
 }
 
 const repositoryRoot = resolve(import.meta.dirname, "../../..");
@@ -358,7 +359,7 @@ async function measureAttempt(
     environment: null,
     initial: null,
     latestTelemetry: null,
-    visibleCanvas: null,
+    recoveredView: null,
   };
   try {
     const unfinalizedResult = await runAttempt(
@@ -397,7 +398,7 @@ async function measureAttempt(
         elapsedMs: capture.elapsedMs,
         initial: capture.initial,
         latestTelemetry: capture.latestTelemetry,
-        visibleCanvas: capture.visibleCanvas,
+        recoveredView: capture.recoveredView,
       }),
       result: null,
       state: "invalid",
@@ -491,10 +492,7 @@ async function runAttempt(
     );
     capture.latestTelemetry = await readTelemetry(page);
     const frameCountAfterVisibilityWait = capture.latestTelemetry.render.frameCount;
-    const clearColor = capture.afterFirstRecovery.greyboxWorld?.clearColor;
-    if (clearColor === undefined) throw new Error("Recovered greybox clear color is unavailable");
-    const png = await page.locator("#render-canvas").screenshot({ type: "png" });
-    capture.visibleCanvas = await analyzeGreyboxRenderedOutput(png, clearColor);
+    capture.recoveredView = await verifyRecoveredResidentView(page, capture.beforeFault);
     if (definition.secondProbe !== null) {
       const expectedTerminalError = page.waitForEvent("console", {
         predicate: (message) =>
@@ -526,8 +524,8 @@ async function runAttempt(
       frameCountAfterVisibilityWait,
       id: definition.id,
       initial: capture.initial,
+      recoveredView: capture.recoveredView,
       secondProbe: definition.secondProbe,
-      visibleCanvas: capture.visibleCanvas,
     }) as UnfinalizedMeasuredRenderRecoveryAttempt;
   } finally {
     if (recoveryStartedAt !== null && capture.elapsedMs === null) {
@@ -627,6 +625,44 @@ function exerciseAtBoundary(
       }>
     >
   >;
+}
+
+/**
+ * Recovery invalidates the running flythrough, and gameplay may then own the camera, so the raw
+ * canvas no longer shows the recovered residency. Preview the pre-fault observer through the fixed
+ * recovery view, capture the render worker's readback and a later compositor screenshot while
+ * that fixed view is held, then release the preview before any second fault.
+ */
+async function verifyRecoveredResidentView(
+  page: Page,
+  beforeFault: RenderRecoveryBoundary | null,
+): Promise<RenderRecoveryVerifiedView> {
+  const observer = beforeFault?.observers[0];
+  if (observer === undefined) throw new Error("Recovery view requires the pre-fault observer");
+  const request: RenderRecoveryViewRequest = Object.freeze({
+    ...RENDER_RECOVERY_VERIFICATION_VIEW,
+    observer: Object.freeze([...observer]) as unknown as RenderRecoveryViewRequest["observer"],
+  });
+  const verified = (await page.evaluate<RenderRecoveryPageResult, RenderRecoveryActionRequest>(
+    evaluateRenderRecoveryPage,
+    { kind: "verify-recovered-view", request },
+  )) as Extract<
+    RenderRecoveryPageResult,
+    Readonly<{ readonly evidence: FlythroughCheckpointRenderEvidence }>
+  >;
+  const png = await page.locator("#render-canvas").screenshot({ type: "png" });
+  const [red, green, blue] = verified.evidence.clearColorRgb;
+  const canvas = await analyzeGreyboxRenderedOutput(png, [red / 255, green / 255, blue / 255, 1]);
+  await page.evaluate<RenderRecoveryPageResult, RenderRecoveryActionRequest>(
+    evaluateRenderRecoveryPage,
+    { kind: "end-recovered-view" },
+  );
+  return Object.freeze({
+    canvas,
+    render: verified.evidence,
+    request,
+    residentCellIds: Object.freeze([...verified.snapshot.streaming.residentCellIds]),
+  });
 }
 
 async function inspectMeasuredRecoveryEnvironment(
@@ -958,8 +994,8 @@ function formatReport(report: {
     "",
     ...report.attempts.map((attempt) =>
       attempt.state === "invalid"
-        ? `- ${attempt.id}: invalid — ${attempt.failureMessage}; browser errors ${attempt.browserErrors.length === 0 ? "none" : attempt.browserErrors.join(" | ")}; partial boundaries initial=${attempt.partial.initial === null ? "missing" : "captured"}, beforeFault=${attempt.partial.beforeFault === null ? "missing" : "captured"}, afterFirstRecovery=${attempt.partial.afterFirstRecovery === null ? "missing" : "captured"}, afterSecondFault=${attempt.partial.afterSecondFault === null ? "missing" : "captured"}; elapsed=${attempt.partial.elapsedMs === null ? "missing" : `${attempt.partial.elapsedMs.toFixed(3)} ms`}; canvas=${attempt.partial.visibleCanvas === null ? "missing" : "captured"}; ${formatLatestTelemetry(attempt.partial.latestTelemetry)}`
-        : `- ${attempt.id}: measured — first recovery ${attempt.result.elapsedMs.toFixed(3)} ms; render/streaming generations ${attempt.result.afterFirstRecovery.renderRecovery.workerGeneration}/${attempt.result.afterFirstRecovery.streaming.workerGeneration}; residents ${attempt.result.afterFirstRecovery.residentCellIds.length}; visible pixels ${(attempt.result.visibleCanvas.visiblePixelRatio * 100).toFixed(2)}%; terminal ${attempt.result.afterSecondFault === null ? "not applicable" : attempt.result.afterSecondFault.renderRecovery.state}`,
+        ? `- ${attempt.id}: invalid — ${attempt.failureMessage}; browser errors ${attempt.browserErrors.length === 0 ? "none" : attempt.browserErrors.join(" | ")}; partial boundaries initial=${attempt.partial.initial === null ? "missing" : "captured"}, beforeFault=${attempt.partial.beforeFault === null ? "missing" : "captured"}, afterFirstRecovery=${attempt.partial.afterFirstRecovery === null ? "missing" : "captured"}, afterSecondFault=${attempt.partial.afterSecondFault === null ? "missing" : "captured"}; elapsed=${attempt.partial.elapsedMs === null ? "missing" : `${attempt.partial.elapsedMs.toFixed(3)} ms`}; recovered view=${attempt.partial.recoveredView === null ? "missing" : "captured"}; ${formatLatestTelemetry(attempt.partial.latestTelemetry)}`
+        : `- ${attempt.id}: measured — first recovery ${attempt.result.elapsedMs.toFixed(3)} ms; render/streaming generations ${attempt.result.afterFirstRecovery.renderRecovery.workerGeneration}/${attempt.result.afterFirstRecovery.streaming.workerGeneration}; residents ${attempt.result.afterFirstRecovery.residentCellIds.length}; recovered view ${attempt.result.recoveredView.render.streamedVisibleMeshCount} streamed meshes, ${(attempt.result.recoveredView.canvas.visiblePixelRatio * 100).toFixed(2)}% visible; terminal ${attempt.result.afterSecondFault === null ? "not applicable" : attempt.result.afterSecondFault.renderRecovery.state}`,
     ),
     "",
     "## Contract",

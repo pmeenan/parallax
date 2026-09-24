@@ -499,6 +499,12 @@ source tag `npm-lite-v1.11.0`, commit
 and the [official feature comparison](https://github.com/BabylonJS/Babylon-Lite/blob/npm-lite-v1.11.0/docs/lite/02-feature-comparison.md).
 The vendor's headline multipliers were not used for the decision.*
 
+*Current pin: `@babylonjs/lite` 1.31.1, adopted 2026-09-24 after targeted renderer-family
+reviews of 1.31.0 and then the 1.31.1 patch (see the
+[dependency ledger](dependencies.md#review-ledger)). Courtyard renders are pixel-identical to
+1.12.0 and GPU time is unchanged. CPU submit is about 0.1 ms per frame higher than on 1.12.0.
+Findings below dated against 1.12.0 were re-checked only where the ledger says so.*
+
 D-077's M0 spike ported the same box-and-light walking skeleton behind one shared worker
 protocol/telemetry/RAF core, with only thin classic and Lite backend adapters differing.
 Each production build then ran the identical schema-v23 / mandatory-metric-set-v10
@@ -550,6 +556,7 @@ facets, six core runs, and 24 checks at 581,328 combined engine+render-worker by
 | Indirect draw | present for thin instances; generic path partial | GPU-culling uses `drawIndexedIndirect`; D-098 proved bounded arbitrary indirect submission through temporary native interop, then removed it with the closed experiment. |
 | Skeletal/animation system | partial | GPU bone textures, 4/8-bone skinning, animation groups, interpolation, blending/cross-fade/additive/masks/weights, and VAT are present. Animation events are absent; game events stay in the fixed-timestep sim, and M3 adds a tested engine timestamp-marker utility only if visual callbacks are needed. Morphs are capped at four active targets; asset QA enforces that bound, with skeletal/VAT authoring or a justified shader extension for an over-cap character. |
 | Worker ownership | present and measured | Public OffscreenCanvas path; local gate proves dedicated-worker WebGPU ownership and unchanged telemetry/SAB behavior |
+| Block-compressed PBR maps | partial | Lite requests `texture-compression-bc` when the adapter has it, and samples BC7 textures uploaded through Parallax's streamed-texture seam (D-199). Its PBR template reads the normal map's `.rgb`, and its fixed `normalScaleMod` hook cannot rebuild Z. Normals stay three-channel BC7, measured indistinguishable in game (2026-09-24). Lite 1.31.0 adds public `MaterialPlugin`s (WGSL injection points, extra samplers and UBO fields), a likely patch-free route to BC5 normals or BC4 roughness, still to be tested. |
 
 **Costs and operating rule:** Lite says its young API is not backward-compatible. The
 package is therefore exact-pinned; upgrades are deliberate reviewed changes, Lite calls

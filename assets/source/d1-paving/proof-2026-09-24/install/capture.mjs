@@ -142,7 +142,7 @@ try {
       file,
       sha256: hash(png),
       request: v.request,
-      visiblePixelRatio: evidence.visiblePixelCount / Math.max(1, evidence.pixelCount ?? 1),
+      visiblePixelRatio: evidence.visiblePixelRatio,
       evidence,
       frames: samples,
     });

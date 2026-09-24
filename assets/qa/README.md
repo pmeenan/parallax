@@ -71,15 +71,20 @@ The admitted paving is `d1-photoreal-paving`, a periodic 4 m module generated fr
 human-approved photoreal source (D-196). Its class config is `d1-photoreal-paving.json`.
 D-197 suspends size ceilings, so sizes and triangle counts are recorded measurements, and
 only structural checks gate admission. Reproduction, representation and results are in
-[the delivery result](../source/d1-paving/proof-2026-09-24/delivery-results.md) and
-[the install result](../source/d1-paving/proof-2026-09-24/install-results.md).
+[the delivery result](../source/d1-paving/proof-2026-09-24/delivery-results.md),
+[the install result](../source/d1-paving/proof-2026-09-24/install-results.md) and
+[the texture result](../source/d1-paving/proof-2026-09-24/texture-results.md).
 
 ```powershell
 node assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs <stage-2 maps dir> <pack dir>
 node assets/qa/prepare-photoreal-paving.mjs <pack dir> <candidate dir>
 pnpm build; node assets/qa/production-decode-receipt.mjs <candidate dir> <receipt.json>
 node assets/qa/admit-d1-paving.mjs <candidate dir> <receipt.json>
+pnpm exec biome format --write assets/library/d1-paving.json
 ```
+
+The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`).
+`PAVING_GROUND_NORMAL=rgba8` keeps the lossless ground normal; the default is UASTC.
 
 - **Preparation** checks:
   - provenance identity and approved rights (`paving-provenance.mjs`, procedural-original)
@@ -88,11 +93,13 @@ node assets/qa/admit-d1-paving.mjs <candidate dir> <receipt.json>
   - flat, fold-free ground normals
   - identical opposite-edge border vertices and heights for every ground LOD
   - LOD reduction
-  - KTX2 headers and full mip chains: UASTC, or RGBA8 plain or zstd for the lossless normal
+  - KTX2 headers and full mip chains: UASTC, or RGBA8 plain or zstd for a lossless map;
+    it records GPU bytes, with UASTC counted as BC7 (D-199)
   - the engine's canonical meshopt layout
   - byte-exact meshopt vertex roundtrips (triangles may rotate cyclically)
 - **The receipt** decodes every runtime resource with the engine's own compressed streaming
-  codec, in a pinned-Chrome module worker with external requests blocked.
+  codec, in a pinned-Chrome module worker with external requests blocked. UASTC maps decode to
+  BC7, as they do in the game.
 - **Admission** requires that receipt, bound to the candidate manifest SHA-256. It then
   rechecks every object hash and length, including the three canonical GLBs. It writes objects
   without replacement and publishes `assets/library/d1-paving.json`; a conflicting object fails

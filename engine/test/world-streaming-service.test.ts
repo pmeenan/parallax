@@ -213,12 +213,25 @@ describe("world streaming service lifecycle", () => {
     const recovery = service.restartAfterRenderFailure();
     void recovery.settled.catch(() => undefined);
     const secondWorker = requireWorker();
+    secondWorker.emit({
+      kind: "telemetry",
+      snapshot: {
+        ...snapshot(service, "streaming"),
+        opfsAccessHandleCount: 256,
+        opfsPackageCount: 256,
+        workerGeneration: 2,
+      },
+    });
+    expect(service.snapshot().opfsAccessHandleCount).toBe(256);
 
     service.failAfterRenderFailure("render retry exhausted");
 
     expect(secondWorker.terminated).toBe(true);
+    // Terminating the worker released its handles, so the failed snapshot must not report them.
     expect(service.snapshot()).toMatchObject({
       failureMessage: "render retry exhausted",
+      opfsAccessHandleCount: 0,
+      opfsPackageCount: 256,
       state: "failed",
     });
     firstPort.close();

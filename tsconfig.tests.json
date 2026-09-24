@@ -4,7 +4,7 @@
     "noEmit": true,
     "rootDir": ".",
     "tsBuildInfoFile": "node_modules/.cache/parallax-tests.tsbuildinfo",
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals", "webxr"]
   },
   "include": [
     "**/*.test.ts",

@@ -127,7 +127,7 @@ describe("assembled build contract", () => {
       expect(renderSource).toContain(matches[0]?.path.replace("immutable/", ""));
     }
     expect(renderSource).not.toMatch(/__[A-Z0-9_]+_WASM_ARTIFACT__/);
-    // The decode worker decodes zstd-supercompressed KTX2 (lossless RGBA8 maps, D-197).
+    // The decode worker transcodes UASTC to BC7 and decodes zstd-supercompressed KTX2.
     const decodeWorkerEntrypoint = manifest.workerEntrypoints.find(
       (entrypoint) => entrypoint.role === "decode",
     );
@@ -135,7 +135,13 @@ describe("assembled build contract", () => {
       join(buildRoot, decodeWorkerEntrypoint?.path ?? "missing-decode-worker"),
       "utf8",
     );
-    for (const scope of ["msc-transcoder", "uastc-rgba-srgb", "uastc-rgba-unorm", "zstd-decoder"]) {
+    for (const scope of [
+      "msc-transcoder",
+      "uastc-bc7",
+      "uastc-rgba-srgb",
+      "uastc-rgba-unorm",
+      "zstd-decoder",
+    ]) {
       const artifact = manifest.artifacts.find((entry) =>
         new RegExp(`^immutable/${scope}-[a-f0-9]{64}\\.wasm$`).test(entry.path),
       );
@@ -239,8 +245,25 @@ describe("assembled build contract", () => {
     const pavingLibrary = JSON.parse(
       await readFile(join(repositoryRoot, "assets/library/d1-paving.json"), "utf8"),
     ) as {
-      resources: readonly Readonly<{ bytes: number; file: string; path: string; sha256: string }>[];
+      resources: readonly Readonly<{
+        bytes: number;
+        file: string;
+        path: string;
+        role: string;
+        sha256: string;
+      }>[];
+      textures: Readonly<Record<string, Readonly<{ encoding: string }>>>;
     };
+    // UASTC maps reach the GPU as BC7; raw RGBA8 maps keep their format.
+    for (const [role, texture] of Object.entries(pavingLibrary.textures)) {
+      const admitted = pavingLibrary.resources.find((entry) => entry.role === role);
+      const descriptor = parsedDistrictIndex.resources.find(
+        ({ sha256 }) => sha256 === admitted?.sha256,
+      );
+      expect(descriptor?.format).toBe("ktx2");
+      if (descriptor?.format === "ktx2")
+        expect(descriptor.decode.format).toBe(texture.encoding === "uastc" ? "bc7" : "rgba8");
+    }
     const pavingResources = pavingLibrary.resources.filter(({ file }) => !file.endsWith(".glb"));
     expect(pavingResources).toHaveLength(26);
     expect(

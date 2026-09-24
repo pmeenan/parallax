@@ -22,9 +22,10 @@ function requireDevice(engine: EngineContext): GPUDevice {
 }
 
 /**
- * Babylon Lite 1.12.0 does not export its device-loss recovery surface from the package
- * root. Keep the private-device dependency isolated and guarded while Parallax restarts
- * the whole render/streaming cohort instead of rebuilding partially poisoned GPU state.
+ * Babylon Lite 1.31.1 exports in-place recovery (`enableDeviceLostSceneRecovery`), which rebuilds
+ * GPU resources inside the same renderer, but no public observe or force-loss hook. D-104 keeps
+ * this private-device dependency isolated and guarded while Parallax restarts the whole
+ * render/streaming cohort instead of rebuilding partially poisoned GPU state.
  */
 export function observeLiteWebGpuDeviceLoss(
   engine: EngineContext,

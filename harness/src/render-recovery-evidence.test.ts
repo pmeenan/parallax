@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import type {
   MeasuredRenderRecoveryAttempt,
   RenderRecoveryBoundary,
+  RenderRecoveryVerifiedView,
 } from "./render-recovery-evidence.js";
 import {
   finalizeMeasuredRenderRecoveryAttempt,
   validateRenderRecoveryAttempt,
 } from "./render-recovery-evidence.js";
+import { RENDER_RECOVERY_VERIFICATION_VIEW } from "./runs/render-recovery.js";
 
 describe("render-recovery evidence", () => {
   it("accepts a moved, fully restored one-retry cohort", () => {
@@ -293,6 +295,71 @@ describe("render-recovery evidence", () => {
   });
 });
 
+describe("render-recovery@2 recovered resident view", () => {
+  it("rejects readbacks from another camera or environment and inconsistent pixel counts", () => {
+    const value = attempt();
+    const render = value.recoveredView.render;
+    for (const mutation of [
+      { cameraPosition: [0, 0, 0] as const },
+      { cameraTarget: [0, 0, 0] as const },
+      { environment: { ...render.environment, weather: "storm" as const } },
+      { visiblePixelCount: 0 },
+      { visiblePixelCount: render.sampledPixelCount + 1 },
+      { clearColorDistanceThreshold: 0 },
+    ]) {
+      expect(() =>
+        validateRenderRecoveryAttempt({
+          ...value,
+          recoveredView: { ...value.recoveredView, render: { ...render, ...mutation } },
+        }),
+      ).toThrow();
+    }
+  });
+
+  it("accepts the pre-fault residency drawn through the fixed recovery view", () => {
+    expect(() => validateRenderRecoveryAttempt(attempt())).not.toThrow();
+  });
+
+  it("rejects a view elsewhere, restreamed, preview-drawn, empty or uncovered", () => {
+    const value = attempt();
+    const view = value.recoveredView;
+    const withView = (recovered: Partial<RenderRecoveryVerifiedView>) => ({
+      ...value,
+      recoveredView: { ...view, ...recovered },
+    });
+    expect(() =>
+      validateRenderRecoveryAttempt(
+        withView({ request: { ...view.request, observer: [0, 12, 0] } }),
+      ),
+    ).toThrow(/pre-fault observer/);
+    expect(() =>
+      validateRenderRecoveryAttempt(withView({ request: { ...view.request, headingRadians: 1 } })),
+    ).toThrow(/fixed recovery view/);
+    expect(() =>
+      validateRenderRecoveryAttempt(withView({ residentCellIds: initialResidents() })),
+    ).toThrow(/pre-fault residency/);
+    for (const render of [
+      { ...view.render, previewVisibleMeshCount: 3 },
+      { ...view.render, streamedVisibleMeshCount: 0 },
+      { ...view.render, visiblePixelRatio: 0.183, visiblePixelCount: 750 },
+      { ...view.render, sampledPixelCount: 1 },
+    ])
+      expect(() => validateRenderRecoveryAttempt(withView({ render }))).toThrow(
+        /streamed residency/,
+      );
+    expect(() =>
+      validateRenderRecoveryAttempt(
+        withView({ canvas: { ...view.canvas, visiblePixelRatio: 0.183 } }),
+      ),
+    ).toThrow(/recovered canvas/);
+    expect(() =>
+      validateRenderRecoveryAttempt(
+        withView({ canvas: { ...view.canvas, clearColorRgb: [0, 0, 0] } }),
+      ),
+    ).toThrow(/recovered canvas/);
+  });
+});
+
 function attempt(): MeasuredRenderRecoveryAttempt {
   const initial = boundary(1, 1, 0, [0, 12, 0], initialResidents());
   const beforeFault = boundary(1, 1, 0, [128, 12, 0], movedResidents());
@@ -307,15 +374,52 @@ function attempt(): MeasuredRenderRecoveryAttempt {
     frameCountAfterVisibilityWait: 4,
     id: "device-loss-recovery",
     initial,
+    recoveredView: recoveredView(beforeFault),
     secondProbe: null,
-    visibleCanvas: Object.freeze({
-      clearColorRgb: Object.freeze([0, 0, 0] as const),
+  });
+}
+
+function recoveredView(beforeFault: RenderRecoveryBoundary): RenderRecoveryVerifiedView {
+  const clearColorRgb = Object.freeze([84, 167, 241] as const);
+  return Object.freeze({
+    canvas: Object.freeze({
+      clearColorRgb,
       height: 64,
       pngSha256: "a".repeat(64),
       visiblePixelCount: 2_048,
       visiblePixelRatio: 0.5,
       width: 64,
     }),
+    render: Object.freeze({
+      cameraPosition: Object.freeze([24.07695154586737, 100, 0] as const),
+      cameraTarget: Object.freeze([128, 40, 0] as const),
+      checkpointId: "visual-preview",
+      clearColorDistanceThreshold: 24,
+      clearColorRgb,
+      elapsedMs: 0,
+      environment: Object.freeze({
+        endMs: 1,
+        id: "visual-preview",
+        startMs: 0,
+        timeOfDay: "daylight" as const,
+        timeOfDayPhase: 0.25,
+        weather: "clear" as const,
+      }),
+      environmentPhaseId: "visual-preview",
+      height: 64,
+      previewVisibleMeshCount: 0,
+      rgbaSha256: "b".repeat(64),
+      sampledPixelCount: 4_096,
+      streamedVisibleMeshCount: 24,
+      visiblePixelCount: 2_600,
+      visiblePixelRatio: 2_600 / 4_096,
+      width: 64,
+    }),
+    request: Object.freeze({
+      ...RENDER_RECOVERY_VERIFICATION_VIEW,
+      observer: beforeFault.observers[0] ?? Object.freeze([0, 0, 0] as const),
+    }),
+    residentCellIds: beforeFault.residentCellIds,
   });
 }
 
@@ -345,7 +449,7 @@ function boundary(
         ktx2: "preinstalled-global" as const,
         meshopt: "preinstalled-global" as const,
       }),
-      versions: Object.freeze({ draco: "1.5.7", ktx2: "9.17.0", meshopt: "1.2.0" }),
+      versions: Object.freeze({ draco: "1.5.7", ktx2: "9.27.1", meshopt: "1.2.0" }),
     }),
     decoderFixtures: Object.freeze({
       draco: Object.freeze({ durationMs: 1, faces: 1 }),

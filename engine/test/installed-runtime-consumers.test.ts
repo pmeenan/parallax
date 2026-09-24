@@ -182,6 +182,24 @@ describe("installed streaming release", () => {
         "district-1-surface",
       ),
     ).toThrow(/dependency graph/);
+    // BC7 needs a complete v2 chain whose base level is whole 4 × 4 blocks.
+    const withAuxiliary = (decode: Record<string, unknown>) => ({
+      ...candidate,
+      resources: [...valid.resources, { ...auxiliary, decode: { ...auxiliary.decode, ...decode } }],
+    });
+    const bc7 = parseStreamingDistrictIndex(withAuxiliary({ format: "bc7" }), "district-1-surface");
+    expect(
+      bc7.resources?.find(({ resourceId }) => resourceId === auxiliary.resourceId)?.decode,
+    ).toMatchObject({ format: "bc7", mipLevelCount: 6 });
+    expect(() =>
+      parseStreamingDistrictIndex(
+        withAuxiliary({ format: "bc7", width: 30, mipLevelCount: 5 }),
+        "district-1-surface",
+      ),
+    ).toThrow(/format/);
+    expect(() =>
+      parseStreamingDistrictIndex(withAuxiliary({ format: "bc5" }), "district-1-surface"),
+    ).toThrow(/format/);
   });
   it("binds a strict per-cell KTX2 -> meshopt dependency graph to installed objects", async () => {
     const indexDocument = productionCompressedDistrictIndexDocument();

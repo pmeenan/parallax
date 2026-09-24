@@ -1,5 +1,61 @@
-import { describe, expect, it } from "vitest";
-import { resolvePbrAssetsForCell } from "./pbr-asset-packaging.mjs";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import { RAW_RGBA8_MIP_CHAIN_FIXTURES } from "../../engine/src/streaming/production-compressed-fixtures.generated.ts";
+import { loadPbrAssetLibrary, resolvePbrAssetsForCell } from "./pbr-asset-packaging.mjs";
+
+it("packages QA-admitted zstd RGBA8 maps as lossless GPU textures", async () => {
+  const root = await mkdtemp(join(tmpdir(), "parallax-packaging-test-"));
+  try {
+    const library = join(root, "assets/library");
+    await mkdir(join(library, "objects"), { recursive: true });
+    const fixture = RAW_RGBA8_MIP_CHAIN_FIXTURES[1];
+    const bytes = Buffer.from(fixture.ktx2, "base64");
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const file = `${sha256}.ktx2`;
+    await writeFile(join(library, "objects", file), bytes);
+    const manifest = {
+      schemaVersion: 1,
+      mode: "periodic-surface-module",
+      status: "QA-admitted-runtime-visual-acceptance-pending",
+      parts: {},
+      textures: {
+        normal: {
+          encoding: "rgba8-zstd",
+          colorSpace: "linear",
+          width: fixture.width,
+          height: fixture.height,
+          mipLevels: fixture.mipLevelCount,
+        },
+      },
+      resources: [{ role: "normal", file, path: `objects/${file}`, bytes: bytes.length, sha256 }],
+    };
+    await writeFile(join(library, "d1-paving.json"), JSON.stringify(manifest));
+    const writeResource = vi.fn(async (_bytes, _name, _extension, descriptor) => descriptor);
+    const result = await loadPbrAssetLibrary(root, writeResource);
+    expect(result.resources).toMatchObject([
+      {
+        decode: {
+          format: "rgba8",
+          colorSpace: "linear",
+          width: 8,
+          height: 4,
+          mipLevelCount: 4,
+          version: 2,
+        },
+      },
+    ]);
+    expect(writeResource).toHaveBeenCalledOnce();
+    manifest.textures.normal.encoding = "unknown";
+    await writeFile(join(library, "d1-paving.json"), JSON.stringify(manifest));
+    await expect(loadPbrAssetLibrary(root, writeResource)).rejects.toThrow(/Unknown encoding/);
+    expect(writeResource).toHaveBeenCalledOnce();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 const cell = {
   bounds: { minimum: [0, 0, 0], maximum: [16, 40, 16] },

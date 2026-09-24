@@ -31,11 +31,14 @@ export interface StreamingCellIndexEntry {
   readonly dependencies?: readonly string[];
 }
 
+/** GPU texel format a streamed KTX2 texture decodes to. `bc7` requires a schema-v2 mip chain. */
+export type StreamingTextureGpuFormat = "rgba8" | "bc7";
+
 export interface StreamingKtx2DependencyIndexEntry {
   readonly bytes: number;
   readonly decode: Readonly<{
     readonly colorSpace: "srgb" | "linear";
-    readonly format: "rgba8";
+    readonly format: StreamingTextureGpuFormat;
     readonly height: number;
     readonly version?: 1 | 2;
     readonly mipLevelCount?: number;
@@ -321,8 +324,9 @@ export interface DecodedKtx2Dependency {
   readonly format: "ktx2";
   readonly height: number;
   readonly resourceId: string;
-  readonly rgba: ArrayBuffer;
-  readonly mipmaps?: readonly Readonly<{ width: number; height: number; rgba: ArrayBuffer }>[];
+  /** Level-0 texels in the descriptor's GPU format: RGBA8 rows or BC7 blocks. */
+  readonly data: ArrayBuffer;
+  readonly mipmaps?: readonly Readonly<{ width: number; height: number; data: ArrayBuffer }>[];
   readonly width: number;
 }
 

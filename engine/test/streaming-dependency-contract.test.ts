@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  expectedStreamingDependencyDecodedBytes,
   planStreamingCellMemoryReservation,
+  streamingTextureLevelBytes,
   validateDecodedCellResponseAccounting,
   validateDecodedStreamingDependencies,
 } from "../src/streaming/streaming-dependency-contract";
@@ -41,7 +43,7 @@ const decoded = Object.freeze([
     format: "ktx2",
     height: 2,
     resourceId: texture.resourceId,
-    rgba: new ArrayBuffer(16),
+    data: new ArrayBuffer(16),
     width: 2,
   }),
   Object.freeze({
@@ -59,6 +61,28 @@ const decoded = Object.freeze([
 ]) satisfies readonly DecodedStreamingDependency[];
 
 describe("streaming dependency contract", () => {
+  it("sizes BC7 levels in whole 16-byte blocks and requires a mip chain", () => {
+    expect(streamingTextureLevelBytes("bc7", 4096, 4096)).toBe(4096 * 4096);
+    expect(streamingTextureLevelBytes("bc7", 2, 1)).toBe(16);
+    expect(streamingTextureLevelBytes("rgba8", 2, 1)).toBe(8);
+    const bc7 = {
+      ...texture,
+      decode: { ...texture.decode, format: "bc7", height: 8, width: 16 },
+    } as const;
+    expect(() =>
+      expectedStreamingDependencyDecodedBytes({
+        ...bc7,
+        decode: { ...bc7.decode, mipLevelCount: 5, version: 2 },
+      }),
+    ).not.toThrow();
+    expect(
+      expectedStreamingDependencyDecodedBytes({
+        ...bc7,
+        decode: { ...bc7.decode, mipLevelCount: 5, version: 2 },
+      }),
+    ).toBe(128 + 32 + 16 + 16 + 16);
+    expect(() => expectedStreamingDependencyDecodedBytes(bc7)).toThrow(/mip chain/);
+  });
   it("plans encoded, decoded, and overlap staging before allocation", () => {
     const entry = { bytes: 100 } as StreamingCellIndexEntry;
     expect(planStreamingCellMemoryReservation(entry, [texture, mesh])).toEqual({
@@ -82,7 +106,7 @@ describe("streaming dependency contract", () => {
       [{ ...decoded[0], resourceId: "wrong" }, decoded[1]] as DecodedStreamingDependency[],
       [{ ...decoded[0], encodedBytes: 8 }, decoded[1]] as DecodedStreamingDependency[],
       [{ ...decoded[0], decodedBytes: 15 }, decoded[1]] as DecodedStreamingDependency[],
-      [{ ...decoded[0], rgba: new ArrayBuffer(15) }, decoded[1]] as DecodedStreamingDependency[],
+      [{ ...decoded[0], data: new ArrayBuffer(15) }, decoded[1]] as DecodedStreamingDependency[],
       [{ ...decoded[0], decodeMs: Number.NaN }, decoded[1]] as DecodedStreamingDependency[],
       [decoded[0], { ...decoded[1], vertexCount: 4 }] as DecodedStreamingDependency[],
     ];

@@ -187,6 +187,17 @@ describe("M3 gameplay runtime", () => {
       { crowdEntities: [{ position: [8.125, 2, 9] }] },
       { playerPosition: [2.125, 3, 4] },
     ]);
+    expect(observers).toHaveLength(1);
+
+    // A scenario borrows the camera and observers, then releases them while the player stands
+    // still: gameplay re-presents and re-targets streaming at once, inside the 100 ms throttle.
+    runtime.update(140, true, true);
+    runtime.update(141, false, true);
+    expect(presentations).toHaveLength(4);
+    expect(observers).toEqual([[[2, 3, 4]], [[2.125, 3, 4]]]);
+    runtime.update(142, false, true);
+    expect(presentations).toHaveLength(4);
+    expect(observers).toHaveLength(2);
 
     publishSimulation({ ...simulationSnapshot, rejectedCommandCount: 1 });
     expect(emitCurrentFrameCount).toBe(2);

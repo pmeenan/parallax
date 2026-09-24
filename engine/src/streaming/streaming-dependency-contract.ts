@@ -3,6 +3,7 @@ import type {
   DecodedStreamingDependency,
   StreamingCellIndexEntry,
   StreamingDependencyIndexEntry,
+  StreamingTextureGpuFormat,
 } from "./streaming-protocol";
 import { STREAMING_DEPENDENCY_DECODED_MAX_BYTES } from "./streaming-protocol";
 import { streamingResourceCacheKey } from "./streaming-resource-key";
@@ -27,11 +28,25 @@ export function expectedStreamingDependencyDecodedBytes(
   return decodedBytes;
 }
 
+/** Bytes of one texture level: RGBA8 rows, or BC7's 16-byte 4 × 4 blocks (partial blocks pad). */
+export function streamingTextureLevelBytes(
+  format: StreamingTextureGpuFormat,
+  width: number,
+  height: number,
+): number {
+  return format === "bc7"
+    ? safeProduct(Math.ceil(width / 4), Math.ceil(height / 4), 16)
+    : safeProduct(width, height, 4);
+}
+
 function expectedTextureBytes(
   descriptor: Extract<StreamingDependencyIndexEntry, { format: "ktx2" }>,
 ): number {
-  const { width, height, version, mipLevelCount } = descriptor.decode;
-  if (version !== 2) return safeProduct(width, height, 4);
+  const { format, width, height, version, mipLevelCount } = descriptor.decode;
+  if (version !== 2) {
+    if (format !== "rgba8") throw new Error("Block-compressed textures require a mip chain");
+    return safeProduct(width, height, 4);
+  }
   if (
     !Number.isSafeInteger(mipLevelCount) ||
     mipLevelCount !== Math.floor(Math.log2(Math.max(width, height))) + 1
@@ -39,10 +54,10 @@ function expectedTextureBytes(
     throw new Error("Streaming texture requires a complete mip chain");
   return safeSum(
     Array.from({ length: mipLevelCount }, (_, level) =>
-      safeProduct(
+      streamingTextureLevelBytes(
+        format,
         Math.max(1, Math.floor(width / 2 ** level)),
         Math.max(1, Math.floor(height / 2 ** level)),
-        4,
       ),
     ),
   );
@@ -102,7 +117,12 @@ export function validateDecodedStreamingDependencies(
         dependency.format !== "ktx2" ||
         dependency.width !== descriptor.decode.width ||
         dependency.height !== descriptor.decode.height ||
-        dependency.rgba.byteLength !== descriptor.decode.width * descriptor.decode.height * 4
+        dependency.data.byteLength !==
+          streamingTextureLevelBytes(
+            descriptor.decode.format,
+            descriptor.decode.width,
+            descriptor.decode.height,
+          )
       ) {
         throw new Error(`Decoded KTX2 dependency ${descriptor.resourceId} payload is invalid`);
       }
@@ -110,13 +130,14 @@ export function validateDecodedStreamingDependencies(
         if (
           !Array.isArray(dependency.mipmaps) ||
           dependency.mipmaps.length !== descriptor.decode.mipLevelCount ||
-          dependency.mipmaps[0]?.rgba !== dependency.rgba ||
+          dependency.mipmaps[0]?.data !== dependency.data ||
           dependency.mipmaps.some(
-            (mip: { width: number; height: number; rgba: ArrayBuffer }, level: number) =>
+            (mip: { width: number; height: number; data: ArrayBuffer }, level: number) =>
               mip.width !== Math.max(1, Math.floor(descriptor.decode.width / 2 ** level)) ||
               mip.height !== Math.max(1, Math.floor(descriptor.decode.height / 2 ** level)) ||
-              !(mip.rgba instanceof ArrayBuffer) ||
-              mip.rgba.byteLength !== mip.width * mip.height * 4,
+              !(mip.data instanceof ArrayBuffer) ||
+              mip.data.byteLength !==
+                streamingTextureLevelBytes(descriptor.decode.format, mip.width, mip.height),
           )
         )
           throw new Error(`Decoded KTX2 dependency ${descriptor.resourceId} mip chain is invalid`);

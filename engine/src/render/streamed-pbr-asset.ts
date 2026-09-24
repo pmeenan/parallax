@@ -8,6 +8,8 @@ import {
   setThinInstances,
   type Texture2D,
 } from "@babylonjs/lite";
+import { streamingTextureLevelBytes } from "../streaming/streaming-dependency-contract";
+import type { StreamingTextureGpuFormat } from "../streaming/streaming-protocol";
 import type { PbrAssetPlacement } from "../world/pbr-asset";
 
 export interface PbrSurfaceFactors {
@@ -128,13 +130,15 @@ export function createPbrWarmupMesh(engine: EngineContext) {
 export interface DecodedTextureMip {
   readonly width: number;
   readonly height: number;
-  readonly rgba: ArrayBuffer;
+  /** Texels in the texture's GPU format: RGBA8 rows or BC7 4 × 4 blocks. */
+  readonly data: ArrayBuffer;
 }
 
 /** Upload already decoded, installed mip bytes. No decoder, URL, or shader work here. */
 export function uploadStreamedPbrTexture(
   engine: EngineContext,
   levels: readonly DecodedTextureMip[],
+  format: StreamingTextureGpuFormat,
   srgb: boolean,
 ): Readonly<{ texture: Texture2D; gpuBytes: number }> {
   const first = levels[0];
@@ -144,33 +148,53 @@ export function uploadStreamedPbrTexture(
     if (
       mip.width !== Math.max(1, first.width >> index) ||
       mip.height !== Math.max(1, first.height >> index) ||
-      mip.rgba.byteLength !== mip.width * mip.height * 4
+      mip.data.byteLength !== streamingTextureLevelBytes(format, mip.width, mip.height)
     )
       throw new Error("PBR texture mip dimensions or byte length are invalid");
-    gpuBytes += mip.rgba.byteLength;
+    gpuBytes += mip.data.byteLength;
   }
   if (levels.length !== 1 + Math.floor(Math.log2(Math.max(first.width, first.height))))
     throw new Error("PBR texture requires its complete authored mip chain");
-  // Lite 1.12's public pixel uploader only allocates mip zero. This bounded device
+  const bc7 = format === "bc7";
+  if (bc7 && (first.width % 4 !== 0 || first.height % 4 !== 0))
+    throw new Error("BC7 PBR texture base dimensions must be whole blocks");
+  // Lite 1.31's public pixel uploader still only allocates mip zero. This bounded device
   // seam uploads the decoded chain without adding a runtime mip-generation PSO.
   const device = Reflect.get(engine, "_device") as GPUDevice;
+  // Chrome-only on BC-capable desktop GPUs: no RGBA8 fallback for BC7 descriptors.
+  if (bc7 && !device.features.has("texture-compression-bc"))
+    throw new Error("BC7 PBR textures require the texture-compression-bc device feature");
   const gpuTexture = device.createTexture({
     label: "streamed-pbr-mip-chain",
     size: { width: first.width, height: first.height },
-    format: srgb ? "rgba8unorm-srgb" : "rgba8unorm",
+    format: bc7
+      ? srgb
+        ? "bc7-rgba-unorm-srgb"
+        : "bc7-rgba-unorm"
+      : srgb
+        ? "rgba8unorm-srgb"
+        : "rgba8unorm",
     mipLevelCount: levels.length,
     // WebGPU GPUTextureUsage.TEXTURE_BINDING | COPY_DST; numeric flags keep this
     // engine module importable by the Node-side contract tests.
     usage: 0x04 | 0x02,
   });
   try {
-    for (const [mipLevel, mip] of levels.entries())
+    for (const [mipLevel, mip] of levels.entries()) {
+      // Block formats copy whole blocks: rows of 4 × 4 blocks, with sub-block mips padded.
+      const blocksWide = Math.ceil(mip.width / 4);
+      const blocksHigh = Math.ceil(mip.height / 4);
       device.queue.writeTexture(
         { texture: gpuTexture, mipLevel },
-        mip.rgba,
-        { bytesPerRow: mip.width * 4, rowsPerImage: mip.height },
-        { width: mip.width, height: mip.height },
+        mip.data,
+        bc7
+          ? { bytesPerRow: blocksWide * 16, rowsPerImage: blocksHigh }
+          : { bytesPerRow: mip.width * 4, rowsPerImage: mip.height },
+        bc7
+          ? { width: blocksWide * 4, height: blocksHigh * 4 }
+          : { width: mip.width, height: mip.height },
       );
+    }
     const texture: Texture2D = {
       texture: gpuTexture,
       view: gpuTexture.createView(),

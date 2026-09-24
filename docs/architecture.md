@@ -1224,12 +1224,20 @@ The streaming system installs and reads these bundles through
 OPFS; generating and packaging them does not by itself claim an OPFS cell-load result.
 
 The shipped compressed-streaming layer consumes schema-v2 dependency descriptors from
-the exact installed release. Decode workers turn KTX2 into RGBA8 texture data and
+the exact installed release. Decode workers turn KTX2 into GPU texture data and
 meshopt payloads into finite vertex or in-range index buffers. Malformed size, graph,
-numeric or index contracts fail closed. KTX2 decoding takes one of two paths:
+numeric or index contracts fail closed. Each KTX2 descriptor declares its GPU format,
+`bc7` or `rgba8`, and decoding takes one of two paths:
 - **Basis (UASTC), optionally zstd-supercompressed:** Babylon's worker-safe transcoders.
-- **Uncompressed RGBA8, optionally zstd:** an engine-owned reader (`ktx2-rgba8.ts`),
-  used for lossless maps.
+  UASTC transcodes to BC7 blocks with the pinned `uastc_bc7.wasm`, or to RGBA8 for `rgba8`
+  descriptors.
+- **Uncompressed RGBA8, optionally zstd:** the same pinned decoder copies the levels through
+  (9.27.1+), for maps that must stay lossless. A raw container requested as `bc7` fails closed.
+
+The render worker uploads BC7 mip chains in whole 4 × 4 block rows, as
+`bc7-rgba-unorm(-srgb)`. `texture-compression-bc` is a required device feature: a BC7
+descriptor on a device without it fails closed, with no RGBA8 fallback. Lite 1.12's PBR shader
+reads the normal map's `.rgb` and cannot rebuild Z, so two-channel BC5 normals are unavailable.
 
 The decode worker loads the pinned zstd wasm, because Compression Streams lack zstd
 (RE-050).
@@ -1414,7 +1422,7 @@ release warmup trace. The human has visually accepted the integrated candidate;
 standard-flythrough qualification remains open after the checkpoint failure recorded
 in the active plan note. Existing budgets remain unchanged. Visible streamed/preview meshes own
 casters, and UI is excluded. A pinned adapter prunes evicted material-view/generation
-cache keys in Lite 1.12.0; public caster lists own task membership. New frame and
+cache keys in Lite 1.12.0 through 1.31.1; public caster lists own task membership. New frame and
 flythrough diagnostics expose CPU submission, latest completed whole-frame GPU timing,
 deduplicated shadow-task timings, caster counts, and logical depth-array bytes.
 

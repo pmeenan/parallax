@@ -12,6 +12,13 @@ production decode receipt, and is admitted as `d1-photoreal-paving` in
 `assets/library/d1-paving.json`. It paves the D1 courtyard as 4 × 4 tiles in the installed
 game. The human approved the installed views and the rights review on 2026-09-24.
 
+**Textures (2026-09-24):** the [texture result](proof-2026-09-24/texture-results.md) re-delivers
+the module as candidate 5 (`79fc60ec…`). Every map, the ground normal included, is UASTC
+`LEVEL_SLOWER`, transcoded to BC7 on the GPU (D-199). Candidates 1–4 had silently been encoded
+at `LEVEL_FASTEST`. An in-game A/B could not tell the BC7 normal from the lossless one. The
+paving now costs 80 MB of GPU memory, down from 237 MB. Human visual acceptance of candidate 5 is
+pending.
+
 **Latest human approval (2026-09-22):** the procedural, periodic
 [photoreal rebuild](proof-2026-09-22/photoreal-results.md) `photoreal/candidate1` is the
 approved visual baseline. Its seeded [builder](proof-2026-09-22/photoreal/build.py) is

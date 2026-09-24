@@ -158,7 +158,7 @@ export interface RenderFrameSample {
     retainedMaterialCount: number;
     technique: "directional-csm-pcf5@1";
     cpuSubmitMs: number;
-    /** Lite 1.12.0 EMA (0.8 previous + 0.2 latest), not a raw frame duration. */
+    /** Lite 1.31.1 EMA (0.8 previous + 0.2 latest) of the instrumented frame interval, not a raw duration. */
     gpuFrameEmaMs: number | null;
     shadowTaskGpuMs: number | null;
     gpuTaskFrameIndex: number | null;

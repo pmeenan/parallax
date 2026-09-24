@@ -13,6 +13,7 @@ import type {
   StreamingKtx2DependencyIndexEntry,
   StreamingMeshoptIndexDependencyIndexEntry,
   StreamingMeshoptVertexDependencyIndexEntry,
+  StreamingTextureGpuFormat,
 } from "./streaming-protocol";
 import {
   STREAMING_DEPENDENCY_DECODED_MAX_BYTES,
@@ -382,7 +383,11 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
               1)) &&
       (candidate.decode.colorSpace === "srgb" ||
         (candidate.decode.version !== undefined && candidate.decode.colorSpace === "linear")) &&
-      candidate.decode.format === "rgba8" &&
+      (candidate.decode.format === "rgba8" ||
+        (candidate.decode.format === "bc7" &&
+          candidate.decode.version === 2 &&
+          (candidate.decode.width as number) % 4 === 0 &&
+          (candidate.decode.height as number) % 4 === 0)) &&
       positiveSafeInteger(candidate.decode.height) &&
       positiveSafeInteger(candidate.decode.width) &&
       safeProduct(candidate.decode.width, candidate.decode.height, 4) !== null &&
@@ -397,7 +402,7 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
         bytes: candidate.bytes as number,
         decode: Object.freeze({
           colorSpace: candidate.decode.colorSpace as "srgb" | "linear",
-          format: "rgba8",
+          format: candidate.decode.format as StreamingTextureGpuFormat,
           height: candidate.decode.height as number,
           ...(candidate.decode.version === 1
             ? { version: 1 as const }

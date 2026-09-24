@@ -191,7 +191,8 @@ export function createWorldStreamingService(): WorldStreamingService {
     recoverySettlement = null;
     districtSwapSettlement?.reject(new Error(message));
     districtSwapSettlement = null;
-    publish({ ...telemetry, failureMessage: message, state: "failed" });
+    // The terminated worker owned every OPFS access handle; its last snapshot's count is stale.
+    publish({ ...telemetry, failureMessage: message, opfsAccessHandleCount: 0, state: "failed" });
   };
 
   const launchWorker = (
@@ -304,7 +305,12 @@ export function createWorldStreamingService(): WorldStreamingService {
       districtSwapSettlement?.reject(new Error(message));
       districtSwapSettlement = null;
       if (telemetry.state !== "disposed") {
-        publish({ ...telemetry, failureMessage: message, state: "failed" });
+        publish({
+          ...telemetry,
+          failureMessage: message,
+          opfsAccessHandleCount: 0,
+          state: "failed",
+        });
       }
     },
     restartAfterRenderFailure(

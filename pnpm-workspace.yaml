@@ -14,6 +14,10 @@ engineStrict: true
 overrides:
   nanoid: 3.3.18
 
-# pnpm 11.12.0 has a built-in 24-hour minimumReleaseAge; D-089 reviewed this exact pin.
+# Release age (docs/dependencies.md): patch releases may be taken at any age, a new minor line
+# once its first release is 1 day old, and a new major (or 0.y) line after 7 days. pnpm has one
+# window and exact-version exclusions only; `node harness/scripts/release-age-gate.mjs --write`
+# enforces the tiers and maintains the exact exclusions for allowed pins younger than a day.
+minimumReleaseAge: 1440
 minimumReleaseAgeExclude:
-  - '@babylonjs/lite@1.12.0'
+  - '@babylonjs/lite@1.31.1'

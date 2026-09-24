@@ -28,6 +28,75 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-200: Optimization accepts materially similar quality for significant performance or memory gains (2026-09-24, accepted; human direction; amends D-197's delivery principle)
+
+**Decision:** the acceptance standard for optimizing content and the engine is *materially
+similar quality*, not identical pixels or the most look-preserving representation. A slight
+quality loss is accepted when it buys a significant gain in download or install size, GPU
+memory, cell-load time, render-thread time or frame time. Delivery still starts from the
+representation that best preserves the approved look (D-197); optimization may then trade it
+for a cheaper one under this standard.
+
+How a trade is judged:
+- An in-game A/B against the current build, in the standard views: walking distance, plus the
+  close and joint views where losses show first.
+- The measured gain, stated with the loss in the results note, so every trade is disclosed.
+- For an asset, human visual acceptance of the new candidate stays the final gate.
+
+Pixel comparison stays as a regression detector. An unexplained difference from a change meant
+to be invisible is investigated as a possible bug; an intended difference is judged by this
+standard.
+
+**Not tradeable:**
+- Correctness defects: seams, missing or floating content, wrong normal orientation, GPU
+  validation errors, lost structure such as joint depth.
+- The player-visible budgets in [budgets.md](budgets.md).
+- The QA structural checks and the reference → QA → library boundary (D-197).
+
+**Context:** the human directed (2026-09-24) that engine and optimization work be front-loaded
+while assets are built, aiming for the highest compression and least render-path work at
+acceptable quality, lossy options included. The first packages judged changes by
+pixel-identical captures, and D-197 told delivery to choose the representation that best
+preserves the look. Either would reject a slight, disclosed loss that buys a large memory or
+performance gain. Examples: BC1 base colour (half of BC7's size), 2048² maps, simplified and
+instanced pebbles ([engine packages](plan.md#engine-packages)).
+
+**Reopen if:** accepted trades accumulate into a visibly degraded area at human review, or a
+shipped trade's gain turns out not to be significant in the combined scene.
+
+---
+
+## D-199: Stream PBR textures to the GPU as BC7 and require texture-compression-bc (2026-09-24, accepted; D-006's transcode trigger)
+
+**Decision:** UASTC KTX2 stays the at-rest texture format (D-006). Each streamed KTX2 descriptor
+declares its GPU format, `bc7` or `rgba8`, and the cache key and byte accounting follow it.
+The packager gives UASTC maps `bc7`. The decode worker transcodes them with the pinned Babylon
+`uastc_bc7.wasm`, and the render worker uploads BC7 block rows. Raw RGBA8 KTX2 remains
+available as `rgba8` for maps that must stay lossless. `texture-compression-bc` is a required
+WebGPU device feature: a BC7 descriptor on a device without it fails closed, with no RGBA8
+fallback.
+
+**Context:** D-006's reopen trigger was met: decode and transcode dominated the installed
+paving cell's load. As RGBA8, the paving cell loaded in 367 ms with 237 MB of GPU memory, and its
+upload stalled the render worker for 146 ms. With BC7 maps (candidate 5, UASTC `LEVEL_SLOWER`)
+it loads in 230 ms with 80 MB. Captures match the RGBA8 build to within 0.4/255 mean. An
+in-game A/B found a BC7 ground normal indistinguishable from the lossless one, so none of the
+paving's maps needs RGBA8 today
+([result](../assets/source/d1-paving/proof-2026-09-24/texture-results.md)).
+
+**Consequences:**
+- The engine runs only on devices that expose BC. dev-01 (D3D12) does. Chrome's exposure on
+  Apple-silicon Metal (mac-01, the Standard planning profile) is unverified, and ASTC/ETC-only
+  devices are unsupported.
+- Asset encoders must set the UASTC level through Web-libktx's enum: the binding silently
+  ignores a numeric `uastcFlags`.
+- Lite 1.12 cannot consume two-channel BC5 normals, so normal maps stay three-channel BC7.
+
+**Reopen if:** a target device lacks BC; Lite gains two-channel normal support; or a BC7
+at-rest encoder would remove the runtime transcode at an acceptable install-size cost.
+
+---
+
 ## D-198: Refresh dev-01's registered Windows servicing baseline to 26200.9457 (2026-09-24, accepted; human decision)
 
 **Decision:** Update the registered dev-01 OS build from Windows `26200.9168` to
@@ -54,7 +123,7 @@ console on the refreshed baseline, with the registered environment measured and 
 
 ---
 
-## D-197: Suspend self-imposed asset and streaming size caps while M4.5 measures real costs (2026-09-24, accepted; human direction)
+## D-197: Suspend self-imposed asset and streaming size caps while M4.5 measures real costs (2026-09-24, accepted; human direction; delivery principle amended by D-200)
 
 **Decision:** for representative M4.5 content, suspend the size and count caps set for the
 greybox world. They become recorded measurements, not rejections:

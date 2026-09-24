@@ -223,8 +223,8 @@ function validateMeasuredAttempt(
       "frameCountAfterVisibilityWait",
       "id",
       "initial",
+      "recoveredView",
       "secondProbe",
-      "visibleCanvas",
     ],
     `${expected.id} result`,
   );
@@ -244,8 +244,7 @@ function validateMeasuredAttempt(
   if (result.afterSecondFault !== null) {
     validateBoundary(result.afterSecondFault, `${expected.id} terminal`);
   }
-  validateVisibleCanvasFields(result.visibleCanvas, `${expected.id} canvas`);
-  requireGreyboxRenderedOutputEvidence(result.visibleCanvas);
+  validateRecoveredView(result.recoveredView, `${expected.id} recovered view`);
   try {
     validateRenderRecoveryAttempt(result as unknown as MeasuredRenderRecoveryAttempt);
   } catch (error: unknown) {
@@ -266,7 +265,7 @@ function validatePartial(value: unknown, id: string): void {
       "elapsedMs",
       "initial",
       "latestTelemetry",
-      "visibleCanvas",
+      "recoveredView",
     ],
     `${id} partial`,
   );
@@ -287,9 +286,8 @@ function validatePartial(value: unknown, id: string): void {
     validateLatestTelemetry(partial.latestTelemetry, `${id} partial latest telemetry`);
     validateRecoveryBaselineBinding(partial, id);
   }
-  if (partial.visibleCanvas !== null) {
-    validateVisibleCanvasFields(partial.visibleCanvas, `${id} partial canvas`);
-    requireGreyboxRenderedOutputEvidence(partial.visibleCanvas);
+  if (partial.recoveredView !== null) {
+    validateRecoveredView(partial.recoveredView, `${id} partial recovered view`);
   }
 }
 
@@ -1223,7 +1221,16 @@ function validateStreamingStructure(value: unknown, label: string): Record<strin
       "workerGeneration",
     ],
     label,
+    STREAMING_OPTIONAL_KEYS,
   );
+  for (const key of STREAMING_OPTIONAL_COUNT_KEYS) {
+    if (key in streaming && !nonNegativeInteger(streaming[key])) {
+      throw new Error(`${label} ${key} is invalid`);
+    }
+  }
+  for (const key of ["dependencyCache", "dependencyGpuCache"]) {
+    if (key in streaming) requireRecord(streaming[key], `${label} ${key}`);
+  }
   for (const key of [
     "cellLoadSampleCount",
     "cpuBudgetRejectionCount",
@@ -1371,6 +1378,16 @@ function validateStreamingStartupTiming(
   }
 }
 
+const CELL_LOAD_DEPENDENCY_KEYS = [
+  "dependencyCount",
+  "dependencyDecodeMs",
+  "dependencyDecodedBytes",
+  "dependencyEncodedBytes",
+  "dependencyReadMs",
+  "dependencyUploadBytes",
+  "dependencyUploadMs",
+] as const;
+
 function validateStreamingSample(value: unknown, label: string, workerGeneration: number): void {
   const sample = requireRecord(value, label);
   const keys = [
@@ -1397,7 +1414,15 @@ function validateStreamingSample(value: unknown, label: string, workerGeneration
     "totalMs",
     "uploadMs",
   ] as const;
-  requireExactKeys(sample, keys, label);
+  requireExactKeys(sample, keys, label, CELL_LOAD_DEPENDENCY_KEYS);
+  // Shared-dependency timing (the paving package's textures) arrives as a complete group.
+  const dependencyKeys = CELL_LOAD_DEPENDENCY_KEYS.filter((key) => key in sample);
+  if (
+    (dependencyKeys.length !== 0 && dependencyKeys.length !== CELL_LOAD_DEPENDENCY_KEYS.length) ||
+    dependencyKeys.some((key) => !nonNegativeFinite(sample[key]))
+  ) {
+    throw new Error(`${label} dependency timing is invalid`);
+  }
   if (!nonEmptyString(sample.cellId) || !nonEmptyString(sample.batchTransactionId)) {
     throw new Error(`${label} identity is invalid`);
   }
@@ -1542,7 +1567,7 @@ function validateDecoderBootstrap(value: unknown, label: string): void {
   if (Object.values(paths).some((entry) => entry !== "preinstalled-global")) {
     throw new Error(`${label} paths are invalid`);
   }
-  if (versions.draco !== "1.5.7" || versions.ktx2 !== "9.17.0" || versions.meshopt !== "1.2.0") {
+  if (versions.draco !== "1.5.7" || versions.ktx2 !== "9.27.1" || versions.meshopt !== "1.2.0") {
     throw new Error(`${label} versions are invalid`);
   }
 }
@@ -1584,11 +1609,12 @@ function validateChromePin(value: unknown): Record<string, unknown> {
   const pin = requireRecord(value, "Chrome pin");
   requireExactKeys(
     pin,
-    ["channel", "downloads", "executableSha256", "revision", "version"],
+    ["browserRevision", "channel", "downloads", "executableSha256", "revision", "version"],
     "Chrome pin",
   );
   if (
     pin.channel !== "stable" ||
+    !nonEmptyString(pin.browserRevision) ||
     !nonEmptyString(pin.revision) ||
     typeof pin.version !== "string" ||
     !/^\d+\.\d+\.\d+\.\d+$/.test(pin.version)
@@ -1996,6 +2022,78 @@ function isVec3(value: unknown): boolean {
   );
 }
 
+/** Structure of `render-recovery@2`'s post-recovery view; semantics live in the evidence module. */
+function validateRecoveredView(value: unknown, label: string): void {
+  const view = requireRecord(value, label);
+  requireExactKeys(view, ["canvas", "render", "request", "residentCellIds"], label);
+  validateVisibleCanvasFields(view.canvas, `${label} canvas`);
+  requireGreyboxRenderedOutputEvidence(view.canvas);
+  const render = requireRecord(view.render, `${label} render`);
+  requireExactKeys(
+    render,
+    [
+      "cameraPosition",
+      "cameraTarget",
+      "checkpointId",
+      "clearColorDistanceThreshold",
+      "clearColorRgb",
+      "elapsedMs",
+      "environment",
+      "environmentPhaseId",
+      "height",
+      "previewVisibleMeshCount",
+      "rgbaSha256",
+      "sampledPixelCount",
+      "streamedVisibleMeshCount",
+      "visiblePixelCount",
+      "visiblePixelRatio",
+      "width",
+    ],
+    `${label} render`,
+  );
+  validateVec3(render.cameraPosition, `${label} camera position`);
+  validateVec3(render.cameraTarget, `${label} camera target`);
+  validateVec3(render.clearColorRgb, `${label} clear color`);
+  if (
+    !nonEmptyString(render.checkpointId) ||
+    !nonEmptyString(render.environmentPhaseId) ||
+    !isRecord(render.environment) ||
+    !nonNegativeFinite(render.elapsedMs) ||
+    !nonNegativeFinite(render.clearColorDistanceThreshold) ||
+    !nonNegativeInteger(render.height) ||
+    !nonNegativeInteger(render.previewVisibleMeshCount) ||
+    !nonNegativeInteger(render.sampledPixelCount) ||
+    !nonNegativeInteger(render.streamedVisibleMeshCount) ||
+    !nonNegativeInteger(render.visiblePixelCount) ||
+    !nonNegativeFinite(render.visiblePixelRatio) ||
+    !nonNegativeInteger(render.width)
+  ) {
+    throw new Error(`Render-recovery ${label} render fields are invalid`);
+  }
+  requireHex(render.rgbaSha256, HEX_64, `${label} RGBA digest`);
+  const request = requireRecord(view.request, `${label} request`);
+  requireExactKeys(
+    request,
+    ["camera", "environment", "headingRadians", "observer"],
+    `${label} request`,
+  );
+  requireExactKeys(
+    requireRecord(request.camera, `${label} request camera`),
+    ["beta", "heightMeters", "radiusMeters"],
+    `${label} request camera`,
+  );
+  requireExactKeys(
+    requireRecord(request.environment, `${label} request environment`),
+    ["timeOfDay", "timeOfDayPhase", "weather"],
+    `${label} request environment`,
+  );
+  validateVec3(request.observer, `${label} request observer`);
+  if (typeof request.headingRadians !== "number" || !Number.isFinite(request.headingRadians)) {
+    throw new Error(`Render-recovery ${label} request heading is invalid`);
+  }
+  requireStringArray(view.residentCellIds, `${label} resident cells`);
+}
+
 function validateVisibleCanvasFields(value: unknown, label: string): void {
   requireExactKeys(
     requireRecord(value, label),
@@ -2149,12 +2247,32 @@ function requireRecord(value: unknown, label: string): Record<string, unknown> {
   return value;
 }
 
+/** Streaming telemetry fields that are present once the compressed dependency pipeline and
+ * PSO warmup have reported (optional in `WorldStreamingTelemetrySnapshot`). */
+const STREAMING_OPTIONAL_COUNT_KEYS = [
+  "dependencyDecodeFailureCount",
+  "dependencyDecodedBytes",
+  "dependencyEncodedBytesRead",
+  "dependencyReadCount",
+  "dependencyUploadBytes",
+  "dependencyUploadCount",
+  "psoWarmupGameplayOverlapCount",
+] as const;
+const STREAMING_OPTIONAL_KEYS = [
+  ...STREAMING_OPTIONAL_COUNT_KEYS,
+  "dependencyCache",
+  "dependencyGpuCache",
+] as const;
+
 function requireExactKeys(
   value: Record<string, unknown>,
   expected: readonly string[],
   label: string,
+  optional: readonly string[] = [],
 ): void {
-  const actual = Object.keys(value).sort();
+  const actual = Object.keys(value)
+    .filter((key) => !optional.includes(key))
+    .sort();
   const sortedExpected = [...expected].sort();
   if (JSON.stringify(actual) !== JSON.stringify(sortedExpected)) {
     throw new Error(`Render-recovery ${label} fields are invalid`);

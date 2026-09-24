@@ -13,6 +13,24 @@ const descriptor = Object.freeze({
 }) satisfies StreamingKtx2DependencyIndexEntry;
 
 describe("streaming resource cache", () => {
+  it("rejects a live texture requested in another GPU format without changing references", () => {
+    const cache = createStreamingResourceCache<object>();
+    const rgba8 = {
+      ...descriptor,
+      decode: { ...descriptor.decode, width: 4, height: 4, version: 2, mipLevelCount: 3 },
+    } as const;
+    const bc7 = { ...rgba8, decode: { ...rgba8.decode, format: "bc7" } } as const;
+    const first = cache.acquire(rgba8);
+    cache.fulfill(first.key, { gpuFormat: "rgba8" });
+    const before = cache.snapshot();
+    expect(() => cache.acquire(bc7)).toThrow(/incompatible descriptor/);
+    expect(cache.snapshot()).toEqual(before);
+    cache.release(first.key);
+    const replacement = cache.acquire(bc7);
+    expect(replacement.miss).toBe(true);
+    expect(replacement.key).not.toBe(first.key);
+  });
+
   it("deduplicates concurrent pending acquisition and disposes once at final release", () => {
     const cache = createStreamingResourceCache<{ dispose(): void }>();
     const dispose = vi.fn();

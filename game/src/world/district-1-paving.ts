@@ -4,7 +4,7 @@ import type { GreyboxDistrictSpec } from "./greybox-spec";
  * content records the admitted candidate; runtime never reads source paths. */
 export const D1_PAVING = Object.freeze({
   assetId: "d1-photoreal-paving",
-  candidateSha256: "83a0ebc0c93aebdc075d220df6882710407aff7101cfc0820fe85cbb6f135b4d",
+  candidateSha256: "79fc60ec48fe75aa3ab81c1ff5d2a5c485e7c683ce65ec7be93f957499daebfa",
   tileMetres: 4,
   /** The module's deepest joint is 20.7 mm below its origin. Lifting it 21 mm keeps every
    * joint above the level pad; stone tops then sit about 2 cm above the collision plane. */

@@ -1482,7 +1482,7 @@ function readyMessage(): RenderReadyMessage {
       }),
       versions: Object.freeze({
         draco: "1.5.7",
-        ktx2: "9.17.0",
+        ktx2: "9.27.1",
         meshopt: "1.2.0",
       }),
     }),

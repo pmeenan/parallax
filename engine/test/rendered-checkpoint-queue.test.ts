@@ -170,7 +170,7 @@ describe("rendered checkpoint queue", () => {
       readonly _captureQueue?: readonly unknown[];
     };
 
-    expect(VERSION).toBe("1.12.0");
+    expect(VERSION).toBe("1.31.1");
     expect(capture).toBeInstanceOf(Promise);
     expect(internal._captureQueue).toHaveLength(1);
   });

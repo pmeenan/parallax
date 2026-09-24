@@ -129,6 +129,8 @@ export interface ParallaxTelemetryExport {
     request: ScenePreviewRequest,
   ): Promise<import("../render/render-protocol").FlythroughCheckpointRenderEvidence>;
   endScenePreview(): Promise<void>;
+  /** Clear a completed, failed or aborted flythrough so preview or preflight can own the camera. */
+  resetFlythrough(): Promise<void>;
   resetBenchmark(): Promise<void>;
   loadSimulation(bytes: Uint8Array): Promise<SimulationPresentationSnapshot>;
   npcDialogSnapshot(): NpcDialogTelemetrySnapshot;
@@ -247,6 +249,10 @@ export function installTelemetryExport(
     prepareFlythrough(): void {
       assertBenchmarkDoesNotOwnScenario("Standalone flythrough preflight");
       flythroughService.prepare();
+    },
+    resetFlythrough(): Promise<void> {
+      assertBenchmarkDoesNotOwnScenario("Flythrough reset");
+      return flythroughService.reset();
     },
     resetBenchmark(): Promise<void> {
       return benchmarkService.reset();

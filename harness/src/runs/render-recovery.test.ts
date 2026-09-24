@@ -7,11 +7,11 @@ import {
   RENDER_RECOVERY_SCENARIO,
 } from "./render-recovery.js";
 
-describe("render-recovery@1 run contract", () => {
+describe("render-recovery@2 run contract", () => {
   it("keeps three isolated real-fault attempts and a versioned result contract", () => {
-    expect(RENDER_RECOVERY_SCENARIO).toBe("render-recovery@1");
-    expect(RENDER_RECOVERY_REPORT_SCHEMA_VERSION).toBe(33);
-    expect(RENDER_RECOVERY_MANDATORY_METRIC_SET_VERSION).toBe(5);
+    expect(RENDER_RECOVERY_SCENARIO).toBe("render-recovery@2");
+    expect(RENDER_RECOVERY_REPORT_SCHEMA_VERSION).toBe(34);
+    expect(RENDER_RECOVERY_MANDATORY_METRIC_SET_VERSION).toBe(6);
     expect(RENDER_RECOVERY_ATTEMPTS).toEqual([
       { firstProbe: "device-loss", id: "device-loss-recovery", secondProbe: null },
       { firstProbe: "worker-crash", id: "worker-crash-recovery", secondProbe: null },

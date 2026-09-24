@@ -28,6 +28,10 @@ await mkdir(out, { recursive: false });
 await mkdir(join(out, "runtime"));
 await mkdir(join(out, "decoded"));
 await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready, MeshoptSimplifier.ready]);
+// UASTC encoder level (libktx pack_uastc_flag_bits) and the ground normal's at-rest format.
+const UASTC_LEVEL = process.env.PAVING_UASTC_LEVEL ?? "LEVEL_SLOWER";
+const GROUND_NORMAL_FORMAT = process.env.PAVING_GROUND_NORMAL ?? "uastc";
+assert(["uastc", "rgba8"].includes(GROUND_NORMAL_FORMAT), "PAVING_GROUND_NORMAL is uastc or rgba8");
 const TILE = 4;
 const N = 4096;
 const PX = TILE / N;
@@ -512,10 +516,11 @@ for (const map of maps.maps) {
     levels.push(rgba);
     texture.setImageFromMemory(level, 0, 0, rgba);
   }
-  // Lossless normal (D-197): UASTC left 24% of texels > 5 degrees off. Stored as plain RGBA8:
-  // in-game, zstd-19 decoding cost 430 ms of the paving cell's 670 ms load (install candidate 3).
-  // Everything else keeps the production UASTC format (prepare-d1-stone-variants.mjs).
-  const lossless = map.role === "ground-normal";
+  // Maps are UASTC at rest and BC7 on the GPU. Candidates 1-4 ran at libktx's LEVEL_FASTEST,
+  // because the binding silently ignores a numeric uastcFlags; only the enum object sets it.
+  // At that level UASTC left 24% of ground-normal texels > 5 degrees off, so candidate 4 kept
+  // the normal as plain RGBA8. PAVING_GROUND_NORMAL=rgba8 keeps that lossless form.
+  const lossless = map.role === "ground-normal" && GROUND_NORMAL_FORMAT === "rgba8";
   Object.assign(basis, {
     uastc: true,
     threadCount: 8,
@@ -523,6 +528,8 @@ for (const map of maps.maps) {
     uastcRDO: false,
     uastcRDONoMultithreading: true,
   });
+  basis.uastcFlags = k.pack_uastc_flag_bits[UASTC_LEVEL];
+  assert.equal(basis.uastcFlags, k.pack_uastc_flag_bits[UASTC_LEVEL].value, "UASTC level unset");
   const started = performance.now();
   if (!lossless) assert.equal(texture.compressBasis(basis), k.ErrorCode.SUCCESS);
   const plain = Buffer.from(texture.writeToMemory());
@@ -541,6 +548,7 @@ for (const map of maps.maps) {
   let decodedBytes = 0;
   let err = 0;
   let maxErr = 0;
+  const angles = { sum: 0, over5: 0, over10: 0, max: 0 };
   for (let level = 0; level < map.levels.length; level++) {
     const rgba = Buffer.from(decoded.getImage(level, 0, 0));
     assert.equal(rgba.length, levels[level].length);
@@ -550,13 +558,22 @@ for (const map of maps.maps) {
       rgba,
       { flag: "wx" },
     );
-    if (level === 0)
+    if (level === 0) {
       for (let i = 0; i < rgba.length; i++) {
         if (i % 4 === 3) continue;
         const d = Math.abs(rgba[i] - levels[0][i]);
         err += d;
         maxErr = Math.max(maxErr, d);
       }
+      if (map.role.endsWith("-normal"))
+        for (let i = 0; i < rgba.length; i += 4) {
+          const a = normalAngleDeg(rgba, levels[0], i);
+          angles.sum += a;
+          angles.max = Math.max(angles.max, a);
+          if (a > 5) angles.over5++;
+          if (a > 10) angles.over10++;
+        }
+    }
   }
   decoded.delete();
   if (lossless) assert.equal(maxErr, 0, "Lossless normal must decode exactly");
@@ -573,6 +590,15 @@ for (const map of maps.maps) {
     bc7LogicalBytes: Math.round(decodedBytes / 4),
     level0MeanAbsError: err / ((levels[0].length / 4) * 3),
     level0MaxAbsError: maxErr,
+    ...(map.role.endsWith("-normal")
+      ? {
+          level0MeanAngleDeg: angles.sum / (levels[0].length / 4),
+          level0MaxAngleDeg: angles.max,
+          level0Over5DegPercent: (angles.over5 / (levels[0].length / 4)) * 100,
+          level0Over10DegPercent: (angles.over10 / (levels[0].length / 4)) * 100,
+        }
+      : {}),
+    uastcLevel: lossless ? null : UASTC_LEVEL,
     encodeMs: Math.round(encodeMs),
     note: map.note,
   };
@@ -729,3 +755,12 @@ receipt.plantNormalFallbacks = plantNormalFallbacks;
 receipt.inputs = { maps: hash(await readFile(join(mapsDir, "maps.json"))) };
 await writeFile(join(out, "pack.json"), `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
 console.log("PACK_DONE", out);
+
+/** Angle in degrees between two 8-bit tangent-space normals at byte offset i. */
+function normalAngleDeg(a, b, i) {
+  const v = (x) => x / 127.5 - 1;
+  const [ax, ay, az] = [v(a[i]), v(a[i + 1]), v(a[i + 2])];
+  const [bx, by, bz] = [v(b[i]), v(b[i + 1]), v(b[i + 2])];
+  const cos = (ax * bx + ay * by + az * bz) / Math.hypot(ax, ay, az) / Math.hypot(bx, by, bz);
+  return (Math.acos(Math.min(1, Math.max(-1, cos))) * 180) / Math.PI;
+}

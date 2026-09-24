@@ -4,7 +4,7 @@
     "rootDir": "qa",
     "outDir": "dist/qa",
     "tsBuildInfoFile": "dist/qa.tsbuildinfo",
-    "types": ["node"],
+    "types": ["node", "webxr"],
     "rewriteRelativeImportExtensions": true
   },
   "include": ["qa/**/*.ts"],

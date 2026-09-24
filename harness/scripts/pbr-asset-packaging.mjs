@@ -36,9 +36,14 @@ export async function loadPbrAssetLibrary(root, writeResource) {
     let dependencies;
     if (texture) {
       assert.equal(entry.file.endsWith(".ktx2"), true);
+      assert(
+        ["uastc", "rgba8", "rgba8-zstd"].includes(texture.encoding),
+        `Unknown encoding ${texture.encoding}`,
+      );
       decode = {
         colorSpace: texture.colorSpace,
-        format: "rgba8",
+        // UASTC transcodes to BC7 on the GPU; raw RGBA8 (lossless) maps upload unchanged.
+        format: texture.encoding === "uastc" ? "bc7" : "rgba8",
         width: texture.width,
         height: texture.height,
         version: 2,

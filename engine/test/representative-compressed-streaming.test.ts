@@ -15,7 +15,11 @@ import {
   CompressedStreamingDecodeError,
   createCompressedStreamingDecoder,
 } from "../src/streaming/compressed-streaming-codecs";
-import { PRODUCTION_COMPRESSED_STREAMING_FIXTURES } from "../src/streaming/production-compressed-fixtures.generated";
+import {
+  PRODUCTION_COMPRESSED_STREAMING_FIXTURES,
+  RAW_RGBA8_MIP_CHAIN_FIXTURES,
+  UASTC_MIP_CHAIN_FIXTURE,
+} from "../src/streaming/production-compressed-fixtures.generated";
 import { representativeCompressedStreamingFixtures } from "../src/streaming/representative-compressed-fixtures";
 import { createStreamingResourceCache } from "../src/streaming/streaming-resource-cache";
 import type { GreyboxCell } from "../src/world/world-contract";
@@ -367,6 +371,147 @@ describe("representative compressed streaming fixtures", () => {
     expect(lite.createMeshFromData).toHaveBeenCalledOnce();
     expect(lite.releaseTexture).toHaveBeenCalledOnce();
     expect(lite.removeFromScene).toHaveBeenCalledOnce();
+  });
+
+  it("transcodes a UASTC mip chain to BC7 blocks or RGBA8 as its descriptor declares", async () => {
+    for (const [transcoder, file] of [
+      [KTX2DecoderPackage.LiteTranscoder_UASTC_BC7, "uastc_bc7.wasm"],
+      [KTX2DecoderPackage.LiteTranscoder_UASTC_RGBA_UNORM, "uastc_rgba8_unorm_v2.wasm"],
+    ] as const) {
+      const bytes = readFileSync(
+        new URL(`../node_modules/@babylonjs/ktx2decoder/wasm/${file}`, import.meta.url),
+      );
+      transcoder.WasmBinary = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      );
+    }
+    const ktx2 = Uint8Array.from(Buffer.from(UASTC_MIP_CHAIN_FIXTURE.ktx2, "base64"));
+    const decoder = createCompressedStreamingDecoder();
+    const decode = (format: "bc7" | "rgba8") =>
+      decoder.decode({
+        bytes: ktx2.slice().buffer,
+        descriptor: {
+          bytes: ktx2.byteLength,
+          decode: {
+            colorSpace: "linear",
+            format,
+            height: UASTC_MIP_CHAIN_FIXTURE.height,
+            mipLevelCount: UASTC_MIP_CHAIN_FIXTURE.mipLevelCount,
+            version: 2,
+            width: UASTC_MIP_CHAIN_FIXTURE.width,
+          },
+          dependencies: [],
+          format: "ktx2",
+          path: `immutable/streaming-texture-${"b".repeat(64)}.ktx2`,
+          resourceId: `game-specific-mip-chain-${format}`,
+          sha256: "b".repeat(64),
+        },
+      });
+    const bc7 = await decode("bc7");
+    const rgba = await decode("rgba8");
+    if (bc7.format !== "ktx2" || rgba.format !== "ktx2") throw new Error("Expected textures");
+    // 16 × 8 → 8 × 4 → 4 × 2 → 2 × 1 → 1 × 1: BC7 pads sub-block levels to one 16-byte block.
+    expect(bc7.mipmaps?.map((mip) => [mip.width, mip.height, mip.data.byteLength])).toEqual([
+      [16, 8, 128],
+      [8, 4, 32],
+      [4, 2, 16],
+      [2, 1, 16],
+      [1, 1, 16],
+    ]);
+    expect(bc7.decodedBytes).toBe(208);
+    expect(bc7.data).toBe(bc7.mipmaps?.[0]?.data);
+    expect(rgba.mipmaps?.map((mip) => mip.data.byteLength)).toEqual([512, 128, 32, 8, 4]);
+    expect(rgba.decodedBytes).toBe(684);
+    // Every BC7 block is mode 0-7 (a set bit in its first byte); no zero padding escapes.
+    const blocks = new Uint8Array(bc7.data);
+    for (let offset = 0; offset < blocks.length; offset += 16) {
+      expect(blocks[offset]).not.toBe(0);
+    }
+  });
+
+  it("copies raw RGBA8 mip chains through the pinned decoder, plain or zstd, never as BC7", async () => {
+    const zstdWasm = readFileSync(
+      new URL("../node_modules/@babylonjs/ktx2decoder/wasm/zstddec.wasm", import.meta.url),
+    );
+    // The decoder fetches its zstd wasm by URL; serve the pinned binary for that one URL.
+    vi.stubGlobal("fetch", async (url: string | URL) => {
+      if (String(url).includes("ZSTD_DECODER_WASM_ARTIFACT")) return new Response(zstdWasm);
+      throw new Error(`Unexpected fetch ${String(url)}`);
+    });
+    try {
+      const decoder = createCompressedStreamingDecoder();
+      for (const fixture of RAW_RGBA8_MIP_CHAIN_FIXTURES) {
+        const ktx2 = Uint8Array.from(Buffer.from(fixture.ktx2, "base64"));
+        const decode = (format: "bc7" | "rgba8") =>
+          decoder.decode({
+            bytes: ktx2.slice().buffer,
+            descriptor: {
+              bytes: ktx2.byteLength,
+              decode: {
+                colorSpace: "linear",
+                format,
+                height: fixture.height,
+                mipLevelCount: fixture.mipLevelCount,
+                version: 2,
+                width: fixture.width,
+              },
+              dependencies: [],
+              format: "ktx2",
+              path: `immutable/streaming-texture-${"c".repeat(64)}.ktx2`,
+              resourceId: `game-specific-raw-${fixture.zstd ? "zstd" : "plain"}`,
+              sha256: "c".repeat(64),
+            },
+          });
+        const decoded = await decode("rgba8");
+        if (decoded.format !== "ktx2") throw new Error("Expected a texture");
+        const levels = decoded.mipmaps?.map((mip) => Buffer.from(mip.data)) ?? [];
+        expect(Buffer.concat(levels).equals(Buffer.from(fixture.rgba, "base64"))).toBe(true);
+        expect(decoded.mipmaps?.map((mip) => [mip.width, mip.height])).toEqual([
+          [8, 4],
+          [4, 2],
+          [2, 1],
+          [1, 1],
+        ]);
+        await expect(decode("bc7")).rejects.toThrow(/did not decode bc7/);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    ["wrong raw color space", 12, 43],
+    ["wrong component size", 16, 4],
+    ["array texture", 32, 1],
+    ["unsupported raw supercompression", 44, 3],
+    ["truncated declared level", 88, 1],
+    ["wrong decoded level size", 96, 1],
+  ])("rejects %s before a raw container reaches the GPU", async (_label, offset, value) => {
+    const fixture = RAW_RGBA8_MIP_CHAIN_FIXTURES[0];
+    const bytes = Uint8Array.from(Buffer.from(fixture.ktx2, "base64"));
+    new DataView(bytes.buffer).setUint32(offset, value, true);
+    await expect(
+      createCompressedStreamingDecoder().decode({
+        bytes: bytes.buffer,
+        descriptor: {
+          bytes: bytes.byteLength,
+          decode: {
+            colorSpace: "linear",
+            format: "rgba8",
+            height: fixture.height,
+            mipLevelCount: fixture.mipLevelCount,
+            version: 2,
+            width: fixture.width,
+          },
+          dependencies: [],
+          format: "ktx2",
+          path: `immutable/streaming-texture-${"c".repeat(64)}.ktx2`,
+          resourceId: "invalid-raw-texture",
+          sha256: "c".repeat(64),
+        },
+      }),
+    ).rejects.toThrow();
   });
 
   it("decodes materially different production-like texture, attribute, and index graphs", async () => {

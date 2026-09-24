@@ -1,4 +1,5 @@
 import type {
+  FlythroughCheckpointRenderEvidence,
   GreyboxRenderTelemetry,
   ParallaxTelemetrySnapshot,
   RenderRecoveryProbeKind,
@@ -7,11 +8,17 @@ import type {
   WorldVec3,
 } from "@parallax/engine";
 import type { MeasuredFlythroughEnvironment } from "./flythrough-run-result.js";
-import type { GreyboxRenderedOutputEvidence } from "./greybox-rendered-output.js";
+import {
+  GREYBOX_MAXIMUM_VISIBLE_PIXEL_RATIO,
+  GREYBOX_MINIMUM_VISIBLE_PIXEL_RATIO,
+  type GreyboxRenderedOutputEvidence,
+  requireGreyboxRenderedOutputEvidence,
+} from "./greybox-rendered-output.js";
 import {
   RENDER_RECOVERY_COMPLETION_TIMEOUT_MS,
   RENDER_RECOVERY_MINIMUM_MOVEMENT_METERS,
   RENDER_RECOVERY_RESIDENT_CELL_COUNT,
+  RENDER_RECOVERY_VERIFICATION_VIEW,
 } from "./runs/render-recovery.js";
 import { requireSabRingBufferCompleteAtMeasurementBoundary } from "./sab-ring-buffer.js";
 import { isSortedUniqueExactStringSet } from "./sorted-exact-string-set.js";
@@ -49,6 +56,30 @@ export interface RenderRecoveryBoundary {
   readonly streaming: WorldStreamingTelemetrySnapshot;
 }
 
+/** The engine's scene-preview request (`ScenePreviewRequest`), as retained evidence. */
+export interface RenderRecoveryViewRequest {
+  readonly camera: Readonly<{ beta: number; heightMeters: number; radiusMeters: number }>;
+  readonly environment: Readonly<{
+    timeOfDay: "dawn" | "daylight" | "dusk" | "night";
+    timeOfDayPhase: number;
+    weather: "clear" | "overcast" | "storm";
+  }>;
+  readonly headingRadians: number;
+  readonly observer: WorldVec3;
+}
+
+/**
+ * Post-recovery rendered output, independent of gameplay camera ownership: the recovered
+ * renderer previews the pre-fault observer through a fixed view. `render` is the render worker's
+ * own readback of that frame; `canvas` is the compositor screenshot of the same preview.
+ */
+export interface RenderRecoveryVerifiedView {
+  readonly canvas: GreyboxRenderedOutputEvidence;
+  readonly render: FlythroughCheckpointRenderEvidence;
+  readonly request: RenderRecoveryViewRequest;
+  readonly residentCellIds: readonly string[];
+}
+
 export interface MeasuredRenderRecoveryAttempt {
   readonly afterFirstRecovery: RenderRecoveryBoundary;
   readonly afterSecondFault: RenderRecoveryBoundary | null;
@@ -59,8 +90,8 @@ export interface MeasuredRenderRecoveryAttempt {
   readonly frameCountAfterVisibilityWait: number;
   readonly id: RenderRecoveryAttemptId;
   readonly initial: RenderRecoveryBoundary;
+  readonly recoveredView: RenderRecoveryVerifiedView;
   readonly secondProbe: RenderRecoveryProbeKind | null;
-  readonly visibleCanvas: GreyboxRenderedOutputEvidence;
 }
 
 export type UnfinalizedMeasuredRenderRecoveryAttempt = Omit<
@@ -85,7 +116,7 @@ export type RenderRecoveryAttempt =
         readonly elapsedMs: number | null;
         readonly initial: RenderRecoveryBoundary | null;
         readonly latestTelemetry: ParallaxTelemetrySnapshot | null;
-        readonly visibleCanvas: GreyboxRenderedOutputEvidence | null;
+        readonly recoveredView: RenderRecoveryVerifiedView | null;
       }>;
       readonly result: null;
       readonly state: "invalid";
@@ -180,13 +211,7 @@ export function validateRenderRecoveryAttempt(attempt: MeasuredRenderRecoveryAtt
   if (attempt.frameCountAfterVisibilityWait <= recovered.frameCount) {
     throw new Error(`${attempt.id} did not render frames after recovery`);
   }
-  if (
-    attempt.visibleCanvas.width <= 0 ||
-    attempt.visibleCanvas.height <= 0 ||
-    attempt.visibleCanvas.visiblePixelCount <= 0
-  ) {
-    throw new Error(`${attempt.id} did not retain visible canvas evidence`);
-  }
+  requireRecoveredResidentView(attempt.id, attempt.recoveredView, beforeFault);
   if (
     !Number.isFinite(attempt.elapsedMs) ||
     attempt.elapsedMs <= 0 ||
@@ -227,6 +252,90 @@ export function validateRenderRecoveryAttempt(attempt: MeasuredRenderRecoveryAtt
   if (terminalErrors.length === 0 || unexpectedErrors.length > 0) {
     throw new Error(`${attempt.id} did not retain the expected terminal browser error`);
   }
+}
+
+function requireRecoveredResidentView(
+  id: RenderRecoveryAttemptId,
+  view: RenderRecoveryVerifiedView,
+  beforeFault: RenderRecoveryBoundary,
+): void {
+  const { request, render, canvas } = view;
+  const expected = RENDER_RECOVERY_VERIFICATION_VIEW;
+  if (
+    JSON.stringify(request.observer) !== JSON.stringify(beforeFault.observers[0]) ||
+    request.headingRadians !== expected.headingRadians ||
+    JSON.stringify(request.camera) !== JSON.stringify(expected.camera) ||
+    JSON.stringify(request.environment) !== JSON.stringify(expected.environment)
+  ) {
+    throw new Error(`${id} did not view the pre-fault observer through the fixed recovery view`);
+  }
+  if (JSON.stringify(view.residentCellIds) !== JSON.stringify(beforeFault.residentCellIds)) {
+    throw new Error(`${id} recovery view did not render the pre-fault residency`);
+  }
+  const target: WorldVec3 = [
+    request.observer[0],
+    request.observer[1] + expected.camera.heightMeters,
+    request.observer[2],
+  ];
+  // Independent reconstruction of the fixed heading-0 recovery view. The renderer may store
+  // camera coordinates as float32, so allow its rounding without admitting another viewpoint.
+  const position: WorldVec3 = [
+    target[0] - expected.camera.radiusMeters * Math.sin(expected.camera.beta),
+    target[1] + expected.camera.radiusMeters * Math.cos(expected.camera.beta),
+    target[2],
+  ];
+  const samePoint = (actual: WorldVec3, wanted: WorldVec3) =>
+    actual.length === 3 &&
+    actual.every(
+      (value, axis) =>
+        Number.isFinite(value) && Math.abs(value - (wanted[axis] ?? Number.NaN)) <= 1e-4,
+    );
+  if (
+    !samePoint(render.cameraPosition, position) ||
+    !samePoint(render.cameraTarget, target) ||
+    render.elapsedMs !== 0 ||
+    render.environmentPhaseId !== "visual-preview" ||
+    render.environment.id !== "visual-preview" ||
+    render.environment.startMs !== 0 ||
+    render.environment.endMs !== 1 ||
+    render.environment.timeOfDay !== expected.environment.timeOfDay ||
+    render.environment.timeOfDayPhase !== expected.environment.timeOfDayPhase ||
+    render.environment.weather !== expected.environment.weather
+  )
+    throw new Error(`${id} recovered readback does not match the fixed recovery view`);
+  const ratioInRange = (ratio: number) =>
+    Number.isFinite(ratio) &&
+    ratio >= GREYBOX_MINIMUM_VISIBLE_PIXEL_RATIO &&
+    ratio < GREYBOX_MAXIMUM_VISIBLE_PIXEL_RATIO;
+  if (
+    render.checkpointId !== "visual-preview" ||
+    render.previewVisibleMeshCount !== 0 ||
+    render.streamedVisibleMeshCount <= 0 ||
+    render.width <= 0 ||
+    render.height <= 0 ||
+    render.sampledPixelCount !== render.width * render.height ||
+    !Number.isSafeInteger(render.visiblePixelCount) ||
+    render.visiblePixelCount <= 0 ||
+    render.visiblePixelCount > render.sampledPixelCount ||
+    Math.abs(render.visiblePixelRatio - render.visiblePixelCount / render.sampledPixelCount) >
+      1e-12 ||
+    !Number.isFinite(render.clearColorDistanceThreshold) ||
+    render.clearColorDistanceThreshold < 2 ||
+    render.clearColorDistanceThreshold > 24 ||
+    !ratioInRange(render.visiblePixelRatio)
+  ) {
+    throw new Error(`${id} recovered renderer did not draw its streamed residency`);
+  }
+  if (
+    canvas.width <= 0 ||
+    canvas.height <= 0 ||
+    canvas.visiblePixelCount <= 0 ||
+    !ratioInRange(canvas.visiblePixelRatio) ||
+    JSON.stringify(canvas.clearColorRgb) !== JSON.stringify(render.clearColorRgb)
+  ) {
+    throw new Error(`${id} did not retain visible recovered canvas evidence`);
+  }
+  requireGreyboxRenderedOutputEvidence(canvas);
 }
 
 export function finalizeMeasuredRenderRecoveryAttempt(

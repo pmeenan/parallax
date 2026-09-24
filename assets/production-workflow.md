@@ -94,7 +94,9 @@ boundary in [AGENTS.md](AGENTS.md).
    Source approval makes no runtime, budget or QA claim. The handbook's
    [delivery section](procedural-authoring.md#delivery-tested-on-the-photoreal-paving-2026-09-24)
    records the tested decimation, map and inspection methods. D-197 suspends the old size caps
-   while real costs are measured.
+   while real costs are measured. D-200 then lets optimization trade a slight, disclosed loss
+   for a significant performance or memory gain, judged by an in-game A/B at materially similar
+   quality.
 
 ## Iteration allowance (D-196)
 

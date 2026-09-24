@@ -5,7 +5,7 @@ export type PbrAssetTransform = Pick<
   "position" | "scale" | "rotationXRadians" | "rotationYRadians" | "rotationZRadians"
 >;
 
-/** Column-major T * Rx * Ry * Rz * Scale * ReflectX, matching Lite 1.12's
+/** Column-major T * Rx * Ry * Rz * Scale * ReflectX, matching Lite 1.31's
  * Euler XYZ proxy and canonical glTF-to-left-handed root conversion. Shared by
  * packaging bounds/terrain fitting and render-worker instance matrices.
  */

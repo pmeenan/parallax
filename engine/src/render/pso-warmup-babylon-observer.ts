@@ -29,9 +29,9 @@ const STENCIL_FACE_DEFAULT = Object.freeze({
   passOp: "keep" as const,
 });
 const STANDARD_VERTEX_WGSL_SHA256 =
-  "ca2060957e94cfa5c00cef782f436988de1db81b09e7b7593f3dd7ff2026af07";
+  "5124b34a66221aee0441d5e43fa6add32683eb0d34721596dc7d4339f0fec769";
 const STANDARD_FRAGMENT_WGSL_SHA256 =
-  "ae7d8c884d08d7a8c9efe5cef64bfb5ee727b57a208595d180f98e1c8bd00a88";
+  "5faf833883dcde310843c475b1ebc14dac88ded9905da671c4076b23b37775b0";
 const CANONICAL_STANDARD_BUILD_GROUP = Reflect.get(createStandardMaterial(), "_buildGroup");
 const STANDARD_OPAQUE_STATE = createPsoWarmupTrace().entries[0]?.state;
 
@@ -366,6 +366,47 @@ function primaryWithCleanupError(
   });
 }
 
+/** Lite 1.20/1.22 moved optional material features behind opt-in setters, which store them
+ * as private fields (`setStandardBumpTexture` writes `_bumpTexture`, `setPbrClearCoat` writes
+ * `_clearCoat`, ...). A feature-key-0 material carries none of them. */
+const STANDARD_OPT_IN_FIELDS = [
+  "_ambientTexture",
+  "_bumpTexture",
+  "_emissiveTexture",
+  "_lightmapTexture",
+  "_opacityTexture",
+  "_reflectionCubeTexture",
+  "_reflectionTexture",
+  "_specularTexture",
+] as const;
+const PBR_OPT_IN_FIELDS = [
+  "_alphaCutOff",
+  "_anisotropy",
+  "_clearCoat",
+  "_emissiveColor",
+  "_gammaAlbedo",
+  "_iridescence",
+  "_metallicReflectanceColor",
+  "_metallicReflectanceTexture",
+  "_reflectanceTexture",
+  "_sheen",
+  "_skyboxMode",
+  "_subsurface",
+  "_transmissive",
+  "_unlit",
+  "emissiveTexture",
+  "lightmapTexture",
+  "occlusionTexture",
+  "specGlossTexture",
+] as const;
+
+function hasOptInFeature(material: object, fields: readonly string[]): boolean {
+  return fields.some((field) => {
+    const value: unknown = Reflect.get(material, field);
+    return value !== undefined && value !== null && value !== false && value !== 0;
+  });
+}
+
 function assertStandardOpaqueMaterial(material: Mesh["material"], meshName: string): void {
   const candidate = material as Partial<StandardMaterialProps>;
   if (
@@ -373,14 +414,7 @@ function assertStandardOpaqueMaterial(material: Mesh["material"], meshName: stri
     Reflect.get(material, "_buildGroup") !== CANONICAL_STANDARD_BUILD_GROUP ||
     candidate.alpha !== 1 ||
     candidate.diffuseTexture !== null ||
-    candidate.emissiveTexture !== null ||
-    candidate.bumpTexture !== null ||
-    candidate.specularTexture !== null ||
-    candidate.ambientTexture !== null ||
-    candidate.lightmapTexture !== null ||
-    candidate.opacityTexture !== null ||
-    candidate.reflectionTexture !== null ||
-    candidate.reflectionCubeTexture !== null ||
+    hasOptInFeature(material, STANDARD_OPT_IN_FIELDS) ||
     candidate.backFaceCulling !== true ||
     candidate.disableLighting !== false ||
     candidate.plugins !== undefined ||
@@ -404,17 +438,9 @@ function assertPbrOpaqueMaterial(material: Mesh["material"], meshName: string): 
     material.occlusionStrength !== 1 ||
     material.doubleSided === true ||
     material.alphaBlend === true ||
-    (material.alphaCutOff ?? 0) !== 0 ||
     (material.alpha ?? 1) !== 1 ||
     material.plugins !== undefined ||
-    material.emissiveTexture !== undefined ||
-    material.emissiveColor !== undefined ||
-    material.specGlossTexture !== undefined ||
-    material.gammaAlbedo === true ||
-    material.clearCoat !== undefined ||
-    material.sheen !== undefined ||
-    material.anisotropy !== undefined ||
-    material.subsurface !== undefined ||
+    hasOptInFeature(material, PBR_OPT_IN_FIELDS) ||
     Reflect.get(material, "_renderFeatures") !== undefined
   )
     throw new Error(`PSO warmup mesh ${meshName} is not the qualified opaque PBR surface`);
@@ -468,9 +494,9 @@ function normalizeObservedStandardPipeline(
   const fragmentModuleSha256 =
     fragment === undefined ? undefined : shaderModules.get(fragment.module);
   const receiver =
-    fragmentModuleSha256 === "3c1588e59ae59ac98bfd6f15e69f4f0335e5e71207262ef0d6a3c44ab13ae7de";
+    fragmentModuleSha256 === "539782be51a691682a96d1d4c63556aee0cf00b226475ecca21b05f0156fa1f5";
   const shadowDepth =
-    fragmentModuleSha256 === "398f5ad7c1c86d2b49c9fd1eba0c481657bf2dfffabbe16c33e5e1cddd8703af";
+    fragmentModuleSha256 === "e62c2cb994c24b4b43d290a50246ccc7577365a66b4f29c63dc6c36ecea7176e";
   const pbr =
     vertexModuleSha256 === PBR_VERTEX_WGSL_SHA256 &&
     (fragmentModuleSha256 === PBR_FRAGMENT_WGSL_SHA256 ||

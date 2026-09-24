@@ -41,6 +41,7 @@ const wasm = {
   __MSC_TRANSCODER_WASM_ARTIFACT__: "@babylonjs/ktx2decoder/wasm/msc_basis_transcoder.wasm",
   __UASTC_RGBA_SRGB_WASM_ARTIFACT__: "@babylonjs/ktx2decoder/wasm/uastc_rgba8_srgb_v2.wasm",
   __UASTC_RGBA_UNORM_WASM_ARTIFACT__: "@babylonjs/ktx2decoder/wasm/uastc_rgba8_unorm_v2.wasm",
+  __UASTC_BC7_WASM_ARTIFACT__: "@babylonjs/ktx2decoder/wasm/uastc_bc7.wasm",
   __ZSTD_DECODER_WASM_ARTIFACT__: "@babylonjs/ktx2decoder/wasm/zstddec.wasm",
 };
 for (const [token, path] of Object.entries(wasm))
@@ -62,7 +63,7 @@ onmessage = async () => {
       const texture = candidate.textures[r.role];
       const lod = lods.find((l) => l.vertexRole === r.role || l.indexRole === r.role);
       const decode = texture
-        ? { version: 2, colorSpace: texture.colorSpace, format: "rgba8", width: texture.width, height: texture.height, mipLevelCount: texture.mipLevels }
+        ? { version: 2, colorSpace: texture.colorSpace, format: texture.encoding === "uastc" ? "bc7" : "rgba8", width: texture.width, height: texture.height, mipLevelCount: texture.mipLevels }
         : lod.indexRole === r.role
           ? { version: 1, mode: "TRIANGLES", count: lod.triangles * 3, stride: 4, indexFormat: "uint32", vertexCount: lod.vertices }
           : { version: 1, mode: "ATTRIBUTES", count: lod.vertices, stride: 32, layout: "position-normal-uv-f32" };
@@ -164,7 +165,6 @@ try {
 const sourceFiles = [];
 for (const path of [
   "engine/src/streaming/compressed-streaming-codecs.ts",
-  "engine/src/streaming/ktx2-rgba8.ts",
   "engine/src/streaming/streaming-dependency-contract.ts",
   "engine/src/streaming/streaming-protocol.ts",
   "engine/node_modules/@babylonjs/ktx2decoder/package.json",

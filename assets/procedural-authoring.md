@@ -191,8 +191,13 @@ lessons generalize:
   pieces as geometry, and colour them from the same base-colour map through planar UVs with
   their true normals. Normal-mapped geometry needs a normal that roughly matches its surface:
   Lite's frame degenerates on near-vertical faces.
-- **Formats.** UASTC is fine for albedo (0.7/255 mean error) but moves 24% of normal texels by
-  more than 5°. Ship normals losslessly (RGBA8 + zstd) and measure in Chrome.
+- **Formats.** Maps are UASTC at rest and BC7 on the GPU (D-199). Set the UASTC level through
+  Web-libktx's enum (`basis.uastcFlags = k.pack_uastc_flag_bits.LEVEL_SLOWER`): the binding
+  silently ignores a number, and the paving's first four candidates shipped at `LEVEL_FASTEST`.
+  At `LEVEL_SLOWER` the albedo error is 0.66/255 mean. A full-height normal moves 2.2° mean,
+  with 8.6% of texels over 5°, and an in-game A/B could not tell it from the lossless normal.
+  Keep raw RGBA8 (`rgba8` descriptors) for a map whose A/B shows visible loss. BC5 normals are
+  unavailable because Lite's PBR shader needs RGB normals.
 - **Inspect in pinned Chrome.** Use the package's `chrome-preview.mjs`, which runs the
   production material, sampler, instancing, lighting and CSM code on the decoded bytes.
 - **Screens.** Fresh subagent screens caught folded triangles that lead inspection had

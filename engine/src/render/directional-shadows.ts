@@ -57,7 +57,7 @@ export function createDirectionalShadows(engine: EngineContext, sun: Directional
   };
 }
 
-/** Lite 1.12.0 removes evicted meshes from tasks but retains their material views/gens. */
+/** Lite 1.31.1 (as 1.12.0) removes evicted meshes from tasks but retains their material views/gens. */
 export function pruneRetiredCasterMaterials(
   generator: ShadowGenerator,
   casters: readonly Mesh[],

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve, sep } from "node:path";
 
 const TRACE_SCHEMA_VERSION = 1;
-const RENDERER = "@babylonjs/lite@1.12.0";
+const RENDERER = "@babylonjs/lite@1.31.1";
 const RESOURCE_ID = "game-specific-pso-warmup-trace";
 const ENTRY_ID = "babylon-lite.standard-opaque-msaa4";
 const WEBGPU_ALL_BITS = 0xffff_ffff;
@@ -170,10 +170,10 @@ const CSM_DEPTH_STATE = deepFreeze({
 } as const);
 
 // Independently pinned expected descriptors; never import the producer registry.
-// Captured on pinned Chrome 152.0.7977.54 with the exact Lite 1.12.0 PBR feature
+// Captured on pinned Chrome 152.0.7977.54 with the exact Lite 1.31.1 PBR feature
 // set: opaque, derivative normal map, ORM, factor, specular AA and directional CSM.
-const PBR_VERTEX_WGSL_SHA256 = "80ce3c63c56133027271da687fc86d2f21c3e1bffc1dfbf14a9a8fbd062fca84";
-const PBR_FRAGMENT_WGSL_SHA256 = "0b24f8b27d393e29deba8953e3f09c85e438cfb2bd38ca0dc92b8a54a478c8d6";
+const PBR_VERTEX_WGSL_SHA256 = "e63f866e284062a6f26df29cab42c63da41918fa704ea2922bc4da405b6d6080";
+const PBR_FRAGMENT_WGSL_SHA256 = "d31c20a4c6bc2ddc8fea544cbfccb410cba05beaae6c036bfac64d3641e8d758";
 const PBR_MATERIAL_GROUP = {
   entries: [
     ...EFFECTIVE_PIPELINE_STATE.layout.bindGroups[1].entries,
@@ -233,7 +233,7 @@ const PBR_COLOR_STATE = deepFreeze({
   ],
 } as const);
 const PBR_DEPTH_FRAGMENT_WGSL_SHA256 =
-  "8655fedc8d364cc42ae079bbc15f8a20efe52799932ef3ee8f70fd2392c0ad95";
+  "ca59db32bf4223ffd42ca6e9c30ab954396339b7034145db7d901f5706ea5811";
 const PBR_DEPTH_STATE = deepFreeze({
   ...PBR_COLOR_STATE,
   colorTarget: null,

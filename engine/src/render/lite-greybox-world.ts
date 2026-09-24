@@ -33,6 +33,7 @@ import {
 } from "@babylonjs/lite";
 import type { FlythroughScenarioSample } from "../flythrough/flythrough-contract";
 import { flythroughCameraPose } from "../flythrough/flythrough-contract";
+import { streamingTextureLevelBytes } from "../streaming/streaming-dependency-contract";
 import type {
   RenderStreamingDependency,
   StreamingResourceCacheTelemetry,
@@ -848,9 +849,16 @@ export function uploadStreamingGreyboxCell(
         throw new Error(`Streaming dependency ${dependency.resourceId} cache miss lacks payload`);
       }
       if (dependency.format === "ktx2") {
-        const rgba = new Uint8Array(dependency.rgba);
-        if (rgba.byteLength !== dependency.width * dependency.height * 4) {
+        const gpuFormat = dependency.descriptor.decode.format;
+        const data = new Uint8Array(dependency.data);
+        if (
+          data.byteLength !==
+          streamingTextureLevelBytes(gpuFormat, dependency.width, dependency.height)
+        ) {
           throw new Error(`Streaming KTX2 dependency ${dependency.resourceId} is invalid`);
+        }
+        if (dependency.mipmaps === undefined && gpuFormat !== "rgba8") {
+          throw new Error(`Streaming KTX2 dependency ${dependency.resourceId} lacks its mip chain`);
         }
         const uploaded =
           dependency.mipmaps === undefined
@@ -858,16 +866,17 @@ export function uploadStreamingGreyboxCell(
             : uploadStreamedPbrTexture(
                 renderer.engine,
                 dependency.mipmaps,
+                gpuFormat,
                 dependency.descriptor.decode.colorSpace === "srgb",
               );
         const texture =
           uploaded?.texture ??
-          createTexture2DFromPixels(renderer.engine, rgba, dependency.width, dependency.height, {
+          createTexture2DFromPixels(renderer.engine, data, dependency.width, dependency.height, {
             magFilter: "linear",
             minFilter: "linear",
             srgb: dependency.descriptor.decode.colorSpace === "srgb",
           });
-        const textureGpuBytes = uploaded?.gpuBytes ?? rgba.byteLength;
+        const textureGpuBytes = uploaded?.gpuBytes ?? data.byteLength;
         let cacheOwnsTexture = false;
         try {
           renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, textureGpuBytes);
@@ -889,10 +898,10 @@ export function uploadStreamingGreyboxCell(
         dependencyUploadCount += 1;
       } else if (dependency.kind === "vertex-attributes") {
         const attributes = new Float32Array(dependency.attributes);
-        if (
-          attributes.length !== dependency.vertexCount * 8 ||
-          attributes.some((value) => !Number.isFinite(value))
-        ) {
+        let finite = attributes.length === dependency.vertexCount * 8;
+        for (let index = 0; finite && index < attributes.length; index += 1)
+          finite = Number.isFinite(attributes[index]);
+        if (!finite) {
           throw new Error(
             `Streaming meshopt vertex dependency ${dependency.resourceId} is invalid`,
           );
@@ -925,20 +934,29 @@ export function uploadStreamingGreyboxCell(
           throw new Error(`Streaming meshopt vertex ${vertexResourceId} is unavailable`);
         }
         const interleaved = new Float32Array(vertexValue.attributes);
-        const positions = new Float32Array(vertexValue.vertexCount * 3);
-        const normals = new Float32Array(vertexValue.vertexCount * 3);
-        const uvs = new Float32Array(vertexValue.vertexCount * 2);
-        for (let vertex = 0; vertex < vertexValue.vertexCount; vertex += 1) {
-          positions.set(interleaved.subarray(vertex * 8, vertex * 8 + 3), vertex * 3);
-          normals.set(interleaved.subarray(vertex * 8 + 3, vertex * 8 + 6), vertex * 3);
-          uvs.set(interleaved.subarray(vertex * 8 + 6, vertex * 8 + 8), vertex * 2);
+        const vertexCount = vertexValue.vertexCount;
+        const positions = new Float32Array(vertexCount * 3);
+        const normals = new Float32Array(vertexCount * 3);
+        const uvs = new Float32Array(vertexCount * 2);
+        // Plain indexed copies: this runs inside the render batch, where per-vertex typed-array
+        // views cost tens of milliseconds on 400k-vertex LODs.
+        for (let vertex = 0; vertex < vertexCount; vertex += 1) {
+          const source = vertex * 8;
+          const vec3 = vertex * 3;
+          positions[vec3] = interleaved[source] ?? 0;
+          positions[vec3 + 1] = interleaved[source + 1] ?? 0;
+          positions[vec3 + 2] = interleaved[source + 2] ?? 0;
+          normals[vec3] = interleaved[source + 3] ?? 0;
+          normals[vec3 + 1] = interleaved[source + 4] ?? 0;
+          normals[vec3 + 2] = interleaved[source + 5] ?? 0;
+          uvs[vertex * 2] = interleaved[source + 6] ?? 0;
+          uvs[vertex * 2 + 1] = interleaved[source + 7] ?? 0;
         }
         const indices = new Uint32Array(dependency.indices);
-        if (
-          indices.length !== dependency.indexCount ||
-          indices.length % 3 !== 0 ||
-          indices.some((value) => value >= vertexValue.vertexCount)
-        ) {
+        let indicesValid = indices.length === dependency.indexCount && indices.length % 3 === 0;
+        for (let index = 0; indicesValid && index < indices.length; index += 1)
+          indicesValid = (indices[index] ?? vertexCount) < vertexCount;
+        if (!indicesValid) {
           throw new Error(`Streaming meshopt index dependency ${dependency.resourceId} is invalid`);
         }
         const definition = requireMaterial(
@@ -1526,7 +1544,7 @@ function pbrAssetSnapshot(renderer: LiteGreyboxWorld) {
         asset.sourceMatrices.byteLength +
         asset.lodMatrices.reduce((sum, matrices) => sum + matrices.byteLength, 0);
       for (const [lod, mesh] of asset.meshes.entries()) {
-        // Exact Lite 1.12 owns/allocates these buffers lazily and destroys them
+        // Exact Lite (1.12–1.31) owns/allocates these buffers lazily and destroys them
         // with the mesh. Observe actual allocated sizes rather than capacity.
         const buffer = mesh.thinInstances
           ? (Reflect.get(mesh.thinInstances, "_gpuBuffer") as GPUBuffer | null)

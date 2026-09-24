@@ -75,6 +75,11 @@ export function createM3GameplayRuntime(
     Number.NaN,
   ];
   let lastStreamingObserverAt = 0;
+  // A scenario (flythrough, benchmark) owns camera and streaming observers while it runs. When it
+  // releases them, gameplay must re-present and re-target streaming at once, even if the player
+  // has not moved; otherwise cells stay around the scenario's last observer.
+  let scenarioWasOwned = false;
+  let observerRetargetPending = false;
   let transitionSwapRunning = false;
   const interactionListeners = new Set<(interaction: M3GameplayInteraction) => void>();
   const publishInteraction = (interaction: M3GameplayInteraction): void => {
@@ -237,7 +242,15 @@ export function createM3GameplayRuntime(
         latestCameraPitchRadians,
         !scenarioOwned && interactiveEnabled && renderService.snapshot().state === "ready",
       );
-      if (scenarioOwned) return;
+      if (scenarioOwned) {
+        scenarioWasOwned = true;
+        return;
+      }
+      const released = scenarioWasOwned;
+      if (released) {
+        scenarioWasOwned = false;
+        observerRetargetPending = true;
+      }
       const player = presentation?.entities.find((entity) => entity.id === PLAYER_ENTITY_ID);
       if (presentation === null || player === undefined) return;
       const crowdEntities = presentation.entities.filter(
@@ -246,37 +259,41 @@ export function createM3GameplayRuntime(
       // Deduplicate on the interpolated pose, not the snapshot tick: interpolation
       // moves the presented transform between snapshot arrivals, so a tick gate
       // would freeze player/camera motion at the snapshot cadence.
-      if (
+      const unchanged =
         latestCameraPitchRadians === lastPresentedPitch &&
         player.yawRadians === lastPresentedYaw &&
         player.position[0] === lastPresentedPosition[0] &&
         player.position[1] === lastPresentedPosition[1] &&
         player.position[2] === lastPresentedPosition[2] &&
-        samePresentedEntities(crowdEntities, lastPresentedCrowd)
-      ) {
+        samePresentedEntities(crowdEntities, lastPresentedCrowd);
+      if (released || !unchanged) {
+        renderService.setGameplayPresentation({
+          cameraPitchRadians: latestCameraPitchRadians,
+          crowdEntities,
+          playerPosition: player.position,
+          playerYawRadians: player.yawRadians,
+          sequence: presentationSequence++,
+        });
+        lastPresentedPitch = latestCameraPitchRadians;
+        lastPresentedYaw = player.yawRadians;
+        lastPresentedPosition = player.position;
+        lastPresentedCrowd = crowdEntities;
+      } else if (!observerRetargetPending) {
         return;
       }
-      renderService.setGameplayPresentation({
-        cameraPitchRadians: latestCameraPitchRadians,
-        crowdEntities,
-        playerPosition: player.position,
-        playerYawRadians: player.yawRadians,
-        sequence: presentationSequence++,
-      });
-      lastPresentedPitch = latestCameraPitchRadians;
-      lastPresentedYaw = player.yawRadians;
-      lastPresentedPosition = player.position;
-      lastPresentedCrowd = crowdEntities;
       const streaming = streamingService.snapshot();
       if (
         interactiveEnabled &&
-        timestamp - lastStreamingObserverAt >= 100 &&
+        (observerRetargetPending || timestamp - lastStreamingObserverAt >= 100) &&
         streaming.state === "streaming" &&
         streaming.districtId === world.id
       ) {
         streamingService.setObservers([player.position]);
         lastStreamingObserverAt = timestamp;
+        observerRetargetPending = false;
       }
+      // Automation without interactive gameplay drives streaming observers itself.
+      if (!interactiveEnabled) observerRetargetPending = false;
     },
   });
 }

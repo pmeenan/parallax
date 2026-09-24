@@ -110,7 +110,7 @@ try {
   const renderer = JSON.parse(packageBytes.toString("utf8")) as { version: string };
   assert.equal(
     renderer.version,
-    "1.12.0",
+    "1.31.1",
     "Requalify animation import when the renderer pin changes",
   );
   const source = await readSourceIdentity(repositoryRoot);

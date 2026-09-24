@@ -373,6 +373,11 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
+**Next up (2026-09-24):** engine package 2, render-path geometry for the paving. The ordered
+list of front-loaded [engine packages](#engine-packages) gives its starting numbers and target.
+Packages 3–5 follow it: texture compression A/B, then lighting balance with AO, then
+small-scale shadows. The flythrough harness repair is a separate task.
+
 **Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
 positional playback and clip memory, shared gameplay-camera listener geometry,
 semantic-event routing, and cleanup on district/authority/presentation changes. Use
@@ -461,7 +466,7 @@ budgets. Rights, QA and admission remain open. Review found up to 4.083 mm open
 position seams in candidate1's clamped displacement. The corrected builder wraps
 the height map; preserve the approved snapshot as evidence and qualify rebuilt
 boundary positions, boundary normals and grazing-light joins before delivery.
-**Active (2026-09-24):** the [delivery package brief](../assets/source/d1-paving/proof-2026-09-24/delivery-brief.md)
+**Closed brief (2026-09-24):** the [delivery package brief](../assets/source/d1-paving/proof-2026-09-24/delivery-brief.md)
 tests a periodic 4 m module in candidate1's views and in pinned-Chrome Babylon Lite:
 - border-locked decimated LODs with flat normals and a full-height normal map
 - 4096² repeat-addressed maps
@@ -511,9 +516,176 @@ Four stale parts had to be fixed first:
 - the harness's expected D1 sample, which predated D2 and D1's asset dependencies
 - its liveness validator, which required integer milliseconds from the monotonic clock
 
-Next engine packages: GPU-compressed textures (BC7 from UASTC, a BC5 normal and chunked
-uploads, for the load and stall), then lighting balance with ambient occlusion, then
-small-scale shadows.
+Next engine packages: GPU-compressed textures, then lighting balance with ambient occlusion,
+then small-scale shadows.
+
+**Closed brief (2026-09-24):** the [GPU-compressed texture brief](../assets/source/d1-paving/proof-2026-09-24/texture-brief.md).
+- UASTC transcodes to BC7 in the decode worker, and descriptors declare their GPU format.
+- `texture-compression-bc` becomes required.
+- The UASTC maps are re-encoded above libktx's default `LEVEL_FASTEST`.
+- The ground normal's 1 byte per texel form is chosen by measured error and a Chrome A/B.
+
+BC5 normals are out: Lite 1.12's PBR shader reads the normal's `.rgb` and has no hook to
+rebuild Z. Allowance: two cycles within 4 active hours.
+
+**Texture outcome (2026-09-24):** [BC7 adopted](../assets/source/d1-paving/proof-2026-09-24/texture-results.md) (D-199).
+- **Asset.** Candidate 5 re-encodes every paving map, the ground normal included, as UASTC
+  `LEVEL_SLOWER`. The Web-libktx binding had silently kept candidates 1–4 at
+  `LEVEL_FASTEST`. An in-game A/B found the BC7 normal indistinguishable from the lossless one.
+- **Cost.** The paving cell loads in 230 ms (was 367), with 80 MB of GPU memory (was 237) and
+  65 MB read (was 132). Captures match the RGBA8 build to within 0.4/255 mean.
+- **Verification.** The installed scale-streaming run passed, with a traversal p95 of 2.2 ms.
+  The replay was rebound and passes, and so does `pnpm check`.
+- **Remaining stall.** The render-worker stall is 90 ms against the 50 ms hitch budget. It is
+  now mesh construction on the render thread, which fell from 110 to 85 ms once per-vertex
+  views were removed.
+
+Human visual acceptance of candidate 5 is pending.
+
+<a id="engine-packages"></a>The human directed (2026-09-24) that engine and optimization work be front-loaded while assets
+are built, not deferred once assets are workable. The aim is the most compression and the
+least render-path work at materially similar quality, not merely workable assets: move work off
+the render thread, and make the work that stays there fast. A slight, disclosed quality loss is
+accepted for a significant performance or memory gain (D-200). Engine packages, in order; each
+starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-research-work)):
+1. **Renderer-family upgrade — done 2026-09-24.** Lite 1.12.0 → 1.31.1 and decoder
+   9.17.0 → 9.27.1 (outcome below). The decoder 9.28.0 is a minor release, eligible from
+   2026-09-25T07:43Z. Take it as a short targeted review at the start of package 3, which
+   exercises the decoder.
+2. **Render-path geometry — next.** Starting point on 1.31.1 (installed paving capture,
+   `lite1311`): the paving cell loads in 218 ms against the 250 ms cell-load p95 budget. Of that,
+   96 ms is dependency decode, 21 ms is the read, and the render-thread batch upload stalls the
+   render worker for 86 ms against the 50 ms hitch budget. That stall is mostly mesh
+   construction.
+   - Move vertex preparation, validation and bounds into the decode worker.
+   - Make the render thread's remaining work fast, not just smaller. Candidates include Lite
+     1.29's partial geometry uploads and 1.31's storage-backed geometry and GPU-buffer wrapping.
+   - Simplify the pebble geometry itself, and instance it. Each 4 m module carries 3,927
+     unique merged pebble shells: 251,328 LOD0 triangles at 64 each, 77% of the geometry bytes,
+     and about 20 ms of render-thread construction on their own
+     ([delivery results](../assets/source/d1-paving/proof-2026-09-24/delivery-results.md)).
+     Options to A/B:
+     - fewer triangles per pebble, with normals carrying the rounding
+     - a higher size cut-off for 3D pebbles (9 mm today), leaving more to the maps, which
+       already draw all 29,204
+     - a small library of pebble shapes, instanced with per-instance transform, scale and
+       colour (about 0.1 MB instead of about 9.7 MB)
+     - dropping pebbles hidden in joints or under plants
+     - tighter pebble LOD distances (6/12 m today)
+
+     Judge each option under D-200 in the 22 cm joint and close views, where screens already
+     flag faceted angular pebbles and lost grain, and at walking distance. Weigh the look
+     against bytes, triangles and render-thread time.
+   - Spread uploads across frames if the stall still exceeds 50 ms.
+   - Target: the paving cell's render-worker stall within the 50 ms hitch budget, with the
+     cell-load p95 no worse and materially similar quality (D-200). Captures stay the regression
+     check: an unexplained pixel change from an engine-only change is investigated. Pebble
+     changes alter the asset, so they ship as a new paving candidate through the QA gate and
+     human visual acceptance.
+3. **Texture compression A/B set** (highest compression at acceptable quality, lossy included).
+   Today every paving map is BC7 from UASTC `LEVEL_SLOWER`: 65 MB read and 80 MB GPU (D-199).
+   - BC1 base colour.
+   - BC4 ORM channels and BC5 normals, rebuilding Z in the shader. First try Lite 1.31's public
+     `MaterialPlugin` (WGSL injection, extra samplers). Use a local test patch of Lite's shader
+     only if the plugin cannot reach the sampling.
+   - 2048² maps.
+   - A UASTC RDO download compressed with HTTP zstd.
+   - Each option is judged under D-200: an in-game A/B against the current build for
+     materially similar quality, weighed against its measured download, GPU memory and
+     cell-load gain.
+   - Outside the A/B set: loading the top mip levels only for near cells. This is an
+     architecture change, not an asset setting. Scope it separately once many resident cells
+     make texture memory the bottleneck.
+4. **Lighting balance with ambient occlusion.**
+5. **Small-scale shadows.** Candidates include Lite 1.18's screen-space lighting.
+
+Candidate 5's human visual acceptance (above) remains open. It gates the asset, not these
+engine packages.
+
+**Renderer-family upgrade brief (2026-09-24, closed).**
+- **Why.** The pins are 19 Lite releases and 11 decoder releases behind (ledger recheck was due
+  2026-09-19). The skipped range adds partial geometry uploads (1.29), storage-backed geometry
+  and GPU buffer wrapping (1.31), screen-space lighting and CSM caching (1.18), and async
+  pipeline compilation (1.22). All of these bear on the packages above.
+- **Question.** Does the ordinary game run unchanged or better on the new pins? What moves in
+  frame time, streaming and recovery?
+- **Scope.** Audit our 58 Lite exports and the private internals: `_device`, CSM shadow task
+  state, the PSO-warmup observer and thin-instance buffers. Adapt to breaking changes. Re-verify
+  D-104's device-loss seam and D-183's CSM and warmup bindings.
+- **Old-pin baselines**, then the same scenarios on the new pins:
+  - render recovery
+  - the D1 flythrough
+  - the courtyard capture
+  - the installed scale-streaming run
+
+  Then `pnpm check` and engine repeatability.
+- **Must fix.** Any rendering, recovery or streaming regression, and any GPU validation error.
+- **Allowance.** Two implementation, capture and evaluation cycles within one work session.
+- **Ending decision.** Adopt with measured before/after evidence, or defer with the named
+  blocking change.
+- **Out of scope.** Adopting new Lite features; that belongs to the packages above.
+
+**Upgrade outcome (2026-09-24): adopted Lite 1.31.0 and decoder 9.27.1, then Lite 1.31.1.**
+1.31.1 is a patch, which the tiered release-age policy allows at any age. It was taken as its own
+review: two PBR WGSL pins moved for a `let`→`var` change, scene pixels are identical, and every
+gate passed. The decoder 9.28.0 is a minor release, eligible from 2026-09-25. Details are in the
+[dependency ledger](dependencies.md#review-ledger).
+- **Adaptations.**
+  - The PSO-warmup observer checks the 1.20/1.22 opt-in material fields.
+  - Seven composed-WGSL pins were recaptured from pinned Chrome; the pipeline structure is
+    unchanged.
+  - `@types/webxr` was added for Lite's typings.
+  - The engine-owned RGBA8 KTX2 reader was retired in favour of the decoder's own path. Its
+    header and mip byte-range checks still run before decoding.
+- **Evidence.** Courtyard renders are pixel-identical. The paving load is 218 ms (was 231) and
+  GPU time is unchanged. CPU submit rose about 0.1 ms per frame, a Lite-side regression to
+  watch. The installed scale-streaming run, installer replay, animation import and `pnpm check`
+  all pass.
+- **Found while baselining.**
+  - Both remaining renderer harnesses were already failing on the old pin.
+    - **Render recovery: repaired as `render-recovery@2`** (report schema 34, metric set 6).
+      The harness now resets the recovery-invalidated flythrough and previews the exact
+      pre-fault observer through a fixed view. It checks the render worker's readback (streamed
+      meshes, none preview-drawn) and a later compositor screenshot of the same fixed view, and requires
+      unchanged residency. Its validators accept the current Chrome-pin and streaming telemetry
+      fields. The engine gains a public `resetFlythrough()` diagnostic.
+
+      **Passed on dev-01's physical console** (build `4ea1b8c6`, Lite 1.31.1): the environment,
+      evidence and bounded-recovery facets all passed, and so did the report contract. Each
+      recovered view drew 24 streamed meshes, with 86.4% readback coverage and 91.6% compositor
+      coverage. First recoveries took 2.9 s
+      (device loss), 6.2 s (worker crash, including the 3 s heartbeat) and 2.8 s.
+
+      Two defects surfaced once the environment facet passed and validation reached the
+      streaming samples:
+      - The result validator predated per-cell shared-dependency timing. It now accepts the
+        seven `dependency*` fields as a complete group, each finite and non-negative.
+      - An engine telemetry bug. When render recovery was exhausted, the streaming service
+        terminated the streaming worker but republished that worker's last snapshot, so the
+        failed state still reported 285 open OPFS access handles. Terminating the worker
+        releases them: every recovery terminates generation 1, and generation 2 reacquires all
+        285. Both service-side failure paths now report zero handles.
+
+      An independent review then tightened the recovered-view check: it now rebuilds the
+      camera position, target and environment from the pre-fault observer, and requires
+      consistent pixel counts. The same review fixed the texture cache key (it omitted the GPU
+      format), restored the raw-KTX2 header and mip-range checks, and admitted lossless zstd
+      RGBA8 maps in packaging. On the resulting build `d98b6c89`, physical `render-recovery@2`
+      passed again (first recoveries 2.9 / 6.1 / 2.9 s), and so did installed scale-streaming
+      (cell-load p95 2.1 ms) and the installer-repair replay.
+
+      The earlier remote-session run (build `2f504301`) failed the environment facet as
+      expected.
+    - Flythrough: failing since 2026-09-05, filed as a separate task.
+  - A real gameplay bug is fixed. When a flythrough or benchmark released the camera and the
+    player stood still, streaming kept loading around the scenario's last position. Gameplay now
+    re-presents and re-targets observers on release.
+- **New capabilities** for the next packages:
+  - partial geometry uploads (1.29) and storage-backed geometry (1.31) for the render-path
+    geometry package
+  - public material plugins with WGSL injection and extra samplers (1.31), a likely patch-free
+    route to BC5 normals and BC4 roughness
+  - screen-space lighting (1.18) for small-scale shadows
 
 *Superseded baseline history:* `production/candidate3` had been approved after
 `cobble-study/candidate1`. Its [shared-resource and LOD delivery proof](../assets/source/d1-paving/proof-2026-09-22/delivery-brief.md):
