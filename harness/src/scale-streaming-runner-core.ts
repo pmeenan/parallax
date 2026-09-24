@@ -400,10 +400,17 @@ export async function materializeScaleStreamingTarget(input: {
     if (districtIndexResource === undefined) {
       throw new Error("Materialized scale-streaming district index resource is absent");
     }
+    // What the installed D1 runtime binds: the composed index, its own cells and every
+    // dependency it lists (production assets plus the generated graphs).
+    const composedIndex = parseStreamingDistrictIndex(
+      JSON.parse(documents.districtIndexBytes.toString("utf8")) as unknown,
+      "district-1-surface",
+    );
+    const composedCellPaths = new Set(composedIndex.cells.map(({ path }) => path));
     const representativeResourceIds = new Set([
       districtIndexResource.id,
-      ...cells.map(({ id }) => id),
-      ...corpus.graphs.flatMap(({ resources }) => resources.map(({ resourceId }) => resourceId)),
+      ...cells.filter(({ source }) => composedCellPaths.has(source)).map(({ id }) => id),
+      ...(composedIndex.resources ?? []).map(({ resourceId }) => resourceId),
     ]);
     const consumerPopulation = deriveScaleStreamingConsumerPopulation(
       validated.installManifest.resources,

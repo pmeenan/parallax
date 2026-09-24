@@ -10,8 +10,7 @@ on 2026-09-24. D-197 suspends the old size caps.
 candidate 4 (candidate 2 plus a pebble LOD2 and a plain RGBA8 normal) passes class QA and the
 production decode receipt, and is admitted as `d1-photoreal-paving` in
 `assets/library/d1-paving.json`. It paves the D1 courtyard as 4 × 4 tiles in the installed
-game. Human acceptance of the installed views and human confirmation of the rights review
-remain open.
+game. The human approved the installed views and the rights review on 2026-09-24.
 
 **Latest human approval (2026-09-22):** the procedural, periodic
 [photoreal rebuild](proof-2026-09-22/photoreal-results.md) `photoreal/candidate1` is the

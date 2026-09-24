@@ -834,11 +834,12 @@ function validateLiveness(
     evidence.installLiveness.absoluteTimeoutMs !== PROGRESS_LIVENESS_ABSOLUTE_TIMEOUT_MS ||
     evidence.installLiveness.pollIntervalMs !== PROGRESS_LIVENESS_POLL_INTERVAL_MS ||
     evidence.installLiveness.stallTimeoutMs !== PROGRESS_LIVENESS_STALL_TIMEOUT_MS ||
-    !nonNegativeInteger(evidence.installLiveness.startedAtMs) ||
-    !nonNegativeInteger(evidence.installLiveness.lastProgressAtMs) ||
+    // Liveness times come from the monotonic performance.now() clock: fractional milliseconds.
+    !nonNegativeMs(evidence.installLiveness.startedAtMs) ||
+    !nonNegativeMs(evidence.installLiveness.lastProgressAtMs) ||
     evidence.installLiveness.lastProgressAtMs < evidence.installLiveness.startedAtMs ||
-    !nonNegativeInteger(evidence.installLiveness.lastProgressGapMs) ||
-    !nonNegativeInteger(evidence.installLiveness.maxProgressGapMs) ||
+    !nonNegativeMs(evidence.installLiveness.lastProgressGapMs) ||
+    !nonNegativeMs(evidence.installLiveness.maxProgressGapMs) ||
     evidence.installLiveness.maxProgressGapMs < evidence.installLiveness.lastProgressGapMs ||
     tuple.finalVerificationPhase !== "complete" ||
     tuple.checkpointedBytes !== target.population.installBytes ||
@@ -1078,6 +1079,10 @@ function positiveInteger(value: unknown): value is number {
 
 function nonNegativeInteger(value: unknown): value is number {
   return Number.isSafeInteger(value) && Number(value) >= 0;
+}
+
+function nonNegativeMs(value: unknown): value is number {
+  return finiteRange(value, 0, Number.MAX_SAFE_INTEGER);
 }
 
 function finiteRange(value: unknown, minimum: number, maximum: number): value is number {

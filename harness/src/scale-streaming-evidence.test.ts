@@ -326,7 +326,39 @@ describe("scale-streaming exact evidence contract", () => {
     }
     const exactCache = exactEvidence.traversal.decodeCache;
     expect(validateScaleStreamingTerminalReport(report, authority)).toBe(report);
+    const monotonic = {
+      ...report,
+      evidence: {
+        ...exactEvidence,
+        installLiveness: {
+          ...exactEvidence.installLiveness,
+          lastProgressAtMs: 144_552.9597,
+          lastProgressGapMs: 4_037.9808,
+          maxProgressGapMs: 29_224.2549,
+          startedAtMs: 14_366.007,
+        },
+      },
+    };
+    expect(validateScaleStreamingTerminalReport(monotonic, authority)).toBe(monotonic);
     for (const mutate of [
+      () => ({
+        ...report,
+        evidence: {
+          ...exactEvidence,
+          installLiveness: { ...exactEvidence.installLiveness, startedAtMs: -0.5 },
+        },
+      }),
+      () => ({
+        ...report,
+        evidence: {
+          ...exactEvidence,
+          installLiveness: {
+            ...exactEvidence.installLiveness,
+            lastProgressAtMs: 0.5,
+            startedAtMs: 1.5,
+          },
+        },
+      }),
       () => ({ ...report, build: { ...exactBuild, artifactDigest: "f".repeat(64) } }),
       () => ({
         ...report,

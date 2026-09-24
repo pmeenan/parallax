@@ -617,9 +617,16 @@ export function createScaleStreamingTargetDocuments(
     gameContentEntrypoints: Object.freeze(gameContentEntrypoints),
   });
   const buildManifestBytes = Buffer.from(`${JSON.stringify(buildManifest)}\n`);
+  // The installed D1 runtime binds exactly this index, its own cells and every dependency the
+  // index lists (production assets and the generated graphs); other districts' cells are not
+  // part of the sample.
+  const sampleCellPaths = new Set(productionIndex.cells.map(({ path }) => path));
   const cellResources = parsed.manifest.resources.filter(
-    (resource) => resource.kind === "world-cell",
+    (resource) => resource.kind === "world-cell" && sampleCellPaths.has(resource.source),
   );
+  if (cellResources.length !== productionIndex.cells.length) {
+    throw new Error("Composed D1 cells are not bound exactly by the install manifest");
+  }
   const dependencyBytes = dependencyInstallResources.reduce(
     (sum, resource) => sum + resource.bytes,
     0,
@@ -636,10 +643,10 @@ export function createScaleStreamingTargetDocuments(
     installManifest: parsed.manifest,
     installManifestBytes,
     materializedSampleBytes:
-      dependencyBytes +
+      resources.reduce((sum, item) => sum + item.bytes, 0) +
       districtIndexBytes.byteLength +
       cellResources.reduce((sum, item) => sum + item.bytes, 0),
-    materializedSampleResourceCount: dependencyInstallResources.length + cellResources.length + 1,
+    materializedSampleResourceCount: resources.length + cellResources.length + 1,
     releaseDigest,
   });
 }

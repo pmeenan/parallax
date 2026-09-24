@@ -1346,6 +1346,13 @@ function startStreamingWorker(): void {
             return bytes;
           });
           preparedInstalledDistricts.set(districtId, installed);
+          // Resolution references the district's installed resources; publish the binding's
+          // cumulative counts now rather than the empty snapshot taken at bind time.
+          const resolvedTelemetry = binding.snapshot();
+          publish({
+            installedResourceBytes: resolvedTelemetry.referencedBytes,
+            installedResourceCount: resolvedTelemetry.referencedResourceCount,
+          });
         }
         resolved?.();
         for (const cell of installed.cells) installedCellPaths.set(cell.entry.sha256, cell.path);

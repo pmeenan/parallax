@@ -686,6 +686,29 @@ describe("installed streaming release", () => {
     expect(source.slice(legacyStart)).toContain("fetchLegacy(");
   });
 
+  it("publishes installed reference counts after each district resolves", async () => {
+    const source = await readFile(
+      new URL("../src/workers/streaming-worker.ts", import.meta.url),
+      "utf8",
+    );
+    const installedStart = source.indexOf(
+      'if (request.contentSource.kind === "installed-release")',
+    );
+    const prepareStart = source.indexOf("prepareDistrict = async", installedStart);
+    const resolveAt = source.indexOf("resolveInstalledStreamingRelease(", prepareStart);
+    const publishAt = source.indexOf(
+      "installedResourceCount: resolvedTelemetry.referencedResourceCount",
+      resolveAt,
+    );
+    const prepareEnd = source.indexOf("return installed.index;", prepareStart);
+
+    // Binding-time counts are always zero; resolution is lazy since the district swap.
+    expect(prepareStart).toBeGreaterThan(installedStart);
+    expect(resolveAt).toBeGreaterThan(prepareStart);
+    expect(publishAt).toBeGreaterThan(resolveAt);
+    expect(publishAt).toBeLessThan(prepareEnd);
+  });
+
   it("rejects hostile material objects, bounds, and derived cell extents", () => {
     const valid = productionCompressedDistrictIndexDocument();
     for (const materials of [

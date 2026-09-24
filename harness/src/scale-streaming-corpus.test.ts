@@ -96,7 +96,8 @@ describe("representative scale-streaming corpus", () => {
       // Periodic paving inventory: models + two district indices + asset packs + cells.
       expect(materialized.population.installBytes).toBe(2755619864);
       expect(materialized.population.installResourceCount).toBe(375);
-      expect(materialized.population.representativeResourceCount).toBe(339);
+      // The installed D1 binding: index + 256 D1 cells + 29 production and 18 generated deps.
+      expect(materialized.population.representativeResourceCount).toBe(304);
       const heroIndex = corpus.graphs
         .find(({ id }) => id === "hero")
         ?.resources.find(({ role }) => role === "indices");
@@ -134,12 +135,13 @@ describe("representative scale-streaming corpus", () => {
         );
         expect(composedCell?.dependencies).toHaveLength((cell.dependencies?.length ?? 0) + 1);
       }
+      const composedCellPaths = new Set(composedIndex.cells.map(({ path }) => path));
       const representativeResourceIds = new Set([
         districtIndexResource.id,
         ...validatedMaterialized.installManifest.resources
-          .filter(({ kind }) => kind === "world-cell")
+          .filter(({ kind, source }) => kind === "world-cell" && composedCellPaths.has(source))
           .map(({ id }) => id),
-        ...corpus.graphs.flatMap(({ resources }) => resources.map(({ resourceId }) => resourceId)),
+        ...(composedIndex.resources ?? []).map(({ resourceId }) => resourceId),
       ]);
       const consumers = deriveScaleStreamingConsumerPopulation(
         validatedMaterialized.installManifest.resources,
@@ -425,18 +427,18 @@ describe("representative scale-streaming corpus", () => {
     expect(first).toMatchObject({
       dependencyCount: 18,
       graphCount: 6,
-      materializedSampleResourceCount: 25,
+      materializedSampleResourceCount: 26,
     });
+    const composedIndex = parseStreamingDistrictIndex(
+      JSON.parse(first.districtIndexBytes.toString("utf8")),
+      "district-1-surface",
+    );
     expect(first.materializedSampleBytes).toBe(
-      first.dependencyBytes +
+      (composedIndex.resources ?? []).reduce((sum, resource) => sum + resource.bytes, 0) +
         first.districtIndexBytes.byteLength +
         fixture.manifest.resources
           .filter(({ kind }) => kind === "world-cell")
           .reduce((sum, resource) => sum + resource.bytes, 0),
-    );
-    const composedIndex = parseStreamingDistrictIndex(
-      JSON.parse(first.districtIndexBytes.toString("utf8")),
-      "district-1-surface",
     );
     expect(composedIndex.schemaVersion).toBe(2);
     expect(composedIndex.resources).toHaveLength(19);

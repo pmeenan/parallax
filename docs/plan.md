@@ -495,16 +495,21 @@ Streams. The human accepted the delivered look on 2026-09-24.
   and its QA are removed.
 - **Engine changes.** zstd and uncompressed RGBA8 KTX2 decode in the decode worker, a
   periodic-surface-module packaging mode, and D-197 telemetry rails in place of the caps.
-- **Verification.** The installer-repair replay was rebound and passes; `pnpm check` passes.
+- **Verification.** The installer-repair replay was rebound and passes, and the installed
+  scale-streaming run passes, and so does `pnpm check`.
 - **Cost.** At 4K near the paving, GPU time is 4.9–5.6 ms p50. The cell's GPU residency is
   237 MB.
 - **Attributed budget bust.** The paving cell loads in 367 ms against the 250 ms p95 budget,
   and its RGBA8 upload stalls the render worker for 146 ms against the 50 ms hitch budget.
 
-Open items:
-- human acceptance of the installed views
-- human confirmation of the agent-recorded rights review
-- a runtime capture from an installer-provisioned profile, which needs the physical console
+The human reviewed and approved the installed views and the rights review on 2026-09-24.
+`pnpm harness:scale-streaming` then passed in an installer-provisioned profile, with a
+traversal cell-load p95 of 1.8 ms and paving hydration matching the runtime route.
+Four stale parts had to be fixed first:
+- dev-01's OS pin, refreshed by D-198
+- the streaming worker's installed-resource telemetry, stuck at 0 since the M4 district swap
+- the harness's expected D1 sample, which predated D2 and D1's asset dependencies
+- its liveness validator, which required integer milliseconds from the monotonic clock
 
 Next engine packages: GPU-compressed textures (BC7 from UASTC, a BC5 normal and chunked
 uploads, for the load and stall), then lighting balance with ambient occlusion, then

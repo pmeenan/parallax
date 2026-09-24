@@ -28,6 +28,32 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-198: Refresh dev-01's registered Windows servicing baseline to 26200.9457 (2026-09-24, accepted; human decision)
+
+**Decision:** Update the registered dev-01 OS build from Windows `26200.9168` to
+`26200.9457`, exactly as D-169 did for the previous servicing update. Nothing else changes:
+the machine, physical-console requirement, Showcase tier, CPU/RAM, RTX 4080 Super, D3D12,
+driver `32.0.16.1074`, display envelope, power scheme, pinned Chrome and all budgets stay as
+registered.
+
+**Context:** The first installed scale-streaming run for the photoreal paving install
+package stopped in validation after 11 s, before materialization. The host reported
+`26200.9457`. Windows, run at the physical console, still reported the registered GPU and
+driver, a 3840 × 2160 60 Hz display, the Balanced power scheme and no remote session. The
+human was at the console, reviewed the mismatch and chose the refresh.
+
+**Consequences:** New dev-01 reference evidence must bind `26200.9457` exactly. Evidence
+bound to `26200.9168` is historical and cannot be relabeled; the M4.5-exit `smoke@1`
+(D-181) runs on the new baseline. The PSO-qualification test fixture moves with the pin.
+
+**Reopen if:** another servicing update, driver change or hardware change alters the
+observed identity.
+
+**Closure evidence:** `scale-streaming-v1-2026-09-24T16-46-51-030Z` passed at the physical
+console on the refreshed baseline, with the registered environment measured and sandboxed.
+
+---
+
 ## D-197: Suspend self-imposed asset and streaming size caps while M4.5 measures real costs (2026-09-24, accepted; human direction)
 
 **Decision:** for representative M4.5 content, suspend the size and count caps set for the

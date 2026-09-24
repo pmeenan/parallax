@@ -188,7 +188,7 @@ const machine = {
   },
   id: "dev-01",
   minimumPhysicalMemoryBytes: 128000000000,
-  osBuild: "26200.9168",
+  osBuild: "26200.9457",
   platform: "win32",
   powerSchemeGuid: "381b4222-f694-41f0-9685-ff5bb260df2e",
   schemaVersion: 1,

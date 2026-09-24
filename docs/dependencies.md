@@ -149,7 +149,7 @@ whichever comes first.
 | KTX-Software Web-libktx 4.4.2 | 4.4.2 | **Current.** The deterministic fixture generator remains the latest official release. | A release/advisory or fixture regeneration. |
 | Khronos glTF Sample Assets commit `2bac6f8c57bf471df0d2a1e8a8ec023c7801dddf` | Upstream `main` `e3cc9d8fee3ab25e21aafdcedda6558f224afbee` | **Deferred.** The fixture is deliberately exact; unrelated upstream sample changes do not justify regeneration. | A fixture regeneration need or next full checkpoint. |
 | Resolved Cargo support crates | Existing lock resolution | **Retained.** No owning Rust/wasm-bindgen input moved and the generated-Wasm repeatability gate passes. | An owning toolchain/crate advisory or Rust/WASM change. |
-| dev-01 Windows 26200.9168 / NVIDIA 32.0.16.1074 | Same observed physical state | **Current.** Both accepted transition reports match the registered machine, display, power, and GPU contract. | Before every registered physical result and on machine-state change. |
+| dev-01 Windows 26200.9457 / NVIDIA 32.0.16.1074 | Same observed physical state | **Current.** D-198 refreshed the Windows servicing build on 2026-09-24; machine, display, power, and GPU contract unchanged. | Before every registered physical result and on machine-state change. |
 
 ### Build, measurement, and supporting inputs
 

@@ -6,11 +6,13 @@ module and the installer-repair production replay installs it. The streaming wor
 from OPFS package handles, the decode pool decodes it, and the render worker draws it through
 the existing PBR placements. There were no browser errors, decode failures or pipeline failures.
 
+**Human accepted (2026-09-24):** "Everything reviewed and approved." This covers the installed
+views below, and it confirms the rights review recorded in [provenance.json](provenance.json).
+
 One budget is busted, and its cause is recorded and attributed. The paving cell loads in 367 ms
 against the 250 ms cell-load p95 budget. Its 237 MB RGBA8 upload blocks the render worker for
 146 ms, against the 50 ms hitch budget. Both costs come from uploading uncompressed RGBA8. The
-GPU-compressed texture package addresses them (below). Human visual acceptance of the installed
-views remains open; the look is unchanged from the accepted delivery.
+GPU-compressed texture package addresses them (below).
 
 ![Installed game, walking view, clear daylight](install/walking-matched.png)
 
@@ -54,7 +56,8 @@ open pad. The grazing view shows the engine gap: centimetre relief casts no shad
 
 ## Measurements
 
-Build `193f0f4d…` in pinned Chrome 152.0.7977.54 on dev-01. The capture used
+Build `193f0f4d…` in pinned Chrome 152.0.7977.54 on dev-01. It differs from the final build
+only by the telemetry fix below. The capture used
 `?parallaxAutomation=runtime`. That route provisions packages over the network into the same
 OPFS handles, then runs the same streaming worker, decode pool and render path. It is focused
 inspection, not a budget gate ([capture-summary.json](install/capture-summary.json),
@@ -97,26 +100,44 @@ CPU submit is 0.23–0.28 ms p50. The triangle counts include tiles outside the 
 instances are culled per draw group, not per tile, so per-tile culling is a cheap win if the
 GPU time matters.
 
-**Install.** The installer-repair production replay passed:
-`installer-repair-production-replay-v4-2026-09-24T16-02-00-668Z.json`, SHA-256 `be1381c9…4943`.
-It installed 357 OPFS resources totalling 2,754,019,327 bytes, then repaired an injected
-corruption, in both the same-worker and restarted modes. The replay contract is rebound to this
-build (semantic contract version 15).
+**Installed profile.** `pnpm harness:scale-streaming` passed at the physical console:
+`scale-streaming-v1-2026-09-24T16-46-51-030Z`, build `0fa0ee3b…`. The run drives the ordinary
+installer in a fresh profile, launches, and runs the standard traversal.
+- **Install.** 2,755,619,864 bytes in 375 resources, including the 2.62 GB app-owned model,
+  completed in about 130 s. The longest progress gap was 29 s.
+- **Binding.** The runtime bound 304 resources, 135,051,695 bytes: the D1 index, 256 cells,
+  and 47 dependencies (29 paving and 18 generated scale-corpus resources).
+- **Paving cell hydration** (32 dependencies): read 42.6 ms, decode 178.4 ms and upload
+  156.7 ms for 237.4 MB decoded. This matches the runtime-route capture.
+- **Traversal.** 48 cell loads with a p95 of 1.8 ms. The paving stays resident, so its cost
+  is paid once, at hydration.
 
-**Checks.** `pnpm check` passed: build, lint, and 2,689 unit tests in 219 files, with one
-skipped. The scale-streaming corpus test now expects the periodic paving inventory: 375 install
-resources, 2,755,619,864 bytes and 47 cache keys.
+Getting that run to pass exposed four stale parts. Only the first is an engine change:
+- **Installed-resource telemetry.** Since the M4 district swap, the streaming worker published
+  its installed-resource counts at bind time, when they are always 0, and never updated them.
+  It now publishes them after each district resolves.
+- **The harness's expected sample.** It predated D2 and D1's asset dependencies. It now
+  expects what the D1 runtime binds: the index, D1's own cells and every dependency the index
+  lists.
+- **The liveness validator.** It required integer milliseconds, but the liveness clock has
+  been the monotonic `performance.now()` since M2. It now accepts non-negative finite values.
+- **The OS baseline.** Windows servicing moved dev-01 to `26200.9457` (D-198).
+
+**Install replay.** The installer-repair production replay passed on the final build:
+`installer-repair-production-replay-v4-2026-09-24T16-30-26-303Z.json`, SHA-256
+`d7b2ef74…6f69`. It installed 357 OPFS resources totalling 2,754,019,327 bytes, then repaired
+an injected corruption, in both the same-worker and restarted modes. The replay contract is
+rebound to this build (semantic contract version 15).
+
+**Checks.** `pnpm check` passed on the final tree: build, lint, and 2,690 unit tests in 219
+files, with one skipped. The scale-streaming corpus test now expects the periodic paving inventory: 375
+install resources, 2,755,619,864 bytes, 47 cache keys and a 304-resource D1 sample.
 
 ## Not done
 
-- **An installer-provisioned runtime capture.** The ordinary installer → launch route is proven
-  by the replay. The courtyard frame and cell numbers above come from the runtime route.
-  `pnpm harness:scale-streaming --physical-console-confirmed` measures an installed profile end
-  to end, but it requires a person at the physical console.
-- **Human review.**
-  - Visual acceptance of the installed views.
-  - Rights: `rightsReview` in provenance.json was approved by the lead agent for this
-    procedural-original asset, and a human should confirm it.
+- **Installed-profile frame captures.** The courtyard views and frame costs come from the
+  runtime route. The installed profile's streaming costs match that route, and the render path
+  is shared.
 - **Physical `smoke@1`** stays at M4.5 exit (D-181).
 
 ## Next engine packages
