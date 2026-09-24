@@ -1,11 +1,17 @@
-# D1 paving — individual limestone source
+# D1 paving — photoreal periodic module and earlier sources
 
 **Delivery (2026-09-24):** [delivery candidate 2](proof-2026-09-24/delivery-results.md) turns the
 approved photoreal source into a periodic 4 m runtime module: fold-free decimated LODs, 4096²
 maps with a lossless normal, and drawn-in plus 3D pebbles and plants. It preserves the approved
-look through fresh import and pinned-Chrome rendering, and awaits human review. Installing it in
-the game is the next engine package ([brief](proof-2026-09-24/install-brief.md)); D-197 suspends
-the old size caps. Rights, class QA and admission remain open.
+look through fresh import and pinned-Chrome rendering, and the human accepted the delivered look
+on 2026-09-24. D-197 suspends the old size caps.
+
+**Installed (2026-09-24):** the [install result](proof-2026-09-24/install-results.md). Delivery
+candidate 4 (candidate 2 plus a pebble LOD2 and a plain RGBA8 normal) passes class QA and the
+production decode receipt, and is admitted as `d1-photoreal-paving` in
+`assets/library/d1-paving.json`. It paves the D1 courtyard as 4 × 4 tiles in the installed
+game. Human acceptance of the installed views and human confirmation of the rights review
+remain open.
 
 **Latest human approval (2026-09-22):** the procedural, periodic
 [photoreal rebuild](proof-2026-09-22/photoreal-results.md) `photoreal/candidate1` is the
@@ -229,14 +235,14 @@ not claimed. Only 0.0151% of linear color components clipped during the brighter
 8-bit diffuse bake. The grass uses three tiny constant maps. Source preview
 subsurface scattering is not reproduced by the initial runtime grass material.
 
-`assets/qa/prepare-d1-paving.mjs` produces canonical single-buffer meshopt GLBs and
-shared KTX2 resources after structural checks; `admit-d1-paving.mjs` additionally
-requires a digest-bound production-worker decoding receipt before writing immutable
+The scan-era `assets/qa/prepare-d1-paving.mjs` (removed 2026-09-24; in git history) produced
+canonical single-buffer meshopt GLBs and shared KTX2 resources after structural checks; its
+`admit-d1-paving.mjs` additionally required a digest-bound production-worker decoding receipt before writing immutable
 library objects. The GLBs retain valid raw fallback views for offline tooling;
 production packaging consumes separately checked 32-byte compressed vertex views
 and compressed indices, avoiding duplicated geometry and unused tangent bytes.
 The initial complete runtime resource set is 13,241,937 bytes.
-See [the focused QA instructions](../../qa/README.md) for commands and checks.
+The [focused QA instructions](../../qa/README.md) now cover the photoreal module.
 
 ## Retained finite clean limestone baseline
 

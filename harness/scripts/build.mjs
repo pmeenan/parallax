@@ -166,7 +166,7 @@ for (const role of ["decode", "installer", "render", "sim", "streaming", "wasm-t
   }
   if (role === "decode") {
     let source = bytes.toString("utf8");
-    for (const scope of ["msc-transcoder", "uastc-rgba-srgb", "uastc-rgba-unorm"]) {
+    for (const scope of ["msc-transcoder", "uastc-rgba-srgb", "uastc-rgba-unorm", "zstd-decoder"]) {
       const artifact = decoderWasmArtifacts.find((entry) => entry.scope === scope);
       if (artifact === undefined) throw new Error(`Decoder artifact ${scope} is unavailable`);
       source = replaceExactlyOnce(source, artifact.token, artifact.outputName);

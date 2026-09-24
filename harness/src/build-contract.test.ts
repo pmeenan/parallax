@@ -43,7 +43,7 @@ describe("assembled build contract", () => {
         .digest("hex"),
     );
     expect(installManifest.gameId).toBe("parallax");
-    expect(installSummary.countByTarget.opfs).toBe(400);
+    expect(installSummary.countByTarget.opfs).toBe(357);
     expect(installSummary.countByTarget.shell).toBe(23);
     expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
     expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
@@ -127,6 +127,21 @@ describe("assembled build contract", () => {
       expect(renderSource).toContain(matches[0]?.path.replace("immutable/", ""));
     }
     expect(renderSource).not.toMatch(/__[A-Z0-9_]+_WASM_ARTIFACT__/);
+    // The decode worker decodes zstd-supercompressed KTX2 (lossless RGBA8 maps, D-197).
+    const decodeWorkerEntrypoint = manifest.workerEntrypoints.find(
+      (entrypoint) => entrypoint.role === "decode",
+    );
+    const decodeSource = await readFile(
+      join(buildRoot, decodeWorkerEntrypoint?.path ?? "missing-decode-worker"),
+      "utf8",
+    );
+    for (const scope of ["msc-transcoder", "uastc-rgba-srgb", "uastc-rgba-unorm", "zstd-decoder"]) {
+      const artifact = manifest.artifacts.find((entry) =>
+        new RegExp(`^immutable/${scope}-[a-f0-9]{64}\\.wasm$`).test(entry.path),
+      );
+      expect(decodeSource).toContain(artifact?.path.replace("immutable/", ""));
+    }
+    expect(decodeSource).not.toMatch(/__[A-Z0-9_]+_WASM_ARTIFACT__/);
 
     for (const artifact of manifest.artifacts) {
       if (artifact.path.startsWith("immutable/")) {
@@ -182,14 +197,14 @@ describe("assembled build contract", () => {
     ]);
     expect(districtIndex.districtId).toBe(districtEntrypoint?.districtId);
     const parsedDistrictIndex = parseStreamingDistrictIndex(districtIndex, "district-1-surface");
-    expect(parsedDistrictIndex.resources).toHaveLength(72);
-    expect(districtIndex.resources.filter(({ format }) => format === "ktx2")).toHaveLength(10);
-    expect(districtIndex.resources.filter(({ format }) => format === "meshopt")).toHaveLength(62);
+    expect(parsedDistrictIndex.resources).toHaveLength(29);
+    expect(districtIndex.resources.filter(({ format }) => format === "ktx2")).toHaveLength(9);
+    expect(districtIndex.resources.filter(({ format }) => format === "meshopt")).toHaveLength(20);
     expect(districtIndex.cells.filter((cell) => cell.dependencies.length === 1)).toHaveLength(255);
     const pavingCell = districtIndex.cells.find(
       (cell) => cell.cellId === "district-1-surface-cell-08-08",
     );
-    expect(pavingCell?.dependencies).toHaveLength(37);
+    expect(pavingCell?.dependencies).toHaveLength(16);
     const compactFixture = PRODUCTION_COMPRESSED_STREAMING_FIXTURES.find(
       ({ id }) => id === "compact",
     );
@@ -227,12 +242,12 @@ describe("assembled build contract", () => {
       resources: readonly Readonly<{ bytes: number; file: string; path: string; sha256: string }>[];
     };
     const pavingResources = pavingLibrary.resources.filter(({ file }) => !file.endsWith(".glb"));
-    expect(pavingResources).toHaveLength(69);
+    expect(pavingResources).toHaveLength(26);
     expect(
       parsedDistrictIndex.resources.filter(({ sha256 }) =>
         pavingResources.some((entry) => entry.sha256 === sha256),
       ),
-    ).toHaveLength(69);
+    ).toHaveLength(26);
     for (const resource of parsedDistrictIndex.resources) {
       const actualBytes = await readFile(join(buildRoot, resource.path));
       const compactIndex = compactResources.findIndex(({ sha256 }) => sha256 === resource.sha256);

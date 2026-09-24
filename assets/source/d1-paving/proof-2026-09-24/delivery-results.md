@@ -1,6 +1,10 @@
 # Photoreal paving delivery — result (2026-09-24)
 
-**Candidate 2 is ready for human review.** It preserves the approved photoreal look through
+**Human accepted (2026-09-24):** "Delivered assets look good." The acceptance covers candidate 2's
+delivered look in the fresh-import and Chrome captures below. Installed-game acceptance follows the
+[install package](install-brief.md) ([result](install-results.md)).
+
+**Candidate 2** preserves the approved photoreal look through
 export and fresh import, and renders the same asset correctly in pinned Chrome. It is not yet
 installed: the streaming path rejects its maps, and making the ordinary install path carry it is
 the next engine package ([brief](install-brief.md)). D-197 suspends the greybox-era size caps

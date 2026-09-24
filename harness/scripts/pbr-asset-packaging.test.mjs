@@ -13,128 +13,84 @@ const cell = {
     },
   },
 };
+const bounds = [
+  [-2, -0.02, -2],
+  [2, 0.02, 2],
+];
+const lods = (part) =>
+  [0, 1, 2].map((lod) => ({
+    vertexRole: `${part}-lod${lod}-vertices`,
+    indexRole: `${part}-lod${lod}-indices`,
+    bounds,
+  }));
+const material = (baseColor, normal, orm, textureAddressMode) => ({
+  baseColor,
+  normal,
+  orm,
+  textureAddressMode,
+  baseColorFactor: [1, 1, 1],
+  roughnessFactor: 1,
+  metallicFactor: 0,
+  normalScale: 1,
+});
 const library = {
   manifest: {
-    assetId: "test",
-    sourceWidthMetres: 2,
-    normalStrength: 1,
-    materials: Object.fromEntries(
-      ["stone", "grass"].map((surface) => [
-        surface,
-        {
-          baseColor: `${surface}-base`,
-          metallicRoughness: `${surface}-orm`,
-          metallicFactor: 0,
-          roughnessFactor: 1,
-          normalStrength: 1,
-          ...(surface === "stone" ? { textureAddressMode: "repeat" } : {}),
-        },
-      ]),
-    ),
+    assetId: "module",
+    parts: {
+      ground: { material: "ground", lods: lods("ground") },
+      pebbles: { material: "pebbles", lods: lods("pebbles") },
+      plants: { material: "plants", lods: lods("plants") },
+    },
+    materials: {
+      ground: material("ground-basecolor", "ground-normal", "ground-orm", "repeat"),
+      pebbles: material("ground-basecolor", "pebble-normal", "pebble-orm", "repeat"),
+      plants: material("plant-basecolor", "plant-normal", "plant-orm", "clamp-to-edge"),
+    },
   },
   byRole: { get: (role) => role },
 };
-const request = {
-  id: "test",
-  assetId: "test",
-  center: [6, 6],
-  heightOffset: 0.015,
+const tile = (x, z, variantId) => ({
+  id: `tile-${x}-${z}-${variantId}`,
+  assetId: "module",
+  variantId,
+  center: [x, z],
+  heightAnchor: [8, 8],
+  heightOffset: 0.021,
   rotationYRadians: 0,
   lodDistancesMeters: [12, 32],
-};
+});
 
-describe("PBR placement packaging", () => {
-  it("shares variant dependencies and checks rotated scaled geometry footprints", () => {
-    const variants = {
-      manifest: {
-        mode: "individual-stone-variants",
-        assetId: "test",
-        variants: [{ id: "square", kind: "stone", material: "stone", lods: ["a", "b", "c"] }],
-        meshes: ["a", "b", "c"].map((stem) => ({
-          stem,
-          triangles: 100,
-          bounds: [
-            [-0.2, 0, -0.1],
-            [0.2, 0.1, 0.1],
-          ],
-        })),
-        materials: {
-          stone: {
-            baseColor: "base",
-            normal: "normal",
-            metallicRoughness: "orm",
-            metallicFactor: 0,
-            roughnessFactor: 1,
-            normalStrength: 1,
-          },
-        },
-      },
-      byRole: { get: (role) => role },
-    };
-    const r = {
-      ...request,
-      variantId: "square",
-      scale: 2,
-      rotationXRadians: 0.2,
-      rotationZRadians: 0.1,
-    };
-    const result = resolvePbrAssetsForCell(
-      cell,
-      [r, { ...r, id: "second", center: [7, 7] }],
-      variants,
-    );
-    expect(result.cell.pbrAssets).toHaveLength(2);
-    expect(result.dependencies).toHaveLength(5);
-    expect(result.cell.pbrAssets[0].scale).toEqual([2, 2, 2]);
-    expect(() => resolvePbrAssetsForCell(cell, [{ ...r, center: [0.1, 0.1] }], variants)).toThrow(
-      /ownership boundary/,
-    );
-  });
-  it("honors an admitted asset-wide sampler default and material overrides", () => {
-    const periodic = {
-      ...library,
-      manifest: { ...library.manifest, textureAddressMode: "repeat" },
-    };
-    const result = resolvePbrAssetsForCell(cell, [request], periodic);
-    expect(result.cell.pbrAssets.map((p) => p.material.textureAddressMode)).toEqual([
-      "repeat",
-      "repeat",
-    ]);
-    const mixed = {
-      ...periodic,
-      manifest: {
-        ...periodic.manifest,
-        materials: {
-          ...periodic.manifest.materials,
-          grass: { ...periodic.manifest.materials.grass, textureAddressMode: "clamp-to-edge" },
-        },
-      },
-    };
-    expect(
-      resolvePbrAssetsForCell(cell, [request], mixed).cell.pbrAssets[1].material.textureAddressMode,
-    ).toBe("clamp-to-edge");
-  });
-  it("bakes one anchor height for nine adjoining modules on sloping terrain", () => {
-    const requests = [4, 6, 8].flatMap((x) =>
-      [4, 6, 8].map((z) => ({
-        ...request,
-        id: `tile-${x}-${z}`,
-        center: [x, z],
-        heightAnchor: [6, 6],
-      })),
+describe("periodic surface module packaging", () => {
+  it("places every part of adjoining tiles on one anchored plane with shared resources", () => {
+    const requests = [2, 6, 10, 14].flatMap((x) =>
+      [2, 6].flatMap((z) => ["ground", "pebbles", "plants"].map((part) => tile(x, z, part))),
     );
     const result = resolvePbrAssetsForCell(cell, requests, library);
-    expect(result.cell.pbrAssets).toHaveLength(18);
-    expect(new Set(result.cell.pbrAssets.map((p) => p.position[1]))).toEqual(new Set([11.515]));
-    expect(result.cell.pbrAssets[0].material.textureAddressMode).toBe("repeat");
-    expect(result.cell.pbrAssets[1].material.textureAddressMode).toBe("clamp-to-edge");
-    expect(result.dependencies).toHaveLength(10);
+    expect(result.cell.pbrAssets).toHaveLength(24);
+    expect(new Set(result.cell.pbrAssets.map((p) => p.position[1]))).toEqual(new Set([12.021]));
+    const byPart = (part) => result.cell.pbrAssets.find((p) => p.id.endsWith(part));
+    expect(byPart("ground").material).toMatchObject({
+      baseColorResourceId: "ground-basecolor",
+      textureAddressMode: "repeat",
+    });
+    expect(byPart("pebbles").material.baseColorResourceId).toBe("ground-basecolor");
+    expect(byPart("plants").material.textureAddressMode).toBe("clamp-to-edge");
+    // Normal + ORM per material (pebbles share the ground base colour) and nine index streams per part.
+    expect(result.dependencies).toHaveLength(6 + 9);
   });
-  it("preserves center sampling for finite placements and rejects cross-cell anchors", () => {
-    const result = resolvePbrAssetsForCell(cell, [{ ...request, center: [4, 4] }], library);
-    expect(result.cell.pbrAssets[0].position[1]).toBe(11.015);
+
+  it("rejects tiles crossing cell ownership, cross-cell anchors and unknown parts", () => {
+    expect(() => resolvePbrAssetsForCell(cell, [tile(1, 8, "ground")], library)).toThrow(
+      /ownership boundary/,
+    );
     expect(() =>
-      resolvePbrAssetsForCell(cell, [{ ...request, heightAnchor: [17, 6] }], library),
+      resolvePbrAssetsForCell(cell, [{ ...tile(8, 8, "ground"), heightAnchor: [17, 8] }], library),
     ).toThrow(/height anchor/);
+    expect(() => resolvePbrAssetsForCell(cell, [tile(8, 8, "stones")], library)).toThrow(
+      /Unknown module part/,
+    );
+    expect(resolvePbrAssetsForCell(cell, [tile(20, 8, "ground")], library).cell.pbrAssets).toBe(
+      undefined,
+    );
   });
 });

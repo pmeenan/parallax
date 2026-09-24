@@ -65,73 +65,42 @@ before library admission: validate decodable format, duration/channel metadata a
 authored level/loop behavior, then audition the asset in the surface/underground scene.
 Class-specific audio checks replace inapplicable mesh checks; M6 expands this first set.
 
-## D1 paving: periodic generated limestone and retained sources
+## D1 paving: photoreal periodic surface module
 
-The current generated limestone uses `source/d1-paving/periodic.py` and
-`periodic-provenance.json`. See its source README for reproduction. The same geometry,
-UV, mip and compression checks apply. Generated input/prompt hashes and reviewed
-output terms replace the scan's CC0 assertion; admission rechecks the current source
-provenance and requires approved rights metadata. Normal strength follows the export.
-The admitted periodic candidate is
-`d1-paving-periodic-2026-09-05/courseless-final/candidate` under results, with its
-production receipt in `d1-paving-periodic-worker-2026-09-05`. Periodic exports
-add connected boundary profiles, planar UV correspondence, and opposite-edge
-position/normal comparisons across every LOD pairing. The current candidate has
-129 samples per edge, zero measured height mismatch and 0.00000171-degree maximum
-normal mismatch over 2,322 comparisons. Base-color, normal and ORM cyclic-gradient
-statistics remain diagnostics, not substitutes for inspecting repeated textures.
-All 18 runtime resources passed the production decoder with external networking
-blocked before admission. Installed artistic evaluation remains separate.
-
-The earlier finite baseline remains reconstructible with `clean.py` and
-`clean-provenance.json`; its evidence is retained in
-`d1-paving-clean-2026-09-05/cycle2-final`. Its successful structural gate did not
-establish periodicity. The periodic material still uses a rigid planar module;
-terrain-conforming per-stone placement is not implemented.
-
-The commands below document the superseded scan candidate.
-
-The accepted source is `source/d1-paving/`; the runtime class limits and rationale
-are in `d1-paving.json`. The two-stage gate is deliberately specific to this module:
+The admitted paving is `d1-photoreal-paving`, a periodic 4 m module generated from the
+human-approved photoreal source (D-196). Its class config is `d1-photoreal-paving.json`.
+D-197 suspends size ceilings, so sizes and triangle counts are recorded measurements, and
+only structural checks gate admission. Reproduction, representation and results are in
+[the delivery result](../source/d1-paving/proof-2026-09-24/delivery-results.md) and
+[the install result](../source/d1-paving/proof-2026-09-24/install-results.md).
 
 ```powershell
-& 'C:/Program Files/Blender Foundation/Blender 5.1/blender.exe' --background --threads 8 --python-exit-code 1 --python assets/source/d1-paving/export.py -- --source harness/results/d1-paving-rework-2026-09-05/scan-final/d1-scanned-source.blend --input harness/results/d1-paving-rework-2026-09-05/scanned-input --output harness/results/d1-paving-integration-2026-09-05/export
-node assets/qa/prepare-d1-paving.mjs harness/results/d1-paving-integration-2026-09-05/export harness/results/d1-paving-integration-2026-09-05/candidate
-node assets/qa/admit-d1-paving.mjs harness/results/d1-paving-integration-2026-09-05/candidate <production-worker-receipt.json>
+node assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs <stage-2 maps dir> <pack dir>
+node assets/qa/prepare-photoreal-paving.mjs <pack dir> <candidate dir>
+pnpm build; node assets/qa/production-decode-receipt.mjs <candidate dir> <receipt.json>
+node assets/qa/admit-d1-paving.mjs <candidate dir> <receipt.json>
 ```
 
-The exporter verifies all four original map hashes and Blender 5.1.2. Preparation
-checks provenance identity and CC0 rights, metric bounds, finite attributes, unit
-normals, indices, per-LOD triangle ceilings, complete stone UV coverage and consistent
-UV winding, KTX2 dimensions/mip counts, and the engine's
-`canonicalMeshoptLayoutErrors` validator. Meshopt vertices must decode byte-exactly;
-triangle indices may rotate cyclically while preserving topology and winding.
-Zero-area source leaf-tip triangles are removed before export. The solid-color grass
-UV exception is explicit in the class budget.
+- **Preparation** checks:
+  - provenance identity and approved rights (`paving-provenance.mjs`, procedural-original)
+  - finite attributes, unit normals and index ranges
+  - planar tile UVs
+  - flat, fold-free ground normals
+  - identical opposite-edge border vertices and heights for every ground LOD
+  - LOD reduction
+  - KTX2 headers and full mip chains: UASTC, or RGBA8 plain or zstd for the lossless normal
+  - the engine's canonical meshopt layout
+  - byte-exact meshopt vertex roundtrips (triangles may rotate cyclically)
+- **The receipt** decodes every runtime resource with the engine's own compressed streaming
+  codec, in a pinned-Chrome module worker with external requests blocked.
+- **Admission** requires that receipt, bound to the candidate manifest SHA-256. It then
+  rechecks every object hash and length, including the three canonical GLBs. It writes objects
+  without replacement and publishes `assets/library/d1-paving.json`; a conflicting object fails
+  closed.
 
-Admission requires a receipt bound to the candidate manifest SHA-256 from the
-production compressed worker, covering all 18 runtime resources. It then rechecks all
-21 object hashes and lengths (including the three canonical GLBs), writes objects
-without replacement, and publishes the checked-in library manifest. A conflicting
-existing object fails closed. Library admission is structural and rights approval;
-source-art approval does not automatically accept runtime lighting, LOD transitions,
-seams or appearance. Those remain part of the actual game captures.
+Library admission covers structure and rights. It does not accept runtime lighting, LOD
+transitions, seams or appearance; those remain part of the installed game captures.
 
-## Individual limestone variants
-
-`prepare-d1-stone-variants.mjs` uses the separate `d1-stone-variants.json` class;
-the preceding periodic tile limits are unchanged. Eight reusable closed stone
-variants retain three LODs, plus separate substrate and rooted vegetation families.
-The scene asset ceiling is 200 stones and 750,000 near-LOD stone triangles: the
-accepted fracture silhouette can require 153 × 3,900 = 596,700 triangles before a
-small slope diagnostic. Shared variants bound resident geometry. The 16 MiB encoded
-set, 8 MiB per-resource limit and runtime performance budgets remain unchanged.
-
-This mode checks welded closed stone topology, actual metric bounds, declared
-generated-surface and procedural-detail UV reuse, original/generated input hashes, and root clearance
-against transformed geometry footprints across all LODs. It does not claim periodic
-tile seams or measured material properties. Generated surface output retains its
-reviewed OpenAI lineage separately from original Apache-2.0 geometry. Admission
-requires every runtime resource in this variable-size set to pass the production
-worker receipt before the immutable library changes; installed visual acceptance
-remains separate.
+The earlier scanned, generated-periodic and individual-stone paving candidates, with their
+QA scripts, are superseded. Their evidence and scripts remain in git history and in their
+`source/d1-paving/` proof folders.

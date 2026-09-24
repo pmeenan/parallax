@@ -260,8 +260,10 @@ residents before replacement loads, and sends decoded cells over a dedicated
 legacy six-key v1 cell index with one exact `resources` table and per-cell dependency
 roots. KTX2 plus legacy/versioned meshopt descriptors form a validated acyclic graph;
 the worker's reference-counted CPU cache and the renderer's correlated GPU cache share
-each dependency across resident cells. Individual dependencies are bounded to 8 MiB
-encoded and 32 MiB decoded, and one batch is bounded to 128 MiB staged bytes (D-148).
+each dependency across resident cells. D-148's size caps (8 MiB encoded and 32 MiB
+decoded per dependency, 128 MiB staged per batch, 16 MiB resident encoded) are
+suspended by D-197. They remain only as runaway rails (1 GiB per dependency, 8 GiB
+resident and staged), and the measured quantities are telemetry.
 The procedural-cell decoder is a fixed hardware-sized nested worker pool; every measured movement-triggered path reports attributable
 OPFS read, decode, upload, total latency, encoded/GPU bytes, queue high water, and
 residency/eviction counters. Districts own separate hashed OPFS subdirectories, so
@@ -1222,9 +1224,15 @@ The streaming system installs and reads these bundles through
 OPFS; generating and packaging them does not by itself claim an OPFS cell-load result.
 
 The shipped compressed-streaming layer consumes schema-v2 dependency descriptors from
-the exact installed release. Decode workers turn KTX2 into bounded RGBA8 texture data
-through Babylon's worker-safe transcoder path and meshopt payloads into finite vertex or
-in-range index buffers; malformed size, graph, numeric, or index contracts fail closed.
+the exact installed release. Decode workers turn KTX2 into RGBA8 texture data and
+meshopt payloads into finite vertex or in-range index buffers. Malformed size, graph,
+numeric or index contracts fail closed. KTX2 decoding takes one of two paths:
+- **Basis (UASTC), optionally zstd-supercompressed:** Babylon's worker-safe transcoders.
+- **Uncompressed RGBA8, optionally zstd:** an engine-owned reader (`ktx2-rgba8.ts`),
+  used for lossless maps.
+
+The decode worker loads the pinned zstd wasm, because Compression Streams lack zstd
+(RE-050).
 The streaming worker reference-counts decoded dependency cache keys across resident
 cells, while the render worker correlates GPU ownership so a shared resource uploads
 once and releases after its last consumer. Encoded/decoded bytes, decode time, cache
@@ -1273,24 +1281,25 @@ references add no decode buffers. Each concurrently prepared cell reserves its
 retained decoded outputs plus the largest single dependency's temporary decoded
 chain, because the decode worker awaits dependencies sequentially. Encoded views
 and cell JSON keep their conservative overlap allowances. Transfer lists move
-buffers rather than copying a second whole output cohort. The 128 MiB logical
-staging cap is unchanged; persistent decoder WASM heaps are separate CPU memory,
-not a claim that this staging count measures total process residency. The first
-individual-stone cold nine-cell projection is 117,408,096 bytes, versus the former
-156,716,168-byte sum that incorrectly duplicated every output chain. Evidence:
-`d1-individual-stones-2026-09-05/staging-reservation-proof.json`.
+buffers rather than copying a second whole output cohort. Staging is logical accounting
+under D-197's rail; persistent decoder WASM heaps are separate CPU memory, not a claim
+that this staging count measures total process residency.
 
-The admitted individual-stone courtyard uses 153 rigid stones from eight shared
-variants, plus its authored substrate and joint-aware grass, centered at [6,6]m.
-The whole canonical RH scene is reflected once into the LH renderer, preserving
-stone/grass alignment. Source stone bottoms are 57mm below the shared terrain
-plane; 73mm nominal thickness leaves about 16mm exposed. A separate 24-stone
-diagnostic around [198,198]m fits rigid transforms to actual collision triangles
-using the admitted bottom polygons, without adding stone colliders or moving the
-ground. All 179 placements stay below the 200-stone/256-placement limits. Typed
-game content records the admitted candidate hash; runtime never reads source paths.
-Placements with matching variant resources and material tone share an instance
-group within each cell, with additional draw groups when they occupy different LODs.
+The admitted D1 paving is a periodic 4 m surface module (D-196, D-197). It has three
+parts: ground, pebbles and plants. Each part has three LODs sharing role-tagged
+materials: ground and pebbles use `repeat` sampling, plants `clamp-to-edge`.
+- **Ground LODs:** border-locked, fold-free heightfield decimations. Vertex normals face
+  up, and a full-height normal map carries the shading.
+- **Placement:** game data places 4 × 4 tiles over the level courtyard pad, 5 cm inside
+  its [0,16]m square. Pebbles and leaves overhang tile edges by up to 2.2 cm, and every
+  placement must stay inside cell 08-08.
+- **Height:** all 48 part placements share one height anchor. They sit 21 mm above the
+  pad, so the deepest joint clears the terrain plane.
+- **Binding:** typed game content records the admitted candidate hash; runtime never
+  reads source paths.
+
+Placements with matching resources share an instance group within each cell, with
+additional draw groups when they occupy different LODs.
 Telemetry reports placement/group/draw counts, triangles, matrix CPU bytes, actual
 native matrix/indirect GPU buffer bytes, LOD changes and setup time. The five-state
 warmup registry contains three Standard states and two native-instanced PBR states.

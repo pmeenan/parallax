@@ -38,7 +38,7 @@ const resources = Object.freeze([
 ]) satisfies readonly StreamingDependencyIndexEntry[];
 
 describe("streaming batch cache transaction", () => {
-  it("still rejects a cohort whose retained outputs exceed the unchanged staging cap", () => {
+  it("rejects a cohort whose retained outputs exceed the staging budget it is given", () => {
     const large = Array.from({ length: 6 }, (_, index) => ({
       bytes: 12,
       format: "meshopt" as const,

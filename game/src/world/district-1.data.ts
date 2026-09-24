@@ -1,8 +1,7 @@
-import { DISTRICT_1_STONES } from "./district-1-stones.data";
+import { createPavingTilePlacements } from "./district-1-paving";
 import { DISTRICT_1_ID } from "./district-identity";
 import type { GreyboxDistrictSpec } from "./greybox-spec";
 import { freezeGreyboxData } from "./greybox-spec";
-import { createStoneAssemblyPlacements } from "./stone-assembly";
 
 const absRange = (axis: "x" | "z", minimum?: number, maximum?: number) =>
   ({
@@ -337,14 +336,11 @@ const DISTRICT_1_BASE_SPEC = freezeGreyboxData({
   },
 } satisfies GreyboxDistrictSpec);
 
-export const DISTRICT_1_STONE_ASSEMBLY = createStoneAssemblyPlacements(
-  DISTRICT_1_BASE_SPEC,
-  DISTRICT_1_STONES,
-  [6, 6],
-  [198, 198],
-  24,
-);
+/** The level courtyard pad [0,16]² is paved with 4 × 4 photoreal paving modules. The field
+ * starts 5 cm inside the pad: pebbles and leaves crossing a tile edge overhang by up to
+ * 2.2 cm, and every placement must stay within its owning cell, whose edge is x = z = 0. */
+export const DISTRICT_1_COURTYARD_PAVING = createPavingTilePlacements("courtyard", [0.05, 0.05], 4);
 export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
   ...DISTRICT_1_BASE_SPEC,
-  assetPlacements: DISTRICT_1_STONE_ASSEMBLY.placements,
+  assetPlacements: DISTRICT_1_COURTYARD_PAVING,
 } satisfies GreyboxDistrictSpec);

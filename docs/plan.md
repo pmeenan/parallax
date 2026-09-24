@@ -486,7 +486,29 @@ The human directed that engine work proceed alongside assets, and that self-impo
 not limit quality (D-197). The next package is the
 [installation brief](../assets/source/d1-paving/proof-2026-09-24/install-brief.md), then
 lighting/AO, then small-scale shadows. RE-050 records Chrome's missing zstd Compression
-Streams. Human review of the delivered look is pending.
+Streams. The human accepted the delivered look on 2026-09-24.
+
+**Installation outcome (2026-09-24):** the [install result](../assets/source/d1-paving/proof-2026-09-24/install-results.md).
+- **What ships.** The ordinary build, install, stream and render path carries delivery
+  candidate 4, which is candidate 2 plus a pebble LOD2 and a plain RGBA8 normal. D-186 admits
+  it to the library, and the D1 courtyard places it as 4 × 4 tiles. The individual-stone kit
+  and its QA are removed.
+- **Engine changes.** zstd and uncompressed RGBA8 KTX2 decode in the decode worker, a
+  periodic-surface-module packaging mode, and D-197 telemetry rails in place of the caps.
+- **Verification.** The installer-repair replay was rebound and passes; `pnpm check` passes.
+- **Cost.** At 4K near the paving, GPU time is 4.9–5.6 ms p50. The cell's GPU residency is
+  237 MB.
+- **Attributed budget bust.** The paving cell loads in 367 ms against the 250 ms p95 budget,
+  and its RGBA8 upload stalls the render worker for 146 ms against the 50 ms hitch budget.
+
+Open items:
+- human acceptance of the installed views
+- human confirmation of the agent-recorded rights review
+- a runtime capture from an installer-provisioned profile, which needs the physical console
+
+Next engine packages: GPU-compressed textures (BC7 from UASTC, a BC5 normal and chunked
+uploads, for the load and stall), then lighting balance with ambient occlusion, then
+small-scale shadows.
 
 *Superseded baseline history:* `production/candidate3` had been approved after
 `cobble-study/candidate1`. Its [shared-resource and LOD delivery proof](../assets/source/d1-paving/proof-2026-09-22/delivery-brief.md):

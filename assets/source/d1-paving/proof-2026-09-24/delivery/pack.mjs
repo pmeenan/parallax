@@ -38,7 +38,12 @@ const LOD = {
     { grid: 800, errorMm: 3 },
     { grid: 200, errorMm: 6 },
   ],
-  pebbles: [{ minimumMm: 9, triangles: 64 }, { minimumMm: 13, triangles: 24 }, null],
+  // The engine requires three LODs per placement; LOD2 keeps the largest pebbles.
+  pebbles: [
+    { minimumMm: 9, triangles: 64 },
+    { minimumMm: 13, triangles: 24 },
+    { minimumMm: 16, triangles: 12 },
+  ],
   plants: [{ keep: 1 }, { keep: 0.35 }, { keep: 0.1 }],
 };
 const hash = (b) => createHash("sha256").update(b).digest("hex");
@@ -507,7 +512,8 @@ for (const map of maps.maps) {
     levels.push(rgba);
     texture.setImageFromMemory(level, 0, 0, rgba);
   }
-  // Lossless normal (D-197): UASTC left 24% of texels > 5 degrees off. RGBA8 + zstd 19.
+  // Lossless normal (D-197): UASTC left 24% of texels > 5 degrees off. Stored as plain RGBA8:
+  // in-game, zstd-19 decoding cost 430 ms of the paving cell's 670 ms load (install candidate 3).
   // Everything else keeps the production UASTC format (prepare-d1-stone-variants.mjs).
   const lossless = map.role === "ground-normal";
   Object.assign(basis, {
@@ -523,7 +529,7 @@ for (const map of maps.maps) {
   assert.equal(texture.deflateZstd(lossless ? 19 : 9), k.ErrorCode.SUCCESS);
   const supercompressed = Buffer.from(texture.writeToMemory());
   const encodeMs = performance.now() - started;
-  const bytes = lossless ? supercompressed : plain;
+  const bytes = plain;
   const zstdBytes = supercompressed.length;
   texture.delete();
   basis.delete();
@@ -560,7 +566,7 @@ for (const map of maps.maps) {
     height: heightPx,
     levels: map.levels.length,
     ktx2: saved,
-    format: lossless ? "rgba8-zstd19" : "uastc",
+    format: lossless ? "rgba8" : "uastc",
     uncompressedContainerBytes: plain.length,
     zstdBytes,
     rgba8DecodedBytes: decodedBytes,

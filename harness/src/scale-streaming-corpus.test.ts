@@ -93,16 +93,16 @@ describe("representative scale-streaming corpus", () => {
         installBytes: validatedMaterialized.installSummary.bytesByTarget.opfs,
         installResourceCount: validatedMaterialized.installSummary.countByTarget.opfs,
       });
-      // Individual-stone inventory: models + two district indices + asset packs + cells.
-      expect(materialized.population.installBytes).toBe(2639677555);
-      expect(materialized.population.installResourceCount).toBe(418);
+      // Periodic paving inventory: models + two district indices + asset packs + cells.
+      expect(materialized.population.installBytes).toBe(2755619864);
+      expect(materialized.population.installResourceCount).toBe(375);
       expect(materialized.population.representativeResourceCount).toBe(339);
       const heroIndex = corpus.graphs
         .find(({ id }) => id === "hero")
         ?.resources.find(({ role }) => role === "indices");
       if (heroIndex === undefined) throw new Error("Generated hero index resource is absent");
       expect(Object.isFrozen(materialized.expectedStreamingResourceCacheKeys)).toBe(true);
-      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(90);
+      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(47);
       expect(materialized.expectedStreamingResourceCacheKeys[heroIndex.resourceId]).toHaveLength(
         542,
       );

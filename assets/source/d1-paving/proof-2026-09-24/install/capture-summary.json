@@ -1,0 +1,245 @@
+{
+  "scenario": "photoreal-paving-courtyard-capture@1",
+  "mode": "privileged-network-runtime",
+  "budgetAuthority": "none: focused inspection, not a smoke or traversal gate",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "buildManifestSha256": "193f0f4db8eeee33eab5f4d8ba2cd60a2a1e42332a2277abcc776c92620f18a6",
+  "source": {
+    "commit": "9517c97b8813a80ed4dfcc3f6175ab13de752d41",
+    "dirtyTreeDigest": "fb055749d19ec7418f3b95c230e43cad54e2c1b59011a0f72894a0e5a308b211"
+  },
+  "readyMs": 2344,
+  "browserErrors": 0,
+  "views": [
+    {
+      "name": "walking",
+      "fullResolutionSha256": "06966fd966604b422042a4b1df6269bebe0e00a10684ede457b5555aea3eaea1",
+      "request": {
+        "observer": [6, 18.98475, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0015739196380726,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.96858552175948
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 4.865,
+      "cpuSubmitMsP50": 0.28,
+      "pbrVisibleTriangles": 5076828
+    },
+    {
+      "name": "walking-matched",
+      "fullResolutionSha256": "abaec4c3006949f49e313c3afdf581829c86af68c13931b9a037c2a2f55a8a47",
+      "request": {
+        "observer": [6, 18.98475, 5.9],
+        "headingRadians": -1.5167948264189284,
+        "camera": {
+          "beta": 0.8477368420759729,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.4709765276100875
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.251,
+      "cpuSubmitMsP50": 0.23,
+      "pbrVisibleTriangles": 5076828
+    },
+    {
+      "name": "close",
+      "fullResolutionSha256": "ecc2a437ba0f15fa622b1440f0478bc3c7abdaff642a6ec6a602f2891788754d",
+      "request": {
+        "observer": [8.9574, 18.98475, 10.3069],
+        "headingRadians": -1.653937558683339,
+        "camera": {
+          "beta": 1.082274384791857,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.6818357573492313
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.164,
+      "cpuSubmitMsP50": 0.275,
+      "pbrVisibleTriangles": 5331906
+    },
+    {
+      "name": "joint",
+      "fullResolutionSha256": "6ade14d486bff64cedd5257ed4eeafd2535ca6dab1e11caa0b9080838b6bb3db",
+      "request": {
+        "observer": [6, 18.974749999999997, 6.3],
+        "headingRadians": -1.6814535479687918,
+        "camera": {
+          "beta": 1.1007811263135119,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.5078385570237852
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.114,
+      "cpuSubmitMsP50": 0.25,
+      "pbrVisibleTriangles": 5381838
+    },
+    {
+      "name": "grazing",
+      "fullResolutionSha256": "414a968ab2197983297aecaa245c16a8e1f27110e1099709ca11bae5494a1682",
+      "request": {
+        "observer": [6, 18.98475, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0015739196380726,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.96858552175948
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.501,
+      "cpuSubmitMsP50": 0.27,
+      "pbrVisibleTriangles": 5381838
+    },
+    {
+      "name": "overcast",
+      "fullResolutionSha256": "27dad48a4840d73f9545e3ad3e138f73bb5e32a8a3d13f678fec84587d66842d",
+      "request": {
+        "observer": [6, 18.98475, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0015739196380726,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.96858552175948
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "overcast"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.628,
+      "cpuSubmitMsP50": 0.25,
+      "pbrVisibleTriangles": 5381838
+    },
+    {
+      "name": "courtyard-overview",
+      "fullResolutionSha256": "63e5a17f650ee5217e1d633397c0156b794d34d3b5ae4832befcdd50e783a771",
+      "request": {
+        "observer": [4.05, 18.98475, 4.05],
+        "headingRadians": -2.390663591191853,
+        "camera": {
+          "beta": 1.1574351689500402,
+          "heightMeters": 0.01,
+          "radiusMeters": 11.202678251204041
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 34,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 5.246,
+      "cpuSubmitMsP50": 0.24,
+      "pbrVisibleTriangles": 3965962
+    },
+    {
+      "name": "courtyard-far",
+      "fullResolutionSha256": "f69554130bbbbaa1fbac56c8c9daaa0f9904eeb3d16b8f44b09de807187b6b9a",
+      "request": {
+        "observer": [2.05, 18.98475, 2.05],
+        "headingRadians": -2.4668517113662403,
+        "camera": {
+          "beta": 1.4928675808823595,
+          "heightMeters": 0.01,
+          "radiusMeters": 38.535697735995385
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "streamedVisibleMeshCount": 32,
+      "frames": 60,
+      "gpuFrameEmaMsP50": 2.362,
+      "cpuSubmitMsP50": 0.24,
+      "pbrVisibleTriangles": 594518
+    }
+  ],
+  "pavingCell": {
+    "batchCellCount": 9,
+    "batchCellOrdinal": 4,
+    "batchDirectUploadMs": 145.6600000858307,
+    "batchFlythroughObserverSequence": 0,
+    "batchObserverUpdateCount": 0,
+    "batchOrdinal": 1,
+    "batchTransactionId": "1:1:0:0",
+    "cellId": "district-1-surface-cell-08-08",
+    "decodeMs": 158.0700000524521,
+    "decodeRoundTripMs": 172.50999999046326,
+    "decodeWaitMs": 14.43999993801117,
+    "dependencyCount": 29,
+    "dependencyDecodeMs": 156.40000009536743,
+    "dependencyDecodedBytes": 236894048,
+    "dependencyEncodedBytes": 132272295,
+    "dependencyReadMs": 42.62999975681305,
+    "dependencyUploadBytes": 236894048,
+    "dependencyUploadMs": 140.625,
+    "encodedBytes": 132345785,
+    "gpuBytes": 236932020,
+    "opfsAccessRoundTripMs": 46.8400000333786,
+    "opfsReadMs": 42.65499973297119,
+    "opfsWaitMs": 4.18500030040741,
+    "renderTransactionRoundTripMs": 147.45500004291534,
+    "renderTransactionWaitMs": 5.365000128746033,
+    "sequence": 4,
+    "streamingWorkerRemainderMs": 0.38999998569488525,
+    "totalMs": 367.1950000524521,
+    "uploadMs": 142.0899999141693
+  },
+  "streaming": {
+    "cellLoadSampleCount": 14,
+    "dependencyDecodeFailureCount": 0,
+    "dependencyDecodedBytes": 236897024,
+    "dependencyEncodedBytesRead": 132273324,
+    "dependencyUploadCount": 29,
+    "decodeWorkerCount": 4,
+    "decodeQueueDepthHighWater": 9,
+    "residentEncodedBytesHighWater": 132375233,
+    "residentGpuBytesHighWater": 237136244,
+    "renderBatchDirectUploadMsHighWater": 145.6600000858307
+  }
+}

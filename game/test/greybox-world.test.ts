@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import type {
   GreyboxCell,
   GreyboxHeightfieldGridPayload,
@@ -9,6 +10,7 @@ import { selectGreyboxCellLod, validateGreyboxDistrict } from "@parallax/engine"
 import { describe, expect, it, vi } from "vitest";
 import { createHeightfieldGeometryBatch } from "../../engine/src/render/lite-greybox-world";
 import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
+import { D1_PAVING } from "../src/world/district-1-paving";
 import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
 import { GREYBOX_DISTRICT_SPECS } from "../src/world/district-registry";
 import { createGreyboxScene, sampleGreyboxTerrain } from "../src/world/greybox-generator";
@@ -50,34 +52,41 @@ function triangleRepresentation(cell: GreyboxCell, tier: 0 | 1 | 2): GreyboxTria
 }
 
 describe("data-first greybox world generation", () => {
-  it("places the admitted rigid stone courtyard and bounded slope diagnostic", () => {
+  it("paves the level courtyard pad with the admitted periodic module", async () => {
     const placements = DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? [];
-    expect(placements).toHaveLength(179);
-    expect(new Set(placements.map((p) => p.id)).size).toBe(179);
-    const courtyard = placements.filter((p) => p.id.startsWith("courtyard-stone-"));
-    const slope = placements.filter((p) => p.id.startsWith("slope-stone-"));
-    expect(courtyard).toHaveLength(153);
-    expect(slope).toHaveLength(24);
-    for (const placement of courtyard) {
-      expect(placement.assetId).toBe("d1-individual-limestone-stones");
-      expect(placement.heightAnchor).toEqual([6, 6]);
-      expect(placement.heightOffset).toBe(-0.057);
-      expect(placement.scale).toBe(1);
-      expect(
-        sampleGreyboxTerrain(DISTRICT_1_GREYBOX_SPEC, ...placement.center) + placement.heightOffset,
-      ).toBeCloseTo(18.91675, 10);
+    expect(placements).toHaveLength(48);
+    expect(new Set(placements.map((p) => p.id)).size).toBe(48);
+    const library = JSON.parse(
+      await readFile(new URL("../../assets/library/d1-paving.json", import.meta.url), "utf8"),
+    ) as { assetId: string; candidateSha256: string };
+    expect(library).toMatchObject({
+      assetId: D1_PAVING.assetId,
+      candidateSha256: D1_PAVING.candidateSha256,
+    });
+    for (const part of ["ground", "pebbles", "plants"] as const) {
+      const tiles = placements.filter((p) => p.variantId === part);
+      expect(tiles).toHaveLength(16);
+      expect(new Set(tiles.map((p) => p.center.join(",")))).toEqual(
+        new Set(
+          [2.05, 6.05, 10.05, 14.05].flatMap((z) =>
+            [2.05, 6.05, 10.05, 14.05].map((x) => `${x},${z}`),
+          ),
+        ),
+      );
+      for (const placement of tiles) {
+        expect(placement).toMatchObject({
+          assetId: "d1-photoreal-paving",
+          heightAnchor: [8.05, 8.05],
+          heightOffset: 0.021,
+          rotationYRadians: 0,
+          lodDistancesMeters: D1_PAVING.lodDistancesMeters[part],
+        });
+        expect(
+          sampleGreyboxTerrain(DISTRICT_1_GREYBOX_SPEC, ...placement.center) +
+            placement.heightOffset,
+        ).toBeCloseTo(18.99475, 10);
+      }
     }
-    for (const variantId of ["substrate", "grass"])
-      expect(placements.find((p) => p.variantId === variantId)).toMatchObject({
-        center: [6, 6],
-        heightOffset: 0,
-        rotationYRadians: 0,
-      });
-    expect(
-      slope.some(
-        (p) => Math.abs(p.rotationXRadians ?? 0) + Math.abs(p.rotationZRadians ?? 0) > 0.01,
-      ),
-    ).toBe(true);
   });
   it("keeps the courtyard plane identical in collision and every rendered terrain LOD", () => {
     const scene = createScene();
@@ -86,7 +95,7 @@ describe("data-first greybox world generation", () => {
     const h = cell.collision.heightfield;
     for (const index of [0, 1, h.columns, h.columns + 1]) expect(h.heights[index]).toBe(height);
     // Both triangles of the [0,16]² lattice square are level, containing the
-    // entire [3,9]² paving footprint, not merely its center sample.
+    // entire [0,16]² paving footprint, not merely its center sample.
     for (const tier of [0, 1, 2] as const) {
       const geometry = createHeightfieldGeometryBatch([
         { cell, representation: heightfieldRepresentation(cell, tier) },

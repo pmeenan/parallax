@@ -8,10 +8,14 @@ export const STREAMING_CELL_LOAD_BUDGET_MS = 250;
 export const STREAMING_DECODE_WORKER_MAXIMUM = 4;
 export const STREAMING_DECODE_WORKER_RESERVED_THREADS = 2;
 export const STREAMING_RESIDENT_CELL_LIMIT = 9;
-export const STREAMING_RESIDENT_ENCODED_BUDGET_BYTES = 16 * 1024 * 1024;
-export const STREAMING_DEPENDENCY_ENCODED_MAX_BYTES = 8 * 1024 * 1024;
-export const STREAMING_DEPENDENCY_DECODED_MAX_BYTES = 32 * 1024 * 1024;
-export const STREAMING_BATCH_STAGING_BUDGET_BYTES = 128 * 1024 * 1024;
+// D-197: the greybox-era size caps (16 MiB resident encoded, 8/32 MiB per dependency,
+// 128 MiB staging) are suspended while M4.5 measures real content costs. These remain
+// only as runaway rails, far above any authored content; the measured quantities are
+// telemetry. Player-visible budgets (docs/budgets.md) still gate.
+export const STREAMING_RESIDENT_ENCODED_BUDGET_BYTES = 8 * 1024 ** 3;
+export const STREAMING_DEPENDENCY_ENCODED_MAX_BYTES = 1024 ** 3;
+export const STREAMING_DEPENDENCY_DECODED_MAX_BYTES = 1024 ** 3;
+export const STREAMING_BATCH_STAGING_BUDGET_BYTES = 8 * 1024 ** 3;
 export const STREAMING_DISTRICT_SWAP_MAX_HITCH_BUDGET_MS = 100;
 export const STREAMING_DISTRICT_SWAP_TOTAL_BUDGET_MS = 4_000;
 export const STREAMING_DISTRICT_SWAP_LOGICAL_GPU_OVERLAP_RATIO = 1.25;

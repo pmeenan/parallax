@@ -16,6 +16,7 @@ import {
   resolveInstalledStreamingRelease,
 } from "../src/streaming/installed-streaming-release";
 import { parsePrivilegedStreamingProvisionPlan } from "../src/streaming/privileged-streaming-provision";
+import { STREAMING_DEPENDENCY_ENCODED_MAX_BYTES } from "../src/streaming/streaming-protocol";
 
 const releaseDigest = "a".repeat(64);
 
@@ -316,7 +317,11 @@ describe("installed streaming release", () => {
       parseStreamingDistrictIndex(
         {
           ...valid,
-          resources: [{ ...texture, bytes: 8 * 1024 * 1024 + 1 }, vertices, indices],
+          resources: [
+            { ...texture, bytes: STREAMING_DEPENDENCY_ENCODED_MAX_BYTES + 1 },
+            vertices,
+            indices,
+          ],
         },
         "district-1-surface",
       ),

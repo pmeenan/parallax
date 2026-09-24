@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "class": "d1-periodic-surface-module-4m",
+  "rationale": "Periodic 4 m procedural paving (D-196). Ground LODs are border-locked, fold-free heightfield decimations with +Y vertex normals and a full-height normal map; pebbles and plants are separate parts. D-197 suspends size ceilings: sizes and triangle counts are recorded measurements, and only the structural checks below gate admission.",
+  "assetId": "d1-photoreal-paving",
+  "tileMetres": 4,
+  "groundTexelsPerMetre": 1024,
+  "parts": {
+    "ground": { "material": "ground", "flatNormals": true, "periodicBorders": true },
+    "pebbles": { "material": "pebbles", "flatNormals": false, "periodicBorders": false },
+    "plants": { "material": "plants", "flatNormals": false, "periodicBorders": false }
+  },
+  "materials": {
+    "ground": {
+      "baseColor": "ground-basecolor",
+      "normal": "ground-normal",
+      "orm": "ground-orm",
+      "textureAddressMode": "repeat"
+    },
+    "pebbles": {
+      "baseColor": "ground-basecolor",
+      "normal": "pebble-normal",
+      "orm": "pebble-orm",
+      "textureAddressMode": "repeat"
+    },
+    "plants": {
+      "baseColor": "plant-basecolor",
+      "normal": "plant-normal",
+      "orm": "plant-orm",
+      "textureAddressMode": "clamp-to-edge"
+    }
+  },
+  "boundsMarginMetres": 0.1,
+  "heightRangeMetres": [-0.05, 0.25],
+  "normalUnitTolerance": 0.001
+}

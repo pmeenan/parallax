@@ -1,6 +1,7 @@
 import createMscTranscoder from "parallax:msc-transcoder-factory";
 import * as KTX2DecoderPackage from "@babylonjs/ktx2decoder";
 import { MeshoptDecoder } from "meshoptimizer/decoder";
+import { decodeKtx2Rgba8, KTX2_VK_FORMAT_UNDEFINED, readKtx2VkFormat } from "./ktx2-rgba8";
 import {
   type RepresentativeCompressedStreamingFixtures,
   representativeCompressedStreamingFixtures,
@@ -18,6 +19,7 @@ import { streamingResourceCacheKey } from "./streaming-resource-key";
 const MSC_TRANSCODER_WASM_ARTIFACT = "__MSC_TRANSCODER_WASM_ARTIFACT__";
 const UASTC_RGBA_SRGB_WASM_ARTIFACT = "__UASTC_RGBA_SRGB_WASM_ARTIFACT__";
 const UASTC_RGBA_UNORM_WASM_ARTIFACT = "__UASTC_RGBA_UNORM_WASM_ARTIFACT__";
+const ZSTD_DECODER_WASM_ARTIFACT = "__ZSTD_DECODER_WASM_ARTIFACT__";
 
 export type { RepresentativeCompressedStreamingFixtures };
 export { representativeCompressedStreamingFixtures };
@@ -58,6 +60,21 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
     UASTC_RGBA_UNORM_WASM_ARTIFACT,
     import.meta.url,
   ).href;
+  // zstd supercompression, for UASTC levels and for lossless RGBA8 maps (D-197). Compression
+  // Streams have no zstd in Chrome 152 (RE-050), so the pinned wasm decoder is used.
+  KTX2DecoderPackage.ZSTDDecoder.WasmModuleURL = new URL(
+    ZSTD_DECODER_WASM_ARTIFACT,
+    import.meta.url,
+  ).href;
+  let zstdDecoder: Promise<InstanceType<typeof KTX2DecoderPackage.ZSTDDecoder>> | null = null;
+  const loadZstd = () => {
+    zstdDecoder ??= (async () => {
+      const decoder = new KTX2DecoderPackage.ZSTDDecoder();
+      await decoder.init();
+      return decoder;
+    })();
+    return zstdDecoder;
+  };
 
   return Object.freeze({
     async decode(dependency: DecodeDependencyRequest): Promise<DecodedStreamingDependency> {
@@ -149,6 +166,48 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
         });
       }
 
+      const container = new Uint8Array(dependency.bytes);
+      if (readKtx2VkFormat(container) !== KTX2_VK_FORMAT_UNDEFINED) {
+        const { width, height, colorSpace } = dependency.descriptor.decode;
+        const mipLevels =
+          dependency.descriptor.decode.version === 2
+            ? dependency.descriptor.decode.mipLevelCount
+            : 1;
+        if (mipLevels === undefined) throw new Error("KTX2 RGBA8 descriptor lacks its mip count");
+        const zstd = await loadZstd();
+        const levels = decodeKtx2Rgba8(
+          container,
+          { width, height, srgb: colorSpace === "srgb", levels: mipLevels },
+          (input, size) => zstd.decode(input, size),
+        );
+        // Standalone buffers: transfer lists must not detach the encoded container.
+        const mipmaps = levels.map((level) =>
+          Object.freeze({
+            width: level.width,
+            height: level.height,
+            rgba: level.rgba.slice().buffer,
+          }),
+        );
+        const base = mipmaps[0];
+        if (base === undefined) throw new Error("KTX2 RGBA8 texture has no levels");
+        if (mipmaps.reduce((sum, mip) => sum + mip.rgba.byteLength, 0) !== expectedDecodedBytes)
+          throw new Error("KTX2 RGBA8 decoded mip chain is incomplete");
+        return Object.freeze({
+          cacheKey: streamingResourceCacheKey(dependency.descriptor),
+          descriptor: dependency.descriptor,
+          decodeMs: performance.now() - startedAt,
+          decodedBytes: expectedDecodedBytes,
+          encodedBytes: dependency.bytes.byteLength,
+          format: "ktx2" as const,
+          height,
+          resourceId: dependency.descriptor.resourceId,
+          rgba: base.rgba,
+          ...(dependency.descriptor.decode.version === 2
+            ? { mipmaps: Object.freeze(mipmaps) }
+            : {}),
+          width,
+        });
+      }
       const decoded = await new KTX2DecoderPackage.KTX2Decoder().decode(
         new Uint8Array(dependency.bytes),
         {
