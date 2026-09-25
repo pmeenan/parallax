@@ -493,7 +493,9 @@ function startStreamingWorker(): void {
                     "kind" in dependency && dependency.kind === "cached-dependency-reference"
                       ? []
                       : dependency.format === "ktx2"
-                        ? (dependency.mipmaps?.map((mip) => mip.data) ?? [dependency.data])
+                        ? (dependency.mipmaps?.map((mip) => mip.data.buffer) ?? [
+                            dependency.data.buffer,
+                          ])
                         : [
                             dependency.kind !== "legacy-positions"
                               ? dependency.kind === "indices"

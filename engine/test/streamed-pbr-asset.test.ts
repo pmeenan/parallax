@@ -12,10 +12,19 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
   // WebGPU enum values for the native buffer helper under Node's fake device.
-  vi.stubGlobal("GPUBufferUsage", { VERTEX: 32, COPY_DST: 8, STORAGE: 128, INDIRECT: 256 });
+  vi.stubGlobal("GPUBufferUsage", {
+    INDEX: 16,
+    VERTEX: 32,
+    COPY_SRC: 4,
+    COPY_DST: 8,
+    STORAGE: 128,
+    INDIRECT: 256,
+  });
 });
 
 import {
+  createStreamedPbrGeometry,
+  disposeStreamedPbrGeometry,
   groupPbrAssetPlacements,
   selectPbrAssetLod,
   uploadStreamedPbrTexture,
@@ -34,6 +43,87 @@ function fixture(features: readonly string[] = ["texture-compression-bc"]) {
   };
   return { texture, device, engine: { _device: device } as unknown as EngineContext };
 }
+
+function geometryFixture() {
+  const buffers: {
+    descriptor: GPUBufferDescriptor;
+    bytes: Uint8Array;
+    destroy: ReturnType<typeof vi.fn>;
+  }[] = [];
+  const device = {
+    limits: { maxBufferSize: 1 << 30, maxVertexBufferArrayStride: 2048 },
+    createBuffer: vi.fn((descriptor: GPUBufferDescriptor) => {
+      const bytes = new Uint8Array(descriptor.size);
+      const buffer = {
+        descriptor,
+        bytes,
+        destroy: vi.fn(),
+        getMappedRange: () => bytes.buffer,
+        unmap: vi.fn(),
+      };
+      buffers.push(buffer);
+      return buffer;
+    }),
+  };
+  return { buffers, device, engine: { _device: device } as unknown as EngineContext };
+}
+
+describe("streamed PBR geometry", () => {
+  const attributes = new Float32Array([
+    0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 2, 1, 0, 1, 0, 0, 1,
+  ]);
+  const vertices = {
+    attributes: attributes.buffer,
+    vertexCount: 3,
+    boundMin: [0, 0, 0] as const,
+    boundMax: [1, 2, 1] as const,
+  };
+  const indices = { indices: new Uint32Array([0, 1, 2]).buffer, indexCount: 3 };
+
+  it("draws the decoded slab in place with decode-worker bounds and no CPU copies", () => {
+    const { buffers, engine } = geometryFixture();
+    const geometry = createStreamedPbrGeometry(engine, "slab", vertices, indices);
+    const [vertexBuffer, indexBuffer] = buffers;
+    expect(buffers).toHaveLength(2);
+    expect(vertexBuffer?.descriptor).toMatchObject({ size: 96, usage: 128 | 32 | 8 });
+    expect(indexBuffer?.descriptor).toMatchObject({ size: 12, usage: 128 | 16 | 8 });
+    expect(Array.from(new Float32Array(vertexBuffer?.bytes.buffer ?? new ArrayBuffer(0)))).toEqual(
+      Array.from(attributes),
+    );
+    expect(Array.from(new Uint32Array(indexBuffer?.bytes.buffer ?? new ArrayBuffer(0)))).toEqual([
+      0, 1, 2,
+    ]);
+    const gpu = (geometry.mesh as unknown as { _gpu: Record<string, unknown> })._gpu;
+    expect(gpu).toMatchObject({
+      positionBuffer: vertexBuffer,
+      normalBuffer: vertexBuffer,
+      uvBuffer: vertexBuffer,
+      indexBuffer,
+      indexCount: 3,
+      indexFormat: "uint32",
+      _vbKey: "sb32.0.12.24.-.-.-",
+    });
+    expect(geometry.mesh.boundMin).toEqual([0, 0, 0]);
+    expect(geometry.mesh.boundMax).toEqual([1, 2, 1]);
+    expect(geometry.gpuBytes).toBe(108);
+    expect("_cpuPositions" in geometry.mesh).toBe(false);
+
+    disposeStreamedPbrGeometry(geometry);
+    expect(vertexBuffer?.destroy).toHaveBeenCalledOnce();
+    expect(indexBuffer?.destroy).toHaveBeenCalledOnce();
+  });
+  it("rejects mismatched payload shapes before allocating GPU memory", () => {
+    const { device, engine } = geometryFixture();
+    for (const [v, i] of [
+      [{ ...vertices, vertexCount: 4 }, indices],
+      [vertices, { ...indices, indexCount: 6 }],
+      [vertices, { indices: new Uint32Array([0, 1]).buffer, indexCount: 2 }],
+    ] as const) {
+      expect(() => createStreamedPbrGeometry(engine, "bad", v, i)).toThrow(/is invalid/);
+    }
+    expect(device.createBuffer).not.toHaveBeenCalled();
+  });
+});
 
 describe("installed PBR surface upload", () => {
   it("matches Lite's rigid tilted transform for packaging bounds and native instance matrices", () => {
@@ -130,7 +220,7 @@ describe("installed PBR surface upload", () => {
     const { engine, device, texture } = fixture();
     const base = uploadStreamedPbrTexture(
       engine,
-      [{ width: 1, height: 1, data: new ArrayBuffer(4) }],
+      [{ width: 1, height: 1, data: new Uint8Array(4) }],
       "rgba8",
       false,
     ).texture;
@@ -180,7 +270,7 @@ describe("installed PBR surface upload", () => {
     const levels = [4, 2, 1].map((width) => ({
       width,
       height: width,
-      data: new ArrayBuffer(width * width * 4),
+      data: new Uint8Array(width * width * 4),
     }));
     const uploaded = uploadStreamedPbrTexture(engine, levels, "rgba8", true);
     expect(uploaded.gpuBytes).toBe(84);
@@ -212,7 +302,7 @@ describe("installed PBR surface upload", () => {
     const levels = [8, 4, 2, 1].map((width) => ({
       width,
       height: width,
-      data: new ArrayBuffer(Math.ceil(width / 4) ** 2 * 16),
+      data: new Uint8Array(Math.ceil(width / 4) ** 2 * 16),
     }));
     const uploaded = uploadStreamedPbrTexture(engine, levels, "bc7", true);
     expect(uploaded.gpuBytes).toBe(64 + 16 + 16 + 16);
@@ -238,7 +328,7 @@ describe("installed PBR surface upload", () => {
     });
     const rgbaSized = levels.map((level) => ({
       ...level,
-      data: new ArrayBuffer(level.width * level.width * 4),
+      data: new Uint8Array(level.width * level.width * 4),
     }));
     expect(() => uploadStreamedPbrTexture(engine, rgbaSized, "bc7", true)).toThrow(
       "mip dimensions or byte length",
@@ -249,12 +339,35 @@ describe("installed PBR surface upload", () => {
     );
     expect(noBc.device.createTexture).not.toHaveBeenCalled();
   });
+  it("uploads pre-encoded BC1 chains as 8-byte block rows", () => {
+    const { engine, device } = fixture();
+    const levels = [8, 4, 2, 1].map((width) => ({
+      width,
+      height: width,
+      data: new Uint8Array(Math.ceil(width / 4) ** 2 * 8),
+    }));
+    const uploaded = uploadStreamedPbrTexture(engine, levels, "bc1", true);
+    expect(uploaded.gpuBytes).toBe(32 + 8 + 8 + 8);
+    expect(device.createTexture.mock.calls[0]?.[0]).toMatchObject({
+      format: "bc1-rgba-unorm-srgb",
+      mipLevelCount: 4,
+    });
+    expect(device.queue.writeTexture.mock.calls.map((call) => call[2])).toEqual([
+      { bytesPerRow: 16, rowsPerImage: 2 },
+      { bytesPerRow: 8, rowsPerImage: 1 },
+      { bytesPerRow: 8, rowsPerImage: 1 },
+      { bytesPerRow: 8, rowsPerImage: 1 },
+    ]);
+    expect(() => uploadStreamedPbrTexture(fixture([]).engine, levels, "bc1", true)).toThrow(
+      "texture-compression-bc",
+    );
+  });
   it("rejects a missing final mip before allocating GPU memory", () => {
     const { engine, device } = fixture();
     expect(() =>
       uploadStreamedPbrTexture(
         engine,
-        [{ width: 2, height: 2, data: new ArrayBuffer(16) }],
+        [{ width: 2, height: 2, data: new Uint8Array(16) }],
         "rgba8",
         false,
       ),
@@ -269,7 +382,7 @@ describe("installed PBR surface upload", () => {
     expect(() =>
       uploadStreamedPbrTexture(
         engine,
-        [{ width: 1, height: 1, data: new ArrayBuffer(4) }],
+        [{ width: 1, height: 1, data: new Uint8Array(4) }],
         "rgba8",
         false,
       ),

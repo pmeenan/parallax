@@ -373,9 +373,9 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
-**Next up (2026-09-24):** engine package 2, render-path geometry for the paving. The ordered
-list of front-loaded [engine packages](#engine-packages) gives its starting numbers and target.
-Packages 3–5 follow it: texture compression A/B, then lighting balance with AO, then
+**Next up (2026-09-24):** engine package 4,
+lighting balance with ambient occlusion, from the ordered list of front-loaded
+[engine packages](#engine-packages). Packages 2 and 3 are done (below). Packages 4–5 follow: lighting balance with AO, then
 small-scale shadows. The flythrough harness repair is a separate task.
 
 **Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
@@ -552,7 +552,7 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
    9.17.0 → 9.27.1 (outcome below). The decoder 9.28.0 is a minor release, eligible from
    2026-09-25T07:43Z. Take it as a short targeted review at the start of package 3, which
    exercises the decoder.
-2. **Render-path geometry — next.** Starting point on 1.31.1 (installed paving capture,
+2. **Render-path geometry — done 2026-09-24** (outcome below). Starting point on 1.31.1 (installed paving capture,
    `lite1311`): the paving cell loads in 218 ms against the 250 ms cell-load p95 budget. Of that,
    96 ms is dependency decode, 21 ms is the read, and the render-thread batch upload stalls the
    render worker for 86 ms against the 50 ms hitch budget. That stall is mostly mesh
@@ -582,7 +582,8 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
      check: an unexplained pixel change from an engine-only change is investigated. Pebble
      changes alter the asset, so they ship as a new paving candidate through the QA gate and
      human visual acceptance.
-3. **Texture compression A/B set** (highest compression at acceptable quality, lossy included).
+3. **Texture compression A/B set — done 2026-09-24** (outcome below; D-201).
+   Highest compression at acceptable quality, lossy included.
    Today every paving map is BC7 from UASTC `LEVEL_SLOWER`: 65 MB read and 80 MB GPU (D-199).
    - BC1 base colour.
    - BC4 ORM channels and BC5 normals, rebuilding Z in the shader. First try Lite 1.31's public
@@ -596,11 +597,87 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
    - Outside the A/B set: loading the top mip levels only for near cells. This is an
      architecture change, not an asset setting. Scope it separately once many resident cells
      make texture memory the bottleneck.
-4. **Lighting balance with ambient occlusion.**
+4. **Lighting balance with ambient occlusion.** Include the 1024² ground ORM A/B from the
+   optimisation review.
 5. **Small-scale shadows.** Candidates include Lite 1.18's screen-space lighting.
 
-Candidate 5's human visual acceptance (above) remains open. It gates the asset, not these
-engine packages.
+Installed-game visual acceptance of the paving was granted for candidate 6 on 2026-09-24.
+The human accepted candidate 7 (package 3) on 2026-09-24, and the library records it.
+
+**Texture compression outcome (2026-09-24): adopted (D-201); candidate 7 accepted by the
+human.** See the [brief](../assets/source/d1-paving/proof-2026-09-24/compression-brief.md)
+and [results](../assets/source/d1-paving/proof-2026-09-24/compression-results.md).
+- **Engine.** Base colours ship as pre-encoded BC1, and the decode worker copies the levels
+  without transcoding. A runtime UASTC→BC1 transcode took 276 ms against 33 ms for BC7, and the
+  pinned decoder has no BCn passthrough.
+- **Asset.** Candidate 7 also ships the ground normal at 2048².
+- **Cost.** Map bytes fall from 52.5 to 24.1 MB on disk and on the GPU, and the paving's GPU
+  memory from 65.9 to 37.6 MB. The cell loads in 85 ms (was 157), and the stall is 19.7 ms.
+- **Look.** The in-game close and joint views match candidate 6.
+- **Dropped or deferred.** BC5/BC4 are dropped: BC5 saves nothing, and BC4 saves only 2.8 MB for
+  a shader swizzle. RDO download is deferred; HTTP zstd on the BC1 maps is the cheaper
+  human-admin win.
+- **Decoder review.** The decoder 9.28.0 review was not yet eligible (07:43Z on 2026-09-25). It
+  moves to the next decoder-touching package.
+- **Verification.** The replay was rebound to v19 on build `670d7722` and passes, and so does
+  `pnpm check`.
+- **Follow-up (candidate 8, D-202, D-203).**
+  - The remaining UASTC maps ship as BC7, pre-transcoded by the runtime's own Babylon
+    transcoder, so the pixels are identical.
+  - Geometry is validated at build time.
+  - The build now refuses any streamed resource needing client work, except the registered
+    meshopt-geometry exception.
+  - The paving decode fell to 18 ms and the cell load to 65 ms, with the same bytes.
+  - The replay is at v21 on build `42700196`. Candidate 8's acceptance is pending: its look is
+    pixel-identical to accepted candidate 7.
+  - Review follow-up: pre-encoded mip levels are views into the transferred container, with no
+    copies. Decode is 11 ms and the cell loads in 55 ms. The replay is at v22 on build
+    `c2728534`.
+  - Package 4 also A/Bs a 1024² ground ORM (4 MiB) under the new lighting.
+Physical smoke waits until the optimisation packages are done (human direction, 2026-09-24).
+
+**Optimization review (2026-09-24):** no P1/P2 defect confirmed; corrected pack-receipt GPU-byte
+accounting for future packs without changing candidate 8's admitted bytes. The
+[review](../assets/source/d1-paving/proof-2026-09-24/optimization-review.md) prioritizes removing
+the remaining 24.1 MB of texture mip copies, then testing a 1024² ground ORM during package 4
+(4 MiB potential saving). Bounds precomputation and narrower geometry formats have lower
+near-term payoff. These are follow-up opportunities, not additional acceptance gates.
+Build/lint and focused checks passed; the full check and a four-worker unit rerun each retained
+one scale-corpus loopback `ENOBUFS` failure, while the isolated scale-corpus/provenance checks
+passed. The review is not a green full-gate claim; see the retained logs in the review.
+
+**Render-path geometry outcome (2026-09-24): adopted.** See the
+[brief](../assets/source/d1-paving/proof-2026-09-24/geometry-brief.md) and
+[results](../assets/source/d1-paving/proof-2026-09-24/geometry-results.md). Both cycles were
+used in one session.
+- **Engine.**
+  - The decode worker also computes vertex bounds, after its finite and index-range checks.
+  - The render worker draws PBR geometry straight from the decoded interleaved bytes, using
+    Lite 1.31's storage-backed meshes. It does no per-vertex work and keeps no CPU copies.
+  - The PBR PSO states pin the 32-byte slab layout; the WGSL is unchanged.
+- **Cost.** The paving cell's render-worker stall is 32.5–37.1 ms (was 89.7) against the 50 ms
+  hitch budget. The cell loads in 175–197 ms (was 228). GPU bytes are unchanged.
+- **Look.** The captures are pixel-identical outside the HUD. Spreading uploads across frames
+  is not needed.
+- **Verification.** Runtime-route captures and focused tests pass. The installer-repair replay
+  was rebound to semantic contract v18 on final build `0a54d957` and passes. `pnpm check`
+  passes. During cycle 1, two full unit runs each hit a different load-dependent flake, and both
+  files pass alone (see results).
+- **Not yet run.** This was a remote session, so the timings are advisory. The installed
+  scale-streaming run waits for dev-01's physical console.
+- **Pebble A/B.** Crease-angle normals (40°) cut pebble LOD0 vertices by 35% and geometry
+  bytes by 19%, with no visible change. Adding an 11 mm 3D cut-off halves geometry bytes and cuts
+  walking-view triangles from 5.65 M to 3.50 M. The cost is that small joint pebbles flatten into
+  the maps.
+- **Candidate 6 admitted.** The human accepted the combined option (2026-09-24) as a slight
+  D-200 trade.
+  - It is admitted as `107c1f60…7f35` and placed by the game. `pack.mjs` defaults and
+    provenance are updated.
+  - In game, the paving stall is 28–30 ms, the cell loads in 154–157 ms, and GPU memory is
+    65.9 MB (was 79.8).
+  - The installed size shrinks by 6.97 MB.
+  - The human accepted the installed-game look on 2026-09-24. The library records the acceptance
+    against this candidate.
 
 **Renderer-family upgrade brief (2026-09-24, closed).**
 - **Why.** The pins are 19 Lite releases and 11 decoder releases behind (ledger recheck was due

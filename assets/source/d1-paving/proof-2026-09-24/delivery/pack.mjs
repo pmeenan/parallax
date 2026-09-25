@@ -21,6 +21,10 @@ import {
   KTX_ENCODER_PIN,
   loadPinnedKtxEncoder,
 } from "../../../../../engine/scripts/ktx-encoder-pin.mjs";
+import {
+  bc7TranscoderIdentity,
+  preencodeUastcAsBc7,
+} from "../../../../../engine/scripts/preencode-bc7.mjs";
 
 const mapsDir = resolve(process.argv[2]);
 const out = resolve(process.argv[3]);
@@ -32,6 +36,18 @@ await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready, MeshoptSimplifier
 const UASTC_LEVEL = process.env.PAVING_UASTC_LEVEL ?? "LEVEL_SLOWER";
 const GROUND_NORMAL_FORMAT = process.env.PAVING_GROUND_NORMAL ?? "uastc";
 assert(["uastc", "rgba8"].includes(GROUND_NORMAL_FORMAT), "PAVING_GROUND_NORMAL is uastc or rgba8");
+// Candidate 7 (engine package 3): base colours ship as pre-encoded BC1, transcoded from UASTC at
+// pack time (a runtime UASTC→BC1 transcode is a real BC1 encode, about 8× slower than BC7), and
+// the ground normal drops its 4096² level. "bc7" and 4096 reproduce candidates 5–6.
+const BASECOLOR_GPU = process.env.PAVING_BASECOLOR_GPU ?? "bc1";
+assert(["bc1", "bc7"].includes(BASECOLOR_GPU), "PAVING_BASECOLOR_GPU is bc1 or bc7");
+const GROUND_NORMAL_SIZE = Number(process.env.PAVING_GROUND_NORMAL_SIZE ?? 2048);
+// Candidate 8: the other UASTC maps ship pre-transcoded to BC7 by the runtime's own Babylon
+// transcoder, so the decode worker only copies them and no pixel changes. "uastc" reproduces
+// candidate 7. Error figures and preview dumps come from the UASTC encode.
+const OTHER_MAPS_AT_REST = process.env.PAVING_OTHER_MAPS_AT_REST ?? "bc7";
+assert(["bc7", "uastc"].includes(OTHER_MAPS_AT_REST), "PAVING_OTHER_MAPS_AT_REST is bc7 or uastc");
+assert([2048, 4096].includes(GROUND_NORMAL_SIZE), "PAVING_GROUND_NORMAL_SIZE is 2048 or 4096");
 const TILE = 4;
 const N = 4096;
 const PX = TILE / N;
@@ -43,11 +59,20 @@ const LOD = {
     { grid: 200, errorMm: 6 },
   ],
   // The engine requires three LODs per placement; LOD2 keeps the largest pebbles.
+  // Candidate 6 (human-accepted 2026-09-24): 3D pebbles from 11 mm (the maps draw all of
+  // them), and angular variants shaded with 40° crease-angle normals, so faces within the
+  // angle share vertices instead of every face splitting. Experiment overrides, recorded in
+  // pack.json: PAVING_PEBBLE_LOD0_MIN_MM and PAVING_PEBBLE_CREASE_DEG ("none" = flat faces,
+  // candidates 1–5 used 9 mm and flat faces).
   pebbles: [
-    { minimumMm: 9, triangles: 64 },
+    { minimumMm: Number(process.env.PAVING_PEBBLE_LOD0_MIN_MM ?? 11), triangles: 64 },
     { minimumMm: 13, triangles: 24 },
     { minimumMm: 16, triangles: 12 },
-  ],
+  ].map((spec) =>
+    process.env.PAVING_PEBBLE_CREASE_DEG === "none"
+      ? spec
+      : { ...spec, creaseDegrees: Number(process.env.PAVING_PEBBLE_CREASE_DEG ?? 40) },
+  ),
   plants: [{ keep: 1 }, { keep: 0.35 }, { keep: 0.1 }],
 };
 const hash = (b) => createHash("sha256").update(b).digest("hex");
@@ -214,7 +239,7 @@ function faceNormal(p, a, b, c) {
   const vz = p[c * 3 + 2] - p[a * 3 + 2];
   return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
 }
-function shell(k, triangles) {
+function shell(k, triangles, creaseDegrees) {
   const { v, f } = variants[k];
   const [idx] = MeshoptSimplifier.simplify(new Uint32Array(f), v, 3, triangles * 3, 0.2, []);
   const smooth = pebble.smooth[k] === 1;
@@ -239,6 +264,46 @@ function shell(k, triangles) {
       }
       tri.push(map.get(i));
     }
+  } else if (creaseDegrees !== undefined) {
+    // Each corner averages the area-weighted normals of the faces around its vertex that lie
+    // within the crease angle of its own face; equal (vertex, normal) corners share a vertex.
+    const cosCrease = Math.cos((creaseDegrees * Math.PI) / 180);
+    const faceN = [];
+    const around = new Map();
+    for (let t = 0; t < idx.length; t += 3) {
+      const n = faceNormal(v, idx[t], idx[t + 1], idx[t + 2]);
+      faceN.push(n);
+      for (const i of idx.subarray(t, t + 3)) {
+        if (!around.has(i)) around.set(i, []);
+        around.get(i).push(t / 3);
+      }
+    }
+    const unit = (n) => {
+      const l = Math.hypot(...n);
+      return [n[0] / l, n[1] / l, n[2] / l];
+    };
+    const key = new Map();
+    for (let t = 0; t < idx.length; t += 3) {
+      const own = unit(faceN[t / 3]);
+      for (const i of idx.subarray(t, t + 3)) {
+        const acc = [0, 0, 0];
+        const group = [];
+        for (const f of around.get(i)) {
+          const u = unit(faceN[f]);
+          if (u[0] * own[0] + u[1] * own[1] + u[2] * own[2] < cosCrease) continue;
+          group.push(f);
+          for (let a = 0; a < 3; a++) acc[a] += faceN[f][a];
+        }
+        const k2 = `${i}:${group.sort((a, b) => a - b).join(",")}`;
+        if (!key.has(k2)) {
+          key.set(k2, pos.length / 3);
+          const n = unit(acc);
+          pos.push(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+          nrm.push(n[0], n[1], n[2]);
+        }
+        tri.push(key.get(k2));
+      }
+    }
   } else {
     for (let t = 0; t < idx.length; t += 3) {
       const n = faceNormal(v, idx[t], idx[t + 1], idx[t + 2]);
@@ -253,7 +318,7 @@ function shell(k, triangles) {
   return { pos, nrm, tri };
 }
 function pebbleLod(spec) {
-  const shells = variants.map((_, k) => shell(k, spec.triangles));
+  const shells = variants.map((_, k) => shell(k, spec.triangles, spec.creaseDegrees));
   const pos = [];
   const nrm = [];
   const tri = [];
@@ -392,7 +457,11 @@ function plantLod(spec) {
 // ------------------------------------------------------------------ encode geometry
 const receipt = {
   stage: "pack",
-  encoders: { ktx: KTX_ENCODER_PIN, meshopt: "1.2.0" },
+  encoders: {
+    ktx: KTX_ENCODER_PIN,
+    meshopt: "1.2.0",
+    ...(OTHER_MAPS_AT_REST === "bc7" ? { bc7Transcoder: await bc7TranscoderIdentity() } : {}),
+  },
   lods: LOD,
   geometry: [],
   textures: [],
@@ -489,8 +558,12 @@ for (let lod = 0; lod < 3; lod++) {
 const k = await loadPinnedKtxEncoder();
 const maps = JSON.parse(await readFile(join(mapsDir, "maps.json"), "utf8"));
 for (const map of maps.maps) {
-  const width = map.levels[0].width;
-  const heightPx = map.levels[0].height;
+  const mapLevels =
+    map.role === "ground-normal" && GROUND_NORMAL_SIZE === 2048 ? map.levels.slice(1) : map.levels;
+  if (map.role === "ground-normal") assert.equal(mapLevels[0].width, GROUND_NORMAL_SIZE);
+  const bc1 = map.role.endsWith("basecolor") && BASECOLOR_GPU === "bc1";
+  const width = mapLevels[0].width;
+  const heightPx = mapLevels[0].height;
   const info = new k.textureCreateInfo();
   info.vkFormat = map.role.endsWith("basecolor")
     ? k.VkFormat.R8G8B8A8_SRGB
@@ -500,7 +573,7 @@ for (const map of maps.maps) {
     baseHeight: heightPx,
     baseDepth: 1,
     numDimensions: 2,
-    numLevels: map.levels.length,
+    numLevels: mapLevels.length,
     numLayers: 1,
     numFaces: 1,
     isArray: false,
@@ -509,7 +582,7 @@ for (const map of maps.maps) {
   const texture = new k.texture(info, k.TextureCreateStorageEnum.ALLOC_STORAGE);
   const basis = new k.basisParams();
   const levels = [];
-  for (const [level, image] of map.levels.entries()) {
+  for (const [level, image] of mapLevels.entries()) {
     const rgba = await readFile(join(mapsDir, image.file));
     assert.equal(hash(rgba), image.sha256);
     assert.equal(rgba.length, image.width * image.height * 4);
@@ -532,7 +605,12 @@ for (const map of maps.maps) {
   assert.equal(basis.uastcFlags, k.pack_uastc_flag_bits[UASTC_LEVEL].value, "UASTC level unset");
   const started = performance.now();
   if (!lossless) assert.equal(texture.compressBasis(basis), k.ErrorCode.SUCCESS);
-  const plain = Buffer.from(texture.writeToMemory());
+  const bc7 = !lossless && !bc1 && OTHER_MAPS_AT_REST === "bc7";
+  const uastcBytes = bc7 ? Buffer.from(texture.writeToMemory()) : null;
+  if (bc1) assert.equal(texture.transcodeBasis(k.TranscodeTarget.BC1_RGB, 0), k.ErrorCode.SUCCESS);
+  const plain = bc7
+    ? (await preencodeUastcAsBc7(k, uastcBytes, map.role.endsWith("basecolor"))).ktx2
+    : Buffer.from(texture.writeToMemory());
   assert.equal(texture.deflateZstd(lossless ? 19 : 9), k.ErrorCode.SUCCESS);
   const supercompressed = Buffer.from(texture.writeToMemory());
   const encodeMs = performance.now() - started;
@@ -542,15 +620,16 @@ for (const map of maps.maps) {
   basis.delete();
   info.delete();
   const saved = await saveRuntime(`${map.role}.ktx2`, bytes);
-  const decoded = new k.texture(bytes);
-  if (!lossless)
+  const decoded = new k.texture(uastcBytes ?? bytes);
+  if (!lossless && !bc1)
     assert.equal(decoded.transcodeBasis(k.TranscodeTarget.RGBA32, 0), k.ErrorCode.SUCCESS);
   let decodedBytes = 0;
   let err = 0;
   let maxErr = 0;
   const angles = { sum: 0, over5: 0, over10: 0, max: 0 };
-  for (let level = 0; level < map.levels.length; level++) {
-    const rgba = Buffer.from(decoded.getImage(level, 0, 0));
+  for (let level = 0; level < mapLevels.length; level++) {
+    const image = Buffer.from(decoded.getImage(level, 0, 0));
+    const rgba = bc1 ? decodeBc1(image, mapLevels[level].width, mapLevels[level].height) : image;
     assert.equal(rgba.length, levels[level].length);
     decodedBytes += rgba.length;
     await writeFile(
@@ -581,13 +660,22 @@ for (const map of maps.maps) {
     role: map.role,
     width,
     height: heightPx,
-    levels: map.levels.length,
+    levels: mapLevels.length,
     ktx2: saved,
-    format: lossless ? "rgba8" : "uastc",
+    format: lossless ? "rgba8" : bc1 ? "bc1" : bc7 ? "bc7" : "uastc",
     uncompressedContainerBytes: plain.length,
     zstdBytes,
     rgba8DecodedBytes: decodedBytes,
     bc7LogicalBytes: Math.round(decodedBytes / 4),
+    // Every sub-4x4 mip still occupies a full BC block; lossless maps keep RGBA8 bytes.
+    gpuBytes: mapLevels.reduce(
+      (sum, level) =>
+        sum +
+        (lossless
+          ? level.width * level.height * 4
+          : Math.ceil(level.width / 4) * Math.ceil(level.height / 4) * (bc1 ? 8 : 16)),
+      0,
+    ),
     level0MeanAbsError: err / ((levels[0].length / 4) * 3),
     level0MaxAbsError: maxErr,
     ...(map.role.endsWith("-normal")
@@ -607,7 +695,7 @@ for (const map of maps.maps) {
     map.role,
     width,
     saved.bytes,
-    "B uastc",
+    bc1 ? "B bc1" : bc7 ? "B bc7" : "B uastc",
     zstdBytes,
     "B zstd",
     entry.level0MeanAbsError.toFixed(3),
@@ -755,6 +843,39 @@ receipt.plantNormalFallbacks = plantNormalFallbacks;
 receipt.inputs = { maps: hash(await readFile(join(mapsDir, "maps.json"))) };
 await writeFile(join(out, "pack.json"), `${JSON.stringify(receipt, null, 2)}\n`, { flag: "wx" });
 console.log("PACK_DONE", out);
+
+/** Opaque BC1 blocks to RGBA8 (padded sub-block levels crop to width × height). */
+function decodeBc1(blocks, width, height) {
+  const out = Buffer.alloc(width * height * 4);
+  const bw = Math.ceil(width / 4);
+  const c565 = (v) => [
+    ((v >> 11) & 31) * (255 / 31),
+    ((v >> 5) & 63) * (255 / 63),
+    (v & 31) * (255 / 31),
+  ];
+  for (let by = 0; by < Math.ceil(height / 4); by++)
+    for (let bx = 0; bx < bw; bx++) {
+      const o = (by * bw + bx) * 8;
+      const e0 = blocks.readUInt16LE(o);
+      const e1 = blocks.readUInt16LE(o + 2);
+      const [a, b] = [c565(e0), c565(e1)];
+      const palette =
+        e0 > e1
+          ? [a, b, a.map((x, i) => (2 * x + b[i]) / 3), a.map((x, i) => (x + 2 * b[i]) / 3)]
+          : [a, b, a.map((x, i) => (x + b[i]) / 2), [0, 0, 0]];
+      const bits = blocks.readUInt32LE(o + 4);
+      for (let p = 0; p < 16; p++) {
+        const x = bx * 4 + (p % 4);
+        const y = by * 4 + Math.floor(p / 4);
+        if (x >= width || y >= height) continue;
+        const colour = palette[(bits >> (2 * p)) & 3];
+        const d = (y * width + x) * 4;
+        for (let c = 0; c < 3; c++) out[d + c] = Math.round(colour[c]);
+        out[d + 3] = 255;
+      }
+    }
+  return out;
+}
 
 /** Angle in degrees between two 8-bit tangent-space normals at byte offset i. */
 function normalAngleDeg(a, b, i) {

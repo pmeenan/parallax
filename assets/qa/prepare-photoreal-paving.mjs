@@ -10,6 +10,7 @@ import { join, relative, resolve } from "node:path";
 import { MeshoptDecoder } from "../../engine/node_modules/meshoptimizer/meshopt_decoder.mjs";
 import { MeshoptEncoder } from "../../engine/node_modules/meshoptimizer/meshopt_encoder.js";
 import { KTX_ENCODER_PIN } from "../../engine/scripts/ktx-encoder-pin.mjs";
+import { bc7TranscoderIdentity } from "../../engine/scripts/preencode-bc7.mjs";
 import { canonicalMeshoptLayoutErrors } from "../../engine/src/assets/meshopt-layout.ts";
 import { readPavingProvenance } from "./paving-provenance.mjs";
 
@@ -76,13 +77,29 @@ for (const texture of pack.textures) {
     assert.equal(bytes[dfd + 14], srgb ? 2 : 1, "UASTC transfer function");
     assert.equal(scheme, 0, "Production UASTC is not supercompressed");
     encoding = "uastc";
+  } else if (vkFormat === 131 || vkFormat === 132) {
+    // Pre-encoded opaque BC1 (VK_FORMAT_BC1_RGB_{UNORM,SRGB}_BLOCK), uploaded as stored.
+    assert.equal(vkFormat, srgb ? 132 : 131, "BC1 colour space");
+    assert.equal(scheme, 0, "Production BC1 is not supercompressed");
+    encoding = "bc1";
+  } else if (vkFormat === 145 || vkFormat === 146) {
+    // Pre-encoded BC7 (VK_FORMAT_BC7_{UNORM,SRGB}_BLOCK), transcoded from UASTC at pack time.
+    assert.equal(vkFormat, srgb ? 146 : 145, "BC7 colour space");
+    assert.equal(scheme, 0, "Production BC7 is not supercompressed");
+    encoding = "bc7";
   } else {
     assert.equal(vkFormat, srgb ? 43 : 37, "RGBA8 colour space");
     assert([0, 2].includes(scheme), "RGBA8 maps are plain or zstd-supercompressed");
     encoding = scheme === 2 ? "rgba8-zstd" : "rgba8";
   }
-  if (texture.role === "ground-basecolor" || texture.role === "ground-normal")
+  if (texture.role === "ground-basecolor")
     assert.equal(width / config.tileMetres, config.groundTexelsPerMetre, "Ground texel density");
+  if (texture.role === "ground-normal")
+    assert.equal(
+      width / config.tileMetres,
+      config.groundNormalTexelsPerMetre,
+      "Ground normal texel density",
+    );
   await save(texture.role, "ktx2", bytes);
   textures[texture.role] = {
     width,
@@ -91,16 +108,23 @@ for (const texture of pack.textures) {
     colorSpace: srgb ? "srgb" : "linear",
     encoding,
   };
-  // GPU residency: UASTC transcodes to BC7 (16 bytes per 4 × 4 block), RGBA8 uploads as is.
-  const bc7Bytes = Array.from({ length: levels }, (_, level) => {
-    const w = Math.max(1, width >> level);
-    const h = Math.max(1, height >> level);
-    return Math.ceil(w / 4) * Math.ceil(h / 4) * 16;
-  }).reduce((sum, value) => sum + value, 0);
+  // GPU residency: UASTC transcodes to BC7 (16 bytes per 4 × 4 block), BC1 is 8 bytes per
+  // block, and RGBA8 uploads as is.
+  const blockBytes = (bytesPerBlock) =>
+    Array.from({ length: levels }, (_, level) => {
+      const w = Math.max(1, width >> level);
+      const h = Math.max(1, height >> level);
+      return Math.ceil(w / 4) * Math.ceil(h / 4) * bytesPerBlock;
+    }).reduce((sum, value) => sum + value, 0);
   measurements.textures[texture.role] = {
     encodedBytes: bytes.length,
     rgba8DecodedBytes: texture.rgba8DecodedBytes,
-    gpuBytes: encoding === "uastc" ? bc7Bytes : texture.rgba8DecodedBytes,
+    gpuBytes:
+      encoding === "uastc" || encoding === "bc7"
+        ? blockBytes(16)
+        : encoding === "bc1"
+          ? blockBytes(8)
+          : texture.rgba8DecodedBytes,
   };
 }
 for (const material of Object.values(config.materials))
@@ -348,7 +372,13 @@ const candidate = {
   parts,
   source,
   provenance: reviewed.provenance,
-  encoders: { ktx: KTX_ENCODER_PIN, meshopt: "1.2.0" },
+  encoders: {
+    ktx: KTX_ENCODER_PIN,
+    meshopt: "1.2.0",
+    ...(Object.values(textures).some((texture) => texture.encoding === "bc7")
+      ? { bc7Transcoder: await currentBc7Transcoder() }
+      : {}),
+  },
   qa: {
     finiteAttributesUnitNormalsAndIndexRange: true,
     planarTileUvs: true,
@@ -368,3 +398,14 @@ await writeFile(join(output, "candidate.json"), `${JSON.stringify(candidate, nul
 console.log(
   JSON.stringify({ resources: resources.length, runtimeBytes: measurements.runtimeEncodedBytes }),
 );
+
+/** Pre-encoded BC7 must come from the engine's pinned Babylon transcoder (D-201). */
+async function currentBc7Transcoder() {
+  const current = await bc7TranscoderIdentity();
+  assert.deepEqual(
+    pack.encoders?.bc7Transcoder,
+    current,
+    "Pre-encoded BC7 was not produced by the pinned Babylon transcoder; repack",
+  );
+  return current;
+}

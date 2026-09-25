@@ -48,6 +48,7 @@ import type {
   GreyboxMaterial,
   GreyboxPrimitive,
   GreyboxSceneConfig,
+  WorldVec3,
 } from "../world/world-contract";
 import {
   parseGreyboxMaterials,
@@ -87,8 +88,11 @@ import type {
 import { RENDER_GAMEPLAY_CROWD_CAPACITY, RENDER_LIGHTING_MODEL } from "./render-protocol";
 import {
   createPbrWarmupMesh,
+  createStreamedPbrGeometry,
   createStreamedPbrMaterial,
+  disposeStreamedPbrGeometry,
   groupPbrAssetPlacements,
+  type StreamedPbrGeometry,
   selectPbrAssetLod,
   uploadStreamedPbrTexture,
   withPbrTextureAddressMode,
@@ -109,8 +113,11 @@ export interface HeightfieldBatchEntry {
 
 interface StreamingDependencyGpuValue {
   attributes: ArrayBuffer | null;
+  readonly bounds: Readonly<{ boundMin: WorldVec3; boundMax: WorldVec3 }> | null;
   readonly format: "ktx2" | "meshopt";
   readonly gpuBytes: number;
+  /** PBR source geometry: storage-backed, outside the scene, disposed by the cache. */
+  readonly geometry: StreamedPbrGeometry | null;
   readonly mesh: Mesh | null;
   readonly texture: Texture2D | null;
   readonly vertexCount: number;
@@ -603,6 +610,7 @@ export async function createLiteGreyboxWorld(
     );
     await psoWarmup.finish();
     removeFromScene(scene, pbrWarmup.mesh);
+    disposeStreamedPbrGeometry(pbrWarmup.geometry);
     for (const texture of Object.values(pbrWarmup.textures)) releaseTexture(texture);
     setGpuTimingEnabled(engine, true);
     await setRenderTaskGpuTimingEnabled(engine, true);
@@ -850,7 +858,7 @@ export function uploadStreamingGreyboxCell(
       }
       if (dependency.format === "ktx2") {
         const gpuFormat = dependency.descriptor.decode.format;
-        const data = new Uint8Array(dependency.data);
+        const data = dependency.data;
         if (
           data.byteLength !==
           streamingTextureLevelBytes(gpuFormat, dependency.width, dependency.height)
@@ -882,7 +890,9 @@ export function uploadStreamingGreyboxCell(
           renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, textureGpuBytes);
           renderer.streamingDependencyCache.fulfill(acquired.key, {
             attributes: null,
+            bounds: null,
             format: "ktx2",
+            geometry: null,
             gpuBytes: textureGpuBytes,
             mesh: null,
             texture,
@@ -897,23 +907,87 @@ export function uploadStreamingGreyboxCell(
         dependencyUploadBytes += textureGpuBytes;
         dependencyUploadCount += 1;
       } else if (dependency.kind === "vertex-attributes") {
-        const attributes = new Float32Array(dependency.attributes);
-        let finite = attributes.length === dependency.vertexCount * 8;
-        for (let index = 0; finite && index < attributes.length; index += 1)
-          finite = Number.isFinite(attributes[index]);
-        if (!finite) {
+        // The build validated the values and the streaming worker checked the payload shape;
+        // only the O(1) size check repeats on the render thread.
+        if (dependency.attributes.byteLength !== dependency.vertexCount * 32) {
           throw new Error(
             `Streaming meshopt vertex dependency ${dependency.resourceId} is invalid`,
           );
         }
         renderer.streamingDependencyCache.fulfill(acquired.key, {
           attributes: dependency.attributes,
+          bounds: Object.freeze({ boundMin: dependency.boundMin, boundMax: dependency.boundMax }),
           format: "meshopt",
+          geometry: null,
           gpuBytes: 0,
           mesh: null,
           texture: null,
           vertexCount: dependency.vertexCount,
         });
+      } else if (dependency.kind === "indices" && pbrIndexIds.has(dependency.resourceId)) {
+        const vertexResourceId = dependency.descriptor.dependencies[1];
+        const vertexDependency = dependencies.find(
+          (candidate) =>
+            candidate.resourceId === vertexResourceId &&
+            candidate.format === "meshopt" &&
+            candidate.kind === "vertex-attributes",
+        );
+        if (vertexDependency === undefined) {
+          throw new Error(
+            `Streaming meshopt index ${dependency.resourceId} lacks its vertex payload`,
+          );
+        }
+        const vertexKey = streamingResourceCacheKey(vertexDependency.descriptor);
+        const vertexValue = renderer.streamingDependencyCache.require(vertexKey).value;
+        if (
+          vertexValue === null ||
+          vertexValue.attributes === null ||
+          vertexValue.bounds === null
+        ) {
+          throw new Error(`Streaming meshopt vertex ${vertexResourceId} is unavailable`);
+        }
+        // The build checked every index against this vertex count.
+        const geometry = createStreamedPbrGeometry(
+          renderer.engine,
+          `streaming-dependency-${dependency.resourceId}`,
+          {
+            attributes: vertexValue.attributes,
+            vertexCount: vertexValue.vertexCount,
+            ...vertexValue.bounds,
+          },
+          dependency,
+        );
+        let cacheOwnsGeometry = false;
+        try {
+          renderer.streamingDependencyCache.setOwnedBytes(
+            vertexKey,
+            0,
+            geometry.vertices.byteLength,
+          );
+          renderer.streamingDependencyCache.setOwnedBytes(
+            acquired.key,
+            0,
+            geometry.indices.byteLength,
+          );
+          renderer.streamingDependencyCache.fulfill(acquired.key, {
+            attributes: null,
+            bounds: null,
+            format: "meshopt",
+            geometry,
+            gpuBytes: geometry.gpuBytes,
+            mesh: geometry.mesh,
+            texture: null,
+            vertexCount: 0,
+          });
+          cacheOwnsGeometry = true;
+          vertexValue.attributes = null;
+        } catch (error: unknown) {
+          if (!cacheOwnsGeometry) disposeStreamedPbrGeometry(geometry);
+          throw error;
+        }
+        renderer.streamingDependencyGpuBytes += geometry.gpuBytes;
+        dependencyUploadBytes += geometry.gpuBytes;
+        dependencyUploadCount += 2;
       } else if (dependency.kind === "indices") {
         const vertexResourceId = dependency.descriptor.dependencies[1];
         const vertexDependency = dependencies.find(
@@ -953,10 +1027,8 @@ export function uploadStreamingGreyboxCell(
           uvs[vertex * 2 + 1] = interleaved[source + 7] ?? 0;
         }
         const indices = new Uint32Array(dependency.indices);
-        let indicesValid = indices.length === dependency.indexCount && indices.length % 3 === 0;
-        for (let index = 0; indicesValid && index < indices.length; index += 1)
-          indicesValid = (indices[index] ?? vertexCount) < vertexCount;
-        if (!indicesValid) {
+        // The build range-checked every index against this vertex count.
+        if (indices.length !== dependency.indexCount || indices.length % 3 !== 0) {
           throw new Error(`Streaming meshopt index dependency ${dependency.resourceId} is invalid`);
         }
         const definition = requireMaterial(
@@ -991,7 +1063,9 @@ export function uploadStreamingGreyboxCell(
           renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, indexGpuBytes);
           renderer.streamingDependencyCache.fulfill(acquired.key, {
             attributes: null,
+            bounds: null,
             format: "meshopt",
+            geometry: null,
             gpuBytes: attributeGpuBytes + indexGpuBytes,
             mesh,
             texture: null,
@@ -1061,7 +1135,9 @@ export function uploadStreamingGreyboxCell(
           renderer.streamingDependencyCache.setOwnedBytes(acquired.key, 0, meshGpuBytes);
           renderer.streamingDependencyCache.fulfill(acquired.key, {
             attributes: null,
+            bounds: null,
             format: "meshopt",
+            geometry: null,
             gpuBytes: meshGpuBytes,
             mesh,
             texture: null,
@@ -1392,7 +1468,13 @@ function releaseStreamingDependencyKeys(
       continue;
     }
     if (!released.final || released.value === null) continue;
-    if (released.value.mesh !== null) {
+    if (released.value.geometry !== null) {
+      try {
+        disposeStreamedPbrGeometry(released.value.geometry);
+      } catch (error: unknown) {
+        cleanupFailures.push(error);
+      }
+    } else if (released.value.mesh !== null) {
       try {
         removeFromScene(renderer.scene, released.value.mesh);
       } catch (error: unknown) {

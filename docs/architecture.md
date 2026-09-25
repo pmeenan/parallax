@@ -1225,17 +1225,31 @@ OPFS; generating and packaging them does not by itself claim an OPFS cell-load r
 
 The shipped compressed-streaming layer consumes schema-v2 dependency descriptors from
 the exact installed release. Decode workers turn KTX2 into GPU texture data and
-meshopt payloads into finite vertex or in-range index buffers. Malformed size, graph,
-numeric or index contracts fail closed. Each KTX2 descriptor declares its GPU format,
-`bc7` or `rgba8`, and decoding takes one of two paths:
+meshopt payloads into vertex or index buffers. Vertex payloads also carry their position
+bounds. Malformed size, graph or bounds contracts fail closed. Finite attributes and in-range
+indices are validated when the build packs each payload, not at runtime (D-202); installed
+bytes are hash-bound to that output. It draws PBR geometry straight from the interleaved
+32-byte position/normal/UV bytes through Lite's storage-backed meshes, so it does no
+per-vertex work and keeps no CPU copies. The PBR PSO states pin this slab layout.
+
+Shipped resources are GPU-ready (D-203): the build refuses anything the client would have to
+transcode, decompress or decode, except through a registered exception. Today the only
+exception is meshopt geometry, about 2.3× smaller to download for a few milliseconds of
+decode-worker time. Each KTX2 descriptor declares its GPU format, `bc7`, `bc1` or `rgba8`, and
+decoding takes one of three paths, of which only the pre-encoded one ships:
 - **Basis (UASTC), optionally zstd-supercompressed:** Babylon's worker-safe transcoders.
   UASTC transcodes to BC7 blocks with the pinned `uastc_bc7.wasm`, or to RGBA8 for `rgba8`
   descriptors.
 - **Uncompressed RGBA8, optionally zstd:** the same pinned decoder copies the levels through
   (9.27.1+), for maps that must stay lossless. A raw container requested as `bc7` fails closed.
+- **Pre-encoded BC1 or BC7 (D-201):** BC1 for opaque colour maps and BC7 for the rest, both
+  transcoded at pack time. BC7 uses the runtime's own `uastc_bc7.wasm`, so its blocks are
+  identical. The pinned decoder has no BCn passthrough, so the decode worker checks the raw
+  container against the descriptor and copies its levels unchanged. A UASTC container
+  requested as `bc1` fails closed.
 
-The render worker uploads BC7 mip chains in whole 4 × 4 block rows, as
-`bc7-rgba-unorm(-srgb)`. `texture-compression-bc` is a required device feature: a BC7
+The render worker uploads BC7 and BC1 mip chains in whole 4 × 4 block rows, as
+`bc7-rgba-unorm(-srgb)` or `bc1-rgba-unorm(-srgb)`. `texture-compression-bc` is a required device feature: a BC7
 descriptor on a device without it fails closed, with no RGBA8 fallback. Lite 1.12's PBR shader
 reads the normal map's `.rgb` and cannot rebuild Z, so two-channel BC5 normals are unavailable.
 

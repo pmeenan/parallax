@@ -5,6 +5,7 @@
   "assetId": "d1-photoreal-paving",
   "tileMetres": 4,
   "groundTexelsPerMetre": 1024,
+  "groundNormalTexelsPerMetre": 512,
   "parts": {
     "ground": { "material": "ground", "flatNormals": true, "periodicBorders": true },
     "pebbles": { "material": "pebbles", "flatNormals": false, "periodicBorders": false },

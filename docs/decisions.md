@@ -28,6 +28,118 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-203: Streamed resources ship GPU-ready; client-side decoding needs a registered exception (2026-09-24, accepted; human direction)
+
+**Decision:** The build refuses any streamed resource that the client would have to transcode,
+decompress or decode before upload. There is one exception mechanism: a registered entry that
+covers the resource and records a large, measured memory or bandwidth saving.
+- **Textures** must be KTX2 stored in the exact GPU format they upload as: BC1, BC7 or RGBA8,
+  UNORM or sRGB, matching the descriptor, and not supercompressed. A Basis/UASTC container or a
+  zstd-supercompressed one fails the build.
+- **Enforcement.** `harness/scripts/gpu-ready-delivery.mjs` checks every resource in the
+  build's single streaming writer, and the build log lists the exceptions in use.
+- **Registered exceptions** live in the same file, each with a reason, a measured saving and a
+  decision. Today there is one, `meshopt-geometry` (below). Adding an exception is a
+  decision-log change, never a way to make a build pass.
+- The compact production fixture now ships its pixels as raw RGBA8 (`gpuReadyKtx2`) instead of
+  its UASTC encode.
+
+**Context:** Minimising client work has a large payoff (human direction). Packages 2 and 3
+moved texture transcoding to pack time (D-201) and geometry validation to build time (D-202),
+cutting the paving cell's decode from 102 to 18 ms and its load from 228 to 65 ms. The runtime
+UASTC→BC1 path alone would have cost 276 ms. The rule stops new content from quietly bringing
+client work back.
+
+**`meshopt-geometry` exception:** meshopt-encoded vertex and index streams are about 2.3× smaller
+to download and install. On paving candidate 8 that is 5.76 MB against 13.25 MB raw: a 7.5 MB
+saving, about a quarter of the paving's download. The decode costs about 6 ms in the decode
+worker, off the render thread. The pinned decoder (meshoptimizer 1.2.0) selects its wasm SIMD
+build whenever the platform validates SIMD, which D-032's baseline guarantees. Raw geometry
+was considered and not adopted: the saving is a large fraction of game content, even though the
+install total is dominated by the LLM.
+
+**Consequences:** New content must be packed into its GPU format at asset-build time. The
+runtime keeps the UASTC and zstd decode paths for tests and for any registered exception, but
+shipped content cannot rely on them. The harness-only scale-streaming corpus is load-test
+content outside the build and is not subject to this rule.
+
+**Reopen if:** a format's client-side decode buys a large, measured saving (register an
+exception), or geometry becomes a bandwidth or memory bottleneck at a scale where meshopt's
+decode cost matters.
+
+---
+
+## D-202: Versioned meshopt payloads are validated when the build packs them, not at runtime (2026-09-24, accepted; human direction)
+
+**Decision:** Finite vertex attributes and in-range triangle indices of every versioned meshopt
+payload are checked at build/pack time. The build's streaming writer calls
+`validateVersionedMeshoptPayload` on each payload. The paving library is also checked by QA
+preparation, and the scale-streaming corpus by its materializer. The decode worker only
+decodes and computes position bounds, and the render thread repeats only O(1) size checks.
+Installed bytes are hash-bound to the build output, so validated payloads reach the decoder
+unchanged. A defect in Parallax's own decode path is fixed in the decoder, not guarded against
+at runtime. The legacy three-vertex fixture keeps its tiny runtime check.
+
+**Context:** The decode worker's finite and index-range scans cost about 3 ms of the paving
+cell's geometry decode, and the render thread had repeated them. The human directed that
+validation move to pack time, since Parallax owns the decode code.
+
+**Consequences:** Any new producer of versioned meshopt streams must validate at build time
+through the shared function, or through an equivalent QA check. The runtime error code
+`vertex-index-out-of-range` is gone. A corrupted OPFS object is still caught by install
+verification, not by the decoder.
+
+**Reopen if:** meshopt payloads arrive from a source the build does not produce, such as user
+or network content outside the install manifest.
+
+---
+
+## D-201: Streamed textures ship pre-encoded as BC1 or BC7; the decode worker copies them (2026-09-24, accepted; amends D-199)
+
+**Decision:** Streamed KTX2 descriptors gain a third GPU format, `bc1`, for opaque sRGB colour
+maps. All paving maps now ship pre-encoded, as raw `VK_FORMAT_BC1_RGB_*` or `VK_FORMAT_BC7_*`
+KTX2 without supercompression.
+- **BC1** is transcoded from the map's UASTC encode at pack time with Web-libktx.
+- **BC7** is transcoded at pack time with the same pinned Babylon `uastc_bc7.wasm` the decode
+  worker used at runtime, so its blocks are identical. Web-libktx's own UASTC→BC7 picks
+  different blocks.
+- **Decode worker.** It checks each raw container against its descriptor and copies the levels
+  unchanged. The render worker uploads 8- or 16-byte block rows.
+- **UASTC.** The runtime keeps its UASTC→BC7 transcode (D-199), but D-203 forbids shipping it
+  without a registered exception. A `bc1` descriptor on a UASTC container fails closed, because
+  runtime UASTC→BC1 is not a supported path.
+- `texture-compression-bc` remains required.
+
+**Context:** Engine package 3 A/B tested BC1 base colours in game against paving candidate 6.
+The look was indistinguishable, with a mean change of about 1/255. Runtime transcoding is
+unusable: UASTC→BC1 is a real BC1 encode, taking 276 ms for the 4096² ground base colour
+against 33 ms for UASTC→BC7. That would push the cell load past its 250 ms budget. The pinned
+Babylon KTX2 decoder has no BCn passthrough; it reads unknown colour models as ETC1S. So
+Parallax validates and slices the raw levels itself. Shipped pre-encoded, the base colour
+decodes in 2 ms and halves in download and on the GPU. Paving candidate 7 pairs this with a
+2048² ground normal. Map bytes fall from 52.5 to 24.1 MB, the cell loads in 85 ms (was 157) and
+GPU memory is 37.6 MB (was 65.9)
+([result](../assets/source/d1-paving/proof-2026-09-24/compression-results.md)).
+
+**Consequences:**
+- The library manifest's texture `encoding` is `uastc`, `bc7`, `bc1`, `rgba8` or `rgba8-zstd`,
+  and packaging derives the GPU format from it. Pre-encoded maps keep no UASTC copy at rest, so
+  a device without BC cannot fall back to them (D-002/D-199 already exclude such devices).
+- UASTC and BC7 are the same size, so pre-encoding BC7 costs no bytes and removes the runtime
+  transcode. It is measured on candidate 8 in the compression result.
+- Pre-encoded BC7 no longer picks up Babylon transcoder fixes automatically. The library records
+  the transcoder version, the build warns when it lags the engine's pin, and each decoder
+  upgrade repacks those maps ([dependencies](dependencies.md)).
+- BC1 quality depends on the pack-time transcoder (Web-libktx 4.4.2); an encoder change moves
+  every BC1 map and needs a fresh A/B.
+- BC1 has no alpha. Maps that need alpha stay BC7.
+
+**Reopen if:** a colour map needs alpha or visibly bands in BC1; a better offline BC1 encoder
+becomes available; or the pinned Babylon decoder gains BCn passthrough, which would retire the
+engine-side container read.
+
+---
+
 ## D-200: Optimization accepts materially similar quality for significant performance or memory gains (2026-09-24, accepted; human direction; amends D-197's delivery principle)
 
 **Decision:** the acceptance standard for optimizing content and the engine is *materially

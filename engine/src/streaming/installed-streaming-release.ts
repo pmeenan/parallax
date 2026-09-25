@@ -384,7 +384,7 @@ function parseDependencyResources(input: unknown): StreamingDependencyIndexEntry
       (candidate.decode.colorSpace === "srgb" ||
         (candidate.decode.version !== undefined && candidate.decode.colorSpace === "linear")) &&
       (candidate.decode.format === "rgba8" ||
-        (candidate.decode.format === "bc7" &&
+        ((candidate.decode.format === "bc7" || candidate.decode.format === "bc1") &&
           candidate.decode.version === 2 &&
           (candidate.decode.width as number) % 4 === 0 &&
           (candidate.decode.height as number) % 4 === 0)) &&

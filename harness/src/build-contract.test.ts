@@ -217,8 +217,9 @@ describe("assembled build contract", () => {
     if (compactFixture === undefined || parsedDistrictIndex.resources === undefined) {
       throw new Error("Compact production fixture or parsed dependency resources are absent");
     }
+    // The build ships the fixture's GPU-ready texture, never its UASTC encode (D-203).
     const expectedCompressedBytes = [
-      Buffer.from(compactFixture.ktx2, "base64"),
+      Buffer.from(compactFixture.gpuReadyKtx2, "base64"),
       Buffer.from(compactFixture.attributes, "base64"),
       Buffer.from(compactFixture.indices, "base64"),
     ];
@@ -254,7 +255,7 @@ describe("assembled build contract", () => {
       }>[];
       textures: Readonly<Record<string, Readonly<{ encoding: string }>>>;
     };
-    // UASTC maps reach the GPU as BC7; raw RGBA8 maps keep their format.
+    // UASTC maps reach the GPU as BC7; pre-encoded BC7/BC1 and raw RGBA8 maps keep their format.
     for (const [role, texture] of Object.entries(pavingLibrary.textures)) {
       const admitted = pavingLibrary.resources.find((entry) => entry.role === role);
       const descriptor = parsedDistrictIndex.resources.find(
@@ -262,7 +263,13 @@ describe("assembled build contract", () => {
       );
       expect(descriptor?.format).toBe("ktx2");
       if (descriptor?.format === "ktx2")
-        expect(descriptor.decode.format).toBe(texture.encoding === "uastc" ? "bc7" : "rgba8");
+        expect(descriptor.decode.format).toBe(
+          texture.encoding === "uastc" || texture.encoding === "bc7"
+            ? "bc7"
+            : texture.encoding === "bc1"
+              ? "bc1"
+              : "rgba8",
+        );
     }
     const pavingResources = pavingLibrary.resources.filter(({ file }) => !file.endsWith(".glb"));
     expect(pavingResources).toHaveLength(26);

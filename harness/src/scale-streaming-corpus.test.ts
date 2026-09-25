@@ -94,7 +94,7 @@ describe("representative scale-streaming corpus", () => {
         installResourceCount: validatedMaterialized.installSummary.countByTarget.opfs,
       });
       // Periodic paving inventory: models + two district indices + asset packs + cells.
-      expect(materialized.population.installBytes).toBe(2688510976);
+      expect(materialized.population.installBytes).toBe(2653234393);
       expect(materialized.population.installResourceCount).toBe(375);
       // The installed D1 binding: index + 256 D1 cells + 29 production and 18 generated deps.
       expect(materialized.population.representativeResourceCount).toBe(304);

@@ -1,5 +1,5 @@
 // Pinned-Chrome Babylon Lite inspection of the photoreal paving delivery candidate.
-// Requires `pnpm build` (harness/dist). node chrome-preview.mjs <pack dir> <stage-2 maps dir> <out dir> [diag|cost|tex2048|rim]
+// Requires `pnpm build` (harness/dist). node chrome-preview.mjs <pack dir> <stage-2 maps dir> <out dir> [diag|cost|tex2048|normal2048|rim]
 // Renders the decoded runtime bytes with chrome-worker.ts in a module worker and writes PNGs
 // plus preview.json (visible triangles, draw calls, GPU frame-time samples). Timings are
 // isolated-preview diagnostics on this machine, not budget evidence.
@@ -32,7 +32,6 @@ const out = resolve(process.argv[4]);
 await mkdir(out, { recursive: false });
 const hash = (b) => createHash("sha256").update(b).digest("hex");
 const packReceipt = JSON.parse(await readFile(join(pack, "pack.json"), "utf8"));
-const maps = JSON.parse(await readFile(join(mapsDir, "maps.json"), "utf8"));
 
 // The source close-up aims at the first rosette root: its first petiole ring (vertices 98-103).
 const npy = await readFile(join(mapsDir, "geometry", "plant_co.npy"));
@@ -165,10 +164,17 @@ if (process.argv[5] === "cost" || process.argv[5] === "tex2048") {
     );
 }
 const maxTextureWidth = process.argv[5] === "tex2048" ? 2048 : undefined;
-const textures = maps.maps.map((m) => ({
-  role: m.role,
-  srgb: m.role.endsWith("basecolor"),
-  levels: m.levels.map((l) => ({ width: l.width, height: l.height })),
+// `normal2048`: the default views with only the ground normal's 4096 level withheld.
+const maxTextureWidthByRole =
+  process.argv[5] === "normal2048" ? { "ground-normal": 2048 } : undefined;
+// Levels as packed (candidate 7's ground normal starts at 2048²), not as authored in stage 2.
+const textures = packReceipt.textures.map((t) => ({
+  role: t.role,
+  srgb: t.role.endsWith("basecolor"),
+  levels: Array.from({ length: t.levels }, (_, level) => ({
+    width: Math.max(1, t.width >> level),
+    height: Math.max(1, t.height >> level),
+  })),
 }));
 const parts = packReceipt.geometry.map((g) => ({ part: g.part, lod: g.lod }));
 const lodBoundaries = { ground: [12, 32], pebbles: [6, 12], plants: [8, 24] };
@@ -248,7 +254,15 @@ try {
       }),
     {
       workerUrl: `${origin}/chrome-worker.js`,
-      request: { origin, textures, parts, lodBoundaries, views, maxTextureWidth },
+      request: {
+        origin,
+        textures,
+        parts,
+        lodBoundaries,
+        views,
+        maxTextureWidth,
+        maxTextureWidthByRole,
+      },
     },
   );
   result.adapter = adapter;

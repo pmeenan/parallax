@@ -8,7 +8,7 @@
     "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
     "seed": 11,
     "author": "Claude (Anthropic) under human direction",
-    "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL"
+    "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks)"
   },
   "inputs": [
     {
@@ -39,7 +39,7 @@
     {
       "role": "delivery-pack",
       "path": "assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs",
-      "sha256": "6d4538f370ab6330a361d7841240550cba2ce6ac4ad67b5856532f517c0eb565"
+      "sha256": "81a7699d2da999b6f3fcd39f43f063b52037f05b5cd9c6ca872871bcfed7fd75"
     }
   ],
   "visualReferences": {

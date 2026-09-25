@@ -10,7 +10,6 @@ import {
   createEngine,
   createFreeCamera,
   createHemisphericLight,
-  createMeshFromData,
   createSceneContext,
   type EngineContext,
   enableThinInstanceDynamicDrawCount,
@@ -27,10 +26,12 @@ import {
 import { createDirectionalShadows } from "../../../../../engine/src/render/directional-shadows";
 import { sampleEnvironmentLighting } from "../../../../../engine/src/render/environment-lighting";
 import {
+  createStreamedPbrGeometry,
   createStreamedPbrMaterial,
   uploadStreamedPbrTexture,
   withPbrTextureAddressMode,
 } from "../../../../../engine/src/render/streamed-pbr-asset";
+import { interleavedPositionBounds } from "../../../../../engine/src/streaming/streaming-dependency-contract";
 import { writePbrAssetMatrix } from "../../../../../engine/src/world/pbr-asset-transform";
 
 type Vec3 = [number, number, number];
@@ -61,6 +62,7 @@ interface Request {
   origin: string;
   // Diagnostic: upload only mips no wider than this (e.g. 2048 drops the 4096 level).
   maxTextureWidth?: number;
+  maxTextureWidthByRole?: Record<string, number>;
   textures: TextureSpec[];
   parts: { part: string; lod: number }[];
   lodBoundaries: Record<string, [number, number]>;
@@ -104,15 +106,22 @@ async function run(request: Request): Promise<void> {
   for (const spec of request.textures) {
     const levels = [];
     for (const [index, level] of spec.levels.entries())
-      if (level.width <= (request.maxTextureWidth ?? Number.POSITIVE_INFINITY))
+      if (
+        level.width <=
+        (request.maxTextureWidthByRole?.[spec.role] ??
+          request.maxTextureWidth ??
+          Number.POSITIVE_INFINITY)
+      )
         levels.push({
           width: level.width,
           height: level.height,
-          rgba: await fetchBytes(
-            `${request.origin}/decoded/${spec.role}-${String(index).padStart(2, "0")}.rgba`,
+          data: new Uint8Array(
+            await fetchBytes(
+              `${request.origin}/decoded/${spec.role}-${String(index).padStart(2, "0")}.rgba`,
+            ),
           ),
         });
-    const uploaded = uploadStreamedPbrTexture(engine, levels, spec.srgb);
+    const uploaded = uploadStreamedPbrTexture(engine, levels, "rgba8", spec.srgb);
     textures.set(spec.role, uploaded.texture);
     textureGpuBytes += uploaded.gpuBytes;
   }
@@ -172,26 +181,19 @@ async function run(request: Request): Promise<void> {
       await fetchBytes(`${request.origin}/decoded/${part}-lod${lod}.indices`),
     );
     geometryBytes += v.byteLength + indices.byteLength;
-    const n = v.length / 8;
-    const positions = new Float32Array(n * 3);
-    const normals = new Float32Array(n * 3);
-    const uvs = new Float32Array(n * 2);
-    for (let i = 0; i < n; i++) {
-      positions.set(v.subarray(i * 8, i * 8 + 3), i * 3);
-      normals.set(v.subarray(i * 8 + 3, i * 8 + 6), i * 3);
-      uvs.set(v.subarray(i * 8 + 6, i * 8 + 8), i * 2);
-    }
+    // The runtime's storage-backed interleaved slab, so previews draw the game's pipelines.
+    const vertices = {
+      attributes: v.buffer,
+      vertexCount: v.length / 8,
+      ...interleavedPositionBounds(v),
+    };
     // Lite builds pipelines at registration; a material swap afterwards renders nothing,
     // so the flat-normal diagnostic gets its own registered ground meshes.
     for (const variant of part === "ground" ? ["ground", "groundFlat"] : [part]) {
-      const mesh = createMeshFromData(
-        engine,
-        `${variant}-lod${lod}`,
-        positions,
-        normals,
-        indices,
-        uvs,
-      );
+      const { mesh } = createStreamedPbrGeometry(engine, `${variant}-lod${lod}`, vertices, {
+        indices: indices.buffer,
+        indexCount: indices.length,
+      });
       const material = materials[variant];
       if (material === undefined) throw new Error(`No material for ${variant}`);
       mesh.material = material;

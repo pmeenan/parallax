@@ -804,6 +804,10 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
     meshFeatures: number,
     sceneFeatures: number,
     lightMode: number,
+    singleLightType: string,
+    esmShadowDepthCode: string,
+    vbLayout: Readonly<Record<string, Readonly<{ _stride: number; _offset: number }>>>,
+    vbKey: string,
   ) => {
     _vertexWGSL: string;
     _fragmentWGSL: string;
@@ -830,6 +834,18 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
           (depth ? 0 : 256) | 16,
           0,
           2,
+          "",
+          "",
+          // Lite's storage-mesh layout for the streamed 32-byte position/normal/UV slab.
+          {
+            position: { _stride: 32, _offset: 0 },
+            normal: { _stride: 32, _offset: 12 },
+            uv: { _stride: 32, _offset: 24 },
+            tangent: { _stride: 0, _offset: 0 },
+            uv2: { _stride: 0, _offset: 0 },
+            color: { _stride: 0, _offset: 0 },
+          },
+          "sb32.0.12.24.-.-.-",
         );
         const groups = [sceneLayout, device.createBindGroupLayout(composed._meshBGLDescriptor)];
         if (composed._shadowBGLDescriptor)

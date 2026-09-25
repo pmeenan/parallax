@@ -7,6 +7,7 @@ import {
 } from "./representative-compressed-fixtures";
 import {
   expectedStreamingDependencyDecodedBytes,
+  interleavedPositionBounds,
   streamingTextureLevelBytes,
 } from "./streaming-dependency-contract";
 import type {
@@ -33,9 +34,9 @@ export interface CompressedStreamingDecoder {
   decode(dependency: DecodeDependencyRequest): Promise<DecodedStreamingDependency>;
 }
 
-export type CompressedStreamingDecodeFailureCode =
-  | "non-finite-vertex-attribute"
-  | "vertex-index-out-of-range";
+/** Only the legacy three-vertex fixture is still value-checked at runtime; versioned meshopt
+ * payloads are validated when the build packs them (`validateVersionedMeshoptPayload`). */
+export type CompressedStreamingDecodeFailureCode = "non-finite-vertex-attribute";
 
 export class CompressedStreamingDecodeError extends Error {
   readonly code: CompressedStreamingDecodeFailureCode;
@@ -87,6 +88,8 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
       const expectedDecodedBytes = expectedStreamingDependencyDecodedBytes(dependency.descriptor);
       if (dependency.descriptor.format === "meshopt") {
         const descriptor = dependency.descriptor;
+        // meshopt geometry is D-203's one client-decode exception: about 2.3× smaller to
+        // download and install for a few milliseconds of decode-worker time per cell.
         await MeshoptDecoder.ready;
         const decoded = new Uint8Array(expectedDecodedBytes);
         MeshoptDecoder.decodeGltfBuffer(
@@ -110,24 +113,14 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
           }
         };
         if ("version" in descriptor.decode) {
-          if (descriptor.decode.mode === "ATTRIBUTES") {
-            validateFiniteAttributes();
-          } else {
-            const indices = new Uint32Array(decoded.buffer);
-            for (let index = 0; index < indices.length; index += 1) {
-              const value = indices[index];
-              if (value === undefined || value >= descriptor.decode.vertexCount) {
-                throw new CompressedStreamingDecodeError(
-                  "vertex-index-out-of-range",
-                  descriptor.resourceId,
-                  `Meshopt dependency ${descriptor.resourceId} decoded an out-of-range vertex index`,
-                );
-              }
-            }
-          }
+          // Finite attributes and index ranges were checked when the build packed this payload
+          // (`validateVersionedMeshoptPayload`); installed bytes are hash-bound to that output.
           return descriptor.decode.mode === "ATTRIBUTES"
             ? Object.freeze({
                 attributes: decoded.buffer,
+                // The render thread draws this interleaved stream as-is and takes its culling
+                // bounds from here, so it does no per-vertex work.
+                ...interleavedPositionBounds(new Float32Array(decoded.buffer)),
                 cacheKey: streamingResourceCacheKey(descriptor),
                 descriptor: descriptor as StreamingMeshoptVertexDependencyIndexEntry,
                 decodeMs: performance.now() - startedAt,
@@ -167,13 +160,46 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
       }
 
       const gpuFormat = dependency.descriptor.decode.format;
-      validateRawKtx2Container(new Uint8Array(dependency.bytes), dependency.descriptor.decode);
-      // The pinned decoder handles every container: UASTC transcodes to BC7 blocks for `bc7`
-      // descriptors or to RGBA8, and raw RGBA8 KTX2 (plain or zstd) copies through as RGBA8.
-      // A raw container requested as `bc7` fails the transcoded-format check below.
+      const bytes = new Uint8Array(dependency.bytes);
+      const rawLevels = validateRawKtx2Container(bytes, dependency.descriptor.decode);
+      if (gpuFormat === "bc1" || (gpuFormat === "bc7" && rawLevels !== null)) {
+        // BCn ships pre-encoded (D-201): the pinned decoder has no BCn passthrough (it treats
+        // unknown colour models as ETC1S), so the levels are copied out exactly as stored. BC1
+        // is never transcoded at runtime: UASTC→BC1 is a real BC1 encode, about 8× slower than
+        // UASTC→BC7. A UASTC container requested as `bc7` still transcodes below.
+        if (rawLevels === null || dependency.descriptor.decode.version !== 2)
+          throw new Error(`BC1 dependency ${dependency.descriptor.resourceId} is not raw BC1`);
+        const { width, height } = dependency.descriptor.decode;
+        // Views, not copies: the container buffer travels on to the render worker intact.
+        const mipmaps = rawLevels.map((level, index) =>
+          Object.freeze({
+            width: Math.max(1, Math.floor(width / 2 ** index)),
+            height: Math.max(1, Math.floor(height / 2 ** index)),
+            data: bytes.subarray(level.byteOffset, level.byteOffset + level.byteLength),
+          }),
+        );
+        if (mipmaps.reduce((sum, mip) => sum + mip.data.byteLength, 0) !== expectedDecodedBytes)
+          throw new Error(`KTX2 ${gpuFormat} mip chain is incomplete`);
+        return Object.freeze({
+          cacheKey: streamingResourceCacheKey(dependency.descriptor),
+          descriptor: dependency.descriptor,
+          decodeMs: performance.now() - startedAt,
+          decodedBytes: expectedDecodedBytes,
+          encodedBytes: dependency.bytes.byteLength,
+          format: "ktx2" as const,
+          height,
+          resourceId: dependency.descriptor.resourceId,
+          data: mipmaps[0]?.data ?? new Uint8Array(0),
+          mipmaps: Object.freeze(mipmaps),
+          width,
+        });
+      }
+      // The pinned decoder handles the other containers: UASTC transcodes to BC7 blocks for
+      // `bc7` descriptors or to RGBA8, and raw RGBA8 KTX2 (plain or zstd) copies through as
+      // RGBA8. A raw container requested as `bc7` fails the transcoded-format check below.
       const bc7 = gpuFormat === "bc7";
       const decoded = await new KTX2DecoderPackage.KTX2Decoder().decode(
-        new Uint8Array(dependency.bytes),
+        bytes,
         {
           astc: false,
           bptc: bc7,
@@ -212,7 +238,7 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
               return Object.freeze({
                 width: mip.width,
                 height: mip.height,
-                data: level === 0 ? data.buffer : mip.data.slice().buffer,
+                data: level === 0 ? data : mip.data.slice(),
               });
             })
           : undefined;
@@ -231,7 +257,7 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
         format: "ktx2" as const,
         height,
         resourceId: dependency.descriptor.resourceId,
-        data: data.buffer,
+        data,
         ...(mipmaps === undefined ? {} : { mipmaps: Object.freeze(mipmaps) }),
         width,
       });
@@ -239,22 +265,31 @@ export function createCompressedStreamingDecoder(): CompressedStreamingDecoder {
   });
 }
 
-/** The vendor decoder copies raw levels but does not enforce our single-image, color-space or
- * declared byte-range contract. Keep those checks before decoding without owning a second codec. */
+/** The vendor decoder copies raw RGBA8 levels but does not enforce our single-image, colour-space
+ * or declared byte-range contract, and it cannot read BCn containers. Check raw containers against
+ * the descriptor before decoding; return their level ranges, or null for a Basis payload. */
 function validateRawKtx2Container(
   bytes: Uint8Array,
   expected: Extract<DecodeDependencyRequest["descriptor"], { format: "ktx2" }>["decode"],
-): void {
+): readonly Readonly<{ byteOffset: number; byteLength: number }>[] | null {
   if (bytes.byteLength < 80 || !KTX2DecoderPackage.KTX2FileReader.IsValid(bytes))
     throw new Error("Invalid KTX2 container");
   if (new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(12, true) === 0)
-    return; // Basis payloads are validated by the transcoder and decoded mip checks.
+    return null; // Basis payloads are validated by the transcoder and decoded mip checks.
   const reader = new KTX2DecoderPackage.KTX2FileReader(bytes);
   reader.parse();
   const header = reader.header;
   const levels = expected.version === 2 ? expected.mipLevelCount : 1;
+  // VK_FORMAT_R8G8B8A8_{SRGB,UNORM} = 43/37, VK_FORMAT_BC1_RGB_{SRGB,UNORM}_BLOCK = 132/131 and
+  // VK_FORMAT_BC7_{SRGB,UNORM}_BLOCK = 146/145. Pre-encoded BCn is stored plain, all levels.
+  const srgb = expected.colorSpace === "srgb";
+  const block = expected.format !== "rgba8";
+  const vkFormat = { bc1: srgb ? 132 : 131, bc7: srgb ? 146 : 145, rgba8: srgb ? 43 : 37 }[
+    expected.format
+  ];
   if (
-    header.vkFormat !== (expected.colorSpace === "srgb" ? 43 : 37) ||
+    header.vkFormat !== vkFormat ||
+    (block && (header.supercompressionScheme !== 0 || header.levelCount !== levels)) ||
     reader.isInGammaSpace !== (expected.colorSpace === "srgb") ||
     header.typeSize !== 1 ||
     header.pixelWidth !== expected.width ||
@@ -266,10 +301,10 @@ function validateRawKtx2Container(
     header.levelCount < levels ||
     (header.supercompressionScheme !== 0 && header.supercompressionScheme !== 2)
   )
-    throw new Error("KTX2 RGBA8 header does not match its descriptor");
+    throw new Error(`KTX2 ${expected.format} header does not match its descriptor`);
   for (const [index, level] of reader.levels.entries()) {
     const expectedBytes = streamingTextureLevelBytes(
-      "rgba8",
+      expected.format,
       Math.max(1, Math.floor(expected.width / 2 ** index)),
       Math.max(1, Math.floor(expected.height / 2 ** index)),
     );
@@ -282,8 +317,11 @@ function validateRawKtx2Container(
       level.uncompressedByteLength !== expectedBytes ||
       (header.supercompressionScheme === 0 && level.byteLength !== expectedBytes)
     )
-      throw new Error(`KTX2 RGBA8 level ${index} is invalid`);
+      throw new Error(`KTX2 ${expected.format} level ${index} is invalid`);
   }
+  return reader.levels
+    .slice(0, levels)
+    .map((level) => Object.freeze({ byteOffset: level.byteOffset, byteLength: level.byteLength }));
 }
 
 export function validateRepresentativeMeshoptFixture(

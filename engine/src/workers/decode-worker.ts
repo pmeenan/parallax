@@ -62,18 +62,20 @@ async function decodeRequest(request: DecodeWorkerRequest): Promise<void> {
       protocolVersion: STREAMING_DECODE_PROTOCOL_VERSION,
       taskId: request.taskId,
     } satisfies DecodeWorkerResponse;
-    scope.postMessage(
-      response,
-      dependencies.flatMap((dependency) =>
-        dependency.format === "ktx2"
-          ? (dependency.mipmaps?.map((mip) => mip.data) ?? [dependency.data])
-          : dependency.kind !== "legacy-positions"
-            ? dependency.kind === "indices"
-              ? dependency.indices
-              : dependency.attributes
-            : dependency.positions,
+    // Mip levels can share one container buffer; a transfer list must name each buffer once.
+    scope.postMessage(response, [
+      ...new Set(
+        dependencies.flatMap((dependency) =>
+          dependency.format === "ktx2"
+            ? (dependency.mipmaps?.map((mip) => mip.data.buffer) ?? [dependency.data.buffer])
+            : dependency.kind !== "legacy-positions"
+              ? dependency.kind === "indices"
+                ? dependency.indices
+                : dependency.attributes
+              : dependency.positions,
+        ),
       ),
-    );
+    ]);
   } catch (error: unknown) {
     scope.postMessage({
       kind: "decode-failure",

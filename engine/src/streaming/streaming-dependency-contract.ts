@@ -1,3 +1,4 @@
+import type { WorldVec3 } from "../world/world-contract";
 import type {
   DecodeCellResponse,
   DecodedStreamingDependency,
@@ -28,15 +29,16 @@ export function expectedStreamingDependencyDecodedBytes(
   return decodedBytes;
 }
 
-/** Bytes of one texture level: RGBA8 rows, or BC7's 16-byte 4 × 4 blocks (partial blocks pad). */
+/** Bytes of one texture level: RGBA8 rows, or 4 × 4 blocks of 16 bytes (BC7) or 8 bytes (BC1).
+ * Partial blocks pad to a whole block. */
 export function streamingTextureLevelBytes(
   format: StreamingTextureGpuFormat,
   width: number,
   height: number,
 ): number {
-  return format === "bc7"
-    ? safeProduct(Math.ceil(width / 4), Math.ceil(height / 4), 16)
-    : safeProduct(width, height, 4);
+  return format === "rgba8"
+    ? safeProduct(width, height, 4)
+    : safeProduct(Math.ceil(width / 4), Math.ceil(height / 4), format === "bc7" ? 16 : 8);
 }
 
 function expectedTextureBytes(
@@ -132,10 +134,10 @@ export function validateDecodedStreamingDependencies(
           dependency.mipmaps.length !== descriptor.decode.mipLevelCount ||
           dependency.mipmaps[0]?.data !== dependency.data ||
           dependency.mipmaps.some(
-            (mip: { width: number; height: number; data: ArrayBuffer }, level: number) =>
+            (mip: { width: number; height: number; data: Uint8Array }, level: number) =>
               mip.width !== Math.max(1, Math.floor(descriptor.decode.width / 2 ** level)) ||
               mip.height !== Math.max(1, Math.floor(descriptor.decode.height / 2 ** level)) ||
-              !(mip.data instanceof ArrayBuffer) ||
+              !(mip.data instanceof Uint8Array) ||
               mip.data.byteLength !==
                 streamingTextureLevelBytes(descriptor.decode.format, mip.width, mip.height),
           )
@@ -149,7 +151,8 @@ export function validateDecodedStreamingDependencies(
         !("kind" in dependency) ||
         dependency.kind !== "vertex-attributes" ||
         dependency.vertexCount !== descriptor.decode.count ||
-        dependency.attributes.byteLength !== expectedDecodedBytes
+        dependency.attributes.byteLength !== expectedDecodedBytes ||
+        !validBounds(dependency.boundMin, dependency.boundMax)
       ) {
         throw new Error(`Decoded meshopt vertex ${descriptor.resourceId} payload is invalid`);
       }
@@ -195,6 +198,51 @@ export function validateDecodedCellResponseAccounting(
     throw new Error(`Decoded streaming cell ${expectedCellId} accounting is invalid`);
   }
   validateDecodedStreamingDependencies(descriptors, response.dependencies);
+}
+
+/** Position bounds of a finite 8-float (position, normal, UV) interleaved vertex stream. */
+export function interleavedPositionBounds(
+  attributes: Float32Array,
+): Readonly<{ boundMin: WorldVec3; boundMax: WorldVec3 }> {
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+  for (let index = 0; index < attributes.length; index += 8) {
+    const x = attributes[index] ?? 0;
+    const y = attributes[index + 1] ?? 0;
+    const z = attributes[index + 2] ?? 0;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+    if (z < minZ) minZ = z;
+    if (z > maxZ) maxZ = z;
+  }
+  if (!(minX <= maxX)) throw new Error("Interleaved vertex stream has no vertices");
+  return Object.freeze({
+    boundMax: Object.freeze([maxX, maxY, maxZ]) as WorldVec3,
+    boundMin: Object.freeze([minX, minY, minZ]) as WorldVec3,
+  });
+}
+
+function validBounds(minimum: unknown, maximum: unknown): boolean {
+  return (
+    Array.isArray(minimum) &&
+    Array.isArray(maximum) &&
+    minimum.length === 3 &&
+    maximum.length === 3 &&
+    minimum.every(
+      (value: unknown, axis) =>
+        typeof value === "number" &&
+        Number.isFinite(value) &&
+        typeof maximum[axis] === "number" &&
+        Number.isFinite(maximum[axis]) &&
+        value <= maximum[axis],
+    )
+  );
 }
 
 function safeProduct(...factors: readonly number[]): number {

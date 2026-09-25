@@ -15,7 +15,10 @@ import {
   CompressedStreamingDecodeError,
   createCompressedStreamingDecoder,
 } from "../src/streaming/compressed-streaming-codecs";
+import { validateVersionedMeshoptPayload } from "../src/streaming/meshopt-payload-validation";
 import {
+  BC1_MIP_CHAIN_FIXTURE,
+  BC7_MIP_CHAIN_FIXTURE,
   PRODUCTION_COMPRESSED_STREAMING_FIXTURES,
   RAW_RGBA8_MIP_CHAIN_FIXTURES,
   UASTC_MIP_CHAIN_FIXTURE,
@@ -428,6 +431,37 @@ describe("representative compressed streaming fixtures", () => {
     for (let offset = 0; offset < blocks.length; offset += 16) {
       expect(blocks[offset]).not.toBe(0);
     }
+    // Pack-time Web-libktx and runtime Babylon UASTC→BC7 transcodes produce identical blocks,
+    // so shipping pre-encoded BC7 (D-201) changes no pixel.
+    const runtimeBlocks = Buffer.concat(bc7.mipmaps?.map((mip) => Buffer.from(mip.data)) ?? []);
+    expect(runtimeBlocks.equals(Buffer.from(BC7_MIP_CHAIN_FIXTURE.blocks, "base64"))).toBe(true);
+    // The pre-encoded container passes straight through as the same blocks.
+    const preencoded = Uint8Array.from(Buffer.from(BC7_MIP_CHAIN_FIXTURE.ktx2, "base64"));
+    const passthrough = await decoder.decode({
+      bytes: preencoded.slice().buffer,
+      descriptor: {
+        bytes: preencoded.byteLength,
+        decode: {
+          colorSpace: "linear",
+          format: "bc7",
+          height: BC7_MIP_CHAIN_FIXTURE.height,
+          mipLevelCount: BC7_MIP_CHAIN_FIXTURE.mipLevelCount,
+          version: 2,
+          width: BC7_MIP_CHAIN_FIXTURE.width,
+        },
+        dependencies: [],
+        format: "ktx2",
+        path: `immutable/streaming-texture-${"e".repeat(64)}.ktx2`,
+        resourceId: "game-specific-preencoded-bc7",
+        sha256: "e".repeat(64),
+      },
+    });
+    if (passthrough.format !== "ktx2") throw new Error("Expected a texture");
+    expect(
+      Buffer.concat(passthrough.mipmaps?.map((mip) => Buffer.from(mip.data)) ?? []).equals(
+        runtimeBlocks,
+      ),
+    ).toBe(true);
   });
 
   it("copies raw RGBA8 mip chains through the pinned decoder, plain or zstd, never as BC7", async () => {
@@ -473,11 +507,68 @@ describe("representative compressed streaming fixtures", () => {
           [2, 1],
           [1, 1],
         ]);
-        await expect(decode("bc7")).rejects.toThrow(/did not decode bc7/);
+        await expect(decode("bc7")).rejects.toThrow(/bc7 header does not match/);
       }
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("copies pre-encoded BC1 levels exactly as stored and never transcodes to BC1", async () => {
+    const decoder = createCompressedStreamingDecoder();
+    const fixture = BC1_MIP_CHAIN_FIXTURE;
+    const bc1 = Uint8Array.from(Buffer.from(fixture.ktx2, "base64"));
+    const uastc = Uint8Array.from(Buffer.from(UASTC_MIP_CHAIN_FIXTURE.ktx2, "base64"));
+    const decode = (
+      bytes: Uint8Array,
+      source: { width: number; height: number; mipLevelCount: number },
+      format: "bc1" | "bc7" | "rgba8",
+      colorSpace: "srgb" | "linear" = "srgb",
+    ) =>
+      decoder.decode({
+        bytes: bytes.slice().buffer,
+        descriptor: {
+          bytes: bytes.byteLength,
+          decode: {
+            colorSpace,
+            format,
+            height: source.height,
+            mipLevelCount: source.mipLevelCount,
+            version: 2,
+            width: source.width,
+          },
+          dependencies: [],
+          format: "ktx2",
+          path: `immutable/streaming-texture-${"d".repeat(64)}.ktx2`,
+          resourceId: "game-specific-bc1",
+          sha256: "d".repeat(64),
+        },
+      });
+    const decoded = await decode(bc1, fixture, "bc1");
+    if (decoded.format !== "ktx2") throw new Error("Expected a texture");
+    const levels = decoded.mipmaps?.map((mip) => Buffer.from(mip.data)) ?? [];
+    expect(Buffer.concat(levels).equals(Buffer.from(fixture.blocks, "base64"))).toBe(true);
+    expect(levels.map((level) => level.byteLength)).toEqual([32, 8, 8, 8]);
+    expect(decoded.decodedBytes).toBe(56);
+    // No copy: every level is a view into the one container buffer, and a single-entry transfer
+    // (as both worker boundaries send it) keeps each view's exact range.
+    const buffers = new Set(decoded.mipmaps?.map((mip) => mip.data.buffer));
+    expect(buffers.size).toBe(1);
+    expect(decoded.data.byteOffset).toBeGreaterThan(0);
+    const moved = structuredClone(decoded, { transfer: [...buffers] });
+    expect(
+      Buffer.concat(moved.mipmaps?.map((mip) => Buffer.from(mip.data)) ?? []).equals(
+        Buffer.from(fixture.blocks, "base64"),
+      ),
+    ).toBe(true);
+    expect(moved.mipmaps?.[0]?.data).toBe(moved.data);
+    await expect(decode(bc1, fixture, "bc1", "linear")).rejects.toThrow(/bc1 header/);
+    await expect(decode(bc1, fixture, "bc7")).rejects.toThrow(/bc7 header/);
+    await expect(decode(bc1, fixture, "rgba8")).rejects.toThrow(/rgba8 header/);
+    // A runtime UASTC→BC1 transcode is a full BC1 encode; only pre-encoded BC1 is accepted.
+    await expect(decode(uastc, UASTC_MIP_CHAIN_FIXTURE, "bc1", "linear")).rejects.toThrow(
+      /not raw BC1/,
+    );
   });
 
   it.each([
@@ -645,21 +736,10 @@ describe("representative compressed streaming fixtures", () => {
       "ATTRIBUTES",
       0,
     );
-    const nonFiniteFailure = await decoder
-      .decode({
-        bytes: nonFiniteEncoded.slice().buffer,
-        descriptor: {
-          ...compact.vertices.descriptor,
-          bytes: nonFiniteEncoded.byteLength,
-        },
-      })
-      .catch((error: unknown) => error);
-    expect(nonFiniteFailure).toBeInstanceOf(CompressedStreamingDecodeError);
-    expect(nonFiniteFailure).toMatchObject({
-      code: "non-finite-vertex-attribute",
-      name: "CompressedStreamingDecodeError",
-      resourceId: compact.vertices.resourceId,
-    });
+    // Values are checked when the build packs a payload, not by the runtime decoder.
+    await expect(
+      validateVersionedMeshoptPayload(compact.vertices.descriptor, nonFiniteEncoded),
+    ).rejects.toThrow(/non-finite/);
     const outOfRangeIndices = new Uint32Array(compact.fixture.indexCount);
     for (let index = 0; index < outOfRangeIndices.length; index += 1) {
       outOfRangeIndices[index] = index % compact.fixture.vertexCount;
@@ -672,21 +752,18 @@ describe("representative compressed streaming fixtures", () => {
       "TRIANGLES",
       0,
     );
-    const outOfRangeFailure = await decoder
-      .decode({
-        bytes: outOfRangeEncoded.slice().buffer,
-        descriptor: {
-          ...compact.index.descriptor,
-          bytes: outOfRangeEncoded.byteLength,
-        },
-      })
-      .catch((error: unknown) => error);
-    expect(outOfRangeFailure).toBeInstanceOf(CompressedStreamingDecodeError);
-    expect(outOfRangeFailure).toMatchObject({
-      code: "vertex-index-out-of-range",
-      name: "CompressedStreamingDecodeError",
-      resourceId: compact.index.resourceId,
-    });
+    await expect(
+      validateVersionedMeshoptPayload(compact.index.descriptor, outOfRangeEncoded),
+    ).rejects.toThrow(/missing vertex/);
+    for (const graph of decodedGraphs) {
+      for (const [descriptor, bytes] of [
+        [graph.vertices.descriptor, graph.fixture.attributes],
+        [graph.index.descriptor, graph.fixture.indices],
+      ] as const)
+        await expect(
+          validateVersionedMeshoptPayload(descriptor, Buffer.from(bytes, "base64")),
+        ).resolves.toBeUndefined();
+    }
 
     const makeRenderer = () =>
       ({
@@ -745,8 +822,9 @@ describe("representative compressed streaming fixtures", () => {
     } as unknown as GreyboxCell;
 
     vi.clearAllMocks();
-    const invalidIndices = graph.index.indices.slice(0);
-    new Uint32Array(invalidIndices)[0] = graph.fixture.vertexCount;
+    // Index ranges are the decode worker's check (above); the render thread keeps the
+    // O(1) shape check, so a truncated payload must still roll the whole cell back.
+    const invalidIndices = graph.index.indices.slice(0, graph.index.indices.byteLength - 12);
     const invalidRenderer = {
       ...renderer,
       streamingCells: new Map(),

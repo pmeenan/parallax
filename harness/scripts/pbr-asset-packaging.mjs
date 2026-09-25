@@ -2,8 +2,32 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { bc7TranscoderIdentity } from "../../engine/scripts/preencode-bc7.mjs";
 import { scaleStreamingDependencyResourceId } from "../../engine/src/streaming/scale-streaming-resource-id.ts";
 import { writePbrAssetMatrix } from "../../engine/src/world/pbr-asset-transform.ts";
+
+/** A reminder, or null, when admitted pre-encoded BC7 maps were made by a different
+ * `@babylonjs/ktx2decoder` than the one the engine pins. */
+export async function pbrBc7TranscoderLag(manifest) {
+  if (!Object.values(manifest.textures).some((texture) => texture.encoding === "bc7")) return null;
+  const current = await bc7TranscoderIdentity();
+  const recorded = manifest.encoders?.bc7Transcoder;
+  return recorded?.version === current.version && recorded?.wasmSha256 === current.wasmSha256
+    ? null
+    : `Pre-encoded BC7 maps in ${manifest.assetId ?? "the PBR library"} were transcoded by ` +
+        `@babylonjs/ktx2decoder ${recorded?.version ?? "(unrecorded)"}; the engine pins ` +
+        `${current.version}. Repack and readmit them to pick up transcoder fixes.`;
+}
+
+/** UASTC transcodes to BC7 on the GPU; pre-encoded BC7 and BC1 (D-201) and raw RGBA8
+ * (lossless) maps upload as stored. */
+export function pbrTextureGpuFormat(texture) {
+  return texture.encoding === "uastc" || texture.encoding === "bc7"
+    ? "bc7"
+    : texture.encoding === "bc1"
+      ? "bc1"
+      : "rgba8";
+}
 
 /** Only admitted library objects cross this build boundary; source art is never packaged.
  * The admitted D1 paving is a periodic surface module (D-196/D-197): parts with three LODs
@@ -14,7 +38,22 @@ export async function loadPbrAssetLibrary(root, writeResource) {
   );
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.mode, "periodic-surface-module");
-  assert.equal(manifest.status, "QA-admitted-runtime-visual-acceptance-pending");
+  // Installed-game visual acceptance is a human record bound to the admitted candidate;
+  // admission alone (structure and rights) still packages as pending.
+  if (manifest.status === "QA-admitted-runtime-visual-accepted") {
+    const acceptance = manifest.runtimeVisualAcceptance;
+    assert.equal(acceptance?.candidateSha256, manifest.candidateSha256, "Acceptance candidate");
+    assert.match(acceptance.acceptedAt, /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(acceptance.acceptedBy, "human");
+    assert(typeof acceptance.evidence === "string" && acceptance.evidence !== "");
+  } else {
+    assert.equal(manifest.status, "QA-admitted-runtime-visual-acceptance-pending");
+    assert.equal(manifest.runtimeVisualAcceptance, undefined);
+  }
+  // Pre-encoded BC7 comes from the pinned Babylon transcoder (D-201). Older output is still valid
+  // BC7, so a lagging pack only warns: repack with each decoder upgrade to pick up its fixes.
+  const bc7Lag = await pbrBc7TranscoderLag(manifest);
+  if (bc7Lag !== null) console.warn(bc7Lag);
   const resources = [];
   const byRole = new Map();
   const lods = Object.values(manifest.parts).flatMap((part) =>
@@ -37,13 +76,12 @@ export async function loadPbrAssetLibrary(root, writeResource) {
     if (texture) {
       assert.equal(entry.file.endsWith(".ktx2"), true);
       assert(
-        ["uastc", "rgba8", "rgba8-zstd"].includes(texture.encoding),
+        ["uastc", "bc7", "bc1", "rgba8", "rgba8-zstd"].includes(texture.encoding),
         `Unknown encoding ${texture.encoding}`,
       );
       decode = {
         colorSpace: texture.colorSpace,
-        // UASTC transcodes to BC7 on the GPU; raw RGBA8 (lossless) maps upload unchanged.
-        format: texture.encoding === "uastc" ? "bc7" : "rgba8",
+        format: pbrTextureGpuFormat(texture),
         width: texture.width,
         height: texture.height,
         version: 2,

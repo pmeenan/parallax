@@ -83,8 +83,20 @@ node assets/qa/admit-d1-paving.mjs <candidate dir> <receipt.json>
 pnpm exec biome format --write assets/library/d1-paving.json
 ```
 
-The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`).
+Shipped maps must be GPU-ready (D-203): pre-encoded BC1/BC7 or plain RGBA8, never UASTC or
+zstd at rest. The build refuses anything else unless a registered client-decode exception
+covers it. The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`) as the
+intermediate for its BC1 and BC7 output.
 `PAVING_GROUND_NORMAL=rgba8` keeps the lossless ground normal; the default is UASTC.
+Candidate 8 ships every other map as BC7, pre-transcoded by the pinned Babylon `uastc_bc7.wasm`
+(`PAVING_OTHER_MAPS_AT_REST=uastc` restores candidate 7). The library records that transcoder
+in `encoders.bc7Transcoder`, and packaging warns when it lags the engine's decoder pin.
+Candidate 7 made pre-encoded BC1 base colours (D-201) and a 2048² ground normal the defaults
+(`PAVING_BASECOLOR_GPU=bc7` and `PAVING_GROUND_NORMAL_SIZE=4096` restore candidate 6;
+[compression result](../source/d1-paving/proof-2026-09-24/compression-results.md)).
+Candidate 6 made 3D pebbles from 11 mm with 40° crease-angle normals the defaults
+([geometry result](../source/d1-paving/proof-2026-09-24/geometry-results.md)).
+`PAVING_PEBBLE_LOD0_MIN_MM=9` and `PAVING_PEBBLE_CREASE_DEG=none` restore the earlier pebbles.
 
 - **Preparation** checks:
   - provenance identity and approved rights (`paving-provenance.mjs`, procedural-original)
@@ -93,8 +105,9 @@ The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`).
   - flat, fold-free ground normals
   - identical opposite-edge border vertices and heights for every ground LOD
   - LOD reduction
-  - KTX2 headers and full mip chains: UASTC, or RGBA8 plain or zstd for a lossless map;
-    it records GPU bytes, with UASTC counted as BC7 (D-199)
+  - KTX2 headers and full mip chains: UASTC, plain pre-encoded BC1 for an opaque colour map
+    (D-201), or RGBA8 plain or zstd for a lossless map; it records GPU bytes, with UASTC
+    counted as BC7 (D-199)
   - the engine's canonical meshopt layout
   - byte-exact meshopt vertex roundtrips (triangles may rotate cyclically)
 - **The receipt** decodes every runtime resource with the engine's own compressed streaming
@@ -107,6 +120,12 @@ The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`).
 
 Library admission covers structure and rights. It does not accept runtime lighting, LOD
 transitions, seams or appearance; those remain part of the installed game captures.
+- **Admitted:** the manifest status is `QA-admitted-runtime-visual-acceptance-pending`.
+- **Accepted:** after the human accepts the installed look, the status becomes
+  `QA-admitted-runtime-visual-accepted`. A `runtimeVisualAcceptance` record carries the same
+  `candidateSha256`, the date, `acceptedBy: "human"` and the evidence.
+- **Readmission:** packaging enforces both forms. Readmitting a new candidate resets the status
+  to pending.
 
 The earlier scanned, generated-periodic and individual-stone paving candidates, with their
 QA scripts, are superseded. Their evidence and scripts remain in git history and in their

@@ -3,8 +3,120 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { RAW_RGBA8_MIP_CHAIN_FIXTURES } from "../../engine/src/streaming/production-compressed-fixtures.generated.ts";
+import { bc7TranscoderIdentity } from "../../engine/scripts/preencode-bc7.mjs";
+import {
+  BC7_MIP_CHAIN_FIXTURE,
+  RAW_RGBA8_MIP_CHAIN_FIXTURES,
+} from "../../engine/src/streaming/production-compressed-fixtures.generated.ts";
 import { loadPbrAssetLibrary, resolvePbrAssetsForCell } from "./pbr-asset-packaging.mjs";
+
+it("warns, without failing, when pre-encoded BC7 lags the pinned Babylon transcoder", async () => {
+  const root = await mkdtemp(join(tmpdir(), "parallax-packaging-bc7-"));
+  try {
+    await mkdir(join(root, "assets/library/objects"), { recursive: true });
+    const bytes = Buffer.from(BC7_MIP_CHAIN_FIXTURE.ktx2, "base64");
+    const sha256 = createHash("sha256").update(bytes).digest("hex");
+    const file = `${sha256}.ktx2`;
+    await writeFile(join(root, "assets/library/objects", file), bytes);
+    const current = await bc7TranscoderIdentity();
+    const load = async (bc7Transcoder) => {
+      await writeFile(
+        join(root, "assets/library/d1-paving.json"),
+        JSON.stringify({
+          schemaVersion: 1,
+          mode: "periodic-surface-module",
+          status: "QA-admitted-runtime-visual-acceptance-pending",
+          encoders: { bc7Transcoder },
+          parts: {},
+          textures: {
+            normal: {
+              encoding: "bc7",
+              colorSpace: "linear",
+              width: BC7_MIP_CHAIN_FIXTURE.width,
+              height: BC7_MIP_CHAIN_FIXTURE.height,
+              mipLevels: BC7_MIP_CHAIN_FIXTURE.mipLevelCount,
+            },
+          },
+          resources: [
+            { role: "normal", file, path: `objects/${file}`, bytes: bytes.length, sha256 },
+          ],
+        }),
+      );
+      return loadPbrAssetLibrary(
+        root,
+        vi.fn(async (_bytes, _name, _extension, descriptor) => descriptor),
+      );
+    };
+    await expect(load(current)).resolves.toMatchObject({
+      resources: [
+        { decode: { format: "bc7", mipLevelCount: BC7_MIP_CHAIN_FIXTURE.mipLevelCount } },
+      ],
+    });
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      expect(warn).not.toHaveBeenCalled();
+      await expect(load({ ...current, version: "0.0.0" })).resolves.toBeDefined();
+      expect(warn).toHaveBeenLastCalledWith(expect.stringMatching(/0\.0\.0.*Repack/));
+      await expect(load(undefined)).resolves.toBeDefined();
+      expect(warn).toHaveBeenLastCalledWith(expect.stringMatching(/unrecorded/));
+    } finally {
+      warn.mockRestore();
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+it("accepts only a human visual acceptance bound to the admitted candidate", async () => {
+  const root = await mkdtemp(join(tmpdir(), "parallax-packaging-acceptance-"));
+  try {
+    await mkdir(join(root, "assets/library"), { recursive: true });
+    const base = {
+      schemaVersion: 1,
+      mode: "periodic-surface-module",
+      candidateSha256: "a".repeat(64),
+      parts: {},
+      textures: {},
+      resources: [],
+    };
+    const acceptance = {
+      candidateSha256: "a".repeat(64),
+      acceptedAt: "2026-09-24",
+      acceptedBy: "human",
+      evidence: "installed captures",
+    };
+    const load = async (manifest) => {
+      await writeFile(join(root, "assets/library/d1-paving.json"), JSON.stringify(manifest));
+      return loadPbrAssetLibrary(root, vi.fn());
+    };
+    await expect(
+      load({
+        ...base,
+        status: "QA-admitted-runtime-visual-accepted",
+        runtimeVisualAcceptance: acceptance,
+      }),
+    ).resolves.toMatchObject({ resources: [] });
+    await expect(
+      load({
+        ...base,
+        status: "QA-admitted-runtime-visual-accepted",
+        runtimeVisualAcceptance: { ...acceptance, candidateSha256: "b".repeat(64) },
+      }),
+    ).rejects.toThrow(/Acceptance candidate/);
+    await expect(load({ ...base, status: "QA-admitted-runtime-visual-accepted" })).rejects.toThrow(
+      /Acceptance candidate/,
+    );
+    await expect(
+      load({
+        ...base,
+        status: "QA-admitted-runtime-visual-acceptance-pending",
+        runtimeVisualAcceptance: acceptance,
+      }),
+    ).rejects.toThrow();
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 it("packages QA-admitted zstd RGBA8 maps as lossless GPU textures", async () => {
   const root = await mkdtemp(join(tmpdir(), "parallax-packaging-test-"));

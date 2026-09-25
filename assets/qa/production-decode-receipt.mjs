@@ -63,7 +63,7 @@ onmessage = async () => {
       const texture = candidate.textures[r.role];
       const lod = lods.find((l) => l.vertexRole === r.role || l.indexRole === r.role);
       const decode = texture
-        ? { version: 2, colorSpace: texture.colorSpace, format: texture.encoding === "uastc" ? "bc7" : "rgba8", width: texture.width, height: texture.height, mipLevelCount: texture.mipLevels }
+        ? { version: 2, colorSpace: texture.colorSpace, format: texture.encoding === "uastc" || texture.encoding === "bc7" ? "bc7" : texture.encoding === "bc1" ? "bc1" : "rgba8", width: texture.width, height: texture.height, mipLevelCount: texture.mipLevels }
         : lod.indexRole === r.role
           ? { version: 1, mode: "TRIANGLES", count: lod.triangles * 3, stride: 4, indexFormat: "uint32", vertexCount: lod.vertices }
           : { version: 1, mode: "ATTRIBUTES", count: lod.vertices, stride: 32, layout: "position-normal-uv-f32" };

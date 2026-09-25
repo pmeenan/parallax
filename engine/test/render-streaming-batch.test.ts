@@ -306,7 +306,7 @@ describe("render streaming batch transactions", () => {
               format: "ktx2" as const,
               height: 2,
               resourceId: "texture",
-              data: new ArrayBuffer(16),
+              data: new Uint8Array(16),
               width: 2,
             },
           ],

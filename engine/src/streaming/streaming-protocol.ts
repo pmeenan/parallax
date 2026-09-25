@@ -32,7 +32,8 @@ export interface StreamingCellIndexEntry {
 }
 
 /** GPU texel format a streamed KTX2 texture decodes to. `bc7` requires a schema-v2 mip chain. */
-export type StreamingTextureGpuFormat = "rgba8" | "bc7";
+/** GPU texel formats: raw RGBA8, or UASTC transcoded to BC7 (RGBA) or BC1 (opaque RGB). */
+export type StreamingTextureGpuFormat = "rgba8" | "bc7" | "bc1";
 
 export interface StreamingKtx2DependencyIndexEntry {
   readonly bytes: number;
@@ -324,9 +325,11 @@ export interface DecodedKtx2Dependency {
   readonly format: "ktx2";
   readonly height: number;
   readonly resourceId: string;
-  /** Level-0 texels in the descriptor's GPU format: RGBA8 rows or BC7 blocks. */
-  readonly data: ArrayBuffer;
-  readonly mipmaps?: readonly Readonly<{ width: number; height: number; data: ArrayBuffer }>[];
+  /** Level-0 texels in the descriptor's GPU format: RGBA8 rows or BC1/BC7 blocks. Pre-encoded
+   * containers are not copied: every level is a view into the one transferred KTX2 buffer, so a
+   * transfer list must carry each distinct `data.buffer` once. */
+  readonly data: Uint8Array;
+  readonly mipmaps?: readonly Readonly<{ width: number; height: number; data: Uint8Array }>[];
   readonly width: number;
 }
 
@@ -345,6 +348,9 @@ export interface DecodedMeshoptDependency {
 
 export interface DecodedMeshoptVertexDependency {
   readonly attributes: ArrayBuffer;
+  /** Position bounds, computed by the decode worker. */
+  readonly boundMax: WorldVec3;
+  readonly boundMin: WorldVec3;
   readonly cacheKey: string;
   readonly descriptor: StreamingMeshoptVertexDependencyIndexEntry;
   readonly decodeMs: number;

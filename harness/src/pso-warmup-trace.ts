@@ -214,11 +214,21 @@ const PBR_COLOR_STATE = deepFreeze({
     vertexSha256: PBR_VERTEX_WGSL_SHA256,
     fragmentSha256: PBR_FRAGMENT_WGSL_SHA256,
   },
+  // Streamed PBR geometry: one interleaved 32-byte position/normal/UV slab.
   vertexBuffers: [
-    ...EFFECTIVE_PIPELINE_STATE.vertexBuffers,
     {
-      arrayStride: 8,
-      attributes: [{ format: "float32x2", offset: 0, shaderLocation: 2 }],
+      arrayStride: 32,
+      attributes: [{ format: "float32x3", offset: 0, shaderLocation: 0 }],
+      stepMode: "vertex",
+    },
+    {
+      arrayStride: 32,
+      attributes: [{ format: "float32x3", offset: 12, shaderLocation: 1 }],
+      stepMode: "vertex",
+    },
+    {
+      arrayStride: 32,
+      attributes: [{ format: "float32x2", offset: 24, shaderLocation: 2 }],
       stepMode: "vertex",
     },
     {

@@ -67,11 +67,13 @@ describe("streaming worker batch transaction wiring", () => {
     );
     expect(streaming).toContain("[task.bytes, ...task.dependencies.map");
     expect(streaming).toContain('"kind" in dependency');
-    expect(streaming).toContain("...new Set(");
     expect(decode).toContain("dependencies.flatMap((dependency)");
     for (const source of [streaming, decode]) {
+      // Pre-encoded mip levels are views into one container buffer: transfer each buffer once.
+      expect(source).toContain("...new Set(");
       expect(source).toContain('dependency.format === "ktx2"');
-      expect(source).toContain("dependency.mipmaps?.map((mip) => mip.data) ?? [dependency.data]");
+      expect(source).toContain("dependency.mipmaps?.map((mip) => mip.data.buffer)");
+      expect(source).toContain("dependency.data.buffer");
       expect(source).toContain('dependency.kind !== "legacy-positions"');
       expect(source).toContain('dependency.kind === "indices"');
       expect(source).toContain("? dependency.indices");

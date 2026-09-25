@@ -3,11 +3,15 @@ import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { validateVersionedMeshoptPayload } from "../../engine/src/streaming/meshopt-payload-validation.ts";
 import { scaleStreamingDependencyResourceId } from "../../engine/src/streaming/scale-streaming-resource-id.ts";
 import { buildRustWasm } from "./build-wasm.mjs";
+import { requireGpuReadyDelivery } from "./gpu-ready-delivery.mjs";
 import { loadPbrAssetLibrary, resolvePbrAssetsForCell } from "./pbr-asset-packaging.mjs";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
+/** Build-log summary of client-decode exceptions in use (D-203). */
+const clientDecodeExceptionUse = new Map();
 const outputRoot = join(repositoryRoot, "dist");
 const moduleDescriptors = Object.freeze([
   {
@@ -518,7 +522,8 @@ async function writeGreyboxWorldArtifacts() {
   ) {
     throw new Error("Accepted compact production compressed streaming fixture is unavailable");
   }
-  const textureBytes = Buffer.from(fixture.ktx2, "base64");
+  // The fixture's GPU-ready raw RGBA8 form, not its UASTC encode (D-203).
+  const textureBytes = Buffer.from(fixture.gpuReadyKtx2, "base64");
   const vertexBytes = Buffer.from(fixture.attributes, "base64");
   const indexBytes = Buffer.from(fixture.indices, "base64");
   const fixtureId = (role, bytes) =>
@@ -567,6 +572,11 @@ async function writeGreyboxWorldArtifacts() {
   ];
   const resolvedDependencyResources = await Promise.all(dependencyResources);
   const pbrLibrary = await loadPbrAssetLibrary(repositoryRoot, writeCompressedFixture);
+  console.info(
+    `Client-decode exceptions in use (D-203): ${
+      [...clientDecodeExceptionUse].map(([id, count]) => `${id} × ${count}`).join(", ") || "none"
+    }`,
+  );
   for (const districtSpec of gameModule.GREYBOX_DISTRICT_SPECS) {
     const district = gameModule.createGreyboxScene(districtSpec).world;
     engineModule.validateGreyboxDistrict(district);
@@ -643,6 +653,13 @@ async function writeCompressedFixture(bytes, scope, extension, descriptor) {
   if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) {
     throw new Error(`Compressed streaming fixture ${scope} is empty`);
   }
+  // Every streamed resource ships GPU-ready unless a registered exception covers it (D-203).
+  const exception = requireGpuReadyDelivery({ resourceId: scope, ...descriptor }, bytes);
+  if (exception !== null)
+    clientDecodeExceptionUse.set(exception, (clientDecodeExceptionUse.get(exception) ?? 0) + 1);
+  // The runtime decoder trusts these values; the build is where they are checked (D-202).
+  if (descriptor.format === "meshopt" && descriptor.decode.version === 1)
+    await validateVersionedMeshoptPayload(descriptor, bytes);
   const body = Buffer.from(bytes);
   const sha256 = createHash("sha256").update(body).digest("hex");
   const outputName = `${scope}-${sha256}${extension}`;

@@ -95,7 +95,7 @@ describe("PBR asset transport contract", () => {
         decode: { ...texture.decode, mipLevelCount: 2 },
       }),
     ).toThrow(/complete mip chain/);
-    const data = new ArrayBuffer(64);
+    const data = new Uint8Array(64);
     const decoded: DecodedKtx2Dependency = {
       cacheKey: streamingResourceCacheKey(texture),
       descriptor: texture,
@@ -109,8 +109,8 @@ describe("PBR asset transport contract", () => {
       data,
       mipmaps: [
         { width: 4, height: 4, data },
-        { width: 2, height: 2, data: new ArrayBuffer(16) },
-        { width: 1, height: 1, data: new ArrayBuffer(4) },
+        { width: 2, height: 2, data: new Uint8Array(16) },
+        { width: 1, height: 1, data: new Uint8Array(4) },
       ],
     };
     expect(() => validateDecodedStreamingDependencies([texture], [decoded])).not.toThrow();

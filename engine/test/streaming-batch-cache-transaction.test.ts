@@ -141,7 +141,7 @@ describe("streaming batch cache transaction", () => {
                 format: "ktx2" as const,
                 height: 2,
                 resourceId: descriptor.resourceId,
-                data: new ArrayBuffer(16),
+                data: new Uint8Array(16),
                 width: 2,
               })
             : Object.freeze({

@@ -44,56 +44,56 @@
       "height": 4096,
       "mipLevels": 13,
       "colorSpace": "srgb",
-      "encoding": "uastc"
+      "encoding": "bc1"
     },
     "ground-normal": {
-      "width": 4096,
-      "height": 4096,
-      "mipLevels": 13,
+      "width": 2048,
+      "height": 2048,
+      "mipLevels": 12,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     },
     "ground-orm": {
       "width": 2048,
       "height": 2048,
       "mipLevels": 12,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     },
     "plant-basecolor": {
       "width": 1024,
       "height": 512,
       "mipLevels": 11,
       "colorSpace": "srgb",
-      "encoding": "uastc"
+      "encoding": "bc1"
     },
     "plant-normal": {
       "width": 1024,
       "height": 512,
       "mipLevels": 11,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     },
     "plant-orm": {
       "width": 1024,
       "height": 512,
       "mipLevels": 11,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     },
     "pebble-normal": {
       "width": 4,
       "height": 4,
       "mipLevels": 3,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     },
     "pebble-orm": {
       "width": 4,
       "height": 4,
       "mipLevels": 3,
       "colorSpace": "linear",
-      "encoding": "uastc"
+      "encoding": "bc7"
     }
   },
   "parts": {
@@ -129,17 +129,17 @@
         {
           "vertexRole": "pebbles-lod0-vertices",
           "indexRole": "pebbles-lod0-indices",
-          "vertices": 439248,
-          "triangles": 251328,
+          "vertices": 81241,
+          "triangles": 72192,
           "bounds": [
-            [-2.0034124851226807, -0.023322604596614838, -2.0086779594421387],
-            [2.002743721008301, 0.007666058372706175, 2.004073143005371]
+            [-2.0001094341278076, -0.023322604596614838, -2.0086779594421387],
+            [2.0021262168884277, 0.007666058372706175, 2.003889799118042]
           ]
         },
         {
           "vertexRole": "pebbles-lod1-vertices",
           "indexRole": "pebbles-lod1-indices",
-          "vertices": 37142,
+          "vertices": 28725,
           "triangles": 21216,
           "bounds": [
             [-2.0000438690185547, -0.023322604596614838, -2.008413314819336],
@@ -149,7 +149,7 @@
         {
           "vertexRole": "pebbles-lod2-vertices",
           "indexRole": "pebbles-lod2-indices",
-          "vertices": 9428,
+          "vertices": 7802,
           "triangles": 5196,
           "bounds": [
             [-2.0000438690185547, -0.022319680079817772, -2.008413314819336],
@@ -196,8 +196,8 @@
   },
   "source": {
     "sourceProvenancePath": "assets/source/d1-paving/proof-2026-09-24/provenance.json",
-    "sourceProvenanceSha256": "8c8f8ceccb84d3b46630dc570ae40f403883c87eb865aec35e2891cfe160dbdb",
-    "deliveryReceiptSha256": "a11ba127667f53d0883058b6273f53279723b7519aa5d45d91dca660e6774243"
+    "sourceProvenanceSha256": "905778ec96a67063e588f096f257f4f25155e8a477d9755517150bc1a26558d9",
+    "deliveryReceiptSha256": "a8c9c4c722231acd861d4e036522b579fda3abbc52af9edf61a2dc234b2c83f6"
   },
   "provenance": {
     "schemaVersion": 1,
@@ -209,7 +209,7 @@
       "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
       "seed": 11,
       "author": "Claude (Anthropic) under human direction",
-      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL"
+      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks)"
     },
     "inputs": [
       {
@@ -240,7 +240,7 @@
       {
         "role": "delivery-pack",
         "path": "assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs",
-        "sha256": "6d4538f370ab6330a361d7841240550cba2ce6ac4ad67b5856532f517c0eb565"
+        "sha256": "95b7bf0b868159b06d19f4943535b9bbf862ad72dfcf7eb9a17aa0604454b111"
       }
     ],
     "visualReferences": {
@@ -288,7 +288,12 @@
       "version": "4.4.2",
       "wasmSha256": "839d8f70377b03e41a73f18ffc3839f87418079792cef4d82aae824a8241c7f0"
     },
-    "meshopt": "1.2.0"
+    "meshopt": "1.2.0",
+    "bc7Transcoder": {
+      "package": "@babylonjs/ktx2decoder",
+      "version": "9.27.1",
+      "wasmSha256": "be442ab8c0cbf734ded98e6ad38112aaba23c83bfeecac4213ded54631fc4eef"
+    }
   },
   "qa": {
     "finiteAttributesUnitNormalsAndIndexRange": true,
@@ -324,14 +329,14 @@
   "measurements": {
     "textures": {
       "ground-basecolor": {
-        "encodedBytes": 22370144,
+        "encodedBytes": 11185312,
         "rgba8DecodedBytes": 89478484,
-        "gpuBytes": 22369648
+        "gpuBytes": 11184824
       },
       "ground-normal": {
-        "encodedBytes": 22370144,
-        "rgba8DecodedBytes": 89478484,
-        "gpuBytes": 22369648
+        "encodedBytes": 5592896,
+        "rgba8DecodedBytes": 22369620,
+        "gpuBytes": 5592432
       },
       "ground-orm": {
         "encodedBytes": 5592896,
@@ -339,9 +344,9 @@
         "gpuBytes": 5592432
       },
       "plant-basecolor": {
-        "encodedBytes": 699536,
+        "encodedBytes": 349984,
         "rgba8DecodedBytes": 2796204,
-        "gpuBytes": 699088
+        "gpuBytes": 349544
       },
       "plant-normal": {
         "encodedBytes": 699536,
@@ -381,15 +386,15 @@
       ],
       "pebbles": [
         {
-          "vertices": 439248,
-          "triangles": 251328
+          "vertices": 81241,
+          "triangles": 72192
         },
         {
-          "vertices": 37142,
+          "vertices": 28725,
           "triangles": 21216
         },
         {
-          "vertices": 9428,
+          "vertices": 7802,
           "triangles": 5196
         }
       ],
@@ -408,66 +413,66 @@
         }
       ]
     },
-    "runtimeEncodedBytes": 65163423,
-    "rgba8DecodedTextureBytes": 209715368,
-    "gpuTextureBytes": 52429088
+    "runtimeEncodedBytes": 29885264,
+    "rgba8DecodedTextureBytes": 142606504,
+    "gpuTextureBytes": 24117504
   },
   "resources": [
     {
       "role": "ground-basecolor",
-      "file": "6ea6e12b693ba4f38acdf85c78f6c1c7ed255c6e6a0b71df5f66a1bce2a26ba2.ktx2",
-      "sha256": "6ea6e12b693ba4f38acdf85c78f6c1c7ed255c6e6a0b71df5f66a1bce2a26ba2",
-      "bytes": 22370144,
-      "path": "objects/6ea6e12b693ba4f38acdf85c78f6c1c7ed255c6e6a0b71df5f66a1bce2a26ba2.ktx2"
+      "file": "345191811b6ee6d4e3677136deaf589fd1c673657f126dd85b7ce72d6229622f.ktx2",
+      "sha256": "345191811b6ee6d4e3677136deaf589fd1c673657f126dd85b7ce72d6229622f",
+      "bytes": 11185312,
+      "path": "objects/345191811b6ee6d4e3677136deaf589fd1c673657f126dd85b7ce72d6229622f.ktx2"
     },
     {
       "role": "ground-normal",
-      "file": "731284dbc91cc56e9c5e82d60263bae341ec565bc4d52e84d8f9c481e6106677.ktx2",
-      "sha256": "731284dbc91cc56e9c5e82d60263bae341ec565bc4d52e84d8f9c481e6106677",
-      "bytes": 22370144,
-      "path": "objects/731284dbc91cc56e9c5e82d60263bae341ec565bc4d52e84d8f9c481e6106677.ktx2"
+      "file": "42a7a5d3e7f19b03177435cba8464c5a33821ac16997d14ab8ecc89efccdc07a.ktx2",
+      "sha256": "42a7a5d3e7f19b03177435cba8464c5a33821ac16997d14ab8ecc89efccdc07a",
+      "bytes": 5592896,
+      "path": "objects/42a7a5d3e7f19b03177435cba8464c5a33821ac16997d14ab8ecc89efccdc07a.ktx2"
     },
     {
       "role": "ground-orm",
-      "file": "1f447e30d927383cf3c2aeb127a2d2f830d620bf2cb7f264bfe676c24e9a11f8.ktx2",
-      "sha256": "1f447e30d927383cf3c2aeb127a2d2f830d620bf2cb7f264bfe676c24e9a11f8",
+      "file": "872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f.ktx2",
+      "sha256": "872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f",
       "bytes": 5592896,
-      "path": "objects/1f447e30d927383cf3c2aeb127a2d2f830d620bf2cb7f264bfe676c24e9a11f8.ktx2"
+      "path": "objects/872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f.ktx2"
     },
     {
       "role": "plant-basecolor",
-      "file": "cce0166858dab877fda4a5427e8a165f28a774f0489a45a6e3b3c5c08da5110f.ktx2",
-      "sha256": "cce0166858dab877fda4a5427e8a165f28a774f0489a45a6e3b3c5c08da5110f",
-      "bytes": 699536,
-      "path": "objects/cce0166858dab877fda4a5427e8a165f28a774f0489a45a6e3b3c5c08da5110f.ktx2"
+      "file": "459b9b0037d28a3a1fee66843e98952d855f6b78bf1c25213a1e59a94b5b2851.ktx2",
+      "sha256": "459b9b0037d28a3a1fee66843e98952d855f6b78bf1c25213a1e59a94b5b2851",
+      "bytes": 349984,
+      "path": "objects/459b9b0037d28a3a1fee66843e98952d855f6b78bf1c25213a1e59a94b5b2851.ktx2"
     },
     {
       "role": "plant-normal",
-      "file": "e9d4b91bf3f40949a0f9d5cbfdd2dd4cb1ff34ebf2626def7d9a42d49bc46674.ktx2",
-      "sha256": "e9d4b91bf3f40949a0f9d5cbfdd2dd4cb1ff34ebf2626def7d9a42d49bc46674",
+      "file": "38e47845c1fd32556392a35f9d9d69ca3adf95cd9269d09f055866877b2e126f.ktx2",
+      "sha256": "38e47845c1fd32556392a35f9d9d69ca3adf95cd9269d09f055866877b2e126f",
       "bytes": 699536,
-      "path": "objects/e9d4b91bf3f40949a0f9d5cbfdd2dd4cb1ff34ebf2626def7d9a42d49bc46674.ktx2"
+      "path": "objects/38e47845c1fd32556392a35f9d9d69ca3adf95cd9269d09f055866877b2e126f.ktx2"
     },
     {
       "role": "plant-orm",
-      "file": "b9313642eb4249d7d6e4a7638dc9f448f304f18fcecac45973fd2a0826eca325.ktx2",
-      "sha256": "b9313642eb4249d7d6e4a7638dc9f448f304f18fcecac45973fd2a0826eca325",
+      "file": "1ec9c939eb943af4a16ac5484185c32ca2d02f48837dca4cb4a057fc3c72f1f7.ktx2",
+      "sha256": "1ec9c939eb943af4a16ac5484185c32ca2d02f48837dca4cb4a057fc3c72f1f7",
       "bytes": 699536,
-      "path": "objects/b9313642eb4249d7d6e4a7638dc9f448f304f18fcecac45973fd2a0826eca325.ktx2"
+      "path": "objects/1ec9c939eb943af4a16ac5484185c32ca2d02f48837dca4cb4a057fc3c72f1f7.ktx2"
     },
     {
       "role": "pebble-normal",
-      "file": "52ae10f961b28be82aff464e1754b432e7aa320c09e23fba507f6b2481059a86.ktx2",
-      "sha256": "52ae10f961b28be82aff464e1754b432e7aa320c09e23fba507f6b2481059a86",
+      "file": "6dca05413f04a625c72909619bf2ee9fb13618b3bb4655a1424f707ce983be8e.ktx2",
+      "sha256": "6dca05413f04a625c72909619bf2ee9fb13618b3bb4655a1424f707ce983be8e",
       "bytes": 304,
-      "path": "objects/52ae10f961b28be82aff464e1754b432e7aa320c09e23fba507f6b2481059a86.ktx2"
+      "path": "objects/6dca05413f04a625c72909619bf2ee9fb13618b3bb4655a1424f707ce983be8e.ktx2"
     },
     {
       "role": "pebble-orm",
-      "file": "dc5c319af746474747745edcbf3b2732e7c34a138f8a16d0407a1ad40e95abbc.ktx2",
-      "sha256": "dc5c319af746474747745edcbf3b2732e7c34a138f8a16d0407a1ad40e95abbc",
+      "file": "5e551f7641c87e378daaee3a98203b7cdd59659390859280d379f5af2f30ac0d.ktx2",
+      "sha256": "5e551f7641c87e378daaee3a98203b7cdd59659390859280d379f5af2f30ac0d",
       "bytes": 304,
-      "path": "objects/dc5c319af746474747745edcbf3b2732e7c34a138f8a16d0407a1ad40e95abbc.ktx2"
+      "path": "objects/5e551f7641c87e378daaee3a98203b7cdd59659390859280d379f5af2f30ac0d.ktx2"
     },
     {
       "role": "ground-lod0-vertices",
@@ -513,45 +518,45 @@
     },
     {
       "role": "pebbles-lod0-vertices",
-      "file": "1bb54ca7dd39b69fed6705921a8f03c413d5ef99fdcba577afa5bcf114499089.meshopt",
-      "sha256": "1bb54ca7dd39b69fed6705921a8f03c413d5ef99fdcba577afa5bcf114499089",
-      "bytes": 8616505,
-      "path": "objects/1bb54ca7dd39b69fed6705921a8f03c413d5ef99fdcba577afa5bcf114499089.meshopt"
+      "file": "49b2db12b5e217c6f05d17f3ce3ecfdcbab58cb5db0ab97c107f4a0d1702262c.meshopt",
+      "sha256": "49b2db12b5e217c6f05d17f3ce3ecfdcbab58cb5db0ab97c107f4a0d1702262c",
+      "bytes": 1913509,
+      "path": "objects/49b2db12b5e217c6f05d17f3ce3ecfdcbab58cb5db0ab97c107f4a0d1702262c.meshopt"
     },
     {
       "role": "pebbles-lod0-indices",
-      "file": "123b7a2fd175c3c3f56bf7e1c176c62be5e75ce243f5a44cbad791bea6b2a892.meshopt",
-      "sha256": "123b7a2fd175c3c3f56bf7e1c176c62be5e75ce243f5a44cbad791bea6b2a892",
-      "bytes": 259721,
-      "path": "objects/123b7a2fd175c3c3f56bf7e1c176c62be5e75ce243f5a44cbad791bea6b2a892.meshopt"
+      "file": "56e5f1d2e988cb392317f5c87aba264bb02bbedaee34edc8b55e2300d10167cf.meshopt",
+      "sha256": "56e5f1d2e988cb392317f5c87aba264bb02bbedaee34edc8b55e2300d10167cf",
+      "bytes": 88813,
+      "path": "objects/56e5f1d2e988cb392317f5c87aba264bb02bbedaee34edc8b55e2300d10167cf.meshopt"
     },
     {
       "role": "pebbles-lod1-vertices",
-      "file": "e29144fd6002302684b49cd2b4f424438fbd1660c2f44a2a6730650b19d656b7.meshopt",
-      "sha256": "e29144fd6002302684b49cd2b4f424438fbd1660c2f44a2a6730650b19d656b7",
-      "bytes": 771419,
-      "path": "objects/e29144fd6002302684b49cd2b4f424438fbd1660c2f44a2a6730650b19d656b7.meshopt"
+      "file": "2339fa93e90ed0d42c5cfdf24d6e4083a7941bb3c179c57f56c78cdffd00f325.meshopt",
+      "sha256": "2339fa93e90ed0d42c5cfdf24d6e4083a7941bb3c179c57f56c78cdffd00f325",
+      "bytes": 692726,
+      "path": "objects/2339fa93e90ed0d42c5cfdf24d6e4083a7941bb3c179c57f56c78cdffd00f325.meshopt"
     },
     {
       "role": "pebbles-lod1-indices",
-      "file": "195cee4007c721941d202bb9d3aa4cf1630662fb075f40e10c1a29ccbe0f1d7c.meshopt",
-      "sha256": "195cee4007c721941d202bb9d3aa4cf1630662fb075f40e10c1a29ccbe0f1d7c",
-      "bytes": 21347,
-      "path": "objects/195cee4007c721941d202bb9d3aa4cf1630662fb075f40e10c1a29ccbe0f1d7c.meshopt"
+      "file": "bf19da2647f806c0451e162895d8b87fa7b6105dbe2801db1666d507806bd934.meshopt",
+      "sha256": "bf19da2647f806c0451e162895d8b87fa7b6105dbe2801db1666d507806bd934",
+      "bytes": 23754,
+      "path": "objects/bf19da2647f806c0451e162895d8b87fa7b6105dbe2801db1666d507806bd934.meshopt"
     },
     {
       "role": "pebbles-lod2-vertices",
-      "file": "ba74ef3d307e939e9bcadd43a210543684e03c5f4dff6aca1a97ffcc1e6a0ece.meshopt",
-      "sha256": "ba74ef3d307e939e9bcadd43a210543684e03c5f4dff6aca1a97ffcc1e6a0ece",
-      "bytes": 204441,
-      "path": "objects/ba74ef3d307e939e9bcadd43a210543684e03c5f4dff6aca1a97ffcc1e6a0ece.meshopt"
+      "file": "8fc10d6bc85c50157f0692523934e43e2a711b5bcb45342115781faf7457c2b2.meshopt",
+      "sha256": "8fc10d6bc85c50157f0692523934e43e2a711b5bcb45342115781faf7457c2b2",
+      "bytes": 187768,
+      "path": "objects/8fc10d6bc85c50157f0692523934e43e2a711b5bcb45342115781faf7457c2b2.meshopt"
     },
     {
       "role": "pebbles-lod2-indices",
-      "file": "ed6535b5d3c418688c1d33edda3b48fcec5ba508091a773918720171c886f3bc.meshopt",
-      "sha256": "ed6535b5d3c418688c1d33edda3b48fcec5ba508091a773918720171c886f3bc",
-      "bytes": 5213,
-      "path": "objects/ed6535b5d3c418688c1d33edda3b48fcec5ba508091a773918720171c886f3bc.meshopt"
+      "file": "cbc27220ad83794e51329052265c2bed2c5ab4f4e0f517cbaab1276cbee24db0.meshopt",
+      "sha256": "cbc27220ad83794e51329052265c2bed2c5ab4f4e0f517cbaab1276cbee24db0",
+      "bytes": 5549,
+      "path": "objects/cbc27220ad83794e51329052265c2bed2c5ab4f4e0f517cbaab1276cbee24db0.meshopt"
     },
     {
       "role": "plants-lod0-vertices",
@@ -597,29 +602,29 @@
     },
     {
       "role": "lod0",
-      "file": "f37478cb9367eec963a2d95d394837658745745fd9b8dad92fed1aa057696f7d.glb",
-      "sha256": "f37478cb9367eec963a2d95d394837658745745fd9b8dad92fed1aa057696f7d",
-      "bytes": 34552312,
-      "path": "objects/f37478cb9367eec963a2d95d394837658745745fd9b8dad92fed1aa057696f7d.glb"
+      "file": "3be01a835498ba5135e6c571b51dec8bccb4cfcdf1c1f9f67cd6aefa6975df45.glb",
+      "sha256": "3be01a835498ba5135e6c571b51dec8bccb4cfcdf1c1f9f67cd6aefa6975df45",
+      "bytes": 14072544,
+      "path": "objects/3be01a835498ba5135e6c571b51dec8bccb4cfcdf1c1f9f67cd6aefa6975df45.glb"
     },
     {
       "role": "lod1",
-      "file": "e4db63abe7e78bb9b34202d2d9050788861fdc13803599783d2cf392096ce7bb.glb",
-      "sha256": "e4db63abe7e78bb9b34202d2d9050788861fdc13803599783d2cf392096ce7bb",
-      "bytes": 4276356,
-      "path": "objects/e4db63abe7e78bb9b34202d2d9050788861fdc13803599783d2cf392096ce7bb.glb"
+      "file": "9f8ef46779c62ee8e9826c61a4da58a809f4b735bad152ed55278a3e30743d00.glb",
+      "sha256": "9f8ef46779c62ee8e9826c61a4da58a809f4b735bad152ed55278a3e30743d00",
+      "bytes": 3930724,
+      "path": "objects/9f8ef46779c62ee8e9826c61a4da58a809f4b735bad152ed55278a3e30743d00.glb"
     },
     {
       "role": "lod2",
-      "file": "dd7f8713ed5e3c71b76be39ec36b89f91272cb1d36bc0224dd5150c91dbc421c.glb",
-      "sha256": "dd7f8713ed5e3c71b76be39ec36b89f91272cb1d36bc0224dd5150c91dbc421c",
-      "bytes": 1092060,
-      "path": "objects/dd7f8713ed5e3c71b76be39ec36b89f91272cb1d36bc0224dd5150c91dbc421c.glb"
+      "file": "3c24644d2b8839fa06596f00940522b9b547b671c82f0884d2299102c93679e8.glb",
+      "sha256": "3c24644d2b8839fa06596f00940522b9b547b671c82f0884d2299102c93679e8",
+      "bytes": 1023684,
+      "path": "objects/3c24644d2b8839fa06596f00940522b9b547b671c82f0884d2299102c93679e8.glb"
     }
   ],
-  "candidateSha256": "79fc60ec48fe75aa3ab81c1ff5d2a5c485e7c683ce65ec7be93f957499daebfa",
+  "candidateSha256": "51a20ab45d30ab4b332e7ab3e2159ddf400491be129d385ff2fdd54ade60febd",
   "workerRoundtrip": {
-    "sha256": "244a2bdb9aeb386914dca445298877b031fcdb86dd9bdd863f51aedf3a1d2286",
-    "evidencePath": "harness/results/paving-photoreal-install-2026-09-24/decode-receipt5a.json"
+    "sha256": "526a29155bda693284aed457023be3a7756198a41d31ec59c1c469c39eadcdc5",
+    "evidencePath": "harness/results/paving-photoreal-delivery-2026-09-24/candidate8/production-decode-receipt.json"
   }
 }
