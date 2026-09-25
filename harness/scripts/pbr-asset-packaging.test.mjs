@@ -262,3 +262,55 @@ describe("periodic surface module packaging", () => {
     );
   });
 });
+
+describe("terrain-conforming placements (D-204)", () => {
+  // A 0.5 m detail field over [0, 12]² of the cell, rising 0.25 m toward its interior.
+  const size = 25;
+  const detailHeights = Array.from({ length: size * size }, (_, index) => {
+    const x = (index % size) * 0.5;
+    const z = Math.floor(index / size) * 0.5;
+    return 10 + (x / 16) * 2 + (z / 16) * 2 + 0.25 * Math.sin((Math.PI * x) / 12);
+  });
+  const rolling = {
+    ...cell,
+    collision: {
+      ...cell.collision,
+      detail: {
+        kind: "heightfield",
+        origin: [0, 0, 0],
+        sampleSpacingMeters: 0.5,
+        columns: size,
+        rows: size,
+        heights: detailHeights,
+      },
+    },
+  };
+  const conforming = (x, z) => ({
+    ...tile(x, z, "ground"),
+    heightAnchor: [6, 6],
+    conformToTerrain: true,
+  });
+
+  it("rests on the walkable ground at the anchor and records it as the drape reference", () => {
+    const result = resolvePbrAssetsForCell(rolling, [conforming(2, 2), conforming(6, 6)], library);
+    const reference = detailHeights[12 * size + 12];
+    for (const placement of result.cell.pbrAssets) {
+      expect(placement.terrainDrape).toEqual({ referenceHeightMeters: reference });
+      expect(placement.position[1]).toBeCloseTo(reference + 0.021, 12);
+    }
+    // Rigid placements keep the anchored coarse plane and carry no drape.
+    const rigid = resolvePbrAssetsForCell(rolling, [tile(6, 6, "ground")], library).cell
+      .pbrAssets[0];
+    expect(rigid.terrainDrape).toBeUndefined();
+    expect(rigid.position[1]).toBeCloseTo(12.021, 12);
+  });
+
+  it("rejects a conforming module without a detail field or reaching past it", () => {
+    expect(() => resolvePbrAssetsForCell(cell, [conforming(6, 6)], library)).toThrow(
+      /terrain detail field at its anchor/,
+    );
+    expect(() => resolvePbrAssetsForCell(rolling, [conforming(11, 6)], library)).toThrow(
+      /outside its cell's terrain detail field/,
+    );
+  });
+});

@@ -13,7 +13,7 @@ const greyboxWorld = {
   colliderCount: 708,
   districtId: "district-1-surface",
   dynamicLighting: true,
-  heightSampleCount: 256 * 17 * 17,
+  heightSampleCount: 83_588,
   lightingModel: RENDER_LIGHTING_MODEL,
   mainThreadScenePostMessageMs: 4,
   mainThreadWorldGenerationMs: 20,

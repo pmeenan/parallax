@@ -20,7 +20,8 @@ import type { PsoWarmupTelemetrySnapshot, PsoWarmupTraceBundle } from "./pso-war
 export type { GreyboxSceneConfig } from "../world/world-contract";
 
 export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
-export const RENDER_LIGHTING_MODEL = "hemispheric-ambient-directional-sun-csm@1" as const;
+// @2 (engine package 5, D-205): calibrated sun, occluded PBR ambient and baked AgX tone mapping.
+export const RENDER_LIGHTING_MODEL = "calibrated-sun-occluded-pbr-ambient-agx-csm@2" as const;
 
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;
@@ -174,6 +175,22 @@ export interface RenderFrameSample {
       visibleTriangleCount: number;
       lodChanges: number;
       placementSetupMs: number;
+      /** Resident per-cell drape fields (D-204), their GPU bytes and cumulative build/upload. */
+      terrainDrapeCount: number;
+      terrainDrapeGpuBytes: number;
+      terrainDrapeUploadMs: number;
+      conformingPlacementCount: number;
+    }>;
+    /**
+     * The applied PBR lighting inputs (D-205), refreshed when the lighting sample changes:
+     * exposure before the baked AgX curve, the directional light intensity, and the occluded
+     * ambient's sky and ground radiance on white.
+     */
+    readonly pbrLighting?: Readonly<{
+      exposure: number;
+      sunLightIntensity: number;
+      ambientSky: readonly [number, number, number];
+      ambientGround: readonly [number, number, number];
     }>;
   }>;
   readonly durationMs: number;

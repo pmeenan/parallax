@@ -1,0 +1,344 @@
+{
+  "scenario": "terrain-conforming-paving-capture@1",
+  "mode": "privileged-network-runtime",
+  "budgetAuthority": "none: focused inspection, not a smoke or traversal gate",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "note": "Physical-console dev-01. GPU values are the median of 60 frames of Lite gpuFrameEmaMs per view. Baseline: committed HEAD 0381e35 with the install package capture (flat courtyard, same eight shared views).",
+  "source": {
+    "commit": "0381e352a08eb1cc85ecd2c5551e999453ce2440",
+    "dirtyTreeDigest": "131050388530dc36596a6ba404f0a4b74bbaf68aaddfa0dc5c92ef58c1ed35ed"
+  },
+  "buildManifestSha256": "627af17e30a40bf517640d6bee52d63e374a863d5d541478b22002622f27bf9e",
+  "courtyardCell": "district-1-surface-cell-08-08-8f8235c1fa16643ddda3dcf93f731467d6c1f69e8ae988f53622279f3acb2025.json",
+  "readyMs": [1626, 1582],
+  "browserErrors": [],
+  "views": [
+    {
+      "name": "walking",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "8c6c40f7af43e81be7f4f6f81dba513798d8db78ec574f926a8f0a6d1a3388aa",
+      "gpuFrameEmaMsP50": {
+        "head": 2.898,
+        "run1": 3.056,
+        "run2": 3.013
+      },
+      "pbrVisibleTriangles": 3952080
+    },
+    {
+      "name": "walking-matched",
+      "request": {
+        "observer": [6, 19.171797290625342, 5.9],
+        "headingRadians": -1.5167948264189284,
+        "camera": {
+          "beta": 0.8730711449233914,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.4177045365628396
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "b9c0c5ce120c3ce2688d7612997a01ff1e5debce107728aec1eaf5918625ed4f",
+      "gpuFrameEmaMsP50": {
+        "head": 5.228,
+        "run1": 5.193,
+        "run2": 5.236
+      },
+      "pbrVisibleTriangles": 3977046
+    },
+    {
+      "name": "close",
+      "request": {
+        "observer": [8.9574, 18.829235034201595, 10.3069],
+        "headingRadians": -1.653937558683339,
+        "camera": {
+          "beta": 1.1216789553429882,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.6683606060775128
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "7fa392e00053379da438c5065dbf1b37a113b74d9a8594acbcef522f5557ee5b",
+      "gpuFrameEmaMsP50": {
+        "head": 5.486,
+        "run1": 5.436,
+        "run2": 5.284
+      },
+      "pbrVisibleTriangles": 4077954
+    },
+    {
+      "name": "joint",
+      "request": {
+        "observer": [6, 19.1454848910148, 6.3],
+        "headingRadians": -1.6814535479687918,
+        "camera": {
+          "beta": 1.140066831116799,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.4982815994099657
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "8c814a3201453a669e745b37b1d663751bd9c96206b0e409aad04a694c90f9aa",
+      "gpuFrameEmaMsP50": {
+        "head": 5.306,
+        "run1": 5.282,
+        "run2": 5.343
+      },
+      "pbrVisibleTriangles": 4127886
+    },
+    {
+      "name": "grazing",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "80d71ef99c1e0aff8d717d2ab93528d98345aaacc4859cfbe3a7f1ccde840814",
+      "gpuFrameEmaMsP50": {
+        "head": 5.509,
+        "run1": 5.368,
+        "run2": 5.468
+      },
+      "pbrVisibleTriangles": 4127886
+    },
+    {
+      "name": "overcast",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "overcast"
+        }
+      },
+      "fullResolutionSha256": "2de962fd3bb6421bac8b3922ce26b415da81c5c0c5ebce927e1232c3c22ab579",
+      "gpuFrameEmaMsP50": {
+        "head": 5.399,
+        "run1": 5.373,
+        "run2": 5.365
+      },
+      "pbrVisibleTriangles": 4127886
+    },
+    {
+      "name": "courtyard-overview",
+      "request": {
+        "observer": [4.05, 19.27992444728114, 4.05],
+        "headingRadians": -2.390663591191853,
+        "camera": {
+          "beta": 1.2011264863338549,
+          "heightMeters": 0.01,
+          "radiusMeters": 11.002390188161757
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "5d2f2407283e20f5245ae8f9145eaa9eda6ff7be6a1698888f3b564bf05119dc",
+      "gpuFrameEmaMsP50": {
+        "head": 5.27,
+        "run1": 5.292,
+        "run2": 5.249
+      },
+      "pbrVisibleTriangles": 3607690
+    },
+    {
+      "name": "courtyard-far",
+      "request": {
+        "observer": [2.05, 19.27373179641185, 2.05],
+        "headingRadians": -2.4668517113662403,
+        "camera": {
+          "beta": 1.4955647562507564,
+          "heightMeters": 0.01,
+          "radiusMeters": 38.52772340722721
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "ab043c0ca649f6e6e472a6c2356b467b41095cc07bd1e924fb28ab97d1c889e3",
+      "gpuFrameEmaMsP50": {
+        "head": 2.366,
+        "run1": 2.631,
+        "run2": 2.633
+      },
+      "pbrVisibleTriangles": 594518
+    },
+    {
+      "name": "rolling-across",
+      "request": {
+        "observer": [16, 18.925915609239386, 8],
+        "headingRadians": 0,
+        "camera": {
+          "beta": 1.5057390877031078,
+          "heightMeters": 0.01,
+          "radiusMeters": 19.040279251601056
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "1870bdae8bef16c62fe1dc3e00b6637fe9cac35f1570a3cf72f41e64546b2599",
+      "gpuFrameEmaMsP50": {
+        "head": null,
+        "run1": 5.083,
+        "run2": 5.085
+      },
+      "pbrVisibleTriangles": 1841908
+    },
+    {
+      "name": "rolling-grazing",
+      "request": {
+        "observer": [8, 18.673824341601268, 16],
+        "headingRadians": -4.71238898038469,
+        "camera": {
+          "beta": 1.5082503483346241,
+          "heightMeters": 0.01,
+          "radiusMeters": 19.037224668331138
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "68ca6c0b113c109721624fdca5b6377e3297f27ace0666231620c094c7009d7f",
+      "gpuFrameEmaMsP50": {
+        "head": null,
+        "run1": 4.668,
+        "run2": 4.576
+      },
+      "pbrVisibleTriangles": 2007360
+    },
+    {
+      "name": "crest",
+      "request": {
+        "observer": [0.5, 19.290340741727636, 16],
+        "headingRadians": -4.434089321379578,
+        "camera": {
+          "beta": 1.4173522290683134,
+          "heightMeters": 0.01,
+          "radiusMeters": 3.6833321260967797
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "88a5a5ea2f51604c86311eaab1a93a814e0c50d1b7b5ab517ad070364acad358",
+      "gpuFrameEmaMsP50": {
+        "head": null,
+        "run1": 4.91,
+        "run2": 4.942
+      },
+      "pbrVisibleTriangles": 2947970
+    },
+    {
+      "name": "dip",
+      "request": {
+        "observer": [16, 18.579148943223842, 0.5],
+        "headingRadians": -0.8760580505981932,
+        "camera": {
+          "beta": 1.307696745079822,
+          "heightMeters": 0.01,
+          "radiusMeters": 4.044295119747082
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "a1bad44c5c8d278c26fcf70949592304017d17b9f17d61c7ec25f89bcd637de0",
+      "gpuFrameEmaMsP50": {
+        "head": null,
+        "run1": 5.292,
+        "run2": 5.17
+      },
+      "pbrVisibleTriangles": 3444326
+    },
+    {
+      "name": "edge-seam",
+      "request": {
+        "observer": [15.5, 18.895160450433117, 7],
+        "headingRadians": -3.7295952571373605,
+        "camera": {
+          "beta": 1.390595561090536,
+          "heightMeters": 0.01,
+          "radiusMeters": 3.664894232537491
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "e518025284666d7e3844af410dbad9456c575b5630c63bb76674a8397f5d2de1",
+      "gpuFrameEmaMsP50": {
+        "head": null,
+        "run1": 4.945,
+        "run2": 5.063
+      },
+      "pbrVisibleTriangles": 2655600
+    }
+  ],
+  "initialBatchDirectUploadMs": {
+    "head": 18.59499990940094,
+    "run1": 24.09499990940094,
+    "run2": 21.56499993801117
+  },
+  "terrainDrape": {
+    "count": 1,
+    "gpuBytes": 33800,
+    "buildUploadMs": [0.855, 1.01],
+    "conformingPlacements": 48,
+    "placementSetupMs": 1.705
+  }
+}

@@ -28,6 +28,97 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-205: Lighting is calibrated to the approved source's Cycles lighting; PBR gets occluded ambient and AgX tone mapping (2026-09-24, accepted; human visual acceptance 2026-09-24)
+
+**Decision:**
+- **Calibration.** The sun and sky are calibrated to the paving source's Cycles lighting,
+  measured by `lighting/calibrate.py`: a 4.6 W/m² sun and a Hosek-Wilkie sky at turbidity 2.6
+  and strength 2. At 30° clear, the sun and sky on a white Lambert surface match Cycles to
+  within 1%.
+- **Units.** Lights use radiance on white. Streamed PBR materials set `directIntensity = π`,
+  because Lite's PBR diffuse divides by π. `sunIntensity` stays a normalized [0, 1] fraction for
+  the evidence contract; `sunLightIntensity` is applied.
+- **PBR ambient.** A `parallax-pbr-ambient` plugin supplies the ambient: hemispheric sky/ground
+  radiance × ORM occlusion, plus a sky specular term using the Karis analytic BRDF with Lagarde
+  specular and horizon occlusion. The greybox hemispheric light excludes PBR meshes.
+- **Tone mapping and exposure.** PBR shaders bake an AgX fit of Blender's "AgX - High Contrast"
+  (rms 0.006 display). Exposure is 1 at the calibrated day and adapts with exponent 0.5 within
+  [0.6, 16].
+- **Asset.** Paving candidate 9 bakes a 40 mm height-field AO into ORM.R and ships the ORM at
+  1024².
+- **Lighting-model identity** is `calibrated-sun-occluded-pbr-ambient-agx-csm@2`.
+  Its daylight sun strength is constant above the horizon fade. Dynamic-lighting evidence
+  requires changing phase and sun direction; intensity ranges remain recorded and may be zero.
+
+**Context:** The delivery package found the game's lighting to be the largest gap to the
+approved image. Its sun-to-sky ratio was 1.4 : 1 against Cycles' 4.9 : 1, it had no tone
+mapping, and Lite applies ORM occlusion only to image-based lighting. Lite's procedural-sky IBL
+was considered first. It needs a shipped BRDF image and regenerates on every sun change, and it
+has no weather or night model. It remains the route for reflective surfaces.
+[Results](../assets/source/d1-paving/proof-2026-09-24/lighting-results.md): the matched
+walking view's mean display level is 123 against Cycles' 118, and the p90 is 170 against 168.
+GPU cost is within noise. The 1024² ORM differs by a mean 0.2–0.4/255 and saves 4.19 MB.
+
+**Consequences:** New PBR content must be authored for these lighting units; ORM.R carries
+real occlusion. The greybox is neither tone mapped nor specular. The joints' remaining dark gap
+(p10 48 against 41) is direct-light shadowing inside the joints, which belongs to package 6.
+
+**Reopen if:** reflective or wet surfaces need sky reflections (take Lite's IBL or a probe
+path), scene-wide post-processing replaces the baked tone curve, or the reference lighting
+changes.
+
+---
+
+## D-204: Surface modules conform to terrain through a GPU drape over shared terrain detail fields (2026-09-24, accepted; human direction)
+
+**Decision:** Paved and other periodic surface modules follow the ground. They do not sit on
+level pads.
+- **Terrain detail regions.** Game data may define rectangles aligned to the coarse collision
+  lattice, each with a finer sample spacing (D1 courtyard: 0.5 m over `[-16, 32]²`). Inside a
+  region, the height is the coarse bilinear field plus an authored rolling term. A C¹ window
+  takes that term to zero at the region edge. Each cell carries its clipped part as
+  `collision.detail`.
+- **One surface.** `sampleCellGroundHeight` (bilinear on the detail field where one exists) is
+  the ground for navigation, all sim ground heights, the build's asset anchors and the
+  conforming drape. The render terrain replaces covered coarse quads with the fine mesh. Cell-edge
+  skirts follow that ground.
+- **Validation.** A detail field must lie on the coarse lattice. Its interior edges must meet the
+  coarse field, and its cell-boundary edges must meet the neighbouring cell's ground. Cells with
+  detail keep the full collision lattice in every LOD.
+- **GPU drape.** A `conformToTerrain` placement records `terrainDrape.referenceHeightMeters`,
+  the ground at its anchor, which its position already includes. Every streamed PBR material
+  carries one vertex-stage plugin. It reads a per-cell `rgba16float` field (height above the
+  reference, x and z slopes) with the same bilinear lookup as collision. It lifts world
+  positions and transforms normals by that vertical shear, in the colour and CSM depth pipelines
+  alike. Rigid placements bind a 1 × 1 zero field, so one warmed pipeline family serves both.
+  Module bytes, instance matrices and geometry stay shared.
+
+**Context:** The human requires surface modules to follow the ground and chose the GPU drape
+over per-tile baked copies or planar facets (2026-09-24). D1 terrain is sampled every 16 m, so
+the 16 m courtyard was one terrain quad. A drape onto that grid would fold along the facets,
+and a drape onto any smoother field would float off or sink below the walkable surface. The
+earlier contour direction (tilt whole stones from terrain samples) belonged to the removed
+individual-stone kit, and a periodic module cannot tilt stones individually.
+[Results](../assets/source/d1-paving/proof-2026-09-24/conform-results.md): on dev-01 the paving
+views stay within ±0.15 ms of GPU time. The drape field is 33.8 KB and builds in about 1 ms on the
+render worker. The first streaming batch's stall rises from 18.6 to 21.6–24.1 ms, against the
+50 ms hitch budget.
+
+**Consequences:** Stones bend with the ground. This is invisible at gentle grades, where the
+curvature radius is far larger than a 10–30 cm cobble. Terrain authoring must therefore keep
+curvature gentle under conforming modules; the courtyard stays under 7.3° and ±0.4 m. The
+vertical shear keeps stone sidewalls vertical rather than rotating them with the slope. Detail
+heights add streamed cell JSON (181,196 bytes for the four courtyard cells). The PSO warmup
+contract pins the plugin's WGSL and bind-group layout. Level pads remain available as a coarse
+base.
+
+**Reopen if:** conforming surfaces need steep or sharply curved ground, which would call for
+per-stone or per-course placement. Also reopen if detail regions grow until cell payloads or the
+render-thread drape build matter, which would mean precomputing drape texels at build time, or if
+Lite gains native terrain-conforming instancing.
+
+---
+
 ## D-203: Streamed resources ship GPU-ready; client-side decoding needs a registered exception (2026-09-24, accepted; human direction)
 
 **Decision:** The build refuses any streamed resource that the client would have to transcode,

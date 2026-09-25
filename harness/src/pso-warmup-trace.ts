@@ -172,11 +172,13 @@ const CSM_DEPTH_STATE = deepFreeze({
 // Independently pinned expected descriptors; never import the producer registry.
 // Captured on pinned Chrome 152.0.7977.54 with the exact Lite 1.31.1 PBR feature
 // set: opaque, derivative normal map, ORM, factor, specular AA and directional CSM.
-const PBR_VERTEX_WGSL_SHA256 = "e63f866e284062a6f26df29cab42c63da41918fa704ea2922bc4da405b6d6080";
-const PBR_FRAGMENT_WGSL_SHA256 = "d31c20a4c6bc2ddc8fea544cbfccb410cba05beaae6c036bfac64d3641e8d758";
+const PBR_VERTEX_WGSL_SHA256 = "dc697137e5b3aaf9dcb17fd835a870a572cc894bc234ab7ec090003eadd66dcf";
+const PBR_FRAGMENT_WGSL_SHA256 = "2e9152e4024089c866edf57a0b380f4fe23c2dda7cc1b0bc8ddfc8a37849fb54";
 const PBR_MATERIAL_GROUP = {
   entries: [
-    ...EFFECTIVE_PIPELINE_STATE.layout.bindGroups[1].entries,
+    // The terrain drape (D-204) reads the material UBO in the vertex stage too.
+    EFFECTIVE_PIPELINE_STATE.layout.bindGroups[1].entries[0],
+    { ...EFFECTIVE_PIPELINE_STATE.layout.bindGroups[1].entries[1], visibility: 3 },
     ...[2, 4, 6].flatMap((binding) => [
       {
         binding,
@@ -194,6 +196,22 @@ const PBR_MATERIAL_GROUP = {
         visibility: 2,
       },
     ]),
+    // Terrain drape field, read with textureLoad in the vertex stage.
+    {
+      binding: 8,
+      resource: {
+        kind: "texture" as const,
+        multisampled: false,
+        sampleType: "float" as const,
+        viewDimension: "2d" as const,
+      },
+      visibility: 1,
+    },
+    {
+      binding: 9,
+      resource: { kind: "sampler" as const, type: "non-filtering" as const },
+      visibility: 1,
+    },
   ],
   index: 1,
 };
@@ -243,7 +261,7 @@ const PBR_COLOR_STATE = deepFreeze({
   ],
 } as const);
 const PBR_DEPTH_FRAGMENT_WGSL_SHA256 =
-  "ca59db32bf4223ffd42ca6e9c30ab954396339b7034145db7d901f5706ea5811";
+  "4cb03f488f4136672b9b02f6bb1598e8012109c16869cf979bbfa4d00fe7a7d8";
 const PBR_DEPTH_STATE = deepFreeze({
   ...PBR_COLOR_STATE,
   colorTarget: null,

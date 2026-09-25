@@ -17,6 +17,8 @@ import { streamingTextureLevelBytes } from "../streaming/streaming-dependency-co
 import type { StreamingTextureGpuFormat } from "../streaming/streaming-protocol";
 import type { PbrAssetPlacement } from "../world/pbr-asset";
 import type { WorldVec3 } from "../world/world-contract";
+import { createPbrAmbientPlugin, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
+import { createTerrainDrapePlugin, type TerrainDrapeField } from "./terrain-drape";
 
 /** Streamed PBR vertices: float32 position, normal and UV, interleaved as meshopt decodes them. */
 export const STREAMED_PBR_VERTEX_STRIDE = 32;
@@ -125,6 +127,7 @@ export function groupPbrAssetPlacements(
       m.metallicFactor,
       m.normalScale,
       m.textureAddressMode ?? "clamp-to-edge",
+      placement.terrainDrape?.referenceHeightMeters ?? null,
     ]);
     const group = groups.get(key);
     if (group) group.push(placement);
@@ -168,12 +171,15 @@ export function selectPbrAssetLod(
   return distance <= near ? 0 : distance <= far ? 1 : 2;
 }
 
-/** All runtime surfaces and the warmup fixture use precisely the same PBR features. */
+/** All runtime surfaces and the warmup fixture use precisely the same PBR features and plugins:
+ * the terrain drape (D-204; rigid placements bind the zero field) and the occluded ambient. */
 export function createStreamedPbrMaterial(
   textures: Readonly<{ baseColor: Texture2D; normal: Texture2D; orm: Texture2D }>,
   factors: PbrSurfaceFactors,
+  drape: TerrainDrapeField,
+  ambient: PbrAmbientState,
 ) {
-  return createPbrMaterial({
+  const material = createPbrMaterial({
     baseColorTexture: textures.baseColor,
     normalTexture: textures.normal,
     ormTexture: textures.orm,
@@ -183,10 +189,19 @@ export function createStreamedPbrMaterial(
     normalTextureScale: factors.normalScale,
     occlusionStrength: 1,
     enableSpecularAA: true,
+    // Lite's PBR direct lighting takes irradiance (it divides diffuse by π), while the scene's
+    // lights, Standard materials and the ambient plugin use radiance on white (engine package 5).
+    directIntensity: Math.PI,
   });
+  material.plugins = [createTerrainDrapePlugin(drape), createPbrAmbientPlugin(ambient)];
+  return material;
 }
 
-export function createPbrWarmupMesh(engine: EngineContext) {
+export function createPbrWarmupMesh(
+  engine: EngineContext,
+  drape: TerrainDrapeField,
+  ambient: PbrAmbientState,
+) {
   const textures = {
     baseColor: createTexture2DFromPixels(engine, new Uint8Array([180, 180, 180, 255]), 1, 1, {
       srgb: true,
@@ -210,12 +225,20 @@ export function createPbrWarmupMesh(engine: EngineContext) {
     { indices: new Uint32Array([0, 1, 2]).buffer, indexCount: 3 },
   );
   const mesh = geometry.mesh;
-  mesh.material = createStreamedPbrMaterial(textures, {
-    baseColorFactor: [1, 1, 1],
-    roughnessFactor: 1,
-    metallicFactor: 0,
-    normalScale: 0.35,
-  });
+  mesh.material = createStreamedPbrMaterial(
+    textures,
+    {
+      baseColorFactor: [1, 1, 1],
+      roughnessFactor: 1,
+      metallicFactor: 0,
+      normalScale: 0.35,
+    },
+    drape,
+    ambient,
+  );
+  // Excluded from the greybox hemispheric light like every PBR placement, so the warmed
+  // pipelines are the runtime's single-directional-light variants.
+  mesh.id = PBR_AMBIENT_MESH_ID;
   mesh.receiveShadows = true;
   setThinInstances(mesh, new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]), 1);
   return { geometry, mesh, textures };

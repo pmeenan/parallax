@@ -2,9 +2,11 @@ import {
   canonicalStreamingCellId,
   type GreyboxCell,
   type GreyboxDistrict,
+  type GreyboxHeightfieldCollider,
   type GreyboxLodTier,
   type GreyboxPrimitive,
   type GreyboxSceneConfig,
+  sampleHeightfieldBilinear,
   type WorldVec3,
 } from "@parallax/engine";
 import type {
@@ -12,6 +14,7 @@ import type {
   FeatureSelectionSpec,
   GreyboxDistrictSpec,
   SpatialExpression,
+  TerrainDetailRegionSpec,
   TerrainLayerSpec,
 } from "./greybox-spec";
 
@@ -132,6 +135,102 @@ export function sampleGreyboxTerrain(spec: GreyboxDistrictSpec, x: number, z: nu
     result += (pad.height - result) * blend;
   }
   return result;
+}
+
+function validateTerrainDetailRegion(
+  spec: GreyboxDistrictSpec,
+  region: TerrainDetailRegionSpec,
+): void {
+  const coarse = spec.world.collisionSampleSpacingMeters;
+  const onLattice = (value: number, origin: number): boolean =>
+    Number.isInteger((value - origin) / coarse);
+  const width = region.maximum[0] - region.minimum[0];
+  const depth = region.maximum[1] - region.minimum[1];
+  if (
+    !(width > 0 && depth > 0) ||
+    !onLattice(region.minimum[0], spec.world.bounds.minimum[0]) ||
+    !onLattice(region.maximum[0], spec.world.bounds.minimum[0]) ||
+    !onLattice(region.minimum[1], spec.world.bounds.minimum[2]) ||
+    !onLattice(region.maximum[1], spec.world.bounds.minimum[2]) ||
+    !Number.isInteger(coarse / region.sampleSpacingMeters) ||
+    !(region.windowMeters > 0) ||
+    region.windowMeters * 2 > Math.min(width, depth) ||
+    region.waves.some(
+      (wave) =>
+        !Number.isFinite(wave.amplitudeMeters) ||
+        !(wave.wavelengthMeters > 0) ||
+        !Number.isFinite(wave.directionRadians) ||
+        !Number.isFinite(wave.phaseRadians),
+    )
+  )
+    throw new Error(`Terrain detail region at ${region.minimum.join(",")} is invalid`);
+}
+
+function smootherstep(value: number): number {
+  const t = Math.min(1, Math.max(0, value));
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+/** The authored rolling term, faded to zero value and slope at the region edge. */
+function terrainDetailRelief(region: TerrainDetailRegionSpec, x: number, z: number): number {
+  // Per-axis windows multiply, so the fade stays smooth at the corners.
+  const window =
+    smootherstep(Math.min(x - region.minimum[0], region.maximum[0] - x) / region.windowMeters) *
+    smootherstep(Math.min(z - region.minimum[1], region.maximum[1] - z) / region.windowMeters);
+  if (window === 0) return 0;
+  let relief = 0;
+  for (const wave of region.waves) {
+    const along = x * Math.cos(wave.directionRadians) + z * Math.sin(wave.directionRadians);
+    relief +=
+      wave.amplitudeMeters *
+      Math.sin((2 * Math.PI * along) / wave.wavelengthMeters + wave.phaseRadians);
+  }
+  return window * relief;
+}
+
+/** The cell's part of the first detail region overlapping it: coarse bilinear plus relief. */
+function createTerrainDetail(
+  spec: GreyboxDistrictSpec,
+  coarse: GreyboxHeightfieldCollider,
+  minimumX: number,
+  minimumZ: number,
+): GreyboxHeightfieldCollider | undefined {
+  const size = spec.world.cellSizeMeters;
+  const overlapping = (spec.terrain.detailRegions ?? []).filter(
+    (region) =>
+      region.minimum[0] < minimumX + size &&
+      region.maximum[0] > minimumX &&
+      region.minimum[1] < minimumZ + size &&
+      region.maximum[1] > minimumZ,
+  );
+  if (overlapping.length > 1)
+    throw new Error(`Cell at ${minimumX},${minimumZ} overlaps several terrain detail regions`);
+  const region = overlapping[0];
+  if (region === undefined) return undefined;
+  validateTerrainDetailRegion(spec, region);
+  const x0 = Math.max(region.minimum[0], minimumX);
+  const z0 = Math.max(region.minimum[1], minimumZ);
+  const x1 = Math.min(region.maximum[0], minimumX + size);
+  const z1 = Math.min(region.maximum[1], minimumZ + size);
+  const spacing = region.sampleSpacingMeters;
+  const columns = Math.round((x1 - x0) / spacing) + 1;
+  const rows = Math.round((z1 - z0) / spacing) + 1;
+  const heights = new Array<number>(columns * rows);
+  for (let row = 0; row < rows; row++)
+    for (let column = 0; column < columns; column++) {
+      const x = x0 + column * spacing;
+      const z = z0 + row * spacing;
+      heights[row * columns + column] =
+        sampleHeightfieldBilinear(coarse, x, z) + terrainDetailRelief(region, x, z);
+    }
+  return Object.freeze({
+    columns,
+    heights: Object.freeze(heights),
+    kind: "heightfield" as const,
+    origin: vec3(x0, 0, z0),
+    rows,
+    sampleSpacingMeters: spacing,
+  });
 }
 
 function cellId(spec: GreyboxDistrictSpec, x: number, z: number): string {
@@ -419,21 +518,34 @@ function createCell(
       );
     }),
   );
-  // Coarse strides would discard a small authored pad's defining vertices.
-  // Retain its existing collision lattice; surrounding cells keep normal LODs.
-  const retainsLevelPad = (spec.terrain.levelPads ?? []).some(
-    (pad) =>
-      minimumX < pad.maximum[0] + pad.transitionMeters &&
-      minimumX + spec.world.cellSizeMeters > pad.minimum[0] - pad.transitionMeters &&
-      minimumZ < pad.maximum[1] + pad.transitionMeters &&
-      minimumZ + spec.world.cellSizeMeters > pad.minimum[1] - pad.transitionMeters,
-  );
+  const heightfield = Object.freeze({
+    columns: samplesPerAxis,
+    heights,
+    kind: "heightfield" as const,
+    origin: vec3(minimumX, 0, minimumZ),
+    rows: samplesPerAxis,
+    sampleSpacingMeters: spec.world.collisionSampleSpacingMeters,
+  });
+  const detail = createTerrainDetail(spec, heightfield, minimumX, minimumZ);
+  const detailVertices = detail === undefined ? 0 : detail.columns * detail.rows;
+  // Coarse strides would discard a small authored pad's defining vertices, and a detail
+  // field's edge lies on the full collision lattice. Retain that lattice in every LOD;
+  // surrounding cells keep normal LODs.
+  const retainsLevelPad =
+    detail !== undefined ||
+    (spec.terrain.levelPads ?? []).some(
+      (pad) =>
+        minimumX < pad.maximum[0] + pad.transitionMeters &&
+        minimumX + spec.world.cellSizeMeters > pad.minimum[0] - pad.transitionMeters &&
+        minimumZ < pad.maximum[1] + pad.transitionMeters &&
+        minimumZ + spec.world.cellSizeMeters > pad.minimum[1] - pad.transitionMeters,
+    );
   const lods = spec.lodTiers.map((tier): GreyboxLodTier => {
     const sampleStride = retainsLevelPad ? 1 : tier.sampleStride;
     const primitives = selectFeatures(featureGroups, tier.featureSelection);
     const terrainVertices = (intervals / sampleStride + 1) ** 2;
     return Object.freeze({
-      complexityScore: terrainVertices + primitives.length * 8,
+      complexityScore: terrainVertices + detailVertices + primitives.length * 8,
       maxDistanceMeters: tier.maxDistanceMeters,
       representations: Object.freeze([
         Object.freeze({
@@ -462,14 +574,8 @@ function createCell(
       minimum: vec3(minimumX, spec.world.bounds.minimum[1], minimumZ),
     }),
     collision: Object.freeze({
-      heightfield: Object.freeze({
-        columns: samplesPerAxis,
-        heights,
-        kind: "heightfield" as const,
-        origin: vec3(minimumX, 0, minimumZ),
-        rows: samplesPerAxis,
-        sampleSpacingMeters: spec.world.collisionSampleSpacingMeters,
-      }),
+      ...(detail === undefined ? {} : { detail }),
+      heightfield,
       obstacles: Object.freeze(
         features.flatMap(({ collisionId, primitive: definition }) =>
           collisionId === undefined

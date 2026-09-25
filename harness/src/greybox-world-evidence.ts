@@ -47,10 +47,10 @@ export function requireGreyboxWorld(
     throw new Error("Greybox directional-sun telemetry is invalid");
   }
   const observedLighting = createObservedLightingEvidence(frames);
+  // D-205 holds daylight irradiance steady. Phase and sun direction must still advance;
+  // scalar intensity ranges are observations and can legitimately be zero near noon.
   if (
     observedLighting.phaseRange <= 1e-6 ||
-    observedLighting.intensityRange <= 1e-6 ||
-    observedLighting.sunIntensityRange <= 1e-6 ||
     observedLighting.sunDirectionAngularChangeRadians <= 1e-6
   ) {
     throw new Error("Greybox lighting did not change during the measurement window");
@@ -149,8 +149,8 @@ function requireObservedLightingEvidence(value: unknown): GreyboxObservedLightin
     (value.sunIntensityMaximum as number) > 1 ||
     (value.sunIntensityMaximum as number) < (value.sunIntensityMinimum as number) ||
     (value.phaseRange as number) <= 1e-6 ||
-    (value.intensityRange as number) <= 1e-6 ||
-    (value.sunIntensityRange as number) <= 1e-6 ||
+    (value.intensityRange as number) < 0 ||
+    (value.sunIntensityRange as number) < 0 ||
     (value.sunDirectionAngularChangeRadians as number) <= 1e-6 ||
     !nearlyEqual(
       value.phaseRange as number,
@@ -194,7 +194,8 @@ function requireGreyboxRenderTelemetry(value: unknown): GreyboxRenderTelemetry {
     value.districtId !== "district-1-surface" ||
     !isInteger(value.cellCount, 256) ||
     !isPositiveInteger(value.colliderCount) ||
-    value.heightSampleCount !== 256 * 17 * 17 ||
+    // D-204: 73,984 coarse samples plus 9,604 samples in the four clipped detail fields.
+    value.heightSampleCount !== 83_588 ||
     value.materialCount !== 8 ||
     !isPositiveInteger(value.renderedFeaturePrimitiveCount) ||
     !isPositiveInteger(value.renderedTerrainPatchCount) ||

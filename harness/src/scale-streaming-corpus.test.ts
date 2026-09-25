@@ -93,8 +93,10 @@ describe("representative scale-streaming corpus", () => {
         installBytes: validatedMaterialized.installSummary.bytesByTarget.opfs,
         installResourceCount: validatedMaterialized.installSummary.countByTarget.opfs,
       });
-      // Periodic paving inventory: models + two district indices + asset packs + cells.
-      expect(materialized.population.installBytes).toBe(2653234393);
+      // Periodic paving inventory: models + two district indices + asset packs + cells. The
+      // four rolling-courtyard cells carry 9,604 terrain detail heights (D-204), and paving
+      // candidate 9 ships its ground ORM at 1024² (engine package 5).
+      expect(materialized.population.installBytes).toBe(2649221269);
       expect(materialized.population.installResourceCount).toBe(375);
       // The installed D1 binding: index + 256 D1 cells + 29 production and 18 generated deps.
       expect(materialized.population.representativeResourceCount).toBe(304);

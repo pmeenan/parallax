@@ -1,0 +1,189 @@
+{
+  "scenario": "terrain-drape-filtering-ab@1",
+  "machine": "dev-01 physical console",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "question": "Does one hardware-filtered textureSampleLevel beat four textureLoad calls for the vertex-stage terrain drape (colour and CSM depth)?",
+  "method": "Three conform/capture.mjs runs per variant, 13 views, median of 60 frames per view; variants differ only in the drape WGSL, sampler and PSO pins.",
+  "fourLoadsBuild": "eb482d02013e9328645aa9d3fff9825e24b2e38484a13550f2cd26d9a276597b",
+  "filteredBuild": "cf28d9608e1847bd7ee6f38135c6695ef2a2e76d0414b241b338c284fbf4ec06",
+  "meanDeltaFilteredMinusFourLoadsMs": {
+    "gpuFrameEma": -0.044,
+    "shadowTask": -0.015
+  },
+  "decision": "not adopted: the deltas are below per-view run-to-run spread (about 0.1-0.3 ms) and the shadow timer step (about 0.066 ms), and the four-load lookup matches collision bilinear exactly",
+  "environmentNote": "All runs here are about 0.3-0.6 ms slower in paving-heavy views than the package 5 capture of 2026-09-24; a control build of the package 5 code shows the same shift, so it is machine state, not this change.",
+  "views": [
+    {
+      "name": "walking",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [2.847, 2.904, 2.899],
+        "filtered": [2.912, 2.818, 2.893],
+        "package5Accepted": 2.956,
+        "package5CodeControl": 2.914
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [1.114, 1.18, 1.18],
+        "filtered": [1.18, 1.114, 1.18]
+      }
+    },
+    {
+      "name": "walking-matched",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.375, 5.353, 5.521],
+        "filtered": [5.578, 5.367, 5.101],
+        "package5Accepted": 5.205,
+        "package5CodeControl": 5.356
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.294, 2.294, 2.359],
+        "filtered": [2.359, 2.294, 2.163]
+      }
+    },
+    {
+      "name": "close",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.817, 5.747, 5.788],
+        "filtered": [5.829, 5.751, 5.684],
+        "package5Accepted": 5.299,
+        "package5CodeControl": 5.758
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.621, 2.556, 2.621],
+        "filtered": [2.621, 2.621, 2.556]
+      }
+    },
+    {
+      "name": "joint",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.846, 5.667, 5.637],
+        "filtered": [5.818, 5.767, 5.832],
+        "package5Accepted": 5.463,
+        "package5CodeControl": 5.839
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.621, 2.556, 2.556],
+        "filtered": [2.621, 2.621, 2.621]
+      }
+    },
+    {
+      "name": "grazing",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.747, 5.739, 5.75],
+        "filtered": [5.804, 5.821, 5.788],
+        "package5Accepted": 5.221,
+        "package5CodeControl": 5.743
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.359, 2.359, 2.359],
+        "filtered": [2.359, 2.359, 2.359]
+      }
+    },
+    {
+      "name": "overcast",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.762, 5.824, 5.757],
+        "filtered": [5.755, 5.786, 5.771],
+        "package5Accepted": 5.249,
+        "package5CodeControl": 5.77
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.425, 2.49, 2.425],
+        "filtered": [2.425, 2.425, 2.49]
+      }
+    },
+    {
+      "name": "courtyard-overview",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.752, 5.748, 5.803],
+        "filtered": [5.564, 5.576, 5.658],
+        "package5Accepted": 5.148,
+        "package5CodeControl": 5.67
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.425, 2.425, 2.425],
+        "filtered": [2.359, 2.359, 2.359]
+      }
+    },
+    {
+      "name": "courtyard-far",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [2.755, 2.699, 2.688],
+        "filtered": [2.602, 2.694, 2.72],
+        "package5Accepted": 2.641,
+        "package5CodeControl": 2.704
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [0.59, 0.59, 0.59],
+        "filtered": [0.59, 0.59, 0.59]
+      }
+    },
+    {
+      "name": "rolling-across",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.522, 5.47, 5.58],
+        "filtered": [5.393, 5.521, 5.602],
+        "package5Accepted": 5.17,
+        "package5CodeControl": 5.571
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.163, 2.163, 2.163],
+        "filtered": [2.097, 2.163, 2.163]
+      }
+    },
+    {
+      "name": "rolling-grazing",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.302, 5.315, 5.294],
+        "filtered": [4.967, 5.405, 5.277],
+        "package5Accepted": 4.623,
+        "package5CodeControl": 5.324
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.294, 2.228, 2.228],
+        "filtered": [2.097, 2.294, 2.228]
+      }
+    },
+    {
+      "name": "crest",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.469, 5.475, 5.48],
+        "filtered": [5.467, 5.46, 5.472],
+        "package5Accepted": 4.997,
+        "package5CodeControl": 5.477
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.884, 2.884, 2.884],
+        "filtered": [2.884, 2.884, 2.884]
+      }
+    },
+    {
+      "name": "dip",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.721, 5.752, 5.913],
+        "filtered": [5.595, 5.613, 5.721],
+        "package5Accepted": 5.161,
+        "package5CodeControl": 5.854
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.884, 2.884, 2.884],
+        "filtered": [2.818, 2.818, 2.884]
+      }
+    },
+    {
+      "name": "edge-seam",
+      "gpuFrameEmaMsP50": {
+        "fourLoads": [5.704, 5.544, 5.539],
+        "filtered": [5.565, 5.419, 5.412],
+        "package5Accepted": 5.137,
+        "package5CodeControl": 5.615
+      },
+      "shadowTaskGpuMsP50": {
+        "fourLoads": [2.49, 2.49, 2.425],
+        "filtered": [2.49, 2.425, 2.425]
+      }
+    }
+  ]
+}

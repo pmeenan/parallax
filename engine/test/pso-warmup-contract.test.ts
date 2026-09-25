@@ -1,4 +1,9 @@
-import { createStandardMaterial, type EngineContext, type Mesh } from "@babylonjs/lite";
+import {
+  createStandardMaterial,
+  type EngineContext,
+  enablePbrMaterialPluginVertexData,
+  type Mesh,
+} from "@babylonjs/lite";
 import { describe, expect, it, vi } from "vitest";
 
 vi.hoisted(() => {
@@ -27,6 +32,7 @@ import {
   observeStandardOpaquePsoRegistration,
 } from "../src/render/pso-warmup-babylon-observer";
 import { createStreamedPbrMaterial } from "../src/render/streamed-pbr-asset";
+import { PARALLAX_AGX_TONE_MAPPING } from "../src/render/tone-mapping";
 
 describe("PSO warmup trace contract", () => {
   it("rejects invalid GPU handles even when the pipeline descriptor matches exactly", async () => {
@@ -769,6 +775,16 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
       metallicFactor: 0,
       normalScale: 0.35,
     },
+    {
+      texture,
+      originX: 0,
+      originZ: 0,
+      inverseSpacing: 1,
+      maximumColumn: 0,
+      maximumRow: 0,
+      gpuBytes: 8,
+    },
+    { sky: [0, 0, 0], ground: [0, 0, 0] },
   );
   const mesh = {
     material,
@@ -792,12 +808,24 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
     // @ts-expect-error Exact-pin private shader fragment has no declarations.
     "../node_modules/@babylonjs/lite/lib/shader/fragments/thin-instance-fragment.js"
   );
+  // The runtime registers Lite's vertex-data plugin bridge before any PBR material builds;
+  // its detect step assigns the terrain drape plugin's fragment index (D-204).
+  enablePbrMaterialPluginVertexData();
+  const pluginRegistry = await import(
+    // @ts-expect-error Exact-pin private plugin registry has no declarations.
+    "../node_modules/@babylonjs/lite/lib/material/plugin/pbr-plugin-registry.js"
+  );
+  (
+    pluginRegistry._getActivePbrPluginExt(undefined) as { detect(material: unknown): unknown }
+  ).detect(material);
+  const pluginIndex = Reflect.get(material, "_pi") as number;
   const compose = composer.createPbrComposer({
     _createThinInstanceFragment: thin.createThinInstanceFragment,
     _multiLightWGSL: lights.MULTI_LIGHT_STRUCTS() + lights.COMPUTE_PBR_LIGHT,
     _multiLightLoop: lights.getMultiLightLoop(),
     _createPbrShadowFragment: csm.createPbrCsmShadowFragment,
     _shadowLights: [{ lightIndex: 1 }],
+    _tm: PARALLAX_AGX_TONE_MAPPING,
   }) as (
     features: number,
     features2: number,
@@ -808,6 +836,8 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
     esmShadowDepthCode: string,
     vbLayout: Readonly<Record<string, Readonly<{ _stride: number; _offset: number }>>>,
     vbKey: string,
+    uv2Mask: number,
+    pluginIndex: number,
   ) => {
     _vertexWGSL: string;
     _fragmentWGSL: string;
@@ -832,7 +862,8 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
           1 | (1 << 15) | (1 << 17),
           (1 << 12) | (depth ? 1 << 15 : 0),
           (depth ? 0 : 256) | 16,
-          0,
+          // Scene feature 16: the baked AgX tone mapping (engine package 5).
+          16,
           2,
           "",
           "",
@@ -846,6 +877,8 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
             color: { _stride: 0, _offset: 0 },
           },
           "sb32.0.12.24.-.-.-",
+          0,
+          pluginIndex,
         );
         const groups = [sceneLayout, device.createBindGroupLayout(composed._meshBGLDescriptor)];
         if (composed._shadowBGLDescriptor)

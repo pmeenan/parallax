@@ -772,7 +772,10 @@ export type {
 } from "./world/world-contract";
 export {
   parseGreyboxMaterials,
+  sampleCellGroundHeight,
+  sampleHeightfieldBilinear,
   selectGreyboxCellLod,
+  terrainDetailContains,
   validateGreyboxDistrict,
   validateGreyboxLightingConfig,
 } from "./world/world-contract";

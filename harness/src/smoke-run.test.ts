@@ -23,7 +23,7 @@ function validTelemetry(): GreyboxRenderTelemetry {
     colliderCount: 708,
     districtId: "district-1-surface",
     dynamicLighting: true,
-    heightSampleCount: 256 * 17 * 17,
+    heightSampleCount: 83_588,
     lightingModel: RENDER_LIGHTING_MODEL,
     materialCount: 8,
     mainThreadWorldGenerationMs: 20,
@@ -133,6 +133,7 @@ describe("D-090 greybox smoke evidence", () => {
     ["partial cell set", { ...validTelemetry(), cellCount: 1 }],
     ["missing collision", { ...validTelemetry(), colliderCount: 0 }],
     ["partial heightfields", { ...validTelemetry(), heightSampleCount: 17 * 17 }],
+    ["missing terrain detail", { ...validTelemetry(), heightSampleCount: 73_984 }],
     ["unexercised LOD", { ...validTelemetry(), selectedLodCellCounts: [0, 60, 196] }],
     ["non-finite materialization", { ...validTelemetry(), materializationMs: Number.NaN }],
     ["non-finite generation", { ...validTelemetry(), mainThreadWorldGenerationMs: Number.NaN }],
@@ -161,8 +162,6 @@ describe("D-090 greybox smoke evidence", () => {
   it.each([
     ["too few samples", validFrames().slice(0, 1)],
     ["static phase", validFrames().map((frame) => ({ ...frame, lightingPhase: 0.2 }))],
-    ["static intensity", validFrames().map((frame) => ({ ...frame, lightingIntensity: 0.55 }))],
-    ["static sun intensity", validFrames().map((frame) => ({ ...frame, sunIntensity: 0.8 }))],
     [
       "zero sun intensity",
       validFrames().map((frame, index) => (index === 0 ? { ...frame, sunIntensity: 0 } : frame)),

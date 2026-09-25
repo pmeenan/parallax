@@ -42,6 +42,7 @@ describe("greybox presentation draw-list invalidation", () => {
       dependencyUploadBytes: 0,
       gpuBytes: 0,
       pbrAssets: [],
+      terrainDrapes: [],
     });
     const before = visibilityEpoch;
     applyGameplayPresentation(renderer, gameplay);

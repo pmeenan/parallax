@@ -1,0 +1,372 @@
+{
+  "scenario": "terrain-conforming-paving-capture@1",
+  "mode": "privileged-network-runtime",
+  "budgetAuthority": "none: focused inspection, not a smoke or traversal gate",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "note": "Physical-console dev-01, final package 5 build. GPU: median of 60 frames of Lite gpuFrameEmaMs. Before: package 4 final capture.",
+  "source": {
+    "commit": "0381e352a08eb1cc85ecd2c5551e999453ce2440",
+    "dirtyTreeDigest": "46c86f118b99ba72800375199c0658b6627ed700309c6cf0fde5535a72dd80c2"
+  },
+  "buildManifestSha256": "85751f51cf3f08f26a54934d0c15d5bd49e5576bbc916ca9a73b737051740c52",
+  "pavingCandidateSha256": "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
+  "readyMs": 1708,
+  "browserErrors": [],
+  "views": [
+    {
+      "name": "walking",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "c699288f4fd9689aa29e72969032afdbdea6fedcfe9c659923f0baf3910a3bc2",
+      "gpuFrameEmaMsP50": {
+        "before": 3.013,
+        "after": 2.956
+      }
+    },
+    {
+      "name": "walking-matched",
+      "request": {
+        "observer": [6, 19.171797290625342, 5.9],
+        "headingRadians": -1.5167948264189284,
+        "camera": {
+          "beta": 0.8730711449233914,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.4177045365628396
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "7e6576f5688eb68c07add687512460a67473a6b87ef5ff7dbeb5862b07696d3e",
+      "gpuFrameEmaMsP50": {
+        "before": 5.236,
+        "after": 5.205
+      }
+    },
+    {
+      "name": "close",
+      "request": {
+        "observer": [8.9574, 18.829235034201595, 10.3069],
+        "headingRadians": -1.653937558683339,
+        "camera": {
+          "beta": 1.1216789553429882,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.6683606060775128
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "08fecb6fc4073e115ba8bdc6951ee92f74fb2957b9834ada8a93d7a325d21012",
+      "gpuFrameEmaMsP50": {
+        "before": 5.284,
+        "after": 5.299
+      }
+    },
+    {
+      "name": "joint",
+      "request": {
+        "observer": [6, 19.1454848910148, 6.3],
+        "headingRadians": -1.6814535479687918,
+        "camera": {
+          "beta": 1.140066831116799,
+          "heightMeters": 0.01,
+          "radiusMeters": 0.4982815994099657
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "129f7a6d1bcd67d47d77295e8f8f5389e6ee7c0021b819ac4eac393634a0e6ed",
+      "gpuFrameEmaMsP50": {
+        "before": 5.343,
+        "after": 5.463
+      }
+    },
+    {
+      "name": "grazing",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "a74f69be445d744ea7d8ee62b898e8a5d47eed867efd917150015515a29afcbb",
+      "gpuFrameEmaMsP50": {
+        "before": 5.468,
+        "after": 5.221
+      }
+    },
+    {
+      "name": "overcast",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "overcast"
+        }
+      },
+      "fullResolutionSha256": "29711580e92aa49008abf3b6dfae7f0145c29592e7a7bbb13573dc709f3f0b88",
+      "gpuFrameEmaMsP50": {
+        "before": 5.365,
+        "after": 5.249
+      }
+    },
+    {
+      "name": "courtyard-overview",
+      "request": {
+        "observer": [4.05, 19.27992444728114, 4.05],
+        "headingRadians": -2.390663591191853,
+        "camera": {
+          "beta": 1.2011264863338549,
+          "heightMeters": 0.01,
+          "radiusMeters": 11.002390188161757
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "e3a33babcbd5f3e85635ca164fabb2da1387c6845e4e26ae43e2efa7b3e4cd28",
+      "gpuFrameEmaMsP50": {
+        "before": 5.249,
+        "after": 5.148
+      }
+    },
+    {
+      "name": "courtyard-far",
+      "request": {
+        "observer": [2.05, 19.27373179641185, 2.05],
+        "headingRadians": -2.4668517113662403,
+        "camera": {
+          "beta": 1.4955647562507564,
+          "heightMeters": 0.01,
+          "radiusMeters": 38.52772340722721
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "fe1bddb2ced569022bf106d74ac63952c5ac542576a09ac6152bd7c5ace1b017",
+      "gpuFrameEmaMsP50": {
+        "before": 2.633,
+        "after": 2.641
+      }
+    },
+    {
+      "name": "rolling-across",
+      "request": {
+        "observer": [16, 18.925915609239386, 8],
+        "headingRadians": 0,
+        "camera": {
+          "beta": 1.5057390877031078,
+          "heightMeters": 0.01,
+          "radiusMeters": 19.040279251601056
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "74ff56597c24568c588b9483898b5900d778ede505266f531e84903eef55bc07",
+      "gpuFrameEmaMsP50": {
+        "before": 5.085,
+        "after": 5.17
+      }
+    },
+    {
+      "name": "rolling-grazing",
+      "request": {
+        "observer": [8, 18.673824341601268, 16],
+        "headingRadians": -4.71238898038469,
+        "camera": {
+          "beta": 1.5082503483346241,
+          "heightMeters": 0.01,
+          "radiusMeters": 19.037224668331138
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "5b9e267e4c241a618f6a531df2602d9525d4ddf4ec6e51bd320cb2bf6c5cd449",
+      "gpuFrameEmaMsP50": {
+        "before": 4.576,
+        "after": 4.623
+      }
+    },
+    {
+      "name": "crest",
+      "request": {
+        "observer": [0.5, 19.290340741727636, 16],
+        "headingRadians": -4.434089321379578,
+        "camera": {
+          "beta": 1.4173522290683134,
+          "heightMeters": 0.01,
+          "radiusMeters": 3.6833321260967797
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "7a4bfa249669a599c246fc29265e0f15ca9227740933002c625a82c261e7a842",
+      "gpuFrameEmaMsP50": {
+        "before": 4.942,
+        "after": 4.997
+      }
+    },
+    {
+      "name": "dip",
+      "request": {
+        "observer": [16, 18.579148943223842, 0.5],
+        "headingRadians": -0.8760580505981932,
+        "camera": {
+          "beta": 1.307696745079822,
+          "heightMeters": 0.01,
+          "radiusMeters": 4.044295119747082
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.03333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "1ba2523ee12437f5785af248d584c333eb8076cdb896c7dfd52d1a94bb8944e3",
+      "gpuFrameEmaMsP50": {
+        "before": 5.17,
+        "after": 5.161
+      }
+    },
+    {
+      "name": "edge-seam",
+      "request": {
+        "observer": [15.5, 18.895160450433117, 7],
+        "headingRadians": -3.7295952571373605,
+        "camera": {
+          "beta": 1.390595561090536,
+          "heightMeters": 0.01,
+          "radiusMeters": 3.664894232537491
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "ea4983464d928f89bc5d05ce1dfbf523d67627afbfe8b97576bd83595e776ae9",
+      "gpuFrameEmaMsP50": {
+        "before": 5.063,
+        "after": 5.137
+      }
+    },
+    {
+      "name": "dusk",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "dusk",
+          "timeOfDayPhase": 0.4888888888888889,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "5d9fecce82e34fa4a9ceb650c6047f94336d0f3e354994165f2098e6b025d99e",
+      "gpuFrameEmaMsP50": {
+        "before": null,
+        "after": 5.395
+      }
+    },
+    {
+      "name": "night",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "night",
+          "timeOfDayPhase": 0.75,
+          "weather": "clear"
+        }
+      },
+      "fullResolutionSha256": "4474a5c362b1b8a1547ad1cabb00209315bebbbe4b51cce6b0816f7b81fd00f4",
+      "gpuFrameEmaMsP50": {
+        "before": null,
+        "after": 5.051
+      }
+    },
+    {
+      "name": "storm",
+      "request": {
+        "observer": [6, 19.193676280486226, 5.3],
+        "headingRadians": -1.590793660768047,
+        "camera": {
+          "beta": 1.0340033882353412,
+          "heightMeters": 0.01,
+          "radiusMeters": 2.9097467069952727
+        },
+        "environment": {
+          "timeOfDay": "daylight",
+          "timeOfDayPhase": 0.08333333333333333,
+          "weather": "storm"
+        }
+      },
+      "fullResolutionSha256": "d9e6cf10ce7fbe55f87c5d49190fbb4d86493828a1ae4d7f2b990e25a15ee20d",
+      "gpuFrameEmaMsP50": {
+        "before": null,
+        "after": 5.503
+      }
+    }
+  ]
+}

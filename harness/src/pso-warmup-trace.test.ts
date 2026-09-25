@@ -60,11 +60,16 @@ describe("independent PSO warmup trace resolver", () => {
     ]);
     const depth = identity.entries[4]?.state;
     expect(depth?.colorTarget).toBeNull();
-    expect(depth?.layout.bindGroups[1]?.entries).toHaveLength(8);
+    // Material UBO, mesh UBO, three texture/sampler pairs and the vertex-stage terrain
+    // drape texture/sampler (D-204); the drape reaches the shadow caster too.
+    expect(depth?.layout.bindGroups[1]?.entries).toHaveLength(10);
+    expect(depth?.layout.bindGroups[1]?.entries.slice(-2).map((entry) => entry.visibility)).toEqual(
+      [1, 1],
+    );
     expect(depth?.shader).toMatchObject({
       family: "pbr",
-      vertexSha256: "e63f866e284062a6f26df29cab42c63da41918fa704ea2922bc4da405b6d6080",
-      fragmentSha256: "ca59db32bf4223ffd42ca6e9c30ab954396339b7034145db7d901f5706ea5811",
+      vertexSha256: "dc697137e5b3aaf9dcb17fd835a870a572cc894bc234ab7ec090003eadd66dcf",
+      fragmentSha256: "4cb03f488f4136672b9b02f6bb1598e8012109c16869cf979bbfa4d00fe7a7d8",
     });
   });
 

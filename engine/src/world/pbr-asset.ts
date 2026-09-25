@@ -29,6 +29,12 @@ export interface PbrAssetPlacement {
   readonly material: PbrAssetMaterial;
   readonly lodDistancesMeters: readonly [number, number];
   readonly lods: readonly [PbrAssetLod, PbrAssetLod, PbrAssetLod];
+  /**
+   * Conform to the owning cell's terrain detail field on the GPU (D-204). The vertex drape
+   * lifts each vertex by the ground height minus this reference: the ground at the
+   * placement's anchor, which the placement's position already includes.
+   */
+  readonly terrainDrape?: Readonly<{ referenceHeightMeters: number }>;
 }
 
 const ID = /^[a-z0-9](?:[a-z0-9._-]{0,126}[a-z0-9])?$/;
@@ -63,7 +69,7 @@ export function validatePbrAssetPlacements(
     if (!record(asset)) throw new Error("PBR asset must be an object");
     keys(
       asset,
-      `id,lodDistancesMeters,lods,material,position,${"rotationXRadians" in asset ? "rotationXRadians," : ""}rotationYRadians,${"rotationZRadians" in asset ? "rotationZRadians," : ""}scale,schemaVersion`,
+      `id,lodDistancesMeters,lods,material,position,${"rotationXRadians" in asset ? "rotationXRadians," : ""}rotationYRadians,${"rotationZRadians" in asset ? "rotationZRadians," : ""}scale,schemaVersion${"terrainDrape" in asset ? ",terrainDrape" : ""}`,
     );
     if (
       !Array.isArray(asset.lodDistancesMeters) ||
@@ -91,6 +97,15 @@ export function validatePbrAssetPlacements(
       asset.position.some((v, i) => v < (bounds.minimum[i] ?? v) || v > (bounds.maximum[i] ?? v))
     )
       throw new Error("PBR asset origin is outside its cell");
+    if ("terrainDrape" in asset) {
+      const drape = asset.terrainDrape;
+      if (
+        !record(drape) ||
+        Object.keys(drape).join(",") !== "referenceHeightMeters" ||
+        !finite(drape.referenceHeightMeters)
+      )
+        throw new Error("PBR asset terrain drape is invalid");
+    }
     if (!record(asset.material)) throw new Error("PBR asset material is invalid");
     const material = asset.material;
     keys(

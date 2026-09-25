@@ -1289,15 +1289,27 @@ modes without duplicate uploads. Lite reference counts the underlying GPUTexture
 Repeating modules still require validated color/height/normal seams at every LOD.
 Game authoring may specify a shared `heightAnchor` within the owning cell; packaging
 bakes its terrain height plus the authored offset into each ordinary runtime position,
-keeping adjoining modules on one plane. Larger footprints require terrain-clearance
-verification; a common anchor does not conform a plane to uneven terrain.
+keeping adjoining modules on one plane. A rigid anchored module does not conform to
+uneven terrain; conforming modules use the drape below.
+
+**Terrain-conforming surfaces (D-204).** Game-owned `terrain.detailRegions` are rectangles on
+the coarse collision lattice with a finer spacing. The coarse bilinear field plus a windowed
+rolling term gives each cell's clipped `collision.detail` field. `sampleCellGroundHeight` in
+`engine/src/world/terrain-surface.ts` is the one ground for navigation, sim, build anchors and
+the drape. The render terrain replaces the covered coarse quads with the fine mesh, and its
+cell-edge skirts follow the same ground. A `conformToTerrain` placement is anchored on that
+ground, and its `terrainDrape` reference is resolved at pack time. On the render worker, each
+cell builds one `rgba16float` drape field per reference (height and slopes). Every streamed
+PBR material carries the vertex-stage drape plugin (`render/terrain-drape.ts`). Rigid
+placements bind a zero field, so the colour and CSM depth pipelines stay one warmed family.
 Game-owned rectangular `terrain.levelPads` apply smoothstep grading after the
 base terrain's rounding. Both collision and render meshes consume the resulting
 height samples. Cells intersecting a pad's transition retain stride-one terrain at
 every LOD so distant rendering cannot discard the pad's defining vertices. D1's
 courtyard uses a level [0,16]m square at 18.97375m and a 32m transition, with unchanged
 outer samples at [-32,48]m on both axes. This affects four cells and retains 1,920
-additional surface triangles versus their former far LOD, excluding seam skirts.
+additional surface triangles versus their former far LOD, excluding seam skirts. The pad is
+now the coarse base under the courtyard's rolling detail region.
 Staging reservations follow first-miss cache ownership: shared or resident dependency
 references add no decode buffers. Each concurrently prepared cell reserves its
 retained decoded outputs plus the largest single dependency's temporary decoded
@@ -1330,12 +1342,25 @@ captures showed diagonal terrain acne. Its custom caster/bootstrap implementatio
 was removed; the historical 0.12 m CSM bias is restored. Evidence remains under
 `d1-contact-shadow-candidate-2026-09-05` and `d1-contact-shadow-integration-2026-09-05`.
 
-A bounded shared-light calibration now scales hemispheric ambient by 0.25/0.88
-across all weather states, retaining sun values and time interpolation. Clear noon
-ambient is 0.25, overcast about 0.216, storm about 0.165; directional noon remains
-1/0.36/0.12. Both Standard and PBR use these same lights. This addresses ambient
-masking PBR directional response (its Lambert diffuse includes 1/PI); installed
-matched daylight/dawn/overcast comparison remains pending, not accepted quality.
+**Calibrated lighting (D-205, engine package 5).** The sun and sky are calibrated to the
+approved paving source's Cycles lighting: its 4.6 W/m² sun and Hosek-Wilkie sky at strength
+2, measured on a white Lambert plane.
+- **Units.** Lights, Standard materials and the PBR ambient use radiance on white. The sun's
+  light intensity is 4.6/π. Lite's PBR direct lighting divides diffuse by π, so streamed PBR
+  materials set `directIntensity = π`.
+- **Ambient.** The hemispheric light excludes PBR meshes (shared id `parallax-pbr-surface`) and
+  keeps lighting the greybox. PBR surfaces get an occluded sky/ground ambient from the
+  `parallax-pbr-ambient` plugin. It applies ORM occlusion to diffuse and specular, with an
+  analytic environment BRDF and horizon occlusion.
+- **Tone mapping.** PBR shaders bake an AgX fit of Blender's "AgX - High Contrast". Exposure is
+  live and adapts partially from the sample's key luminance, so storm and night stay darker but
+  readable. Standard greybox materials are not tone mapped, and the lights' specular channel is
+  zero, which keeps the greybox matte.
+- **Telemetry.** `sunIntensity` remains a normalized direct-sun fraction. Frame telemetry's
+  `rendering.pbrLighting` records the applied PBR inputs: exposure, `sunLightIntensity`, and the
+  ambient's sky and ground radiance.
+
+The earlier shared hemispheric calibration (0.25/0.88) now drives only the greybox ambient.
 
 **Common vs. game-specific split (D-010):** every packaged resource is classified as
 *common* (engine code, shared asset packs/kits, models — shareable across published
@@ -1400,7 +1425,8 @@ wet surfaces, or particles.
 
 M4.5's lighting foundation evaluates one deterministic solar/sky/ground irradiance
 sample for the active authored phase and weather state. The render worker applies its
-sky and ground irradiance through a world-up hemispheric light and its direct irradiance
+sky and ground irradiance through a world-up hemispheric light for the greybox, and through the
+occluded PBR ambient plugin for streamed PBR surfaces (D-205), and its direct irradiance
 through a separate directional sun whose vector records the world-space direction the
 light rays travel. A horizon-anchored smoothstep fades direct intensity continuously to
 zero while the wider twilight curve continues to drive ambient, sky, and ground color.

@@ -373,10 +373,11 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
-**Next up (2026-09-24):** engine package 4,
-lighting balance with ambient occlusion, from the ordered list of front-loaded
-[engine packages](#engine-packages). Packages 2 and 3 are done (below). Packages 4–5 follow: lighting balance with AO, then
-small-scale shadows. The flythrough harness repair is a separate task.
+**Next up (2026-09-24):** engine package 6, small-scale shadows, from the ordered list of
+front-loaded [engine packages](#engine-packages). Package 5 (lighting balance with AO, D-205)
+is done, and the human accepted its lighting and paving candidate 9 on 2026-09-24 (outcome
+below). Package 4 (terrain-conforming paving, D-204) was accepted the same day. The flythrough harness repair is a
+separate task.
 
 **Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
 positional playback and clip memory, shared gameplay-camera listener geometry,
@@ -597,12 +598,58 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
    - Outside the A/B set: loading the top mip levels only for near cells. This is an
      architecture change, not an asset setting. Scope it separately once many resident cells
      make texture memory the bottleneck.
-4. **Lighting balance with ambient occlusion.** Include the 1024² ground ORM A/B from the
-   optimisation review.
-5. **Small-scale shadows.** Candidates include Lite 1.18's screen-space lighting.
+4. **Terrain-conforming paving — done 2026-09-24** (human direction; D-204;
+   [brief](../assets/source/d1-paving/proof-2026-09-24/conform-brief.md),
+   [results](../assets/source/d1-paving/proof-2026-09-24/conform-results.md)). Terrain detail
+   regions give collision, navigation and render one fine, shared surface. A GPU vertex drape
+   conforms the shared periodic module to it, in the colour and shadow pipelines alike.
+   - **Courtyard.** It now rolls −0.38 to +0.33 m around the pad, with at most 7.25° of slope.
+   - **Cost on dev-01.** Paving views are within ±0.15 ms of GPU time. The drape field is 33.8 KB
+     and builds in about 1 ms. The first streaming batch stall is 21.6–24.1 ms (was 18.6).
+   - **Fix found by the captures.** Cell-edge skirts now follow the ground; drawn at the coarse
+     edge height, they had poked through the rolling grass.
+   - **Verification.** The replay is rebound to v23 and passes. The installed scale-streaming
+     run passed on the physical console (p95 2.125 ms) after one same-artifact retry of a
+     loopback post-validation flake. That run also closes package 2's pending physical run.
+     `pnpm check` passes.
+   - **Accepted.** The human visually accepted the rolling courtyard on 2026-09-24. The greybox
+     grass's CSM acne bands, more visible on slopes, go to package 6.
+5. **Lighting balance with ambient occlusion — done 2026-09-24** (D-205;
+   [brief](../assets/source/d1-paving/proof-2026-09-24/lighting-brief.md),
+   [results](../assets/source/d1-paving/proof-2026-09-24/lighting-results.md)).
+   - **Lighting.** The sun and sky are calibrated to the source's Cycles lighting
+     ([calibration](../assets/source/d1-paving/proof-2026-09-24/lighting/calibrate.py)). PBR
+     gets an occluded sky/ground ambient plugin and a baked AgX High Contrast fit. Exposure
+     adapts partially, so dusk, night and storm stay distinct and readable.
+   - **Match.** The matched walking view's mean display level is 123 against Cycles' 118, and
+     the p90 is 170 against 168. GPU cost is within noise.
+   - **Paving candidate 9** (`4b2707a4…6329`) bakes a 40 mm height-field AO into ORM.R and ships
+     the ORM at 1024². It saves 4.19 MB for a mean 0.2–0.4/255 difference.
+   - **Accepted.** The human visually accepted the lighting and candidate 9 on 2026-09-24; the
+     library records it against `4b2707a4…6329`. The joints stay lighter than Cycles (p10 48
+     against 41), because sunlight inside them is unshadowed; that goes to package 6.
+   - **Review follow-up** (2026-09-25;
+     [review](../assets/source/d1-paving/proof-2026-09-24/lighting-review.md)).
+     - A second agent fixed two P2 evidence defects: smoke's terrain sample count, and steady
+       calibrated daylight intensity.
+     - The CPU trims and the `rendering.pbrLighting` diagnostics are adopted.
+     - A hardware-filtered drape was measured on the physical console and not adopted: −0.04 ms,
+       within noise.
+     - On build `eb482d02…`, replay, installed scale-streaming (p95 2.13 ms) and render recovery
+       pass.
+6. **Small-scale shadows.** Candidates include Lite 1.18's screen-space lighting. Target the
+   joint and pebble shadowing that package 5 left open, and the greybox grass's CSM acne.
+
+**Packages 4–5 review (2026-09-25):** corrected two smoke-evidence regressions: the expected
+height-sample count now includes the four detail fields (83,588 total), and constant calibrated
+daylight strength is accepted while phase and sun direction must advance. An integration test
+feeds the real D1 terrain and lighting samples through both live and persisted evidence checks.
+The [review](../assets/source/d1-paving/proof-2026-09-24/lighting-review.md) ranks a filtered drape
+lookup A/B and smaller CPU update savings; package 6 remains the next visual improvement.
 
 Installed-game visual acceptance of the paving was granted for candidate 6 on 2026-09-24.
-The human accepted candidate 7 (package 3) on 2026-09-24, and the library records it.
+The human accepted candidate 7 (package 3) on 2026-09-24. Candidate 9 (package 5) was accepted the
+same day, and the library records its acceptance.
 
 **Texture compression outcome (2026-09-24): adopted (D-201); candidate 7 accepted by the
 human.** See the [brief](../assets/source/d1-paving/proof-2026-09-24/compression-brief.md)
@@ -633,13 +680,13 @@ and [results](../assets/source/d1-paving/proof-2026-09-24/compression-results.md
   - Review follow-up: pre-encoded mip levels are views into the transferred container, with no
     copies. Decode is 11 ms and the cell loads in 55 ms. The replay is at v22 on build
     `c2728534`.
-  - Package 4 also A/Bs a 1024² ground ORM (4 MiB) under the new lighting.
+  - Package 5 (lighting) also A/Bs a 1024² ground ORM (4 MiB) under the new lighting.
 Physical smoke waits until the optimisation packages are done (human direction, 2026-09-24).
 
 **Optimization review (2026-09-24):** no P1/P2 defect confirmed; corrected pack-receipt GPU-byte
 accounting for future packs without changing candidate 8's admitted bytes. The
 [review](../assets/source/d1-paving/proof-2026-09-24/optimization-review.md) prioritizes removing
-the remaining 24.1 MB of texture mip copies, then testing a 1024² ground ORM during package 4
+the remaining 24.1 MB of texture mip copies, then testing a 1024² ground ORM during the lighting package
 (4 MiB potential saving). Bounds precomputation and narrower geometry formats have lower
 near-term payoff. These are follow-up opportunities, not additional acceptance gates.
 Build/lint and focused checks passed; the full check and a four-worker unit rerun each retained
@@ -664,7 +711,7 @@ used in one session.
   passes. During cycle 1, two full unit runs each hit a different load-dependent flake, and both
   files pass alone (see results).
 - **Not yet run.** This was a remote session, so the timings are advisory. The installed
-  scale-streaming run waits for dev-01's physical console.
+  scale-streaming run later passed on dev-01's physical console during package 4 (p95 2.125 ms).
 - **Pebble A/B.** Crease-angle normals (40°) cut pebble LOD0 vertices by 35% and geometry
   bytes by 19%, with no visible change. Adding an 11 mm 3D cut-off halves geometry bytes and cuts
   walking-view triangles from 5.65 M to 3.50 M. The cost is that small joint pebbles flatten into
@@ -1599,6 +1646,8 @@ modules are rigid and use the local level pad. Future paths should place/tilt wh
 stones from terrain samples while fitting joint substrate/vegetation continuously;
 do not bend broad stones or imply periodic texturing implements terrain conformance.
 Retain source stone IDs/contours for that placement work before extending along slopes.
+(Superseded 2026-09-24: that kit was removed, and the periodic module now conforms through
+D-204's GPU drape.)
 Human feedback rejects atlas-cycle2's linear courses and similar blocks. New bounded
 layout correction: two layout/render evaluations within 45 minutes, preserving the
 accepted rough material while mixing block sizes/orientations and infill, with no

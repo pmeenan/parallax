@@ -5,6 +5,10 @@ import { resolve } from "node:path";
 import { bc7TranscoderIdentity } from "../../engine/scripts/preencode-bc7.mjs";
 import { scaleStreamingDependencyResourceId } from "../../engine/src/streaming/scale-streaming-resource-id.ts";
 import { writePbrAssetMatrix } from "../../engine/src/world/pbr-asset-transform.ts";
+import {
+  sampleCellGroundHeight,
+  terrainDetailContains,
+} from "../../engine/src/world/terrain-surface.ts";
 
 /** A reminder, or null, when admitted pre-encoded BC7 maps were made by a different
  * `@babylonjs/ktx2decoder` than the one the engine pins. */
@@ -162,10 +166,21 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
         anchorZ <= cell.bounds.maximum[2],
       "Asset height anchor must lie within its owning cell",
     );
+    // A conforming module rests on the walkable ground at its anchor; the GPU drape then
+    // follows the same detail field everywhere else in its footprint (D-204).
+    const detail = cell.collision.detail;
+    const conforms = request.conformToTerrain === true;
+    assert(
+      !conforms || (detail !== undefined && terrainDetailContains(detail, anchorX, anchorZ)),
+      `Conforming asset ${request.id} needs a terrain detail field at its anchor`,
+    );
+    const referenceHeight = conforms
+      ? sampleCellGroundHeight(cell.collision, anchorX, anchorZ)
+      : surfaceHeight(cell, anchorX, anchorZ);
     const placement = {
       schemaVersion: 1,
       id: request.id,
-      position: [x, surfaceHeight(cell, anchorX, anchorZ) + request.heightOffset, z],
+      position: [x, referenceHeight + request.heightOffset, z],
       rotationYRadians: request.rotationYRadians,
       scale: [1, 1, 1],
       lodDistancesMeters: request.lodDistancesMeters,
@@ -183,6 +198,7 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
         vertexResourceId: resource(lod.vertexRole),
         indexResourceId: resource(lod.indexRole),
       })),
+      ...(conforms ? { terrainDrape: { referenceHeightMeters: referenceHeight } } : {}),
     };
     const matrix = new Float64Array(16);
     writePbrAssetMatrix(matrix, 0, placement);
@@ -199,6 +215,19 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
           assert(
             value >= cell.bounds.minimum[axis] && value <= cell.bounds.maximum[axis],
             "Transformed asset crosses cell ownership boundary",
+          );
+        }
+        if (conforms) {
+          const [worldX, worldZ] = [0, 2].map(
+            (axis) =>
+              matrix[axis] * point[0] +
+              matrix[4 + axis] * point[1] +
+              matrix[8 + axis] * point[2] +
+              matrix[12 + axis],
+          );
+          assert(
+            terrainDetailContains(detail, worldX, worldZ),
+            `Conforming asset ${request.id} extends outside its cell's terrain detail field`,
           );
         }
       }

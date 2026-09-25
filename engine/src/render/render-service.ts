@@ -235,6 +235,15 @@ function freezeRenderFrameSample(value: RenderFrameSample): RenderFrameSample {
       ...(value.rendering.pbrAssets === undefined
         ? {}
         : { pbrAssets: Object.freeze({ ...value.rendering.pbrAssets }) }),
+      ...(value.rendering.pbrLighting === undefined
+        ? {}
+        : {
+            pbrLighting: Object.freeze({
+              ...value.rendering.pbrLighting,
+              ambientSky: freezeWorldVector(value.rendering.pbrLighting.ambientSky),
+              ambientGround: freezeWorldVector(value.rendering.pbrLighting.ambientGround),
+            }),
+          }),
     }),
     sunDirection: freezeWorldVector(value.sunDirection),
   });

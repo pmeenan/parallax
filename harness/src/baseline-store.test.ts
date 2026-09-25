@@ -64,7 +64,7 @@ const validGreyboxWorld = Object.freeze({
   colliderCount: 708,
   districtId: "district-1-surface",
   dynamicLighting: true,
-  heightSampleCount: 256 * 17 * 17,
+  heightSampleCount: 83_588,
   lightingModel: RENDER_LIGHTING_MODEL,
   materialCount: 8,
   mainThreadWorldGenerationMs: 20,

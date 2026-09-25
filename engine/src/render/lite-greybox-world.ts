@@ -14,10 +14,14 @@ import {
   createTexture2DFromPixels,
   type DirectionalLight,
   disposeMeshGpu,
+  enableMaterialPlugins,
+  enablePbrMaterialPluginVertexData,
   enableThinInstanceDynamicDrawCount,
   getRenderTaskGpuTimings,
   type HemisphericLight,
+  type Material,
   type Mesh,
+  markMaterialUboDirty,
   registerSceneWithShadowSupport,
   releaseTexture,
   removeFromScene,
@@ -44,6 +48,7 @@ import { type PbrAssetPlacement, validatePbrAssetPlacements } from "../world/pbr
 import { writePbrAssetMatrix } from "../world/pbr-asset-transform";
 import type {
   GreyboxCell,
+  GreyboxHeightfieldCollider,
   GreyboxHeightfieldGridPayload,
   GreyboxMaterial,
   GreyboxPrimitive,
@@ -52,6 +57,7 @@ import type {
 } from "../world/world-contract";
 import {
   parseGreyboxMaterials,
+  sampleCellGroundHeight,
   selectGreyboxCellLod,
   validateGreyboxDistrict,
   validateGreyboxLightingConfig,
@@ -70,6 +76,14 @@ import {
   gameplayCameraBeta,
 } from "./gameplay-camera";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
+import { createPbrAmbientState, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
+import {
+  createRigidTerrainDrapeField,
+  createTerrainDrapeField,
+  type TerrainDrapeField,
+  terrainDetailSlope,
+} from "./terrain-drape";
+import { PARALLAX_AGX_TONE_MAPPING } from "./tone-mapping";
 
 export { gameplayCameraAlpha, gameplayCameraBeta } from "./gameplay-camera";
 
@@ -125,6 +139,9 @@ interface StreamingDependencyGpuValue {
 
 interface ResidentPbrAsset {
   readonly placements: readonly PbrAssetPlacement[];
+  /** Shared by the group's three LOD meshes. */
+  readonly material: Material;
+  readonly conformingPlacementCount: number;
   readonly meshes: readonly Mesh[];
   readonly triangleCounts: readonly number[];
   readonly activeLods: Uint8Array;
@@ -138,16 +155,24 @@ function applyEnvironmentLighting(
   sunLight: DirectionalLight,
   scene: SceneContext,
   lighting: EnvironmentLightingSample,
+  pbrAmbient: PbrAmbientState,
 ): void {
+  // PBR surfaces: occluded sky/ground ambient (plugin UBOs; the caller marks them dirty) and a
+  // live exposure read from the scene UBO before the baked AgX curve.
+  copyRgb(pbrAmbient.sky, lighting.pbrSky);
+  copyRgb(pbrAmbient.ground, lighting.pbrGround);
+  scene.imageProcessing.exposure = lighting.exposure;
   ambientLight.intensity = lighting.ambientIntensity;
   copyRgb(ambientLight.diffuseColor, lighting.skyColor);
-  copyRgb(ambientLight.specularColor, lighting.skyColor);
+  // Only Standard (greybox) materials read the lights' specular channel; PBR specular uses the
+  // diffuse colour. The greybox is matte, which avoids blown highlights under the calibrated sun.
+  copyRgb(ambientLight.specularColor, NO_SPECULAR);
   copyRgb(ambientLight.groundColor, lighting.groundColor);
   // Babylon Lite scalar/color writes do not invalidate the light UBO; set direction last.
   ambientLight.direction.set(0, 1, 0);
-  sunLight.intensity = lighting.sunIntensity;
+  sunLight.intensity = lighting.sunLightIntensity;
   copyRgb(sunLight.diffuse, lighting.sunColor);
-  copyRgb(sunLight.specular, lighting.sunColor);
+  copyRgb(sunLight.specular, NO_SPECULAR);
   sunLight.direction.set(
     lighting.sunDirection[0],
     lighting.sunDirection[1],
@@ -157,6 +182,8 @@ function applyEnvironmentLighting(
   scene.clearColor.g = lighting.clearColor[1];
   scene.clearColor.b = lighting.clearColor[2];
 }
+
+const NO_SPECULAR: LinearRgb = Object.freeze([0, 0, 0] as const);
 
 function copyRgb(target: [number, number, number], source: LinearRgb): void {
   target[0] = source[0];
@@ -239,18 +266,25 @@ export function createHeightfieldGeometryBatch(
     const heightfield = cell.collision.heightfield;
     const columns = (heightfield.columns - 1) / representation.sampleStride + 1;
     const rows = (heightfield.rows - 1) / representation.sampleStride + 1;
-    const skirtSampleCount =
-      (needsSkirt(entry, [0, -1]) ? columns : 0) +
-      (needsSkirt(entry, [0, 1]) ? columns : 0) +
-      (needsSkirt(entry, [-1, 0]) ? rows : 0) +
-      (needsSkirt(entry, [1, 0]) ? rows : 0);
-    const skirtCount =
-      Number(needsSkirt(entry, [0, -1])) +
-      Number(needsSkirt(entry, [0, 1])) +
-      Number(needsSkirt(entry, [-1, 0])) +
-      Number(needsSkirt(entry, [1, 0]));
-    vertexCount += columns * rows + skirtSampleCount * 2;
-    indexCount += (columns - 1) * (rows - 1) * 6 + (skirtSampleCount - skirtCount) * 6;
+    const skirts = heightfieldSkirts(entry, needsSkirt);
+    const skirtSampleCount = skirts.reduce((sum, skirt) => sum + skirt.samples.length, 0);
+    const skirtCount = skirts.length;
+    const detail = cell.collision.detail;
+    if (detail !== undefined && representation.sampleStride !== 1)
+      throw new Error(`cell ${cell.id} terrain detail requires the full collision lattice`);
+    const coveredQuads =
+      detail === undefined
+        ? 0
+        : ((detail.columns - 1) * (detail.rows - 1) * detail.sampleSpacingMeters ** 2) /
+          heightfield.sampleSpacingMeters ** 2;
+    vertexCount +=
+      columns * rows +
+      skirtSampleCount * 2 +
+      (detail === undefined ? 0 : detail.columns * detail.rows);
+    indexCount +=
+      ((columns - 1) * (rows - 1) - coveredQuads) * 6 +
+      (skirtSampleCount - skirtCount) * 6 +
+      (detail === undefined ? 0 : (detail.columns - 1) * (detail.rows - 1) * 6);
     for (let row = 0; row < heightfield.rows; row += 1) {
       for (let column = 0; column < heightfield.columns; column += 1) {
         const x = heightfield.origin[0] + column * heightfield.sampleSpacingMeters;
@@ -314,8 +348,19 @@ export function createHeightfieldGeometryBatch(
         uvs[uv + 1] = sampledRow / (sampledRows - 1);
       }
     }
+    const detail = cell.collision.detail;
     for (let row = 0; row + 1 < sampledRows; row += 1) {
       for (let column = 0; column + 1 < sampledColumns; column += 1) {
+        if (
+          detail !== undefined &&
+          terrainDetailCoversQuad(
+            detail,
+            heightfield.origin[0] + column * stride * heightfield.sampleSpacingMeters,
+            heightfield.origin[2] + row * stride * heightfield.sampleSpacingMeters,
+            stride * heightfield.sampleSpacingMeters,
+          )
+        )
+          continue;
         const southwest = vertexBase + row * sampledColumns + column;
         const southeast = southwest + 1;
         const northwest = southwest + sampledColumns;
@@ -330,38 +375,41 @@ export function createHeightfieldGeometryBatch(
       }
     }
     vertexBase = surfaceVertexBase + sampledColumns * sampledRows;
-    const addSkirt = (
-      samples: readonly (readonly [number, number])[],
-      normal: readonly [number, number, number],
-      reverseWinding: boolean,
-    ): void => {
+    if (detail !== undefined) {
+      indexBase = writeTerrainDetailMesh(
+        detail,
+        positions,
+        normals,
+        uvs,
+        indices,
+        vertexBase,
+        indexBase,
+      );
+      vertexBase += detail.columns * detail.rows;
+    }
+    for (const skirt of heightfieldSkirts(entry, needsSkirt)) {
       const skirtBase = vertexBase;
-      for (const [sampleIndex, [column, row]] of samples.entries()) {
-        const worldX = heightfield.origin[0] + column * heightfield.sampleSpacingMeters;
-        const worldZ = heightfield.origin[2] + row * heightfield.sampleSpacingMeters;
-        for (const [verticalIndex, y] of [
-          heightAt(column, row),
-          cell.bounds.minimum[1],
-        ].entries()) {
+      for (const [sampleIndex, [worldX, worldZ, top]] of skirt.samples.entries()) {
+        for (const [verticalIndex, y] of [top, cell.bounds.minimum[1]].entries()) {
           const vertex = skirtBase + sampleIndex * 2 + verticalIndex;
           const position = vertex * 3;
           positions[position] = worldX;
           positions[position + 1] = y;
           positions[position + 2] = worldZ;
-          normals[position] = normal[0];
-          normals[position + 1] = normal[1];
-          normals[position + 2] = normal[2];
+          normals[position] = skirt.normal[0];
+          normals[position + 1] = skirt.normal[1];
+          normals[position + 2] = skirt.normal[2];
           const uv = vertex * 2;
-          uvs[uv] = sampleIndex / Math.max(1, samples.length - 1);
+          uvs[uv] = sampleIndex / Math.max(1, skirt.samples.length - 1);
           uvs[uv + 1] = verticalIndex;
         }
       }
-      for (let segment = 0; segment + 1 < samples.length; segment += 1) {
+      for (let segment = 0; segment + 1 < skirt.samples.length; segment += 1) {
         const top0 = skirtBase + segment * 2;
         const bottom0 = top0 + 1;
         const top1 = top0 + 2;
         const bottom1 = top1 + 1;
-        const triangles = reverseWinding
+        const triangles = skirt.reverseWinding
           ? [bottom0, top1, top0, bottom0, bottom1, top1]
           : [top0, top1, bottom0, top1, bottom1, bottom0];
         for (const vertex of triangles) {
@@ -369,37 +417,7 @@ export function createHeightfieldGeometryBatch(
           indexBase += 1;
         }
       }
-      vertexBase += samples.length * 2;
-    };
-    const sampledColumnsList = Array.from({ length: sampledColumns }, (_, index) => index * stride);
-    const sampledRowsList = Array.from({ length: sampledRows }, (_, index) => index * stride);
-    if (needsSkirt(entry, [0, -1])) {
-      addSkirt(
-        sampledColumnsList.map((column) => [column, 0] as const),
-        [0, 0, -1],
-        true,
-      );
-    }
-    if (needsSkirt(entry, [0, 1])) {
-      addSkirt(
-        sampledColumnsList.map((column) => [column, heightfield.rows - 1] as const),
-        [0, 0, 1],
-        false,
-      );
-    }
-    if (needsSkirt(entry, [-1, 0])) {
-      addSkirt(
-        sampledRowsList.map((row) => [0, row] as const),
-        [-1, 0, 0],
-        false,
-      );
-    }
-    if (needsSkirt(entry, [1, 0])) {
-      addSkirt(
-        sampledRowsList.map((row) => [heightfield.columns - 1, row] as const),
-        [1, 0, 0],
-        true,
-      );
+      vertexBase += skirt.samples.length * 2;
     }
   }
 
@@ -410,6 +428,141 @@ export function createHeightfieldGeometryBatch(
     triangleCount: indexCount / 3,
     uvs,
   });
+}
+
+interface HeightfieldSkirt {
+  /** World x, z and the ground height along the cell edge, in edge order. */
+  readonly samples: readonly (readonly [number, number, number])[];
+  readonly normal: readonly [number, number, number];
+  readonly reverseWinding: boolean;
+}
+
+/**
+ * Crack-hiding walls on the cell edges that have no same-stride neighbour in the batch.
+ * Their tops follow the rendered ground: the stride lattice, plus every terrain detail
+ * sample where a detail field (D-204) reaches the edge, so rolling ground never dips
+ * below a wall drawn at the coarse edge height.
+ */
+function heightfieldSkirts(
+  entry: HeightfieldBatchEntry,
+  needsSkirt: (entry: HeightfieldBatchEntry, offset: readonly [number, number]) => boolean,
+): HeightfieldSkirt[] {
+  const { cell, representation } = entry;
+  const field = cell.collision.heightfield;
+  const detail = cell.collision.detail;
+  const step = field.sampleSpacingMeters * representation.sampleStride;
+  const minimumX = field.origin[0];
+  const minimumZ = field.origin[2];
+  const maximumX = minimumX + (field.columns - 1) * field.sampleSpacingMeters;
+  const maximumZ = minimumZ + (field.rows - 1) * field.sampleSpacingMeters;
+  const along = (from: number, to: number, detailFrom: number | null, detailTo: number) => {
+    const values = new Set<number>();
+    for (let index = 0; index <= Math.round((to - from) / step); index++)
+      values.add(from + index * step);
+    if (detail !== undefined && detailFrom !== null) {
+      const count = Math.round((detailTo - detailFrom) / detail.sampleSpacingMeters);
+      for (let index = 0; index <= count; index++)
+        values.add(detailFrom + index * detail.sampleSpacingMeters);
+    }
+    return [...values].sort((left, right) => left - right);
+  };
+  const detailMaximumX =
+    detail === undefined ? 0 : detail.origin[0] + (detail.columns - 1) * detail.sampleSpacingMeters;
+  const detailMaximumZ =
+    detail === undefined ? 0 : detail.origin[2] + (detail.rows - 1) * detail.sampleSpacingMeters;
+  // A detail field contributes samples only to the edges its own boundary lies on.
+  const touchesZ = (z: number): boolean =>
+    detail !== undefined && (detail.origin[2] === z || detailMaximumZ === z);
+  const touchesX = (x: number): boolean =>
+    detail !== undefined && (detail.origin[0] === x || detailMaximumX === x);
+  const xs = (z: number) =>
+    along(minimumX, maximumX, touchesZ(z) ? (detail?.origin[0] ?? null) : null, detailMaximumX);
+  const zs = (x: number) =>
+    along(minimumZ, maximumZ, touchesX(x) ? (detail?.origin[2] ?? null) : null, detailMaximumZ);
+  const ground = (x: number, z: number) =>
+    [x, z, sampleCellGroundHeight(cell.collision, x, z)] as const;
+  const skirts: HeightfieldSkirt[] = [];
+  if (needsSkirt(entry, [0, -1]))
+    skirts.push({
+      samples: xs(minimumZ).map((x) => ground(x, minimumZ)),
+      normal: [0, 0, -1],
+      reverseWinding: true,
+    });
+  if (needsSkirt(entry, [0, 1]))
+    skirts.push({
+      samples: xs(maximumZ).map((x) => ground(x, maximumZ)),
+      normal: [0, 0, 1],
+      reverseWinding: false,
+    });
+  if (needsSkirt(entry, [-1, 0]))
+    skirts.push({
+      samples: zs(minimumX).map((z) => ground(minimumX, z)),
+      normal: [-1, 0, 0],
+      reverseWinding: false,
+    });
+  if (needsSkirt(entry, [1, 0]))
+    skirts.push({
+      samples: zs(maximumX).map((z) => ground(maximumX, z)),
+      normal: [1, 0, 0],
+      reverseWinding: true,
+    });
+  return skirts;
+}
+
+function terrainDetailCoversQuad(
+  detail: GreyboxHeightfieldCollider,
+  x: number,
+  z: number,
+  size: number,
+): boolean {
+  return (
+    x >= detail.origin[0] &&
+    z >= detail.origin[2] &&
+    x + size <= detail.origin[0] + (detail.columns - 1) * detail.sampleSpacingMeters &&
+    z + size <= detail.origin[2] + (detail.rows - 1) * detail.sampleSpacingMeters
+  );
+}
+
+/** The fine terrain mesh replacing covered coarse quads; returns the next index slot. */
+function writeTerrainDetailMesh(
+  detail: GreyboxHeightfieldCollider,
+  positions: Float32Array,
+  normals: Float32Array,
+  uvs: Float32Array,
+  indices: Uint32Array,
+  vertexBase: number,
+  indexBase: number,
+): number {
+  const { columns, rows, sampleSpacingMeters: spacing } = detail;
+  const heightAt = (column: number, row: number): number =>
+    detail.heights[
+      Math.min(rows - 1, Math.max(0, row)) * columns + Math.min(columns - 1, Math.max(0, column))
+    ] ?? 0;
+  for (let row = 0; row < rows; row++)
+    for (let column = 0; column < columns; column++) {
+      const vertex = vertexBase + row * columns + column;
+      positions[vertex * 3] = detail.origin[0] + column * spacing;
+      positions[vertex * 3 + 1] = heightAt(column, row);
+      positions[vertex * 3 + 2] = detail.origin[2] + row * spacing;
+      const [slopeX, slopeZ] = terrainDetailSlope(detail, column, row);
+      const inverseLength = 1 / Math.hypot(slopeX, 1, slopeZ);
+      normals[vertex * 3] = -slopeX * inverseLength;
+      normals[vertex * 3 + 1] = inverseLength;
+      normals[vertex * 3 + 2] = -slopeZ * inverseLength;
+      uvs[vertex * 2] = column / (columns - 1);
+      uvs[vertex * 2 + 1] = row / (rows - 1);
+    }
+  let next = indexBase;
+  for (let row = 0; row + 1 < rows; row++)
+    for (let column = 0; column + 1 < columns; column++) {
+      const southwest = vertexBase + row * columns + column;
+      const southeast = southwest + 1;
+      const northwest = southwest + columns;
+      const northeast = northwest + 1;
+      indices.set([southwest, southeast, northwest, southeast, northeast, northwest], next);
+      next += 6;
+    }
+  return next;
 }
 
 function requireMaterial(
@@ -436,6 +589,10 @@ export async function createLiteGreyboxWorld(
   try {
     setEngineSize(engine, width, height);
     const scene = createSceneContext(engine);
+    // Every streamed PBR material carries the vertex-stage terrain drape (D-204).
+    enablePbrMaterialPluginVertexData();
+    enableMaterialPlugins(scene);
+    const rigidTerrainDrape = createRigidTerrainDrapeField(engine);
     scene.clearColor = {
       a: config.clearColor[3],
       b: config.clearColor[2],
@@ -461,9 +618,19 @@ export async function createLiteGreyboxWorld(
       quantizeAnimatedEnvironmentLightingPhase(config.lighting.initialPhase),
       config.lighting.weather,
     );
+    // PBR shaders bake the AgX curve at registration; exposure stays live (engine package 5).
+    scene.imageProcessing = {
+      ...scene.imageProcessing,
+      contrast: 1,
+      toneMapping: PARALLAX_AGX_TONE_MAPPING,
+      toneMappingEnabled: true,
+    };
+    const pbrAmbient = createPbrAmbientState();
     const ambientLight = createHemisphericLight();
+    // The greybox keeps the hemispheric light; PBR surfaces use the occluded ambient instead.
+    ambientLight.excludedMeshIds = new Set([PBR_AMBIENT_MESH_ID]);
     const sunLight = createDirectionalLight([...lighting.sunDirection]);
-    applyEnvironmentLighting(ambientLight, sunLight, scene, lighting);
+    applyEnvironmentLighting(ambientLight, sunLight, scene, lighting, pbrAmbient);
     addToScene(scene, ambientLight);
     addToScene(scene, sunLight);
     const shadows = createDirectionalShadows(engine, sunLight);
@@ -568,7 +735,8 @@ export async function createLiteGreyboxWorld(
       }
     }
     const hybridUi = createHybridUiRenderer(engine, scene, camera);
-    const pbrWarmup = createPbrWarmupMesh(engine);
+    const pbrWarmup = createPbrWarmupMesh(engine, rigidTerrainDrape, pbrAmbient);
+    const pbrLightingTelemetry = createPbrLightingTelemetry(lighting);
     addToScene(scene, pbrWarmup.mesh);
     const shadowExcluded = new Set(hybridUi.meshes);
     for (const mesh of scene.meshes) {
@@ -647,6 +815,9 @@ export async function createLiteGreyboxWorld(
       presentationOwner: "preview" as "preview" | "streamed-residency",
       previewMeshes: Object.freeze(previewMeshes),
       psoWarmup,
+      pbrAmbient,
+      pbrLightingTelemetry,
+      rigidTerrainDrape,
       scene,
       shadows,
       shadowExcluded,
@@ -658,8 +829,10 @@ export async function createLiteGreyboxWorld(
           gpuBytes: number;
           meshes: readonly Mesh[];
           pbrAssets: readonly ResidentPbrAsset[];
+          terrainDrapes: readonly TerrainDrapeField[];
         }>
       >(),
+      terrainDrapeUploadMs: 0,
       streamingDependencyCache: createStreamingResourceCache<StreamingDependencyGpuValue>(),
       streamingDependencyGpuBytes: 0,
       pbrAssetUploadMs: 0,
@@ -800,6 +973,7 @@ export function uploadStreamingGreyboxCell(
   }
   const meshes: Mesh[] = [];
   const pbrAssets: ResidentPbrAsset[] = [];
+  const terrainDrapes: TerrainDrapeField[] = [];
   const pbrPlacements = cell.pbrAssets ?? [];
   validatePbrAssetPlacements(
     pbrPlacements,
@@ -1198,6 +1372,24 @@ export function uploadStreamingGreyboxCell(
       if (texture === null) throw new Error(`PBR texture ${resourceId} is not a texture`);
       return texture;
     };
+    const drapesByReference = new Map<number, TerrainDrapeField>();
+    const drapeFor = (placement: PbrAssetPlacement): TerrainDrapeField => {
+      const reference = placement.terrainDrape?.referenceHeightMeters;
+      if (reference === undefined) return renderer.rigidTerrainDrape;
+      const detail = cell.collision.detail;
+      if (detail === undefined)
+        throw new Error(`Conforming PBR asset ${placement.id} has no terrain detail field`);
+      let field = drapesByReference.get(reference);
+      if (field === undefined) {
+        const drapeStartedAt = performance.now();
+        field = createTerrainDrapeField(renderer.engine, detail, reference);
+        renderer.terrainDrapeUploadMs += performance.now() - drapeStartedAt;
+        drapesByReference.set(reference, field);
+        terrainDrapes.push(field);
+        gpuBytes += field.gpuBytes;
+      }
+      return field;
+    };
     for (const placements of groupPbrAssetPlacements(pbrPlacements)) {
       const placement = placements[0];
       if (placement === undefined) continue;
@@ -1226,6 +1418,8 @@ export function uploadStreamingGreyboxCell(
           orm: textureForMaterial(placement.material.ormResourceId),
         },
         placement.material,
+        drapeFor(placement),
+        renderer.pbrAmbient,
       );
       const lodMeshes: Mesh[] = [];
       const triangleCounts: number[] = [];
@@ -1236,6 +1430,7 @@ export function uploadStreamingGreyboxCell(
         // its placement ownership before the dependency cache releases the source.
         const mesh = cloneTransformNode(source) as Mesh;
         mesh.name = `${cell.id}-${placement.id}-lod${level}`;
+        mesh.id = PBR_AMBIENT_MESH_ID;
         mesh.material = material;
         // Group mesh remains identity: every instance matrix already includes
         // canonical RH-to-LH conversion followed by its full world placement.
@@ -1264,6 +1459,8 @@ export function uploadStreamingGreyboxCell(
       }
       pbrAssets.push({
         placements,
+        material,
+        conformingPlacementCount: placement.terrainDrape === undefined ? 0 : placements.length,
         meshes: lodMeshes,
         triangleCounts,
         activeLods: new Uint8Array(placements.length),
@@ -1282,6 +1479,7 @@ export function uploadStreamingGreyboxCell(
         gpuBytes,
         meshes: Object.freeze(meshes),
         pbrAssets: Object.freeze(pbrAssets),
+        terrainDrapes: Object.freeze(terrainDrapes),
       }),
     );
     return Object.freeze({
@@ -1300,6 +1498,7 @@ export function uploadStreamingGreyboxCell(
         disposeMeshGpu(mesh);
       }
     }
+    for (const drape of terrainDrapes) releaseTexture(drape.texture);
     releaseStreamingDependencyKeys(renderer, dependencyKeys);
     throw error;
   }
@@ -1431,6 +1630,13 @@ export function evictStreamingGreyboxCell(
       cleanupFailures.push(error);
     }
   }
+  for (const drape of resident.terrainDrapes) {
+    try {
+      releaseTexture(drape.texture);
+    } catch (error: unknown) {
+      cleanupFailures.push(error);
+    }
+  }
   let dependencyFreedBytes = 0;
   try {
     dependencyFreedBytes = releaseStreamingDependencyKeys(renderer, resident.dependencyKeys);
@@ -1527,7 +1733,15 @@ export function renderLiteGreyboxWorld(
   if (lightingPhase !== renderer.lighting.phase || weather !== renderer.lighting.weather) {
     const lighting = sampleEnvironmentLighting(lightingPhase, weather);
     renderer.lighting = lighting;
-    applyEnvironmentLighting(renderer.ambientLight, renderer.sunLight, renderer.scene, lighting);
+    applyEnvironmentLighting(
+      renderer.ambientLight,
+      renderer.sunLight,
+      renderer.scene,
+      lighting,
+      renderer.pbrAmbient,
+    );
+    renderer.pbrLightingTelemetry = createPbrLightingTelemetry(lighting);
+    markPbrAmbientDirty(renderer);
   }
 
   updatePbrAssetLods(renderer);
@@ -1548,6 +1762,7 @@ export function renderLiteGreyboxWorld(
     rendering: Object.freeze({
       ...renderer.shadows.snapshot(),
       pbrAssets: pbrAssetSnapshot(renderer),
+      pbrLighting: renderer.pbrLightingTelemetry,
       cpuSubmitMs,
       gpuFrameEmaMs: renderer.engine.gpuFrameTimeMs > 0 ? renderer.engine.gpuFrameTimeMs : null,
       shadowTaskGpuMs: shadowTask?.durationMs ?? null,
@@ -1618,9 +1833,15 @@ function pbrAssetSnapshot(renderer: LiteGreyboxWorld) {
   let instanceMatrixCpuBytes = 0;
   let instanceMatrixGpuBytes = 0;
   let instanceDrawArgsGpuBytes = 0;
+  let terrainDrapeCount = 0;
+  let terrainDrapeGpuBytes = 0;
+  let conformingPlacementCount = 0;
   for (const resident of renderer.streamingCells.values()) {
+    terrainDrapeCount += resident.terrainDrapes.length;
+    for (const drape of resident.terrainDrapes) terrainDrapeGpuBytes += drape.gpuBytes;
     for (const asset of resident.pbrAssets ?? []) {
       residentPlacementCount += asset.placements.length;
+      conformingPlacementCount += asset.conformingPlacementCount;
       residentGroupCount += 1;
       instanceMatrixCpuBytes +=
         asset.sourceMatrices.byteLength +
@@ -1653,7 +1874,28 @@ function pbrAssetSnapshot(renderer: LiteGreyboxWorld) {
     instanceDrawArgsGpuBytes,
     lodChanges: renderer.pbrAssetLodChanges,
     placementSetupMs: renderer.pbrAssetUploadMs,
+    terrainDrapeCount,
+    terrainDrapeGpuBytes,
+    terrainDrapeUploadMs: renderer.terrainDrapeUploadMs,
+    conformingPlacementCount,
   };
+}
+
+/** Re-upload every resident PBR material's ambient after a lighting change. */
+function markPbrAmbientDirty(renderer: LiteGreyboxWorld): void {
+  for (const resident of renderer.streamingCells.values())
+    for (const asset of resident.pbrAssets) markMaterialUboDirty(asset.material);
+}
+
+function createPbrLightingTelemetry(
+  lighting: EnvironmentLightingSample,
+): NonNullable<RenderFrameSample["rendering"]["pbrLighting"]> {
+  return Object.freeze({
+    exposure: lighting.exposure,
+    sunLightIntensity: lighting.sunLightIntensity,
+    ambientSky: lighting.pbrSky,
+    ambientGround: lighting.pbrGround,
+  });
 }
 
 export function visibleStreamingMeshCount(renderer: LiteGreyboxWorld): number {

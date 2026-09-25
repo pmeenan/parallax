@@ -6,9 +6,15 @@ import type {
   GreyboxSceneConfig,
   GreyboxTriangleBoxPayload,
 } from "@parallax/engine";
-import { selectGreyboxCellLod, validateGreyboxDistrict } from "@parallax/engine";
+import {
+  sampleCellGroundHeight,
+  selectGreyboxCellLod,
+  simulationWorldDefinition,
+  validateGreyboxDistrict,
+} from "@parallax/engine";
 import { describe, expect, it, vi } from "vitest";
 import { createHeightfieldGeometryBatch } from "../../engine/src/render/lite-greybox-world";
+import { buildDeterministicNavigationMesh } from "../src/sim/deterministic-navigation";
 import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
 import { D1_PAVING } from "../src/world/district-1-paving";
 import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
@@ -183,9 +189,59 @@ describe("data-first greybox world generation", () => {
     expect(scene.camera.minZ).toBe(5);
     expect(scene.lodObservers).toEqual([[0, 12, -900]]);
     expect(summary.cellCount).toBe(CELLS_PER_AXIS ** 2);
-    expect(summary.heightSampleCount).toBe(CELLS_PER_AXIS ** 2 * HEIGHTFIELD_SAMPLES_PER_AXIS ** 2);
+    // Coarse fields, plus the rolling courtyard's detail region [-16, 32]² at 0.5 m, clipped
+    // into its four cells (D-204).
+    expect(summary.heightSampleCount).toBe(
+      CELLS_PER_AXIS ** 2 * HEIGHTFIELD_SAMPLES_PER_AXIS ** 2 + 65 ** 2 + 2 * 33 * 65 + 33 ** 2,
+    );
     expect(summary.colliderCount).toBeGreaterThan(0);
     expect(summary.markerCount).toBe(18);
+  });
+
+  it("rolls the courtyard on one shared walkable surface (D-204)", () => {
+    const scene = createScene();
+    const detailed = scene.world.cells.filter((cell) => cell.collision.detail !== undefined);
+    expect(detailed.map((cell) => cell.coordinate)).toEqual([
+      [7, 7],
+      [8, 7],
+      [7, 8],
+      [8, 8],
+    ]);
+    for (const cell of detailed) {
+      // Detail cells keep the full collision lattice so the fine mesh edge meets it.
+      for (const lod of cell.lods)
+        for (const representation of lod.representations)
+          if (representation.kind === "heightfield-grid")
+            expect(representation.sampleStride).toBe(1);
+      const detail = cell.collision.detail;
+      if (detail === undefined) throw new Error("detail");
+      let steepest = 0;
+      for (let row = 1; row + 1 < detail.rows; row++)
+        for (let column = 1; column + 1 < detail.columns; column++) {
+          const height = (c: number, r: number) => detail.heights[r * detail.columns + c] ?? 0;
+          const slopeX = (height(column + 1, row) - height(column - 1, row)) / 1;
+          const slopeZ = (height(column, row + 1) - height(column, row - 1)) / 1;
+          steepest = Math.max(steepest, Math.hypot(slopeX, slopeZ));
+        }
+      expect((Math.atan(steepest) * 180) / Math.PI).toBeLessThan(10);
+    }
+    const courtyard = requireCell(scene, 8, 8);
+    const navigation = buildDeterministicNavigationMesh(simulationWorldDefinition(scene.world), {
+      agentRadiusMeters: 0.4,
+      maximumGroundStepMeters: 0.5,
+      sampleSpacingMeters: 16,
+    });
+    let relief = 0;
+    for (let x = 0.3; x < 16; x += 1.7)
+      for (let z = 0.2; z < 16; z += 1.3) {
+        const ground = sampleCellGroundHeight(courtyard.collision, x, z);
+        expect(navigation.groundHeight(x, z)).toBe(Math.fround(ground));
+        relief = Math.max(relief, Math.abs(ground - 18.97375));
+      }
+    expect(relief).toBeGreaterThan(0.25);
+    const paving = DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? [];
+    expect(paving.length).toBeGreaterThan(0);
+    expect(paving.every((placement) => placement.conformToTerrain === true)).toBe(true);
   });
 
   it("preserves stable IDs, ordering, neighbors, and deterministic generation", () => {

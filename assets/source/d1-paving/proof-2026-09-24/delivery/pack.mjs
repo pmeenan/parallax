@@ -48,6 +48,10 @@ const GROUND_NORMAL_SIZE = Number(process.env.PAVING_GROUND_NORMAL_SIZE ?? 2048)
 const OTHER_MAPS_AT_REST = process.env.PAVING_OTHER_MAPS_AT_REST ?? "bc7";
 assert(["bc7", "uastc"].includes(OTHER_MAPS_AT_REST), "PAVING_OTHER_MAPS_AT_REST is bc7 or uastc");
 assert([2048, 4096].includes(GROUND_NORMAL_SIZE), "PAVING_GROUND_NORMAL_SIZE is 2048 or 4096");
+// Candidate 9 (engine package 5) drops the ground ORM's authored 2048² level: 4 MiB for a mean
+// 0.2–0.4/255 in-game difference. 2048 reproduces candidates 1–8.
+const GROUND_ORM_SIZE = Number(process.env.PAVING_GROUND_ORM_SIZE ?? 1024);
+assert([1024, 2048].includes(GROUND_ORM_SIZE), "PAVING_GROUND_ORM_SIZE is 1024 or 2048");
 const TILE = 4;
 const N = 4096;
 const PX = TILE / N;
@@ -559,8 +563,12 @@ const k = await loadPinnedKtxEncoder();
 const maps = JSON.parse(await readFile(join(mapsDir, "maps.json"), "utf8"));
 for (const map of maps.maps) {
   const mapLevels =
-    map.role === "ground-normal" && GROUND_NORMAL_SIZE === 2048 ? map.levels.slice(1) : map.levels;
+    (map.role === "ground-normal" && GROUND_NORMAL_SIZE === 2048) ||
+    (map.role === "ground-orm" && GROUND_ORM_SIZE === 1024)
+      ? map.levels.slice(1)
+      : map.levels;
   if (map.role === "ground-normal") assert.equal(mapLevels[0].width, GROUND_NORMAL_SIZE);
+  if (map.role === "ground-orm") assert.equal(mapLevels[0].width, GROUND_ORM_SIZE);
   const bc1 = map.role.endsWith("basecolor") && BASECOLOR_GPU === "bc1";
   const width = mapLevels[0].width;
   const heightPx = mapLevels[0].height;

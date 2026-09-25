@@ -7,8 +7,9 @@
 #   normal      = full-height normal (16-bit low-pass slopes + approved detail normal) with
 #                 pebble normals; runtime vertex normals are flat, so this map carries all
 #                 shading and every LOD shades identically
-#   ORM         = R 1 (Lite applies occlusion to IBL only; the game has none), G roughness
-#                 with pebbles at the source's 0.72, B 0 metallic
+#   ORM         = R ambient occlusion (--ao-radius-mm, default 40; 0 gives candidates 1-8's 1), G
+#                 roughness with pebbles at the source's 0.72, B 0 metallic. The engine applies
+#                 R to its sky/ground ambient only (engine package 5).
 # Plant atlas (1024 x 512): leaf0-2, grass and stem swatch, with a luminance bump normal.
 # Every mip is a 2x2 box of the level above (linear light for colour), so mips stay periodic.
 import argparse
@@ -28,6 +29,9 @@ ap = argparse.ArgumentParser()
 ap.add_argument('--extract', required=True)
 ap.add_argument('--out', required=True)
 ap.add_argument('--pebble-geometry-mm', type=float, default=9.0)
+ap.add_argument('--ao-radius-mm', type=float, default=40.0)  # 0 reproduces candidates 1-8
+ap.add_argument('--ao-directions', type=int, default=16)
+ap.add_argument('--ao-steps', type=int, default=16)
 A = ap.parse_args(argv)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(HERE, '../../proof-2026-09-22/photoreal/candidate1'))
@@ -152,6 +156,8 @@ nrm_c = ng * (1 - a[..., None]) + pnrm * a[..., None]
 nrm_c /= np.linalg.norm(nrm_c, axis=-1, keepdims=True)
 rough_c = rough * (1 - a) + 0.72 * a
 pebble_fraction = float(a.mean())
+# The occluding surface: the ground, with every drawn-in pebble's top where it stands above it.
+H_ao = np.where(above, np.maximum(H, ztop), H).astype(np.float32)
 del pa, pn, ph, pnrm, ng
 
 # ---------------------------------------------------------------- mips and outputs
@@ -209,9 +215,45 @@ emit('ground-basecolor', chain(alb_c, enc_color, box_any), 'sRGB; approved albed
 del alb_c, alb
 emit('ground-normal', chain(nrm_c, enc_normal, box_any), 'OpenGL (+Y up) tangent space; full height slopes; renormalized mips')
 del nrm_c
-orm0 = np.stack([np.ones((N, N), np.float32), rough_c, np.zeros((N, N), np.float32)], -1)
-emit('ground-orm', chain(box(orm0), enc_orm, box_any), 'R occlusion 1, G roughness, B metallic 0; 2048^2 (512 texels/m)')
-del orm0
+
+
+def height_ao(height, spacing, radius, directions, steps):
+    """Horizon-based ambient occlusion of a periodic height field (rolls wrap the tile).
+    Per direction, the highest horizon within the radius blocks sin^2(elevation) of the
+    cosine-weighted sky, faded smoothly to zero at the radius; AO is 1 minus the mean."""
+    blocked = np.zeros_like(height)
+    for k in range(directions):
+        angle = 2 * math.pi * (k + 0.5) / directions
+        horizon = np.zeros_like(height)
+        seen = set()
+        for s in range(1, steps + 1):
+            reach = radius * (s / steps) ** 1.5  # denser samples near the texel
+            dx = int(round(math.cos(angle) * reach / spacing))
+            dy = int(round(math.sin(angle) * reach / spacing))
+            if (dx, dy) == (0, 0) or (dx, dy) in seen:
+                continue
+            seen.add((dx, dy))
+            distance = math.hypot(dx, dy) * spacing
+            rise = np.maximum(np.roll(height, (-dy, -dx), (0, 1)) - height, 0)
+            sine2 = rise * rise / (rise * rise + distance * distance)
+            horizon = np.maximum(horizon, sine2 * (1 - (distance / radius) ** 2))
+        blocked += horizon
+    return (1 - blocked / directions).astype(np.float32)
+
+
+orm_rough = box(rough_c)
+if A.ao_radius_mm > 0:
+    # At the ORM's 2048^2 (2 mm texels), from the box-filtered occluding surface.
+    occlusion = height_ao(box(H_ao), 2 * PX, A.ao_radius_mm / 1000, A.ao_directions, A.ao_steps)
+    ao_note = 'R height-field AO (%g mm radius, %d directions)' % (A.ao_radius_mm, A.ao_directions)
+else:
+    occlusion = np.ones_like(orm_rough)
+    ao_note = 'R occlusion 1'
+ao_stats = dict(mean=float(occlusion.mean()), p01=float(np.percentile(occlusion, 1)),
+                p10=float(np.percentile(occlusion, 10)), minimum=float(occlusion.min()))
+orm0 = np.stack([occlusion, orm_rough, np.zeros_like(orm_rough)], -1)
+emit('ground-orm', chain(orm0, enc_orm, box_any), ao_note + ', G roughness, B metallic 0; 2048^2 (512 texels/m)')
+del orm0, H_ao
 
 # ---------------------------------------------------------------- plant atlas (1024 x 512)
 AW, AH, GUTTER = 1024, 512, 2
@@ -277,6 +319,7 @@ for k, v in arrays.items():  # plain little-endian .npy files for the Node packe
 write = dict(stage='maps', blender=bpy.app.version_string, pebbleGeometryMinimumMm=A.pebble_geometry_mm,
              pebbles=int(len(size)), pebbleGeometryInstances=int(geometry.sum()),
              pebbleMapCoverageFraction=pebble_fraction, heightRangeMetres=receipt_h,
+             ambientOcclusion=dict(radiusMm=A.ao_radius_mm, directions=A.ao_directions, steps=A.ao_steps, **ao_stats),
              atlasRegions=regions, maps=records,
              inputs=dict(extract=sha(os.path.join(EXT, 'extract.json'))))
 json.dump(write, open(os.path.join(OUT, 'maps.json'), 'w', encoding='utf-8'), indent=2)

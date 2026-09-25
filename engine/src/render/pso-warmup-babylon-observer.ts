@@ -9,6 +9,7 @@ import {
 } from "@babylonjs/lite";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
+import { PBR_AMBIENT_PLUGIN_NAME } from "./pbr-ambient";
 import {
   createPsoWarmupTrace,
   PBR_COLOR_STATE,
@@ -19,6 +20,7 @@ import {
   PSO_WARMUP_PIPELINES,
   PSO_WARMUP_STANDARD_OPAQUE_STATE_DIGEST,
 } from "./pso-warmup-contract";
+import { TERRAIN_DRAPE_PLUGIN_NAME } from "./terrain-drape";
 
 const WEBGPU_ALL_BITS = 0xffff_ffff;
 const WEBGPU_COLOR_WRITE_ALL = 0xf;
@@ -439,7 +441,12 @@ function assertPbrOpaqueMaterial(material: Mesh["material"], meshName: string): 
     material.doubleSided === true ||
     material.alphaBlend === true ||
     (material.alpha ?? 1) !== 1 ||
-    material.plugins !== undefined ||
+    // Exactly the terrain drape (D-204) and the occluded ambient, in that order; any other plugin
+    // set changes the pipeline family.
+    material.plugins?.length !== 2 ||
+    material.plugins[0]?.name !== TERRAIN_DRAPE_PLUGIN_NAME ||
+    material.plugins[1]?.name !== PBR_AMBIENT_PLUGIN_NAME ||
+    material.plugins.some((plugin) => plugin.isEnabled === false) ||
     hasOptInFeature(material, PBR_OPT_IN_FIELDS) ||
     Reflect.get(material, "_renderFeatures") !== undefined
   )

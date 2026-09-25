@@ -1,7 +1,8 @@
-import type {
-  GreyboxAabbCollider,
-  SimulationWorldCell,
-  SimulationWorldDefinition,
+import {
+  type GreyboxAabbCollider,
+  type SimulationWorldCell,
+  type SimulationWorldDefinition,
+  sampleCellGroundHeight,
 } from "@parallax/engine";
 
 export interface NavigationMeshConfig {
@@ -440,18 +441,7 @@ function groundHeight(grid: NavigationGrid, x: number, z: number): number {
   const cellZ = clamp(Math.floor((z - bounds.minimum[2]) / grid.cellSizeMeters), 0, cellsZ - 1);
   const cell = grid.cellsByCoordinate.get(`${cellX},${cellZ}`);
   if (cell === undefined) throw new Error("Navigation mesh could not resolve terrain cell");
-  const field = cell.collision.heightfield;
-  const column = clamp((x - field.origin[0]) / field.sampleSpacingMeters, 0, field.columns - 1);
-  const row = clamp((z - field.origin[2]) / field.sampleSpacingMeters, 0, field.rows - 1);
-  const column0 = Math.floor(column);
-  const row0 = Math.floor(row);
-  const column1 = Math.min(field.columns - 1, column0 + 1);
-  const row1 = Math.min(field.rows - 1, row0 + 1);
-  const sample = (sampleColumn: number, sampleRow: number): number =>
-    field.heights[sampleRow * field.columns + sampleColumn] ?? 0;
-  const south = lerp(sample(column0, row0), sample(column1, row0), column - column0);
-  const north = lerp(sample(column0, row1), sample(column1, row1), column - column0);
-  return Math.fround(lerp(south, north, row - row0));
+  return Math.fround(sampleCellGroundHeight(cell.collision, x, z));
 }
 
 function overlapsExpandedAabb(
@@ -517,8 +507,4 @@ function assertFinitePosition(position: readonly number[], label: string): void 
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
-}
-
-function lerp(from: number, to: number, alpha: number): number {
-  return from + (to - from) * alpha;
 }

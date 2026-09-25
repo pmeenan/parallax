@@ -142,6 +142,21 @@ export interface WorldMarkerSpec {
   readonly tags: readonly string[];
 }
 
+export interface TerrainDetailRegionSpec {
+  readonly minimum: readonly [number, number];
+  readonly maximum: readonly [number, number];
+  /** Must divide the coarse collision sample spacing. */
+  readonly sampleSpacingMeters: number;
+  /** Width of the edge band over which the rolling term fades to zero. */
+  readonly windowMeters: number;
+  readonly waves: readonly Readonly<{
+    amplitudeMeters: number;
+    wavelengthMeters: number;
+    directionRadians: number;
+    phaseRadians: number;
+  }>[];
+}
+
 export interface GreyboxDistrictSpec {
   readonly assetPlacements?: readonly {
     readonly id: string;
@@ -153,6 +168,9 @@ export interface GreyboxDistrictSpec {
     readonly heightOffset: number;
     /** Shared terrain sample for adjoining modules; defaults to each center. */
     readonly heightAnchor?: readonly [number, number];
+    /** Drape the module onto the terrain surface on the GPU (D-204). Its footprint must lie
+     * inside the owning cell's terrain detail field; the anchor sets the reference plane. */
+    readonly conformToTerrain?: boolean;
     readonly rotationYRadians: number;
     readonly rotationXRadians?: number;
     readonly rotationZRadians?: number;
@@ -191,6 +209,12 @@ export interface GreyboxDistrictSpec {
       height: number;
       transitionMeters: number;
     }>[];
+    /** Fine terrain shared by collision, navigation, render and conforming surface modules
+     * (D-204). Edges lie on the coarse collision lattice. Inside, the height is the coarse
+     * bilinear field plus a rolling term that a C1 window takes to zero at the edge, so the
+     * fine and coarse meshes meet without seams.
+     */
+    detailRegions?: readonly TerrainDetailRegionSpec[];
     materialId: string;
     roundingDecimalPlaces: number;
   }>;

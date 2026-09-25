@@ -1,4 +1,11 @@
 import { type PbrAssetPlacement, validatePbrAssetPlacements } from "./pbr-asset";
+import { sampleCellGroundHeight, sampleHeightfieldBilinear } from "./terrain-surface";
+
+export {
+  sampleCellGroundHeight,
+  sampleHeightfieldBilinear,
+  terrainDetailContains,
+} from "./terrain-surface";
 
 export type WorldVec3 = readonly [number, number, number];
 
@@ -78,6 +85,11 @@ export interface GreyboxAabbCollider {
 
 export interface GreyboxCollisionPayload {
   readonly heightfield: GreyboxHeightfieldCollider;
+  /**
+   * Finer terrain over a rectangle on the coarse lattice (D-204). Inside it, this field is
+   * the ground for collision, navigation, rendering and conforming surface modules.
+   */
+  readonly detail?: GreyboxHeightfieldCollider;
   readonly obstacles: readonly GreyboxAabbCollider[];
 }
 
@@ -425,6 +437,11 @@ export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorld
     }
     for (const height of heightfield.heights) finite(height, `cell ${cell.id} collision height`);
     heightSampleCount += heightfield.heights.length;
+    const detail = cell.collision.detail;
+    if (detail !== undefined) {
+      validateTerrainDetail(cell, detail);
+      heightSampleCount += detail.heights.length;
+    }
     const obstacleIds = new Set<string>();
     for (const obstacle of cell.collision.obstacles) {
       if (obstacle.kind !== "aabb") throw new Error(`cell ${cell.id} has an invalid collider kind`);
@@ -435,6 +452,10 @@ export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorld
     colliderCount += cell.collision.obstacles.length;
   }
   if (cellIds.size === 0) throw new Error("Greybox district requires cells");
+  const cellsByCoordinate = new Map(
+    district.cells.map((cell) => [`${cell.coordinate[0]},${cell.coordinate[1]}`, cell]),
+  );
+  for (const cell of district.cells) validateTerrainDetailSeams(cell, cellsByCoordinate);
   for (const cell of district.cells) {
     const neighbors = new Set<string>();
     for (const neighbor of cell.neighbors) {
@@ -472,6 +493,92 @@ export function validateGreyboxDistrict(district: GreyboxDistrict): GreyboxWorld
     heightSampleCount,
     lodPrimitiveCounts: Object.freeze(lodPrimitiveCounts),
     markerCount: district.markers.length,
+  });
+}
+
+function validateTerrainDetail(cell: GreyboxCell, detail: GreyboxHeightfieldCollider): void {
+  const coarse = cell.collision.heightfield;
+  const label = `cell ${cell.id} terrain detail`;
+  if (
+    detail.kind !== "heightfield" ||
+    !Number.isInteger(detail.columns) ||
+    !Number.isInteger(detail.rows) ||
+    detail.columns < 2 ||
+    detail.rows < 2 ||
+    detail.heights.length !== detail.columns * detail.rows
+  )
+    throw new Error(`${label} is invalid`);
+  validateVec3(detail.origin, `${label} origin`);
+  finite(detail.sampleSpacingMeters, `${label} sample spacing`);
+  const ratio = coarse.sampleSpacingMeters / detail.sampleSpacingMeters;
+  const onLattice = (offset: number): boolean =>
+    Number.isInteger(offset / coarse.sampleSpacingMeters);
+  const width = (detail.columns - 1) * detail.sampleSpacingMeters;
+  const depth = (detail.rows - 1) * detail.sampleSpacingMeters;
+  if (
+    !(detail.sampleSpacingMeters > 0) ||
+    !Number.isInteger(ratio) ||
+    !onLattice(detail.origin[0] - coarse.origin[0]) ||
+    !onLattice(detail.origin[2] - coarse.origin[2]) ||
+    !onLattice(width) ||
+    !onLattice(depth) ||
+    detail.origin[0] < cell.bounds.minimum[0] ||
+    detail.origin[2] < cell.bounds.minimum[2] ||
+    detail.origin[0] + width > cell.bounds.maximum[0] ||
+    detail.origin[2] + depth > cell.bounds.maximum[2]
+  )
+    throw new Error(`${label} must lie on the coarse collision lattice inside its cell`);
+  for (const height of detail.heights) finite(height, `${label} height`);
+  // Inside the cell, the fine and coarse meshes share the detail edge: both interpolate
+  // linearly along it. Edges on the cell boundary meet the neighbour instead (checked
+  // across cells by validateTerrainDetailSeams).
+  forEachTerrainDetailEdgeSample(detail, (x, z, height) => {
+    const onCellBoundary =
+      x === cell.bounds.minimum[0] ||
+      x === cell.bounds.maximum[0] ||
+      z === cell.bounds.minimum[2] ||
+      z === cell.bounds.maximum[2];
+    if (!onCellBoundary && Math.abs(height - sampleHeightfieldBilinear(coarse, x, z)) > 1e-6)
+      throw new Error(`${label} edge does not meet the coarse terrain`);
+  });
+}
+
+function forEachTerrainDetailEdgeSample(
+  detail: GreyboxHeightfieldCollider,
+  visit: (x: number, z: number, height: number) => void,
+): void {
+  for (let row = 0; row < detail.rows; row++)
+    for (let column = 0; column < detail.columns; column++) {
+      if (row !== 0 && row !== detail.rows - 1 && column !== 0 && column !== detail.columns - 1)
+        continue;
+      visit(
+        detail.origin[0] + column * detail.sampleSpacingMeters,
+        detail.origin[2] + row * detail.sampleSpacingMeters,
+        detail.heights[row * detail.columns + column] ?? 0,
+      );
+    }
+}
+
+/** A detail edge on a cell boundary must meet the neighbouring cell's ground exactly. */
+function validateTerrainDetailSeams(
+  cell: GreyboxCell,
+  cellsByCoordinate: ReadonlyMap<string, GreyboxCell>,
+): void {
+  const detail = cell.collision.detail;
+  if (detail === undefined) return;
+  const [cellX, cellZ] = cell.coordinate;
+  forEachTerrainDetailEdgeSample(detail, (x, z, height) => {
+    const neighbours: (readonly [number, number])[] = [];
+    if (x === cell.bounds.minimum[0]) neighbours.push([cellX - 1, cellZ]);
+    if (x === cell.bounds.maximum[0]) neighbours.push([cellX + 1, cellZ]);
+    if (z === cell.bounds.minimum[2]) neighbours.push([cellX, cellZ - 1]);
+    if (z === cell.bounds.maximum[2]) neighbours.push([cellX, cellZ + 1]);
+    for (const [neighbourX, neighbourZ] of neighbours) {
+      const neighbour = cellsByCoordinate.get(`${neighbourX},${neighbourZ}`);
+      if (neighbour === undefined) continue;
+      if (Math.abs(height - sampleCellGroundHeight(neighbour.collision, x, z)) > 1e-6)
+        throw new Error(`cell ${cell.id} terrain detail does not meet cell ${neighbour.id}`);
+    }
   });
 }
 

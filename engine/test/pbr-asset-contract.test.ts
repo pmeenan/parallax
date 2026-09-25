@@ -62,6 +62,21 @@ describe("PBR asset transport contract", () => {
       ]),
     ).toThrow(/address mode/);
   });
+  it("accepts a terrain drape reference and rejects malformed ones (D-204)", () => {
+    expect(() =>
+      validatePbrAssetPlacements([{ ...asset, terrainDrape: { referenceHeightMeters: 18.97 } }]),
+    ).not.toThrow();
+    for (const terrainDrape of [
+      null,
+      {},
+      { referenceHeightMeters: Number.NaN },
+      { referenceHeightMeters: "18" },
+      { referenceHeightMeters: 18, extra: 1 },
+    ])
+      expect(() =>
+        validatePbrAssetPlacements([{ ...asset, terrainDrape } as unknown as PbrAssetPlacement]),
+      ).toThrow(/terrain drape/);
+  });
   it("rejects malformed transforms, unexpected fields, and missing material resources", () => {
     expect(() => validatePbrAssetPlacements([asset])).not.toThrow();
     for (const value of [

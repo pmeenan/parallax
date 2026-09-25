@@ -3,7 +3,7 @@
   "mode": "periodic-surface-module",
   "assetId": "d1-photoreal-paving",
   "class": "d1-periodic-surface-module-4m",
-  "status": "QA-admitted-runtime-visual-acceptance-pending",
+  "status": "QA-admitted-runtime-visual-accepted",
   "upAxis": "Y",
   "tileMetres": 4,
   "materials": {
@@ -54,9 +54,9 @@
       "encoding": "bc7"
     },
     "ground-orm": {
-      "width": 2048,
-      "height": 2048,
-      "mipLevels": 12,
+      "width": 1024,
+      "height": 1024,
+      "mipLevels": 11,
       "colorSpace": "linear",
       "encoding": "bc7"
     },
@@ -196,8 +196,8 @@
   },
   "source": {
     "sourceProvenancePath": "assets/source/d1-paving/proof-2026-09-24/provenance.json",
-    "sourceProvenanceSha256": "905778ec96a67063e588f096f257f4f25155e8a477d9755517150bc1a26558d9",
-    "deliveryReceiptSha256": "a8c9c4c722231acd861d4e036522b579fda3abbc52af9edf61a2dc234b2c83f6"
+    "sourceProvenanceSha256": "ec1b29834a18da300cca59cab38714db0984aa73d672ee7439c1e4ede40ae5dd",
+    "deliveryReceiptSha256": "e5ef2898351c459d8fe4128eef8ec26e0ba1a1e20cdbeac7ff2896aaf9004bdb"
   },
   "provenance": {
     "schemaVersion": 1,
@@ -209,7 +209,7 @@
       "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
       "seed": 11,
       "author": "Claude (Anthropic) under human direction",
-      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks)"
+      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks) -> delivery candidate 9: candidate 8 with a height-field ambient occlusion (40 mm radius, 16 directions) baked into the ground ORM red channel (maps.py --ao-radius-mm 40), with the ground ORM packed from its 1024 authored mip level (PAVING_GROUND_ORM_SIZE=1024); every other map and all geometry are byte-identical (engine package 5)"
     },
     "inputs": [
       {
@@ -235,12 +235,12 @@
       {
         "role": "delivery-maps",
         "path": "assets/source/d1-paving/proof-2026-09-24/delivery/maps.py",
-        "sha256": "1c35cfbed05dd142dd8f4a2c8a3e59750368d584792028fe573f6773af57f67b"
+        "sha256": "3721ac63ce6cfc061e97797831b67eb2b92796696ebff03831ea8c07de5aca08"
       },
       {
         "role": "delivery-pack",
         "path": "assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs",
-        "sha256": "95b7bf0b868159b06d19f4943535b9bbf862ad72dfcf7eb9a17aa0604454b111"
+        "sha256": "aba5ed2a142be92bdc5b9ef5b77f47d222acc91be8052fcbbe12047158d859db"
       }
     ],
     "visualReferences": {
@@ -339,9 +339,9 @@
         "gpuBytes": 5592432
       },
       "ground-orm": {
-        "encodedBytes": 5592896,
-        "rgba8DecodedBytes": 22369620,
-        "gpuBytes": 5592432
+        "encodedBytes": 1398576,
+        "rgba8DecodedBytes": 5592404,
+        "gpuBytes": 1398128
       },
       "plant-basecolor": {
         "encodedBytes": 349984,
@@ -413,9 +413,9 @@
         }
       ]
     },
-    "runtimeEncodedBytes": 29885264,
-    "rgba8DecodedTextureBytes": 142606504,
-    "gpuTextureBytes": 24117504
+    "runtimeEncodedBytes": 25690944,
+    "rgba8DecodedTextureBytes": 125829288,
+    "gpuTextureBytes": 19923200
   },
   "resources": [
     {
@@ -434,10 +434,10 @@
     },
     {
       "role": "ground-orm",
-      "file": "872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f.ktx2",
-      "sha256": "872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f",
-      "bytes": 5592896,
-      "path": "objects/872bf379b8d04a611ff6c8947d68061da32df30ec89bf40aaca9114ff257f23f.ktx2"
+      "file": "1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095.ktx2",
+      "sha256": "1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095",
+      "bytes": 1398576,
+      "path": "objects/1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095.ktx2"
     },
     {
       "role": "plant-basecolor",
@@ -622,9 +622,15 @@
       "path": "objects/3c24644d2b8839fa06596f00940522b9b547b671c82f0884d2299102c93679e8.glb"
     }
   ],
-  "candidateSha256": "51a20ab45d30ab4b332e7ab3e2159ddf400491be129d385ff2fdd54ade60febd",
+  "candidateSha256": "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
   "workerRoundtrip": {
-    "sha256": "526a29155bda693284aed457023be3a7756198a41d31ec59c1c469c39eadcdc5",
-    "evidencePath": "harness/results/paving-photoreal-delivery-2026-09-24/candidate8/production-decode-receipt.json"
+    "sha256": "bcc8f50c3e8dffcfcba167468b59da246e3fd971e58555441239842eac2ff5b2",
+    "evidencePath": "harness/results/paving-photoreal-delivery-2026-09-24/candidate9/production-decode-receipt-final.json"
+  },
+  "runtimeVisualAcceptance": {
+    "candidateSha256": "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
+    "acceptedAt": "2026-09-24",
+    "acceptedBy": "human",
+    "evidence": "assets/source/d1-paving/proof-2026-09-24/lighting-results.md (installed game under the package 5 lighting, D-205)"
   }
 }

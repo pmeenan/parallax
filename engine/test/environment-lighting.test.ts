@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   quantizeAnimatedEnvironmentLightingPhase,
+  SUN_LIGHT_SCALE,
   sampleEnvironmentLighting,
 } from "../src/render/environment-lighting";
 
@@ -105,5 +106,60 @@ describe("environment lighting", () => {
     expect(animated.phase).toBe(quantizedPhase);
     expect(authored.phase).toBe(rawPhase);
     expect(quantizedPhase).not.toBe(rawPhase);
+  });
+});
+
+describe("calibrated lighting (engine package 5)", () => {
+  const luminance = (rgb: readonly number[]) =>
+    0.2126 * (rgb[0] ?? 0) + 0.7152 * (rgb[1] ?? 0) + 0.0722 * (rgb[2] ?? 0);
+
+  it("reproduces the paving source's Cycles sun and sky at 30° in clear weather", () => {
+    const day = sampleEnvironmentLighting(30 / 360, "clear");
+    // lighting/calibrate.py: white Lambert plane radiance under sun only and sky only.
+    const sunOnWhite = day.sunColor.map(
+      (channel) => channel * day.sunLightIntensity * day.sunElevation,
+    );
+    const cyclesSun = [0.7268, 0.6396, 0.5233];
+    const cyclesSky = [0.0854, 0.133, 0.2107];
+    // Within 1%: Cycles samples the 0.6° sun disc.
+    for (const [index, value] of sunOnWhite.entries())
+      expect(Math.abs(value / (cyclesSun[index] ?? 1) - 1)).toBeLessThan(0.01);
+    for (const [index, value] of day.pbrSky.entries())
+      expect(value).toBeCloseTo(cyclesSky[index] ?? 0, 2);
+    expect(day.sunLightIntensity).toBeCloseTo(SUN_LIGHT_SCALE, 12);
+    expect(day.exposure).toBeCloseTo(1, 2);
+  });
+
+  it("keeps states ordered: clear > overcast > storm > night in exposed key", () => {
+    const exposedKey = (phase: number, weather: "clear" | "overcast" | "storm") => {
+      const sample = sampleEnvironmentLighting(phase, weather);
+      const sun = sample.sunColor.map(
+        (channel) => channel * sample.sunLightIntensity * Math.max(0, sample.sunElevation),
+      );
+      return (luminance(sun) + luminance(sample.pbrSky)) * sample.exposure;
+    };
+    const clear = exposedKey(30 / 360, "clear");
+    const overcast = exposedKey(30 / 360, "overcast");
+    const storm = exposedKey(30 / 360, "storm");
+    const night = exposedKey(0.75, "clear");
+    expect(clear).toBeGreaterThan(overcast);
+    expect(overcast).toBeGreaterThan(storm);
+    expect(storm).toBeGreaterThan(night);
+    // Night stays readable: at least a tenth of the daylight key after adaptation.
+    expect(night).toBeGreaterThan(clear * 0.1);
+  });
+
+  it("bounds exposure and the ambient for every state", () => {
+    for (const weather of ["clear", "overcast", "storm"] as const)
+      for (let index = 0; index < 96; index += 1) {
+        const sample = sampleEnvironmentLighting(index / 96, weather);
+        expect(sample.exposure).toBeGreaterThanOrEqual(0.6);
+        expect(sample.exposure).toBeLessThanOrEqual(16);
+        for (const channel of [...sample.pbrSky, ...sample.pbrGround]) {
+          expect(Number.isFinite(channel)).toBe(true);
+          expect(channel).toBeGreaterThan(0);
+        }
+        expect(sample.sunLightIntensity).toBeCloseTo(sample.sunIntensity * SUN_LIGHT_SCALE, 12);
+      }
   });
 });

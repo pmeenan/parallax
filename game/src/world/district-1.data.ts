@@ -263,6 +263,21 @@ const DISTRICT_1_BASE_SPEC = freezeGreyboxData({
     // Finished courtyard: exact level 16m grid square, smoothly graded over
     // 32m outside it. Render and collision share this world-coordinate field.
     levelPads: [{ minimum: [0, 0], maximum: [16, 16], height: 18.97375, transitionMeters: 32 }],
+    // Rolling courtyard (D-204): the pad is the coarse base, and gentle crossing waves roll
+    // the paved ground by a few decimetres. Slopes stay walkable, under 10°.
+    detailRegions: [
+      {
+        minimum: [-16, -16],
+        maximum: [32, 32],
+        sampleSpacingMeters: 0.5,
+        windowMeters: 8,
+        waves: [
+          { amplitudeMeters: 0.22, wavelengthMeters: 22, directionRadians: 0.4, phaseRadians: 0.3 },
+          { amplitudeMeters: 0.14, wavelengthMeters: 15, directionRadians: 2.1, phaseRadians: 1.7 },
+          { amplitudeMeters: 0.05, wavelengthMeters: 10, directionRadians: -0.9, phaseRadians: 4 },
+        ],
+      },
+    ],
     layers: [
       {
         afterHeight: 2,
