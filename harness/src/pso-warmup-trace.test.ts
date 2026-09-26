@@ -68,8 +68,8 @@ describe("independent PSO warmup trace resolver", () => {
     );
     expect(depth?.shader).toMatchObject({
       family: "pbr",
-      vertexSha256: "dc697137e5b3aaf9dcb17fd835a870a572cc894bc234ab7ec090003eadd66dcf",
-      fragmentSha256: "4cb03f488f4136672b9b02f6bb1598e8012109c16869cf979bbfa4d00fe7a7d8",
+      vertexSha256: "294524ca0b21d73038645a244ba6188a7df92aa494b9601f423967521161aa51",
+      fragmentSha256: "cb0a2b6fedf62a81be13e510c0514c60b7a0526fda79a8fb9e892622d5e8fff1",
     });
   });
 

@@ -1466,6 +1466,16 @@ cache keys in Lite 1.12.0 through 1.31.1; public caster lists own task membershi
 flythrough diagnostics expose CPU submission, latest completed whole-frame GPU timing,
 deduplicated shadow-task timings, caster counts, and logical depth-array bytes.
 
+**Small-scale shadows (D-206).** A Parallax CSM receiver replaces Lite's for Standard and PBR
+materials; Lite has no hook, so it sets Lite's private receiver registry after the generator
+registers the stock one, and the PSO contract pins the composed WGSL. Each cascade lookup moves
+three texels of that cascade along the geometric normal, scaled by the sine of the angle to the
+light, and the caster bias is 0.06 m. Placements may leave the casters
+(`castsCsmShadows: false`): relief below CSM's resolution belongs to the surface instead. A
+periodic PBR module may carry its height in ORM.B (`ormHeight`). The sun micro-shadow plugin
+marches that field toward the sun and scales only the direct light, before the occluded ambient.
+Every streamed PBR material carries the plugin, so the PBR pipeline family stays single.
+
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box
 features by material. Single-sided downward skirts are emitted at outer/cull boundaries

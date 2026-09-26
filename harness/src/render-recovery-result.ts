@@ -560,7 +560,7 @@ function validateRenderFrame(value: unknown, label: string): void {
     `${label} rendering`,
   );
   if (
-    rendering.technique !== "directional-csm-pcf5@1" ||
+    rendering.technique !== "directional-csm-pcf5-normal-offset@2" ||
     rendering.depthArrayBytes !== 16_777_216 ||
     ![
       rendering.casterCount,

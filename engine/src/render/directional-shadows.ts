@@ -6,6 +6,7 @@ import {
   type ShadowGenerator,
   setShadowTaskCasterMeshes,
 } from "@babylonjs/lite";
+import { installNormalOffsetCsmReceivers } from "./csm-normal-offset-receiver";
 
 /** Retained M4.5 candidate. Logical depth-array bytes are not GPU residency. */
 export const DIRECTIONAL_SHADOW_CONFIG = Object.freeze({
@@ -19,11 +20,26 @@ export const DIRECTIONAL_SHADOW_CONFIG = Object.freeze({
   numCascades: 4,
   shadowMaxZ: 180,
   stabilizeCascades: true,
-  worldSpaceBias: 0.12,
+  // Caster offset in metres. With the 3-texel receiver normal offset (engine package 6), 0.06 m
+  // removes the sunlit-wall striping that 0.12 m alone left; 0.03 m brought the acne back.
+  worldSpaceBias: 0.06,
 });
+
+/** Meshes whose relief a micro-shadow height field carries instead (engine package 6). A weak set,
+ * so evicted meshes leave it with their last reference. */
+const csmNonCasters = new WeakSet<Mesh>();
+
+export function excludeFromCsmCasters(mesh: Mesh): void {
+  csmNonCasters.add(mesh);
+}
+
+const isCsmCaster = (mesh: Mesh, excluded: ReadonlySet<Mesh>) =>
+  mesh.visible !== false && !excluded.has(mesh) && !csmNonCasters.has(mesh);
 
 export function createDirectionalShadows(engine: EngineContext, sun: DirectionalLight) {
   const generator = createCsmDirectionalShadowGenerator(engine, sun, DIRECTIONAL_SHADOW_CONFIG);
+  // Replaces the stock receivers the generator just registered (engine package 6).
+  installNormalOffsetCsmReceivers();
   sun.shadowGenerator = generator;
   let casters: readonly Mesh[] = [];
   let membershipUpdates = 0;
@@ -34,12 +50,12 @@ export function createDirectionalShadows(engine: EngineContext, sun: Directional
       let index = 0;
       let changed = false;
       for (const mesh of meshes) {
-        if (mesh.visible === false || excluded.has(mesh)) continue;
+        if (!isCsmCaster(mesh, excluded)) continue;
         if (casters[index] !== mesh) changed = true;
         index += 1;
       }
       if (!changed && index === casters.length) return;
-      casters = meshes.filter((mesh) => mesh.visible !== false && !excluded.has(mesh));
+      casters = meshes.filter((mesh) => isCsmCaster(mesh, excluded));
       // Lite uses list identity to invalidate cascade tasks. Never mutate a retained list.
       setShadowTaskCasterMeshes(generator, casters);
       pruneRetiredCasterMaterials(generator, casters);
@@ -51,7 +67,7 @@ export function createDirectionalShadows(engine: EngineContext, sun: Directional
         depthArrayBytes: 4 * 1024 * 1024 * 4,
         membershipUpdates,
         retainedMaterialCount: shadowMaterialMaps(generator)?.views.size ?? 0,
-        technique: "directional-csm-pcf5@1" as const,
+        technique: "directional-csm-pcf5-normal-offset@2" as const,
       });
     },
   };

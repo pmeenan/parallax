@@ -634,6 +634,7 @@ for (const map of maps.maps) {
   let decodedBytes = 0;
   let err = 0;
   let maxErr = 0;
+  const channelErr = [0, 0, 0];
   const angles = { sum: 0, over5: 0, over10: 0, max: 0 };
   for (let level = 0; level < mapLevels.length; level++) {
     const image = Buffer.from(decoded.getImage(level, 0, 0));
@@ -650,6 +651,7 @@ for (const map of maps.maps) {
         if (i % 4 === 3) continue;
         const d = Math.abs(rgba[i] - levels[0][i]);
         err += d;
+        channelErr[i % 4] += d;
         maxErr = Math.max(maxErr, d);
       }
       if (map.role.endsWith("-normal"))
@@ -686,6 +688,11 @@ for (const map of maps.maps) {
     ),
     level0MeanAbsError: err / ((levels[0].length / 4) * 3),
     level0MaxAbsError: maxErr,
+    level0MeanAbsErrorByChannel: channelErr.map((e) => e / (levels[0].length / 4)),
+    // Candidate 10 (engine package 6): ORM.B carries the occluding height over this range.
+    ...(map.ormHeightRangeMetres === undefined
+      ? {}
+      : { ormHeightRangeMetres: map.ormHeightRangeMetres }),
     ...(map.role.endsWith("-normal")
       ? {
           level0MeanAngleDeg: angles.sum / (levels[0].length / 4),

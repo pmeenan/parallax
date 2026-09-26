@@ -88,6 +88,11 @@ zstd at rest. The build refuses anything else unless a registered client-decode 
 covers it. The packer encodes UASTC at `PAVING_UASTC_LEVEL` (default `LEVEL_SLOWER`) as the
 intermediate for its BC1 and BC7 output.
 `PAVING_GROUND_NORMAL=rgba8` keeps the lossless ground normal; the default is UASTC.
+Candidate 10 (engine package 6, D-206) writes the occluding height into the ground ORM's blue
+channel (`maps.py --orm-b-height 1`, the default; 0 restores candidate 9's metallic 0). The packer
+records its range, and preparation publishes it as the ground material's `ormHeightRangeMetres`.
+Preparation requires the range to lie inside the class height range; the engine requires a
+metallic factor of 0 for a height-carrying ORM.
 Candidate 9 (engine package 5) bakes a 40 mm height-field AO into the ground ORM's red channel
 (`maps.py --ao-radius-mm 40`, the default; 0 restores R = 1). It packs that ORM from its 1024²
 level (`PAVING_GROUND_ORM_SIZE=1024`, the default; 2048 restores candidates 1–8).

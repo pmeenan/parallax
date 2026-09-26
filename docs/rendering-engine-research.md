@@ -787,3 +787,21 @@ show a broad dark band; `after-falloff` removes it with the public
 `frustumEdgeFalloff: 0.1` setting while preserving the capsule contact shadow. Both
 captures live under `harness/results/m45-csm-integration-2026-09-04/`. This is bounded
 coverage with an edge fade, not long-distance shadows or an artistic acceptance claim.
+
+### Small-scale shadow gaps in Lite 1.31.1 (D-206)
+
+- **CSM receiver.** Lite's receiver has no normal offset or receiver-plane bias, and there is no
+  public hook to change it. The generator registers its stock fragment factories in the private
+  `lib/shadow/csm-receiver-registry.js`, which the package export map hides. Parallax imports
+  that module by path and replaces the factories after creating the generator. The PSO contract
+  pins the composed receiver WGSL, so a Lite change that bypasses the override fails warmup.
+  Candidate upstream: a receiver offset setting, or a public receiver-factory hook.
+- **Direct-light hook.** `MaterialPlugin` has no injection point inside the PBR light loop.
+  Sun micro-shadowing therefore rescales `directDiffuse + directSpecular` at
+  `CUSTOM_FRAGMENT_BEFORE_FINALCOLORCOMPOSITION`. That is exact while the sun is the only direct
+  light on PBR surfaces, and it relies on those template variable names.
+- **Screen-space contact shadows** (Lite 1.18+). They are not used, because they require
+  single-sample depth, while the renderer is MSAA 4. They also multiply the final tone-mapped
+  colour rather than the direct light.
+
+These are renderer-library gaps, not Chrome findings.

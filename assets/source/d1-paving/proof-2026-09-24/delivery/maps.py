@@ -8,8 +8,11 @@
 #                 pebble normals; runtime vertex normals are flat, so this map carries all
 #                 shading and every LOD shades identically
 #   ORM         = R ambient occlusion (--ao-radius-mm, default 40; 0 gives candidates 1-8's 1), G
-#                 roughness with pebbles at the source's 0.72, B 0 metallic. The engine applies
-#                 R to its sky/ground ambient only (engine package 5).
+#                 roughness with pebbles at the source's 0.72, B the occluding height (ground and
+#                 drawn-in pebble tops) normalised over its range (--orm-b-height 1, the default;
+#                 0 gives candidates 1-9's metallic 0). The engine applies R to its sky/ground
+#                 ambient only (engine package 5) and marches B toward the sun (engine package 6);
+#                 the paving's metallic factor is 0, so the channel is otherwise unread.
 # Plant atlas (1024 x 512): leaf0-2, grass and stem swatch, with a luminance bump normal.
 # Every mip is a 2x2 box of the level above (linear light for colour), so mips stay periodic.
 import argparse
@@ -32,6 +35,7 @@ ap.add_argument('--pebble-geometry-mm', type=float, default=9.0)
 ap.add_argument('--ao-radius-mm', type=float, default=40.0)  # 0 reproduces candidates 1-8
 ap.add_argument('--ao-directions', type=int, default=16)
 ap.add_argument('--ao-steps', type=int, default=16)
+ap.add_argument('--orm-b-height', type=int, choices=(0, 1), default=1)  # 0 reproduces candidate 9
 A = ap.parse_args(argv)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.normpath(os.path.join(HERE, '../../proof-2026-09-22/photoreal/candidate1'))
@@ -168,7 +172,7 @@ def box(x):
     return 0.25 * (x[0::2, 0::2] + x[1::2, 0::2] + x[0::2, 1::2] + x[1::2, 1::2])
 
 
-def emit(role, levels_rgba, note):
+def emit(role, levels_rgba, note, **extra):
     files = []
     for lv, rgba in enumerate(levels_rgba):
         path = os.path.join(OUT, 'mips', '%s-%02d.rgba' % (role, lv))
@@ -179,7 +183,7 @@ def emit(role, levels_rgba, note):
         files.append(dict(file='mips/' + os.path.basename(path), width=rgba.shape[1], height=rgba.shape[0],
                           sha256=hashlib.sha256(data).hexdigest()))
     write_png(os.path.join(OUT, role + '.png'), levels_rgba[0][..., :3] if role != 'plant-basecolor' else levels_rgba[0][..., :3])
-    records.append(dict(role=role, note=note, levels=files))
+    records.append(dict(role=role, note=note, levels=files, **extra))
 
 
 def chain(level0, encode, reduce):
@@ -251,9 +255,22 @@ else:
     ao_note = 'R occlusion 1'
 ao_stats = dict(mean=float(occlusion.mean()), p01=float(np.percentile(occlusion, 1)),
                 p10=float(np.percentile(occlusion, 10)), minimum=float(occlusion.min()))
-orm0 = np.stack([occlusion, orm_rough, np.zeros_like(orm_rough)], -1)
-emit('ground-orm', chain(orm0, enc_orm, box_any), ao_note + ', G roughness, B metallic 0; 2048^2 (512 texels/m)')
-del orm0, H_ao
+orm_extra = {}
+if A.orm_b_height:
+    # The occluding surface the AO saw, at the ORM's 2048^2; box mips keep it a mean height.
+    H_orm = box(H_ao)
+    h_range = [float(H_orm.min()), float(H_orm.max())]
+    orm_b = (H_orm - h_range[0]) / (h_range[1] - h_range[0])
+    orm_extra = dict(ormHeightRangeMetres=h_range)
+    b_note = 'B height over [%.5f, %.5f] m' % tuple(h_range)
+    del H_orm
+else:
+    orm_b = np.zeros_like(orm_rough)
+    b_note = 'B metallic 0'
+orm0 = np.stack([occlusion, orm_rough, orm_b], -1)
+emit('ground-orm', chain(orm0, enc_orm, box_any), ao_note + ', G roughness, ' + b_note + '; 2048^2 (512 texels/m)',
+     **orm_extra)
+del orm0, orm_b, H_ao
 
 # ---------------------------------------------------------------- plant atlas (1024 x 512)
 AW, AH, GUTTER = 1024, 512, 2

@@ -15,7 +15,8 @@
       "baseColorFactor": [1, 1, 1],
       "roughnessFactor": 1,
       "metallicFactor": 0,
-      "normalScale": 1
+      "normalScale": 1,
+      "ormHeightRangeMetres": [-0.020527616143226624, 0.011564048007130623]
     },
     "pebbles": {
       "baseColor": "ground-basecolor",
@@ -196,8 +197,8 @@
   },
   "source": {
     "sourceProvenancePath": "assets/source/d1-paving/proof-2026-09-24/provenance.json",
-    "sourceProvenanceSha256": "ec1b29834a18da300cca59cab38714db0984aa73d672ee7439c1e4ede40ae5dd",
-    "deliveryReceiptSha256": "e5ef2898351c459d8fe4128eef8ec26e0ba1a1e20cdbeac7ff2896aaf9004bdb"
+    "sourceProvenanceSha256": "6a4916c774fb2cdc23c67afaf4640038cc365a087d4258750e14c5633e5ce0f9",
+    "deliveryReceiptSha256": "e654a9e104c903500aeaa064de3cc4297fd6928e0123f3ac33aae59c109e6709"
   },
   "provenance": {
     "schemaVersion": 1,
@@ -209,7 +210,7 @@
       "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
       "seed": 11,
       "author": "Claude (Anthropic) under human direction",
-      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks) -> delivery candidate 9: candidate 8 with a height-field ambient occlusion (40 mm radius, 16 directions) baked into the ground ORM red channel (maps.py --ao-radius-mm 40), with the ground ORM packed from its 1024 authored mip level (PAVING_GROUND_ORM_SIZE=1024); every other map and all geometry are byte-identical (engine package 5)"
+      "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks) -> delivery candidate 9: candidate 8 with a height-field ambient occlusion (40 mm radius, 16 directions) baked into the ground ORM red channel (maps.py --ao-radius-mm 40), with the ground ORM packed from its 1024 authored mip level (PAVING_GROUND_ORM_SIZE=1024); every other map and all geometry are byte-identical (engine package 5) -> delivery candidate 10: candidate 9 with the occluding height (ground and drawn-in pebble tops) normalised into the ground ORM blue channel, which the paving's metallic factor of 0 leaves unread, for sun micro-shadowing (maps.py --orm-b-height 1); every other map and all geometry are byte-identical (engine package 6)"
     },
     "inputs": [
       {
@@ -235,12 +236,12 @@
       {
         "role": "delivery-maps",
         "path": "assets/source/d1-paving/proof-2026-09-24/delivery/maps.py",
-        "sha256": "3721ac63ce6cfc061e97797831b67eb2b92796696ebff03831ea8c07de5aca08"
+        "sha256": "732f331b3d427586f22cef7edc3ef9ce64f6f814a025048ef759052ed2ec5867"
       },
       {
         "role": "delivery-pack",
         "path": "assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs",
-        "sha256": "aba5ed2a142be92bdc5b9ef5b77f47d222acc91be8052fcbbe12047158d859db"
+        "sha256": "036a9008e8ac68541e2cfbdcbbcfc13ae8055ccb337edd8bcdd71b37d5c68cdc"
       }
     ],
     "visualReferences": {
@@ -434,10 +435,10 @@
     },
     {
       "role": "ground-orm",
-      "file": "1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095.ktx2",
-      "sha256": "1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095",
+      "file": "4e8aea74b9b5b4518ed997ef475f6e8e6b7a86023dcc5cb554bbb9b6b5ca7412.ktx2",
+      "sha256": "4e8aea74b9b5b4518ed997ef475f6e8e6b7a86023dcc5cb554bbb9b6b5ca7412",
       "bytes": 1398576,
-      "path": "objects/1d15ef3abc71100a337c2ad6a578490051ef33ddce6cc32b893c24d0164b3095.ktx2"
+      "path": "objects/4e8aea74b9b5b4518ed997ef475f6e8e6b7a86023dcc5cb554bbb9b6b5ca7412.ktx2"
     },
     {
       "role": "plant-basecolor",
@@ -622,15 +623,15 @@
       "path": "objects/3c24644d2b8839fa06596f00940522b9b547b671c82f0884d2299102c93679e8.glb"
     }
   ],
-  "candidateSha256": "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
+  "candidateSha256": "3c64cf17e2c15dcbc33c721ed2bccfbdc2f121eecfeaff9854c7f5a41635dabe",
   "workerRoundtrip": {
-    "sha256": "bcc8f50c3e8dffcfcba167468b59da246e3fd971e58555441239842eac2ff5b2",
-    "evidencePath": "harness/results/paving-photoreal-delivery-2026-09-24/candidate9/production-decode-receipt-final.json"
+    "sha256": "766770a6e3cb29872359d99f6dfbde1e78907c337efa97b3afbe74cf4547e254",
+    "evidencePath": "harness/results/paving-photoreal-delivery-2026-09-25/candidate10/receipt.json"
   },
   "runtimeVisualAcceptance": {
-    "candidateSha256": "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
-    "acceptedAt": "2026-09-24",
+    "candidateSha256": "3c64cf17e2c15dcbc33c721ed2bccfbdc2f121eecfeaff9854c7f5a41635dabe",
+    "acceptedAt": "2026-09-25",
     "acceptedBy": "human",
-    "evidence": "assets/source/d1-paving/proof-2026-09-24/lighting-results.md (installed game under the package 5 lighting, D-205)"
+    "evidence": "assets/source/d1-paving/proof-2026-09-25/shadows-results.md (installed game with sun micro-shadowing and the normal-offset CSM receiver, D-206)"
   }
 }

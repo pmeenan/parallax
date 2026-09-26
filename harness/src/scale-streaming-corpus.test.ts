@@ -95,8 +95,9 @@ describe("representative scale-streaming corpus", () => {
       });
       // Periodic paving inventory: models + two district indices + asset packs + cells. The
       // four rolling-courtyard cells carry 9,604 terrain detail heights (D-204), and paving
-      // candidate 9 ships its ground ORM at 1024² (engine package 5).
-      expect(materialized.population.installBytes).toBe(2649221269);
+      // candidate 9 ships its ground ORM at 1024² (engine package 5). Engine package 6 adds the
+      // courtyard placements' ORM height and CSM caster fields (2,176 bytes of cell JSON).
+      expect(materialized.population.installBytes).toBe(2649223445);
       expect(materialized.population.installResourceCount).toBe(375);
       // The installed D1 binding: index + 256 D1 cells + 29 production and 18 generated deps.
       expect(materialized.population.representativeResourceCount).toBe(304);

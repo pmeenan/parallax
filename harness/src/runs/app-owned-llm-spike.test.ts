@@ -301,7 +301,7 @@ function frames(count: number): RenderFrameSample[] {
       depthArrayBytes: 16_777_216,
       membershipUpdates: 0,
       retainedMaterialCount: 0,
-      technique: "directional-csm-pcf5@1" as const,
+      technique: "directional-csm-pcf5-normal-offset@2" as const,
       cpuSubmitMs: 1,
       gpuFrameEmaMs: null,
       shadowTaskGpuMs: null,

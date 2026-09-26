@@ -62,7 +62,7 @@ import {
   validateGreyboxDistrict,
   validateGreyboxLightingConfig,
 } from "../world/world-contract";
-import { createDirectionalShadows } from "./directional-shadows";
+import { createDirectionalShadows, excludeFromCsmCasters } from "./directional-shadows";
 import {
   type EnvironmentLightingSample,
   type LinearRgb,
@@ -77,6 +77,7 @@ import {
 } from "./gameplay-camera";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
 import { createPbrAmbientState, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
+import { NO_PBR_MICROSHADOW_SURFACE, pbrMicroShadowSurfaceFromMatrix } from "./pbr-sun-microshadow";
 import {
   createRigidTerrainDrapeField,
   createTerrainDrapeField,
@@ -161,6 +162,7 @@ function applyEnvironmentLighting(
   // live exposure read from the scene UBO before the baked AgX curve.
   copyRgb(pbrAmbient.sky, lighting.pbrSky);
   copyRgb(pbrAmbient.ground, lighting.pbrGround);
+  for (let axis = 0; axis < 3; axis++) pbrAmbient.toSun[axis] = -(lighting.sunDirection[axis] ?? 0);
   scene.imageProcessing.exposure = lighting.exposure;
   ambientLight.intensity = lighting.ambientIntensity;
   copyRgb(ambientLight.diffuseColor, lighting.skyColor);
@@ -1420,6 +1422,14 @@ export function uploadStreamingGreyboxCell(
         placement.material,
         drapeFor(placement),
         renderer.pbrAmbient,
+        placement.material.ormHeight === undefined
+          ? NO_PBR_MICROSHADOW_SURFACE
+          : pbrMicroShadowSurfaceFromMatrix(
+              sourceMatrices,
+              placement.material.ormHeight.rangeMeters[1] -
+                placement.material.ormHeight.rangeMeters[0],
+              placement.material.ormHeight.tileMeters,
+            ),
       );
       const lodMeshes: Mesh[] = [];
       const triangleCounts: number[] = [];
@@ -1445,6 +1455,8 @@ export function uploadStreamingGreyboxCell(
         enableThinInstanceDynamicDrawCount(mesh);
         setThinInstanceCount(mesh, lodCounts[level] ?? 0);
         mesh.receiveShadows = true;
+        // Relief a sun micro-shadow height field carries stays out of the CSM (engine package 6).
+        if (placement.castsCsmShadows === false) excludeFromCsmCasters(mesh);
         mesh.visible = renderer.presentationOwner === "streamed-residency" && level === 0;
         meshes.push(mesh);
         lodMeshes.push(mesh);

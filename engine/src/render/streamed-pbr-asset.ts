@@ -18,6 +18,11 @@ import type { StreamingTextureGpuFormat } from "../streaming/streaming-protocol"
 import type { PbrAssetPlacement } from "../world/pbr-asset";
 import type { WorldVec3 } from "../world/world-contract";
 import { createPbrAmbientPlugin, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
+import {
+  createPbrSunMicroShadowPlugin,
+  NO_PBR_MICROSHADOW_SURFACE,
+  type PbrMicroShadowSurface,
+} from "./pbr-sun-microshadow";
 import { createTerrainDrapePlugin, type TerrainDrapeField } from "./terrain-drape";
 
 /** Streamed PBR vertices: float32 position, normal and UV, interleaved as meshopt decodes them. */
@@ -128,6 +133,18 @@ export function groupPbrAssetPlacements(
       m.normalScale,
       m.textureAddressMode ?? "clamp-to-edge",
       placement.terrainDrape?.referenceHeightMeters ?? null,
+      placement.castsCsmShadows ?? true,
+      // Micro-shadow gradients follow the group's orientation, so height surfaces group by it.
+      m.ormHeight === undefined
+        ? null
+        : [
+            m.ormHeight.rangeMeters,
+            m.ormHeight.tileMeters,
+            placement.rotationXRadians ?? 0,
+            placement.rotationYRadians,
+            placement.rotationZRadians ?? 0,
+            placement.scale,
+          ],
     ]);
     const group = groups.get(key);
     if (group) group.push(placement);
@@ -172,12 +189,14 @@ export function selectPbrAssetLod(
 }
 
 /** All runtime surfaces and the warmup fixture use precisely the same PBR features and plugins:
- * the terrain drape (D-204; rigid placements bind the zero field) and the occluded ambient. */
+ * the terrain drape (D-204; rigid placements bind the zero field), sun micro-shadowing (engine
+ * package 6; surfaces without height bind a zero range) and the occluded ambient. */
 export function createStreamedPbrMaterial(
   textures: Readonly<{ baseColor: Texture2D; normal: Texture2D; orm: Texture2D }>,
   factors: PbrSurfaceFactors,
   drape: TerrainDrapeField,
   ambient: PbrAmbientState,
+  microShadow: PbrMicroShadowSurface = NO_PBR_MICROSHADOW_SURFACE,
 ) {
   const material = createPbrMaterial({
     baseColorTexture: textures.baseColor,
@@ -193,7 +212,11 @@ export function createStreamedPbrMaterial(
     // lights, Standard materials and the ambient plugin use radiance on white (engine package 5).
     directIntensity: Math.PI,
   });
-  material.plugins = [createTerrainDrapePlugin(drape), createPbrAmbientPlugin(ambient)];
+  material.plugins = [
+    createTerrainDrapePlugin(drape),
+    createPbrSunMicroShadowPlugin(ambient, microShadow),
+    createPbrAmbientPlugin(ambient),
+  ];
   return material;
 }
 

@@ -1,0 +1,734 @@
+{
+  "scenario": "terrain-conforming-paving-capture@1 (package 4 script)",
+  "budgetAuthority": "none: focused inspection; remote-desktop timings are advisory",
+  "browser": "Chrome 152.0.7977.54",
+  "runs": {
+    "baseline": {
+      "dir": "baseline",
+      "build": "eb482d02…",
+      "session": "physical console",
+      "note": "package 5 build, clean commit 42b9903",
+      "buildManifestSha256": "eb482d02013e9328645aa9d3fff9825e24b2e38484a13550f2cd26d9a276597b",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": null
+      },
+      "canvas": "3841x2161",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 2.895,
+          "shadowTaskGpuMsP50": 1.18,
+          "pngSha256": "497bdee37a9addd38f9c8131e2a2465dab8d628fc78e5fa0e9546a967348747b"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.503,
+          "shadowTaskGpuMsP50": 2.359,
+          "pngSha256": "38e651151ac3fc5f2260913ba4e708d9785b49b23329ed24b36acc254d11db04"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 5.704,
+          "shadowTaskGpuMsP50": 2.556,
+          "pngSha256": "d52a6f7b2e9d7864caf6f7e337178ea37baaca7eab1e0cf1a32283fc24291233"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 5.861,
+          "shadowTaskGpuMsP50": 2.621,
+          "pngSha256": "6c91019621efc8b612c38601cb80f5be199c1e43214bceb37d94d1dd63cf4963"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 5.834,
+          "shadowTaskGpuMsP50": 2.359,
+          "pngSha256": "8aab331d59ef2a16112f6130fc6c58d870274e7ef09d68857c8dd9e3c954416e"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 5.754,
+          "shadowTaskGpuMsP50": 2.425,
+          "pngSha256": "b8a376a40ebacf8e4047331dbfe35e448e191b598badc2ff42ed83fb20801c9a"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.522,
+          "shadowTaskGpuMsP50": 2.294,
+          "pngSha256": "222d3429e3475309e7c3321654b5c46e9502b706bf00ffbc8e5bad923734fd1a"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 2.189,
+          "shadowTaskGpuMsP50": 0.459,
+          "pngSha256": "c802c954c51b0eb8c75ee6cebe3bec7017311b1a2440a486b179c4fc2da37a81"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 5.408,
+          "shadowTaskGpuMsP50": 2.097,
+          "pngSha256": "916a65d8cbb21de1bb16133e1ab92addb1ff24501f6124f032eb06f8c95b5125"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 5.281,
+          "shadowTaskGpuMsP50": 2.228,
+          "pngSha256": "351d266e0d6e44ae727241e37d20e92e8e4df398fc1c2993add34abef8fb85ac"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 5.496,
+          "shadowTaskGpuMsP50": 2.884,
+          "pngSha256": "208986381f2f1ab7ad905799be797739f045f83340e493453eb1eed6f1303fdc"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 5.517,
+          "shadowTaskGpuMsP50": 2.753,
+          "pngSha256": "f2460647591272a065768b96858754c6271b28fb8896bd6f1adea3098ed4ed45"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 5.525,
+          "shadowTaskGpuMsP50": 2.425,
+          "pngSha256": "3c75a266953792fe19b55c007ebc051472d90f093ff1e67f25f51ebe4cdb5425"
+        }
+      }
+    },
+    "microshadow": {
+      "dir": "microshadow-4k",
+      "session": "physical console",
+      "note": "micro-shadow and 1.5-texel receiver at 0.12 m bias; all casters",
+      "buildManifestSha256": "373ebf3aec9b70adf1bcc0b18c4198c10b073c66ddf707f3f86704c6c11f9355",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "51bdbc773a4d13c597a2be692c810812ce61dc0572b574ea574cc5c70660b824"
+      },
+      "canvas": "3841x2161",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 3.206,
+          "shadowTaskGpuMsP50": 1.18,
+          "pngSha256": "e2108c498b5e7676b91c2c404d67f6a348406302873529e326cba5288493c6b6"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.401,
+          "shadowTaskGpuMsP50": 2.097,
+          "pngSha256": "ba3d7baeb10a94edff06be8913090b52bcef57fbc5f5086ff0347997992c6195"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 5.8,
+          "shadowTaskGpuMsP50": 2.425,
+          "pngSha256": "6143099af229453d25f4285a314faff2fa7906f5b6a6bea0a5b3a3292143e7c0"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 5.495,
+          "shadowTaskGpuMsP50": 2.294,
+          "pngSha256": "2e1ab96ee9cd6b6a87bc48a3b9c7311d42a04e0a93dc62ca0fa10a5b1021877d"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 5.884,
+          "shadowTaskGpuMsP50": 2.163,
+          "pngSha256": "86b04e2a282a5ae452c6eb8f99e42d854ce139f902fa0c33b3c73be3dc37a0ef"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 5.813,
+          "shadowTaskGpuMsP50": 2.228,
+          "pngSha256": "7a9cf1c75514ade4bb117eb527feadfd7292c49dc67e87424d0e68dfa336c71d"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.625,
+          "shadowTaskGpuMsP50": 2.097,
+          "pngSha256": "03fbfc511f015ffd03119bdd4a54c82fd2aabf2afc85660d4ee6d14874efac07"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 2.715,
+          "shadowTaskGpuMsP50": 0.59,
+          "pngSha256": "1e129d6eff717c2c65f675589d0bc89a9270cd2130b4f2f427ff0bde608117ef"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 5.626,
+          "shadowTaskGpuMsP50": 1.835,
+          "pngSha256": "bd74056b4470d41dab7e052fc7439fc86bb194d577352cb02ddd9bc219c4aba4"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.903,
+          "shadowTaskGpuMsP50": 1.769,
+          "pngSha256": "8e32df63ed969788e1be45b7d7d8c4914084457a33129f505ae18ddd485cfb67"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 5.514,
+          "shadowTaskGpuMsP50": 2.687,
+          "pngSha256": "fe0dc60a84c6851cb44e5ea179d6ee94d7f1ddbc9f075f47e594c921c6d08dd9"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 5.575,
+          "shadowTaskGpuMsP50": 2.621,
+          "pngSha256": "cdb902b7f61b3983ba59d7359d7bc0699a81aa5834761d128ef040e7e7c0cd36"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 5.574,
+          "shadowTaskGpuMsP50": 2.163,
+          "pngSha256": "7d246c24675ae6908df5505112e874e7c34991c75a190b2ebfa84a4130326b20"
+        }
+      }
+    },
+    "castersAll": {
+      "dir": "casters-none",
+      "session": "remote desktop",
+      "note": "final shader, 0.12 m / 1.5 texels, all casters",
+      "buildManifestSha256": "d902e58c18dc2c2f24eb9ea3ff0e4d0a2c860750b2a423a2ed114383a7d213c4",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "7951e913891cbe86a47c2ea03fc6cf9dfe112cbf56206d9e25eabb60637b4d4c"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 5.674,
+          "shadowTaskGpuMsP50": 1.114,
+          "pngSha256": "d09f8b9f03054c4f3d81bf2d8a4cf1f9220a770a9e65e5f441c424bf129b5050"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.233,
+          "shadowTaskGpuMsP50": 1.114,
+          "pngSha256": "042643d9190358c9087118110d7ab48e80333f562a96876d38a7322044cf5188"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 5.174,
+          "shadowTaskGpuMsP50": 1.114,
+          "pngSha256": "a295eb3f4b04a00cfea5ba5b16584400e64545a8746a38ab50fa1956be83b0b8"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 5.035,
+          "shadowTaskGpuMsP50": 1.114,
+          "pngSha256": "67f54e62b1bfad342c31acbb7dd8c2dcefa4a3def404246f562fa1540965993f"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 5.463,
+          "shadowTaskGpuMsP50": 1.049,
+          "pngSha256": "fbc19c650784628cce3feca320eb434e3646da6eb5dd5a3b4c7b6568723820b2"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 5.852,
+          "shadowTaskGpuMsP50": 1.114,
+          "pngSha256": "55e9faa95c8473ebac253d54e9fc24316254d1e9606b36ef17edfb0a995f4e3e"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.45,
+          "shadowTaskGpuMsP50": 1.049,
+          "pngSha256": "a9b4913f3c7648508af43638f6e29169892afe2c5c95ca793538b588a1c657ca"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.107,
+          "shadowTaskGpuMsP50": 0.262,
+          "pngSha256": "6dbedaca764d93e0af6b0255af017aa4cd64c9d58a44efd7187750c5d87d694e"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 3.732,
+          "shadowTaskGpuMsP50": 0.59,
+          "pngSha256": "fd494d9266da56c8129bdf9550bef1640064937afe08341f5819c828dc236c45"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.085,
+          "shadowTaskGpuMsP50": 0.786,
+          "pngSha256": "b332d963574891dda03cb7c50f1ef0ae6b649c04dba87292fe6ce27b22eeffb3"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 4.411,
+          "shadowTaskGpuMsP50": 1.245,
+          "pngSha256": "a2546c7018d8c775974609dc2804971ec38299f1e24740fe70cfdd7bdb8b7ebc"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 4.67,
+          "shadowTaskGpuMsP50": 1.245,
+          "pngSha256": "712228a8d9f9d6702163425a8e405964dd909a2ec7020138bec9be52bd25badf"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.82,
+          "shadowTaskGpuMsP50": 0.983,
+          "pngSha256": "c7e41bde1509a870636c635bee21b67ab20a952666fddc65a1371f9d4fb6a6c7"
+        }
+      }
+    },
+    "castersNoGround": {
+      "dir": "casters-ground",
+      "session": "remote desktop",
+      "note": "ground excluded",
+      "buildManifestSha256": "ec8eb32799a452c9c1b43ec15daf019614eeb0909ad1f6dc8008b19b6946642f",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "62bbabb8a177516d9f0d0ddc3c27f7fad3cec9a28fe494fc5f641d07830b85db"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.827,
+          "shadowTaskGpuMsP50": 0.328,
+          "pngSha256": "bf7e2f5948b4c5fad1e0df144974b2a65d4f2355783dd4767a2e64b6345dc420"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.635,
+          "shadowTaskGpuMsP50": 0.393,
+          "pngSha256": "0b6f302b07ab55bc1985d89606cbabdee89e11bafda8b9ac0c7b37679a4fe79e"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 4.908,
+          "shadowTaskGpuMsP50": 0.393,
+          "pngSha256": "7682bea341e69543b768e725db198e1fa5be8d94bdf081653c31812cff322528"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 4.8,
+          "shadowTaskGpuMsP50": 0.393,
+          "pngSha256": "87f0ba9867bd51900107d213519726b30799dd8e323014ad3d91e1cd9eacfc22"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 4.795,
+          "shadowTaskGpuMsP50": 0.328,
+          "pngSha256": "48c7f227ea6622c0b294f938e65ab86e0513331ff00bc81878d9b309a8b1e854"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 4.937,
+          "shadowTaskGpuMsP50": 0.393,
+          "pngSha256": "87edb29e751cbda47d20fc7e3ced5de6661870177f60f063f4902cd011c2b8a3"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.096,
+          "shadowTaskGpuMsP50": 0.328,
+          "pngSha256": "e8fbd2985476e2982e90d79ee69123fb8af2542f56740ed73812896005227bdf"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.799,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "819c8f596273eb6ecbd62822b9b87d0028f618d338dcec06ae663fd4a067994a"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 4.98,
+          "shadowTaskGpuMsP50": 0.262,
+          "pngSha256": "84bcc19c9f3c7abc09b7aff2e7116d4441a998439f62a8f4db8fc6723ffb7c1c"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.475,
+          "shadowTaskGpuMsP50": 0.262,
+          "pngSha256": "0e965c9b78ac05b0953bb3ff920a3f8efb1da8764cca27398a8e5cdf037ae535"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 4.301,
+          "shadowTaskGpuMsP50": 0.459,
+          "pngSha256": "8eb9465a10a554f965a53a93d199655a0dc757a19ecacd385165249024535059"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 3.749,
+          "shadowTaskGpuMsP50": 0.262,
+          "pngSha256": "ee3c3bd2aab26f4e924efce3942c781dbecba73521bf858a1926fc390a532473"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.778,
+          "shadowTaskGpuMsP50": 0.328,
+          "pngSha256": "6c89aebc41309705446e07d0cb4ea1db02ec528144f2f5263ed87685a07af9b3"
+        }
+      }
+    },
+    "castersNoGroundPebbles": {
+      "dir": "casters-ground,pebbles",
+      "session": "remote desktop",
+      "note": "ground and pebbles excluded",
+      "buildManifestSha256": "dc5fed67f0694fa3bef269138fb173da848343e4ef06b11016d60ac02bcc07c5",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "3f7610e64de39efe8540f2a23a3a7aa51fc8015a976ef3fe7a25c7fc0cd7eb3c"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.907,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "d849d33cac7e096b1b2969b9cd7e5579e40824e1cda415e5a2adb285e4ad290a"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.096,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "0f75585ae16a54c4795a7e77aa1b9d740cd81d7873ecd9394ce37318728f8a65"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 4.787,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "733a31d45b0a7a9639cccf1f83292ecf4e80bcb4f0f98d9fd7d669cdd939652f"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 5.291,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "1937ffdcaab0e300eca15cbdddc312198ebf1edd424d92121235707bc23cf0ff"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 5.009,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "be4aa78031e091a3106c8eeb4f6cfbbec54bb22f12e943a564f41962fcf1c1c9"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 4.945,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "0995e0d433b622b016d6e0148d971f477bc2c7393ba530099e5f02b696d53c40"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.456,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "18065b42c8dcf3880a529b34afa8fc77a05c209a563b68d91485be9c8229f197"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.197,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "cfb53554003d9eec88edb9dd18d19273e1628171821e14475c6d2aeb3a823d43"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 3.089,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "21aa5418ac8a5db270f1b1e038ab04c839bfef9fc97e9c5e857c0b24420fe919"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.179,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "78dcf756a73e267ab80c1d9cff3392677b2c4bb5efdd59f408039fc2991ba0f6"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 2.517,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "ff37f136f276ae5a1a24a71a9874ad17115fcb88d1f865d03b6f42cdd2bdda18"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 3.415,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "576e0623e09b91245b46d4d847d951833be6e082f24a6148387e1ba8dc4df8ed"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 5.084,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "9e41d131cb7df65addb70a597faaa5c6e67d39d190317d004504196defd5ec41"
+        }
+      }
+    },
+    "castersNoPaving": {
+      "dir": "casters-ground,pebbles,plants",
+      "session": "remote desktop",
+      "note": "all paving parts excluded",
+      "buildManifestSha256": "37e91503a71bb7e2913cfad0282af45c666590072634fd04e9f3106cfdb7fb53",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "c1994ec5aca932ad5a87728df8237e483ce0cca8e466a14865f387ceba7e3ebd"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.825,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "381bd5a975372b827ff5b468793e7146985b45f8cc7fb20f6a7a691aaf99809e"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 4.776,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "fddb15305edbaf10297873e11f10fab0c58f20f9ff1c3250f129737ac574d0b6"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 4.781,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "b59825c1c93dcd53017a5b44ae51f4885f0e73147bdec64466a7ce744e946962"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 4.595,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "945d6a4b89c002a16563a65889557e9193ae522bf5f936526e3f8dc342479fdd"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 4.87,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "744a6f89ef029eba760073b62c63d484c9568ce7acb39bd0b1df49864cb91e5e"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 5.293,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "52a71d7e99cc2261e0619bda55d3b56d8d3f96fde8e65c0062e6103e7e27a0e0"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.106,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "a35eefbecb2029fe9846ef15cbd73ebea9e7cc3c30c5116feb7f7f55d7fcd6ba"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.217,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "1f9cd3896e7de37e4e8b9d0714475175f54c2c7dfe444db5c93031e3f4fb46c4"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 4.205,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "b1b7d8ed66299d49a3b7fc1a7959b634c8fec30263708d50101083f1ed3f4018"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.118,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "f0c4044720b66d24a3c586d25e22f5b3108a42bf5e1d1f22c68a7a94f7cd34a0"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 3.622,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "d6a29144a375a7ee518f2e97abe1a606d3aee6e336bcdc6935163ae79714332f"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 3.098,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "52f840c685ca6ed80a30eca029bd8bef697f7f0495bc592f3c238c7cc1b2b944"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.845,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "40d5ad4839bc0e00b7363b911f0aac0b39f4e49993ab98c3862adf4cd161d5fd"
+        }
+      }
+    },
+    "bias003": {
+      "dir": "bias-0.03-offset-1.5",
+      "session": "remote desktop",
+      "note": "rejected: acne",
+      "buildManifestSha256": "26b5f7a6536955030039f7d272aede1567e0bf8fa3c5f7fd92cf0e3e2543a920",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "248d004740b3848b1037d34905d35ed258c917d7b59f5ec8401f3f4df15f2b58"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.858,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "1ee6c9ae9722ea2767874610834bf4f09d884de426452325e66d391c98ad9d38"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 4.889,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "d83d0725d15728400616d60cf583f962baa1713dc37489cdf6f5ccdfa30ed701"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 5.465,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "0e12dd7aadca8a8a6d3e47a6b3963e75d0a1256fbca1557d9e0fa1bf49f9ce7c"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 4.997,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "e717ce0cdc88ceaf5cfa364248fd60d296aac8cc16b07d2a22495af4f9e81c18"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 4.597,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "df1d011766a2d6e22773dc7cd6bc6a4399cca358de2cb6fed5671e6cc1e559bf"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 4.989,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "0dd5d207fa088f1703ec52797ee7f873b6ea3af1c7f7245dc7d93e1366519393"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.016,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "d6332ca5c1a27b0a9002d62f1c76c18018f8b13e916855167bcf0fdfd95eb067"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 2.86,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "422a56bf250381fa2fa4f9c84a21c37d917bff292a48d94efe87989cdd015ea4"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 3.06,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "ce09cd56505955fa44065321b8585085b74f3f02c8e027fedec886f96fa8bc54"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.211,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "c4277c2e43820c77a5f50f27fa9136ff19bb4bc555a1b3007606b9b9cf1237e7"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 4.009,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "163ec36dd286694d41ac7b338ce2492fb02d79e1e6d293c51d8849000a217a96"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 3.265,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "c8ee5d9e8ec7ad017544424356b0ae38fa2419b2cfbb32033b8628f093d745a0"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.495,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "4f238bc790606ea060e62159003e5e96ca23da44aa2192d09b06cc8e7180eff5"
+        }
+      }
+    },
+    "bias006": {
+      "dir": "bias-0.06-offset-3",
+      "session": "remote desktop",
+      "note": "adopted parameters, penumbra 0.08",
+      "buildManifestSha256": "1ff3e2485ab8b793f733e53d2076686a71a41160cc1c569e8690bfe7318db6bb",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "d6230ce5bbc2f89c57e9361229753ea507e23cd7a4b8305ba43ecca4a1544fe1"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.503,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "c07d6fb2182bf17588a726510d88312ec2db36c5be2a3fc146a71d140b858810"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 4.959,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "374b40bc9fe3f964daac7e80a5184c53ec3daec294c4cdb6de408bb6586fdde7"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 4.445,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "09f07d0241246e4513497403f0794a4b04386bd104450fb6fdf84fc9fbe81ad3"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 4.672,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "ecaed985da06991eb1c7510a4762fff3dd1bb691f5c95cf71fa07ad83156a45b"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 4.457,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "187eef8a00ed5dfddb5a7c57483f1d6f2bdd03701ecd13ec0d05783571e9af7a"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 4.618,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "23c97a8171443b5b2b1a32cea2ffefcbef8a861efd8e43af55c50aa0e08fd0bf"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 4.974,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "4497b4396e96eb1e180573852b78e45286be657c518e94c6d17196bd32385de0"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.152,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "c366e6cd2488a71608982b51ec50321214a57d461b5b3c231abf8a6fcb9d35af"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 5.182,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "b9567045888392dbc2dfd3047fd83380719349021bbed03b29a3a3447ea6d6d5"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 4.326,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "bef1849325f446e4cf50663472d8b344dfbc163d8edfcfd79ff83c80bf38e4c3"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 2.522,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "5f57321529713d41f0e713e2879a9869399a4b6f71d2ab341dfbfb2fd2e7ccb3"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 4.617,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "9094d79769287f762cf29d7e6f543c3c33e64d260ac524487f45a95ab01ff49b"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.686,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "890994be227f6abe6ca147a4f7b5600e99681dae071e2c3f441b830e21366483"
+        }
+      }
+    },
+    "final": {
+      "dir": "final",
+      "session": "remote desktop",
+      "note": "final build, penumbra 0.03; pixel-identical to the pre-lint build ae29ee24…",
+      "buildManifestSha256": "8439134ab4896e162186fed22fb12393d99e4a4b7058de7cbb54a27c01018535",
+      "source": {
+        "commit": "42b9903cfeaa2786361b8e6e60a8f4a18d207436",
+        "dirtyTreeDigest": "b956fca124ef0cc3e92ff890ce828903817297dbd75e195f17c46531f7a69946"
+      },
+      "canvas": "6017x3386",
+      "browserErrors": 0,
+      "views": {
+        "walking": {
+          "gpuFrameEmaMsP50": 4.712,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "ca96ee7b08dcb2b275086c66919e3a56a68e1fffb0a5e6d84bdcc440bfb215d3"
+        },
+        "walking-matched": {
+          "gpuFrameEmaMsP50": 5.157,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "37617d43ccc134697d2b4c0e0ad41e51a995ad207cbe6055e6ba1c2b71b63672"
+        },
+        "close": {
+          "gpuFrameEmaMsP50": 4.856,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "62dbcd0d1d503f47329a967b49f892bcaff401c526d151b59d9599c28c11ed13"
+        },
+        "joint": {
+          "gpuFrameEmaMsP50": 4.729,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "5d886a2033bc15fe660c205d039dad4693501cbae4513397a24a49c13687ea80"
+        },
+        "grazing": {
+          "gpuFrameEmaMsP50": 4.577,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "6ae0fc5be258f9db18a10da9f394cbeecf5cc5d0ee0921a3a998f2c7d958d2d5"
+        },
+        "overcast": {
+          "gpuFrameEmaMsP50": 5.03,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "abb12f7d2bc121c618a43a9bbc353196de3c64455dff3425007d63137c4661cd"
+        },
+        "courtyard-overview": {
+          "gpuFrameEmaMsP50": 5.251,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "30d46b2f6932b0d4c1b75e8d357dacd13dba6bc60960cfada246a2c0186f52a2"
+        },
+        "courtyard-far": {
+          "gpuFrameEmaMsP50": 3.191,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "c4333bd5443fce6c9ae26f86d41402e3fc27604686aa631481280781c1f25823"
+        },
+        "rolling-across": {
+          "gpuFrameEmaMsP50": 3.2,
+          "shadowTaskGpuMsP50": 0.066,
+          "pngSha256": "783d729c58c9e0f77222e5cc92205e9e100080171c7b7e7588d20c5745c95cfa"
+        },
+        "rolling-grazing": {
+          "gpuFrameEmaMsP50": 3.754,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "a06ea9d2921a80aa6d569c54c07377e636aa27b66767585a008fbd4199e9e6ed"
+        },
+        "crest": {
+          "gpuFrameEmaMsP50": 4.277,
+          "shadowTaskGpuMsP50": 0.197,
+          "pngSha256": "7f1a853a90129fbb7c361f6da4a4a7075b4bd7267cfad97f85f5b61a18a53f84"
+        },
+        "dip": {
+          "gpuFrameEmaMsP50": 3.169,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "7a4f59c1700c2d5b2caa771915d7d0d6ca95406c80110244a988d2e17bafa1e0"
+        },
+        "edge-seam": {
+          "gpuFrameEmaMsP50": 4.584,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "0f0a6307624b8a89c195268afd66a173153b959512c02396738cf5517f24a087"
+        },
+        "dusk": {
+          "gpuFrameEmaMsP50": 5.959,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "fec83472077b1ce32d3060e51147fe3b8b86bed42e5facc30f4147dc8fe92203"
+        },
+        "night": {
+          "gpuFrameEmaMsP50": 4.283,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "9dd160f1e80742aec268d68da36eb620421c890803794e1ac2c58540838d3eaa"
+        },
+        "storm": {
+          "gpuFrameEmaMsP50": 5.23,
+          "shadowTaskGpuMsP50": 0.131,
+          "pngSha256": "24e94a6bb7982c5a3e24e2a38cf284e6fb5f2e78a25f714dd9b5802b552d0e1e"
+        }
+      }
+    }
+  }
+}

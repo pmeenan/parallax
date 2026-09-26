@@ -261,6 +261,33 @@ describe("periodic surface module packaging", () => {
       undefined,
     );
   });
+  it("carries the ORM height range and the CSM caster flag (engine package 6)", () => {
+    const heightLibrary = {
+      ...library,
+      manifest: {
+        ...library.manifest,
+        tileMetres: 4,
+        materials: {
+          ...library.manifest.materials,
+          ground: { ...library.manifest.materials.ground, ormHeightRangeMetres: [-0.02, 0.012] },
+        },
+      },
+    };
+    const [ground, pebbles, plants] = resolvePbrAssetsForCell(
+      cell,
+      [
+        { ...tile(6, 6, "ground"), castsCsmShadows: false },
+        { ...tile(6, 6, "pebbles"), castsCsmShadows: false },
+        tile(6, 6, "plants"),
+      ],
+      heightLibrary,
+    ).cell.pbrAssets;
+    expect(ground.material.ormHeight).toEqual({ rangeMeters: [-0.02, 0.012], tileMeters: 4 });
+    expect(ground.castsCsmShadows).toBe(false);
+    expect("ormHeight" in pebbles.material).toBe(false);
+    expect(pebbles.castsCsmShadows).toBe(false);
+    expect("castsCsmShadows" in plants).toBe(false);
+  });
 });
 
 describe("terrain-conforming placements (D-204)", () => {

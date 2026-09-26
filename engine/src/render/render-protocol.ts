@@ -21,7 +21,9 @@ export type { GreyboxSceneConfig } from "../world/world-contract";
 
 export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
 // @2 (engine package 5, D-205): calibrated sun, occluded PBR ambient and baked AgX tone mapping.
-export const RENDER_LIGHTING_MODEL = "calibrated-sun-occluded-pbr-ambient-agx-csm@2" as const;
+// @3 (engine package 6, D-206): sun micro-shadowing and the normal-offset CSM receiver.
+export const RENDER_LIGHTING_MODEL =
+  "calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@3" as const;
 
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;
@@ -157,7 +159,7 @@ export interface RenderFrameSample {
     depthArrayBytes: number;
     membershipUpdates: number;
     retainedMaterialCount: number;
-    technique: "directional-csm-pcf5@1";
+    technique: "directional-csm-pcf5-normal-offset@2";
     cpuSubmitMs: number;
     /** Lite 1.31.1 EMA (0.8 previous + 0.2 latest) of the instrumented frame interval, not a raw duration. */
     gpuFrameEmaMs: number | null;

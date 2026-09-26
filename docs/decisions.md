@@ -28,7 +28,53 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
-## D-205: Lighting is calibrated to the approved source's Cycles lighting; PBR gets occluded ambient and AgX tone mapping (2026-09-24, accepted; human visual acceptance 2026-09-24)
+## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25)
+
+**Decision:**
+- **Sun micro-shadowing.** A periodic PBR module may carry its height in ORM.B, which the paving's
+  metallic factor of 0 leaves unread. The material declares it as `ormHeight` (the metres B spans
+  and the tile its planar UVs cover). The `parallax-pbr-sun-microshadow` plugin marches that
+  field toward the sun in 12 steps, with a cone penumbra, and scales only the direct light,
+  before the ambient term. Every streamed PBR material carries the plugin, so they still share
+  one pipeline; materials without height write a zero range.
+- **CSM receiver.** Parallax replaces Lite's CSM receiver fragment for Standard and PBR materials.
+  Each cascade lookup moves along the geometric normal by 3 texels of that cascade, scaled by the
+  sine of the angle to the light. The caster bias falls from 0.12 to 0.06 m.
+- **Caster set.** Placements may declare `castsCsmShadows: false`. The paving ground and pebbles do,
+  because the ground's height field holds them; the plants keep casting.
+- **Asset.** Paving candidate 10 (`3c64cf17…dabe`) is candidate 9 with the occluding height in
+  ORM.B. It has the same bytes and GPU memory.
+- **Identities.** The lighting model is `calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@3`
+  and the shadow technique is `directional-csm-pcf5-normal-offset@2`.
+
+**Context:** [Engine package 6](../assets/source/d1-paving/proof-2026-09-25/shadows-results.md).
+CSM cannot resolve 3 cm of relief: its texels are centimetres wide, and its bias exceeded the
+relief. Lite 1.18's screen-space contact shadows need single-sample depth (the renderer is
+MSAA 4). They also multiply the final colour, not the direct light, and see only rasterised
+depth. Lite has no receiver hook, so the replacement reaches its private registry. The PSO
+contract pins the resulting WGSL, so drift fails warmup. Results:
+- **Grass and walls.** The grass acne and the sunlit-wall striping are gone.
+- **Joints.** A 12° sun now casts stone-edge shadows into the joints.
+- **Cost.** The CSM task fell from 2.1–2.9 ms to 0.07–0.20 ms, because the 180k-triangle paving
+  ground no longer renders into four cascades; no pixel changed. The micro-shadow is within GPU
+  noise.
+
+**Consequences:**
+- **Joint darkness.** D-205's attribution was wrong. Direct sun shadows cover 1.6% of the
+  shipped field at a 30° sun (2.3% at the source's 4096² resolution) and 7.4% at 12°. The joints
+  staying lighter than Cycles is mostly not direct shadowing, and remains open.
+- **Direct light.** The plugin treats all PBR direct light as sunlight. Local lights (night and
+  storm, delivery step 2) need their own term or an exclusion.
+- **Lite upgrades.** A Lite upgrade must re-check the private receiver registry and the
+  template's `directDiffuse`/`directSpecular` names. The composed-WGSL pins catch drift.
+
+**Reopen if:** Lite exposes a receiver or light-loop hook, the joint gap is traced to a cause the
+height field should carry, local lights reach PBR surfaces, or a height-carrying asset needs a
+metallic channel.
+
+---
+
+## D-205: Lighting is calibrated to the approved source's Cycles lighting; PBR gets occluded ambient and AgX tone mapping (2026-09-24, accepted; human visual acceptance 2026-09-24; joint-gap attribution corrected by D-206)
 
 **Decision:**
 - **Calibration.** The sun and sky are calibrated to the paving source's Cycles lighting,

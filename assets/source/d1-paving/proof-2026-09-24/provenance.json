@@ -8,7 +8,7 @@
     "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
     "seed": 11,
     "author": "Claude (Anthropic) under human direction",
-    "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks) -> delivery candidate 9: candidate 8 with a height-field ambient occlusion (40 mm radius, 16 directions) baked into the ground ORM red channel (maps.py --ao-radius-mm 40), with the ground ORM packed from its 1024 authored mip level (PAVING_GROUND_ORM_SIZE=1024); every other map and all geometry are byte-identical (engine package 5)"
+    "lineage": "photoreal/candidate1 source (human-approved 2026-09-22) -> delivery candidate 5: candidate 4 (accepted 2026-09-24) with its UASTC maps re-encoded at LEVEL_SLOWER for BC7 GPU transcoding, selected by PAVING_GROUND_NORMAL -> delivery candidate 6: candidate 5 with 3D pebble shells from 11 mm and 40-degree crease-angle pebble normals (pebble A/B accepted 2026-09-24) -> delivery candidate 7: candidate 6 with its base colours transcoded at pack time from the same UASTC encode to BC1, and the ground normal packed from its 2048 authored mip level -> delivery candidate 8: candidate 7 with every remaining UASTC map pre-transcoded to BC7 by the pinned Babylon uastc_bc7 transcoder (identical blocks) -> delivery candidate 9: candidate 8 with a height-field ambient occlusion (40 mm radius, 16 directions) baked into the ground ORM red channel (maps.py --ao-radius-mm 40), with the ground ORM packed from its 1024 authored mip level (PAVING_GROUND_ORM_SIZE=1024); every other map and all geometry are byte-identical (engine package 5) -> delivery candidate 10: candidate 9 with the occluding height (ground and drawn-in pebble tops) normalised into the ground ORM blue channel, which the paving's metallic factor of 0 leaves unread, for sun micro-shadowing (maps.py --orm-b-height 1); every other map and all geometry are byte-identical (engine package 6)"
   },
   "inputs": [
     {
@@ -34,12 +34,12 @@
     {
       "role": "delivery-maps",
       "path": "assets/source/d1-paving/proof-2026-09-24/delivery/maps.py",
-      "sha256": "3721ac63ce6cfc061e97797831b67eb2b92796696ebff03831ea8c07de5aca08"
+      "sha256": "732f331b3d427586f22cef7edc3ef9ce64f6f814a025048ef759052ed2ec5867"
     },
     {
       "role": "delivery-pack",
       "path": "assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs",
-      "sha256": "aba5ed2a142be92bdc5b9ef5b77f47d222acc91be8052fcbbe12047158d859db"
+      "sha256": "036a9008e8ac68541e2cfbdcbbcfc13ae8055ccb337edd8bcdd71b37d5c68cdc"
     }
   ],
   "visualReferences": {

@@ -171,6 +171,9 @@ export interface GreyboxDistrictSpec {
     /** Drape the module onto the terrain surface on the GPU (D-204). Its footprint must lie
      * inside the owning cell's terrain detail field; the anchor sets the reference plane. */
     readonly conformToTerrain?: boolean;
+    /** False leaves the part out of the directional CSM casters: its relief is too small for CSM
+     * and a sun micro-shadow height field already carries it (engine package 6). */
+    readonly castsCsmShadows?: false;
     readonly rotationYRadians: number;
     readonly rotationXRadians?: number;
     readonly rotationZRadians?: number;

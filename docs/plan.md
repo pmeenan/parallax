@@ -373,11 +373,13 @@ and adjust the next work package. No unattended scheduled work is implied.
 
 ### Current work and exit checklist
 
-**Next up (2026-09-24):** engine package 6, small-scale shadows, from the ordered list of
-front-loaded [engine packages](#engine-packages). Package 5 (lighting balance with AO, D-205)
-is done, and the human accepted its lighting and paving candidate 9 on 2026-09-24 (outcome
-below). Package 4 (terrain-conforming paving, D-204) was accepted the same day. The flythrough harness repair is a
-separate task.
+**Next up (2026-09-25):** the ordered front-loaded [engine packages](#engine-packages) are
+complete. The human accepted package 6, small-scale shadows (D-206;
+[result](../assets/source/d1-paving/proof-2026-09-25/shadows-results.md)), and paving candidate 10
+on 2026-09-25. Choose the next work package from the delivery sequence with the human: the rest
+of the daylight kit (checklist below) or night/storm presentation. The joints staying lighter
+than Cycles is an open, non-shadow question (D-206). The flythrough harness repair is a separate
+task.
 
 **Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
 positional playback and clip memory, shared gameplay-camera listener geometry,
@@ -637,8 +639,25 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
        within noise.
      - On build `eb482d02…`, replay, installed scale-streaming (p95 2.13 ms) and render recovery
        pass.
-6. **Small-scale shadows.** Candidates include Lite 1.18's screen-space lighting. Target the
-   joint and pebble shadowing that package 5 left open, and the greybox grass's CSM acne.
+6. **Small-scale shadows — done 2026-09-25, accepted** (D-206;
+   [brief](../assets/source/d1-paving/proof-2026-09-25/shadows-brief.md),
+   [results](../assets/source/d1-paving/proof-2026-09-25/shadows-results.md)).
+   - **Joints and pebbles.** Paving candidate 10 (`3c64cf17…dabe`) stores its height in ORM.B,
+     with the same bytes as candidate 9. A PBR plugin marches it toward the sun and shades only
+     the direct light. At 12° the stone edges now cast shadows into the joints.
+   - **Acne.** A Parallax CSM receiver offsets lookups 3 texels along the normal, and the caster
+     bias falls to 0.06 m. The grass acne and the greybox walls' striping are gone.
+   - **Cost.** The paving ground and pebbles leave the CSM casters, which changes no pixel. The
+     CSM task falls from 2.1–2.9 to 0.07–0.20 ms, and micro-shadowing is within GPU noise.
+   - **Finding.** Direct shadows cover only 1.6% of the paving at a 30° sun. The joints staying
+     lighter than Cycles is mostly not direct shadowing (correcting D-205), and remains open.
+   - **Verification.** The replay is rebound to v25 and passes, and so does `pnpm check`. The
+     installed scale-streaming run passed on the physical console (p95 1.82 ms). An earlier
+     attempt over remote desktop failed closed on the environment check and is retained.
+   - **Accepted.** The human visually accepted the look and candidate 10 on 2026-09-25; the
+     library records it against `3c64cf17…dabe`.
+   - Lite 1.18's screen-space contact shadows were not taken. They need single-sample depth and
+     they darken the whole final colour; they stay the route for contacts between placed objects.
 
 **Packages 4–5 review (2026-09-25):** corrected two smoke-evidence regressions: the expected
 height-sample count now includes the four detail fields (83,588 total), and constant calibrated
@@ -649,7 +668,7 @@ lookup A/B and smaller CPU update savings; package 6 remains the next visual imp
 
 Installed-game visual acceptance of the paving was granted for candidate 6 on 2026-09-24.
 The human accepted candidate 7 (package 3) on 2026-09-24. Candidate 9 (package 5) was accepted the
-same day, and the library records its acceptance.
+same day, and candidate 10 (package 6) on 2026-09-25; the library records the current acceptance.
 
 **Texture compression outcome (2026-09-24): adopted (D-201); candidate 7 accepted by the
 human.** See the [brief](../assets/source/d1-paving/proof-2026-09-24/compression-brief.md)

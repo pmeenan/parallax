@@ -130,6 +130,22 @@ for (const texture of pack.textures) {
 for (const material of Object.values(config.materials))
   for (const role of [material.baseColor, material.normal, material.orm])
     assert(textures[role], `Missing material texture ${role}`);
+// Candidate 10 (engine package 6): an ORM whose B channel carries height gives its materials the
+// range; the engine marches it toward the sun. It needs the unread metallic channel.
+const ormHeightRange = (role) => {
+  const range = pack.textures.find((texture) => texture.role === role)?.ormHeightRangeMetres;
+  if (range === undefined) return undefined;
+  assert(
+    Array.isArray(range) &&
+      range.length === 2 &&
+      range.every(Number.isFinite) &&
+      range[1] > range[0] &&
+      range[0] >= config.heightRangeMetres[0] &&
+      range[1] <= config.heightRangeMetres[1],
+    `Invalid ORM height range for ${role}`,
+  );
+  return range;
+};
 
 // ---------------------------------------------------------------- geometry
 const half = config.tileMetres / 2;
@@ -365,6 +381,9 @@ const candidate = {
         roughnessFactor: 1,
         metallicFactor: 0,
         normalScale: 1,
+        ...(ormHeightRange(material.orm) === undefined
+          ? {}
+          : { ormHeightRangeMetres: ormHeightRange(material.orm) }),
       },
     ]),
   ),

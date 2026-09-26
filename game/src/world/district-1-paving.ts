@@ -4,7 +4,7 @@ import type { GreyboxDistrictSpec } from "./greybox-spec";
  * content records the admitted candidate; runtime never reads source paths. */
 export const D1_PAVING = Object.freeze({
   assetId: "d1-photoreal-paving",
-  candidateSha256: "4b2707a4b06ad1b838a8f4907961ee4250c95e8c7bfefa1bbd19c0ee1dae6329",
+  candidateSha256: "3c64cf17e2c15dcbc33c721ed2bccfbdc2f121eecfeaff9854c7f5a41635dabe",
   tileMetres: 4,
   /** The module's deepest joint is 20.7 mm below its origin. Lifting it 21 mm keeps every
    * joint above the level pad; stone tops then sit about 2 cm above the collision plane. */
@@ -38,6 +38,10 @@ export function createPavingTilePlacements(
           heightAnchor: [anchor[0] ?? 0, anchor[1] ?? 0],
           heightOffset: D1_PAVING.heightOffsetMeters,
           conformToTerrain: true,
+          // The ground's ORM height field holds the ground and every pebble top, and its sun
+          // micro-shadowing draws their shadows; 3 cm of relief is below CSM's resolution. The
+          // plants stand above the field and keep casting.
+          ...(part === "plants" ? {} : { castsCsmShadows: false as const }),
           rotationYRadians: 0,
           lodDistancesMeters: D1_PAVING.lodDistancesMeters[part],
         });

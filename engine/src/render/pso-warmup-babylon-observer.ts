@@ -10,6 +10,7 @@ import {
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { PBR_AMBIENT_PLUGIN_NAME } from "./pbr-ambient";
+import { PBR_SUN_MICROSHADOW_PLUGIN_NAME } from "./pbr-sun-microshadow";
 import {
   createPsoWarmupTrace,
   PBR_COLOR_STATE,
@@ -441,11 +442,12 @@ function assertPbrOpaqueMaterial(material: Mesh["material"], meshName: string): 
     material.doubleSided === true ||
     material.alphaBlend === true ||
     (material.alpha ?? 1) !== 1 ||
-    // Exactly the terrain drape (D-204) and the occluded ambient, in that order; any other plugin
-    // set changes the pipeline family.
-    material.plugins?.length !== 2 ||
+    // Exactly the terrain drape (D-204), sun micro-shadowing (engine package 6) and the occluded
+    // ambient, in that order; any other plugin set changes the pipeline family.
+    material.plugins?.length !== 3 ||
     material.plugins[0]?.name !== TERRAIN_DRAPE_PLUGIN_NAME ||
-    material.plugins[1]?.name !== PBR_AMBIENT_PLUGIN_NAME ||
+    material.plugins[1]?.name !== PBR_SUN_MICROSHADOW_PLUGIN_NAME ||
+    material.plugins[2]?.name !== PBR_AMBIENT_PLUGIN_NAME ||
     material.plugins.some((plugin) => plugin.isEnabled === false) ||
     hasOptInFeature(material, PBR_OPT_IN_FIELDS) ||
     Reflect.get(material, "_renderFeatures") !== undefined
@@ -500,8 +502,9 @@ function normalizeObservedStandardPipeline(
   const fragment = descriptor.fragment;
   const fragmentModuleSha256 =
     fragment === undefined ? undefined : shaderModules.get(fragment.module);
+  // The Parallax normal-offset CSM receiver (engine package 6), not Lite's stock one.
   const receiver =
-    fragmentModuleSha256 === "539782be51a691682a96d1d4c63556aee0cf00b226475ecca21b05f0156fa1f5";
+    fragmentModuleSha256 === "51e9d1556c553dfdd54dac4832e4544ab682dff19bbc703ef912282a1b5860a9";
   const shadowDepth =
     fragmentModuleSha256 === "e62c2cb994c24b4b43d290a50246ccc7577365a66b4f29c63dc6c36ecea7176e";
   const pbr =

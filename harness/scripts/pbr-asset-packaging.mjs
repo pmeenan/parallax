@@ -193,12 +193,21 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
         metallicFactor: source.metallicFactor,
         roughnessFactor: source.roughnessFactor,
         normalScale: source.normalScale,
+        ...(source.ormHeightRangeMetres === undefined
+          ? {}
+          : {
+              ormHeight: {
+                rangeMeters: source.ormHeightRangeMetres,
+                tileMeters: manifest.tileMetres,
+              },
+            }),
       },
       lods: part.lods.map((lod) => ({
         vertexResourceId: resource(lod.vertexRole),
         indexResourceId: resource(lod.indexRole),
       })),
       ...(conforms ? { terrainDrape: { referenceHeightMeters: referenceHeight } } : {}),
+      ...(request.castsCsmShadows === false ? { castsCsmShadows: false } : {}),
     };
     const matrix = new Float64Array(16);
     writePbrAssetMatrix(matrix, 0, placement);

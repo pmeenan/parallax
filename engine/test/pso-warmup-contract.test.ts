@@ -28,6 +28,10 @@ import {
   serializePsoWarmupTrace,
 } from "../src/index";
 import {
+  createPbrNormalOffsetCsmFragment,
+  createStdNormalOffsetCsmFragment,
+} from "../src/render/csm-normal-offset-receiver";
+import {
   normalizePsoBindGroupLayoutDescriptor,
   observeStandardOpaquePsoRegistration,
 } from "../src/render/pso-warmup-babylon-observer";
@@ -714,12 +718,6 @@ async function createCsmBoundary(omitDepth = false) {
       _vertexBufferLayouts: GPUVertexBufferLayout[];
     };
   };
-  const fragments = (await import(
-    // @ts-expect-error Same pinned private receiver fragment used by the shipping public CSM API.
-    "../node_modules/@babylonjs/lite/lib/material/standard/fragments/std-csm-shadow-fragment.js"
-  )) as unknown as {
-    createStdCsmShadowFragment(lights: readonly { lightIndex: number }[]): unknown;
-  };
   const sceneLayout = device.createBindGroupLayout({
     entries: [
       { binding: 0, visibility: 3, buffer: { type: "uniform" } },
@@ -738,7 +736,8 @@ async function createCsmBoundary(omitDepth = false) {
           state.shader.materialFeatureKey,
           state.shader.meshFeatureKey,
           state.shader.meshFeatureKey === 256
-            ? [fragments.createStdCsmShadowFragment([{ lightIndex: 1 }])]
+            ? // The runtime replaces the stock receiver with the normal-offset one (engine package 6).
+              [createStdNormalOffsetCsmFragment([{ lightIndex: 1 }])]
             : [],
         );
         const groups = [sceneLayout, device.createBindGroupLayout(composed._meshBGLDescriptor)];
@@ -784,7 +783,7 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
       maximumRow: 0,
       gpuBytes: 8,
     },
-    { sky: [0, 0, 0], ground: [0, 0, 0] },
+    { sky: [0, 0, 0], ground: [0, 0, 0], toSun: [0, 1, 0] },
   );
   const mesh = {
     material,
@@ -799,10 +798,6 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
   const lights = await import(
     // @ts-expect-error Pinned dependency implementation does not ship declarations.
     "../node_modules/@babylonjs/lite/lib/material/pbr/fragments/multilight-wgsl.js"
-  );
-  const csm = await import(
-    // @ts-expect-error Pinned dependency implementation does not ship declarations.
-    "../node_modules/@babylonjs/lite/lib/material/pbr/fragments/pbr-csm-shadow-fragment.js"
   );
   const thin = await import(
     // @ts-expect-error Exact-pin private shader fragment has no declarations.
@@ -823,7 +818,8 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
     _createThinInstanceFragment: thin.createThinInstanceFragment,
     _multiLightWGSL: lights.MULTI_LIGHT_STRUCTS() + lights.COMPUTE_PBR_LIGHT,
     _multiLightLoop: lights.getMultiLightLoop(),
-    _createPbrShadowFragment: csm.createPbrCsmShadowFragment,
+    // The runtime replaces Lite's stock receiver with the normal-offset one (engine package 6).
+    _createPbrShadowFragment: createPbrNormalOffsetCsmFragment,
     _shadowLights: [{ lightIndex: 1 }],
     _tm: PARALLAX_AGX_TONE_MAPPING,
   }) as (

@@ -11,6 +11,14 @@ export interface PbrAssetMaterial {
   readonly roughnessFactor: number;
   readonly metallicFactor: number;
   readonly normalScale: number;
+  /** A periodic module's height in ORM.B, for sun micro-shadowing (engine package 6): the metres
+   * that B = 0 and B = 1 stand for, and the tile the planar texture coordinates span. */
+  readonly ormHeight?: PbrAssetOrmHeight;
+}
+
+export interface PbrAssetOrmHeight {
+  readonly rangeMeters: readonly [number, number];
+  readonly tileMeters: number;
 }
 
 export interface PbrAssetLod {
@@ -26,6 +34,8 @@ export interface PbrAssetPlacement {
   readonly rotationXRadians?: number;
   readonly rotationZRadians?: number;
   readonly scale: WorldVec3;
+  /** False leaves the placement out of the directional CSM casters (engine package 6). */
+  readonly castsCsmShadows?: false;
   readonly material: PbrAssetMaterial;
   readonly lodDistancesMeters: readonly [number, number];
   readonly lods: readonly [PbrAssetLod, PbrAssetLod, PbrAssetLod];
@@ -69,7 +79,7 @@ export function validatePbrAssetPlacements(
     if (!record(asset)) throw new Error("PBR asset must be an object");
     keys(
       asset,
-      `id,lodDistancesMeters,lods,material,position,${"rotationXRadians" in asset ? "rotationXRadians," : ""}rotationYRadians,${"rotationZRadians" in asset ? "rotationZRadians," : ""}scale,schemaVersion${"terrainDrape" in asset ? ",terrainDrape" : ""}`,
+      `${"castsCsmShadows" in asset ? "castsCsmShadows," : ""}id,lodDistancesMeters,lods,material,position,${"rotationXRadians" in asset ? "rotationXRadians," : ""}rotationYRadians,${"rotationZRadians" in asset ? "rotationZRadians," : ""}scale,schemaVersion${"terrainDrape" in asset ? ",terrainDrape" : ""}`,
     );
     if (
       !Array.isArray(asset.lodDistancesMeters) ||
@@ -80,6 +90,8 @@ export function validatePbrAssetPlacements(
       asset.lodDistancesMeters[1] <= asset.lodDistancesMeters[0]
     )
       throw new Error("PBR asset LOD distances must increase");
+    if ("castsCsmShadows" in asset && asset.castsCsmShadows !== false)
+      throw new Error("PBR asset CSM caster flag is invalid");
     if (asset.schemaVersion !== 1 || !id(asset.id) || ids.has(asset.id))
       throw new Error("PBR asset identity is invalid");
     ids.add(asset.id);
@@ -110,8 +122,25 @@ export function validatePbrAssetPlacements(
     const material = asset.material;
     keys(
       material,
-      `baseColorFactor,baseColorResourceId,metallicFactor,normalResourceId,normalScale,ormResourceId,roughnessFactor${"textureAddressMode" in material ? ",textureAddressMode" : ""}`,
+      `baseColorFactor,baseColorResourceId,metallicFactor,normalResourceId,normalScale,${"ormHeight" in material ? "ormHeight," : ""}ormResourceId,roughnessFactor${"textureAddressMode" in material ? ",textureAddressMode" : ""}`,
     );
+    if ("ormHeight" in material) {
+      const height = material.ormHeight;
+      if (
+        !record(height) ||
+        Object.keys(height).join(",") !== "rangeMeters,tileMeters" ||
+        !Array.isArray(height.rangeMeters) ||
+        height.rangeMeters.length !== 2 ||
+        !height.rangeMeters.every(finite) ||
+        !((height.rangeMeters[1] ?? 0) - (height.rangeMeters[0] ?? 0) > 0) ||
+        (height.rangeMeters[1] ?? 0) - (height.rangeMeters[0] ?? 0) > 1 ||
+        !finite(height.tileMeters) ||
+        height.tileMeters <= 0 ||
+        // The height must stand for real relief: an unread metallic channel only.
+        material.metallicFactor !== 0
+      )
+        throw new Error("PBR asset ORM height is invalid");
+    }
     if (
       "textureAddressMode" in material &&
       material.textureAddressMode !== "clamp-to-edge" &&

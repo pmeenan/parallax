@@ -22,6 +22,8 @@ export interface PbrAmbientState {
   readonly sky: [number, number, number];
   /** The same for a downward-facing surface: light bounced from the ground. */
   readonly ground: [number, number, number];
+  /** Unit world direction toward the sun, for the sun micro-shadow plugin (engine package 6). */
+  readonly toSun: [number, number, number];
 }
 
 const AMBIENT_FRAGMENT_WGSL = [
@@ -39,7 +41,7 @@ const AMBIENT_FRAGMENT_WGSL = [
 ].join("");
 
 export function createPbrAmbientState(): PbrAmbientState {
-  return { sky: [0, 0, 0], ground: [0, 0, 0] };
+  return { sky: [0, 0, 0], ground: [0, 0, 0], toSun: [0, 1, 0] };
 }
 
 export function createPbrAmbientPlugin(state: PbrAmbientState): MaterialPlugin {
