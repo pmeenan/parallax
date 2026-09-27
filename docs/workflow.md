@@ -70,7 +70,10 @@ capture/evaluation cycles for an initial experiment; a cycle makes a concrete ch
 captures it, and evaluates it. For authored assets, scripted preview passes inside the
 package's time box do not count as cycles; full-quality candidate handoffs do (D-196). Also state a finite work-session or elapsed-effort limit
 appropriate to that package so a cycle cannot hide an unlimited implementation task.
-These are planning limits, not runtime performance budgets.
+These are planning estimates, not runtime performance budgets. Under D-207, visual and
+authored-asset work is quality-gated, not effort-gated. Reaching the estimate is a progress
+report, not a stopping point. The package continues until its quality gate passes, or ends in a
+justified "no viable path" defer.
 
 Use established implementations on the exact pin first. A competing implementation or
 new evidence tool needs a named visual/capability gap, measured bottleneck, or recurring
@@ -79,10 +82,10 @@ readability, and artifacts against the selected references. Agents fix the brief
 defects autonomously; subjectivity is not an excuse to skip inspection. Integrate the
 best supported candidate into the ordinary game before enlarging an isolated spike.
 
-At the allowance boundary, record one outcome: integrate/adopt with measured evidence
-and required human artistic acceptance; extend with a specific unresolved question,
-expected payoff and a new finite allowance; or defer with the limitation and reopening
-trigger. An agent may make a justified extension within authorized scope, but may not
+A package ends in one outcome: integrate/adopt with measured evidence and the required human
+artistic acceptance, or defer when no viable path to progress exists, recording the
+limitation, evidence and reopening trigger. When an estimate runs out, record the remaining
+question and continue (D-207). An agent may make a justified extension within authorized scope, but may not
 silently reset allowances. An unmet required scene outcome remains open; defer the
 technique, not the acceptance requirement. Time expiry never grants quality acceptance.
 

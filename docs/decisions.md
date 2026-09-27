@@ -28,6 +28,31 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-207: Visual work is quality-gated, not effort-gated (2026-09-26, accepted; human direction; amends D-182 and D-196 allowances)
+
+**Decision:** A visual or authored-asset package continues until its quality gate passes: both
+D-195 independent screens and lead inspection pass, and the human accepts. It stops early only
+when no viable path to progress exists; that is recorded as a defer with the evidence. Briefs
+still state a planning estimate, and the handoff still reports the effort spent. Reaching the
+estimate is a progress report, not a stopping point. An agent does not stop or hand off at an
+allowance boundary merely because the estimate is used up. Time never grants acceptance, and
+D-195 screens, human artistic acceptance and all rights, QA, budget and delivery gates are
+unchanged.
+
+**Context:** The first architecture package (K1, the timber-framed wall family) passed its one
+session and two handoffs at candidate 8. Both screens still asked for another candidate, so the
+agent stopped and asked. The human directed "Extend until success or no viable path for progress
+exists. We are quality gated, not effort gated." It restates the paving lesson behind D-196:
+counted allowances encourage stopping on flawed results.
+
+**Consequences:** `docs/workflow.md`'s bounded-visual-work section and the asset production
+workflow treat the cycle and time box as estimates. A package ends in acceptance or in a
+justified "no viable path" defer. Handoffs to the human for artistic direction are still
+welcome at any point, but they do not end the package.
+
+**Reopen if:** unbounded iteration stops converging (repeated candidates without measurable
+screen progress), or effort and cost need a hard cap again.
+
 ## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25)
 
 **Decision:**

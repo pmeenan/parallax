@@ -1,0 +1,510 @@
+{
+  "createdUtc": "2026-09-26T23:46:49.394005+00:00",
+  "blender": "5.2.1 LTS",
+  "args": {
+    "out": "candidate18",
+    "px": 1.0,
+    "stone_px": 1.25,
+    "oak_px": 0.75,
+    "coarse": 0.02,
+    "subdiv": 3,
+    "paving": "../../d1-paving/proof-2026-09-22/photoreal/candidate1",
+    "paving_subdiv": 3,
+    "samples": 256,
+    "views": "unlit",
+    "scale": 1.0,
+    "seed": 7,
+    "save_blend": true,
+    "force": true,
+    "sunk": 1.0,
+    "skyk": 1.0
+  },
+  "seconds": 1040.9,
+  "texelMillimetres": {
+    "oak": 1.0,
+    "plaster": 1.0,
+    "stone": 1.25
+  },
+  "meshSpacingMillimetres": 2.5,
+  "members": 297,
+  "atlases": {
+    "oak": [16384, 8896],
+    "stone": [8192, 3840]
+  },
+  "heightRangeMetres": {
+    "oak": [-0.0176592655479908, 0.012660234235227108],
+    "stone": [-0.033259253948926926, 0.03480258584022522]
+  },
+  "plantSites": 63,
+  "references": [
+    "KIT-005 batch087 A v3",
+    "KIT-006 batch087 B v2",
+    "MAT-008 batch104 B v1",
+    "MAT-009 batch105 A v5",
+    "KIT-007 batch089 A v1",
+    "KIT-009 batch090 A v2",
+    "KIT-010 batch090 B v3",
+    "DIR-002 batch001 B"
+  ],
+  "sourceOnly": true,
+  "runtimeQA": false,
+  "rightsReviewed": false,
+  "artisticAcceptance": false,
+  "files": [
+    {
+      "path": "build-snapshot.py",
+      "bytes": 98035,
+      "sha256": "59765c934eaf9a8652cc9c98112cd9a7afdcc57f2271a59bc2c0c7c74828d332"
+    },
+    {
+      "path": "corner.png",
+      "bytes": 3008830,
+      "sha256": "b4095d60d5f73702dd91eeb7a564396e836ff2e3ea1dd7d04119dde3e50ea158"
+    },
+    {
+      "path": "extreme.png",
+      "bytes": 2032166,
+      "sha256": "04b3ee7042a5211d4956f72180789f1abf7f8ee98361375ae994f468eb0c2613"
+    },
+    {
+      "path": "front.png",
+      "bytes": 2992793,
+      "sha256": "6b48575e71090b52fc10072a4afe0930870642b4ee9d91b391726adb9cabe78a"
+    },
+    {
+      "path": "gray.png",
+      "bytes": 2643203,
+      "sha256": "857af4d5f94c83dc3e211fa3d03f47e1ee0f8c3d87882e631460f99edf03c452"
+    },
+    {
+      "path": "junction.png",
+      "bytes": 2457833,
+      "sha256": "9815a96de0940e1197593ea2340ac0f3c1270068a994aabd232ef00dc66a64f3"
+    },
+    {
+      "path": "layout.json",
+      "bytes": 15690,
+      "sha256": "6426af5b8ede703afdaa38d4a993f4133b44824ba427d25f6ee22f1867a382a3"
+    },
+    {
+      "path": "low.png",
+      "bytes": 2924198,
+      "sha256": "32ecde34a2a251f9f03924be160a0c73145bc1bab78eafdc00842519826430c8"
+    },
+    {
+      "path": "oak.png",
+      "bytes": 2665242,
+      "sha256": "a600b3754e20abdb1463b1bd609056a27c3712ebaef8a3e48bdc3a87838e3785"
+    },
+    {
+      "path": "overcast.png",
+      "bytes": 2480759,
+      "sha256": "6ef78bcc47956cf5a960de50f742f674580c099e41b422c486c1bdd0e3c0bebb"
+    },
+    {
+      "path": "overview.png",
+      "bytes": 2688597,
+      "sha256": "0ddb040dd3103d927afd0ea67ab3fd857ff5cccac559c81ca967a5e85dce997d"
+    },
+    {
+      "path": "source.blend",
+      "bytes": 19182322,
+      "sha256": "9e909c8367ebb045df556933584719c103c189c2e4b0a7c08c01f0b039f5db8e"
+    },
+    {
+      "path": "street.png",
+      "bytes": 2802600,
+      "sha256": "c34ea6365118ff66e55e3874ca06957b6676560f8f1ef54b12cbd4e55fe2845f"
+    },
+    {
+      "path": "unlit.png",
+      "bytes": 2614533,
+      "sha256": "9e895783d353b8ccb64469ef3bfb0d1ea35ab598a3f81d4183db2cb264228380"
+    },
+    {
+      "path": "window.png",
+      "bytes": 2743820,
+      "sha256": "89a5ae28b571c67618c4295380fe27addc6d2fbaa37d2e2da2efe957b8365638"
+    },
+    {
+      "path": "maps/grass.png",
+      "bytes": 761,
+      "sha256": "d07170e6e5fe2a50e818fccfe5f226ff4dae0483c3a2ca3e2a88b2eb67f933f1"
+    },
+    {
+      "path": "maps/leaf0.png",
+      "bytes": 51805,
+      "sha256": "fde62c66fe88c1fdeddc74d64d224243bc041bfb696aaf0caba88df2fc424f08"
+    },
+    {
+      "path": "maps/leaf1.png",
+      "bytes": 54534,
+      "sha256": "c7d59a55200a38de1bfee74dc8fd2835d644ba5167e1c888913003bdc31bd9d3"
+    },
+    {
+      "path": "maps/leaf2.png",
+      "bytes": 57909,
+      "sha256": "0fa1c941e040fa9c73fdc18ceb8d1e879d150049ec4828f7463b7241ce727b5d"
+    },
+    {
+      "path": "maps/mortar-albedo.png",
+      "bytes": 410153,
+      "sha256": "8aa71c6b99956c389f1bbc50b6a4b0cb709cbfc3fe5eeb706a0f187fff2b315d"
+    },
+    {
+      "path": "maps/mortar-height.png",
+      "bytes": 869689,
+      "sha256": "1d5c15e4b8e797404620a8641be0af031ee7fb197d4cb11c86fdedc3fafee484"
+    },
+    {
+      "path": "maps/mortar-normal.png",
+      "bytes": 1055638,
+      "sha256": "1189b6f9a21d57714fc16d488ea8f4a104c8645df9f531ef31933e4f29bc5762"
+    },
+    {
+      "path": "maps/mortar-roughness.png",
+      "bytes": 1836,
+      "sha256": "8e7f573e7ee19da0df7729cd195185b3b86719749d4ad4212c118a464ae001c9"
+    },
+    {
+      "path": "maps/oak-albedo.png",
+      "bytes": 196696340,
+      "sha256": "7840a4c59cecdd378d7b9202311debfc72628c13d0726767e8cf6f764a28b9a2"
+    },
+    {
+      "path": "maps/oak-detail-albedo.png",
+      "bytes": 148655,
+      "sha256": "5929ab1deb18c9b942d92a007622c20efc6896c0073a409954d90cdace795285"
+    },
+    {
+      "path": "maps/oak-detail-height.png",
+      "bytes": 1011192,
+      "sha256": "ecefc3f1da63d9ed84e81b2a7b1f079e6c6827b16155fe6cd071cebfd1ac5299"
+    },
+    {
+      "path": "maps/oak-detailmask.png",
+      "bytes": 193398,
+      "sha256": "ec9d8716a8e3b4adfdf644fd01cdad98dee685233c7c2f79971bd2ba23586763"
+    },
+    {
+      "path": "maps/oak-height.png",
+      "bytes": 224872947,
+      "sha256": "9c6a4dab468885646d6a568793636fe135e02c0305c30650aa560039f40c1742"
+    },
+    {
+      "path": "maps/oak-normal.png",
+      "bytes": 313052314,
+      "sha256": "b73c5746517c6fae964d55c84667477c84dcfb6d93d03aa0d7a76b750706c732"
+    },
+    {
+      "path": "maps/oak-roughness.png",
+      "bytes": 23645130,
+      "sha256": "807d90f91dfdc5563821dd44907cad3d47d8fdfea59255525a19c7464cab0416"
+    },
+    {
+      "path": "maps/plaster-g-braced-albedo.png",
+      "bytes": 5085075,
+      "sha256": "9fa887ed09da9c61b151851f418ca4347ce7e7afb880f421e18be3a449217537"
+    },
+    {
+      "path": "maps/plaster-g-braced-height.png",
+      "bytes": 8327918,
+      "sha256": "6fb5da73c9f1039d7297fd283e96b8b54235d999188b352e41f1e5cb8614ad8d"
+    },
+    {
+      "path": "maps/plaster-g-braced-normal.png",
+      "bytes": 7890191,
+      "sha256": "d7b4b0409639c9f7a887ae9b2cb56639c580f0141cbe92e9632345316b4571cd"
+    },
+    {
+      "path": "maps/plaster-g-braced-roughness.png",
+      "bytes": 26790,
+      "sha256": "61b32877f7998888c0c2e4bf71c2c41bc16b95f85e0fe4a29daa4d30d2950f7a"
+    },
+    {
+      "path": "maps/plaster-g-cbrace-albedo.png",
+      "bytes": 5164016,
+      "sha256": "62dffdc80a84a2be6b7d15a1c88857849afcda91826d23dca4fef7b84582d2a6"
+    },
+    {
+      "path": "maps/plaster-g-cbrace-height.png",
+      "bytes": 8375894,
+      "sha256": "6fc8ba27047c95e9530c66cb6672ebb5dae645b3ad00bb17268630472f2d0d37"
+    },
+    {
+      "path": "maps/plaster-g-cbrace-normal.png",
+      "bytes": 7898774,
+      "sha256": "290286c4d50d08fcae318d6f118c6fb9ab5c8dcb428485f92fdae50031b3920f"
+    },
+    {
+      "path": "maps/plaster-g-cbrace-roughness.png",
+      "bytes": 35022,
+      "sha256": "c49de855a8917bd1db318164db6a986571d59c9fcef642194d7313bdbe1b9e2f"
+    },
+    {
+      "path": "maps/plaster-g-cbrace2-albedo.png",
+      "bytes": 5033422,
+      "sha256": "45223c554995568a9aecab03ae4f8fe0a53a3d09b4a45707024635f052247920"
+    },
+    {
+      "path": "maps/plaster-g-cbrace2-height.png",
+      "bytes": 8337845,
+      "sha256": "bfb39647443bf46e86bb98a36ab108277c11159768eaaa75af83d99150848281"
+    },
+    {
+      "path": "maps/plaster-g-cbrace2-normal.png",
+      "bytes": 7870108,
+      "sha256": "e1e3403e732a0d04e4e3393d417690c61b793340c50f89cebb6112c921f939a9"
+    },
+    {
+      "path": "maps/plaster-g-cbrace2-roughness.png",
+      "bytes": 37136,
+      "sha256": "d89dc4c791546af1fedfedf1134d4a1b759bd19406fb73699d813959f580da1f"
+    },
+    {
+      "path": "maps/plaster-g-door-albedo.png",
+      "bytes": 4738945,
+      "sha256": "4215f9418e3eda9ac29643b3dd50b7f22e9ce5312c65ad44253ca79b91086bcf"
+    },
+    {
+      "path": "maps/plaster-g-door-height.png",
+      "bytes": 7423616,
+      "sha256": "855bda8cef28047c41f693d07091400a2a6e3ed456d1e0d3830e7fb069c9f8c4"
+    },
+    {
+      "path": "maps/plaster-g-door-normal.png",
+      "bytes": 7069640,
+      "sha256": "6018ad238afce526ae059bdb5611fdb3f5df928be3a61a1a99259bc0be11e8d6"
+    },
+    {
+      "path": "maps/plaster-g-door-roughness.png",
+      "bytes": 36040,
+      "sha256": "e8dd1533ec4645b71b7a720927b9261d911c16a591004119f2c623220b1dce8c"
+    },
+    {
+      "path": "maps/plaster-g-plain-albedo.png",
+      "bytes": 5261030,
+      "sha256": "865d380cf738a7f03f0a58da20aeef42a5e46dce0a8ad478d5fcee8be36252d2"
+    },
+    {
+      "path": "maps/plaster-g-plain-height.png",
+      "bytes": 8680490,
+      "sha256": "c807dd52fbe5d468797ebad120de364d9db22e230fc712f658da8d27e1fdc6d1"
+    },
+    {
+      "path": "maps/plaster-g-plain-normal.png",
+      "bytes": 8237022,
+      "sha256": "1439322d4e2b9344f2e02fc36a7477838c9d119a5d9ac179fc980228f08f0b01"
+    },
+    {
+      "path": "maps/plaster-g-plain-roughness.png",
+      "bytes": 43164,
+      "sha256": "b6dc5387de367316b39fd4b9404267498a8aac5c709f78f0c66dd351dd0b1b01"
+    },
+    {
+      "path": "maps/plaster-g-window-albedo.png",
+      "bytes": 4923561,
+      "sha256": "d88ce016383c391ffc9273ea57998e91b78b0e8b2ab03b2e72f390c7c62af44d"
+    },
+    {
+      "path": "maps/plaster-g-window-height.png",
+      "bytes": 7752408,
+      "sha256": "e1fbad17e3360e0a635d34ee8eea3e08cf242729df9bf6e2531d767f377e904e"
+    },
+    {
+      "path": "maps/plaster-g-window-normal.png",
+      "bytes": 7359060,
+      "sha256": "4b297ea887bf61b1e7a3647b8952d22ac55a4cd80f5efa5353a0d4762263484f"
+    },
+    {
+      "path": "maps/plaster-g-window-roughness.png",
+      "bytes": 34107,
+      "sha256": "0920b34bb09792f9640bdde3241cde5806f529e2f054d30a41fa7276e3b561fa"
+    },
+    {
+      "path": "maps/plaster-g-window2-albedo.png",
+      "bytes": 4921437,
+      "sha256": "f3af252ae93f62409250bc1df6c53dce01e946b4661d77a7115484d27ea256b8"
+    },
+    {
+      "path": "maps/plaster-g-window2-height.png",
+      "bytes": 7740300,
+      "sha256": "5e28fe7da0aeffcd06bc259c250cef037ce87b71791f577bcd63699215b8e87f"
+    },
+    {
+      "path": "maps/plaster-g-window2-normal.png",
+      "bytes": 7365217,
+      "sha256": "58289e93a7e2a6eda777e5e3e0be5a3a50a004a7978fd13dfdce16eb9d018e5d"
+    },
+    {
+      "path": "maps/plaster-g-window2-roughness.png",
+      "bytes": 32396,
+      "sha256": "a3d964f7e823a83537707ebef4da2f5d23e7e71efc8bb4eb60ec0354cc3bc75b"
+    },
+    {
+      "path": "maps/plaster-u-braced-albedo.png",
+      "bytes": 5238472,
+      "sha256": "8820110a5ef0196dc50bf2ce8d0d59367978489de6d19933de58a8b3bdea1c56"
+    },
+    {
+      "path": "maps/plaster-u-braced-height.png",
+      "bytes": 8388966,
+      "sha256": "94d92cddb5363da9476c23d0dd0a666dedc798be1723bb95763fe67b3416f8bd"
+    },
+    {
+      "path": "maps/plaster-u-braced-normal.png",
+      "bytes": 7978340,
+      "sha256": "ecb55f828b439799d891730241966dc81d76ba9b1d7fc5c516ff5f265463e6fb"
+    },
+    {
+      "path": "maps/plaster-u-braced-roughness.png",
+      "bytes": 44226,
+      "sha256": "4d3c918d9dfe69a7bb7cb7fa418d8670249f1352d88e022e999d72d40b35674d"
+    },
+    {
+      "path": "maps/plaster-u-cbrace-albedo.png",
+      "bytes": 5290089,
+      "sha256": "22033de65ea46ae55dfef99bae3f09eeac474e12d31566cfe419fafcb59e50eb"
+    },
+    {
+      "path": "maps/plaster-u-cbrace-height.png",
+      "bytes": 8423528,
+      "sha256": "4ea71b5902775f2cce8308269d2673e122fe6fd91eb3f55c5de66413ade258e6"
+    },
+    {
+      "path": "maps/plaster-u-cbrace-normal.png",
+      "bytes": 7996561,
+      "sha256": "86d74cab0bd9b477a20d14211afab5c465f68b2a91bae2a3fd0ef368f459a144"
+    },
+    {
+      "path": "maps/plaster-u-cbrace-roughness.png",
+      "bytes": 39957,
+      "sha256": "ed5b916de31575d04e12d94035d18455f324139e7679351bbc5e4d26dd9d125d"
+    },
+    {
+      "path": "maps/plaster-u-cbrace2-albedo.png",
+      "bytes": 5177630,
+      "sha256": "df2f94af3227ab4b3404015d0295b37c116d03d958ba3df49fe4aa9fecd5b565"
+    },
+    {
+      "path": "maps/plaster-u-cbrace2-height.png",
+      "bytes": 8441153,
+      "sha256": "a3e0fab6d7ff849a877eb5aa64f223515059ba98cfb275fac3e187db57015d6a"
+    },
+    {
+      "path": "maps/plaster-u-cbrace2-normal.png",
+      "bytes": 7943581,
+      "sha256": "c0fb5393914c007c8777424ad6e6959482450dc25ad8b7091e24744a34625e81"
+    },
+    {
+      "path": "maps/plaster-u-cbrace2-roughness.png",
+      "bytes": 36403,
+      "sha256": "c8477aad5780ce31d28443739f53fe6a919525c46e6e59e6297812e4b434b7f5"
+    },
+    {
+      "path": "maps/plaster-u-plain-albedo.png",
+      "bytes": 5323994,
+      "sha256": "4971bdcdb4a032e04fde1dee9ea1441441d5e32804edb678db0037f85aba9a2e"
+    },
+    {
+      "path": "maps/plaster-u-plain-height.png",
+      "bytes": 8775240,
+      "sha256": "2940fb6789f38a8c4fa96843d9d6b6568097793e4e13ea250939309175a2d781"
+    },
+    {
+      "path": "maps/plaster-u-plain-normal.png",
+      "bytes": 8242187,
+      "sha256": "60b1fe2b2bbd98a3d6de3811a4cfcb4fa43906bb6ebe9262aa384a66ef171371"
+    },
+    {
+      "path": "maps/plaster-u-plain-roughness.png",
+      "bytes": 39487,
+      "sha256": "0b79a322389742a6999aa6dada387851c8e7b4b6735cbb96abbb7daa652e5231"
+    },
+    {
+      "path": "maps/plaster-u-window-albedo.png",
+      "bytes": 4934153,
+      "sha256": "0a8398f4cc28657c844a878cb44de748889de1a1260b1300b7c835cf9a5a7b3a"
+    },
+    {
+      "path": "maps/plaster-u-window-height.png",
+      "bytes": 7838533,
+      "sha256": "468b64d5dea422c374b76a254839859c048a651285fb9048f97d5c806356e030"
+    },
+    {
+      "path": "maps/plaster-u-window-normal.png",
+      "bytes": 7404463,
+      "sha256": "eaf6bc8b8821dcc698bb6211d0dff557f4c1095ec108887ff0906212fcbd8d7c"
+    },
+    {
+      "path": "maps/plaster-u-window-roughness.png",
+      "bytes": 36994,
+      "sha256": "ebd1b11b4a05ed9fce0db635a4bfc8e676ec98c81255d6c019fd4d28462f44bb"
+    },
+    {
+      "path": "maps/plaster-u-window2-albedo.png",
+      "bytes": 5051228,
+      "sha256": "131aa4d6d6b1c543e89f08c7fc00140b389092b359b54fb0d9432d9aa18d7ff0"
+    },
+    {
+      "path": "maps/plaster-u-window2-height.png",
+      "bytes": 7802136,
+      "sha256": "62227a67c2fb18ed6e7a7eea50ffdace450bad6a2dcc77e0b401f32481428bae"
+    },
+    {
+      "path": "maps/plaster-u-window2-normal.png",
+      "bytes": 7424055,
+      "sha256": "6b727d2c5b87e649e412f8d09d1fcbc396b1908557621c96fa50a563ecb5bfab"
+    },
+    {
+      "path": "maps/plaster-u-window2-roughness.png",
+      "bytes": 36690,
+      "sha256": "9055f2dc8f1b70b8f478bee02ef22dfcc70fa4229374e06f26a22e6db9476d44"
+    },
+    {
+      "path": "maps/soil-albedo.png",
+      "bytes": 663139,
+      "sha256": "4416d31c284629488e4cd3db7ba92d60f3e0876d01cf62b1777fd5965ab06317"
+    },
+    {
+      "path": "maps/soil-height.png",
+      "bytes": 868780,
+      "sha256": "5f00c87341b2c48a52c6f7f0c2e8e1b945562abe7d14b18953e6c44c303ad090"
+    },
+    {
+      "path": "maps/soil-normal.png",
+      "bytes": 1057053,
+      "sha256": "fd2f88ad2028376c2e5564f28b3d9e92595ce6745fb575f1107857776bf9d62e"
+    },
+    {
+      "path": "maps/soil-roughness.png",
+      "bytes": 1836,
+      "sha256": "8e7f573e7ee19da0df7729cd195185b3b86719749d4ad4212c118a464ae001c9"
+    },
+    {
+      "path": "maps/stone-albedo.png",
+      "bytes": 32558421,
+      "sha256": "6b5807f86cb6f5f602ab65fcb412fcc4d2c4ac252ef88483e2dc4412cf150d23"
+    },
+    {
+      "path": "maps/stone-detailmask.png",
+      "bytes": 50638,
+      "sha256": "ae9ef7b47b362054cf0dab3aa463e9145bc9133169aa52affe806573bc42a323"
+    },
+    {
+      "path": "maps/stone-height.png",
+      "bytes": 37767156,
+      "sha256": "5d5755f9c908cf9183fccf01f332a71c37c87ad77edca08fdb9fda0a57c0ba82"
+    },
+    {
+      "path": "maps/stone-normal.png",
+      "bytes": 40735599,
+      "sha256": "fb1050f02679b03caaecfba464c5960decbf6492fca66edd788aa72704e8c8eb"
+    },
+    {
+      "path": "maps/stone-roughness.png",
+      "bytes": 487503,
+      "sha256": "d55babf2dc61c8fe27f7e0195165e406d7dc6538dfce379a50ea3a2f271e54a8"
+    }
+  ]
+}

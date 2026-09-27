@@ -376,10 +376,39 @@ and adjust the next work package. No unattended scheduled work is implied.
 **Next up (2026-09-25):** the ordered front-loaded [engine packages](#engine-packages) are
 complete. The human accepted package 6, small-scale shadows (D-206;
 [result](../assets/source/d1-paving/proof-2026-09-25/shadows-results.md)), and paving candidate 10
-on 2026-09-25. Choose the next work package from the delivery sequence with the human: the rest
-of the daylight kit (checklist below) or night/storm presentation. The joints staying lighter
-than Cycles is an open, non-shadow question (D-206). The flythrough harness repair is a separate
-task.
+on 2026-09-25. The next task (human direction, 2026-09-25) is the rest of the daylight courtyard
+kit (the "small modular D1 kit" checklist item below), run as the
+[daylight kit program](#daylight-kit-program). Its first package, K1, the timber-framed wall
+family, has an accepted source (candidate 18, 2026-09-26); its delivery package is next. Night/storm presentation follows the kit. The joints staying
+lighter than Cycles is an open, non-shadow question (D-206). The flythrough harness repair is a
+separate task.
+
+<a id="daylight-kit-program"></a>**Daylight kit program (2026-09-25).** The kit is built against
+the [approved well courtyard](../assets/reference/concept-art-batch-187-a.md) at the village-well
+transition: court x −540…−492, z −170…−122, four perimeter houses, the well and the stair
+entrance. The paved [0,16]² pad is a prototype ([site plan](../assets/reference/shared-site-plan.md)).
+Each package is a source package, then a separate delivery package (production workflow steps
+1–8), each with its own brief and time box. Delivery drives the engine work each asset exposes,
+done as we go (front-loaded, D-197/D-200). Proposed order, open to human reordering:
+- **K1 — timber-framed wall family:** plaster and oak bays (plain, window, door), corner post,
+  limestone plinth ([brief](../assets/source/d1-walls/proof-2026-09-25/brief.md)). Architecture
+  is the first class beyond ground surfaces and dominates every reference view. Likely engine
+  work at delivery: kit-piece instancing across many placements, sun micro-shadowing on
+  non-ground surfaces, architecture class QA.
+  **Source result (2026-09-26):** [candidate 18](../assets/source/d1-walls/proof-2026-09-25/results.md)
+  passed both D-195 screens with disclosed limits. **The human accepted it on 2026-09-26.** It ran
+  under D-207 (quality-gated, not effort-gated): 18 candidates, with an oak rework after the human's
+  candidate 3 review. Next: the K1 delivery package, briefed first.
+- **K2 — terracotta roof:** gable, ridge, eave and verge (KIT-008, MAT-011).
+- **Assembly A1 — first house at the well court.** Walls and roof as one house in the ordinary
+  installed game, so later pieces are judged in place. It needs a court pad and paving moved to
+  the well court, building collision replacing the greybox cluster there, and placements split
+  at the x = −512 cell edge, which the court straddles.
+- **K3 — the well** (KIT-004), **K4 — garden walls, stairs and the entrance** (KIT-011/012),
+  **K5 — shrubs and verge grass** (VEG-002/003), **K6 — terrain detail** around the paving (earth
+  bank, soil/grass transitions, MAT-019/020), **K7 — castle silhouette** (DIR-003, KIT-014).
+- The program ends with the checklist's integration item: the eight D-193 matching captures,
+  both screens and human acceptance of the daylight area.
 
 **Spatial-audio foundation (2026-09-11; parallel technical work):** implement bounded
 positional playback and clip memory, shared gameplay-camera listener geometry,

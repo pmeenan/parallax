@@ -215,4 +215,8 @@ keep the same principles:
 - give per-object parameters
 
 The first asset of each new class should record where this guidance needed to change.
+Architecture's first record is the [timber-framed wall family](source/d1-walls/proof-2026-09-25/results.md#where-the-ground-surface-method-had-to-change-first-architecture-asset)
+(2026-09-25; artistic acceptance pending). It uses swept "member" profiles with unrolled periodic
+fields in shared atlases, no texels on buried faces, evenly tessellated end caps, arris wear scaled
+to the member, and integration fields that read neighbouring geometry.
 Characters, rigs and animation stay under their own QA profiles.

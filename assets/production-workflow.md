@@ -102,9 +102,10 @@ boundary in [AGENTS.md](AGENTS.md).
 
 Scripted preview passes inside a time-boxed work session don't consume D-182's
 implementation/capture/evaluation cycles. Those cycles count **full-quality candidate
-handoffs**, two by default. The time box, the extension rules and the rule that time expiry
-never grants acceptance are unchanged. An extension names the remaining question and a new
-time box.
+handoffs**, two by default. These are planning estimates. D-207 makes asset work
+quality-gated, not effort-gated. Iteration continues past the estimate until both screens, lead
+inspection and the human accept, or until no viable path to progress exists. Time expiry never
+grants acceptance.
 
 ## Keep this current
 
