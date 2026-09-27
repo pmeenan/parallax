@@ -28,6 +28,35 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-208: Buildings are exterior shells; enterable buildings get seamless interiors inside the shell (2026-09-27, accepted; human direction)
+
+**Decision:**
+- **Most buildings are exterior shells.** They are real geometry where the street sees it,
+  including the wall thickness at door and window reveals, and have no rooms behind it.
+- **Windows of closed buildings** show a fake interior: a dark box, as on the K1 test house now,
+  or an interior-mapping shader that draws a room behind the glass without geometry.
+- **Enterable buildings** get real interiors aligned to the inside of the same shell, with no
+  loading screen. An interior is its own streamed resource set behind the door, which is its
+  visibility portal. Neither side renders much of the other.
+- **Layout constraint.** An interior must fit the shell's footprint and match its openings. The
+  game design already has enterable spaces: the tavern's connected rooms and private chambers.
+
+**Context:** Asked while the K1 wall kit was being delivered. Shells are the open-world norm. The
+alternative for enterable buildings, a door that loads a separate interior space (Bethesda
+style), breaks immersion and does not exercise the streaming architecture. Seamless
+interiors inside the shell are the RDR2/Witcher 3/Cyberpunk pattern. They fit the
+install/stream model (goal 1) and use the wall depth the K1 kit already carries.
+
+**Consequences:** Assembly A1 and later house kits plan which houses are enterable. They keep
+interiors within shell footprints, and treat doorways as portals for streaming and visibility.
+Interior mapping for closed windows is a candidate engine package. Interior lighting needs its
+own treatment; the exterior's analytic sky and ground ambient does not apply indoors.
+
+**Reopen if:** interior density or streaming cost at a door makes seamless entry miss budgets,
+or game design needs interiors larger than their shells.
+
+---
+
 ## D-207: Visual work is quality-gated, not effort-gated (2026-09-26, accepted; human direction; amends D-182 and D-196 allowances)
 
 **Decision:** A visual or authored-asset package continues until its quality gate passes: both
@@ -53,13 +82,13 @@ welcome at any point, but they do not end the package.
 **Reopen if:** unbounded iteration stops converging (repeated candidates without measurable
 screen progress), or effort and cost need a hard cap again.
 
-## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25)
+## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25; march generalized 2026-09-26, below)
 
 **Decision:**
 - **Sun micro-shadowing.** A periodic PBR module may carry its height in ORM.B, which the paving's
   metallic factor of 0 leaves unread. The material declares it as `ormHeight` (the metres B spans
   and the tile its planar UVs cover). The `parallax-pbr-sun-microshadow` plugin marches that
-  field toward the sun in 12 steps, with a cone penumbra, and scales only the direct light,
+  field toward the sun in 12 steps (texel-spaced since the amendment below), with a cone penumbra, and scales only the direct light,
   before the ambient term. Every streamed PBR material carries the plugin, so they still share
   one pipeline; materials without height write a zero range.
 - **CSM receiver.** Parallax replaces Lite's CSM receiver fragment for Standard and PBR materials.
@@ -96,6 +125,21 @@ contract pins the resulting WGSL, so drift fails warmup. Results:
 **Reopen if:** Lite exposes a receiver or light-loop hook, the joint gap is traced to a cause the
 height field should carry, local lights reach PBR surfaces, or a height-carrying asset needs a
 metallic channel.
+
+**Amendment (2026-09-26, K1 wall delivery):** the march no longer assumes a planar tile on
+horizontal ground.
+- **Direction.** It derives the texture-space direction per fragment from screen-space derivatives
+  of the world position and UV. The per-material gradient uniform and `ormHeight.tileMeters` are
+  gone, and height surfaces no longer group by orientation. Atlas-mapped, vertical, rotated and
+  mirrored surfaces march correctly.
+- **Steps.** Even steps about 1.5 texels apart, 4 to 64 per fragment, replace the fixed 12
+  quadratic steps. The fixed count skipped an 85 mm window sill at the far end of a long march and
+  stair-stepped its shadow edge.
+- **Occluders outside a surface.** A surface's height field may include neighbouring geometry: the
+  wall plaster's field carries the timber that stands proud of it, in a margin beyond the panel.
+- **Identities.** The lighting model is `calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@4`,
+  and the PBR vertex, colour and depth WGSL pins are recaptured. Evidence:
+  [K1 delivery results](../assets/source/d1-walls/proof-2026-09-26/delivery-results.md).
 
 ---
 
@@ -137,6 +181,29 @@ real occlusion. The greybox is neither tone mapped nor specular. The joints' rem
 **Reopen if:** reflective or wet surfaces need sky reflections (take Lite's IBL or a probe
 path), scene-wide post-processing replaces the baked tone curve, or the reference lighting
 changes.
+
+**Amendment (2026-09-27, engine package 7; human visual re-acceptance of the paving and walls
+2026-09-27):** the calibration holds for every surface orientation, not only upward paving. The K1 walls showed the gap
+([brief](../assets/source/d1-walls/proof-2026-09-27/lighting-brief.md)).
+- **Sky dome.** The ambient's sky term is shaped by the normal in the sun's frame: nine terms
+  (1, y, y², h, h·y, s², h²y², s⁴, h³y) per channel, relative to the up-facing sky. They are
+  tabled by sun elevation and fitted to the source's Hosek sky integrated over 801 normals and to
+  its Cycles probes. Every Cycles probe is within 2.3%. Weather and night fade the shape toward a
+  uniform dome with the direct sun.
+- **Clear sky by elevation.** The up-facing sky follows Cycles' measurement at nine elevations.
+  The two-point fit had run 9–29% bright above 38°. Below 12° the twilight fade still applies.
+- **Ground bounce.** `(1 − n.y)/2` of the paving's mean albedo (0.319, 0.255, 0.167) × its
+  sun and sky irradiance, replacing a neutral 0.2 blend.
+- **Tone map.** The AgX inset and outset matrices are refitted to Blender's colour handling in
+  CIELAB, with the neutral curve pinned. Earth tones are within ΔE 2.5. Mid grass is 5.9 and
+  saturated primaries worse, the limit of a matrix model.
+- **Identity** `calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@5`. The PBR WGSL pins
+  are recaptured and the installer-repair replay is rebound to semantic contract v26.
+- **Source staging.** Source scenes stage assets on ground that reaches the horizon. Blender's
+  Hosek sky is bright below the horizon, about ten times the paving. Walls on the K1 source's
+  32 × 24 m patch saw it and took 13–37% more sky light than a street gives. The game's ground
+  bounce, not that staging, is the reference.
+Evidence: [results](../assets/source/d1-walls/proof-2026-09-27/lighting-results.md).
 
 ---
 

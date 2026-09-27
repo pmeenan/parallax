@@ -1,0 +1,1120 @@
+{
+  "groundAlbedo": [0.3187, 0.2547, 0.1668],
+  "domeTerms": ["1", "y", "y^2", "h", "h*y", "s^2", "h^2*y^2", "s^4", "h^3*y"],
+  "domeFrame": "sun frame: y up, h toward the sun horizontally, s across; relative to the up value",
+  "dome": [
+    {
+      "elevationDeg": 3,
+      "coefficients": [
+        [1.21089, 0.49865, -0.70942, 0.35727, 0.18561, -0.2236, 0.36049, -0.11798, -0.17502],
+        [0.92197, 0.49963, -0.42154, 0.16697, 0.09159, -0.12768, 0.16013, -0.04489, -0.07864],
+        [0.6613, 0.50047, -0.1618, 0.0582, 0.03957, -0.07777, 0.00282, 0.01375, -0.02253]
+      ],
+      "maxRelativeErrorWalls": 0.027740507012892657,
+      "maxRelativeErrorAll": 0.057529495115949195,
+      "meanRelativeError": 0.006638390982455607,
+      "panoramaVsProbes": 0.02020546027428982
+    },
+    {
+      "elevationDeg": 8,
+      "coefficients": [
+        [1.29249, 0.49853, -0.7909, 0.45638, 0.25588, -0.27981, 0.40511, -0.13709, -0.23384],
+        [1.00756, 0.49941, -0.50689, 0.2226, 0.13061, -0.16299, 0.21634, -0.06756, -0.11614],
+        [0.73361, 0.50019, -0.2338, 0.07531, 0.05129, -0.08894, 0.05323, -0.00759, -0.03745]
+      ],
+      "maxRelativeErrorWalls": 0.03582169117118957,
+      "maxRelativeErrorAll": 0.06713624865593737,
+      "meanRelativeError": 0.007304184001773669,
+      "panoramaVsProbes": 0.022006356207880162
+    },
+    {
+      "elevationDeg": 12,
+      "coefficients": [
+        [1.26409, 0.49865, -0.76262, 0.46697, 0.28011, -0.27688, 0.37791, -0.13144, -0.24257],
+        [1.02015, 0.49939, -0.51945, 0.24543, 0.15458, -0.17026, 0.2221, -0.07236, -0.13105],
+        [0.76239, 0.50008, -0.26246, 0.09165, 0.06565, -0.0936, 0.07262, -0.0168, -0.04783]
+      ],
+      "maxRelativeErrorWalls": 0.03620582486927318,
+      "maxRelativeErrorAll": 0.06257679399897917,
+      "meanRelativeError": 0.007258094127603673,
+      "panoramaVsProbes": 0.020625290733922386
+    },
+    {
+      "elevationDeg": 20,
+      "coefficients": [
+        [1.14854, 0.49893, -0.64736, 0.41729, 0.28747, -0.23165, 0.28511, -0.10687, -0.21441],
+        [0.98296, 0.49943, -0.4823, 0.24259, 0.17517, -0.15316, 0.19148, -0.06657, -0.12679],
+        [0.77435, 0.49998, -0.27429, 0.10891, 0.0862, -0.08854, 0.08017, -0.02325, -0.05464]
+      ],
+      "maxRelativeErrorWalls": 0.02915074602424231,
+      "maxRelativeErrorAll": 0.04546779501104551,
+      "meanRelativeError": 0.0069043649562422075,
+      "panoramaVsProbes": 0.01742324972178655
+    },
+    {
+      "elevationDeg": 30,
+      "coefficients": [
+        [1.01286, 0.49902, -0.51174, 0.32919, 0.2644, -0.16186, 0.19139, -0.0836, -0.1503],
+        [0.90724, 0.49942, -0.40655, 0.20658, 0.171, -0.11146, 0.14265, -0.05612, -0.09363],
+        [0.75156, 0.49992, -0.25143, 0.10844, 0.09384, -0.06906, 0.06858, -0.02373, -0.04561]
+      ],
+      "maxRelativeErrorWalls": 0.018641675992760065,
+      "maxRelativeErrorAll": 0.03165707797838817,
+      "meanRelativeError": 0.00709883176236313,
+      "panoramaVsProbes": 0.015481386587715917
+    },
+    {
+      "elevationDeg": 38,
+      "coefficients": [
+        [0.93041, 0.49903, -0.42928, 0.27024, 0.23622, -0.10694, 0.14731, -0.0765, -0.09717],
+        [0.8495, 0.49943, -0.34881, 0.17517, 0.15601, -0.07507, 0.11307, -0.05212, -0.06263],
+        [0.72439, 0.4999, -0.22424, 0.09898, 0.08989, -0.05012, 0.05752, -0.02377, -0.03272]
+      ],
+      "maxRelativeErrorWalls": 0.01969763254707344,
+      "maxRelativeErrorAll": 0.03335389007467326,
+      "meanRelativeError": 0.007532976474515019,
+      "panoramaVsProbes": 0.01459290811073699
+    },
+    {
+      "elevationDeg": 50,
+      "coefficients": [
+        [0.8364, 0.49885, -0.33505, 0.20086, 0.18651, -0.03468, 0.12586, -0.07241, -0.036],
+        [0.7771, 0.49936, -0.27632, 0.13317, 0.1254, -0.02708, 0.0925, -0.04886, -0.02488],
+        [0.68461, 0.49986, -0.1844, 0.08042, 0.07621, -0.0237, 0.04941, -0.02362, -0.01466]
+      ],
+      "maxRelativeErrorWalls": 0.02231430324450051,
+      "maxRelativeErrorAll": 0.03732106650343377,
+      "meanRelativeError": 0.008482709665173456,
+      "panoramaVsProbes": 0.015862130209615577
+    },
+    {
+      "elevationDeg": 65,
+      "coefficients": [
+        [0.73687, 0.49884, -0.23549, 0.12067, 0.11337, 0.0333, 0.13217, -0.07025, 0.00567],
+        [0.70733, 0.49934, -0.20653, 0.08573, 0.08162, 0.01911, 0.09398, -0.0487, 0.0021],
+        [0.64494, 0.49983, -0.1447, 0.05615, 0.05394, 0.00424, 0.05168, -0.02506, -0.00088]
+      ],
+      "maxRelativeErrorWalls": 0.027306635430313093,
+      "maxRelativeErrorAll": 0.03845030616448698,
+      "meanRelativeError": 0.008845340570475233,
+      "panoramaVsProbes": 0.014989277964838177
+    },
+    {
+      "elevationDeg": 80,
+      "coefficients": [
+        [0.66585, 0.49897, -0.1646, 0.04151, 0.03935, 0.06551, 0.14675, -0.06461, 0.00951],
+        [0.6628, 0.49934, -0.16199, 0.03724, 0.0353, 0.04838, 0.11068, -0.0493, 0.00498],
+        [0.621, 0.49982, -0.12074, 0.02697, 0.02581, 0.02457, 0.05971, -0.02636, 0.00075]
+      ],
+      "maxRelativeErrorWalls": 0.02533147210552402,
+      "maxRelativeErrorAll": 0.03588953605325317,
+      "meanRelativeError": 0.008197481878690911,
+      "panoramaVsProbes": 0.012659215566388715
+    }
+  ],
+  "domeValidation": [
+    {
+      "case": "paving-day-30",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.0001400000000000438
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007069308576364676
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.007212240024478431
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.01030812350494659
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "side-left",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.003540467843507026
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "side-right",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.0027770387577240917
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002365358179195793
+    },
+    {
+      "case": "paving-day-30",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002103433886176621
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00016000000000008979
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.005547541056275347
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.00859485408743925
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.014660380611153956
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "side-left",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.00461851369506361
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "side-right",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.004896491162599527
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0037879537208726764
+    },
+    {
+      "case": "wall-key-38",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0030529363009923448
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00011999999999992197
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007800466894944101
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.009612156270720533
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.011166542067820149
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "side-left",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.006469710385011027
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "side-right",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.007299063975738706
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003473181688576652
+    },
+    {
+      "case": "wall-low-12",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.00030124943418146787
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00011999999999986864
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007559280206288922
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.010053737074759915
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.01054496721332568
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0038624835843191147
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.0030535852026625124
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003295650966833363
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0013561424388563578
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.008919423646285354
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0005393308001278424
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0032568686987816528
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0013441936970394245
+    },
+    {
+      "case": "sweep-3",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.006522300266955961
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00011999999999995765
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007841750300674221
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.009144796915024319
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.011903373438975035
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0042896354627500405
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.002652969881664899
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0033048025408113657
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0014993364297042442
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.008509064741020428
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0007578189281022485
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.004166121716983913
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0013870466662138173
+    },
+    {
+      "case": "sweep-8",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.00824615851410228
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00011999999999986923
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007020862243530152
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.008550649036610038
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.011136453514906709
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0036436765982095637
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.0024274482863803483
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002776682664119047
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002517207826725592
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.008398130959860353
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0008876469661551729
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.003907849471593567
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.00119827516293298
+    },
+    {
+      "case": "sweep-12",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.007677440340462309
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00010999999999977152
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.005797814726188785
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.006809798032448902
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.010328014933518244
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.003543370063722085
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.0025181253646260893
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002814755974880127
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002864447366657968
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.011295775775812013
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0005454976632911615
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.004014064885713904
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.001493820865001721
+    },
+    {
+      "case": "sweep-20",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0054564043592192375
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00013999999999994936
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.005578272855023315
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.007320525047521944
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.010852952488597025
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.003916520430365639
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.002837256417746605
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003141534229193945
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003109731293312225
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.015951103628360157
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.00040748705243602107
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.003495757488576747
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0020131713481730895
+    },
+    {
+      "case": "sweep-30",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0022013415364719995
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00016000000000023518
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.006799573967203598
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.008678504907642125
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.011972911874625573
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.004091572162178664
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.0032499964222979325
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003167235653685126
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0026634353973277363
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.018513069227117804
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.00021634374500834364
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0026264559965721375
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0022950942677667126
+    },
+    {
+      "case": "sweep-38",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0010715181632015075
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00020000000000002275
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.00810051583697124
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.01023403559817063
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.014665857934457925
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.005186524468090261
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.003421641518241698
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.003409598317818531
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002832917868499726
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.02227542427949021
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0016935351898455127
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.002692905382438211
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0018287825877643423
+    },
+    {
+      "case": "sweep-50",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0039207101255987606
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00022000000000005216
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.008621424604046758
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.012381450168271498
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.01532591359559923
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.004956977606565879
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.003594434327569988
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0026080121263803943
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0028193733548422264
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.023334010059417362
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.0035907494166567363
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0037310501839838894
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0010005347983148053
+    },
+    {
+      "case": "sweep-65",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.0072593967318018175
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "up",
+      "normalUp": 1.0,
+      "maxRelativeError": 0.00022000000000009382
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "down",
+      "normalUp": -1.0,
+      "maxRelativeError": 0.007185095750591561
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "sunward",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.012742320889153981
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "antisun",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.012933108774515638
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "side",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.004175428274234872
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "side2",
+      "normalUp": -0.0,
+      "maxRelativeError": 0.003602148833961472
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "tilt-sunward",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.0026116677698650166
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "tilt-antisun",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.002389807220720365
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "tilt-side",
+      "normalUp": 0.7071067690849304,
+      "maxRelativeError": 0.022364778487182557
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "tilt-diag",
+      "normalUp": 0.5773502588272095,
+      "maxRelativeError": 0.004709849001464642
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "down-sunward",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0031307234256931753
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "down-antisun",
+      "normalUp": -0.7071067690849304,
+      "maxRelativeError": 0.0008289549505376613
+    },
+    {
+      "case": "sweep-80",
+      "orientation": "diag",
+      "normalUp": 0.0,
+      "maxRelativeError": 0.010154460713703057
+    }
+  ],
+  "domeValidationWorst": 0.023334010059417362,
+  "domeValidationWorstWalls": 0.023334010059417362,
+  "agx": {
+    "insetRows": [
+      [0.62127833, 0.23343154, 0.14540347],
+      [0.09959861, 0.69430019, 0.206641],
+      [0.07681333, 0.20178747, 0.72120687]
+    ],
+    "outsetRows": [
+      [1.52460694, -0.31184546, -0.21290588],
+      [-0.15384115, 1.38032555, -0.22668132],
+      [-0.06663283, -0.53608733, 1.60292909]
+    ],
+    "deltaEMaxBefore": 39.16670773951354,
+    "deltaEMaxAfter": 23.41972379987087,
+    "earthDeltaEMaxBefore": 3.5705846411258757,
+    "earthDeltaEMaxAfter": 2.5430746084822062,
+    "neutralChangeMax": 0.00024114069369796098,
+    "patches": [
+      {
+        "patch": "grey",
+        "linear": [0.063, 0.063, 0.063],
+        "deltaE": 0.719
+      },
+      {
+        "patch": "grey",
+        "linear": [0.18, 0.18, 0.18],
+        "deltaE": 0.581
+      },
+      {
+        "patch": "grey",
+        "linear": [0.44999999999999996, 0.44999999999999996, 0.44999999999999996],
+        "deltaE": 1.103
+      },
+      {
+        "patch": "plaster",
+        "linear": [0.217, 0.175, 0.11549999999999999],
+        "deltaE": 1.577
+      },
+      {
+        "patch": "plaster",
+        "linear": [0.62, 0.5, 0.33],
+        "deltaE": 2.543
+      },
+      {
+        "patch": "plaster",
+        "linear": [1.55, 1.25, 0.8250000000000001],
+        "deltaE": 1.672
+      },
+      {
+        "patch": "oak",
+        "linear": [0.0315, 0.01925, 0.010499999999999999],
+        "deltaE": 0.775
+      },
+      {
+        "patch": "oak",
+        "linear": [0.09, 0.055, 0.03],
+        "deltaE": 2.248
+      },
+      {
+        "patch": "oak",
+        "linear": [0.22499999999999998, 0.1375, 0.075],
+        "deltaE": 2.928
+      },
+      {
+        "patch": "stone",
+        "linear": [0.1575, 0.13299999999999998, 0.0945],
+        "deltaE": 0.88
+      },
+      {
+        "patch": "stone",
+        "linear": [0.45, 0.38, 0.27],
+        "deltaE": 1.977
+      },
+      {
+        "patch": "stone",
+        "linear": [1.125, 0.95, 0.675],
+        "deltaE": 1.705
+      },
+      {
+        "patch": "sky-blue",
+        "linear": [0.06999999999999999, 0.12249999999999998, 0.21],
+        "deltaE": 2.782
+      },
+      {
+        "patch": "sky-blue",
+        "linear": [0.2, 0.35, 0.6],
+        "deltaE": 1.017
+      },
+      {
+        "patch": "sky-blue",
+        "linear": [0.5, 0.875, 1.5],
+        "deltaE": 1.626
+      },
+      {
+        "patch": "grass",
+        "linear": [0.041999999999999996, 0.06999999999999999, 0.017499999999999998],
+        "deltaE": 1.86
+      },
+      {
+        "patch": "grass",
+        "linear": [0.12, 0.2, 0.05],
+        "deltaE": 5.919
+      },
+      {
+        "patch": "grass",
+        "linear": [0.3, 0.5, 0.125],
+        "deltaE": 2.528
+      },
+      {
+        "patch": "red",
+        "linear": [0.21, 0.017499999999999998, 0.010499999999999999],
+        "deltaE": 9.501
+      },
+      {
+        "patch": "red",
+        "linear": [0.6, 0.05, 0.03],
+        "deltaE": 15.655
+      },
+      {
+        "patch": "red",
+        "linear": [1.5, 0.125, 0.075],
+        "deltaE": 3.097
+      },
+      {
+        "patch": "green",
+        "linear": [0.017499999999999998, 0.175, 0.017499999999999998],
+        "deltaE": 3.767
+      },
+      {
+        "patch": "green",
+        "linear": [0.05, 0.5, 0.05],
+        "deltaE": 7.514
+      },
+      {
+        "patch": "green",
+        "linear": [0.125, 1.25, 0.125],
+        "deltaE": 10.169
+      },
+      {
+        "patch": "blue",
+        "linear": [0.013999999999999999, 0.020999999999999998, 0.21],
+        "deltaE": 15.441
+      },
+      {
+        "patch": "blue",
+        "linear": [0.04, 0.06, 0.6],
+        "deltaE": 8.496
+      },
+      {
+        "patch": "blue",
+        "linear": [0.1, 0.15, 1.5],
+        "deltaE": 7.852
+      }
+    ],
+    "samples": 402
+  }
+}

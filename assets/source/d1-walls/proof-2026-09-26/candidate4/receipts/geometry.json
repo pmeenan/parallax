@@ -1,0 +1,5426 @@
+{
+  "stage": "geometry",
+  "source": "candidate19",
+  "extractSha256": "de73c9a2d9323f9d325fa69f6def363c9bb1b2e956128efd1345901b30876a09",
+  "method": "attribute",
+  "displacementWeight": 16,
+  "displacementSmoothMm": {
+    "oak": 2,
+    "stone": 2,
+    "plaster": 6,
+    "soil": 3
+  },
+  "plasterMarginMetres": 0.1,
+  "squash": 0.02,
+  "errorsMm": {
+    "oak": [1, 1.5, 5],
+    "stone": [1, 3, 8],
+    "plaster": [1, 3, 8],
+    "soil": [1.5, 4, 8]
+  },
+  "plantFractions": [1, 0.35, 0.1],
+  "layout": {
+    "vertex": "position-normal-uv-f32",
+    "stride": 32,
+    "index": "uint32"
+  },
+  "meshes": [
+    {
+      "object": "corner-oak",
+      "piece": "corner",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [12, 0, 0],
+      "sourceVertices": 1186980,
+      "sourceTriangles": 2365216,
+      "sourceTurnedFaces": 2233,
+      "sourceTurnedAreaFraction": 0.00018221506009146913,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 16498,
+          "triangles": 30804,
+          "rawBytes": 897584,
+          "bounds": [
+            [-0.004718780517578125, 0.49887770414352417, -0.21891425549983978],
+            [0.29160594940185547, 6.281184673309326, 0.04616225138306618]
+          ],
+          "vertexStream": {
+            "path": "runtime/corner-oak-lod0.vertices.meshopt",
+            "bytes": 333669,
+            "sha256": "7fb935842e595f5759f3bd886cf9de9fda52b32095e80794855b41130f603814"
+          },
+          "indexStream": {
+            "path": "runtime/corner-oak-lod0.indices.meshopt",
+            "bytes": 35965,
+            "sha256": "d7178ca9a2003c39eb17ca83f466fd4d08fb8f42763968925a32a8ebc878ae23"
+          },
+          "simplifierErrorMm": 0.9977574227377772,
+          "turnedFaces": 77,
+          "turnedAreaFraction": 0.00008998696828731857
+        },
+        {
+          "lod": 1,
+          "vertices": 11321,
+          "triangles": 20632,
+          "rawBytes": 609856,
+          "bounds": [
+            [-0.004718780517578125, 0.4991165101528168, -0.2187214195728302],
+            [0.29164886474609375, 6.281184673309326, 0.04557521641254425]
+          ],
+          "vertexStream": {
+            "path": "runtime/corner-oak-lod1.vertices.meshopt",
+            "bytes": 228828,
+            "sha256": "4ce7674b7b0b8800337b588f462e6f63f02bfa80fb9f47a9ef197cb17a235f8d"
+          },
+          "indexStream": {
+            "path": "runtime/corner-oak-lod1.indices.meshopt",
+            "bytes": 23958,
+            "sha256": "73845899ade674c9abf2fca4d81bae0ed5786e3fa789f06ab8639444b0456687"
+          },
+          "simplifierErrorMm": 1.4966295566409826,
+          "turnedFaces": 55,
+          "turnedAreaFraction": 0.0001063611175792596
+        },
+        {
+          "lod": 2,
+          "vertices": 2633,
+          "triangles": 3412,
+          "rawBytes": 125200,
+          "bounds": [
+            [-0.004718780517578125, 0.4992038607597351, -0.2187214195728302],
+            [0.29119205474853516, 6.280235767364502, 0.04557521641254425]
+          ],
+          "vertexStream": {
+            "path": "runtime/corner-oak-lod2.vertices.meshopt",
+            "bytes": 50579,
+            "sha256": "32004434d15d4e73aa3c08727987c96f92471b0aecf4957de3388645645a1038"
+          },
+          "indexStream": {
+            "path": "runtime/corner-oak-lod2.indices.meshopt",
+            "bytes": 3720,
+            "sha256": "766ca600e504bbc92b6e7f15c14a05038f900776ae5b52b90a47c6704c08cb5a"
+          },
+          "simplifierErrorMm": 4.982696380466223,
+          "turnedFaces": 28,
+          "turnedAreaFraction": 4.232567094581123e-7
+        }
+      ]
+    },
+    {
+      "object": "g-braced-oak",
+      "piece": "g-braced",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 1342850,
+      "sourceTriangles": 2672192,
+      "sourceTurnedFaces": 27773,
+      "sourceTurnedAreaFraction": 0.0021184433434969945,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 8358,
+          "triangles": 14569,
+          "rawBytes": 442284,
+          "bounds": [
+            [-1.0431883335113525, 0.49888843297958374, -0.21923476457595825],
+            [1.0009777545928955, 3.5090441703796387, 0.055316612124443054]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-braced-oak-lod0.vertices.meshopt",
+            "bytes": 178434,
+            "sha256": "1c38ba1e6c2ea555fef0bd334a82b7bf6a15f02c162fd94497898d12b5318818"
+          },
+          "indexStream": {
+            "path": "runtime/g-braced-oak-lod0.indices.meshopt",
+            "bytes": 16755,
+            "sha256": "f2fc604101d04cc210fb9fc1b393be33cd0dbd34bf7e21ff43391385f6991300"
+          },
+          "simplifierErrorMm": 0.9988696547225118,
+          "turnedFaces": 84,
+          "turnedAreaFraction": 0.00023347667819935126
+        },
+        {
+          "lod": 1,
+          "vertices": 4898,
+          "triangles": 7833,
+          "rawBytes": 250732,
+          "bounds": [
+            [-1.0430774688720703, 0.49888843297958374, -0.21923476457595825],
+            [1.0005099773406982, 3.5090441703796387, 0.05444427579641342]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-braced-oak-lod1.vertices.meshopt",
+            "bytes": 104797,
+            "sha256": "07f4145fbddad01233f7cb1977676a13c3284a2d007827ba8430ca57f1f918ba"
+          },
+          "indexStream": {
+            "path": "runtime/g-braced-oak-lod1.indices.meshopt",
+            "bytes": 8863,
+            "sha256": "7b01c673729b4e70c7a0bca146502e7be5500265e9f62450ef4dcbdd180b1eae"
+          },
+          "simplifierErrorMm": 1.4967895112931728,
+          "turnedFaces": 23,
+          "turnedAreaFraction": 0.0001459644172889099
+        },
+        {
+          "lod": 2,
+          "vertices": 2751,
+          "triangles": 3722,
+          "rawBytes": 132696,
+          "bounds": [
+            [-1.0424778461456299, 0.49962663650512695, -0.21899785101413727],
+            [1.0002782344818115, 3.5089073181152344, 0.05444427579641342]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-braced-oak-lod2.vertices.meshopt",
+            "bytes": 54880,
+            "sha256": "b7b1e0728754eb4b698f1fd82a817a87f129289560111b2c20bfca1d168f494f"
+          },
+          "indexStream": {
+            "path": "runtime/g-braced-oak-lod2.indices.meshopt",
+            "bytes": 4081,
+            "sha256": "33e4c788fbaa934e717ce24363f287816fdb12b1b85741af0ad1ce0738ffe122"
+          },
+          "simplifierErrorMm": 4.967523738741875,
+          "turnedFaces": 15,
+          "turnedAreaFraction": 0.00011199742461998138
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-braced",
+      "piece": "g-braced",
+      "material": "plaster-g-braced",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 827433,
+      "sourceTriangles": 1651200,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2850,
+          "triangles": 5641,
+          "rawBytes": 158892,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008122997358441353],
+            [1.000000238418579, 3.2800004482269287, 0.01030852273106575]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-braced-lod0.vertices.meshopt",
+            "bytes": 43431,
+            "sha256": "3fa2afb11f9d96d6fd20f1e76ac612fec1a464f9f48926b4a3468035ce191583"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-braced-lod0.indices.meshopt",
+            "bytes": 6472,
+            "sha256": "c2423792b5d42723040ff056f8f0481a5d5f9b6e2b79578526c301c18c41552a"
+          },
+          "simplifierErrorMm": 0.9957640431821346,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1170,
+          "triangles": 2300,
+          "rawBytes": 65040,
+          "bounds": [
+            [-1, 0.699999988079071, -0.0069433473981916904],
+            [1.000000238418579, 3.2800004482269287, 0.01030852273106575]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-braced-lod1.vertices.meshopt",
+            "bytes": 18628,
+            "sha256": "1e91fd57e1798b3d8f63396288220e6bdb66268798924be7172e99c598ed17d0"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-braced-lod1.indices.meshopt",
+            "bytes": 2640,
+            "sha256": "5d0482f02008531fb734abda9757b547d84ed2616a9293843b13db6b7fe26cda"
+          },
+          "simplifierErrorMm": 2.951480681076646,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 500,
+          "triangles": 971,
+          "rawBytes": 27652,
+          "bounds": [
+            [-1, 0.699999988079071, -0.006527678109705448],
+            [1.000000238418579, 3.2800004482269287, 0.008183866739273071]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-braced-lod2.vertices.meshopt",
+            "bytes": 8312,
+            "sha256": "4ac06093a830a59846af4a7c8bc23471886fddbb1184974487db0f9f1efd1488"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-braced-lod2.indices.meshopt",
+            "bytes": 1139,
+            "sha256": "861781f926deeb26d1b0fde7febe7cf012e065800b5f56cc1788ce37c07c7dc6"
+          },
+          "simplifierErrorMm": 7.934293709695339,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "g-cbrace-oak",
+      "piece": "g-cbrace",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 943936,
+      "sourceTriangles": 1875104,
+      "sourceTurnedFaces": 19227,
+      "sourceTurnedAreaFraction": 0.002594891856841356,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 7557,
+          "triangles": 13718,
+          "rawBytes": 406440,
+          "bounds": [
+            [-1.0040249824523926, 0.49584025144577026, -0.22241874039173126],
+            [1.29296875, 3.5088274478912354, 0.053303733468055725]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace-oak-lod0.vertices.meshopt",
+            "bytes": 165343,
+            "sha256": "369fd290608069ec1a51eb7196a7623c2f9fe7244e2962932b5e9248c83d9354"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace-oak-lod0.indices.meshopt",
+            "bytes": 15922,
+            "sha256": "fe2c1bbbccf13b10a3a01afe2454b8d7b75f1dc465dec068abddeaa202652e89"
+          },
+          "simplifierErrorMm": 0.9907308267429471,
+          "turnedFaces": 113,
+          "turnedAreaFraction": 0.0006399359400719101
+        },
+        {
+          "lod": 1,
+          "vertices": 4008,
+          "triangles": 6831,
+          "rawBytes": 210228,
+          "bounds": [
+            [-1.0040249824523926, 0.49584025144577026, -0.22241874039173126],
+            [1.2928383350372314, 3.5086939334869385, 0.053303733468055725]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace-oak-lod1.vertices.meshopt",
+            "bytes": 89265,
+            "sha256": "8bdd54274c3844e8d88908b4fe253551f22c90b2903667e6aadeb0e1c79e3b41"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace-oak-lod1.indices.meshopt",
+            "bytes": 7758,
+            "sha256": "6b57b2c7795b5a0e2345ea48c9011e3a9c80e448e3618df2d407c574c6e10fa0"
+          },
+          "simplifierErrorMm": 1.4656621497124434,
+          "turnedFaces": 37,
+          "turnedAreaFraction": 0.0002768390130464979
+        },
+        {
+          "lod": 2,
+          "vertices": 1916,
+          "triangles": 2814,
+          "rawBytes": 95080,
+          "bounds": [
+            [-1.0040249824523926, 0.49584025144577026, -0.22240538895130157],
+            [1.2927007675170898, 3.5084025859832764, 0.05319496616721153]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace-oak-lod2.vertices.meshopt",
+            "bytes": 41373,
+            "sha256": "c9446ad34d5a899dd6a790a38b729b92ff170df79de5639a6fcc2c7c62e42394"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace-oak-lod2.indices.meshopt",
+            "bytes": 3102,
+            "sha256": "6af4d577a6eef4f024935ea34b013204c96cc8eae9315a11b255e0e2c3f93c09"
+          },
+          "simplifierErrorMm": 4.974567331373692,
+          "turnedFaces": 24,
+          "turnedAreaFraction": 0.00004132897620573612
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-cbrace",
+      "piece": "g-cbrace",
+      "material": "plaster-g-cbrace",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 827433,
+      "sourceTriangles": 1651200,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2870,
+          "triangles": 5682,
+          "rawBytes": 160024,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008302745409309864],
+            [1.000000238418579, 3.2800004482269287, 0.010627278126776218]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace-lod0.vertices.meshopt",
+            "bytes": 43798,
+            "sha256": "bb9981319af13340ccd5fd27eb4fb8bb4a7a1136daf9b91bada9580adb048fe0"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace-lod0.indices.meshopt",
+            "bytes": 6527,
+            "sha256": "4121eba94e5b844bd0477b8b2ca21936efbd9032c35fe0173f1f422aef7a7032"
+          },
+          "simplifierErrorMm": 0.9996050503104925,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1209,
+          "triangles": 2382,
+          "rawBytes": 67272,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008302745409309864],
+            [1.000000238418579, 3.2800004482269287, 0.010627278126776218]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace-lod1.vertices.meshopt",
+            "bytes": 19215,
+            "sha256": "362c89f20d569cb9661560a455d79796cbafef5eae1e2dacf0493f62bd4e9bd9"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace-lod1.indices.meshopt",
+            "bytes": 2754,
+            "sha256": "3714254068fda3304db6ba6377cc278f248ae4432c5ea0aefc0804966082384b"
+          },
+          "simplifierErrorMm": 2.9521400574594736,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 505,
+          "triangles": 984,
+          "rawBytes": 27968,
+          "bounds": [
+            [-1, 0.699999988079071, -0.00752263842150569],
+            [1.000000238418579, 3.2800004482269287, 0.010627278126776218]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace-lod2.vertices.meshopt",
+            "bytes": 8356,
+            "sha256": "8eb9e16195476eee6046dcb5a3e58e8d7b21e6960362b64bf390eb39868087d3"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace-lod2.indices.meshopt",
+            "bytes": 1119,
+            "sha256": "ccfef3f65a3960a7665dfee9e485aa412e6e7b415e296c8b45cd84e91eecdba3"
+          },
+          "simplifierErrorMm": 7.966175675392151,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "g-cbrace2-oak",
+      "piece": "g-cbrace2",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 644282,
+      "sourceTriangles": 1277568,
+      "sourceTurnedFaces": 18786,
+      "sourceTurnedAreaFraction": 0.004334720437252511,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4058,
+          "triangles": 7578,
+          "rawBytes": 220792,
+          "bounds": [
+            [-1.00411856174469, 0.4952944815158844, -0.017192717641592026],
+            [1.090712070465088, 3.5068624019622803, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak-lod0.vertices.meshopt",
+            "bytes": 93733,
+            "sha256": "49cbe90a172051f1ae94528273daca33a2ed3fd0724318214d1e54707efcd44a"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak-lod0.indices.meshopt",
+            "bytes": 8762,
+            "sha256": "fb0bb89264db78222b49b3d03e40d61f51ff8b4d592bb7130acf6a535e859572"
+          },
+          "simplifierErrorMm": 0.9955645073205233,
+          "turnedFaces": 81,
+          "turnedAreaFraction": 0.0016028921645883517
+        },
+        {
+          "lod": 1,
+          "vertices": 2221,
+          "triangles": 4053,
+          "rawBytes": 119708,
+          "bounds": [
+            [-1.00411856174469, 0.4952944815158844, -0.017187397927045822],
+            [1.0908162593841553, 3.506784677505493, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak-lod1.vertices.meshopt",
+            "bytes": 52604,
+            "sha256": "2bb0b62236ac615363b33259118e7e14e22d30fa70af7489071176a395d8dfe9"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak-lod1.indices.meshopt",
+            "bytes": 4553,
+            "sha256": "e923269840c4587baef0385cce8d0f252ee6a72f681e409578f568ee5aaa51ea"
+          },
+          "simplifierErrorMm": 1.4645730843767524,
+          "turnedFaces": 36,
+          "turnedAreaFraction": 0.0010383402818569946
+        },
+        {
+          "lod": 2,
+          "vertices": 871,
+          "triangles": 1474,
+          "rawBytes": 45560,
+          "bounds": [
+            [-1.0025818347930908, 0.4952944815158844, -0.017057333141565323],
+            [1.0908162593841553, 3.5060129165649414, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak-lod2.vertices.meshopt",
+            "bytes": 21633,
+            "sha256": "36c9c637518cb92f60f45d3402b5493d66b61caa62bb6b20ff31807958ce8f5e"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak-lod2.indices.meshopt",
+            "bytes": 1652,
+            "sha256": "7aa9b15b5f8e1b4115169f8a63d69a68eb357a32a73ef1ee0c3b3f8be9840ec4"
+          },
+          "simplifierErrorMm": 4.966565873473883,
+          "turnedFaces": 10,
+          "turnedAreaFraction": 0.00023114463963530985
+        }
+      ]
+    },
+    {
+      "object": "g-cbrace2-oak~m",
+      "piece": "g-cbrace2~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "g-cbrace2-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4058,
+          "triangles": 7578,
+          "rawBytes": 220792,
+          "bounds": [
+            [-1.090712070465088, 0.4952944815158844, -0.017192717641592026],
+            [1.00411856174469, 3.5068624019622803, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod0.vertices.meshopt",
+            "bytes": 93733,
+            "sha256": "cbb05c3e5a3e09485b102b9961a23b564f3caefb36ab2181eb219585634c6b3e"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod0.indices.meshopt",
+            "bytes": 11207,
+            "sha256": "e6b9e814654e6a57d499724ea9d8500feea7cdf347505a581f0f84c6fdaab5c8"
+          },
+          "simplifierErrorMm": 0.9955645073205233
+        },
+        {
+          "lod": 1,
+          "vertices": 2221,
+          "triangles": 4053,
+          "rawBytes": 119708,
+          "bounds": [
+            [-1.0908162593841553, 0.4952944815158844, -0.017187397927045822],
+            [1.00411856174469, 3.506784677505493, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod1.vertices.meshopt",
+            "bytes": 52604,
+            "sha256": "8dd3a8be186ded6e004263369c3bf3b4956e886f4d0840f732cc66ddde8f1073"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod1.indices.meshopt",
+            "bytes": 6089,
+            "sha256": "3639a4ef77e1c819fa0f6af2a0ed32d8ba52ee3a63d2da669a0bfb49597c81f0"
+          },
+          "simplifierErrorMm": 1.4645730843767524
+        },
+        {
+          "lod": 2,
+          "vertices": 871,
+          "triangles": 1474,
+          "rawBytes": 45560,
+          "bounds": [
+            [-1.0908162593841553, 0.4952944815158844, -0.017057333141565323],
+            [1.0025818347930908, 3.5060129165649414, 0.05197945609688759]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod2.vertices.meshopt",
+            "bytes": 21633,
+            "sha256": "45c8ba13f79975c79ba3ddc9214f8f0b0eb20e43923290efafef56f4fc9cb544"
+          },
+          "indexStream": {
+            "path": "runtime/g-cbrace2-oak~m-lod2.indices.meshopt",
+            "bytes": 2081,
+            "sha256": "d9ddbb1fb72505ca675b98161e59d40529d8c1a2b84c9b601c71718fac3ce1d9"
+          },
+          "simplifierErrorMm": 4.966565873473883
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-cbrace2",
+      "piece": "g-cbrace2",
+      "material": "plaster-g-cbrace2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 827433,
+      "sourceTriangles": 1651200,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2861,
+          "triangles": 5663,
+          "rawBytes": 159508,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008860156871378422],
+            [1.000000238418579, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod0.vertices.meshopt",
+            "bytes": 43495,
+            "sha256": "46cc5918496b174c11e0317c1aee98e9fe5c0ef6ce0a7e5eb3e87e18e4c19ce7"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod0.indices.meshopt",
+            "bytes": 6543,
+            "sha256": "4c2e83c7b564fb1622912455202042786346b3af0bff880262cddcb06a74dd5b"
+          },
+          "simplifierErrorMm": 0.9969586972147226,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1209,
+          "triangles": 2382,
+          "rawBytes": 67272,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008860156871378422],
+            [1.000000238418579, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod1.vertices.meshopt",
+            "bytes": 19236,
+            "sha256": "c0708f5b4121f409ae6cb0bf679ed122b8722e529b0fe6b531d4e2207b574a08"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod1.indices.meshopt",
+            "bytes": 2779,
+            "sha256": "0f301486274852975328d4515d4000fd3fb8aeed96d094458f87fa627fe01d0f"
+          },
+          "simplifierErrorMm": 2.9896749183535576,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 511,
+          "triangles": 995,
+          "rawBytes": 28292,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008860156871378422],
+            [1.000000238418579, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod2.vertices.meshopt",
+            "bytes": 8463,
+            "sha256": "e17322825587fc29530279745a4f28a790eb9481e482cbfed93dafdac733edda"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2-lod2.indices.meshopt",
+            "bytes": 1150,
+            "sha256": "4cd60916b2d9217435bba14853f6df3161e8aced070e56390784c6fe8e056373"
+          },
+          "simplifierErrorMm": 7.948528043925762,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-cbrace2~m",
+      "piece": "g-cbrace2~m",
+      "material": "plaster-g-cbrace2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "plaster-g-cbrace2",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2861,
+          "triangles": 5663,
+          "rawBytes": 159508,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.008860156871378422],
+            [1, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod0.vertices.meshopt",
+            "bytes": 43495,
+            "sha256": "5859e4f4ba781531eb745d2290135b60bfe89d5938543fa48774cd0a9d414a04"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod0.indices.meshopt",
+            "bytes": 8814,
+            "sha256": "fb6cf61da126b609018a734442f42482623baa020266b4b50a625e864ced1d0e"
+          },
+          "simplifierErrorMm": 0.9969586972147226
+        },
+        {
+          "lod": 1,
+          "vertices": 1209,
+          "triangles": 2382,
+          "rawBytes": 67272,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.008860156871378422],
+            [1, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod1.vertices.meshopt",
+            "bytes": 19236,
+            "sha256": "9245c31e54147b2ee1fa7714984f8634e8ee640752f3a57decc530f1522b9ee6"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod1.indices.meshopt",
+            "bytes": 3665,
+            "sha256": "ef7ac177901a8234aaa77d049dc562735dedbd5e3c9ec6d5227c5a596c05fcbc"
+          },
+          "simplifierErrorMm": 2.9896749183535576
+        },
+        {
+          "lod": 2,
+          "vertices": 511,
+          "triangles": 995,
+          "rawBytes": 28292,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.008860156871378422],
+            [1, 3.2800004482269287, 0.011186501011252403]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod2.vertices.meshopt",
+            "bytes": 8463,
+            "sha256": "20bf11a5ea2aa12683b5291b320e2fd86022aa59a6e48372b872df66bbcc3d4e"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-cbrace2~m-lod2.indices.meshopt",
+            "bytes": 1443,
+            "sha256": "072692c7220bcc47ae7e7435eb6129ad3a67b4e40951ac3b7f74b4466977e955"
+          },
+          "simplifierErrorMm": 7.948528043925762
+        }
+      ]
+    },
+    {
+      "object": "g-door-oak",
+      "piece": "g-door",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 2395383,
+      "sourceTriangles": 4758624,
+      "sourceTurnedFaces": 25629,
+      "sourceTurnedAreaFraction": 0.0012657171271475383,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 12910,
+          "triangles": 23273,
+          "rawBytes": 692396,
+          "bounds": [
+            [-1.006657600402832, -0.0014225608902052045, -0.22157874703407288],
+            [1.000903844833374, 3.512256383895874, 0.054006196558475494]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-oak-lod0.vertices.meshopt",
+            "bytes": 274679,
+            "sha256": "d78a66a95404bc8e70b75599b1d276e5062dbaf6e6a6dcb31e4d3f471cf4f9ae"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-oak-lod0.indices.meshopt",
+            "bytes": 26709,
+            "sha256": "3362d5cf073e1f5293cd6309b2e2350c68926811ceb96eaba0549fbf7f0adb80"
+          },
+          "simplifierErrorMm": 0.9865079773589969,
+          "turnedFaces": 152,
+          "turnedAreaFraction": 0.0003645047368400007
+        },
+        {
+          "lod": 1,
+          "vertices": 5474,
+          "triangles": 8755,
+          "rawBytes": 280228,
+          "bounds": [
+            [-1.006657600402832, -0.0014225608902052045, -0.22157874703407288],
+            [1.0006401538848877, 3.512136697769165, 0.054006196558475494]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-oak-lod1.vertices.meshopt",
+            "bytes": 119792,
+            "sha256": "73bf3e9d07c233b650d05a6e4538a685b03eec2c4832b960218bac7af88d509d"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-oak-lod1.indices.meshopt",
+            "bytes": 9851,
+            "sha256": "bed487f98ed99c3dde88e50b1f0079f7a00b032357be7055403c1e87fc58d43d"
+          },
+          "simplifierErrorMm": 1.4904342824593186,
+          "turnedFaces": 31,
+          "turnedAreaFraction": 0.00018279068812306073
+        },
+        {
+          "lod": 2,
+          "vertices": 2952,
+          "triangles": 3961,
+          "rawBytes": 141996,
+          "bounds": [
+            [-1.006657600402832, -0.00021448757615871727, -0.22157874703407288],
+            [1.0004446506500244, 3.5104174613952637, 0.053873877972364426]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-oak-lod2.vertices.meshopt",
+            "bytes": 60334,
+            "sha256": "9eaf2ef300d8ea0bb9fa64bb7539121d9b8f2ad2d76499b405c1620252f41721"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-oak-lod2.indices.meshopt",
+            "bytes": 4351,
+            "sha256": "1cc2e5b9e38767b5d8955c1e6697a0f9c59f31568b7b5f72b42b7fe66dcc1c1d"
+          },
+          "simplifierErrorMm": 4.983814898878336,
+          "turnedFaces": 8,
+          "turnedAreaFraction": 0.000256669002926471
+        }
+      ]
+    },
+    {
+      "object": "g-door-stone",
+      "piece": "g-door",
+      "material": "kit-stone",
+      "materialClass": "stone",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 293499,
+      "sourceTriangles": 584192,
+      "sourceTurnedFaces": 5626,
+      "sourceTurnedAreaFraction": 0.004027332093872002,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3322,
+          "triangles": 6139,
+          "rawBytes": 179972,
+          "bounds": [
+            [-0.4325152039527893, -0.09083125740289688, -0.21663717925548553],
+            [0.8371403217315674, 0.031143201515078545, 0.15006226301193237]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-stone-lod0.vertices.meshopt",
+            "bytes": 76178,
+            "sha256": "9af98a9a631bafeafeb2c9659aaa402570869b16d1debbb46cc94742f99886c4"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-stone-lod0.indices.meshopt",
+            "bytes": 7102,
+            "sha256": "99e273583bbef51c81fc12bda223bca00f72690306f25c2d0a3e9236d5ef5101"
+          },
+          "simplifierErrorMm": 0.980938202701509,
+          "turnedFaces": 32,
+          "turnedAreaFraction": 0.001124310520241867
+        },
+        {
+          "lod": 1,
+          "vertices": 1540,
+          "triangles": 2609,
+          "rawBytes": 80588,
+          "bounds": [
+            [-0.43233001232147217, -0.09083125740289688, -0.2165917009115219],
+            [0.8371403217315674, 0.030103232711553574, 0.15006226301193237]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-stone-lod1.vertices.meshopt",
+            "bytes": 35423,
+            "sha256": "4a043a24b6e36d294e0a94bf8dd34736aca682f6660e7784a221394fffb67551"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-stone-lod1.indices.meshopt",
+            "bytes": 2978,
+            "sha256": "cc120655301bb9ab18dd97413bbdc1f55e82467a1e7ade60723548fa0a3e8afa"
+          },
+          "simplifierErrorMm": 2.965762745589018,
+          "turnedFaces": 7,
+          "turnedAreaFraction": 0.00063335994484046
+        },
+        {
+          "lod": 2,
+          "vertices": 876,
+          "triangles": 1303,
+          "rawBytes": 43668,
+          "bounds": [
+            [-0.43233001232147217, -0.09025797247886658, -0.2165917009115219],
+            [0.8371403217315674, 0.0300801619887352, 0.15006226301193237]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-door-stone-lod2.vertices.meshopt",
+            "bytes": 19716,
+            "sha256": "ab8d6ac0f1b00b06d8bbd706b0aab720af5173dfde98e7fd925e567d18a697db"
+          },
+          "indexStream": {
+            "path": "runtime/g-door-stone-lod2.indices.meshopt",
+            "bytes": 1506,
+            "sha256": "ad49b3a4c26bdbc7a9955d6ab5da643d34b8a5e139d420089c2be7a472cf97e2"
+          },
+          "simplifierErrorMm": 7.963014766573906,
+          "turnedFaces": 6,
+          "turnedAreaFraction": 0.0002643067054317312
+        }
+      ]
+    },
+    {
+      "object": "iron-g-door",
+      "piece": "g-door",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "sourceVertices": 1920,
+      "sourceTriangles": 1092,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 1920,
+          "triangles": 1092,
+          "rawBytes": 74544,
+          "bounds": [
+            [-0.3149999976158142, 0.32500001788139343, -0.010999999940395355],
+            [0.6109999418258667, 1.9549999237060547, 0.014000000432133675]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-door-lod0.vertices.meshopt",
+            "bytes": 33408,
+            "sha256": "db7f6fd6cc581f224e553029864077d6cef70a178c84eb08bcf183ad9f42d2b6"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-door-lod0.indices.meshopt",
+            "bytes": 1145,
+            "sha256": "2bedac0c94ad672ad026b48fe4eb1d8983ab5bb471612cc00d97918e1614b6bc"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1920,
+          "triangles": 1092,
+          "rawBytes": 74544,
+          "bounds": [
+            [-0.3149999976158142, 0.32500001788139343, -0.010999999940395355],
+            [0.6109999418258667, 1.9549999237060547, 0.014000000432133675]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-door-lod1.vertices.meshopt",
+            "bytes": 33408,
+            "sha256": "db7f6fd6cc581f224e553029864077d6cef70a178c84eb08bcf183ad9f42d2b6"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-door-lod1.indices.meshopt",
+            "bytes": 1145,
+            "sha256": "2bedac0c94ad672ad026b48fe4eb1d8983ab5bb471612cc00d97918e1614b6bc"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 1920,
+          "triangles": 1092,
+          "rawBytes": 74544,
+          "bounds": [
+            [-0.3149999976158142, 0.32500001788139343, -0.010999999940395355],
+            [0.6109999418258667, 1.9549999237060547, 0.014000000432133675]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-door-lod2.vertices.meshopt",
+            "bytes": 33408,
+            "sha256": "db7f6fd6cc581f224e553029864077d6cef70a178c84eb08bcf183ad9f42d2b6"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-door-lod2.indices.meshopt",
+            "bytes": 1145,
+            "sha256": "2bedac0c94ad672ad026b48fe4eb1d8983ab5bb471612cc00d97918e1614b6bc"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-door",
+      "piece": "g-door",
+      "material": "plaster-g-door",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 568473,
+      "sourceTriangles": 1132032,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 1609,
+          "triangles": 3166,
+          "rawBytes": 89480,
+          "bounds": [
+            [-1, 0.699999988079071, -0.007993836887180805],
+            [1.000000238418579, 3.2800004482269287, 0.009736167266964912]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-door-lod0.vertices.meshopt",
+            "bytes": 24980,
+            "sha256": "b42cea76d9c17cdda5ad45c5f112ac80bff76b2d458aa4a3f3d45d1c1d92413b"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-door-lod0.indices.meshopt",
+            "bytes": 3689,
+            "sha256": "809ddb058c96243ab273eb78e15d90722985e48e896e6404034e728aec15e096"
+          },
+          "simplifierErrorMm": 0.995759735815227,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 691,
+          "triangles": 1347,
+          "rawBytes": 38276,
+          "bounds": [
+            [-1, 0.7000000476837158, -0.007993836887180805],
+            [1.000000238418579, 3.2800004482269287, 0.009736167266964912]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-door-lod1.vertices.meshopt",
+            "bytes": 11139,
+            "sha256": "1e860aab70653d9f8b896af878452d82fd0dbdfced89ef84415a079c62378ae1"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-door-lod1.indices.meshopt",
+            "bytes": 1587,
+            "sha256": "8335952a4d5a575f3300607eb3f54f7baeb2a48753c784068f6ae43b923bc30e"
+          },
+          "simplifierErrorMm": 2.9535365756601095,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 302,
+          "triangles": 574,
+          "rawBytes": 16552,
+          "bounds": [
+            [-1, 0.7000000476837158, -0.007993836887180805],
+            [1.000000238418579, 3.2800004482269287, 0.00920790620148182]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-door-lod2.vertices.meshopt",
+            "bytes": 5050,
+            "sha256": "3a95ba08cc3020034aa42f6cb9e5fcf85a003dde1e00e6c7e32c5051b71a7475"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-door-lod2.indices.meshopt",
+            "bytes": 652,
+            "sha256": "e20f9b8ef071886fb72ee9f1ee6a94c15acd8048fcb2f632ea622afc6c521fba"
+          },
+          "simplifierErrorMm": 7.961208000779152,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "g-plain-oak",
+      "piece": "g-plain",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 553685,
+      "sourceTriangles": 1098816,
+      "sourceTurnedFaces": 14893,
+      "sourceTurnedAreaFraction": 0.0036200511321163044,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3667,
+          "triangles": 6958,
+          "rawBytes": 200840,
+          "bounds": [
+            [-1.0047904253005981, 0.4987965226173401, -0.01844717003405094],
+            [1.0006003379821777, 3.504333019256592, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak-lod0.vertices.meshopt",
+            "bytes": 82512,
+            "sha256": "e663ad2e610b4e4e66b49476a52f2aacb6bf3e944b500aab61ac2ce1e978d123"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak-lod0.indices.meshopt",
+            "bytes": 7969,
+            "sha256": "b6b1e80d46bb700d54b64eeb81cc38e248f50cb7596c2e39c6f9632e4ce494fe"
+          },
+          "simplifierErrorMm": 0.9979245951399207,
+          "turnedFaces": 73,
+          "turnedAreaFraction": 0.0011014475474616116
+        },
+        {
+          "lod": 1,
+          "vertices": 1913,
+          "triangles": 3558,
+          "rawBytes": 103912,
+          "bounds": [
+            [-1.0047904253005981, 0.499953955411911, -0.01844717003405094],
+            [1.0004193782806396, 3.5032005310058594, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak-lod1.vertices.meshopt",
+            "bytes": 44846,
+            "sha256": "2ddda7450857c2d42da93a8f242d7d3a5d964f4ad1b6b2fe303b7467a5e41884"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak-lod1.indices.meshopt",
+            "bytes": 4058,
+            "sha256": "4e4b744d60822ef83318e2bdbadaab5df2a921a734ed2f8b153962f0d820a638"
+          },
+          "simplifierErrorMm": 1.4643811155110598,
+          "turnedFaces": 24,
+          "turnedAreaFraction": 0.0006041235062735322
+        },
+        {
+          "lod": 2,
+          "vertices": 742,
+          "triangles": 1293,
+          "rawBytes": 39260,
+          "bounds": [
+            [-1.0036405324935913, 0.49997177720069885, -0.01844717003405094],
+            [1.0000078678131104, 3.5018863677978516, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak-lod2.vertices.meshopt",
+            "bytes": 18336,
+            "sha256": "861830d2a428bf83ef2bae12c23d353b4058af6ac3b2cb370a39096e89db42d9"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak-lod2.indices.meshopt",
+            "bytes": 1458,
+            "sha256": "17d2374ec07828e211f9e283351a1ecd0523cd1f11aae1fa20a80f59a3fa926c"
+          },
+          "simplifierErrorMm": 4.958832636475563,
+          "turnedFaces": 8,
+          "turnedAreaFraction": 1.607814373297421e-7
+        }
+      ]
+    },
+    {
+      "object": "g-plain-oak~m",
+      "piece": "g-plain~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "g-plain-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3667,
+          "triangles": 6958,
+          "rawBytes": 200840,
+          "bounds": [
+            [-1.0006003379821777, 0.4987965226173401, -0.01844717003405094],
+            [1.0047904253005981, 3.504333019256592, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak~m-lod0.vertices.meshopt",
+            "bytes": 82512,
+            "sha256": "761c9a75688b81631ec75412a9c7bb2a4468c81c1c4da11762fc381397bc1c4a"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak~m-lod0.indices.meshopt",
+            "bytes": 10407,
+            "sha256": "6f9a67e75279e0e15899fc4562cebb79bed8736599d8ae4414b3580694e65e29"
+          },
+          "simplifierErrorMm": 0.9979245951399207
+        },
+        {
+          "lod": 1,
+          "vertices": 1913,
+          "triangles": 3558,
+          "rawBytes": 103912,
+          "bounds": [
+            [-1.0004193782806396, 0.499953955411911, -0.01844717003405094],
+            [1.0047904253005981, 3.5032005310058594, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak~m-lod1.vertices.meshopt",
+            "bytes": 44846,
+            "sha256": "f6652066b548b4071ffd023c1f81711d5a5fe50b280065685cae624c34031874"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak~m-lod1.indices.meshopt",
+            "bytes": 5457,
+            "sha256": "38a0b3e5eb5021be16ce920e76180d4c045e66d6c6d0fd81134e339f05233e77"
+          },
+          "simplifierErrorMm": 1.4643811155110598
+        },
+        {
+          "lod": 2,
+          "vertices": 742,
+          "triangles": 1293,
+          "rawBytes": 39260,
+          "bounds": [
+            [-1.0000078678131104, 0.49997177720069885, -0.01844717003405094],
+            [1.0036405324935913, 3.5018863677978516, 0.052853625267744064]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-plain-oak~m-lod2.vertices.meshopt",
+            "bytes": 18336,
+            "sha256": "52cd40cff8076c1be141f37ec7a4d6960630bcb69657d88972d960bc3c7a9c19"
+          },
+          "indexStream": {
+            "path": "runtime/g-plain-oak~m-lod2.indices.meshopt",
+            "bytes": 1865,
+            "sha256": "f8e070aeadfd9ccef09ab5fa177e7c07970b31bb7864676884762ba1d19ffaec"
+          },
+          "simplifierErrorMm": 4.958832636475563
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-plain",
+      "piece": "g-plain",
+      "material": "plaster-g-plain",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 827433,
+      "sourceTriangles": 1651200,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3001,
+          "triangles": 5942,
+          "rawBytes": 167336,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008716447278857231],
+            [1.000000238418579, 3.2800004482269287, 0.01140127144753933]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain-lod0.vertices.meshopt",
+            "bytes": 45621,
+            "sha256": "96da2a3f67b54b20f9ca0edccb6643b765707e1ccd043bab83544ecbdf2b7530"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain-lod0.indices.meshopt",
+            "bytes": 6886,
+            "sha256": "46b717f3d78ad889aa82fe5b9a1b2bf6bc0b853be07289af8dfacc19f4f6cd4b"
+          },
+          "simplifierErrorMm": 0.999177573248744,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1253,
+          "triangles": 2471,
+          "rawBytes": 69748,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008716447278857231],
+            [1.000000238418579, 3.2800004482269287, 0.01140127144753933]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain-lod1.vertices.meshopt",
+            "bytes": 19839,
+            "sha256": "1bac6f2f2519911b41e3779dc13193d495784badb34b6c151a9322de973bd54d"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain-lod1.indices.meshopt",
+            "bytes": 2870,
+            "sha256": "87741e9678eca8af989ee9ef29be9885c318f9f20f94159f36939c4d49a3e79e"
+          },
+          "simplifierErrorMm": 2.993587404489517,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 540,
+          "triangles": 1054,
+          "rawBytes": 29928,
+          "bounds": [
+            [-1, 0.699999988079071, -0.00825790036469698],
+            [1.000000238418579, 3.2800004482269287, 0.010334149934351444]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain-lod2.vertices.meshopt",
+            "bytes": 8952,
+            "sha256": "6d55fa9a6f4460d9c5c2f098a64ece6679213544fc176233b3b106f1f15b8516"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain-lod2.indices.meshopt",
+            "bytes": 1206,
+            "sha256": "6591b38ca2ee6caa31c2fc8e47cf188308bf699f71ec9dd8804870645357d450"
+          },
+          "simplifierErrorMm": 7.951295934617519,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-plain~m",
+      "piece": "g-plain~m",
+      "material": "plaster-g-plain",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "plaster-g-plain",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3001,
+          "triangles": 5942,
+          "rawBytes": 167336,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.008716447278857231],
+            [1, 3.2800004482269287, 0.01140127144753933]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain~m-lod0.vertices.meshopt",
+            "bytes": 45621,
+            "sha256": "8dc927aa03fb29d68db443f5c44b7abe32a6df938594eb10048443d79d81333b"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain~m-lod0.indices.meshopt",
+            "bytes": 9397,
+            "sha256": "ff9e7ce0747e5d67dcd9353395f32f6cd7c6be4aecad30bd4f778f16ece68962"
+          },
+          "simplifierErrorMm": 0.999177573248744
+        },
+        {
+          "lod": 1,
+          "vertices": 1253,
+          "triangles": 2471,
+          "rawBytes": 69748,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.008716447278857231],
+            [1, 3.2800004482269287, 0.01140127144753933]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain~m-lod1.vertices.meshopt",
+            "bytes": 19839,
+            "sha256": "2994377d58ef7ddee9d7263195a95f65f214c7945d9a3003e96fe073b20d83b6"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain~m-lod1.indices.meshopt",
+            "bytes": 3759,
+            "sha256": "628daf34511aa7440cdb3475746ca37ca3ab25089a279e0f52bc81c432e34097"
+          },
+          "simplifierErrorMm": 2.993587404489517
+        },
+        {
+          "lod": 2,
+          "vertices": 540,
+          "triangles": 1054,
+          "rawBytes": 29928,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.00825790036469698],
+            [1, 3.2800004482269287, 0.010334149934351444]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-plain~m-lod2.vertices.meshopt",
+            "bytes": 8952,
+            "sha256": "ebdbf49c15df140a8d723a6c15fe3568297fd0fb64820f0b87ac1cdad93c5a62"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-plain~m-lod2.indices.meshopt",
+            "bytes": 1632,
+            "sha256": "4a32057104827ccd8bb1b38ccd85182e24a23e12f1d5e52d5e2657d2687c8812"
+          },
+          "simplifierErrorMm": 7.951295934617519
+        }
+      ]
+    },
+    {
+      "object": "g-window-oak",
+      "piece": "g-window",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 2226385,
+      "sourceTriangles": 4414016,
+      "sourceTurnedFaces": 41555,
+      "sourceTurnedAreaFraction": 0.0025346031839255188,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9950,
+          "triangles": 15633,
+          "rawBytes": 505996,
+          "bounds": [
+            [-1.0048645734786987, 0.4955753684043884, -0.21949827671051025],
+            [1.0006029605865479, 3.5076708793640137, 0.08810441195964813]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window-oak-lod0.vertices.meshopt",
+            "bytes": 215113,
+            "sha256": "b78cf952db411c3214c52c84c3e5264635ec5da0fa190123e672e848be336fdd"
+          },
+          "indexStream": {
+            "path": "runtime/g-window-oak-lod0.indices.meshopt",
+            "bytes": 17598,
+            "sha256": "b5f39324656c2947fa9c2457f94b9dacf6c45688af7a54b5cb74cc1f060f76c7"
+          },
+          "simplifierErrorMm": 0.9860593127086759,
+          "turnedFaces": 116,
+          "turnedAreaFraction": 0.00084034132991265
+        },
+        {
+          "lod": 1,
+          "vertices": 7363,
+          "triangles": 10728,
+          "rawBytes": 364352,
+          "bounds": [
+            [-1.0044033527374268, 0.4955753684043884, -0.21949827671051025],
+            [1.0004663467407227, 3.507643461227417, 0.08810441195964813]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window-oak-lod1.vertices.meshopt",
+            "bytes": 157154,
+            "sha256": "3438e2dbe4cc063cee9bed10f813dac6510535c63219081c28391d020ee1dc27"
+          },
+          "indexStream": {
+            "path": "runtime/g-window-oak-lod1.indices.meshopt",
+            "bytes": 11997,
+            "sha256": "ef8122d47e463a9f3bbeb5d88e582ed5c9a5c9bd75ea6add07b6fb13a20b0234"
+          },
+          "simplifierErrorMm": 1.4644288457930088,
+          "turnedFaces": 66,
+          "turnedAreaFraction": 0.0005322665954594576
+        },
+        {
+          "lod": 2,
+          "vertices": 4647,
+          "triangles": 5618,
+          "rawBytes": 216120,
+          "bounds": [
+            [-1.0044033527374268, 0.4955753684043884, -0.21924558281898499],
+            [1.0000519752502441, 3.5067598819732666, 0.08778096735477448]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window-oak-lod2.vertices.meshopt",
+            "bytes": 92633,
+            "sha256": "f55c375ed59b73c0deefd0edf381c3acd2d5062bce9ec9153c0ab5fa19911526"
+          },
+          "indexStream": {
+            "path": "runtime/g-window-oak-lod2.indices.meshopt",
+            "bytes": 6057,
+            "sha256": "4a5e88a892b12fb2371749db74b5158120bb61c084a52699b02bff4bccc25a84"
+          },
+          "simplifierErrorMm": 4.96015464887023,
+          "turnedFaces": 35,
+          "turnedAreaFraction": 0.00013062538682640542
+        }
+      ]
+    },
+    {
+      "object": "glass-g-window",
+      "piece": "g-window",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "sourceVertices": 4,
+      "sourceTriangles": 2,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window-lod0.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window-lod0.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window-lod1.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window-lod1.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window-lod2.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window-lod2.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-g-window",
+      "piece": "g-window",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "sourceVertices": 2400,
+      "sourceTriangles": 1480,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window-lod0.vertices.meshopt",
+            "bytes": 39312,
+            "sha256": "67921688fa27c73a7547df558375c7155e4b682613d7b76ba4f27b454a3a8930"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window-lod0.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window-lod1.vertices.meshopt",
+            "bytes": 39312,
+            "sha256": "67921688fa27c73a7547df558375c7155e4b682613d7b76ba4f27b454a3a8930"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window-lod1.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window-lod2.vertices.meshopt",
+            "bytes": 39312,
+            "sha256": "67921688fa27c73a7547df558375c7155e4b682613d7b76ba4f27b454a3a8930"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window-lod2.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-window",
+      "piece": "g-window",
+      "material": "plaster-g-window",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 729504,
+      "sourceTriangles": 1454080,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2365,
+          "triangles": 4673,
+          "rawBytes": 131756,
+          "bounds": [
+            [-1, 0.699999988079071, -0.008904356509447098],
+            [1.000000238418579, 3.2800004482269287, 0.008353330194950104]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window-lod0.vertices.meshopt",
+            "bytes": 36277,
+            "sha256": "429d9aa31ebd3bf93bf96b9c9943df5702a87744054ad4187cf48f6df63d42ed"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window-lod0.indices.meshopt",
+            "bytes": 5516,
+            "sha256": "2db04b1c6e73b544c086e43de946460726a98f5a545ac11739c845b0eb42434d"
+          },
+          "simplifierErrorMm": 0.9952493710443377,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 996,
+          "triangles": 1959,
+          "rawBytes": 55380,
+          "bounds": [
+            [-1, 0.7000000476837158, -0.008904356509447098],
+            [1.000000238418579, 3.2800004482269287, 0.008272109553217888]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window-lod1.vertices.meshopt",
+            "bytes": 15892,
+            "sha256": "28cc4fb799f720e2464905ce1a95ac2afd21b555c19286c7e7602e7979580ced"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window-lod1.indices.meshopt",
+            "bytes": 2266,
+            "sha256": "417f2ccd44cb9a63903867499c844de011cd66c46fbb010680fde946e0bfc279"
+          },
+          "simplifierErrorMm": 2.9870900325477123,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 420,
+          "triangles": 812,
+          "rawBytes": 23184,
+          "bounds": [
+            [-1, 0.7000000476837158, -0.008788942359387875],
+            [1.000000238418579, 3.2800004482269287, 0.008272109553217888]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window-lod2.vertices.meshopt",
+            "bytes": 7068,
+            "sha256": "dd5e5a5afc23ae14eae5d0cfc0bc00829cb9c41e8fabaf69677093fbb612dfca"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window-lod2.indices.meshopt",
+            "bytes": 940,
+            "sha256": "85ce8a39b700cbf15f5408602c41a2d1ea5e7a91a68c8e857aba0a7d073170af"
+          },
+          "simplifierErrorMm": 7.970158942043781,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "g-window2-oak",
+      "piece": "g-window2",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 2226385,
+      "sourceTriangles": 4414016,
+      "sourceTurnedFaces": 65349,
+      "sourceTurnedAreaFraction": 0.004147962579329294,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9732,
+          "triangles": 15240,
+          "rawBytes": 494304,
+          "bounds": [
+            [-1.005095362663269, 0.4930557608604431, -0.21787422895431519],
+            [1.000657081604004, 3.5065042972564697, 0.08631845563650131]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak-lod0.vertices.meshopt",
+            "bytes": 210513,
+            "sha256": "f402fc1c4e7c55cc6429de8d43fa4742546a3cbedc10130aa60a504736618dc3"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak-lod0.indices.meshopt",
+            "bytes": 17143,
+            "sha256": "e2ecd30826190daa443bab89a6ca02e73c8c5f875c3aa4a55aa0213136792924"
+          },
+          "simplifierErrorMm": 0.9999993490055203,
+          "turnedFaces": 190,
+          "turnedAreaFraction": 0.0013954031487385435
+        },
+        {
+          "lod": 1,
+          "vertices": 7175,
+          "triangles": 10337,
+          "rawBytes": 353644,
+          "bounds": [
+            [-1.004181146621704, 0.4930557608604431, -0.21787422895431519],
+            [1.000657081604004, 3.5058393478393555, 0.08631845563650131]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak-lod1.vertices.meshopt",
+            "bytes": 152251,
+            "sha256": "479555f067718737826aa49d2f0ec066fb53cd186418c61bb3d50fa750e97722"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak-lod1.indices.meshopt",
+            "bytes": 11458,
+            "sha256": "e37a1ff74c437323dc6b022d36d5ce37f805c4141565bdd4dca126321674ed17"
+          },
+          "simplifierErrorMm": 1.498189172707498,
+          "turnedFaces": 106,
+          "turnedAreaFraction": 0.0011268003281554334
+        },
+        {
+          "lod": 2,
+          "vertices": 4594,
+          "triangles": 5491,
+          "rawBytes": 212900,
+          "bounds": [
+            [-1.002750277519226, 0.49443021416664124, -0.21787422895431519],
+            [1.00016450881958, 3.5053133964538574, 0.08569809049367905]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak-lod2.vertices.meshopt",
+            "bytes": 91296,
+            "sha256": "4210854ddd91095be544cfe1499b4775b00eb57d8133aaeadf4d04fb38dad2b5"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak-lod2.indices.meshopt",
+            "bytes": 5954,
+            "sha256": "9f53d55e37f6b15b46087e4f7fada859994498aa2a04da2ed934e9b906e98dd1"
+          },
+          "simplifierErrorMm": 4.969954490661621,
+          "turnedFaces": 45,
+          "turnedAreaFraction": 0.0006463048266113801
+        }
+      ]
+    },
+    {
+      "object": "g-window2-oak~m",
+      "piece": "g-window2~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "g-window2-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9732,
+          "triangles": 15240,
+          "rawBytes": 494304,
+          "bounds": [
+            [-1.000657081604004, 0.4930557608604431, -0.21787422895431519],
+            [1.005095362663269, 3.5065042972564697, 0.08631845563650131]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak~m-lod0.vertices.meshopt",
+            "bytes": 210513,
+            "sha256": "1d21ab93fc5c535831535a6c61eca103a377761aa7585700054fb3a7325326b5"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak~m-lod0.indices.meshopt",
+            "bytes": 21229,
+            "sha256": "66bf878c4b77c80cd4f73dc057aa4ea1c4986cd0f74cd71c681713db72317065"
+          },
+          "simplifierErrorMm": 0.9999993490055203
+        },
+        {
+          "lod": 1,
+          "vertices": 7175,
+          "triangles": 10337,
+          "rawBytes": 353644,
+          "bounds": [
+            [-1.000657081604004, 0.4930557608604431, -0.21787422895431519],
+            [1.004181146621704, 3.5058393478393555, 0.08631845563650131]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak~m-lod1.vertices.meshopt",
+            "bytes": 152251,
+            "sha256": "81ad9db36397795c42a207043f5947b253219a88d6678b8c6c6202c161745241"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak~m-lod1.indices.meshopt",
+            "bytes": 14208,
+            "sha256": "8833a7112e3bfcc666bb53d2dcbec3cd47555b5fa6d88c01043cc81d62ddd323"
+          },
+          "simplifierErrorMm": 1.498189172707498
+        },
+        {
+          "lod": 2,
+          "vertices": 4594,
+          "triangles": 5491,
+          "rawBytes": 212900,
+          "bounds": [
+            [-1.00016450881958, 0.49443021416664124, -0.21787422895431519],
+            [1.002750277519226, 3.5053133964538574, 0.08569809049367905]
+          ],
+          "vertexStream": {
+            "path": "runtime/g-window2-oak~m-lod2.vertices.meshopt",
+            "bytes": 91296,
+            "sha256": "36a79f3c531daf051715eb9edb5c22e0c7ceff88b2f59db6666652395e8cc408"
+          },
+          "indexStream": {
+            "path": "runtime/g-window2-oak~m-lod2.indices.meshopt",
+            "bytes": 7181,
+            "sha256": "4ff096502d6d0924595c9da866888f94b47e6c1252df05c6b924c999b39a38f5"
+          },
+          "simplifierErrorMm": 4.969954490661621
+        }
+      ]
+    },
+    {
+      "object": "glass-g-window2",
+      "piece": "g-window2",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "sourceVertices": 4,
+      "sourceTriangles": 2,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2-lod0.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2-lod0.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2-lod1.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2-lod1.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.5700000524520874, -0.05999999865889549],
+            [0.45500004291534424, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2-lod2.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "d747845ac8d424069d72c8c9b3422f5e01a7223e2adaf610e6d6a79e26684cb3"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2-lod2.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "glass-g-window2~m",
+      "piece": "g-window2~m",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "mirrorOf": "glass-g-window2",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.5700000524520874, -0.05999999865889549],
+            [0.20499998331069946, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2~m-lod0.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "2620df9ae1772fe51a61d9eaf2132e63e2dbaae97bef489a9b18ce9117066dcd"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2~m-lod0.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.5700000524520874, -0.05999999865889549],
+            [0.20499998331069946, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2~m-lod1.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "2620df9ae1772fe51a61d9eaf2132e63e2dbaae97bef489a9b18ce9117066dcd"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2~m-lod1.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.5700000524520874, -0.05999999865889549],
+            [0.20499998331069946, 2.430000066757202, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-g-window2~m-lod2.vertices.meshopt",
+            "bytes": 145,
+            "sha256": "2620df9ae1772fe51a61d9eaf2132e63e2dbaae97bef489a9b18ce9117066dcd"
+          },
+          "indexStream": {
+            "path": "runtime/glass-g-window2~m-lod2.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-g-window2",
+      "piece": "g-window2",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "sourceVertices": 2400,
+      "sourceTriangles": 1480,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2-lod0.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "fe7294ea97b90bdb49753aedfe39ffcb6a4a1ab72f54546e8e4f76e94272ce33"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2-lod0.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "1fa7524769808cba335728573382753dde156bdff0a55f5077ff0a3de35ff59b"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2-lod1.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "fe7294ea97b90bdb49753aedfe39ffcb6a4a1ab72f54546e8e4f76e94272ce33"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2-lod1.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "1fa7524769808cba335728573382753dde156bdff0a55f5077ff0a3de35ff59b"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.5850000381469727, 0.003000000026077032],
+            [0.934999942779541, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2-lod2.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "fe7294ea97b90bdb49753aedfe39ffcb6a4a1ab72f54546e8e4f76e94272ce33"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2-lod2.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "1fa7524769808cba335728573382753dde156bdff0a55f5077ff0a3de35ff59b"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-g-window2~m",
+      "piece": "g-window2~m",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 0],
+      "mirrorOf": "iron-g-window2",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.5850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2~m-lod0.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "ece4912299badb8a722419fe2e15f9a0fede4761bf224f96f1f9a2cf54775522"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2~m-lod0.indices.meshopt",
+            "bytes": 4018,
+            "sha256": "8c4a108981e814f37d881ea6387da5cdd8d992de9b90d22b44ecd20830a34d39"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.5850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2~m-lod1.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "ece4912299badb8a722419fe2e15f9a0fede4761bf224f96f1f9a2cf54775522"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2~m-lod1.indices.meshopt",
+            "bytes": 4018,
+            "sha256": "8c4a108981e814f37d881ea6387da5cdd8d992de9b90d22b44ecd20830a34d39"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.5850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 2.365000009536743, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-g-window2~m-lod2.vertices.meshopt",
+            "bytes": 39392,
+            "sha256": "ece4912299badb8a722419fe2e15f9a0fede4761bf224f96f1f9a2cf54775522"
+          },
+          "indexStream": {
+            "path": "runtime/iron-g-window2~m-lod2.indices.meshopt",
+            "bytes": 4018,
+            "sha256": "8c4a108981e814f37d881ea6387da5cdd8d992de9b90d22b44ecd20830a34d39"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-window2",
+      "piece": "g-window2",
+      "material": "plaster-g-window2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "sourceVertices": 729504,
+      "sourceTriangles": 1454080,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2384,
+          "triangles": 4702,
+          "rawBytes": 132712,
+          "bounds": [
+            [-1, 0.699999988079071, -0.007088372018188238],
+            [1.000000238418579, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2-lod0.vertices.meshopt",
+            "bytes": 36603,
+            "sha256": "c108d601266942cbb8ce8d6f1d2f1464f4d491136e47aa20630198628fc3d838"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2-lod0.indices.meshopt",
+            "bytes": 5511,
+            "sha256": "f88e17255fafeecdc7d8b2d4294c3baca0d363a3d3c0292d2f8cf2289a661c58"
+          },
+          "simplifierErrorMm": 0.9965633507817984,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1009,
+          "triangles": 1975,
+          "rawBytes": 55988,
+          "bounds": [
+            [-1, 0.699999988079071, -0.006000069435685873],
+            [1.000000238418579, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2-lod1.vertices.meshopt",
+            "bytes": 16141,
+            "sha256": "4346e8b303f2d385a162beb561713fc25a5ae16b1cd2ddafd53d79cae862b2fc"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2-lod1.indices.meshopt",
+            "bytes": 2290,
+            "sha256": "3f7892027bcf335b9005ea7a024037e1b454e97d881a537ff09947d0769eaa00"
+          },
+          "simplifierErrorMm": 2.992712426930666,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 438,
+          "triangles": 842,
+          "rawBytes": 24120,
+          "bounds": [
+            [-1, 0.699999988079071, -0.006000069435685873],
+            [1.000000238418579, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2-lod2.vertices.meshopt",
+            "bytes": 7358,
+            "sha256": "e6fcd55430749ed708667472e54e765ff717e5f98a806e3b2b2d5d5706727861"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2-lod2.indices.meshopt",
+            "bytes": 978,
+            "sha256": "97f52c30d8623963e424bfecc97fe734a09839112f3e3276de3d7d3033583e47"
+          },
+          "simplifierErrorMm": 7.963261567056179,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-g-window2~m",
+      "piece": "g-window2~m",
+      "material": "plaster-g-window2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 0],
+      "mirrorOf": "plaster-g-window2",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2384,
+          "triangles": 4702,
+          "rawBytes": 132712,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.007088372018188238],
+            [1, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2~m-lod0.vertices.meshopt",
+            "bytes": 36603,
+            "sha256": "f3d6a346f73a6d7c2218813308e1348f502aa9cdb36da44a1f28124eea3551bb"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2~m-lod0.indices.meshopt",
+            "bytes": 7385,
+            "sha256": "f72f3d6dcaf660f8c83b3b01d59942ef7d377fb4553b45d4a4bf68a3e0eeb934"
+          },
+          "simplifierErrorMm": 0.9965633507817984
+        },
+        {
+          "lod": 1,
+          "vertices": 1009,
+          "triangles": 1975,
+          "rawBytes": 55988,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.006000069435685873],
+            [1, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2~m-lod1.vertices.meshopt",
+            "bytes": 16141,
+            "sha256": "8678dd24a7e34f29c0e057874ed54baad93b54975583b564aa2e96e62e1397f0"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2~m-lod1.indices.meshopt",
+            "bytes": 3024,
+            "sha256": "a3cbbf438008a8782c35f6a846f0abc847b4624ed03b707f67a1042f461cca23"
+          },
+          "simplifierErrorMm": 2.992712426930666
+        },
+        {
+          "lod": 2,
+          "vertices": 438,
+          "triangles": 842,
+          "rawBytes": 24120,
+          "bounds": [
+            [-1.000000238418579, 0.699999988079071, -0.006000069435685873],
+            [1, 3.2800004482269287, 0.012128995731472969]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-g-window2~m-lod2.vertices.meshopt",
+            "bytes": 7358,
+            "sha256": "5009948e2285986386cb2f174f654eaf8134005b7e8c7c3cb821ccc74458dd92"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-g-window2~m-lod2.indices.meshopt",
+            "bytes": 1250,
+            "sha256": "fcec3ab508d8bd4e7e6c407ad1d99280a5b4748c2bfed9fbc7d02c2af7c52095"
+          },
+          "simplifierErrorMm": 7.963261567056179
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-braced",
+      "piece": "u-braced",
+      "material": "plaster-u-braced",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 833841,
+      "sourceTriangles": 1664000,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2961,
+          "triangles": 5859,
+          "rawBytes": 165060,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.009041555225849152],
+            [1.000000238418579, 2.780001163482666, 0.009764173068106174]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-braced-lod0.vertices.meshopt",
+            "bytes": 45549,
+            "sha256": "b0b4631ecccea51a0c72093ef13cbd534a9a4cc562653666f21ffa80c7910b2e"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-braced-lod0.indices.meshopt",
+            "bytes": 6804,
+            "sha256": "7d5e7d8cb08d4ce13918ecf72cc7cf460ca8a8e99104dd363064ef1a65f87bb2"
+          },
+          "simplifierErrorMm": 0.9992666309699416,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1183,
+          "triangles": 2331,
+          "rawBytes": 65828,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008453232236206532],
+            [1.000000238418579, 2.780001163482666, 0.010018366388976574]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-braced-lod1.vertices.meshopt",
+            "bytes": 18916,
+            "sha256": "1921a331c0250caf6ca1cd9a22e885e7b0ad4c50eaa18dd8bc7cce43037e2f73"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-braced-lod1.indices.meshopt",
+            "bytes": 2702,
+            "sha256": "fd91012ed1e808f76ed374b3baa4ef4d5f5e444c3194a60d16c690775ea46113"
+          },
+          "simplifierErrorMm": 2.976371441036463,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 522,
+          "triangles": 1019,
+          "rawBytes": 28932,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.007469332776963711],
+            [1.000000238418579, 2.780001163482666, 0.009617245756089687]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-braced-lod2.vertices.meshopt",
+            "bytes": 8762,
+            "sha256": "854a98f867697e3ee2708019e50583b4fe63143cc80454c97f68ea1d298308b7"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-braced-lod2.indices.meshopt",
+            "bytes": 1181,
+            "sha256": "c41a2902726dad3dacb8d97309268d071aa31f6fa2445a41241b95c61e68e647"
+          },
+          "simplifierErrorMm": 7.957993075251579,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "u-braced-oak",
+      "piece": "u-braced",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 1566362,
+      "sourceTriangles": 3118144,
+      "sourceTurnedFaces": 15783,
+      "sourceTurnedAreaFraction": 0.001272035684740341,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9270,
+          "triangles": 15765,
+          "rawBytes": 485820,
+          "bounds": [
+            [-1.0432465076446533, -0.005429744720458984, -0.2188304215669632],
+            [1.0008928775787354, 3.0081934928894043, 0.057174067944288254]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-braced-oak-lod0.vertices.meshopt",
+            "bytes": 197755,
+            "sha256": "ce29d9c1a7fa842ea35dbc5352b761f35ec4f02cbdbcb5837290080adb0cdcf3"
+          },
+          "indexStream": {
+            "path": "runtime/u-braced-oak-lod0.indices.meshopt",
+            "bytes": 18178,
+            "sha256": "0a5faa59b8adeaac4302635094af6f029d287b0cc0a06e9dcc7b79ce2b78866d"
+          },
+          "simplifierErrorMm": 0.9919742587953806,
+          "turnedFaces": 128,
+          "turnedAreaFraction": 0.0006094415803057341
+        },
+        {
+          "lod": 1,
+          "vertices": 5923,
+          "triangles": 9290,
+          "rawBytes": 301016,
+          "bounds": [
+            [-1.0432465076446533, -0.005429744720458984, -0.2188304215669632],
+            [1.0007860660552979, 3.0079965591430664, 0.057174067944288254]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-braced-oak-lod1.vertices.meshopt",
+            "bytes": 125559,
+            "sha256": "ab4c7479e3e34dc2c3e0e479f04fe0a19664ff66abca8d7ec7884a57aeda5f3f"
+          },
+          "indexStream": {
+            "path": "runtime/u-braced-oak-lod1.indices.meshopt",
+            "bytes": 10464,
+            "sha256": "0777ee159b6b20beb07cedf54884d3f70af403047258cb612fc14a8141f7c93c"
+          },
+          "simplifierErrorMm": 1.4881242532283068,
+          "turnedFaces": 65,
+          "turnedAreaFraction": 0.00042434698995799013
+        },
+        {
+          "lod": 2,
+          "vertices": 3527,
+          "triangles": 4677,
+          "rawBytes": 168988,
+          "bounds": [
+            [-1.043199896812439, -0.005429744720458984, -0.2184455394744873],
+            [1.0004258155822754, 3.0068774223327637, 0.05712154880166054]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-braced-oak-lod2.vertices.meshopt",
+            "bytes": 70591,
+            "sha256": "6b2f8b0530df85d99bcf0ba01cf5efaa085d25617a289cda46bd45e154436681"
+          },
+          "indexStream": {
+            "path": "runtime/u-braced-oak-lod2.indices.meshopt",
+            "bytes": 5163,
+            "sha256": "249302068fec0bb00a397810b182ac3659b149e0334b9f261267b52c5da06dc0"
+          },
+          "simplifierErrorMm": 4.972903057932854,
+          "turnedFaces": 45,
+          "turnedAreaFraction": 0.00014251241679217845
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-cbrace",
+      "piece": "u-cbrace",
+      "material": "plaster-u-cbrace",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 833841,
+      "sourceTriangles": 1664000,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2987,
+          "triangles": 5906,
+          "rawBytes": 166456,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.009229706600308418],
+            [1.000000238418579, 2.780001163482666, 0.010258943773806095]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace-lod0.vertices.meshopt",
+            "bytes": 45853,
+            "sha256": "eb823e4cd2ab8494ff29fbb826766608357566d0630978082f11da3442613ef4"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace-lod0.indices.meshopt",
+            "bytes": 6844,
+            "sha256": "be5f3909d2d1d31431f863c9ee773efd737ffb43a5a6dd866369515846e83e2e"
+          },
+          "simplifierErrorMm": 0.9980184258893132,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1225,
+          "triangles": 2409,
+          "rawBytes": 68108,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.00878929067403078],
+            [1.000000238418579, 2.780001163482666, 0.010258943773806095]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace-lod1.vertices.meshopt",
+            "bytes": 19670,
+            "sha256": "75a814eddd87a7aa2dc332727b74c1ca3c7d6471fc2c9c7544d7f0c2a4f42336"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace-lod1.indices.meshopt",
+            "bytes": 2754,
+            "sha256": "c2012f7c28e650d43740f1256442308cf612dc0b0d6b8fe2013dd69be6e46c0d"
+          },
+          "simplifierErrorMm": 2.971007488667965,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 525,
+          "triangles": 1021,
+          "rawBytes": 29052,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008218853734433651],
+            [1.000000238418579, 2.780001163482666, 0.010258943773806095]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace-lod2.vertices.meshopt",
+            "bytes": 8778,
+            "sha256": "db1a6db67933dac253607a4b8f862ae467c17e0e2c24104acf24d9824044f360"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace-lod2.indices.meshopt",
+            "bytes": 1198,
+            "sha256": "8c2116cecbfcd7b5c866d3c061d5ec5d375232bc3533687536bfa4348b3361b2"
+          },
+          "simplifierErrorMm": 7.99813587218523,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "u-cbrace-oak",
+      "piece": "u-cbrace",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 1265166,
+      "sourceTriangles": 2515648,
+      "sourceTurnedFaces": 13524,
+      "sourceTurnedAreaFraction": 0.0009566914528708335,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 8780,
+          "triangles": 15382,
+          "rawBytes": 465544,
+          "bounds": [
+            [-1.0008052587509155, -0.005866050720214844, -0.2233199030160904],
+            [1.2931084632873535, 3.009908676147461, 0.05173438787460327]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace-oak-lod0.vertices.meshopt",
+            "bytes": 188622,
+            "sha256": "ae9575635983f0430da15c7e994b41b4a51858c100d4387089b22a161b77e4dc"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace-oak-lod0.indices.meshopt",
+            "bytes": 17751,
+            "sha256": "de4f65caae7aea87a4b9182e6632c46150bea49546264ac4d94ee8b72f68a715"
+          },
+          "simplifierErrorMm": 0.9990546386688948,
+          "turnedFaces": 100,
+          "turnedAreaFraction": 0.0002645575604066658
+        },
+        {
+          "lod": 1,
+          "vertices": 5242,
+          "triangles": 8547,
+          "rawBytes": 270308,
+          "bounds": [
+            [-1.0008028745651245, -0.005866050720214844, -0.2233199030160904],
+            [1.2927298545837402, 3.009908676147461, 0.05173438787460327]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace-oak-lod1.vertices.meshopt",
+            "bytes": 113387,
+            "sha256": "6905b12e3cb451f6f2b3334d061dd15418af340934d9395df3f4fb1bd1886911"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace-oak-lod1.indices.meshopt",
+            "bytes": 9647,
+            "sha256": "0eb276ad12ee279438631036d716a7f96f620d44592fdc865d36e534699c00a6"
+          },
+          "simplifierErrorMm": 1.481038867495954,
+          "turnedFaces": 37,
+          "turnedAreaFraction": 0.00022560586334503487
+        },
+        {
+          "lod": 2,
+          "vertices": 2840,
+          "triangles": 3919,
+          "rawBytes": 137908,
+          "bounds": [
+            [-1.0007444620132446, -0.005360841751098633, -0.22327031195163727],
+            [1.2924294471740723, 3.0092058181762695, 0.05125055089592934]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace-oak-lod2.vertices.meshopt",
+            "bytes": 58665,
+            "sha256": "5a4a494b180a88c1a55fbb545a2b640187c0b1764d6efcc16f36b494c7654a66"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace-oak-lod2.indices.meshopt",
+            "bytes": 4379,
+            "sha256": "c4047e828288b964f0c0a3b5174d31356b1d4ba9197f15cba35cff08b54cd287"
+          },
+          "simplifierErrorMm": 4.966655746102333,
+          "turnedFaces": 19,
+          "turnedAreaFraction": 0.0002144802716507676
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-cbrace2",
+      "piece": "u-cbrace2",
+      "material": "plaster-u-cbrace2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 833841,
+      "sourceTriangles": 1664000,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2910,
+          "triangles": 5758,
+          "rawBytes": 162216,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.009067831560969353],
+            [1.000000238418579, 2.780001163482666, 0.010918141342699528]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod0.vertices.meshopt",
+            "bytes": 44803,
+            "sha256": "a3a344508640cd14bc0e46e2aed6f3219fada75ae42d390db6582c90352303d9"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod0.indices.meshopt",
+            "bytes": 6685,
+            "sha256": "1bea7c27182765fd9f90ac903d2aec6feb6027fd3b29cd55b69fc811116cc469"
+          },
+          "simplifierErrorMm": 0.9980422910302877,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1199,
+          "triangles": 2358,
+          "rawBytes": 66664,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.009067831560969353],
+            [1.000000238418579, 2.780001163482666, 0.010918141342699528]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod1.vertices.meshopt",
+            "bytes": 19240,
+            "sha256": "ce7eb50ff980f3bf1dce02621b480273be728b5b198e3a0235856867bbb1c63b"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod1.indices.meshopt",
+            "bytes": 2732,
+            "sha256": "5e61307847a084f4eb32003642c055baf59598bb45b58c9dd1f1af7eb58a3a2d"
+          },
+          "simplifierErrorMm": 2.9999269172549248,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 522,
+          "triangles": 1016,
+          "rawBytes": 28896,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008760268799960613],
+            [1.000000238418579, 2.780001163482666, 0.010469136759638786]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod2.vertices.meshopt",
+            "bytes": 8721,
+            "sha256": "7a7ee8aa782111dd5177b444bcf669ced5a7f98ca3dbc1e9bef50fbd72403624"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2-lod2.indices.meshopt",
+            "bytes": 1170,
+            "sha256": "de95c0ebcfd89160beebf6921804f483c4f82010ef360826d26c744058f420ec"
+          },
+          "simplifierErrorMm": 7.838214747607708,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-cbrace2~m",
+      "piece": "u-cbrace2~m",
+      "material": "plaster-u-cbrace2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "plaster-u-cbrace2",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2910,
+          "triangles": 5758,
+          "rawBytes": 162216,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.009067831560969353],
+            [1, 2.780001163482666, 0.010918141342699528]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod0.vertices.meshopt",
+            "bytes": 44803,
+            "sha256": "bff286554bb0e024ac271953b6f4141dfa2218506d67ea8bd857a8a8c87f1442"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod0.indices.meshopt",
+            "bytes": 9109,
+            "sha256": "1625a55aff4f3bf753357920378560927104a5a9fd5e463c373043d42b49f0d8"
+          },
+          "simplifierErrorMm": 0.9980422910302877
+        },
+        {
+          "lod": 1,
+          "vertices": 1199,
+          "triangles": 2358,
+          "rawBytes": 66664,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.009067831560969353],
+            [1, 2.780001163482666, 0.010918141342699528]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod1.vertices.meshopt",
+            "bytes": 19240,
+            "sha256": "0289ab306c26762196df4c0920cb1e3cd529929cca13a299ad8ec23e98a4ab53"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod1.indices.meshopt",
+            "bytes": 3649,
+            "sha256": "926c584e6ae39745e0cbb43a82df299dbaa337d60ca844c401005f4ba77ef942"
+          },
+          "simplifierErrorMm": 2.9999269172549248
+        },
+        {
+          "lod": 2,
+          "vertices": 522,
+          "triangles": 1016,
+          "rawBytes": 28896,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.008760268799960613],
+            [1, 2.780001163482666, 0.010469136759638786]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod2.vertices.meshopt",
+            "bytes": 8721,
+            "sha256": "fee21d13eb84bec6cdc4bb7e34cf072124ff126777a2961959951ca138feed1f"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-cbrace2~m-lod2.indices.meshopt",
+            "bytes": 1564,
+            "sha256": "212cfbfaae8bd9e568d1a7fe5444bacb007bced83509f5c8eb101c12c482d475"
+          },
+          "simplifierErrorMm": 7.838214747607708
+        }
+      ]
+    },
+    {
+      "object": "u-cbrace2-oak",
+      "piece": "u-cbrace2",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 656530,
+      "sourceTriangles": 1301952,
+      "sourceTurnedFaces": 25676,
+      "sourceTurnedAreaFraction": 0.005161044028815908,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4118,
+          "triangles": 7704,
+          "rawBytes": 224224,
+          "bounds": [
+            [-1.005784034729004, -0.005720376968383789, -0.018713325262069702],
+            [1.091010332107544, 3.0103774070739746, 0.052561357617378235]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak-lod0.vertices.meshopt",
+            "bytes": 94714,
+            "sha256": "81a0defa20dd2f8e13162f10d26cba14decd16ff6277fd74bd01bc3bd5f2fc0a"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak-lod0.indices.meshopt",
+            "bytes": 8844,
+            "sha256": "fddc0fb9642959f2a3ef69e03b4b77eae79cd3761b96cac094d9f37dcf89344a"
+          },
+          "simplifierErrorMm": 0.9977256413549185,
+          "turnedFaces": 88,
+          "turnedAreaFraction": 0.001543566191405461
+        },
+        {
+          "lod": 1,
+          "vertices": 2256,
+          "triangles": 4140,
+          "rawBytes": 121872,
+          "bounds": [
+            [-1.005784034729004, -0.0036725997924804688, -0.018713325262069702],
+            [1.0907938480377197, 3.0103774070739746, 0.051953356713056564]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak-lod1.vertices.meshopt",
+            "bytes": 53704,
+            "sha256": "059d256d00bec8d7cfe90d299c888c84867db3bc923248cb3e4a0ab2b6960789"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak-lod1.indices.meshopt",
+            "bytes": 4691,
+            "sha256": "fbeb8e04a033dbe0427e658ebcaa25c180d16245d1504b7275e49ddec59e1163"
+          },
+          "simplifierErrorMm": 1.4827194390818477,
+          "turnedFaces": 28,
+          "turnedAreaFraction": 0.00103619653732459
+        },
+        {
+          "lod": 2,
+          "vertices": 897,
+          "triangles": 1540,
+          "rawBytes": 47184,
+          "bounds": [
+            [-1.005784034729004, -0.0036580562591552734, -0.018713325262069702],
+            [1.0905811786651611, 3.0084991455078125, 0.051953356713056564]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak-lod2.vertices.meshopt",
+            "bytes": 22420,
+            "sha256": "a18cdc1e5e0a42c652db298036e830e8115b0ba784330b6360aa15d4c3b562dc"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak-lod2.indices.meshopt",
+            "bytes": 1729,
+            "sha256": "ee09b30de79fad14a2b448da9c9cae40d54ae15bf1de14a9dcb8ea1861016337"
+          },
+          "simplifierErrorMm": 4.98233875259757,
+          "turnedFaces": 10,
+          "turnedAreaFraction": 0.0002870061487285518
+        }
+      ]
+    },
+    {
+      "object": "u-cbrace2-oak~m",
+      "piece": "u-cbrace2~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "u-cbrace2-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4118,
+          "triangles": 7704,
+          "rawBytes": 224224,
+          "bounds": [
+            [-1.091010332107544, -0.005720376968383789, -0.018713325262069702],
+            [1.005784034729004, 3.0103774070739746, 0.052561357617378235]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod0.vertices.meshopt",
+            "bytes": 94714,
+            "sha256": "8b4556368ac99d39e6d1a8bdb19d31ae779ab2153ed9f7427f93d87e8b2ef316"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod0.indices.meshopt",
+            "bytes": 11344,
+            "sha256": "c81b0ee2d2a7aece56d1dc9a7e2b6f18fa14ea19510de743700ac2223186a7eb"
+          },
+          "simplifierErrorMm": 0.9977256413549185
+        },
+        {
+          "lod": 1,
+          "vertices": 2256,
+          "triangles": 4140,
+          "rawBytes": 121872,
+          "bounds": [
+            [-1.0907938480377197, -0.0036725997924804688, -0.018713325262069702],
+            [1.005784034729004, 3.0103774070739746, 0.051953356713056564]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod1.vertices.meshopt",
+            "bytes": 53704,
+            "sha256": "520eb0674528a070615e04fb420ea66b1da25d0da724610b61c913cbb9a95a69"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod1.indices.meshopt",
+            "bytes": 6120,
+            "sha256": "cddd1993ad68ebc1cc3e374a687ad743f2d59938bc30c27ca739ddf050ae5258"
+          },
+          "simplifierErrorMm": 1.4827194390818477
+        },
+        {
+          "lod": 2,
+          "vertices": 897,
+          "triangles": 1540,
+          "rawBytes": 47184,
+          "bounds": [
+            [-1.0905811786651611, -0.0036580562591552734, -0.018713325262069702],
+            [1.005784034729004, 3.0084991455078125, 0.051953356713056564]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod2.vertices.meshopt",
+            "bytes": 22420,
+            "sha256": "6c9ade0cd2e38f0df1de551542409f2ae2f9a1d5842865894600ff85ee310f16"
+          },
+          "indexStream": {
+            "path": "runtime/u-cbrace2-oak~m-lod2.indices.meshopt",
+            "bytes": 2167,
+            "sha256": "42e17539c9823af572db1fdda78d60ac878564cd136656826e4bcfa63545f59d"
+          },
+          "simplifierErrorMm": 4.98233875259757
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-plain",
+      "piece": "u-plain",
+      "material": "plaster-u-plain",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 833841,
+      "sourceTriangles": 1664000,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3054,
+          "triangles": 6048,
+          "rawBytes": 170304,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.007640473544597626],
+            [1.000000238418579, 2.780001163482666, 0.010238895192742348]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain-lod0.vertices.meshopt",
+            "bytes": 46797,
+            "sha256": "6e2d09214ea078e967ff2780f10a9227c8f4a155a2ddd2e70cd5c1b6377da85d"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain-lod0.indices.meshopt",
+            "bytes": 7016,
+            "sha256": "82e58091b1d8294b3d882f6efc997b8e8696088a236683b1ee5a21afa7797618"
+          },
+          "simplifierErrorMm": 0.9778458625078201,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 1256,
+          "triangles": 2477,
+          "rawBytes": 69916,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.007640473544597626],
+            [1.000000238418579, 2.780001163482666, 0.010238895192742348]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain-lod1.vertices.meshopt",
+            "bytes": 20118,
+            "sha256": "6ccfae87fa209e6f7a7bd3ec80b7f195f6dafae12f2440eed8cc7b413ccafda4"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain-lod1.indices.meshopt",
+            "bytes": 2873,
+            "sha256": "21e8742746f6d6f5772135d92ec4545e731013e6a0cf293969bb5614763ca019"
+          },
+          "simplifierErrorMm": 2.9766152147203684,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 545,
+          "triangles": 1061,
+          "rawBytes": 30172,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.007640473544597626],
+            [1.000000238418579, 2.780001163482666, 0.009661521762609482]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain-lod2.vertices.meshopt",
+            "bytes": 9095,
+            "sha256": "1d75e2e743a3a2bdfff05f200a62351f26236e9b016ba7c91df04d9fc754833e"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain-lod2.indices.meshopt",
+            "bytes": 1240,
+            "sha256": "484c67cf0285f3bb28d1d74474fc15e676f7c81fa26d52f12231476a82a14d02"
+          },
+          "simplifierErrorMm": 7.990322075784206,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-plain~m",
+      "piece": "u-plain~m",
+      "material": "plaster-u-plain",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "plaster-u-plain",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3054,
+          "triangles": 6048,
+          "rawBytes": 170304,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.007640473544597626],
+            [1, 2.780001163482666, 0.010238895192742348]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain~m-lod0.vertices.meshopt",
+            "bytes": 46797,
+            "sha256": "f3260cb15f9c9eff0aed46402ee53bae66fc52dbcda298e94cb40a06916ef4f7"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain~m-lod0.indices.meshopt",
+            "bytes": 9481,
+            "sha256": "e7eb147b2d683bfc5af995dccbeb1b96a8321c1d313f5daa2d04535e5f5e17d8"
+          },
+          "simplifierErrorMm": 0.9778458625078201
+        },
+        {
+          "lod": 1,
+          "vertices": 1256,
+          "triangles": 2477,
+          "rawBytes": 69916,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.007640473544597626],
+            [1, 2.780001163482666, 0.010238895192742348]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain~m-lod1.vertices.meshopt",
+            "bytes": 20118,
+            "sha256": "bcf929faefc9cda52971de1760a33472e170e81d72034dbb411f1d68be7cb755"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain~m-lod1.indices.meshopt",
+            "bytes": 3737,
+            "sha256": "a04ef87b98cce9d9bb7c90970450562dc13b6a6ebb8cdb9f209d1154a5b4285d"
+          },
+          "simplifierErrorMm": 2.9766152147203684
+        },
+        {
+          "lod": 2,
+          "vertices": 545,
+          "triangles": 1061,
+          "rawBytes": 30172,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.007640473544597626],
+            [1, 2.780001163482666, 0.009661521762609482]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-plain~m-lod2.vertices.meshopt",
+            "bytes": 9095,
+            "sha256": "73b43eb4fa87e42406429c444157d5125165eedd9bf6c53c39e541839a79a4ba"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-plain~m-lod2.indices.meshopt",
+            "bytes": 1661,
+            "sha256": "d9cf9899224db65ad8232b2d890307b05dfb54403394d997c1abf9693f441d40"
+          },
+          "simplifierErrorMm": 7.990322075784206
+        }
+      ]
+    },
+    {
+      "object": "u-plain-oak",
+      "piece": "u-plain",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 563101,
+      "sourceTriangles": 1117568,
+      "sourceTurnedFaces": 15590,
+      "sourceTurnedAreaFraction": 0.0037993805932864696,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3727,
+          "triangles": 7103,
+          "rawBytes": 204500,
+          "bounds": [
+            [-1.0045868158340454, -0.0014889240264892578, -0.015459292568266392],
+            [1.0009136199951172, 3.0045604705810547, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak-lod0.vertices.meshopt",
+            "bytes": 83804,
+            "sha256": "64d0a9af634eced1f587a34c9e7682215c57dc9d31d97618e47106f6180bd4d4"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak-lod0.indices.meshopt",
+            "bytes": 8154,
+            "sha256": "73c7d5a72d587df808a24388f4e77669b3992182562385895e4dcf58e963ee76"
+          },
+          "simplifierErrorMm": 0.9994206484407187,
+          "turnedFaces": 49,
+          "turnedAreaFraction": 0.0006345958792496443
+        },
+        {
+          "lod": 1,
+          "vertices": 1938,
+          "triangles": 3620,
+          "rawBytes": 105456,
+          "bounds": [
+            [-1.0045868158340454, -0.0014889240264892578, -0.015459292568266392],
+            [1.0009136199951172, 3.0045595169067383, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak-lod1.vertices.meshopt",
+            "bytes": 45911,
+            "sha256": "c82e310e20de26eddd5b7b41160cef7343513c8d517b275364f24f3481cb2e9d"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak-lod1.indices.meshopt",
+            "bytes": 4163,
+            "sha256": "8b01b6564562e42b01caa021e36be95b79dde22acdd8b94e62ec80fbf3332f92"
+          },
+          "simplifierErrorMm": 1.468165311962366,
+          "turnedFaces": 14,
+          "turnedAreaFraction": 0.00041321767435335745
+        },
+        {
+          "lod": 2,
+          "vertices": 744,
+          "triangles": 1311,
+          "rawBytes": 39540,
+          "bounds": [
+            [-1.0045868158340454, -0.0009694099426269531, -0.015424735844135284],
+            [1.0001187324523926, 3.0034689903259277, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak-lod2.vertices.meshopt",
+            "bytes": 18575,
+            "sha256": "2ae0d38ff175218a1cc07417f60952245e2948a93412f9305a2800307aa3e32d"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak-lod2.indices.meshopt",
+            "bytes": 1492,
+            "sha256": "880fc582f0a1d93c42d576db393ac12f49dec1e8183c4b159007783da3d7cace"
+          },
+          "simplifierErrorMm": 4.965092521160841,
+          "turnedFaces": 4,
+          "turnedAreaFraction": 0.00018070991372829532
+        }
+      ]
+    },
+    {
+      "object": "u-plain-oak~m",
+      "piece": "u-plain~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "u-plain-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 3727,
+          "triangles": 7103,
+          "rawBytes": 204500,
+          "bounds": [
+            [-1.0009136199951172, -0.0014889240264892578, -0.015459292568266392],
+            [1.0045868158340454, 3.0045604705810547, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak~m-lod0.vertices.meshopt",
+            "bytes": 83804,
+            "sha256": "60bd0ad2340646769f6d30309707cabd0268bc0e0b840841be7dd78c764347f4"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak~m-lod0.indices.meshopt",
+            "bytes": 10438,
+            "sha256": "5ade262eefd4889d59fe7cebb8a8a35fc8bb3be312317f23764d1a5e707e0aed"
+          },
+          "simplifierErrorMm": 0.9994206484407187
+        },
+        {
+          "lod": 1,
+          "vertices": 1938,
+          "triangles": 3620,
+          "rawBytes": 105456,
+          "bounds": [
+            [-1.0009136199951172, -0.0014889240264892578, -0.015459292568266392],
+            [1.0045868158340454, 3.0045595169067383, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak~m-lod1.vertices.meshopt",
+            "bytes": 45911,
+            "sha256": "4eeb489eb446a0618ac9fdaff1afb1934b77b90406b842cb25393534e140d55e"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak~m-lod1.indices.meshopt",
+            "bytes": 5558,
+            "sha256": "e311de44f5004eb56f75899e61fe84693afd84e8f330f907463a37b57cf3b539"
+          },
+          "simplifierErrorMm": 1.468165311962366
+        },
+        {
+          "lod": 2,
+          "vertices": 744,
+          "triangles": 1311,
+          "rawBytes": 39540,
+          "bounds": [
+            [-1.0001187324523926, -0.0009694099426269531, -0.015424735844135284],
+            [1.0045868158340454, 3.0034689903259277, 0.050938680768013]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-plain-oak~m-lod2.vertices.meshopt",
+            "bytes": 18575,
+            "sha256": "f20b392d180d1801e5b088a814a42ab2c99518dc6042f243b418bfcafb3b0236"
+          },
+          "indexStream": {
+            "path": "runtime/u-plain-oak~m-lod2.indices.meshopt",
+            "bytes": 1880,
+            "sha256": "caf592d2cd515af271bdc4d2b42e057b7d9ab094003fa4312c5282367a0b551e"
+          },
+          "simplifierErrorMm": 4.965092521160841
+        }
+      ]
+    },
+    {
+      "object": "glass-u-window",
+      "piece": "u-window",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 4,
+      "sourceTriangles": 2,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window-lod0.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window-lod0.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window-lod1.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window-lod1.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window-lod2.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window-lod2.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "glass-u-window~m",
+      "piece": "u-window~m",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "glass-u-window",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.070000171661377, -0.05999999865889549],
+            [0.20499998331069946, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window~m-lod0.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "baa3ee83a33d8bb24ca78c65122a3e7e750228a0e1c04e6784e6711cd6f70e49"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window~m-lod0.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.070000171661377, -0.05999999865889549],
+            [0.20499998331069946, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window~m-lod1.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "baa3ee83a33d8bb24ca78c65122a3e7e750228a0e1c04e6784e6711cd6f70e49"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window~m-lod1.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.45500004291534424, 1.070000171661377, -0.05999999865889549],
+            [0.20499998331069946, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window~m-lod2.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "baa3ee83a33d8bb24ca78c65122a3e7e750228a0e1c04e6784e6711cd6f70e49"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window~m-lod2.indices.meshopt",
+            "bytes": 21,
+            "sha256": "3ea471b23208e8fe60317f9359a1e3c83fceb4724125e593195518587f9b2694"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-u-window",
+      "piece": "u-window",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 2400,
+      "sourceTriangles": 1480,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window-lod0.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "bcdf14395674e16ae82ce168999b7f9ef44955f359e7b691d75c3fe382824982"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window-lod0.indices.meshopt",
+            "bytes": 1633,
+            "sha256": "535909b51db39eadc2b32bf5e53e84e759cc304feaf35d8543d26ed79c2aa2c3"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window-lod1.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "bcdf14395674e16ae82ce168999b7f9ef44955f359e7b691d75c3fe382824982"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window-lod1.indices.meshopt",
+            "bytes": 1633,
+            "sha256": "535909b51db39eadc2b32bf5e53e84e759cc304feaf35d8543d26ed79c2aa2c3"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window-lod2.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "bcdf14395674e16ae82ce168999b7f9ef44955f359e7b691d75c3fe382824982"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window-lod2.indices.meshopt",
+            "bytes": 1633,
+            "sha256": "535909b51db39eadc2b32bf5e53e84e759cc304feaf35d8543d26ed79c2aa2c3"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-u-window~m",
+      "piece": "u-window~m",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "iron-u-window",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.0850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window~m-lod0.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "054966a1c8a468306d79ebb7a08a1cb812c4459ca2fa8a44638b6fee20130f70"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window~m-lod0.indices.meshopt",
+            "bytes": 4015,
+            "sha256": "aa8befe17a4e8981fa9852779291feced68203afd1a3d84bc9936ec7b4dc1dd5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.0850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window~m-lod1.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "054966a1c8a468306d79ebb7a08a1cb812c4459ca2fa8a44638b6fee20130f70"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window~m-lod1.indices.meshopt",
+            "bytes": 4015,
+            "sha256": "aa8befe17a4e8981fa9852779291feced68203afd1a3d84bc9936ec7b4dc1dd5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.934999942779541, 1.0850000381469727, 0.003000000026077032],
+            [0.6850000023841858, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window~m-lod2.vertices.meshopt",
+            "bytes": 39235,
+            "sha256": "054966a1c8a468306d79ebb7a08a1cb812c4459ca2fa8a44638b6fee20130f70"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window~m-lod2.indices.meshopt",
+            "bytes": 4015,
+            "sha256": "aa8befe17a4e8981fa9852779291feced68203afd1a3d84bc9936ec7b4dc1dd5"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-window",
+      "piece": "u-window",
+      "material": "plaster-u-window",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 735912,
+      "sourceTriangles": 1466880,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2372,
+          "triangles": 4674,
+          "rawBytes": 131992,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008489685133099556],
+            [1.000000238418579, 2.780001163482666, 0.008886707946658134]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window-lod0.vertices.meshopt",
+            "bytes": 36797,
+            "sha256": "ef9b7d285a110493bd8ce5493af5b51496808b37220447a8ad6b80cc98e56704"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window-lod0.indices.meshopt",
+            "bytes": 5419,
+            "sha256": "b72f2b028e46017fadf5b7abab46448f462a847f1f8ac8b519c1b6d09f4d2b04"
+          },
+          "simplifierErrorMm": 0.9892121888697147,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 959,
+          "triangles": 1882,
+          "rawBytes": 53272,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008489685133099556],
+            [1.000000238418579, 2.780001163482666, 0.008886707946658134]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window-lod1.vertices.meshopt",
+            "bytes": 15436,
+            "sha256": "a4d494cc4d201f8ce4f21837efc0970e4691a115f7d5e8dbf7fc9eb001edd01d"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window-lod1.indices.meshopt",
+            "bytes": 2172,
+            "sha256": "d934262f5e07bc07b3bd68479118881d9580e4fea5797b3efc0fe55ffae88219"
+          },
+          "simplifierErrorMm": 2.968904562294483,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 429,
+          "triangles": 831,
+          "rawBytes": 23700,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.006000030320137739],
+            [1.000000238418579, 2.780001163482666, 0.00762917147949338]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window-lod2.vertices.meshopt",
+            "bytes": 7181,
+            "sha256": "8c1073dfb8d268710ea33d999541240d6a5c86e4fd168943cf7516cec580e566"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window-lod2.indices.meshopt",
+            "bytes": 960,
+            "sha256": "27f147f02c7da3f334007c60b3a6f25fadbef7a9f902e510084c4379f5160a5d"
+          },
+          "simplifierErrorMm": 7.905071601271629,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-window~m",
+      "piece": "u-window~m",
+      "material": "plaster-u-window",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "plaster-u-window",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2372,
+          "triangles": 4674,
+          "rawBytes": 131992,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.008489685133099556],
+            [1, 2.780001163482666, 0.008886707946658134]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window~m-lod0.vertices.meshopt",
+            "bytes": 36797,
+            "sha256": "790315825635cdfc562dec0f7f821dccc04dea1ad21a355f236ff3fabc093188"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window~m-lod0.indices.meshopt",
+            "bytes": 7134,
+            "sha256": "64afb44a1764f8b1cd897ae4e0c1d04a469d29f43965462a74108cd39360d37d"
+          },
+          "simplifierErrorMm": 0.9892121888697147
+        },
+        {
+          "lod": 1,
+          "vertices": 959,
+          "triangles": 1882,
+          "rawBytes": 53272,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.008489685133099556],
+            [1, 2.780001163482666, 0.008886707946658134]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window~m-lod1.vertices.meshopt",
+            "bytes": 15436,
+            "sha256": "857caa8592e9066e3be3bd3b9bc009e866aafa46efe7c4df89de87ed14b02f75"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window~m-lod1.indices.meshopt",
+            "bytes": 2783,
+            "sha256": "5e1a03a54f520c434bd3879b8f9603baf30f2de649bfeebf7d738f721ba70a45"
+          },
+          "simplifierErrorMm": 2.968904562294483
+        },
+        {
+          "lod": 2,
+          "vertices": 429,
+          "triangles": 831,
+          "rawBytes": 23700,
+          "bounds": [
+            [-1.000000238418579, 0.18000006675720215, -0.006000030320137739],
+            [1, 2.780001163482666, 0.00762917147949338]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window~m-lod2.vertices.meshopt",
+            "bytes": 7181,
+            "sha256": "2a54dbd37bcc490db5434aeb66de6b44f33ef2270d6aefdd55b9282d444d0221"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window~m-lod2.indices.meshopt",
+            "bytes": 1217,
+            "sha256": "ffa86d3396e57b9707f02f56ed7f822e726bbe2dbd8fd316a32312d5f8482e77"
+          },
+          "simplifierErrorMm": 7.905071601271629
+        }
+      ]
+    },
+    {
+      "object": "u-window-oak",
+      "piece": "u-window",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 2224625,
+      "sourceTriangles": 4410496,
+      "sourceTurnedFaces": 67224,
+      "sourceTurnedAreaFraction": 0.003832884941461568,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9620,
+          "triangles": 14952,
+          "rawBytes": 487264,
+          "bounds": [
+            [-1.0021402835845947, -0.0030663013458251953, -0.21730290353298187],
+            [1.0008914470672607, 3.005329132080078, 0.08603983372449875]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak-lod0.vertices.meshopt",
+            "bytes": 209883,
+            "sha256": "a1551474caadf14f5e6878e03dbf1834a961fff2b80f613dd0f6dba8aa15d7e1"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak-lod0.indices.meshopt",
+            "bytes": 16839,
+            "sha256": "fe286948fa8119921836fec8aa2d0378a29322a230c9f7aa836785bdb06cff51"
+          },
+          "simplifierErrorMm": 0.9871382499113679,
+          "turnedFaces": 137,
+          "turnedAreaFraction": 0.0008586907411066111
+        },
+        {
+          "lod": 1,
+          "vertices": 7247,
+          "triangles": 10425,
+          "rawBytes": 357004,
+          "bounds": [
+            [-1.002057433128357, -0.0030663013458251953, -0.21730290353298187],
+            [1.0002515316009521, 3.005329132080078, 0.08542345464229584]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak-lod1.vertices.meshopt",
+            "bytes": 155835,
+            "sha256": "b06b9aba02c937934e9c7a5f0714b91559c74be583e85f3bfe77a0a0c4913aad"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak-lod1.indices.meshopt",
+            "bytes": 11586,
+            "sha256": "a9d93d35a043e9fb659fef07d1e6dc28cd526d6b6cfd7454f7126647c6205911"
+          },
+          "simplifierErrorMm": 1.4661455061286688,
+          "turnedFaces": 81,
+          "turnedAreaFraction": 0.0006694844221798561
+        },
+        {
+          "lod": 2,
+          "vertices": 4673,
+          "triangles": 5607,
+          "rawBytes": 216820,
+          "bounds": [
+            [-1.002057433128357, -0.002346515655517578, -0.21730290353298187],
+            [1.000054121017456, 3.005329132080078, 0.08511205017566681]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak-lod2.vertices.meshopt",
+            "bytes": 94183,
+            "sha256": "966c1a2a171a30fb89f2e0645ceb042399dbe782e8b4326d69ef314b45413dfb"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak-lod2.indices.meshopt",
+            "bytes": 6054,
+            "sha256": "1ed0b02fb134d220b6a6580cacfd87f7e81a10407d40d245b7192d629aed19a9"
+          },
+          "simplifierErrorMm": 4.997117444872856,
+          "turnedFaces": 34,
+          "turnedAreaFraction": 0.0004610309989596871
+        }
+      ]
+    },
+    {
+      "object": "u-window-oak~m",
+      "piece": "u-window~m",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "mirrorOf": "u-window-oak",
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9620,
+          "triangles": 14952,
+          "rawBytes": 487264,
+          "bounds": [
+            [-1.0008914470672607, -0.0030663013458251953, -0.21730290353298187],
+            [1.0021402835845947, 3.005329132080078, 0.08603983372449875]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak~m-lod0.vertices.meshopt",
+            "bytes": 209883,
+            "sha256": "c6dbf37e7473051132b2b850703ca951a8d1dae1377df507e61db591ad96d4c2"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak~m-lod0.indices.meshopt",
+            "bytes": 21059,
+            "sha256": "841b5c456ab30d35cc4a429ffd1ee54aadcc5487608d37b6e29afcb6e93571e7"
+          },
+          "simplifierErrorMm": 0.9871382499113679
+        },
+        {
+          "lod": 1,
+          "vertices": 7247,
+          "triangles": 10425,
+          "rawBytes": 357004,
+          "bounds": [
+            [-1.0002515316009521, -0.0030663013458251953, -0.21730290353298187],
+            [1.002057433128357, 3.005329132080078, 0.08542345464229584]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak~m-lod1.vertices.meshopt",
+            "bytes": 155835,
+            "sha256": "df76a773dbe2810442e11902bd706a791a2f50c3343add2962cd5cf28f491729"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak~m-lod1.indices.meshopt",
+            "bytes": 14270,
+            "sha256": "2fb39ee5681e28ea236b3e40e49396c2479eace80b4e8aeb8febdf827c40ce38"
+          },
+          "simplifierErrorMm": 1.4661455061286688
+        },
+        {
+          "lod": 2,
+          "vertices": 4673,
+          "triangles": 5607,
+          "rawBytes": 216820,
+          "bounds": [
+            [-1.000054121017456, -0.002346515655517578, -0.21730290353298187],
+            [1.002057433128357, 3.005329132080078, 0.08511205017566681]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window-oak~m-lod2.vertices.meshopt",
+            "bytes": 94183,
+            "sha256": "4cb8a042f836c4580eabfcbdc507afc1e3998f1335ec2e00b4fa6236517ad23d"
+          },
+          "indexStream": {
+            "path": "runtime/u-window-oak~m-lod2.indices.meshopt",
+            "bytes": 7243,
+            "sha256": "21387549add4a5b36d7d98e90eeecc6cfa16ad2d3c4bafa29a01d273c3f57bd1"
+          },
+          "simplifierErrorMm": 4.997117444872856
+        }
+      ]
+    },
+    {
+      "object": "glass-u-window2",
+      "piece": "u-window2",
+      "material": "kit-glass",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 4,
+      "sourceTriangles": 2,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window2-lod0.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window2-lod0.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window2-lod1.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window2-lod1.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 4,
+          "triangles": 2,
+          "rawBytes": 152,
+          "bounds": [
+            [-0.20499998331069946, 1.070000171661377, -0.05999999865889549],
+            [0.45500004291534424, 1.929999828338623, -0.05999999865889549]
+          ],
+          "vertexStream": {
+            "path": "runtime/glass-u-window2-lod2.vertices.meshopt",
+            "bytes": 137,
+            "sha256": "ae102d5f82cb97e4426862b243c707192b1eae6fd894a39fdb3c66e2cd9a2b5b"
+          },
+          "indexStream": {
+            "path": "runtime/glass-u-window2-lod2.indices.meshopt",
+            "bytes": 19,
+            "sha256": "620faa59dcbf65f88c961ee30596c0aed61131785d73af18bc188831cb37fa04"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "iron-u-window2",
+      "piece": "u-window2",
+      "material": "kit-iron",
+      "materialClass": null,
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 2400,
+      "sourceTriangles": 1480,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window2-lod0.vertices.meshopt",
+            "bytes": 39255,
+            "sha256": "d6a46768403f20c80229e79ff59a3b1e3e0c235a1fc2dbd5f36f909d95f6b9f3"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window2-lod0.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window2-lod1.vertices.meshopt",
+            "bytes": 39255,
+            "sha256": "d6a46768403f20c80229e79ff59a3b1e3e0c235a1fc2dbd5f36f909d95f6b9f3"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window2-lod1.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 2400,
+          "triangles": 1480,
+          "rawBytes": 94560,
+          "bounds": [
+            [-0.6850000023841858, 1.0850000381469727, 0.003000000026077032],
+            [0.934999942779541, 1.8650002479553223, 0.042500000447034836]
+          ],
+          "vertexStream": {
+            "path": "runtime/iron-u-window2-lod2.vertices.meshopt",
+            "bytes": 39255,
+            "sha256": "d6a46768403f20c80229e79ff59a3b1e3e0c235a1fc2dbd5f36f909d95f6b9f3"
+          },
+          "indexStream": {
+            "path": "runtime/iron-u-window2-lod2.indices.meshopt",
+            "bytes": 1629,
+            "sha256": "78b4cfe5be44fc15715ff0a6804662cc9afe2ea24a7ca9de79774e5080ada4e5"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plaster-u-window2",
+      "piece": "u-window2",
+      "material": "plaster-u-window2",
+      "materialClass": "plaster",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 735912,
+      "sourceTriangles": 1466880,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2380,
+          "triangles": 4698,
+          "rawBytes": 132536,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008261013776063919],
+            [1.000000238418579, 2.780001163482666, 0.009852955117821693]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window2-lod0.vertices.meshopt",
+            "bytes": 37037,
+            "sha256": "192326ffa01510bf97ee55ce00b09bdbb912dfecbbdce3d0da723dfc37fd7a6c"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window2-lod0.indices.meshopt",
+            "bytes": 5465,
+            "sha256": "ab019ac004083292cc3fd263889c17bfbff94ea2f507e674c75d20f2185c46e3"
+          },
+          "simplifierErrorMm": 0.9970258688554168,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 997,
+          "triangles": 1957,
+          "rawBytes": 55388,
+          "bounds": [
+            [-1, 0.18000006675720215, -0.008261013776063919],
+            [1.000000238418579, 2.780001163482666, 0.009852955117821693]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window2-lod1.vertices.meshopt",
+            "bytes": 16127,
+            "sha256": "a3dde4031429c2f1ca09b63e6b9fb8303bda85d7385a5ec7bc968e07f8eda709"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window2-lod1.indices.meshopt",
+            "bytes": 2252,
+            "sha256": "8ae95b6194cfcb554991009f7e5a5f6c63a8c2dc461874cabaf420cdb0096e99"
+          },
+          "simplifierErrorMm": 2.994431648403406,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 429,
+          "triangles": 831,
+          "rawBytes": 23700,
+          "bounds": [
+            [-1, 0.18000054359436035, -0.008261013776063919],
+            [1.000000238418579, 2.780001163482666, 0.008218526840209961]
+          ],
+          "vertexStream": {
+            "path": "runtime/plaster-u-window2-lod2.vertices.meshopt",
+            "bytes": 7233,
+            "sha256": "f3a0ad168b2ad5c276c084891afb568e187c92288065d968a9910bd99d3d2bf1"
+          },
+          "indexStream": {
+            "path": "runtime/plaster-u-window2-lod2.indices.meshopt",
+            "bytes": 988,
+            "sha256": "105ac9997906d1610de7af34f89fb9c833130b124e38cca45fe6cef92c470639"
+          },
+          "simplifierErrorMm": 7.854043506085873,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "u-window2-oak",
+      "piece": "u-window2",
+      "material": "kit-oak",
+      "materialClass": "oak",
+      "pivot": [1, 0, 3.5],
+      "sourceVertices": 2224625,
+      "sourceTriangles": 4410496,
+      "sourceTurnedFaces": 47911,
+      "sourceTurnedAreaFraction": 0.0027323959829630776,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 9905,
+          "triangles": 15561,
+          "rawBytes": 503692,
+          "bounds": [
+            [-1.0049257278442383, -0.005138874053955078, -0.22108905017375946],
+            [1.000770092010498, 3.0068888664245605, 0.09149613976478577]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window2-oak-lod0.vertices.meshopt",
+            "bytes": 215208,
+            "sha256": "6848d19292228a76aa35b819f3b22e44bb305fe090b8e52fe8117ab3b9d07985"
+          },
+          "indexStream": {
+            "path": "runtime/u-window2-oak-lod0.indices.meshopt",
+            "bytes": 17528,
+            "sha256": "bb5e8a20f00381c3d8b3d348ff926752207fb11dcaf8adb6cc801686b46292fa"
+          },
+          "simplifierErrorMm": 0.9982346091419458,
+          "turnedFaces": 66,
+          "turnedAreaFraction": 0.00027424362962227464
+        },
+        {
+          "lod": 1,
+          "vertices": 7351,
+          "triangles": 10653,
+          "rawBytes": 363068,
+          "bounds": [
+            [-1.004734992980957, -0.005138874053955078, -0.22108905017375946],
+            [1.0000765323638916, 3.0064759254455566, 0.09149613976478577]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window2-oak-lod1.vertices.meshopt",
+            "bytes": 156494,
+            "sha256": "aeff4ca49ddf9eeced5ecc179472096015949ba99ca89bcea0ea562f93147e6e"
+          },
+          "indexStream": {
+            "path": "runtime/u-window2-oak-lod1.indices.meshopt",
+            "bytes": 11822,
+            "sha256": "65fa7b9cabfbe3513bb01a1fccea873a696e80c83f5791b17b7c4d1486fc7da4"
+          },
+          "simplifierErrorMm": 1.4917438384145498,
+          "turnedFaces": 27,
+          "turnedAreaFraction": 0.00016990637671622104
+        },
+        {
+          "lod": 2,
+          "vertices": 4686,
+          "triangles": 5658,
+          "rawBytes": 217848,
+          "bounds": [
+            [-1.004734992980957, -0.005035400390625, -0.22067825496196747],
+            [0.99997878074646, 3.0064759254455566, 0.09149613976478577]
+          ],
+          "vertexStream": {
+            "path": "runtime/u-window2-oak-lod2.vertices.meshopt",
+            "bytes": 93922,
+            "sha256": "f71a4650be53e8e80c753fffced6526ec16149a67aecfacd7283b0b056a8d9ce"
+          },
+          "indexStream": {
+            "path": "runtime/u-window2-oak-lod2.indices.meshopt",
+            "bytes": 6127,
+            "sha256": "478b60f37cbd075a2e4718fee896a07d35d7639ed51faf8f16e8e29e06f22e01"
+          },
+          "simplifierErrorMm": 4.990537650883198,
+          "turnedFaces": 17,
+          "turnedAreaFraction": 0.00006837571041057121
+        }
+      ]
+    },
+    {
+      "object": "FootPlants",
+      "piece": null,
+      "material": "plants",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 34895,
+      "sourceTriangles": 51540,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 69790,
+          "triangles": 103080,
+          "rawBytes": 3470240,
+          "bounds": [
+            [-0.3612682819366455, 0.008528602309525013, -5.993227481842041],
+            [12.5606689453125, 0.27524739503860474, 0.34540387988090515]
+          ],
+          "vertexStream": {
+            "path": "runtime/FootPlants-lod0.vertices.meshopt",
+            "bytes": 1470296,
+            "sha256": "f4388028a7d7efb40a41484c98f73d082db336d11f1b283b957090263a4023f1"
+          },
+          "indexStream": {
+            "path": "runtime/FootPlants-lod0.indices.meshopt",
+            "bytes": 110961,
+            "sha256": "2a9c824572d1ddf88a0eb282c3acbc8ca6dea9bc48a0e70ca6a00c3446c7fac4"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 31870,
+          "triangles": 36078,
+          "rawBytes": 1452776,
+          "bounds": [
+            [-0.3612610697746277, 0.008528602309525013, -5.993227481842041],
+            [12.5606689453125, 0.27524739503860474, 0.34527140855789185]
+          ],
+          "vertexStream": {
+            "path": "runtime/FootPlants-lod1.vertices.meshopt",
+            "bytes": 708646,
+            "sha256": "2482f0578fc1f3edc0b67a5db0805737ea3c4f6ae91288004b06e2cab6f3bc2e"
+          },
+          "indexStream": {
+            "path": "runtime/FootPlants-lod1.indices.meshopt",
+            "bytes": 37851,
+            "sha256": "27ed9229e120b61e9547eb478d0b8f5b4005db7855636ff845049604c80ae7aa"
+          },
+          "simplifierErrorMm": 0.7594333728775382
+        },
+        {
+          "lod": 2,
+          "vertices": 12462,
+          "triangles": 10304,
+          "rawBytes": 522432,
+          "bounds": [
+            [-0.36125385761260986, 0.008528602309525013, -5.993227481842041],
+            [12.56064510345459, 0.27464738488197327, 0.34527140855789185]
+          ],
+          "vertexStream": {
+            "path": "runtime/FootPlants-lod2.vertices.meshopt",
+            "bytes": 286579,
+            "sha256": "5d8e8912108cb276bde43279931aee03851b59efb2efd251c1f40fdfa991daaa"
+          },
+          "indexStream": {
+            "path": "runtime/FootPlants-lod2.indices.meshopt",
+            "bytes": 10570,
+            "sha256": "9699d4baa79a0fde8298165dc7d2b35dbc417a0b321e3acdd01d09c6bfc0a13f"
+          },
+          "simplifierErrorMm": 2.2988850250840187
+        }
+      ]
+    },
+    {
+      "object": "interior",
+      "piece": null,
+      "material": "interior",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 24,
+      "sourceTriangles": 12,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.25999999046325684, 0, -6.199999809265137],
+            [11.989999771118164, 6.489999771118164, -0.25999999046325684]
+          ],
+          "vertexStream": {
+            "path": "runtime/interior-lod0.vertices.meshopt",
+            "bytes": 475,
+            "sha256": "8d2b295c311d05d712f9feb23a087f972b979be0fbe1f55da32ad09a65a716c0"
+          },
+          "indexStream": {
+            "path": "runtime/interior-lod0.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.25999999046325684, 0, -6.199999809265137],
+            [11.989999771118164, 6.489999771118164, -0.25999999046325684]
+          ],
+          "vertexStream": {
+            "path": "runtime/interior-lod1.vertices.meshopt",
+            "bytes": 475,
+            "sha256": "8d2b295c311d05d712f9feb23a087f972b979be0fbe1f55da32ad09a65a716c0"
+          },
+          "indexStream": {
+            "path": "runtime/interior-lod1.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.25999999046325684, 0, -6.199999809265137],
+            [11.989999771118164, 6.489999771118164, -0.25999999046325684]
+          ],
+          "vertexStream": {
+            "path": "runtime/interior-lod2.vertices.meshopt",
+            "bytes": 475,
+            "sha256": "8d2b295c311d05d712f9feb23a087f972b979be0fbe1f55da32ad09a65a716c0"
+          },
+          "indexStream": {
+            "path": "runtime/interior-lod2.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "mortar-front-0",
+      "piece": null,
+      "material": "mortar",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 24,
+      "sourceTriangles": 12,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.5799999833106995, -0.05999999865889549, -0.23999999463558197],
+            [4.534999847412109, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-0-lod0.vertices.meshopt",
+            "bytes": 419,
+            "sha256": "a80776c81a2be3e6d5292ba8ff65a22c63809bc7a74d3716addb679bb365cf85"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-0-lod0.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.5799999833106995, -0.05999999865889549, -0.23999999463558197],
+            [4.534999847412109, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-0-lod1.vertices.meshopt",
+            "bytes": 419,
+            "sha256": "a80776c81a2be3e6d5292ba8ff65a22c63809bc7a74d3716addb679bb365cf85"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-0-lod1.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [0.5799999833106995, -0.05999999865889549, -0.23999999463558197],
+            [4.534999847412109, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-0-lod2.vertices.meshopt",
+            "bytes": 419,
+            "sha256": "a80776c81a2be3e6d5292ba8ff65a22c63809bc7a74d3716addb679bb365cf85"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-0-lod2.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "mortar-front-1",
+      "piece": null,
+      "material": "mortar",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 24,
+      "sourceTriangles": 12,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [5.864999771118164, -0.05999999865889549, -0.23999999463558197],
+            [11.680000305175781, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-1-lod0.vertices.meshopt",
+            "bytes": 420,
+            "sha256": "a4d13e2798851ebc0f37c5a6769678cfb048752844d26e2f7e1ffa1f9f1e7470"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-1-lod0.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [5.864999771118164, -0.05999999865889549, -0.23999999463558197],
+            [11.680000305175781, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-1-lod1.vertices.meshopt",
+            "bytes": 420,
+            "sha256": "a4d13e2798851ebc0f37c5a6769678cfb048752844d26e2f7e1ffa1f9f1e7470"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-1-lod1.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [5.864999771118164, -0.05999999865889549, -0.23999999463558197],
+            [11.680000305175781, 0.4819999933242798, 0.04600000008940697]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-front-1-lod2.vertices.meshopt",
+            "bytes": 420,
+            "sha256": "a4d13e2798851ebc0f37c5a6769678cfb048752844d26e2f7e1ffa1f9f1e7470"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-front-1-lod2.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "mortar-left-0",
+      "piece": null,
+      "material": "mortar",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 24,
+      "sourceTriangles": 12,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [-0.04600000008940697, -0.05999999865889549, -6.260000228881836],
+            [0.23999999463558197, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-left-0-lod0.vertices.meshopt",
+            "bytes": 441,
+            "sha256": "9e827b939a2e620342abda69138932c7374a57a93db8a325a8bd3b06195d958d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-left-0-lod0.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [-0.04600000008940697, -0.05999999865889549, -6.260000228881836],
+            [0.23999999463558197, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-left-0-lod1.vertices.meshopt",
+            "bytes": 441,
+            "sha256": "9e827b939a2e620342abda69138932c7374a57a93db8a325a8bd3b06195d958d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-left-0-lod1.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [-0.04600000008940697, -0.05999999865889549, -6.260000228881836],
+            [0.23999999463558197, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-left-0-lod2.vertices.meshopt",
+            "bytes": 441,
+            "sha256": "9e827b939a2e620342abda69138932c7374a57a93db8a325a8bd3b06195d958d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-left-0-lod2.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "mortar-right-0",
+      "piece": null,
+      "material": "mortar",
+      "materialClass": null,
+      "pivot": [0, 0, 0],
+      "sourceVertices": 24,
+      "sourceTriangles": 12,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [12.010000228881836, -0.05999999865889549, -6.260000228881836],
+            [12.295999526977539, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-right-0-lod0.vertices.meshopt",
+            "bytes": 412,
+            "sha256": "7a523ce8c9a002a2c2e1b786f0153497fa6af8f1c092644f156c32796236655d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-right-0-lod0.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [12.010000228881836, -0.05999999865889549, -6.260000228881836],
+            [12.295999526977539, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-right-0-lod1.vertices.meshopt",
+            "bytes": 412,
+            "sha256": "7a523ce8c9a002a2c2e1b786f0153497fa6af8f1c092644f156c32796236655d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-right-0-lod1.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 24,
+          "triangles": 12,
+          "rawBytes": 912,
+          "bounds": [
+            [12.010000228881836, -0.05999999865889549, -6.260000228881836],
+            [12.295999526977539, 0.4819999933242798, -0.5799999833106995]
+          ],
+          "vertexStream": {
+            "path": "runtime/mortar-right-0-lod2.vertices.meshopt",
+            "bytes": 412,
+            "sha256": "7a523ce8c9a002a2c2e1b786f0153497fa6af8f1c092644f156c32796236655d"
+          },
+          "indexStream": {
+            "path": "runtime/mortar-right-0-lod2.indices.meshopt",
+            "bytes": 29,
+            "sha256": "ffd29da51fb0d92de7d27f6278ad54b0b1d17d4d177d08b397295a6ba4ef4ee1"
+          },
+          "simplifierErrorMm": 0
+        }
+      ]
+    },
+    {
+      "object": "plinth-foot",
+      "piece": null,
+      "material": "kit-stone",
+      "materialClass": "stone",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 925830,
+      "sourceTriangles": 1843072,
+      "sourceTurnedFaces": 4182,
+      "sourceTurnedAreaFraction": 0.000164688038567678,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 189962,
+          "triangles": 376661,
+          "rawBytes": 10598716,
+          "bounds": [
+            [-0.10139749199151993, -0.06292098015546799, -0.5327149629592896],
+            [12.35079574584961, 0.5297576189041138, 0.10351557284593582]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-foot-lod0.vertices.meshopt",
+            "bytes": 3752767,
+            "sha256": "60d5179621a9a1c32a5279a14c00ffdf9b5133b23842478342ebfcd67bda4750"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-foot-lod0.indices.meshopt",
+            "bytes": 431895,
+            "sha256": "d06b35d2d1bcd6205f08da678bc603692e7fb19efd8a5193ab0ec125e88699ba"
+          },
+          "simplifierErrorMm": 0.9991256520152092,
+          "turnedFaces": 3638,
+          "turnedAreaFraction": 0.00021854179627328618
+        },
+        {
+          "lod": 1,
+          "vertices": 54066,
+          "triangles": 106889,
+          "rawBytes": 3012780,
+          "bounds": [
+            [-0.10139749199151993, -0.06292098015546799, -0.5324130058288574],
+            [12.35065746307373, 0.5297333002090454, 0.10262501984834671]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-foot-lod1.vertices.meshopt",
+            "bytes": 1115513,
+            "sha256": "7f17bb8bf7f31e3610a6f27bef2152030d574c5b07c0ef5ee51ffb49475b3071"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-foot-lod1.indices.meshopt",
+            "bytes": 127567,
+            "sha256": "89805f103235bf31f6ee07784f3dd6591f7a6a33d18b91257f15aca9c7e86c4a"
+          },
+          "simplifierErrorMm": 2.977257827296853,
+          "turnedFaces": 923,
+          "turnedAreaFraction": 0.00034058733641617123
+        },
+        {
+          "lod": 2,
+          "vertices": 2190,
+          "triangles": 3722,
+          "rawBytes": 114744,
+          "bounds": [
+            [-0.10139749199151993, -0.06292098015546799, -0.5321427583694458],
+            [12.349387168884277, 0.5297333002090454, 0.10262501984834671]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-foot-lod2.vertices.meshopt",
+            "bytes": 48332,
+            "sha256": "f641de85c4938e7a07566bb7abe18ee530cf6f90456d2eea7a7249213100e0d4"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-foot-lod2.indices.meshopt",
+            "bytes": 4244,
+            "sha256": "1d0d478e21b5917e62c4cfdca3429d6920c00c51af0d2e590fc9e93ae1743453"
+          },
+          "simplifierErrorMm": 7.893363945186138,
+          "turnedFaces": 1,
+          "turnedAreaFraction": 3.9086645664088224e-8
+        }
+      ]
+    },
+    {
+      "object": "plinth-front",
+      "piece": null,
+      "material": "kit-stone",
+      "materialClass": "stone",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 3623135,
+      "sourceTriangles": 7177152,
+      "sourceTurnedFaces": 65946,
+      "sourceTurnedAreaFraction": 0.0037485904772814847,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 654748,
+          "triangles": 1290635,
+          "rawBytes": 36439556,
+          "bounds": [
+            [0.5173166990280151, -0.06559955328702927, -0.24328848719596863],
+            [11.743782997131348, 0.5140585899353027, 0.09653198719024658]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-front-lod0.vertices.meshopt",
+            "bytes": 13389653,
+            "sha256": "10b348b992369c45cd4f584b1ea8116d82b2c1f023d8678a910615440996e5f7"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-front-lod0.indices.meshopt",
+            "bytes": 1499122,
+            "sha256": "70bc9cd08c4e79b38df41a6af14c3910d574c4ee7166f7ec37cd5eeac2370e41"
+          },
+          "simplifierErrorMm": 0.994716421701014,
+          "turnedFaces": 13935,
+          "turnedAreaFraction": 0.0016358517171908952
+        },
+        {
+          "lod": 1,
+          "vertices": 62087,
+          "triangles": 118729,
+          "rawBytes": 3411532,
+          "bounds": [
+            [0.5173166990280151, -0.06559955328702927, -0.24328848719596863],
+            [11.743782997131348, 0.5140585899353027, 0.09653198719024658]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-front-lod1.vertices.meshopt",
+            "bytes": 1355979,
+            "sha256": "41402f6304d3d468fc088aaa4ab57c33c787930b0010a7deb308bc837fe56f7f"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-front-lod1.indices.meshopt",
+            "bytes": 138052,
+            "sha256": "f4cef5c93151d40d06e94914e0eaa81f960119826b8ed356a33949cc6c618153"
+          },
+          "simplifierErrorMm": 2.9743933118879795,
+          "turnedFaces": 1091,
+          "turnedAreaFraction": 0.0006280591193957265
+        },
+        {
+          "lod": 2,
+          "vertices": 8240,
+          "triangles": 13099,
+          "rawBytes": 420868,
+          "bounds": [
+            [0.5196110010147095, -0.06559955328702927, -0.2426130473613739],
+            [11.743114471435547, 0.5140585899353027, 0.09629367291927338]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-front-lod2.vertices.meshopt",
+            "bytes": 197429,
+            "sha256": "d2e7573d61016fd25c02036c16d0c5294fc02e06c68d093b77de94f97dd9f78c"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-front-lod2.indices.meshopt",
+            "bytes": 14291,
+            "sha256": "0afb363df83aed489815bdc7bcd683b06bb92726bb36f9b0f47ccdf60cbc81f1"
+          },
+          "simplifierErrorMm": 7.9574743285775185,
+          "turnedFaces": 37,
+          "turnedAreaFraction": 0.0004941788787745042
+        }
+      ]
+    },
+    {
+      "object": "plinth-left",
+      "piece": null,
+      "material": "kit-stone",
+      "materialClass": "stone",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 2018218,
+      "sourceTriangles": 3997568,
+      "sourceTurnedFaces": 35898,
+      "sourceTurnedAreaFraction": 0.003878277959970584,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 160474,
+          "triangles": 315301,
+          "rawBytes": 8918780,
+          "bounds": [
+            [-0.10194087773561478, -0.06537806242704391, -6.323585033416748],
+            [0.24274352192878723, 0.5180352926254272, -0.5117841958999634]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-left-lod0.vertices.meshopt",
+            "bytes": 3356160,
+            "sha256": "2125e2291f1b50da2dd605e87cb51502201a22707242c41bf15fbccc6d17d5a6"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-left-lod0.indices.meshopt",
+            "bytes": 370248,
+            "sha256": "2cf417cc3acbbb2e30ad1847bbdcf991cfe3cfcde4824b5860befdd66725c9f7"
+          },
+          "simplifierErrorMm": 0.9943578625097871,
+          "turnedFaces": 2364,
+          "turnedAreaFraction": 0.001478499334212788
+        },
+        {
+          "lod": 1,
+          "vertices": 9569,
+          "triangles": 16839,
+          "rawBytes": 508276,
+          "bounds": [
+            [-0.10194087773561478, -0.06537806242704391, -6.322485446929932],
+            [0.24274352192878723, 0.5180352926254272, -0.5117841958999634]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-left-lod1.vertices.meshopt",
+            "bytes": 227272,
+            "sha256": "6c25aa5d14c162a4412b022d958b84caa834b4cab4623b96d1ec041085a7b52d"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-left-lod1.indices.meshopt",
+            "bytes": 18854,
+            "sha256": "17dde20c969fcfb73a99aa81d6ae4df20979dad7f5ef167b670754ebd6cac456"
+          },
+          "simplifierErrorMm": 2.9828501865267754,
+          "turnedFaces": 50,
+          "turnedAreaFraction": 0.0008853501676491712
+        },
+        {
+          "lod": 2,
+          "vertices": 4439,
+          "triangles": 7096,
+          "rawBytes": 227200,
+          "bounds": [
+            [-0.10194087773561478, -0.06356647610664368, -6.321662902832031],
+            [0.24235963821411133, 0.5167158842086792, -0.5117841958999634]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-left-lod2.vertices.meshopt",
+            "bytes": 108159,
+            "sha256": "9330178261298085b992bc96623a0efa777c387228a9a8ba3abc460d716ffccf"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-left-lod2.indices.meshopt",
+            "bytes": 7746,
+            "sha256": "f3bc1394758120478b47cc89112b600051e67ff0f5ebfd4fa395fee6ef48391c"
+          },
+          "simplifierErrorMm": 7.9506682232022285,
+          "turnedFaces": 13,
+          "turnedAreaFraction": 0.0003504946021266718
+        }
+      ]
+    },
+    {
+      "object": "plinth-right",
+      "piece": null,
+      "material": "kit-stone",
+      "materialClass": "stone",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 2127349,
+      "sourceTriangles": 4214976,
+      "sourceTurnedFaces": 33903,
+      "sourceTurnedAreaFraction": 0.0036990517671551,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 158832,
+          "triangles": 311825,
+          "rawBytes": 8824524,
+          "bounds": [
+            [12.007472038269043, -0.06541648507118225, -6.319700717926025],
+            [12.349323272705078, 0.5150590538978577, -0.5175930857658386]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-right-lod0.vertices.meshopt",
+            "bytes": 3184736,
+            "sha256": "f2838060574e1c73fa86e04485bd0ac8ed76779db2b23f5eed4dfeab35ea449c"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-right-lod0.indices.meshopt",
+            "bytes": 366734,
+            "sha256": "394ef9558d1f1798d498a9e91bccf9db432eb69eb8d237ca03be186512e2e8b7"
+          },
+          "simplifierErrorMm": 0.9943690383806825,
+          "turnedFaces": 2690,
+          "turnedAreaFraction": 0.0015330362913060823
+        },
+        {
+          "lod": 1,
+          "vertices": 10237,
+          "triangles": 17962,
+          "rawBytes": 543128,
+          "bounds": [
+            [12.007640838623047, -0.06519246101379395, -6.318817138671875],
+            [12.349323272705078, 0.5147691369056702, -0.518278181552887]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-right-lod1.vertices.meshopt",
+            "bytes": 232096,
+            "sha256": "691754bef43f9f157fb7061bc2e0742d1aed20bb4181c4a8ef949358f31e7704"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-right-lod1.indices.meshopt",
+            "bytes": 20058,
+            "sha256": "b52b4962896b3c3d2d485f8bb991c8575f8bc30000314747bc6061809855b8e1"
+          },
+          "simplifierErrorMm": 2.983079757541418,
+          "turnedFaces": 29,
+          "turnedAreaFraction": 0.00035257038931494684
+        },
+        {
+          "lod": 2,
+          "vertices": 4850,
+          "triangles": 7702,
+          "rawBytes": 247624,
+          "bounds": [
+            [12.00794792175293, -0.0625125914812088, -6.318817138671875],
+            [12.349323272705078, 0.513485848903656, -0.518278181552887]
+          ],
+          "vertexStream": {
+            "path": "runtime/plinth-right-lod2.vertices.meshopt",
+            "bytes": 111931,
+            "sha256": "57a0e7c5ca82feb57c63d68a57b4f0dd6ce7e1c4695881e09391331064924da4"
+          },
+          "indexStream": {
+            "path": "runtime/plinth-right-lod2.indices.meshopt",
+            "bytes": 8378,
+            "sha256": "e425f6b74b0f4842ba8e98e66d5b34aaef7031c7894533a195007544d947b782"
+          },
+          "simplifierErrorMm": 7.997413165867329,
+          "turnedFaces": 14,
+          "turnedAreaFraction": 0.0003100331876810866
+        }
+      ]
+    },
+    {
+      "object": "soil-front-0",
+      "piece": null,
+      "material": "soil",
+      "materialClass": "soil",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 56373,
+      "sourceTriangles": 110656,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 353,
+          "triangles": 615,
+          "rawBytes": 18676,
+          "bounds": [
+            [-0.36000004410743713, -0.03113151155412197, 0.06476149708032608],
+            [4.575056552886963, 0.03555859625339508, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-0-lod0.vertices.meshopt",
+            "bytes": 9246,
+            "sha256": "040738cf5c040b9e1eec48a1c7fa9e8ea2d34bad4ef6969a10e1888e665d401f"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-0-lod0.indices.meshopt",
+            "bytes": 707,
+            "sha256": "1826b7adc0c0f0644bdfdd364a715a41a8f136bba89c7309a0d9dac91a3bbde7"
+          },
+          "simplifierErrorMm": 1.49254547432065,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 143,
+          "triangles": 232,
+          "rawBytes": 7360,
+          "bounds": [
+            [-0.36000004410743713, -0.03113151155412197, 0.06476149708032608],
+            [4.5750322341918945, 0.03555859625339508, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-0-lod1.vertices.meshopt",
+            "bytes": 3872,
+            "sha256": "187e44ef1c7b5069f86321e9717a5f7dea1b592798ddc0a96aa444b5316d1c07"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-0-lod1.indices.meshopt",
+            "bytes": 264,
+            "sha256": "cdf0f548efa60855a6112c295e94f174e35739b59072c63ce36bcee9c059a0bb"
+          },
+          "simplifierErrorMm": 3.949962556362152,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 82,
+          "triangles": 120,
+          "rawBytes": 4064,
+          "bounds": [
+            [-0.36000004410743713, -0.03113151155412197, 0.06476149708032608],
+            [4.5750322341918945, 0.03555859625339508, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-0-lod2.vertices.meshopt",
+            "bytes": 2383,
+            "sha256": "c3a498927dd08c66ccf1eddfdf19ca205e39a8495c4256787ac628e75abf341a"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-0-lod2.indices.meshopt",
+            "bytes": 146,
+            "sha256": "363c1d903cd1fac6685085eedc713ebd84a7c3f9cb0b889b2687ebbfd2b64f3b"
+          },
+          "simplifierErrorMm": 7.910898886620998,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "soil-front-1",
+      "piece": null,
+      "material": "soil",
+      "materialClass": "soil",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 78476,
+      "sourceTriangles": 152320,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 1278,
+          "triangles": 2267,
+          "rawBytes": 68100,
+          "bounds": [
+            [5.825009346008301, -0.030976422131061554, 0.06475338339805603],
+            [12.620001792907715, 0.03207443654537201, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-1-lod0.vertices.meshopt",
+            "bytes": 29596,
+            "sha256": "5dd22d516339325608eae59898748bee619022f8b4ebfe4f0c29d947f2156dbc"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-1-lod0.indices.meshopt",
+            "bytes": 2692,
+            "sha256": "f2d557416b2df48918cf7886ab827321efd95246dace4c664ed1311a34f83b54"
+          },
+          "simplifierErrorMm": 1.4931700425222516,
+          "turnedFaces": 2,
+          "turnedAreaFraction": 0.00009071521230652809
+        },
+        {
+          "lod": 1,
+          "vertices": 1145,
+          "triangles": 2028,
+          "rawBytes": 60976,
+          "bounds": [
+            [5.825009346008301, -0.030976422131061554, 0.06475338339805603],
+            [12.620001792907715, 0.03207443654537201, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-1-lod1.vertices.meshopt",
+            "bytes": 26460,
+            "sha256": "dba0d3911ffd72b128a484661a1358deb27b2445a6bf3afa168348b6da3f6204"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-1-lod1.indices.meshopt",
+            "bytes": 2411,
+            "sha256": "092c9e9d7cb445b9cd54c685abb54f9810c21e3d4cb3122268a70f1669637c7d"
+          },
+          "simplifierErrorMm": 3.9476752281188965,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 1117,
+          "triangles": 1976,
+          "rawBytes": 59456,
+          "bounds": [
+            [5.825009346008301, -0.030976422131061554, 0.06475338339805603],
+            [12.620001792907715, 0.03207443654537201, 0.36500003933906555]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-front-1-lod2.vertices.meshopt",
+            "bytes": 25828,
+            "sha256": "c4226a293a678f603af683bb1805ab5bd1d15951dc4a7fcf61451b2ec193bc72"
+          },
+          "indexStream": {
+            "path": "runtime/soil-front-1-lod2.indices.meshopt",
+            "bytes": 2344,
+            "sha256": "9f0684a289c433c87d6be18edcfc4a79e6e9b91cac589462cce10fb877242052"
+          },
+          "simplifierErrorMm": 7.6849330216646194,
+          "turnedFaces": 4,
+          "turnedAreaFraction": 0.0003210826690045492
+        }
+      ]
+    },
+    {
+      "object": "soil-left-0",
+      "piece": null,
+      "material": "soil",
+      "materialClass": "soil",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 75981,
+      "sourceTriangles": 149184,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 646,
+          "triangles": 1141,
+          "rawBytes": 34364,
+          "bounds": [
+            [-0.36548808217048645, -0.03331919014453888, -6.300023555755615],
+            [-0.0645262822508812, 0.03450784087181091, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-left-0-lod0.vertices.meshopt",
+            "bytes": 16739,
+            "sha256": "838912b0f725469348d1375f6fa7a48613612d23f79301894349e92dc8107bc0"
+          },
+          "indexStream": {
+            "path": "runtime/soil-left-0-lod0.indices.meshopt",
+            "bytes": 1312,
+            "sha256": "a6352157a8852c035f2c2d5037a7faa64826c36c949beda17dec329767befd98"
+          },
+          "simplifierErrorMm": 1.4932703925296664,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 1,
+          "vertices": 266,
+          "triangles": 438,
+          "rawBytes": 13768,
+          "bounds": [
+            [-0.36519941687583923, -0.03273136168718338, -6.300014495849609],
+            [-0.0645262822508812, 0.03450784087181091, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-left-0-lod1.vertices.meshopt",
+            "bytes": 7185,
+            "sha256": "0a2322f5c0007929735cdd80d7ae62b1bde8f50347e20c5c2d56b117d2b83662"
+          },
+          "indexStream": {
+            "path": "runtime/soil-left-0-lod1.indices.meshopt",
+            "bytes": 501,
+            "sha256": "0c1d1e983ff10b5eff2467084b1f8347d118454a62ee9e29ed2521c70ac0b33e"
+          },
+          "simplifierErrorMm": 3.9622923359274864,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        },
+        {
+          "lod": 2,
+          "vertices": 143,
+          "triangles": 226,
+          "rawBytes": 7288,
+          "bounds": [
+            [-0.36519941687583923, -0.03273136168718338, -6.299989223480225],
+            [-0.0645262822508812, 0.03450784087181091, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-left-0-lod2.vertices.meshopt",
+            "bytes": 3908,
+            "sha256": "0d5e20dbd8350583e7b04e480b3788bb47dd8966929f817f46c9a60b2a2b39ab"
+          },
+          "indexStream": {
+            "path": "runtime/soil-left-0-lod2.indices.meshopt",
+            "bytes": 252,
+            "sha256": "1657646ffebb9b0b45bad123f401b0a29c66a35d8fb4906b0c2909a459b86217"
+          },
+          "simplifierErrorMm": 7.935448549687862,
+          "turnedFaces": 0,
+          "turnedAreaFraction": 0
+        }
+      ]
+    },
+    {
+      "object": "soil-right-0",
+      "piece": null,
+      "material": "soil",
+      "materialClass": "soil",
+      "pivot": [0, 0, 0],
+      "sourceVertices": 78139,
+      "sourceTriangles": 149184,
+      "sourceTurnedFaces": 0,
+      "sourceTurnedAreaFraction": 0,
+      "lods": [
+        {
+          "lod": 0,
+          "vertices": 2757,
+          "triangles": 4653,
+          "rawBytes": 144060,
+          "bounds": [
+            [12.314777374267578, -0.033367764204740524, -6.300011157989502],
+            [12.615771293640137, 0.03453889116644859, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-right-0-lod0.vertices.meshopt",
+            "bytes": 62891,
+            "sha256": "d8e4de40c8479b56005f0badafe880b59ad0b551dd75f807df002e8b754b4bf8"
+          },
+          "indexStream": {
+            "path": "runtime/soil-right-0-lod0.indices.meshopt",
+            "bytes": 5620,
+            "sha256": "0c014cc3c8ab129d1871657207388bd1e410efe28834fc53d937e8f4c695d3aa"
+          },
+          "simplifierErrorMm": 1.4902657130733132,
+          "turnedFaces": 1,
+          "turnedAreaFraction": 1.716736389142169e-9
+        },
+        {
+          "lod": 1,
+          "vertices": 2684,
+          "triangles": 4539,
+          "rawBytes": 140356,
+          "bounds": [
+            [12.314777374267578, -0.033367764204740524, -6.300011157989502],
+            [12.615771293640137, 0.03453889116644859, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-right-0-lod1.vertices.meshopt",
+            "bytes": 61110,
+            "sha256": "1c79e5e99f5a24d9f2f52976a5dfce6e88971d5745df28d77000773847f44afb"
+          },
+          "indexStream": {
+            "path": "runtime/soil-right-0-lod1.indices.meshopt",
+            "bytes": 5498,
+            "sha256": "62df9c4558daaa10a184d752bd9c9b644f5e4d9e2d584788237c1cc15432cc7e"
+          },
+          "simplifierErrorMm": 3.929401282221079,
+          "turnedFaces": 1,
+          "turnedAreaFraction": 1.716871610835396e-9
+        },
+        {
+          "lod": 2,
+          "vertices": 2678,
+          "triangles": 4532,
+          "rawBytes": 140080,
+          "bounds": [
+            [12.314777374267578, -0.033367764204740524, -6.300011157989502],
+            [12.615462303161621, 0.03453889116644859, 0.36000004410743713]
+          ],
+          "vertexStream": {
+            "path": "runtime/soil-right-0-lod2.vertices.meshopt",
+            "bytes": 61036,
+            "sha256": "3e2686df3ff6c028d0d3f3a66070b5ea393d30acc464b445ae82c27c1c587010"
+          },
+          "indexStream": {
+            "path": "runtime/soil-right-0-lod2.indices.meshopt",
+            "bytes": 5497,
+            "sha256": "cf01916ff63dc79616aa3ebeb6cd688a81d2cf72b5f1f382dd34fcc64fe6371f"
+          },
+          "simplifierErrorMm": 7.639836985617876,
+          "turnedFaces": 1,
+          "turnedAreaFraction": 1.716598982677169e-9
+        }
+      ]
+    }
+  ],
+  "placements": [
+    {
+      "name": "place-00-g-braced",
+      "piece": "g-braced",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-01-u-braced",
+      "piece": "u-braced",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-02-g-window",
+      "piece": "g-window",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-03-u-window",
+      "piece": "u-window",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 3, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-04-g-door",
+      "piece": "g-door",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-05-u-window2",
+      "piece": "u-window2",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-06-g-window2",
+      "piece": "g-window2",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 7, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-07-u-window",
+      "piece": "u-window",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 7, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-08-g-plain",
+      "piece": "g-plain",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 9, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-09-u-plain",
+      "piece": "u-plain",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 9, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-10-g-cbrace",
+      "piece": "g-cbrace",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 11, 0, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-11-u-cbrace",
+      "piece": "u-cbrace",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 11, 3.5, 0, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-12-g-cbrace2",
+      "piece": "g-cbrace2~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.249999805, 0, -1.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-13-u-cbrace2",
+      "piece": "u-cbrace2~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.250000111, 3.5, -1.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-14-g-window2",
+      "piece": "g-window2~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.249999805, 0, -3.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-15-u-plain",
+      "piece": "u-plain~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.250000111, 3.5, -3.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-16-g-plain",
+      "piece": "g-plain~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.249999805, 0, -5.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-17-u-window",
+      "piece": "u-window~m",
+      "matrix": [
+        1.95e-7, 0, -1, 0, 8.7e-8, 1, 0, 0, 1, -8.7e-8, 1.95e-7, 0, 12.250000111, 3.5, -5.25, 1
+      ],
+      "mirrored": true
+    },
+    {
+      "name": "place-18-g-plain",
+      "piece": "g-plain",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 0, -5.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-19-u-window",
+      "piece": "u-window",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 3.5, -5.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-20-g-window",
+      "piece": "g-window",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 0, -3.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-21-u-plain",
+      "piece": "u-plain",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 3.5, -3.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-22-g-cbrace2",
+      "piece": "g-cbrace2",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 0, -1.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-23-u-cbrace2",
+      "piece": "u-cbrace2",
+      "matrix": [7.5e-8, 0, 1, 0, 0, 1, 0, 0, -1, 0, 7.5e-8, 0, 7.5e-8, 3.5, -1.25, 1],
+      "mirrored": false
+    },
+    {
+      "name": "place-24-corner",
+      "piece": "corner",
+      "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 12, 0, 0, 1],
+      "mirrored": false
+    }
+  ],
+  "housePlacement": {
+    "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  }
+}

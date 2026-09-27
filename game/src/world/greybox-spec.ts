@@ -161,7 +161,13 @@ export interface GreyboxDistrictSpec {
   readonly assetPlacements?: readonly {
     readonly id: string;
     readonly assetId: string;
+    /** One part of the asset; an assembly request names no variant. */
     readonly variantId?: string;
+    /** A whole kit assembly (the K1 test house): a rigid group of its parts, placed by
+     * `center`, `heightOffset` and `rotationYRadians` in quarter turns. */
+    readonly assembly?: string;
+    /** An assembly's box collider over its bounds. */
+    readonly collision?: true;
     readonly baseColorFactor?: readonly [number, number, number];
     readonly scale?: number;
     readonly center: readonly [number, number];

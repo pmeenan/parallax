@@ -5,6 +5,7 @@ import {
   type Mesh,
 } from "@babylonjs/lite";
 import { describe, expect, it, vi } from "vitest";
+import { createPbrAmbientState } from "../src/render/pbr-ambient";
 
 vi.hoisted(() => {
   // The pinned low-level shader composer reads WebGPU's immutable stage flags at import.
@@ -783,7 +784,7 @@ async function pbrBoundary(device: FakeDevice, mutation?: "missing-depth" | "sou
       maximumRow: 0,
       gpuBytes: 8,
     },
-    { sky: [0, 0, 0], ground: [0, 0, 0], toSun: [0, 1, 0] },
+    createPbrAmbientState(),
   );
   const mesh = {
     material,

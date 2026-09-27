@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  GROUND_BOUNCE_ALBEDO,
   quantizeAnimatedEnvironmentLightingPhase,
   SUN_LIGHT_SCALE,
   sampleEnvironmentLighting,
@@ -161,5 +163,99 @@ describe("calibrated lighting (engine package 5)", () => {
         }
         expect(sample.sunLightIntensity).toBeCloseTo(sample.sunIntensity * SUN_LIGHT_SCALE, 12);
       }
+  });
+});
+
+describe("lighting on every orientation (engine package 7)", () => {
+  const calibration = JSON.parse(
+    readFileSync(
+      new URL(
+        "../../assets/source/d1-walls/proof-2026-09-27/lighting/calibration/calibration.json",
+        import.meta.url,
+      ),
+      "utf8",
+    ),
+  ) as {
+    probes: {
+      case: string;
+      elevationDeg: number;
+      orientation: string;
+      normal: [number, number, number];
+      toSun: [number, number, number];
+      skyOnlyRadiance: [number, number, number];
+    }[];
+  };
+
+  // The ambient plugin's diffuse term for a sky-only probe (source frame, z up), relative to the
+  // up-facing sky: the shaped dome plus the ground's bounce of that sky.
+  const skyOnly = (
+    shape: readonly number[],
+    normal: readonly number[],
+    toSun: readonly number[],
+    channel: number,
+  ) => {
+    const hl = Math.hypot(toSun[0] ?? 0, toSun[1] ?? 0);
+    const hx = (toSun[0] ?? 0) / hl;
+    const hy = (toSun[1] ?? 0) / hl;
+    const y = normal[2] ?? 0;
+    const h = (normal[0] ?? 0) * hx + (normal[1] ?? 0) * hy;
+    const s = (normal[0] ?? 0) * hy - (normal[1] ?? 0) * hx;
+    const terms = [1, y, y * y, h, h * y, s * s, h * h * y * y, s ** 4, h ** 3 * y];
+    const dome = terms.reduce((sum, term, k) => sum + term * (shape[k * 3 + channel] ?? 0), 0);
+    return Math.max(0, dome) + (GROUND_BOUNCE_ALBEDO[channel] ?? 0) * (1 - y) * 0.5;
+  };
+
+  it("follows the source's clear Cycles sky at every measured sun elevation", () => {
+    const sweep = (
+      calibration as unknown as {
+        sweep: { elevationDeg: number; orientation: string; skyOnlyRadiance: number[] }[];
+      }
+    ).sweep
+      // Below 12° the game's twilight fade (daylight < 1) dims the sky by design.
+      .filter((p) => p.orientation === "up" && p.elevationDeg >= 12);
+    expect(sweep.length).toBe(7);
+    for (const probe of sweep) {
+      const { pbrSky } = sampleEnvironmentLighting(probe.elevationDeg / 360, "clear");
+      for (const channel of [0, 1, 2])
+        expect(
+          Math.abs((pbrSky[channel] ?? 0) / (probe.skyOnlyRadiance[channel] ?? 1) - 1),
+          `${probe.elevationDeg}°`,
+        ).toBeLessThan(0.01);
+    }
+  });
+
+  it("keeps an upward surface's sky exactly: the paving's calibrated look", () => {
+    for (let degrees = 1; degrees < 90; degrees += 1) {
+      const shape = sampleEnvironmentLighting(degrees / 360, "clear").pbrSkyShape;
+      for (const channel of [0, 1, 2])
+        expect(skyOnly(shape, [0, 0, 1], [1, 0, 0], channel)).toBeCloseTo(1, 3);
+    }
+  });
+
+  it("matches the source's Cycles sky on every probe orientation within 3%", () => {
+    const cases = ["wall-key-38", "paving-day-30", "wall-low-12"];
+    for (const name of cases) {
+      const probes = calibration.probes.filter((p) => p.case === name);
+      const up = probes.find((p) => p.orientation === "up");
+      if (up === undefined) throw new Error(`No up probe for ${name}`);
+      const { pbrSkyShape } = sampleEnvironmentLighting(up.elevationDeg / 360, "clear");
+      for (const probe of probes)
+        for (const channel of [0, 1, 2]) {
+          const cycles = (probe.skyOnlyRadiance[channel] ?? 0) / (up.skyOnlyRadiance[channel] ?? 1);
+          const model = skyOnly(pbrSkyShape, probe.normal, probe.toSun, channel);
+          expect(Math.abs(model / cycles - 1), `${name} ${probe.orientation}`).toBeLessThan(0.03);
+        }
+    }
+  });
+
+  it("flattens toward a uniform dome as weather hides the sun", () => {
+    const clear = sampleEnvironmentLighting(30 / 360, "clear").pbrSkyShape;
+    const storm = sampleEnvironmentLighting(30 / 360, "storm").pbrSkyShape;
+    const sunward = [1, 0, 0];
+    const antisun = [-1, 0, 0];
+    const contrast = (shape: readonly number[]) =>
+      skyOnly(shape, sunward, [1, 0, 0], 1) / skyOnly(shape, antisun, [1, 0, 0], 1);
+    expect(contrast(clear)).toBeGreaterThan(1.3);
+    expect(contrast(storm)).toBeLessThan(contrast(clear));
   });
 });

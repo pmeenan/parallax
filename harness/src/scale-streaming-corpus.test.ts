@@ -96,17 +96,20 @@ describe("representative scale-streaming corpus", () => {
       // Periodic paving inventory: models + two district indices + asset packs + cells. The
       // four rolling-courtyard cells carry 9,604 terrain detail heights (D-204), and paving
       // candidate 9 ships its ground ORM at 1024² (engine package 5). Engine package 6 adds the
-      // courtyard placements' ORM height and CSM caster fields (2,176 bytes of cell JSON).
-      expect(materialized.population.installBytes).toBe(2649223445);
-      expect(materialized.population.installResourceCount).toBe(375);
-      // The installed D1 binding: index + 256 D1 cells + 29 production and 18 generated deps.
-      expect(materialized.population.representativeResourceCount).toBe(304);
+      // courtyard placements' ORM height and CSM caster fields (2,176 bytes of cell JSON). The K1
+      // wall delivery drops the unused `ormHeight.tileMeters` (240 bytes), and K1 step 2 installs
+      // the wall kit's 387 admitted objects (317,475,432 bytes).
+      expect(materialized.population.installBytes).toBe(2966698637);
+      expect(materialized.population.installResourceCount).toBe(762);
+      // The installed D1 binding: index + 256 D1 cells + 29 paving, 387 wall-kit and 18 generated
+      // deps.
+      expect(materialized.population.representativeResourceCount).toBe(691);
       const heroIndex = corpus.graphs
         .find(({ id }) => id === "hero")
         ?.resources.find(({ role }) => role === "indices");
       if (heroIndex === undefined) throw new Error("Generated hero index resource is absent");
       expect(Object.isFrozen(materialized.expectedStreamingResourceCacheKeys)).toBe(true);
-      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(47);
+      expect(Object.keys(materialized.expectedStreamingResourceCacheKeys)).toHaveLength(434);
       expect(materialized.expectedStreamingResourceCacheKeys[heroIndex.resourceId]).toHaveLength(
         542,
       );

@@ -5,6 +5,25 @@ exact upstream pin, the local regression evidence, and the smallest upstreamable
 They are proposals until a PR URL replaces the status; do not imply that upstream has
 accepted them.
 
+## UP-005: Build runtime thin-instance PBR meshes per mesh when the group already covers them
+
+- **Upstream pin:** [`@babylonjs/lite` 1.31.1](https://github.com/BabylonJS/Babylon-Lite).
+- **Problem:** every thin-instance mesh added to a built scene rebuilds the whole PBR family
+  and its CSM caster state, once per mesh
+  ([RE-051](rough-edges.md#re-051-lite-rebuilds-the-pbr-family-once-per-runtime-thin-instance-pool)).
+- **Local integration:** [`lite-thin-pool-build.ts`](../engine/src/render/lite-thin-pool-build.ts)
+  clears the private `_runtimeThinBuild` hook on streamed pools, behind a runtime guard and a
+  unit test that pins the hook's presence.
+- **Smallest upstreamable change:** in `scene-runtime-mesh-build.js`, the runtime path
+  should call the built group's `rebuildSingle` when the mesh's feature flags are a subset of
+  those the group was compiled with. The flags are thin instances, GPU culling, skeleton,
+  morphs, UV transform/UV2, vertex colour, flat normals, gamma albedo, and the light and
+  shadow path. Fall back to one coalesced family rebuild per drain otherwise.
+- **Regression fixture:** a built scene plus 250 thin-instance PBR meshes added in one frame.
+  `createBuffer` calls must stay linear in the added meshes, and no frame may exceed 1 s. The
+  K1 house measured 340,316 calls before and 2,203 after the local seam.
+- **Status:** proposal; not filed.
+
 ## UP-004: Keep wasm-bindgen thread scratch state outside Rust's allocator region
 
 - **Upstream pins:** wasm-bindgen / wasm-bindgen-cli-support 0.2.127 and Rust

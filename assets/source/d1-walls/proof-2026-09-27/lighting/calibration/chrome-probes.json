@@ -1,0 +1,305 @@
+{
+  "scenario": "engine-package-7-white-probes@1",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "method": "albedo 0.25 minus albedo 0 (x8 exposure), each through the inverse AgX mirror and exposure",
+  "skyOnlyWorstRelativeByCase": {
+    "wall-key-38": 0.02303795002754172,
+    "paving-day-30": 0.016721476142511404,
+    "wall-low-12": 0.018511200262341432
+  },
+  "skyOnlyRelativeToUp": [
+    {
+      "probe": "wall-key-38/up",
+      "chromeRelativeToUp": [1, 1, 1],
+      "cyclesRelativeToUp": [1, 1, 1],
+      "relative": [0, 0, 0]
+    },
+    {
+      "probe": "wall-key-38/down",
+      "chromeRelativeToUp": [0.3174, 0.2583, 0.1661],
+      "cyclesRelativeToUp": [0.319, 0.2548, 0.1668],
+      "relative": [-0.0052, 0.0137, -0.0039]
+    },
+    {
+      "probe": "wall-key-38/sunward",
+      "chromeRelativeToUp": [1.343, 1.1609, 0.9078],
+      "cyclesRelativeToUp": [1.3718, 1.1608, 0.9111],
+      "relative": [-0.021, 0.0001, -0.0036]
+    },
+    {
+      "probe": "wall-key-38/antisun",
+      "chromeRelativeToUp": [0.8126, 0.8035, 0.7099],
+      "cyclesRelativeToUp": [0.8317, 0.8111, 0.7138],
+      "relative": [-0.023, -0.0094, -0.0055]
+    },
+    {
+      "probe": "wall-key-38/side-left",
+      "chromeRelativeToUp": [0.9028, 0.8574, 0.7354],
+      "cyclesRelativeToUp": [0.9105, 0.8528, 0.7356],
+      "relative": [-0.0085, 0.0054, -0.0001]
+    },
+    {
+      "probe": "wall-key-38/side-right",
+      "chromeRelativeToUp": [0.8965, 0.8519, 0.7296],
+      "cyclesRelativeToUp": [0.9108, 0.853, 0.7357],
+      "relative": [-0.0157, -0.0014, -0.0083]
+    },
+    {
+      "probe": "wall-key-38/tilt-sunward",
+      "chromeRelativeToUp": [1.4275, 1.3008, 1.1149],
+      "cyclesRelativeToUp": [1.4425, 1.2834, 1.1125],
+      "relative": [-0.0104, 0.0135, 0.0021]
+    },
+    {
+      "probe": "wall-key-38/tilt-antisun",
+      "chromeRelativeToUp": [0.8563, 0.9223, 0.8912],
+      "cyclesRelativeToUp": [0.8699, 0.9096, 0.899],
+      "relative": [-0.0156, 0.0139, -0.0087]
+    },
+    {
+      "probe": "paving-day-30/up",
+      "chromeRelativeToUp": [1, 1, 1],
+      "cyclesRelativeToUp": [1, 1, 1],
+      "relative": [0, 0, 0]
+    },
+    {
+      "probe": "paving-day-30/down",
+      "chromeRelativeToUp": [0.3233, 0.2588, 0.1664],
+      "cyclesRelativeToUp": [0.3185, 0.2546, 0.1667],
+      "relative": [0.0148, 0.0167, -0.0015]
+    },
+    {
+      "probe": "paving-day-30/sunward",
+      "chromeRelativeToUp": [1.4937, 1.2483, 0.9358],
+      "cyclesRelativeToUp": [1.5123, 1.2496, 0.9473],
+      "relative": [-0.0123, -0.001, -0.0121]
+    },
+    {
+      "probe": "paving-day-30/antisun",
+      "chromeRelativeToUp": [0.8459, 0.8346, 0.7279],
+      "cyclesRelativeToUp": [0.8518, 0.8354, 0.7304],
+      "relative": [-0.0069, -0.0009, -0.0034]
+    },
+    {
+      "probe": "paving-day-30/side-left",
+      "chromeRelativeToUp": [0.9195, 0.8735, 0.7388],
+      "cyclesRelativeToUp": [0.93, 0.8696, 0.7434],
+      "relative": [-0.0114, 0.0044, -0.0062]
+    },
+    {
+      "probe": "paving-day-30/side-right",
+      "chromeRelativeToUp": [0.9195, 0.8735, 0.7388],
+      "cyclesRelativeToUp": [0.9293, 0.8692, 0.7433],
+      "relative": [-0.0106, 0.0049, -0.006]
+    },
+    {
+      "probe": "paving-day-30/tilt-sunward",
+      "chromeRelativeToUp": [1.5222, 1.3338, 1.1286],
+      "cyclesRelativeToUp": [1.5354, 1.3408, 1.1342],
+      "relative": [-0.0086, -0.0052, -0.005]
+    },
+    {
+      "probe": "paving-day-30/tilt-antisun",
+      "chromeRelativeToUp": [0.8782, 0.9194, 0.905],
+      "cyclesRelativeToUp": [0.8788, 0.9233, 0.9095],
+      "relative": [-0.0007, -0.0042, -0.005]
+    },
+    {
+      "probe": "wall-low-12/up",
+      "chromeRelativeToUp": [1, 1, 1],
+      "cyclesRelativeToUp": [1, 1, 1],
+      "relative": [0, 0, 0]
+    },
+    {
+      "probe": "wall-low-12/down",
+      "chromeRelativeToUp": [0.3201, 0.2565, 0.167],
+      "cyclesRelativeToUp": [0.319, 0.2548, 0.1667],
+      "relative": [0.0033, 0.0067, 0.0016]
+    },
+    {
+      "probe": "wall-low-12/sunward",
+      "chromeRelativeToUp": [1.8992, 1.3917, 0.9501],
+      "cyclesRelativeToUp": [1.9088, 1.4035, 0.9402],
+      "relative": [-0.005, -0.0084, 0.0106]
+    },
+    {
+      "probe": "wall-low-12/antisun",
+      "chromeRelativeToUp": [0.9494, 0.9103, 0.76],
+      "cyclesRelativeToUp": [0.9673, 0.9092, 0.7563],
+      "relative": [-0.0185, 0.0012, 0.0049]
+    },
+    {
+      "probe": "wall-low-12/side-left",
+      "chromeRelativeToUp": [1.0251, 0.9129, 0.7392],
+      "cyclesRelativeToUp": [1.0217, 0.9091, 0.737],
+      "relative": [0.0033, 0.0042, 0.0029]
+    },
+    {
+      "probe": "wall-low-12/side-right",
+      "chromeRelativeToUp": [1.0224, 0.9105, 0.7373],
+      "cyclesRelativeToUp": [1.0226, 0.9096, 0.7371],
+      "relative": [-0.0002, 0.001, 0.0002]
+    },
+    {
+      "probe": "wall-low-12/tilt-sunward",
+      "chromeRelativeToUp": [1.7799, 1.4279, 1.1197],
+      "cyclesRelativeToUp": [1.7924, 1.4277, 1.1138],
+      "relative": [-0.007, 0.0001, 0.0053]
+    },
+    {
+      "probe": "wall-low-12/tilt-antisun",
+      "chromeRelativeToUp": [0.9609, 0.9858, 0.9433],
+      "cyclesRelativeToUp": [0.967, 0.9885, 0.942],
+      "relative": [-0.0063, -0.0028, 0.0015]
+    }
+  ],
+  "totalsAbsolute": [
+    {
+      "probe": "wall-key-38/up",
+      "chrome": [0.94311, 0.90219, 0.84597],
+      "cycles": [0.98975, 0.93577, 0.88631],
+      "relative": [-0.0471, -0.0359, -0.0455]
+    },
+    {
+      "probe": "wall-key-38/down",
+      "chrome": [0.30454, 0.2294, 0.14226],
+      "cycles": [0.31561, 0.23844, 0.14785],
+      "relative": [-0.0351, -0.0379, -0.0378]
+    },
+    {
+      "probe": "wall-key-38/sunward",
+      "chrome": [1.3691, 1.24134, 1.05645],
+      "cycles": [1.41747, 1.28099, 1.10064],
+      "relative": [-0.0341, -0.031, -0.0401]
+    },
+    {
+      "probe": "wall-key-38/antisun",
+      "chrome": [0.20785, 0.20697, 0.21366],
+      "cycles": [0.21577, 0.21567, 0.22299],
+      "relative": [-0.0367, -0.0403, -0.0418]
+    },
+    {
+      "probe": "wall-key-38/side-left",
+      "chrome": [0.22289, 0.21825, 0.22534],
+      "cycles": [0.22453, 0.22317, 0.22939],
+      "relative": [-0.0073, -0.022, -0.0177]
+    },
+    {
+      "probe": "wall-key-38/side-right",
+      "chrome": [0.21258, 0.21165, 0.21874],
+      "cycles": [0.22443, 0.22312, 0.22938],
+      "relative": [-0.0528, -0.0514, -0.0464]
+    },
+    {
+      "probe": "wall-key-38/tilt-sunward",
+      "chrome": [1.55066, 1.41912, 1.26789],
+      "cycles": [1.62176, 1.49068, 1.32583],
+      "relative": [-0.0438, -0.048, -0.0437]
+    },
+    {
+      "probe": "wall-key-38/tilt-antisun",
+      "chrome": [0.11421, 0.15195, 0.21928],
+      "cycles": [0.118, 0.15858, 0.22882],
+      "relative": [-0.0321, -0.0418, -0.0417]
+    },
+    {
+      "probe": "paving-day-30/up",
+      "chrome": [0.78373, 0.74903, 0.71416],
+      "cycles": [0.81648, 0.77605, 0.73735],
+      "relative": [-0.0401, -0.0348, -0.0315]
+    },
+    {
+      "probe": "paving-day-30/down",
+      "chrome": [0.24873, 0.19013, 0.11802],
+      "cycles": [0.26032, 0.19771, 0.12298],
+      "relative": [-0.0445, -0.0383, -0.0403]
+    },
+    {
+      "probe": "paving-day-30/sunward",
+      "chrome": [1.45162, 1.31833, 1.10388],
+      "cycles": [1.51141, 1.36199, 1.15577],
+      "relative": [-0.0396, -0.0321, -0.0449]
+    },
+    {
+      "probe": "paving-day-30/antisun",
+      "chrome": [0.18106, 0.18309, 0.18902],
+      "cycles": [0.18763, 0.19151, 0.19717],
+      "relative": [-0.035, -0.0439, -0.0413]
+    },
+    {
+      "probe": "paving-day-30/side-left",
+      "chrome": [0.19311, 0.19622, 0.19637],
+      "cycles": [0.19577, 0.19739, 0.20105],
+      "relative": [-0.0136, -0.006, -0.0233]
+    },
+    {
+      "probe": "paving-day-30/side-right",
+      "chrome": [0.18511, 0.18776, 0.19085],
+      "cycles": [0.19584, 0.19743, 0.20107],
+      "relative": [-0.0548, -0.049, -0.0508]
+    },
+    {
+      "probe": "paving-day-30/tilt-sunward",
+      "chrome": [1.51883, 1.39355, 1.22545],
+      "cycles": [1.57732, 1.44484, 1.26936],
+      "relative": [-0.0371, -0.0355, -0.0346]
+    },
+    {
+      "probe": "paving-day-30/tilt-antisun",
+      "chrome": [0.1038, 0.13831, 0.19682],
+      "cycles": [0.10765, 0.14525, 0.20382],
+      "relative": [-0.0357, -0.0477, -0.0344]
+    },
+    {
+      "probe": "wall-low-12/up",
+      "chrome": [0.36215, 0.33489, 0.31984],
+      "cycles": [0.36013, 0.3512, 0.33542],
+      "relative": [0.0056, -0.0465, -0.0464]
+    },
+    {
+      "probe": "wall-low-12/down",
+      "chrome": [0.1117, 0.08422, 0.05223],
+      "cycles": [0.11484, 0.08949, 0.05594],
+      "relative": [-0.0274, -0.0588, -0.0663]
+    },
+    {
+      "probe": "wall-low-12/sunward",
+      "chrome": [1.54365, 1.29989, 1.05301],
+      "cycles": [1.56719, 1.39122, 1.14032],
+      "relative": [-0.015, -0.0656, -0.0766]
+    },
+    {
+      "probe": "wall-low-12/antisun",
+      "chrome": [0.10322, 0.10913, 0.10416],
+      "cycles": [0.10729, 0.1141, 0.10923],
+      "relative": [-0.0379, -0.0435, -0.0464]
+    },
+    {
+      "probe": "wall-low-12/side-left",
+      "chrome": [0.11346, 0.11432, 0.10569],
+      "cycles": [0.11233, 0.11553, 0.10806],
+      "relative": [0.01, -0.0105, -0.022]
+    },
+    {
+      "probe": "wall-low-12/side-right",
+      "chrome": [0.10727, 0.10789, 0.10142],
+      "cycles": [0.11222, 0.11546, 0.10801],
+      "relative": [-0.0442, -0.0656, -0.061]
+    },
+    {
+      "probe": "wall-low-12/tilt-sunward",
+      "chrome": [1.28872, 1.11782, 0.92041],
+      "cycles": [1.32666, 1.194, 1.00485],
+      "relative": [-0.0286, -0.0638, -0.084]
+    },
+    {
+      "probe": "wall-low-12/tilt-antisun",
+      "chrome": [0.07065, 0.09377, 0.11465],
+      "cycles": [0.07388, 0.09769, 0.11911],
+      "relative": [-0.0438, -0.0401, -0.0374]
+    }
+  ]
+}

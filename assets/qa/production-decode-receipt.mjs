@@ -33,8 +33,9 @@ assert.equal(candidate.status, "structural-QA-passed-worker-roundtrip-pending");
 const serving = await mkdtemp(join(dirname(receiptPath), "decode-receipt-serving-"));
 await writeFile(join(serving, "candidate.json"), candidateBytes);
 const runtime = candidate.resources.filter((resource) => !resource.file.endsWith(".glb"));
-for (const resource of runtime)
-  await link(join(candidateDirectory, resource.file), join(serving, resource.file));
+// A kit-piece set lists shared content-addressed objects under several roles; link each once.
+for (const file of new Set(runtime.map((resource) => resource.file)))
+  await link(join(candidateDirectory, file), join(serving, file));
 
 // The same decoder inputs the engine build substitutes (harness/scripts/build.mjs).
 const wasm = {

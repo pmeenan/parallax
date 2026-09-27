@@ -201,22 +201,24 @@ const material = (baseColor, normal, orm, textureAddressMode) => ({
   metallicFactor: 0,
   normalScale: 1,
 });
-const library = {
-  manifest: {
-    assetId: "module",
-    parts: {
-      ground: { material: "ground", lods: lods("ground") },
-      pebbles: { material: "pebbles", lods: lods("pebbles") },
-      plants: { material: "plants", lods: lods("plants") },
-    },
-    materials: {
-      ground: material("ground-basecolor", "ground-normal", "ground-orm", "repeat"),
-      pebbles: material("ground-basecolor", "pebble-normal", "pebble-orm", "repeat"),
-      plants: material("plant-basecolor", "plant-normal", "plant-orm", "clamp-to-edge"),
-    },
+const moduleManifest = {
+  assetId: "module",
+  parts: {
+    ground: { material: "ground", lods: lods("ground") },
+    pebbles: { material: "pebbles", lods: lods("pebbles") },
+    plants: { material: "plants", lods: lods("plants") },
   },
-  byRole: { get: (role) => role },
+  materials: {
+    ground: material("ground-basecolor", "ground-normal", "ground-orm", "repeat"),
+    pebbles: material("ground-basecolor", "pebble-normal", "pebble-orm", "repeat"),
+    plants: material("plant-basecolor", "plant-normal", "plant-orm", "clamp-to-edge"),
+  },
 };
+// The packaging library: every admitted manifest by asset id, each with its role → resource map.
+const libraryOf = (manifest) => ({
+  assets: new Map([[manifest.assetId, { manifest, byRole: { get: (role) => role } }]]),
+});
+const library = libraryOf(moduleManifest);
 const tile = (x, z, variantId) => ({
   id: `tile-${x}-${z}-${variantId}`,
   assetId: "module",
@@ -262,17 +264,14 @@ describe("periodic surface module packaging", () => {
     );
   });
   it("carries the ORM height range and the CSM caster flag (engine package 6)", () => {
-    const heightLibrary = {
-      ...library,
-      manifest: {
-        ...library.manifest,
-        tileMetres: 4,
-        materials: {
-          ...library.manifest.materials,
-          ground: { ...library.manifest.materials.ground, ormHeightRangeMetres: [-0.02, 0.012] },
-        },
+    const heightLibrary = libraryOf({
+      ...moduleManifest,
+      tileMetres: 4,
+      materials: {
+        ...moduleManifest.materials,
+        ground: { ...moduleManifest.materials.ground, ormHeightRangeMetres: [-0.02, 0.012] },
       },
-    };
+    });
     const [ground, pebbles, plants] = resolvePbrAssetsForCell(
       cell,
       [
@@ -282,11 +281,72 @@ describe("periodic surface module packaging", () => {
       ],
       heightLibrary,
     ).cell.pbrAssets;
-    expect(ground.material.ormHeight).toEqual({ rangeMeters: [-0.02, 0.012], tileMeters: 4 });
+    expect(ground.material.ormHeight).toEqual({ rangeMeters: [-0.02, 0.012] });
     expect(ground.castsCsmShadows).toBe(false);
     expect("ormHeight" in pebbles.material).toBe(false);
     expect(pebbles.castsCsmShadows).toBe(false);
     expect("castsCsmShadows" in plants).toBe(false);
+  });
+});
+
+describe("kit assemblies", () => {
+  // Two parts in the asset's glTF frame: one at its origin, one 3 m along glTF +X and 1 m up.
+  const translation = (x, y, z) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1];
+  const kit = libraryOf({
+    ...moduleManifest,
+    assetId: "kit",
+    assemblies: {
+      house: {
+        parts: [
+          { part: "ground", matrix: translation(0, 0, 0) },
+          { part: "plants", matrix: translation(3, 1, 0) },
+        ],
+      },
+    },
+  });
+  const house = {
+    id: "house",
+    assetId: "kit",
+    assembly: "house",
+    center: [8, 8],
+    heightOffset: 0,
+    rotationYRadians: Math.PI / 2,
+    lodDistancesMeters: [12, 40],
+  };
+  const withObstacles = { ...cell, id: "cell", collision: { ...cell.collision, obstacles: [] } };
+
+  it("expands an assembly into rigid part placements on the ground at its anchor", () => {
+    const { cell: resolved } = resolvePbrAssetsForCell(withObstacles, [house], kit);
+    const [ground, plants] = resolved.pbrAssets;
+    expect(resolved.pbrAssets.map((p) => p.id)).toEqual(["house-000-ground", "house-001-plants"]);
+    expect(ground.position).toEqual([8, 12, 8]);
+    expect(ground.rotationYRadians).toBeCloseTo(Math.PI / 2);
+    // glTF +X is the engine's -X; a quarter turn carries it to +Z.
+    expect(plants.position[0]).toBeCloseTo(8);
+    expect(plants.position[1]).toBeCloseTo(13);
+    expect(plants.position[2]).toBeCloseTo(11);
+    expect(resolved.collision.obstacles).toEqual([]);
+  });
+
+  it("adds one collision box over the assembly and refuses collision on single parts", () => {
+    const { cell: resolved } = resolvePbrAssetsForCell(
+      withObstacles,
+      [{ ...house, collision: true }],
+      kit,
+    );
+    const [box] = resolved.collision.obstacles;
+    expect(resolved.collision.obstacles).toHaveLength(1);
+    expect(box).toMatchObject({ id: "cell-house", kind: "aabb" });
+    // Both parts' ±2 m footprints, the second 3 m along +Z, and the 1 m rise.
+    expect(box.center.map((v) => Number(v.toFixed(3)))).toEqual([8, 12.5, 9.5]);
+    expect(box.size.map((v) => Number(v.toFixed(3)))).toEqual([4, 1.04, 7]);
+    expect(() =>
+      resolvePbrAssetsForCell(
+        withObstacles,
+        [{ ...tile(8, 8, "ground"), collision: true }],
+        library,
+      ),
+    ).toThrow(/Only assemblies carry collision/);
   });
 });
 

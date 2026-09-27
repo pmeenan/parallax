@@ -79,7 +79,7 @@ only structural checks gate admission. Reproduction, representation and results 
 node assets/source/d1-paving/proof-2026-09-24/delivery/pack.mjs <stage-2 maps dir> <pack dir>
 node assets/qa/prepare-photoreal-paving.mjs <pack dir> <candidate dir>
 pnpm build; node assets/qa/production-decode-receipt.mjs <candidate dir> <receipt.json>
-node assets/qa/admit-d1-paving.mjs <candidate dir> <receipt.json>
+node assets/qa/admit-library-candidate.mjs <candidate dir> <receipt.json> d1-paving.json
 pnpm exec biome format --write assets/library/d1-paving.json
 ```
 
@@ -107,7 +107,7 @@ Candidate 6 made 3D pebbles from 11 mm with 40° crease-angle normals the defaul
 `PAVING_PEBBLE_LOD0_MIN_MM=9` and `PAVING_PEBBLE_CREASE_DEG=none` restore the earlier pebbles.
 
 - **Preparation** checks:
-  - provenance identity and approved rights (`paving-provenance.mjs`, procedural-original)
+  - provenance identity and approved rights (`asset-provenance.mjs`, procedural-original)
   - finite attributes, unit normals and index ranges
   - planar tile UVs
   - flat, fold-free ground normals

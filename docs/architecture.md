@@ -1351,7 +1351,10 @@ approved paving source's Cycles lighting: its 4.6 W/m² sun and Hosek-Wilkie sky
 - **Ambient.** The hemispheric light excludes PBR meshes (shared id `parallax-pbr-surface`) and
   keeps lighting the greybox. PBR surfaces get an occluded sky/ground ambient from the
   `parallax-pbr-ambient` plugin. It applies ORM occlusion to diffuse and specular, with an
-  analytic environment BRDF and horizon occlusion.
+  analytic environment BRDF and horizon occlusion. The sky's diffuse term is shaped by the
+  normal in the sun's frame (nine terms tabled by sun elevation, the sample's `pbrSkyShape`),
+  and the ground bounces `(1 − n.y)/2` of the paving's albedo × its irradiance (engine package 7,
+  D-205 amended).
 - **Tone mapping.** PBR shaders bake an AgX fit of Blender's "AgX - High Contrast". Exposure is
   live and adapts partially from the sample's key luminance, so storm and night stay darker but
   readable. Standard greybox materials are not tone mapped, and the lights' specular channel is
@@ -1472,8 +1475,10 @@ registers the stock one, and the PSO contract pins the composed WGSL. Each casca
 three texels of that cascade along the geometric normal, scaled by the sine of the angle to the
 light, and the caster bias is 0.06 m. Placements may leave the casters
 (`castsCsmShadows: false`): relief below CSM's resolution belongs to the surface instead. A
-periodic PBR module may carry its height in ORM.B (`ormHeight`). The sun micro-shadow plugin
-marches that field toward the sun and scales only the direct light, before the occluded ambient.
+PBR surface may carry its occluding height in ORM.B (`ormHeight`). The sun micro-shadow plugin
+marches that field toward the sun in texel-spaced steps, finding its texture-space direction per
+fragment from screen-space derivatives, so any UV layout works. It scales only the direct light,
+before the occluded ambient.
 Every streamed PBR material carries the plugin, so the PBR pipeline family stays single.
 
 For the D-090 M1 preview, the render worker materializes terrain directly from the

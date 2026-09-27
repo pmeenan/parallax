@@ -395,10 +395,11 @@ describe("production deployment contract", () => {
         "-File",
         resolve(repositoryRoot, "deploy/Deploy-Production.Tests.ps1"),
       ],
-      { cwd: repositoryRoot, timeout: 30_000, windowsHide: true },
+      // The script hashes the frozen dist inventory; the K1 wall kit's 318 MB took it past 30 s.
+      { cwd: repositoryRoot, timeout: 90_000, windowsHide: true },
     );
     expect(result.stdout).toContain("Deploy-Production behavior tests: PASS");
-  }, 30_000);
+  }, 90_000);
 
   it("runs the destructive model-content uploader safety suite in the unit gate", async () => {
     const result = await execFileAsync(

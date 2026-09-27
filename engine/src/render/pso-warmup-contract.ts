@@ -173,11 +173,12 @@ export const CSM_DEPTH_STATE = deepFreeze({
 
 // Captured on pinned Chrome 152.0.7977.54 with the exact Lite 1.31.1 PBR feature
 // set: opaque, derivative normal map, ORM, factor, specular AA and directional CSM, with the
-// Parallax normal-offset CSM receiver and sun micro-shadow plugin (engine package 6).
+// Parallax normal-offset CSM receiver and sun micro-shadow plugin (engine package 6; per-fragment
+// texture gradients since the K1 wall delivery, 2026-09-26).
 export const PBR_VERTEX_WGSL_SHA256 =
-  "294524ca0b21d73038645a244ba6188a7df92aa494b9601f423967521161aa51";
+  "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb";
 export const PBR_FRAGMENT_WGSL_SHA256 =
-  "b2d29987a95aa91513b673421310f9e51bcbfa6ec64cb00d2d5a0b8b72f95c4e";
+  "84bae6cae3b861bc7d5fa370beca1855bf4710cbece74168201089e018c8b9c0";
 const PBR_MATERIAL_GROUP = {
   entries: [
     // The terrain drape (D-204) reads the material UBO in the vertex stage too.
@@ -266,7 +267,7 @@ export const PBR_COLOR_STATE = deepFreeze({
   ],
 } as const);
 export const PBR_DEPTH_FRAGMENT_WGSL_SHA256 =
-  "cb0a2b6fedf62a81be13e510c0514c60b7a0526fda79a8fb9e892622d5e8fff1";
+  "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716";
 export const PBR_DEPTH_STATE = deepFreeze({
   ...PBR_COLOR_STATE,
   colorTarget: null,

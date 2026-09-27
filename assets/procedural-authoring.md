@@ -203,6 +203,20 @@ lessons generalize:
 - **Screens.** Fresh subagent screens caught folded triangles that lead inspection had
   missed. Run both screens on every handoff.
 
+Architecture's first delivery ([K1 walls](source/d1-walls/proof-2026-09-26/delivery-results.md),
+2026-09-26) changed these points for assets that are not a height field on a plane:
+- **Weld corners with a tolerance.** Subdivision gives one vertex's corners UVs that differ by
+  float noise; exact-key welding makes false seams and the simplifier then barely reduces.
+- **Simplify on the base surface.** Squashing the height fails on bowed, rounded members, because
+  the base surface itself needs the squashed tolerance. Simplify the undisplaced positions with the
+  displacement vector as a weighted attribute (weight 16), and compare folded area with the
+  source's own micro-folds rather than requiring none.
+- **Keep atlas islands apart.** Recover the islands from the builder's packing, compute normals and
+  AO per island, and push-pull fill the empty texels before mips.
+- **Occluders outside a surface belong in its height field.** A plaster panel's ORM.B carries the
+  timber around it in a margin beyond the panel, so sun micro-shadows from plates and posts appear.
+- **Mirrored placements get mirrored geometry**, keeping one front-face convention and pipeline.
+
 ## Beyond ground surfaces (untested guidance)
 
 This method is proven only on a tileable ground surface. For masonry faces, a heightfield on

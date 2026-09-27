@@ -85,6 +85,48 @@ COS APIs exist):
 
 ## Findings
 
+## RE-051: Lite rebuilds the PBR family once per runtime thin-instance pool
+
+- **Date / Chrome version:** 2026-09-27; Chrome for Testing Stable 152.0.7977.54, Windows 11,
+  RTX 4080 SUPER. Babylon Lite 1.31.1.
+- **Layer:** Babylon.
+- **Status:** worked around (see below);
+  [UP-005](upstream-contributions.md#up-005-build-runtime-thin-instance-pbr-meshes-per-mesh-when-the-group-already-covers-them)
+  proposes the upstream change.
+- **What we expected / What happened:** we expected adding a cell's streamed PBR pools to
+  cost about one per-mesh build each. Instead the K1 test house (one thin-instance pool per
+  placement and LOD) stalled the render worker for 9.2 s when its cell became resident. That
+  tripped the 3 s render heartbeat and the 5 s render-request timeout.
+  - **Counts:** in that one frame, GPU counters in the worker counted 340,316 `createBuffer`
+    and 170,540 `createBindGroup` calls. A CPU trace put the time under Dawn's
+    `GetCommandSpace`/`WaitForToken`.
+  - **Cause:** every thin-instance mesh carries Lite's `_runtimeThinBuild` hook
+    (`lib/mesh/thin-instance.js`). The material-swap drain sends such a mesh to
+    `lib/scene/scene-runtime-mesh-build.js` `B`. For the PBR family, once the scene is
+    built, `B` runs `rebuildScenePbrPipelines(scene, true)`: the whole family, including the
+    CSM caster state, rebuilt once per mesh and chained.
+  - **Lite knows this path is quadratic.** Its own comment calls it "N redundant rebuilds …
+    a rare runtime path". A streaming world takes that path for every PBR cell.
+- **Repro:** register a scene with one thin-instance PBR mesh. Then add N more thin-instance
+  PBR meshes in one frame and count `GPUDevice.createBuffer` calls. They grow as N × (PBR
+  renderables + CSM casters). The measured case is
+  [install/capture.mjs](../assets/source/d1-walls/proof-2026-09-27/install/capture.mjs)
+  on the step-2 build.
+- **Impact on Parallax:** worked around in
+  [`lite-thin-pool-build.ts`](../engine/src/render/lite-thin-pool-build.ts).
+  - **The seam.** It is runtime-guarded, like D-104's `_device` seam. It clears the pool's
+    hook before `addToScene`, so the drain takes the group's per-mesh `rebuildSingle`. The
+    warmup mesh compiles every streamed pool's feature set into the group at registration.
+    If the group is not built, the drain still falls back to the full build.
+  - **Result.**
+    - The house now loads with 2,203 buffers and 649 bind groups.
+    - The longest render frame gap falls from 9,167 ms to 297 ms. The 250–300 ms gaps were
+      there before too, and are a separate streaming hitch.
+    - All 14 captured views are pixel-identical to the stalled build's once they render.
+- **Proposed improvement:** in Lite, coalesce a drain's runtime PBR builds into one family
+  rebuild. Better, build a runtime mesh per-mesh when the built group already covers its
+  features (thin instances, skeleton, morphs, light path, shadows).
+
 ## RE-050: Compression Streams have no zstd (or Brotli) decoder for OPFS-resident assets
 
 - **Date / Chrome version:** 2026-09-24; Chrome for Testing Stable 152.0.7977.54, Windows 11,

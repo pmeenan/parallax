@@ -379,7 +379,12 @@ complete. The human accepted package 6, small-scale shadows (D-206;
 on 2026-09-25. The next task (human direction, 2026-09-25) is the rest of the daylight courtyard
 kit (the "small modular D1 kit" checklist item below), run as the
 [daylight kit program](#daylight-kit-program). Its first package, K1, the timber-framed wall
-family, has an accepted source (candidate 18, 2026-09-26); its delivery package is next. Night/storm presentation follows the kit. The joints staying
+family, has an accepted source (candidate 18, 2026-09-26); its delivery package is in progress
+([brief](../assets/source/d1-walls/proof-2026-09-26/delivery-brief.md),
+[step 1 results](../assets/source/d1-walls/proof-2026-09-26/delivery-results.md)). The human decided
+candidate 3's three open items on 2026-09-27: engine package 7 (lighting on every surface) is done
+and its looks are re-accepted. Delivery candidate 4, on source candidate 19, was accepted the same
+day; step 2 (installation) is next. Night/storm presentation follows the kit. The joints staying
 lighter than Cycles is an open, non-shadow question (D-206). The flythrough harness repair is a
 separate task.
 
@@ -398,12 +403,74 @@ done as we go (front-loaded, D-197/D-200). Proposed order, open to human reorder
   **Source result (2026-09-26):** [candidate 18](../assets/source/d1-walls/proof-2026-09-25/results.md)
   passed both D-195 screens with disclosed limits. **The human accepted it on 2026-09-26.** It ran
   under D-207 (quality-gated, not effort-gated): 18 candidates, with an oak rework after the human's
-  candidate 3 review. Next: the K1 delivery package, briefed first.
+  candidate 3 review.
+  **Delivery (2026-09-26, in progress):** the [delivery brief](../assets/source/d1-walls/proof-2026-09-26/delivery-brief.md)
+  splits it into two steps. Step 1 is the runtime representation inspected in pinned Chrome; step 2
+  is installation (a general PBR asset library, class QA and admission, mirrored placements, and
+  the test house in the installed game).
+  **Step 1 status: accepted 2026-09-27.** Delivery candidate 4 passed both screens with disclosed
+  limits, and the human accepted it with them
+  ([results](../assets/source/d1-walls/proof-2026-09-26/delivery-results.md)).
+  - **Look.** It keeps the accepted look from street distance to walking range: low-passed
+    displaced LODs, 274.5 MB of BC1/BC7 maps, and 3.35 ms GPU at 4K for the street view with the
+    paving.
+  - **Candidate 4.**
+    - It is built on source candidate 19 under lighting `@5`.
+    - Plaster AO is geometric (150 mm, no falloff).
+    - The occluder margins carry the real neighbouring pieces. Post shadows now match the source
+      at 0.7 m and 0.25 m.
+    - Disclosed limits:
+      - small 0.25 m export details;
+      - shaded facades too bright near the ground (analytic ground bounce);
+      - 13.5 MB of oak-atlas shelf for the corner post.
+  - **Engine.** Micro-shadowing now works on any surface, with per-fragment gradients and a
+    texel-spaced march (D-206 amended). The WGSL pins are recaptured and the replay rebound to v26.
+  - **Candidate 3** did not pass its screens. The human decided its three open items on
+    2026-09-27:
+    - **Front-left corner.** Fix it in the accepted source. Source candidate 19 makes the braced
+      bays' post the full-depth corner post. It also stages the house on ground to the horizon
+      (engine package 7's finding), and keeps every other member's look.
+    - **Lighting.** Run engine package 7, re-opening the paving's look as needed
+      ([brief](../assets/source/d1-walls/proof-2026-09-27/lighting-brief.md),
+      [results](../assets/source/d1-walls/proof-2026-09-27/lighting-results.md), D-205 amended):
+      - The sky dome is shaped by orientation, the clear sky measured by elevation, the paving's
+        ground bounce added, and the AgX matrices refitted. The identity is `@5`.
+      - Walls and paving move closer to Cycles at unchanged cost.
+      - The human re-accepted the paving and wall looks, and source candidate 19, the same day.
+    - **Oak inside 0.5 m.** Its 1.5 mm texels are accepted: not worth the size of a detail layer.
+
+    Step 2, installation
+    ([brief](../assets/source/d1-walls/proof-2026-09-27/install-brief.md),
+    [results](../assets/source/d1-walls/proof-2026-09-27/install-results.md)): **done; the human's
+    runtime visual acceptance is pending.** It covers:
+    - a multi-manifest library with a kit-piece mode;
+    - mirrored variants and full placements;
+    - architecture class QA and admission;
+    - the test house beside the paving pad in the installed game, with measured costs.
+
+    **Seen in the game (2026-09-27).** The human asked for two fixes in the source:
+    - corner braces mitred tight to post and plate, and pegged on their axes;
+    - a daylight slot closed at an upper-floor corner.
+
+    [Source candidate 20](../assets/source/d1-walls/proof-2026-09-25/results.md#candidate-20-mitred-braces-and-closed-corners-2026-09-27)
+    fixes both and keeps every other member's look. It passed both screens with disclosed limits,
+    and the human accepted it the same day. Delivery candidate 5 reran step 1 on it and passed
+    both screens with candidate 4's limits.
+
+    The first installed load stalled the render worker for 9.2 s. Babylon Lite rebuilt the whole
+    PBR family once per streamed thin-instance pool. A runtime-guarded engine seam fixes it
+    ([RE-051](rough-edges.md#re-051-lite-rebuilds-the-pbr-family-once-per-runtime-thin-instance-pool),
+    UP-005).
+
+    The house cell's first load is 375 ms against the 250 ms traversal budget. The cause is
+    attributed: the whole kit's 409 MB goes to the GPU on first residency.
 - **K2 — terracotta roof:** gable, ridge, eave and verge (KIT-008, MAT-011).
 - **Assembly A1 — first house at the well court.** Walls and roof as one house in the ordinary
   installed game, so later pieces are judged in place. It needs a court pad and paving moved to
   the well court, building collision replacing the greybox cluster there, and placements split
-  at the x = −512 cell edge, which the court straddles.
+  at the x = −512 cell edge, which the court straddles. Houses are exterior shells, and enterable
+  ones get seamless interiors inside the shell (D-208, 2026-09-27). A1's brief decides which
+  well-court houses are enterable, and how closed windows fake their rooms.
 - **K3 — the well** (KIT-004), **K4 — garden walls, stairs and the entrance** (KIT-011/012),
   **K5 — shrubs and verge grass** (VEG-002/003), **K6 — terrain detail** around the paving (earth
   bank, soil/grass transitions, MAT-019/020), **K7 — castle silhouette** (DIR-003, KIT-014).
@@ -687,6 +754,28 @@ starts by writing its bounded brief ([workflow](workflow.md#bounded-visual-and-r
      library records it against `3c64cf17…dabe`.
    - Lite 1.18's screen-space contact shadows were not taken. They need single-sample depth and
      they darken the whole final colour; they stay the route for contacts between placed objects.
+7. **Lighting on every surface — done 2026-09-27, accepted** (D-205 amended;
+   [brief](../assets/source/d1-walls/proof-2026-09-27/lighting-brief.md),
+   [results](../assets/source/d1-walls/proof-2026-09-27/lighting-results.md)). The K1 wall
+   delivery drove it.
+   - **Model.**
+     - The sky dome is shaped by the normal in the sun's frame: nine terms tabled by elevation,
+       fitted to the source's Hosek sky and Cycles probes.
+     - The clear sky follows Cycles at nine elevations.
+     - The ground bounces the paving's albedo.
+     - The AgX matrices are refitted in CIELAB. The identity is `@5`.
+   - **Match.**
+     - In Chrome, white probes' sky light is within 2.3% of Cycles.
+     - At the source's exposure, wall plaster is within 0–4 levels in red and green. Blue is 4–13
+       low, about 6 of it the matrix tone map's limit.
+     - The paving's walking-matched statistics and colour move closer to Cycles. GPU cost is
+       within noise.
+   - **Finding.** Blender's Hosek sky is bright below the horizon, so the K1 source's small
+     paving patch over-lit its walls. Sources now stage on ground to the horizon.
+   - **Verification.** The WGSL pins are recaptured. The replay is rebound (v26) and passes, and
+     so does `pnpm check`.
+   - **Accepted.** The human re-accepted the paving and wall looks on 2026-09-27, with the
+     remaining blue gap.
 
 **Packages 4–5 review (2026-09-25):** corrected two smoke-evidence regressions: the expected
 height-sample count now includes the four detail fields (83,588 total), and constant calibrated

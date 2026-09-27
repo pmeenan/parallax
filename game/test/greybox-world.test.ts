@@ -17,6 +17,7 @@ import { createHeightfieldGeometryBatch } from "../../engine/src/render/lite-gre
 import { buildDeterministicNavigationMesh } from "../src/sim/deterministic-navigation";
 import { DISTRICT_1_GREYBOX_SPEC } from "../src/world/district-1.data";
 import { D1_PAVING } from "../src/world/district-1-paving";
+import { D1_TIMBER_WALLS, DISTRICT_1_TEST_HOUSE } from "../src/world/district-1-walls";
 import { DISTRICT_2_GREYBOX_SPEC } from "../src/world/district-2.data";
 import { GREYBOX_DISTRICT_SPECS } from "../src/world/district-registry";
 import { createGreyboxScene, sampleGreyboxTerrain } from "../src/world/greybox-generator";
@@ -59,7 +60,9 @@ function triangleRepresentation(cell: GreyboxCell, tier: 0 | 1 | 2): GreyboxTria
 
 describe("data-first greybox world generation", () => {
   it("paves the level courtyard pad with the admitted periodic module", async () => {
-    const placements = DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? [];
+    const placements = (DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? []).filter(
+      (p) => p.assetId === D1_PAVING.assetId,
+    );
     expect(placements).toHaveLength(48);
     expect(new Set(placements.map((p) => p.id)).size).toBe(48);
     const library = JSON.parse(
@@ -93,6 +96,21 @@ describe("data-first greybox world generation", () => {
         ).toBeCloseTo(18.99475, 10);
       }
     }
+  });
+  it("stands the admitted K1 test house beside the pad as one rigid, colliding assembly", async () => {
+    const others = (DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? []).filter(
+      (p) => p.assetId !== D1_PAVING.assetId,
+    );
+    expect(others).toEqual([DISTRICT_1_TEST_HOUSE]);
+    const library = JSON.parse(
+      await readFile(new URL("../../assets/library/d1-timber-walls.json", import.meta.url), "utf8"),
+    ) as { assetId: string; candidateSha256: string; assemblies: Record<string, unknown> };
+    expect(library).toMatchObject({
+      assetId: D1_TIMBER_WALLS.assetId,
+      candidateSha256: D1_TIMBER_WALLS.candidateSha256,
+    });
+    expect(Object.keys(library.assemblies)).toContain(DISTRICT_1_TEST_HOUSE.assembly);
+    expect(DISTRICT_1_TEST_HOUSE).toMatchObject({ collision: true, rotationYRadians: Math.PI / 2 });
   });
   it("keeps the courtyard plane identical in collision and every rendered terrain LOD", () => {
     const scene = createScene();
@@ -239,7 +257,9 @@ describe("data-first greybox world generation", () => {
         relief = Math.max(relief, Math.abs(ground - 18.97375));
       }
     expect(relief).toBeGreaterThan(0.25);
-    const paving = DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? [];
+    const paving = (DISTRICT_1_GREYBOX_SPEC.assetPlacements ?? []).filter(
+      (placement) => placement.assetId === D1_PAVING.assetId,
+    );
     expect(paving.length).toBeGreaterThan(0);
     expect(paving.every((placement) => placement.conformToTerrain === true)).toBe(true);
   });

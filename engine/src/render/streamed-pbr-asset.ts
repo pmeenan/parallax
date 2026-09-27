@@ -134,17 +134,9 @@ export function groupPbrAssetPlacements(
       m.textureAddressMode ?? "clamp-to-edge",
       placement.terrainDrape?.referenceHeightMeters ?? null,
       placement.castsCsmShadows ?? true,
-      // Micro-shadow gradients follow the group's orientation, so height surfaces group by it.
-      m.ormHeight === undefined
-        ? null
-        : [
-            m.ormHeight.rangeMeters,
-            m.ormHeight.tileMeters,
-            placement.rotationXRadians ?? 0,
-            placement.rotationYRadians,
-            placement.rotationZRadians ?? 0,
-            placement.scale,
-          ],
+      // The micro-shadow march finds its texture gradients per fragment, so a height surface
+      // groups by its range only, not by orientation.
+      m.ormHeight?.rangeMeters ?? null,
     ]);
     const group = groups.get(key);
     if (group) group.push(placement);

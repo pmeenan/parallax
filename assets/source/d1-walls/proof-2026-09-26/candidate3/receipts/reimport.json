@@ -1,0 +1,21 @@
+{
+  "stage": "reimport",
+  "lod": 0,
+  "samples": 128,
+  "views": [
+    "front",
+    "corner",
+    "junction",
+    "close",
+    "oak",
+    "window",
+    "street",
+    "overview",
+    "overcast",
+    "low",
+    "right",
+    "gray"
+  ],
+  "geometry": "e3201be4815155f3120660c482f2357798ebb791f8964610dce08fe603f4319d",
+  "pack": "3447a21eedba3d89f09b23659f6035f513ab2cbc9d695ce25de541e97dba40b4"
+}

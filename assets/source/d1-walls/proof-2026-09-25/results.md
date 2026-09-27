@@ -1,15 +1,22 @@
 # Timber-framed wall family — result (kit package K1, 2026-09-25/26)
 
-**Status: accepted.** The human accepted candidate 18 on 2026-09-26 ("That looks SO much
-better!"). It passed both independent screens with disclosed limits. It is source only: no runtime delivery, class QA, library admission or rights
-review yet ([brief](brief.md)).
+**Status: accepted (candidate 20).** The human accepted candidate 18 on 2026-09-26 ("That looks SO
+much better!"). It passed both independent screens with disclosed limits. On 2026-09-27 the human had
+its open front-left corner fixed in the source, and accepted
+[candidate 19](#candidate-19-the-front-left-corner-2026-09-27) the same day. Viewing it installed in
+the game, the human had its corner braces mitred and pegged and an upper-floor corner slot closed:
+[candidate 20](#candidate-20-mitred-braces-and-closed-corners-2026-09-27) passed both screens with
+disclosed limits, and the human accepted it the same day. Only candidate 20 is retained. Candidate 18
+is in git history. Candidate 19 was never committed; its changed views survive in candidate 20's
+comparison boards, and delivery candidate 4 was built on it. The runtime delivery follows the accepted source
+([delivery results](../proof-2026-09-26/delivery-results.md)); see the [brief](brief.md) for scope.
 
 The package ran under D-207 (quality-gated, not effort-gated), adopted on 2026-09-26 at candidate 8,
 when the human directed "Extend until success or no viable path for progress exists."
 
-![Oak: MAT-009 reference and candidate 18](candidate18/compare-oak.png)
+![Oak: MAT-009 reference and candidate 20](candidate20/compare-oak.png)
 
-![Front: KIT-005 reference and candidate 18](candidate18/compare-front.png)
+![Front: KIT-005 reference and candidate 20](candidate20/compare-front.png)
 
 ## What was built
 
@@ -77,20 +84,23 @@ Plinth runs with corner footing stones, and foot soil with weeds, are laid per w
 | 16–17 | Grain running straight through knots; brace foot through the post arris; posts straight and knotless; end grain hatched by the fibre layer | Contour-loop flow lines round knots; shallower brace; posts biased to run-out figure with at least two knots; detail mask keeps fibres off end grain |
 | 18 | Both screens pass with disclosed limits | — |
 
-Only the accepted candidate 18 is retained. The rejected candidates' renders were deleted to keep
+Only the accepted candidate (now 20) is retained. The rejected candidates' renders were deleted to keep
 Git LFS lean; the table above records what each round found and fixed.
 
 ## Views
 
-[front](candidate18/front.png), [corner](candidate18/corner.png), [junction](candidate18/junction.png),
-[extreme](candidate18/extreme.png), [oak](candidate18/oak.png), [window](candidate18/window.png),
-[street](candidate18/street.png), [overview](candidate18/overview.png),
-[overcast](candidate18/overcast.png), [low](candidate18/low.png), [gray](candidate18/gray.png),
-[unlit](candidate18/unlit.png).
+[front](candidate20/front.png), [corner](candidate20/corner.png), [corner-left](candidate20/corner-left.png),
+[right](candidate20/right.png), [junction](candidate20/junction.png),
+[extreme](candidate20/extreme.png), [oak](candidate20/oak.png), [window](candidate20/window.png),
+[street](candidate20/street.png), [overview](candidate20/overview.png),
+[overcast](candidate20/overcast.png), [low](candidate20/low.png), [gray](candidate20/gray.png),
+[unlit](candidate20/unlit.png), [brace-foot](candidate20/brace-foot.png),
+[brace-head](candidate20/brace-head.png), [slot-left](candidate20/slot-left.png),
+[slot-right](candidate20/slot-right.png).
 
-Reference comparisons: [front](candidate18/compare-front.png), [corner](candidate18/compare-corner.png),
-[junction](candidate18/compare-junction.png), [window](candidate18/compare-window.png),
-[street](candidate18/compare-street.png), [oak](candidate18/compare-oak.png).
+Reference comparisons: [front](candidate20/compare-front.png), [corner](candidate20/compare-corner.png),
+[junction](candidate20/compare-junction.png), [window](candidate20/compare-window.png),
+[street](candidate20/compare-street.png), [oak](candidate20/compare-oak.png).
 
 ## Independent screens (D-195), candidate 18
 
@@ -106,6 +116,102 @@ renders.
     a 1.02 × 2.24 m door and a 0.49 m plinth.
   - The oak meets the human's direction at 1–1.5 m.
 - **Lead inspection** agrees with both screens.
+
+## Candidate 19: the front-left corner (2026-09-27)
+
+The delivery's screens found the approved test house open at its front-left corner. The braced bays'
+post was a shell post, which left a slot through the corner, and the left facade's brace ended in
+the air. The human directed "change the accepted source to fix the geometry now."
+
+![Front-left corner and right facade, candidate 19 (left) and 20](candidate20/compare-c19-corners.jpg)
+
+- **Corner post.** The braced bays' post is now the house's full-depth corner post. It stands 35 mm
+  proud of the left facade's plaster plane, as the corner piece's post does at the front-right.
+- **Staging.** The house stands on the paving continued, undisplaced, to the horizon. Engine
+  package 7 found that Blender's Hosek sky is bright below the horizon, about ten times the paving's
+  radiance ([lighting results](../proof-2026-09-27/lighting-results.md#source-staging-a-finding)).
+  Past the old 32 × 24 m patch, walls took 13–37% more sky light than a street gives. The mean of a
+  sunlit view moves by at most 2.4% (overview), and the sun-off overcast diagnostic is 7.5% darker.
+- **Everything else is unchanged.** Changing one member had reshuffled the others' seeded look
+  twice. The post had drawn a bow value from the shared random sequence as a beam, and the oak
+  detail tile is sampled in atlas space. Now:
+  - the post keeps its old draw, in the old order;
+  - its old atlas rectangles stay as empty placeholders, and its own are packed last.
+
+  `layout.json` is byte-identical to candidate 18's. The junction, extreme and window views match
+  candidate 18 within 24 levels at every pixel. The corner, oak and street views differ only at the
+  horizon.
+- **New views:** `corner-left` and `right`, the runtime delivery's views of the fixed corner and
+  the mirrored right facade.
+- **Independent screens (D-195).**
+  - **Quality: ready with disclosed limits.** The corner is closed, both braces seat on the post,
+    and there is no z-fighting. Nothing else regressed.
+  - **Consistency: consistent with disclosed limits.** The two corners now follow the same framing
+    logic.
+  - **Both flagged the first staging plane.** A flat paving-coloured plane read as a beige
+    backdrop and did not take the clay override. The final candidate uses the paving material
+    instead.
+- **Disclosed:**
+  - The corner post's face is about 0.285 m, 35 mm wider than a bay post. A heavier corner post is
+    period-correct.
+  - `corner-left` crops the post's head and foot. The plate over the post is visible only in
+    `front`, `low` and `overview`.
+  - The oak atlas grows from 8896 to 10304 rows. Source only: the delivery re-packs its own atlas.
+
+## Candidate 20: mitred braces and closed corners (2026-09-27)
+
+Viewing the installed test house, the human found two defects in candidate 19:
+- "The diagonal boards in the corners don't look tight - they need to run all the way to a mitre
+  cut and be aligned with the pegs."
+- "The side view also showed daylight gap in the corner of the upper floor."
+
+![Brace joints and the corner slots, candidate 20](candidate20/joints.jpg)
+
+- **Braces.**
+  - **Mitred ends.** Each brace end is cut parallel to the post face and the plate underside, and
+    seated 75 mm into them, as a tenoned brace is. The visible shoulder runs the brace's full
+    width against its post or plate. The square ends had left a plaster triangle at one edge.
+  - **Pegs on the brace axis.** Each brace has two pegs on its axis, 50 mm into the post and 50 mm
+    into the plate, so each passes through the hidden tenon. They had been 15–20 cm off it.
+  - **Plate pegs stand on the plate's real surface.** The plate bows and is hewn with up to about
+    6 mm of relief, which buried pegs 2 mm proud of its nominal face. Plate pegs now stand 3 mm
+    proud of the highest point of the plate's displaced surface under them. Post pegs stand
+    4 mm prouder than the frame's other pegs.
+- **Corner slot.** Both corner posts now reach 5 mm past the side facade's plaster line. They had
+  stopped 35 mm short. Seen along the side wall, that slot showed through the roofless shell to
+  the sky. The posts are now 0.285 × 0.29 m. `slot-left` and `slot-right` graze along each side
+  facade into its front corner.
+- **Everything else is unchanged.**
+  - **Braces keep candidate 19's grain.** Each brace keeps candidate 19's length, so its texture
+    is byte-identical. The mitred geometry spreads that texture along each edge. A first build
+    with new brace lengths re-rolled the grain into straight streaks with a long check, reading
+    as two boards. Both screens flagged it, and one found a chipped edge showing plaster.
+  - **Atlas.** The corner posts' old atlas rectangles stay as placeholders. Their new ones are
+    packed on one fresh shelf, and the posts' end caps fill the old holes.
+  - **Checked by diff against candidate 19.** `layout.json` is identical. The oak atlas grows
+    from 10304 to 10432 rows. The maps are stored bottom-up, so candidate 19's rows sit 128 rows
+    lower. With that offset, only the corner posts, braces and pegs change. So do their rows and
+    holes, and the plaster of the six braced panels near the brace ends.
+  - **Renders.** `junction` and `extreme` match candidate 19 within 8 levels. Every other view
+    differs only at the corners and braces.
+- **New views:** `brace-foot`, `brace-head`, `slot-left` and `slot-right`.
+- **Independent screens (D-195), on the build with the restored brace grain.**
+  - **Quality: ready with disclosed limits.** Every brace joint is a tight full-width cut, with no
+    gap, overshoot or open end. The pegs are on the brace axes, and there is no daylight at any
+    corner. The brace grain and knots match candidate 19, and no plaster shows along brace edges.
+  - **Consistency: consistent with disclosed limits.** All braces follow one joint logic on both
+    corners, both side facades and both floors. The corner posts match each other.
+  - **Consistency also found:** the pegs, 50 mm in, sat past a 40 mm seat, so they missed the
+    tenon. The seat is now 75 mm. That geometry is hidden inside the post and plate, and the
+    final build's renders were checked against the screened ones.
+- **Disclosed:**
+  - **Corner-post grain changed.** Deepening the posts changed their surface grid, so their
+    grain is new, with a knot in a new place in `oak`. It still reads as the same oak.
+  - **Pegs in shade are barely visible:** the left facade's post peg in `corner-left`, and the
+    right facade's plate peg in `right`. At grazing angles, the pegs at post edges show as small
+    nubs.
+  - **An existing lengthwise check** on the front-left upper brace reads as a split board in the
+    new `brace-foot` close-up. Candidate 19 had it too, but no candidate 19 view came this close.
 
 ## Known limits (disclosed, none blocking at play distance)
 
@@ -138,19 +244,21 @@ renders.
   `blender-mcp.exe` helpers. It never ran, which lost several hours. Builds now start directly.
 - **GPU memory.** Rendering all 12 views in one process runs out of GPU memory at full resolution.
   Candidates render `unlit` in a second seeded pass, which reproduced byte-identical maps.
+  At candidate 20 even that pass ran out: as emitters, the unlit view's surfaces put every displaced
+  triangle into Cycles' light tree. Unlit materials now turn emission sampling off.
 
 ## Reproduce
 
 ```bash
-blender -b --factory-startup --python build.py -- --out candidate18 --px 1.0 --oak-px 0.75 --stone-px 1.25 --subdiv 3 --paving-subdiv 3 --samples 256 --views front,corner,junction,extreme,oak,window,street,overview,overcast,low,gray --save-blend
+blender -b --factory-startup --python build.py -- --out candidate20 --px 1.0 --oak-px 0.75 --stone-px 1.25 --subdiv 3 --paving-subdiv 3 --samples 256 --views front,corner,corner-left,right,junction,extreme,oak,window,street,overview,overcast,low,gray,brace-foot,brace-head,slot-left,slot-right --save-blend
 ```
 
 ```bash
-blender -b --factory-startup --python build.py -- --out candidate18 --force --px 1.0 --oak-px 0.75 --stone-px 1.25 --subdiv 3 --paving-subdiv 3 --samples 256 --views unlit --save-blend
+blender -b --factory-startup --python build.py -- --out candidate20 --force --px 1.0 --oak-px 0.75 --stone-px 1.25 --subdiv 3 --paving-subdiv 3 --samples 256 --views unlit --save-blend
 ```
 
 ```bash
-python compare.py candidate18
+python compare.py candidate20
 ```
 
 Blender 5.2.1, seed 7. The candidate's `build-snapshot.py` is the exact recipe. The ground uses the

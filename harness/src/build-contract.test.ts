@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import {
   type GreyboxCell,
@@ -43,7 +43,8 @@ describe("assembled build contract", () => {
         .digest("hex"),
     );
     expect(installManifest.gameId).toBe("parallax");
-    expect(installSummary.countByTarget.opfs).toBe(357);
+    // 357 before the K1 wall kit's 387 admitted objects joined the install (K1 step 2).
+    expect(installSummary.countByTarget.opfs).toBe(744);
     expect(installSummary.countByTarget.shell).toBe(23);
     expect(installSummary.bytesByTarget.opfs).toBeGreaterThan(2_620_371_552);
     expect(installSummary.resourceCount).toBe(manifest.artifacts.length - 1 + 5);
@@ -203,14 +204,16 @@ describe("assembled build contract", () => {
     ]);
     expect(districtIndex.districtId).toBe(districtEntrypoint?.districtId);
     const parsedDistrictIndex = parseStreamingDistrictIndex(districtIndex, "district-1-surface");
-    expect(parsedDistrictIndex.resources).toHaveLength(29);
-    expect(districtIndex.resources.filter(({ format }) => format === "ktx2")).toHaveLength(9);
-    expect(districtIndex.resources.filter(({ format }) => format === "meshopt")).toHaveLength(20);
+    // The paving's 29 dependencies plus the K1 wall kit's (K1 step 2).
+    expect(parsedDistrictIndex.resources).toHaveLength(416);
+    expect(districtIndex.resources.filter(({ format }) => format === "ktx2")).toHaveLength(70);
+    expect(districtIndex.resources.filter(({ format }) => format === "meshopt")).toHaveLength(346);
     expect(districtIndex.cells.filter((cell) => cell.dependencies.length === 1)).toHaveLength(255);
     const pavingCell = districtIndex.cells.find(
       (cell) => cell.cellId === "district-1-surface-cell-08-08",
     );
-    expect(pavingCell?.dependencies).toHaveLength(16);
+    // The paving pad's 16 roots and the test house's (cell 08-08 holds both).
+    expect(pavingCell?.dependencies).toHaveLength(219);
     const compactFixture = PRODUCTION_COMPRESSED_STREAMING_FIXTURES.find(
       ({ id }) => id === "compact",
     );
@@ -278,13 +281,29 @@ describe("assembled build contract", () => {
         pavingResources.some((entry) => entry.sha256 === sha256),
       ),
     ).toHaveLength(26);
+    // Every other dependency is an object some library manifest admitted (paving, K1 walls).
+    const libraryDirectory = join(repositoryRoot, "assets/library");
+    const libraryResources = (
+      await Promise.all(
+        (
+          await readdir(libraryDirectory)
+        )
+          .filter((name) => name.endsWith(".json"))
+          .map(async (name) => {
+            const library = JSON.parse(await readFile(join(libraryDirectory, name), "utf8")) as {
+              resources: readonly Readonly<{ bytes: number; path: string; sha256: string }>[];
+            };
+            return library.resources;
+          }),
+      )
+    ).flat();
     for (const resource of parsedDistrictIndex.resources) {
       const actualBytes = await readFile(join(buildRoot, resource.path));
       const compactIndex = compactResources.findIndex(({ sha256 }) => sha256 === resource.sha256);
       if (compactIndex >= 0) {
         expect(actualBytes).toEqual(expectedCompressedBytes[compactIndex]);
       } else {
-        const admitted = pavingResources.find(({ sha256 }) => sha256 === resource.sha256);
+        const admitted = libraryResources.find(({ sha256 }) => sha256 === resource.sha256);
         if (admitted === undefined) throw new Error(`Unadmitted asset ${resource.resourceId}`);
         expect(resource.bytes).toBe(admitted.bytes);
         expect(

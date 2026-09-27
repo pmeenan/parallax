@@ -1,0 +1,257 @@
+{
+  "scenario": "k1-wall-delivery-preview@1",
+  "budgetAuthority": "none: isolated worker preview, not the installed game",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "renderer": {
+    "package": "@babylonjs/lite",
+    "version": "1.31.1"
+  },
+  "adapter": {
+    "features": [
+      "bgra8unorm-storage",
+      "clip-distances",
+      "core-features-and-limits",
+      "depth-clip-control",
+      "depth32float-stencil8",
+      "dual-source-blending",
+      "float32-blendable",
+      "float32-filterable",
+      "indirect-first-instance",
+      "primitive-index",
+      "rg11b10ufloat-renderable",
+      "shader-f16",
+      "subgroup-size-control",
+      "subgroups",
+      "texture-component-swizzle",
+      "texture-compression-bc",
+      "texture-compression-bc-sliced-3d",
+      "texture-formats-tier1",
+      "texture-formats-tier2",
+      "timestamp-query"
+    ],
+    "info": {
+      "vendor": "nvidia",
+      "architecture": "lovelace"
+    }
+  },
+  "textureSource": "pack (GPU-ready BC1/BC7 KTX2)",
+  "workerBundleSha256": "88decfd83775d99729388eaeb35ab1259f9979e49b1f371e53977878bf8504ac",
+  "geometryReceiptSha256": "3309772f46310f0f0374290724cadb640bf4950d34d2d8d34df50186978a4f22",
+  "textureReceiptSha256": "500730eba702e0fbae122ccd8acfbf77403e623eabc63c4537e303aa98a4a109",
+  "uploadMs": 4341,
+  "textureGpuBytes": {
+    "kit-oak-basecolor": 28487128,
+    "kit-oak-normal": 56974256,
+    "kit-oak-orm": 14244784,
+    "kit-stone-basecolor": 5242984,
+    "kit-stone-normal": 10485968,
+    "kit-stone-orm": 10485968,
+    "plaster-g-plain-basecolor": 1022144,
+    "plaster-g-plain-normal": 8160288,
+    "plaster-g-plain-orm": 2044288,
+    "plaster-g-window-basecolor": 1022144,
+    "plaster-g-window-normal": 8160288,
+    "plaster-g-window-orm": 2044288,
+    "plaster-g-door-basecolor": 1022144,
+    "plaster-g-door-normal": 8160288,
+    "plaster-g-door-orm": 2044288,
+    "plaster-g-braced-basecolor": 1022144,
+    "plaster-g-braced-normal": 8160288,
+    "plaster-g-braced-orm": 2044288,
+    "plaster-g-cbrace-basecolor": 1022144,
+    "plaster-g-cbrace-normal": 8160288,
+    "plaster-g-cbrace-orm": 2044288,
+    "plaster-g-cbrace2-basecolor": 1022144,
+    "plaster-g-cbrace2-normal": 8160288,
+    "plaster-g-cbrace2-orm": 2044288,
+    "plaster-g-window2-basecolor": 1022144,
+    "plaster-g-window2-normal": 8160288,
+    "plaster-g-window2-orm": 2044288,
+    "plaster-u-window2-basecolor": 1028200,
+    "plaster-u-window2-normal": 8216400,
+    "plaster-u-window2-orm": 2056400,
+    "plaster-u-cbrace-basecolor": 1028200,
+    "plaster-u-cbrace-normal": 8216400,
+    "plaster-u-cbrace-orm": 2056400,
+    "plaster-u-cbrace2-basecolor": 1028200,
+    "plaster-u-cbrace2-normal": 8216400,
+    "plaster-u-cbrace2-orm": 2056400,
+    "plaster-u-plain-basecolor": 1028200,
+    "plaster-u-plain-normal": 8216400,
+    "plaster-u-plain-orm": 2056400,
+    "plaster-u-window-basecolor": 1028200,
+    "plaster-u-window-normal": 8216400,
+    "plaster-u-window-orm": 2056400,
+    "plaster-u-braced-basecolor": 1028200,
+    "plaster-u-braced-normal": 8216400,
+    "plaster-u-braced-orm": 2056400,
+    "mortar-basecolor": 174776,
+    "mortar-normal": 349552,
+    "mortar-orm": 87408,
+    "soil-basecolor": 174776,
+    "soil-normal": 349552,
+    "soil-orm": 87408,
+    "plants-basecolor": 349544,
+    "plants-normal": 699088,
+    "plants-orm": 699088,
+    "kit-iron-basecolor": 43704,
+    "kit-iron-normal": 87408,
+    "kit-iron-orm": 87408,
+    "kit-glass-basecolor": 43704,
+    "kit-glass-normal": 87408,
+    "kit-glass-orm": 87408,
+    "interior-basecolor": 24,
+    "interior-normal": 48,
+    "interior-orm": 48,
+    "paving-ground-basecolor": 11184824,
+    "paving-ground-normal": 5592432,
+    "paving-ground-orm": 1398128,
+    "paving-plant-basecolor": 349544,
+    "paving-plant-normal": 699088,
+    "paving-plant-orm": 699088,
+    "paving-pebble-normal": 48,
+    "paving-pebble-orm": 48
+  },
+  "textureGpuBytesTotal": 295645680,
+  "geometryDecodedBytes": 114940008,
+  "lodBoundaries": {
+    "walls": [12, 40],
+    "paving": {
+      "ground": [12, 32],
+      "pebbles": [6, 12],
+      "plants": [8, 24]
+    }
+  },
+  "shaders": {
+    "modules": [
+      {
+        "sha256": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "bytes": 3223,
+        "markers": ["microShadowSun", "@vertex"]
+      },
+      {
+        "sha256": "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716",
+        "bytes": 3478,
+        "markers": ["microShadowSun", "@fragment"]
+      },
+      {
+        "sha256": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "bytes": 3223,
+        "markers": ["microShadowSun", "@vertex"]
+      },
+      {
+        "sha256": "84bae6cae3b861bc7d5fa370beca1855bf4710cbece74168201089e018c8b9c0",
+        "bytes": 14658,
+        "markers": ["msUvPerMeter", "microShadowSun", "@fragment", "csmSample"]
+      },
+      {
+        "sha256": "a896fc385b468ad1df5c8ee8d8470121efa07e464a1c3049c665332cdc297912",
+        "bytes": 40,
+        "markers": []
+      }
+    ],
+    "pipelines": [
+      {
+        "vertex": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "fragment": "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716",
+        "targets": 0
+      },
+      {
+        "vertex": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "fragment": "84bae6cae3b861bc7d5fa370beca1855bf4710cbece74168201089e018c8b9c0",
+        "targets": 1
+      }
+    ]
+  },
+  "browserErrors": [],
+  "externalRequests": [],
+  "views": [
+    {
+      "view": "warmup-4k",
+      "file": "warmup-4k.png",
+      "sha256": "d45a00e22f647b5d64ff6c861f9a773d9b0e51321916e38775adcd04d986bffb",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 10221235,
+      "drawCalls": 470,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 9.521240536514565,
+        "p95": 26.531594240000004
+      }
+    },
+    {
+      "view": "street-4k",
+      "file": "street-4k.png",
+      "sha256": "d45a00e22f647b5d64ff6c861f9a773d9b0e51321916e38775adcd04d986bffb",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 10221235,
+      "drawCalls": 470,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 3.3295552880850234,
+        "p95": 3.346524337735917
+      }
+    },
+    {
+      "view": "overview-4k",
+      "file": "overview-4k.png",
+      "sha256": "0e79165575cc679a6194b98a6b010b9aa389a0b840ef61fb5d4529d26b1b5ebd",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 4190904,
+      "drawCalls": 474,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 2.3989417811191496,
+        "p95": 2.4173413229364837
+      }
+    },
+    {
+      "view": "junction-4k",
+      "file": "junction-4k.png",
+      "sha256": "4ea603e85e337426406fc72c7241a2facc66e018a36e79380003f3227e37e9e1",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 10028917,
+      "drawCalls": 470,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 2.8067370217822876,
+        "p95": 2.866632061339512
+      }
+    },
+    {
+      "view": "street-4k-paving-only",
+      "file": "street-4k-paving-only.png",
+      "sha256": "e8bb3bfde021f5b7eb3f660a9d6117ddf1ae9582fdaccab9c641f3f2ad246820",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 7711838,
+      "drawCalls": 218,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 1.461721403919608,
+        "p95": 1.4755831677128222
+      }
+    },
+    {
+      "view": "street-4k-walls-only",
+      "file": "street-4k-walls-only.png",
+      "sha256": "c963848c29ea1b06fdc9f355b45bb5a016e13449b0c0000a491fa1b0e7eb4b60",
+      "width": 3840,
+      "height": 2160,
+      "visibleTriangles": 2509397,
+      "drawCalls": 462,
+      "gpuFrameMs": {
+        "samples": 180,
+        "p50": 2.400379910938304,
+        "p95": 2.46431548443138
+      }
+    }
+  ]
+}

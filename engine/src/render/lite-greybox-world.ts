@@ -76,8 +76,9 @@ import {
   gameplayCameraBeta,
 } from "./gameplay-camera";
 import { createHybridUiRenderer } from "./hybrid-ui-renderer";
+import { buildThinPoolInBuiltGroup } from "./lite-thin-pool-build";
 import { createPbrAmbientState, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
-import { NO_PBR_MICROSHADOW_SURFACE, pbrMicroShadowSurfaceFromMatrix } from "./pbr-sun-microshadow";
+import { NO_PBR_MICROSHADOW_SURFACE } from "./pbr-sun-microshadow";
 import {
   createRigidTerrainDrapeField,
   createTerrainDrapeField,
@@ -162,6 +163,7 @@ function applyEnvironmentLighting(
   // live exposure read from the scene UBO before the baked AgX curve.
   copyRgb(pbrAmbient.sky, lighting.pbrSky);
   copyRgb(pbrAmbient.ground, lighting.pbrGround);
+  for (const [index, value] of lighting.pbrSkyShape.entries()) pbrAmbient.skyShape[index] = value;
   for (let axis = 0; axis < 3; axis++) pbrAmbient.toSun[axis] = -(lighting.sunDirection[axis] ?? 0);
   scene.imageProcessing.exposure = lighting.exposure;
   ambientLight.intensity = lighting.ambientIntensity;
@@ -1424,12 +1426,11 @@ export function uploadStreamingGreyboxCell(
         renderer.pbrAmbient,
         placement.material.ormHeight === undefined
           ? NO_PBR_MICROSHADOW_SURFACE
-          : pbrMicroShadowSurfaceFromMatrix(
-              sourceMatrices,
-              placement.material.ormHeight.rangeMeters[1] -
+          : {
+              heightRangeMeters:
+                placement.material.ormHeight.rangeMeters[1] -
                 placement.material.ormHeight.rangeMeters[0],
-              placement.material.ormHeight.tileMeters,
-            ),
+            },
       );
       const lodMeshes: Mesh[] = [];
       const triangleCounts: number[] = [];
@@ -1460,6 +1461,7 @@ export function uploadStreamingGreyboxCell(
         mesh.visible = renderer.presentationOwner === "streamed-residency" && level === 0;
         meshes.push(mesh);
         lodMeshes.push(mesh);
+        buildThinPoolInBuiltGroup(mesh);
         addToScene(renderer.scene, mesh);
         addedMeshes.add(mesh);
         const descriptor = dependencyById.get(lod.indexResourceId)?.descriptor;

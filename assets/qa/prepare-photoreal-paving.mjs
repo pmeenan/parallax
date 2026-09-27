@@ -12,7 +12,7 @@ import { MeshoptEncoder } from "../../engine/node_modules/meshoptimizer/meshopt_
 import { KTX_ENCODER_PIN } from "../../engine/scripts/ktx-encoder-pin.mjs";
 import { bc7TranscoderIdentity } from "../../engine/scripts/preencode-bc7.mjs";
 import { canonicalMeshoptLayoutErrors } from "../../engine/src/assets/meshopt-layout.ts";
-import { readPavingProvenance } from "./paving-provenance.mjs";
+import { readPavingProvenance } from "./asset-provenance.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
 const input = resolve(process.argv[2]);

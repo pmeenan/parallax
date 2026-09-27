@@ -24,11 +24,9 @@ import {
   createPbrSunMicroShadowPlugin,
   NO_PBR_MICROSHADOW_SURFACE,
   PBR_SUN_MICROSHADOW_PLUGIN_NAME,
-  pbrMicroShadowSurfaceFromMatrix,
 } from "../src/render/pbr-sun-microshadow";
 import { groupPbrAssetPlacements } from "../src/render/streamed-pbr-asset";
 import { type PbrAssetPlacement, validatePbrAssetPlacements } from "../src/world/pbr-asset";
-import { writePbrAssetMatrix } from "../src/world/pbr-asset-transform";
 
 const placement: PbrAssetPlacement = {
   schemaVersion: 1,
@@ -45,7 +43,7 @@ const placement: PbrAssetPlacement = {
     roughnessFactor: 1,
     metallicFactor: 0,
     normalScale: 1,
-    ormHeight: { rangeMeters: [-0.0205, 0.0116], tileMeters: 4 },
+    ormHeight: { rangeMeters: [-0.0205, 0.0116] },
   },
   lods: [
     { vertexResourceId: "vertex", indexResourceId: "index" },
@@ -54,67 +52,76 @@ const placement: PbrAssetPlacement = {
   ],
 };
 
-function matrixOf(transform: Partial<PbrAssetPlacement>): Float64Array {
-  const matrix = new Float64Array(16);
-  writePbrAssetMatrix(matrix, 0, { ...placement, ...transform });
-  return matrix;
-}
-
-function transform(matrix: Float64Array, local: readonly number[]): number[] {
-  return [0, 1, 2].map(
-    (row) =>
-      (matrix[row] ?? 0) * (local[0] ?? 0) +
-      (matrix[4 + row] ?? 0) * (local[1] ?? 0) +
-      (matrix[8 + row] ?? 0) * (local[2] ?? 0) +
-      (matrix[12 + row] ?? 0),
-  );
-}
-
 describe("sun micro-shadowing (engine package 6)", () => {
-  it("maps world displacements to the module's planar u = X/tile, v = Z/tile", () => {
-    for (const pose of [
-      { rotationYRadians: 0 },
-      { rotationYRadians: Math.PI / 2 },
-      { rotationYRadians: 0.7, scale: [2, 1, 2] as [number, number, number] },
-    ]) {
-      const matrix = matrixOf(pose);
-      const surface = pbrMicroShadowSurfaceFromMatrix(matrix, 0.032, 4);
-      const a = [0.3, 0.01, -1.1];
-      const b = [-0.9, 0.02, 0.4];
-      const [wa, wb] = [transform(matrix, a), transform(matrix, b)];
-      const d = [0, 1, 2].map((axis) => (wb[axis] ?? 0) - (wa[axis] ?? 0));
-      const dot = (g: readonly number[]) => d.reduce((sum, v, axis) => sum + v * (g[axis] ?? 0), 0);
-      expect(dot(surface.gradientU)).toBeCloseTo(((b[0] ?? 0) - (a[0] ?? 0)) / 4, 9);
-      expect(dot(surface.gradientV)).toBeCloseTo(((b[2] ?? 0) - (a[2] ?? 0)) / 4, 9);
+  it("recovers the texture gradient per fragment on any plane, UV layout and handedness", () => {
+    // The WGSL: grad = (cross(dpY,N) duv/dx + cross(N,dpX) duv/dy) / dot(dpX, cross(dpY,N)).
+    const cross = (a: number[], b: number[]) => [
+      (a[1] ?? 0) * (b[2] ?? 0) - (a[2] ?? 0) * (b[1] ?? 0),
+      (a[2] ?? 0) * (b[0] ?? 0) - (a[0] ?? 0) * (b[2] ?? 0),
+      (a[0] ?? 0) * (b[1] ?? 0) - (a[1] ?? 0) * (b[0] ?? 0),
+    ];
+    const dot = (a: number[], b: number[]) => a.reduce((sum, v, i) => sum + v * (b[i] ?? 0), 0);
+    const normalize = (a: number[]) => a.map((v) => v / Math.hypot(...a));
+    // A vertical wall (u along +X at 1/2 per metre, v down its face) and a mirrored, rotated
+    // atlas island on a tilted plane; screen derivatives are arbitrary independent steps.
+    for (const [tangent, bitangent, uPerMeter, vPerMeter] of [
+      [[1, 0, 0], [0, -1, 0], 0.5, 1 / 2.58],
+      [normalize([0.3, 0.2, -0.9]), normalize([0.95, 0, 0.3167]), -1 / 12.3, 1 / 6.7],
+    ] as const) {
+      const normal = normalize(cross([...tangent], [...bitangent]));
+      const uvAt = (p: number[]) => [
+        dot(p, [...tangent]) * uPerMeter,
+        dot(p, [...bitangent]) * vPerMeter,
+      ];
+      const dpX = [0.0003, 0.0001, -0.0002].map((v, i) => v + 0.0004 * (tangent[i] ?? 0));
+      const dpY = [0.0001, -0.0002, 0.0003].map((v, i) => v + 0.0003 * (bitangent[i] ?? 0));
+      // Keep the steps in the plane, as screen derivatives of a planar triangle are.
+      const inPlane = (d: number[]) => d.map((v, i) => v - dot(d, normal) * (normal[i] ?? 0));
+      const [x, y] = [inPlane(dpX), inPlane(dpY)];
+      const [duvX, duvY] = [uvAt(x), uvAt(y)];
+      const perpY = cross(y, normal);
+      const perpX = cross(normal, x);
+      const det = dot(x, perpY);
+      const direction = normalize(inPlane([0.7, -0.1, 0.4]));
+      const uvPerMeter = [0, 1].map(
+        (k) =>
+          (dot(direction, perpY) * (duvX[k] ?? 0) + dot(direction, perpX) * (duvY[k] ?? 0)) / det,
+      );
+      const expected = uvAt(direction);
+      expect(uvPerMeter[0]).toBeCloseTo(expected[0] ?? 0, 9);
+      expect(uvPerMeter[1]).toBeCloseTo(expected[1] ?? 0, 9);
     }
-    // The canonical glTF-to-left-handed mirror: world +X runs toward -u at rotation 0.
-    const surface = pbrMicroShadowSurfaceFromMatrix(matrixOf({}), 0.032, 4);
-    expect([...surface.gradientU].map((v) => +v.toFixed(6))).toEqual([-0.25, 0, 0]);
-    expect([...surface.gradientV].map((v) => +v.toFixed(6))).toEqual([0, 0, 0.25]);
-    expect(() => pbrMicroShadowSurfaceFromMatrix(new Float64Array(16), 0.032, 4)).toThrow(
-      /singular/,
+    const wgsl =
+      createPbrSunMicroShadowPlugin(
+        createPbrAmbientState(),
+        NO_PBR_MICROSHADOW_SURFACE,
+      ).getCustomCode?.("fragment")?.CUSTOM_FRAGMENT_BEFORE_FINALCOLORCOMPOSITION ?? "";
+    expect(wgsl).toContain("let msPerpY=cross(msDpY,N_geom);");
+    expect(wgsl).toContain("let msPerpX=cross(N_geom,msDpX);");
+    expect(wgsl).toContain("let msDet=dot(msDpX,msPerpY);");
+    expect(wgsl).toContain(
+      "let msUvPerMeter=(dot(msDir,msPerpY)*msDuvX+dot(msDir,msPerpX)*msDuvY)/msDet;",
     );
   });
 
-  it("writes the sun, height range and gradients, and a zero range for surfaces without height", () => {
+  it("writes the sun and height range, and a zero range for surfaces without height", () => {
     const lighting = createPbrAmbientState();
     lighting.toSun.splice(0, 3, 0.866, 0.5, 0);
     const offsets = new Map([
       ["microShadowSun", 0],
       ["microShadowHeight", 16],
-      ["microShadowU", 32],
-      ["microShadowV", 48],
     ]);
-    const data = new Float32Array(16).fill(9);
-    const surface = pbrMicroShadowSurfaceFromMatrix(matrixOf({}), 0.032, 4);
-    createPbrSunMicroShadowPlugin(lighting, surface).writeUbo?.(data, offsets);
+    const data = new Float32Array(8).fill(9);
+    createPbrSunMicroShadowPlugin(lighting, { heightRangeMeters: 0.032 }).writeUbo?.(data, offsets);
     expect([...data.subarray(0, 4)].map((v) => +v.toFixed(3))).toEqual([0.866, 0.5, 0, 0]);
     expect(data[4]).toBeCloseTo(0.032, 6);
-    expect([...data.subarray(8, 16)].map((v) => +v.toFixed(3))).toEqual([
-      -0.25, 0, 0, 0, 0, 0, 0.25, 0,
-    ]);
     createPbrSunMicroShadowPlugin(lighting, NO_PBR_MICROSHADOW_SURFACE).writeUbo?.(data, offsets);
     expect(data[4]).toBe(0);
+    expect(
+      createPbrSunMicroShadowPlugin(lighting, NO_PBR_MICROSHADOW_SURFACE)
+        .getUniforms?.()
+        ?.ubo?.map((u) => u.name),
+    ).toEqual(["microShadowSun", "microShadowHeight"]);
   });
 
   it("takes derivatives in uniform control flow and shadows only the direct light", () => {
@@ -180,12 +187,11 @@ describe("PBR placement contract for small-scale shadows", () => {
     expect(() => validatePbrAssetPlacements([placement])).not.toThrow();
     for (const ormHeight of [
       null,
-      { rangeMeters: [0.01, 0.01], tileMeters: 4 },
-      { rangeMeters: [0, 2], tileMeters: 4 },
-      { rangeMeters: [0, Number.NaN], tileMeters: 4 },
-      { rangeMeters: [0, 0.03], tileMeters: 0 },
-      { rangeMeters: [0, 0.03] },
-      { rangeMeters: [0, 0.03], tileMeters: 4, extra: 1 },
+      { rangeMeters: [0.01, 0.01] },
+      { rangeMeters: [0, 2] },
+      { rangeMeters: [0, Number.NaN] },
+      { rangeMeters: [0, 0.03], tileMeters: 4 },
+      { rangeMeters: [0, 0.03], extra: 1 },
     ])
       expect(() =>
         validatePbrAssetPlacements([
@@ -209,17 +215,22 @@ describe("PBR placement contract for small-scale shadows", () => {
       ).toThrow(/CSM caster/);
   });
 
-  it("groups height surfaces by orientation and every placement by its caster flag", () => {
+  it("groups height surfaces by range, not orientation, and every placement by its caster flag", () => {
     const groups = groupPbrAssetPlacements([
       placement,
       { ...placement, id: "b", position: [10, 19, 6] },
       { ...placement, id: "c", rotationYRadians: Math.PI / 2 },
       { ...placement, id: "d", castsCsmShadows: false },
+      {
+        ...placement,
+        id: "e",
+        material: { ...placement.material, ormHeight: { rangeMeters: [-0.01, 0.03] } },
+      },
     ]);
     expect(groups.map((group) => group.map(({ id }) => id))).toEqual([
-      ["ground", "b"],
-      ["c"],
+      ["ground", "b", "c"],
       ["d"],
+      ["e"],
     ]);
   });
 });

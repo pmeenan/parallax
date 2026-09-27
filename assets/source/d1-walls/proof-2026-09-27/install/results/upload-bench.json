@@ -1,0 +1,63 @@
+{
+  "scenario": "webgpu-bc-upload-bench@1",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "results": [
+    {
+      "mode": "write",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 165.7850000858307,
+      "doneMs": 166.86000001430511,
+      "maxEventLoopGapMs": 165.85000002384186
+    },
+    {
+      "mode": "staging",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 117.125,
+      "doneMs": 270.53000009059906,
+      "maxEventLoopGapMs": 117.19500005245209
+    },
+    {
+      "mode": "chunked",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 134.79999995231628,
+      "doneMs": 140.89999997615814,
+      "maxEventLoopGapMs": 22.375
+    },
+    {
+      "mode": "write",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 165.16999995708466,
+      "doneMs": 166.10000002384186,
+      "maxEventLoopGapMs": 165.25499999523163
+    },
+    {
+      "mode": "staging",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 118.11500000953674,
+      "doneMs": 271.38499999046326,
+      "maxEventLoopGapMs": 118.16499996185303
+    },
+    {
+      "mode": "chunked",
+      "textures": 63,
+      "calls": 676,
+      "totalBytes": 274499568,
+      "issuedMs": 133.85000002384186,
+      "doneMs": 140.29500007629395,
+      "maxEventLoopGapMs": 22.09500002861023
+    }
+  ]
+}

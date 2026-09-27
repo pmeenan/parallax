@@ -1,5 +1,4 @@
 import type { MaterialPlugin } from "@babylonjs/lite";
-import type { WorldVec3 } from "../world/world-contract";
 import type { PbrAmbientState } from "./pbr-ambient";
 
 /**
@@ -15,22 +14,24 @@ import type { PbrAmbientState } from "./pbr-ambient";
  */
 export const PBR_SUN_MICROSHADOW_PLUGIN_NAME = "parallax-pbr-sun-microshadow";
 
-/** The march, fixed at compile time so every material shares one shader. */
-export const PBR_SUN_MICROSHADOW_STEPS = 12;
+/** The march's step bounds, fixed at compile time so every material shares one shader; the count
+ * between them follows the march length in texels. */
+export const PBR_SUN_MICROSHADOW_MIN_STEPS = 4;
+export const PBR_SUN_MICROSHADOW_MAX_STEPS = 64;
+const MICROSHADOW_TEXELS_PER_STEP = "1.5";
 
-/** A placement group's height field and its world-space texture-coordinate gradients. */
+/** A surface's occluding height field. */
 export interface PbrMicroShadowSurface {
   /** Metres spanned by ORM.B from 0 to 1. */
   readonly heightRangeMeters: number;
-  /** World-space gradients of u and v (texture units per metre) on the module's plane. */
-  readonly gradientU: WorldVec3;
-  readonly gradientV: WorldVec3;
 }
 
 // Lite's PBR shader has already sampled `orm`, built `N_geom` and summed the direct light into
 // `color` at this hook; the ambient plugin adds its term after this one (lower priority first).
 // The ray leaves the fragment's own height and rises at the sun's elevation over the local tangent
-// plane. Each step's clearance below the field becomes shadow through a penumbra that widens with
+// plane. Its texture-space direction comes from the fragment's own screen-space derivatives: the
+// world gradients of u and v on the triangle's plane, so atlas-mapped, vertical, rotated and
+// mirrored surfaces march correctly (the K1 wall delivery), not only planar ground tiles. Each step's clearance below the field becomes shadow through a penumbra that widens with
 // distance (a soft cone), and the march ends once the ray clears the top of the field.
 /** Penumbra width per metre of march: a cone about 4.6° wide, softer than the 0.53° sun disc, so
  * the 3.9 mm height texels do not alias into stair steps. */
@@ -39,7 +40,11 @@ const MICROSHADOW_FRAGMENT_WGSL = [
   "{",
   // Derivatives first, while control flow is still uniform.
   "let msSize=vec2<f32>(textureDimensions(ormTexture,0));",
-  "let msFootprint=max(length(dpdx(input.uv)*msSize),length(dpdy(input.uv)*msSize));",
+  "let msDuvX=dpdx(input.uv);",
+  "let msDuvY=dpdy(input.uv);",
+  "let msDpX=dpdx(input.worldPos);",
+  "let msDpY=dpdy(input.worldPos);",
+  "let msFootprint=max(length(msDuvX*msSize),length(msDuvY*msSize));",
   "let msLod=max(log2(max(msFootprint,1.0)),0.0);",
   // Relief finer than the sampled mip averages out; fade the term out over two further levels.
   "let msFade=1.0-smoothstep(material.microShadowHeight.y,material.microShadowHeight.y+2.0,msLod);",
@@ -47,18 +52,25 @@ const MICROSHADOW_FRAGMENT_WGSL = [
   "let msDirect=directDiffuse+directSpecular;",
   "let msToSun=material.microShadowSun.xyz;",
   "let msSunUp=dot(msToSun,N_geom);",
-  "if(msRange>0.0&&msFade>0.0&&msSunUp>0.0&&max(msDirect.r,max(msDirect.g,msDirect.b))>0.0){",
+  // grad u = (perpY du/dx + perpX du/dy) / det satisfies grad u . dp/dx = du/dx and . dp/dy = du/dy.
+  "let msPerpY=cross(msDpY,N_geom);",
+  "let msPerpX=cross(N_geom,msDpX);",
+  "let msDet=dot(msDpX,msPerpY);",
+  "if(msRange>0.0&&msFade>0.0&&msSunUp>0.0&&abs(msDet)>1e-30&&max(msDirect.r,max(msDirect.g,msDirect.b))>0.0){",
   "let msAlong=msToSun-N_geom*msSunUp;",
   "let msAlongLength=length(msAlong);",
   "let msRise=msSunUp/max(msAlongLength,0.0001);",
   "let msDir=msAlong/max(msAlongLength,0.0001);",
-  "let msUvPerMeter=vec2<f32>(dot(msDir,material.microShadowU.xyz),dot(msDir,material.microShadowV.xyz));",
+  "let msUvPerMeter=(dot(msDir,msPerpY)*msDuvX+dot(msDir,msPerpX)*msDuvY)/msDet;",
   "let msStart=textureSampleLevel(ormTexture,ormSampler,input.uv,msLod).b*msRange;",
   "let msLength=min((msRange-msStart)/max(msRise,0.0001),material.microShadowHeight.z);",
+  // Even steps about 1.5 texels of the sampled mip apart: a fixed count skipped a tall occluder
+  // at the far end of a long march (the wall's window sills), stair-stepping its shadow edge.
+  "let msTexels=msLength*length(msUvPerMeter*msSize)/exp2(msLod);",
+  `let msSteps=u32(clamp(ceil(msTexels/${MICROSHADOW_TEXELS_PER_STEP}),${PBR_SUN_MICROSHADOW_MIN_STEPS}.0,${PBR_SUN_MICROSHADOW_MAX_STEPS}.0));`,
   "var msLit=1.0;",
-  `for(var msStep=1u;msStep<=${PBR_SUN_MICROSHADOW_STEPS}u;msStep++){`,
-  `let msFraction=f32(msStep)/${PBR_SUN_MICROSHADOW_STEPS}.0;`,
-  "let msT=msLength*msFraction*msFraction;",
+  "for(var msStep=1u;msStep<=msSteps;msStep++){",
+  "let msT=msLength*f32(msStep)/f32(msSteps);",
   "let msField=textureSampleLevel(ormTexture,ormSampler,input.uv+msUvPerMeter*msT,msLod).b*msRange;",
   "let msClearance=msStart+msT*msRise-msField;",
   // The penumbra grows with distance (a cone), so it is scale free; the bias absorbs BC7 noise.
@@ -77,47 +89,7 @@ const MICROSHADOW_BIAS_METERS = 0.0003;
 
 export const NO_PBR_MICROSHADOW_SURFACE: PbrMicroShadowSurface = Object.freeze({
   heightRangeMeters: 0,
-  gradientU: Object.freeze([0, 0, 0]) as WorldVec3,
-  gradientV: Object.freeze([0, 0, 0]) as WorldVec3,
 });
-
-/** World gradients of the module's planar tile UVs (u = local X / tile, v = local Z / tile) from
- * a placement's column-major matrix: rows X and Z of its inverse, divided by the tile size. */
-export function pbrMicroShadowSurfaceFromMatrix(
-  matrix: ArrayLike<number>,
-  heightRangeMeters: number,
-  tileMeters: number,
-): PbrMicroShadowSurface {
-  const m = (column: number, row: number) => matrix[column * 4 + row] ?? 0;
-  const a = [
-    [m(0, 0), m(1, 0), m(2, 0)],
-    [m(0, 1), m(1, 1), m(2, 1)],
-    [m(0, 2), m(1, 2), m(2, 2)],
-  ] as const;
-  const [r0, r1, r2] = a;
-  const cofactor = (i: number, j: number) => {
-    const rows = [r0, r1, r2].filter((_, index) => index !== i);
-    const cols = [0, 1, 2].filter((index) => index !== j);
-    const [p, q] = rows;
-    const [c0, c1] = cols as [number, number];
-    const value = (p?.[c0] ?? 0) * (q?.[c1] ?? 0) - (p?.[c1] ?? 0) * (q?.[c0] ?? 0);
-    return (i + j) % 2 === 0 ? value : -value;
-  };
-  const determinant = r0[0] * cofactor(0, 0) + r0[1] * cofactor(0, 1) + r0[2] * cofactor(0, 2);
-  if (!Number.isFinite(determinant) || Math.abs(determinant) < 1e-9)
-    throw new Error("PBR micro-shadow placement matrix is singular");
-  // Row k of the inverse is the k-th column of the cofactor matrix over the determinant.
-  const inverseRow = (k: number): WorldVec3 => [
-    cofactor(0, k) / determinant / tileMeters,
-    cofactor(1, k) / determinant / tileMeters,
-    cofactor(2, k) / determinant / tileMeters,
-  ];
-  return Object.freeze({
-    heightRangeMeters,
-    gradientU: inverseRow(0),
-    gradientV: inverseRow(2),
-  });
-}
 
 export function createPbrSunMicroShadowPlugin(
   lighting: PbrAmbientState,
@@ -135,23 +107,13 @@ export function createPbrSunMicroShadowPlugin(
       ubo: [
         { name: "microShadowSun", type: "vec4<f32>" },
         { name: "microShadowHeight", type: "vec4<f32>" },
-        { name: "microShadowU", type: "vec4<f32>" },
-        { name: "microShadowV", type: "vec4<f32>" },
       ],
     }),
     writeUbo: (data, offsets) => {
       const sun = (offsets.get("microShadowSun") ?? 0) / 4;
       const height = (offsets.get("microShadowHeight") ?? 0) / 4;
-      const u = (offsets.get("microShadowU") ?? 0) / 4;
-      const v = (offsets.get("microShadowV") ?? 0) / 4;
-      for (let axis = 0; axis < 3; axis++) {
-        data[sun + axis] = lighting.toSun[axis] ?? 0;
-        data[u + axis] = surface.gradientU[axis] ?? 0;
-        data[v + axis] = surface.gradientV[axis] ?? 0;
-      }
+      for (let axis = 0; axis < 3; axis++) data[sun + axis] = lighting.toSun[axis] ?? 0;
       data[sun + 3] = 0;
-      data[u + 3] = 0;
-      data[v + 3] = 0;
       data[height] = surface.heightRangeMeters;
       data[height + 1] = MICROSHADOW_FADE_START_LOD;
       data[height + 2] = MICROSHADOW_MAX_MARCH_METERS;

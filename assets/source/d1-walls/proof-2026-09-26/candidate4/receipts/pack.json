@@ -1,0 +1,1705 @@
+{
+  "stage": "pack",
+  "mapsSha256": "97fb1986cd2272afcdbc72ee4225f7da78d49d6532657c9a320aacae228ed148",
+  "encoders": {
+    "ktx": {
+      "archiveSha256": "1d4598a290ccb654d6a33c074c4ca96f0c5ccef99e042323eaa4d1230d4de63d",
+      "jsSha256": "96422b4d0d0de173b9796711379b1525585aa03f8f662ad7794f2dd088da32c7",
+      "version": "4.4.2",
+      "wasmSha256": "839d8f70377b03e41a73f18ffc3839f87418079792cef4d82aae824a8241c7f0"
+    },
+    "bc7Transcoder": {
+      "package": "@babylonjs/ktx2decoder",
+      "version": "9.27.1",
+      "wasmSha256": "be442ab8c0cbf734ded98e6ad38112aaba23c83bfeecac4213ded54631fc4eef"
+    }
+  },
+  "uastcLevel": "LEVEL_SLOWER",
+  "materials": {
+    "kit-oak": {
+      "fibreAlbedoFactor": 1.0400830507278442,
+      "ormTexelMm": 3,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9912691116333008,
+        "p01": 0.8054804801940918,
+        "minimum": 0.2453364133834839
+      },
+      "ormHeightRangeMetres": [-0.017460625618696213, 0.012191813439130783],
+      "texelMm": 1.5,
+      "atlas": [8192, 5152],
+      "islands": 483
+    },
+    "kit-stone": {
+      "ormTexelMm": 2.5,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9624649286270142,
+        "p01": 0.7456167936325073,
+        "minimum": 0.35212844610214233
+      },
+      "ormHeightRangeMetres": [-0.032687269151210785, 0.03445233404636383],
+      "texelMm": 2.5,
+      "atlas": [4096, 1920],
+      "islands": 351
+    },
+    "plaster-g-plain": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9677304029464722,
+        "p01": 0.5532703399658203,
+        "minimum": 0.25277599692344666
+      },
+      "ormHeightRangeMetres": [-0.009927596896886826, 0.05289170518517494],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.2214759646827992,
+      "timberMaxHeightMm": 52.91775894165039
+    },
+    "plaster-g-window": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9407637715339661,
+        "p01": 0.5043202042579651,
+        "minimum": 0.18403297662734985
+      },
+      "ormHeightRangeMetres": [-0.005999673157930374, 0.08823104202747345],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.4060793001962067,
+      "timberMaxHeightMm": 88.35652160644531
+    },
+    "plaster-g-door": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.946679413318634,
+        "p01": 0.50801682472229,
+        "minimum": 0.24050112068653107
+      },
+      "ormHeightRangeMetres": [-0.009109508246183395, 0.05435510724782944],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.31464829954218443,
+      "timberMaxHeightMm": 54.48215103149414
+    },
+    "plaster-g-braced": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9650612473487854,
+        "p01": 0.5449783802032471,
+        "minimum": 0.16539977490901947
+      },
+      "ormHeightRangeMetres": [-0.009408874437212944, 0.05547203868627548],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.26361200130804446,
+      "timberMaxHeightMm": 55.516578674316406
+    },
+    "plaster-g-cbrace": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9651158452033997,
+        "p01": 0.5449536442756653,
+        "minimum": 0.1951116919517517
+      },
+      "ormHeightRangeMetres": [-0.009224966168403625, 0.053244296461343765],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.2480788096795291,
+      "timberMaxHeightMm": 53.28241729736328
+    },
+    "plaster-g-cbrace2": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9694380164146423,
+        "p01": 0.5675636529922485,
+        "minimum": 0.18538318574428558
+      },
+      "ormHeightRangeMetres": [-0.010319165885448456, 0.052032049745321274],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.206053629823414,
+      "timberMaxHeightMm": 52.05950927734375
+    },
+    "plaster-g-window2": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.941275417804718,
+        "p01": 0.5065430998802185,
+        "minimum": 0.05792279168963432
+      },
+      "ormHeightRangeMetres": [-0.00868380255997181, 0.08683401346206665],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.40680984303466317,
+      "timberMaxHeightMm": 86.85751342773438
+    },
+    "plaster-u-window2": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9399392604827881,
+        "p01": 0.48274245858192444,
+        "minimum": 0.0618860125541687
+      },
+      "ormHeightRangeMetres": [-0.008178743533790112, 0.09172658622264862],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.39880113636363634,
+      "timberMaxHeightMm": 91.76904296875
+    },
+    "plaster-u-cbrace": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9634645581245422,
+        "p01": 0.5450109243392944,
+        "minimum": 0.19803595542907715
+      },
+      "ormHeightRangeMetres": [-0.010650238022208214, 0.05215391144156456],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.24865779220779222,
+      "timberMaxHeightMm": 52.284263610839844
+    },
+    "plaster-u-cbrace2": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9691251516342163,
+        "p01": 0.5660120248794556,
+        "minimum": 0.17466896772384644
+      },
+      "ormHeightRangeMetres": [-0.009951472282409668, 0.05290737375617027],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.2041612012987013,
+      "timberMaxHeightMm": 52.932796478271484
+    },
+    "plaster-u-plain": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9647589325904846,
+        "p01": 0.5366940498352051,
+        "minimum": 0.2319704294204712
+      },
+      "ormHeightRangeMetres": [-0.008566556498408318, 0.05215391144156456],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.21921347402597402,
+      "timberMaxHeightMm": 52.284263610839844
+    },
+    "plaster-u-window": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9418407678604126,
+        "p01": 0.4970055818557739,
+        "minimum": 0.04911226034164429
+      },
+      "ormHeightRangeMetres": [-0.009628762491047382, 0.08609205484390259],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.40079123376623377,
+      "timberMaxHeightMm": 86.10517120361328
+    },
+    "plaster-u-braced": {
+      "ormTexelMm": 2,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 0.9636965394020081,
+        "p01": 0.5404341220855713,
+        "minimum": 0.163016676902771
+      },
+      "ormHeightRangeMetres": [-0.009997237473726273, 0.05476980283856392],
+      "texelMm": 2,
+      "normalTexelMm": 1,
+      "marginMetres": 0.1,
+      "timberCoverage": 0.26079350649350647,
+      "timberMaxHeightMm": 54.822105407714844
+    },
+    "mortar": {
+      "ormTexelMm": 3.90625,
+      "textureAddressMode": "repeat",
+      "ambientOcclusion": {
+        "mean": 0.40000006556510925,
+        "p01": 0.4000000059604645,
+        "minimum": 0.4000000059604645
+      },
+      "texelMm": 1.953125,
+      "tileMetres": 1
+    },
+    "soil": {
+      "ormTexelMm": 3.90625,
+      "textureAddressMode": "repeat",
+      "ambientOcclusion": {
+        "mean": 0.9813525676727295,
+        "p01": 0.9263925552368164,
+        "minimum": 0.8626987934112549
+      },
+      "ormHeightRangeMetres": [-0.004867786541581154, 0.005413513630628586],
+      "texelMm": 1.953125,
+      "tileMetres": 1
+    },
+    "plants": {
+      "ormTexelMm": 1,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 1,
+        "p01": 1,
+        "minimum": 1
+      }
+    },
+    "kit-iron": {
+      "ormTexelMm": 0.390625,
+      "textureAddressMode": "repeat",
+      "ambientOcclusion": {
+        "mean": 1,
+        "p01": 1,
+        "minimum": 1
+      },
+      "metallicFactor": 0.55,
+      "tileMetres": 0.1,
+      "meanTilt": 2.451237678527832
+    },
+    "kit-glass": {
+      "ormTexelMm": 0.78125,
+      "textureAddressMode": "repeat",
+      "ambientOcclusion": {
+        "mean": 1,
+        "p01": 1,
+        "minimum": 1
+      },
+      "metallicFactor": 0,
+      "tileMetres": 0.2,
+      "meanTiltDeg": 1.3762798309326172
+    },
+    "interior": {
+      "ormTexelMm": 0,
+      "textureAddressMode": "clamp-to-edge",
+      "ambientOcclusion": {
+        "mean": 1,
+        "p01": 1,
+        "minimum": 1
+      },
+      "metallicFactor": 0,
+      "constant": true
+    }
+  },
+  "textures": [
+    {
+      "role": "kit-oak-basecolor",
+      "material": "kit-oak",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 8192,
+      "height": 5152,
+      "levels": 14,
+      "decodedLevels": 14,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/kit-oak-basecolor.ktx2",
+        "bytes": 28138200,
+        "sha256": "bffb19ed0f97c28b7898c20e5382a5f5e338ffc2df0d45a1ed764b96c5734ad0"
+      },
+      "gpuBytes": 28137688,
+      "level0MeanAbsError": 2.224998110816592,
+      "level0MaxAbsError": 30,
+      "encodeMs": 372767,
+      "note": "sRGB albedo, 1.5 mm texels, islands push-pull filled",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-oak-normal",
+      "material": "kit-oak",
+      "slot": "normal",
+      "srgb": false,
+      "width": 8192,
+      "height": 5152,
+      "levels": 14,
+      "decodedLevels": 14,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-oak-normal.ktx2",
+        "bytes": 56275888,
+        "sha256": "4a70c3deb8dcc2f72410f8cbae5da2a0e819fe886a80a5d61237940ebf563806"
+      },
+      "gpuBytes": 56275376,
+      "level0MeanAbsError": 2.8064756847563244,
+      "level0MaxAbsError": 67,
+      "encodeMs": 465023,
+      "note": "OpenGL (+Y up) tangent space; low-pass slopes + detail; renormalized mips",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-oak-orm",
+      "material": "kit-oak",
+      "slot": "orm",
+      "srgb": false,
+      "width": 4096,
+      "height": 2576,
+      "levels": 13,
+      "decodedLevels": 13,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-oak-orm.ktx2",
+        "bytes": 14070688,
+        "sha256": "7097f88a4f94a044037333e6ba45d68f09baee1c95a353cc410c5de69bec787f"
+      },
+      "gpuBytes": 14070192,
+      "level0MeanAbsError": 0.32436956875566125,
+      "level0MaxAbsError": 17,
+      "encodeMs": 94727,
+      "note": "R island AO (40 mm), G roughness, B height; 3 mm texels",
+      "ormHeightRangeMetres": [-0.017460625618696213, 0.012191813439130783],
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-stone-basecolor",
+      "material": "kit-stone",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 4096,
+      "height": 1920,
+      "levels": 13,
+      "decodedLevels": 13,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/kit-stone-basecolor.ktx2",
+        "bytes": 5243472,
+        "sha256": "4549b2e1602830d29cc8eb13676341e34e5265040e4d768fd863c90c5ce1961b"
+      },
+      "gpuBytes": 5242984,
+      "level0MeanAbsError": 1.624045689900716,
+      "level0MaxAbsError": 25,
+      "encodeMs": 124075,
+      "note": "sRGB albedo, 2.5 mm texels, islands push-pull filled",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-stone-normal",
+      "material": "kit-stone",
+      "slot": "normal",
+      "srgb": false,
+      "width": 4096,
+      "height": 1920,
+      "levels": 13,
+      "decodedLevels": 13,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-stone-normal.ktx2",
+        "bytes": 10486464,
+        "sha256": "d9d6ac66ab7aa41758b88424651dc46c7f5a15e5adfb27026686c38977914763"
+      },
+      "gpuBytes": 10485968,
+      "level0MeanAbsError": 2.91379271613227,
+      "level0MaxAbsError": 68,
+      "encodeMs": 147770,
+      "note": "OpenGL (+Y up) tangent space; low-pass slopes + detail; renormalized mips",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-stone-orm",
+      "material": "kit-stone",
+      "slot": "orm",
+      "srgb": false,
+      "width": 4096,
+      "height": 1920,
+      "levels": 13,
+      "decodedLevels": 13,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-stone-orm.ktx2",
+        "bytes": 10486464,
+        "sha256": "21994e73c2d95fe55c7627efa6f7a18251f29428c2480af0edd8ff9abf57bfa4"
+      },
+      "gpuBytes": 10485968,
+      "level0MeanAbsError": 0.460958989461263,
+      "level0MaxAbsError": 17,
+      "encodeMs": 67958,
+      "note": "R island AO (40 mm), G roughness, B height; 2.5 mm texels",
+      "ormHeightRangeMetres": [-0.032687269151210785, 0.03445233404636383],
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-plain-basecolor",
+      "material": "plaster-g-plain",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-plain-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "97575956537fce94021346b0acf1a88aae5ee586d9df4298ae0c8407dafedcb3"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.3054360414489725,
+      "level0MaxAbsError": 19,
+      "encodeMs": 20542,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-plain-normal",
+      "material": "plaster-g-plain",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-plain-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "fc12762e6b5d1627b4e78c68f18ecb8a853387ecf691dcb86d83d3a5abe8b99c"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.4215814802703293,
+      "level0MaxAbsError": 112,
+      "encodeMs": 82269,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-plain-orm",
+      "material": "plaster-g-plain",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-plain-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "5f6dd055084cf79f2424253f378cca5b2a7b51098929d78fdaa73596fc0e5bfe"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.10851532567049808,
+      "level0MaxAbsError": 17,
+      "encodeMs": 17932,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009927596896886826, 0.05289170518517494]
+    },
+    {
+      "role": "plaster-g-window-basecolor",
+      "material": "plaster-g-window",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-window-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "e9d41284705d20642198d1ddd428877f3e36486d02eda409845a3135b15b8f88"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.2446921804249391,
+      "level0MaxAbsError": 18,
+      "encodeMs": 17519,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-window-normal",
+      "material": "plaster-g-window",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-window-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "745d256b690502f0a8a982a5281edc6e5aa6570cc3c28b322084abe244a54216"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.2420100283409636,
+      "level0MaxAbsError": 63,
+      "encodeMs": 72714,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-window-orm",
+      "material": "plaster-g-window",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-window-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "66f4a9a1bc571ca3fd852ac6cb0db5bc8afcae7bfb853351f734dfb49009db58"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.124424416579589,
+      "level0MaxAbsError": 26,
+      "encodeMs": 17536,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.005999673157930374, 0.08823104202747345]
+    },
+    {
+      "role": "plaster-g-door-basecolor",
+      "material": "plaster-g-door",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-door-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "97a31f3b0f813c6452853e213a47e87972aee158e1b76fb2e1177931aa418b3a"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.2303698624172763,
+      "level0MaxAbsError": 16,
+      "encodeMs": 18622,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-door-normal",
+      "material": "plaster-g-door",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-door-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "2d858f3148cf6309ce4c549189129cd65b5ae009209e1418db83cc9babe2a09a"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.1909771092217136,
+      "level0MaxAbsError": 91,
+      "encodeMs": 71613,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-door-orm",
+      "material": "plaster-g-door",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-door-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "dd9fcaca3ef1161e12ed5302e02a50063ccb4f2d29baeaf6cd4fed442fb88931"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.13798175722744688,
+      "level0MaxAbsError": 21,
+      "encodeMs": 18253,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009109508246183395, 0.05435510724782944]
+    },
+    {
+      "role": "plaster-g-braced-basecolor",
+      "material": "plaster-g-braced",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-braced-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "bb1582daa972a0d455069fe317890fef6b618094a71b1ad69a8dcb43b4d373cd"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.24041078892372,
+      "level0MaxAbsError": 18,
+      "encodeMs": 18394,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-braced-normal",
+      "material": "plaster-g-braced",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-braced-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "0264f09e95d36f36eae9f8b2f80ae45761dfdd64d9b5a219601ac66674c47668"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.338505995203837,
+      "level0MaxAbsError": 79,
+      "encodeMs": 79860,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-braced-orm",
+      "material": "plaster-g-braced",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-braced-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "4cd38d1c178431bc3370c33d64c1f1c6201d2247bfbaaa7a3b17e675b3625f57"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.11288423023336816,
+      "level0MaxAbsError": 23,
+      "encodeMs": 17704,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009408874437212944, 0.05547203868627548]
+    },
+    {
+      "role": "plaster-g-cbrace-basecolor",
+      "material": "plaster-g-cbrace",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "263773211dc095b07e0dd315044b40448f9895e0dc238e89f4dac0459d7fc0d9"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.2588825757575757,
+      "level0MaxAbsError": 19,
+      "encodeMs": 21051,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-cbrace-normal",
+      "material": "plaster-g-cbrace",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "2c2c7bc31be1b14a17905407140d299835a303a104356f930bc9e1726b9bbd22"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.3412272727272727,
+      "level0MaxAbsError": 76,
+      "encodeMs": 78671,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-cbrace-orm",
+      "material": "plaster-g-cbrace",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "f223c860539327b521e041a806dc90a1438298ad4065f875ebac489ee4f5d316"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.12024338209683037,
+      "level0MaxAbsError": 20,
+      "encodeMs": 17825,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009224966168403625, 0.053244296461343765]
+    },
+    {
+      "role": "plaster-g-cbrace2-basecolor",
+      "material": "plaster-g-cbrace2",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace2-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "8b03530f143639b1a49e4622612b29b7b216e097e7bc23f953d9c584cb3700d4"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.25951802507837,
+      "level0MaxAbsError": 15,
+      "encodeMs": 19741,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-cbrace2-normal",
+      "material": "plaster-g-cbrace2",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace2-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "f70b95327ee2698cfa6c038b99f8a8a4cde9758e154e5eca4f21f01a04871832"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.3327444953128407,
+      "level0MaxAbsError": 74,
+      "encodeMs": 79346,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-cbrace2-orm",
+      "material": "plaster-g-cbrace2",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-cbrace2-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "110c301a635bca6ecc6ee1b2014b954431e4a8b92e0b592bc96773034434b09b"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.10935431905259492,
+      "level0MaxAbsError": 31,
+      "encodeMs": 17567,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.010319165885448456, 0.052032049745321274]
+    },
+    {
+      "role": "plaster-g-window2-basecolor",
+      "material": "plaster-g-window2",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-g-window2-basecolor.ktx2",
+        "bytes": 1022584,
+        "sha256": "79966a5f1a51a3ffb5818dcc2410ef6f191aaed49a7159c502392d3aa02843b4"
+      },
+      "gpuBytes": 1022144,
+      "level0MeanAbsError": 1.2267859630790665,
+      "level0MaxAbsError": 19,
+      "encodeMs": 20330,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-window2-normal",
+      "material": "plaster-g-window2",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2780,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-window2-normal.ktx2",
+        "bytes": 8160752,
+        "sha256": "4d56c9f280a264ef54723324c7571ef887eda595cb531e322f5edb147c98d5a9"
+      },
+      "gpuBytes": 8160288,
+      "level0MeanAbsError": 1.2420443645083934,
+      "level0MaxAbsError": 66,
+      "encodeMs": 74284,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-g-window2-orm",
+      "material": "plaster-g-window2",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1392,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-g-window2-orm.ktx2",
+        "bytes": 2044736,
+        "sha256": "75242f946101783198be3d97b55568d863172d693a712d69693520764255c645"
+      },
+      "gpuBytes": 2044288,
+      "level0MeanAbsError": 0.12262103796586556,
+      "level0MaxAbsError": 26,
+      "encodeMs": 12504,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.00868380255997181, 0.08683401346206665]
+    },
+    {
+      "role": "plaster-u-window2-basecolor",
+      "material": "plaster-u-window2",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-window2-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "75b1cbd645b5d040871975a1a1223922d0ce6ac1f2e44a29bfde9253ad492044"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.2551508658008659,
+      "level0MaxAbsError": 18,
+      "encodeMs": 27763,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-window2-normal",
+      "material": "plaster-u-window2",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-window2-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "9d5ff8f90dfa43a15cb5acc491d1a311e7c28ce36d7c1b7310758d4d794a0d3c"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.2391026515151515,
+      "level0MaxAbsError": 82,
+      "encodeMs": 69835,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-window2-orm",
+      "material": "plaster-u-window2",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-window2-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "3f8cbc059446924327ffc92287f077e2fa32dfbe16d46273ee2b297a39013d90"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.11982142857142856,
+      "level0MaxAbsError": 35,
+      "encodeMs": 12396,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.008178743533790112, 0.09172658622264862]
+    },
+    {
+      "role": "plaster-u-cbrace-basecolor",
+      "material": "plaster-u-cbrace",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "a7dd8fa5eb9224a9d089ce8e620d1ef02d54be73936ca3ae4a30afb346ee0889"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.2859655844155844,
+      "level0MaxAbsError": 19,
+      "encodeMs": 25472,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-cbrace-normal",
+      "material": "plaster-u-cbrace",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "fde61ff13f824fe74093c6371d416b010a67c5e4c24fc1e8468ef1a0854b3bdc"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.364279274891775,
+      "level0MaxAbsError": 93,
+      "encodeMs": 78731,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-cbrace-orm",
+      "material": "plaster-u-cbrace",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "bc7bb87cf91c8ec4ded2be20c3a2a94c2a5c958807665ec73760df40ae669f5d"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.12431428571428571,
+      "level0MaxAbsError": 22,
+      "encodeMs": 12940,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.010650238022208214, 0.05215391144156456]
+    },
+    {
+      "role": "plaster-u-cbrace2-basecolor",
+      "material": "plaster-u-cbrace2",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace2-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "7a5caca540bc88d491698ac0a63ea2df61df139e1f65db5f507afe9c577a26ac"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.2922738095238095,
+      "level0MaxAbsError": 18,
+      "encodeMs": 25007,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-cbrace2-normal",
+      "material": "plaster-u-cbrace2",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace2-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "8eccfb6dfa881380143fb18bf85fe82a6a85e5c8dd933ac7ffa46e794b854195"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.3377179112554112,
+      "level0MaxAbsError": 77,
+      "encodeMs": 71169,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-cbrace2-orm",
+      "material": "plaster-u-cbrace2",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-cbrace2-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "c89159df17a65c94fe7c7a87a4d21f9eea2e4a637b646dacee503a406e31a5ec"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.11113290043290043,
+      "level0MaxAbsError": 26,
+      "encodeMs": 17513,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009951472282409668, 0.05290737375617027]
+    },
+    {
+      "role": "plaster-u-plain-basecolor",
+      "material": "plaster-u-plain",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-plain-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "21c333babdd82946f61c98839bafb1c1f434fe852c9f861e5f67f73d0deecf6e"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.32085670995671,
+      "level0MaxAbsError": 22,
+      "encodeMs": 32958,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-plain-normal",
+      "material": "plaster-u-plain",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-plain-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "2bdfd9ebefecb259db0363265aa4b4cdd76bfe57b3e0feafe508a012a6385b74"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.401316287878788,
+      "level0MaxAbsError": 104,
+      "encodeMs": 81759,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-plain-orm",
+      "material": "plaster-u-plain",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-plain-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "345fbf0e352be2de01ebf66920704f3277e1ef37046543aba769558ac1623623"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.11351212121212122,
+      "level0MaxAbsError": 25,
+      "encodeMs": 18322,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.008566556498408318, 0.05215391144156456]
+    },
+    {
+      "role": "plaster-u-window-basecolor",
+      "material": "plaster-u-window",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-window-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "b500ad32ce7abb6db0cdf249375b7dffa2e17338e9d801dee7a02338240c8c9b"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.274982251082251,
+      "level0MaxAbsError": 17,
+      "encodeMs": 33268,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-window-normal",
+      "material": "plaster-u-window",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-window-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "35a9ff6f1ba1761fdbc797d2e14a3716034df30b578cdebcc5f97e5c1be4de8e"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.2290273809523808,
+      "level0MaxAbsError": 83,
+      "encodeMs": 73724,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-window-orm",
+      "material": "plaster-u-window",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-window-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "606f9fc379c37ebfc397c192c84a0305052ba87107ed9f9e7e144a2a46358dce"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.11894761904761905,
+      "level0MaxAbsError": 31,
+      "encodeMs": 17309,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009628762491047382, 0.08609205484390259]
+    },
+    {
+      "role": "plaster-u-braced-basecolor",
+      "material": "plaster-u-braced",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plaster-u-braced-basecolor.ktx2",
+        "bytes": 1028640,
+        "sha256": "041df0f10424accb5604367fe88c2f94ce729681a9be21c5d485505f68de7b68"
+      },
+      "gpuBytes": 1028200,
+      "level0MeanAbsError": 1.303415367965368,
+      "level0MaxAbsError": 20,
+      "encodeMs": 33830,
+      "note": "sRGB albedo, 2 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-braced-normal",
+      "material": "plaster-u-braced",
+      "slot": "normal",
+      "srgb": false,
+      "width": 2200,
+      "height": 2800,
+      "levels": 12,
+      "decodedLevels": 12,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-braced-normal.ktx2",
+        "bytes": 8216864,
+        "sha256": "1e77c82e3aca4af9799a0f8bf5244b36636ea0590fadd86fb0f69dccd8290e0a"
+      },
+      "gpuBytes": 8216400,
+      "level0MeanAbsError": 1.3502321428571429,
+      "level0MaxAbsError": 74,
+      "encodeMs": 80439,
+      "note": "OpenGL (+Y up); low-pass slopes + detail; renormalized mips; 1 mm texels",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plaster-u-braced-orm",
+      "material": "plaster-u-braced",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1100,
+      "height": 1400,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plaster-u-braced-orm.ktx2",
+        "bytes": 2056848,
+        "sha256": "6197ee48b1025b19e877374fc45aaa419119e1631c6f4dbaa8b35a2844e204e6"
+      },
+      "gpuBytes": 2056400,
+      "level0MeanAbsError": 0.12156753246753246,
+      "level0MaxAbsError": 23,
+      "encodeMs": 18273,
+      "note": "R AO (150 mm, no falloff) of plaster + proud timber, G roughness, B plaster + timber height; 2 mm texels",
+      "ormHeightRangeMetres": [-0.009997237473726273, 0.05476980283856392]
+    },
+    {
+      "role": "mortar-basecolor",
+      "material": "mortar",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 512,
+      "height": 512,
+      "levels": 10,
+      "decodedLevels": 10,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/mortar-basecolor.ktx2",
+        "bytes": 175192,
+        "sha256": "704d01f2133e4731e98cb849fecea1a456040001449d44df2b7f0c2ca23909a7"
+      },
+      "gpuBytes": 174776,
+      "level0MeanAbsError": 1.3472379048665364,
+      "level0MaxAbsError": 11,
+      "encodeMs": 2935,
+      "note": "sRGB albedo, 1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "mortar-normal",
+      "material": "mortar",
+      "slot": "normal",
+      "srgb": false,
+      "width": 512,
+      "height": 512,
+      "levels": 10,
+      "decodedLevels": 10,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/mortar-normal.ktx2",
+        "bytes": 349968,
+        "sha256": "365cb321b56b513c3f79963c550ae1bf503e47394f7810356cf434dd326997a7"
+      },
+      "gpuBytes": 349552,
+      "level0MeanAbsError": 2.638885498046875,
+      "level0MaxAbsError": 29,
+      "encodeMs": 4251,
+      "note": "OpenGL (+Y up), 1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "mortar-orm",
+      "material": "mortar",
+      "slot": "orm",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/mortar-orm.ktx2",
+        "bytes": 87808,
+        "sha256": "d32951e6179bf8e05d6d82b244f9d79fee4479dbbac276af91da5d382dc55bc5"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 9,
+      "note": "R 0.4 joint occlusion, G roughness, B 0 (no height)",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "soil-basecolor",
+      "material": "soil",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 512,
+      "height": 512,
+      "levels": 10,
+      "decodedLevels": 10,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/soil-basecolor.ktx2",
+        "bytes": 175192,
+        "sha256": "1fc1b5aef75b506f242aad4b8c9ffc2080a53341655c7626b7e0842ccdef7eb9"
+      },
+      "gpuBytes": 174776,
+      "level0MeanAbsError": 2.1380513509114585,
+      "level0MaxAbsError": 23,
+      "encodeMs": 3024,
+      "note": "sRGB albedo, 1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "soil-normal",
+      "material": "soil",
+      "slot": "normal",
+      "srgb": false,
+      "width": 512,
+      "height": 512,
+      "levels": 10,
+      "decodedLevels": 10,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/soil-normal.ktx2",
+        "bytes": 349968,
+        "sha256": "61755f884ec8efc555e59d6affed577d558d786dc2819383480a9b07a0236e01"
+      },
+      "gpuBytes": 349552,
+      "level0MeanAbsError": 4.405465443929036,
+      "level0MaxAbsError": 37,
+      "encodeMs": 4503,
+      "note": "OpenGL (+Y up), 1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "soil-orm",
+      "material": "soil",
+      "slot": "orm",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/soil-orm.ktx2",
+        "bytes": 87808,
+        "sha256": "ffebd4e52468c537fc3b2a488f4b36783120207a0df675d9cad5f7b33c0aa8f9"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0.8648478190104166,
+      "level0MaxAbsError": 17,
+      "encodeMs": 1213,
+      "note": "R AO, G roughness, B height; 1 m repeat tile",
+      "ormHeightRangeMetres": [-0.004867786541581154, 0.005413513630628586],
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plants-basecolor",
+      "material": "plants",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 1024,
+      "height": 512,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/plants-basecolor.ktx2",
+        "bytes": 349984,
+        "sha256": "b3974ee7ee6c8debd0fec293f79cac7a5682edfa0f96cd10c2e285407dda324b"
+      },
+      "gpuBytes": 349544,
+      "level0MeanAbsError": 0.9679679870605469,
+      "level0MaxAbsError": 13,
+      "encodeMs": 4777,
+      "note": "sRGB atlas: leaf0-2, grass, stem (the paving layout)",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plants-normal",
+      "material": "plants",
+      "slot": "normal",
+      "srgb": false,
+      "width": 1024,
+      "height": 512,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plants-normal.ktx2",
+        "bytes": 699536,
+        "sha256": "5c9900a1db78c7605fbda089f220400f8dc875275ac7db7361190cd3f34fc849"
+      },
+      "gpuBytes": 699088,
+      "level0MeanAbsError": 0.019742329915364582,
+      "level0MaxAbsError": 4,
+      "encodeMs": 3029,
+      "note": "luminance bump, source strength 0.6 / 0.5 mm",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "plants-orm",
+      "material": "plants",
+      "slot": "orm",
+      "srgb": false,
+      "width": 1024,
+      "height": 512,
+      "levels": 11,
+      "decodedLevels": 11,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/plants-orm.ktx2",
+        "bytes": 699536,
+        "sha256": "1ec9c939eb943af4a16ac5484185c32ca2d02f48837dca4cb4a057fc3c72f1f7"
+      },
+      "gpuBytes": 699088,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 45,
+      "note": "leaves 0.72, grass/stem 0.5 roughness",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-iron-basecolor",
+      "material": "kit-iron",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/kit-iron-basecolor.ktx2",
+        "bytes": 44096,
+        "sha256": "20c552e4f7ebce0184a13fb9d8dbf5e329420f1359053a63dd127db381f43ebc"
+      },
+      "gpuBytes": 43704,
+      "level0MeanAbsError": 1.1109415690104167,
+      "level0MaxAbsError": 6,
+      "encodeMs": 511,
+      "note": "sRGB; source noise ramp, 0.1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-iron-normal",
+      "material": "kit-iron",
+      "slot": "normal",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-iron-normal.ktx2",
+        "bytes": 87808,
+        "sha256": "286498c7946b201415b9f0eb3debc21b6c28eda6ff1d756b97c52e252fac43d8"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0.1730804443359375,
+      "level0MaxAbsError": 3,
+      "encodeMs": 687,
+      "note": "OpenGL (+Y up); source noise bump, 0.1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-iron-orm",
+      "material": "kit-iron",
+      "slot": "orm",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-iron-orm.ktx2",
+        "bytes": 87808,
+        "sha256": "69b601d2d519b35540a5590ce592aca75e3d57626a6a868942c52560b2231de9"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 69,
+      "note": "R 1, G 0.62, B 1 (metallic 0.55 via the factor); 0.1 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-glass-basecolor",
+      "material": "kit-glass",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/kit-glass-basecolor.ktx2",
+        "bytes": 44096,
+        "sha256": "6cfc34da9f7d3816091545f00f9e9625b07045063ea088610c6b25c7c302e042"
+      },
+      "gpuBytes": 43704,
+      "level0MeanAbsError": 0.3333333333333333,
+      "level0MaxAbsError": 1,
+      "encodeMs": 17,
+      "note": "constant, 0.2 m tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-glass-normal",
+      "material": "kit-glass",
+      "slot": "normal",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-glass-normal.ktx2",
+        "bytes": 87808,
+        "sha256": "9208b58c1b6cc2f6e4d291d824ec6a69dd034ba6cb90b859ee934e69c172a4ad"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0.0033315022786458335,
+      "level0MaxAbsError": 1,
+      "encodeMs": 523,
+      "note": "uneven glazing, 0.2 m repeat tile",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "kit-glass-orm",
+      "material": "kit-glass",
+      "slot": "orm",
+      "srgb": false,
+      "width": 256,
+      "height": 256,
+      "levels": 9,
+      "decodedLevels": 9,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/kit-glass-orm.ktx2",
+        "bytes": 87808,
+        "sha256": "5a81a3e53afdb5e76db092854ee4bcde34c28511c4720b2913e8502ec70f1f45"
+      },
+      "gpuBytes": 87408,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 91,
+      "note": "R 1, G 0.06, B 0",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "interior-basecolor",
+      "material": "interior",
+      "slot": "basecolor",
+      "srgb": true,
+      "width": 4,
+      "height": 4,
+      "levels": 3,
+      "decodedLevels": 3,
+      "format": "bc1",
+      "ktx2": {
+        "path": "runtime/interior-basecolor.ktx2",
+        "bytes": 272,
+        "sha256": "137a5a4c8b374923b8e55b370c24ead1d39ce2b56e4e833cd0fcb42e4c7c0012"
+      },
+      "gpuBytes": 24,
+      "level0MeanAbsError": 0.6666666666666666,
+      "level0MaxAbsError": 1,
+      "encodeMs": 3,
+      "note": "constant",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "interior-normal",
+      "material": "interior",
+      "slot": "normal",
+      "srgb": false,
+      "width": 4,
+      "height": 4,
+      "levels": 3,
+      "decodedLevels": 3,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/interior-normal.ktx2",
+        "bytes": 304,
+        "sha256": "6dca05413f04a625c72909619bf2ee9fb13618b3bb4655a1424f707ce983be8e"
+      },
+      "gpuBytes": 48,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 3,
+      "note": "flat",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    },
+    {
+      "role": "interior-orm",
+      "material": "interior",
+      "slot": "orm",
+      "srgb": false,
+      "width": 4,
+      "height": 4,
+      "levels": 3,
+      "decodedLevels": 3,
+      "format": "bc7",
+      "ktx2": {
+        "path": "runtime/interior-orm.ktx2",
+        "bytes": 304,
+        "sha256": "b09e35232ed55a82dda640cf5c23ddcf2dd49fea3d2d1d29aeb286ce2698d06b"
+      },
+      "gpuBytes": 48,
+      "level0MeanAbsError": 0,
+      "level0MaxAbsError": 0,
+      "encodeMs": 3,
+      "note": "constant; metallic 0 via the factor",
+      "reusedFrom": "C:/Users/patme/AppData/Local/Temp/claude/D--src-parallax/3c6c5f93-2d8a-451a-aacb-b54438cc295f/scratchpad/k1/pack-c19b"
+    }
+  ],
+  "totals": {
+    "ktx2Bytes": 274527088,
+    "gpuBytes": 274499568
+  },
+  "wallSeconds": 56
+}

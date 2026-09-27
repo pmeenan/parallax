@@ -3,7 +3,7 @@ import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
 
 const run = promisify(execFile);
-const moduleUrl = new URL("../../assets/qa/paving-provenance.mjs", import.meta.url).href;
+const moduleUrl = new URL("../../assets/qa/asset-provenance.mjs", import.meta.url).href;
 const provenanceUrl = new URL(
   "../../assets/source/d1-paving/proof-2026-09-24/provenance.json",
   import.meta.url,

@@ -1,4 +1,5 @@
 import { createPavingTilePlacements } from "./district-1-paving";
+import { DISTRICT_1_TEST_HOUSE } from "./district-1-walls";
 import { DISTRICT_1_ID } from "./district-identity";
 import type { GreyboxDistrictSpec } from "./greybox-spec";
 import { freezeGreyboxData } from "./greybox-spec";
@@ -357,5 +358,5 @@ const DISTRICT_1_BASE_SPEC = freezeGreyboxData({
 export const DISTRICT_1_COURTYARD_PAVING = createPavingTilePlacements("courtyard", [0.05, 0.05], 4);
 export const DISTRICT_1_GREYBOX_SPEC = freezeGreyboxData({
   ...DISTRICT_1_BASE_SPEC,
-  assetPlacements: DISTRICT_1_COURTYARD_PAVING,
+  assetPlacements: [...DISTRICT_1_COURTYARD_PAVING, DISTRICT_1_TEST_HOUSE],
 } satisfies GreyboxDistrictSpec);

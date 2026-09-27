@@ -1,0 +1,303 @@
+{
+  "scenario": "k1-wall-delivery-preview@1",
+  "budgetAuthority": "none: isolated worker preview, not the installed game",
+  "browser": {
+    "version": "152.0.7977.54",
+    "executableSha256": "b0123437c55a3893e8988328f576ffcbe68cee7743d3653ffe865c73633b1ef4"
+  },
+  "renderer": {
+    "package": "@babylonjs/lite",
+    "version": "1.31.1"
+  },
+  "adapter": {
+    "features": [
+      "bgra8unorm-storage",
+      "clip-distances",
+      "core-features-and-limits",
+      "depth-clip-control",
+      "depth32float-stencil8",
+      "dual-source-blending",
+      "float32-blendable",
+      "float32-filterable",
+      "indirect-first-instance",
+      "primitive-index",
+      "rg11b10ufloat-renderable",
+      "shader-f16",
+      "subgroup-size-control",
+      "subgroups",
+      "texture-component-swizzle",
+      "texture-compression-bc",
+      "texture-compression-bc-sliced-3d",
+      "texture-formats-tier1",
+      "texture-formats-tier2",
+      "timestamp-query"
+    ],
+    "info": {
+      "vendor": "nvidia",
+      "architecture": "lovelace"
+    }
+  },
+  "textureSource": "pack (GPU-ready BC1/BC7 KTX2)",
+  "workerBundleSha256": "88decfd83775d99729388eaeb35ab1259f9979e49b1f371e53977878bf8504ac",
+  "geometryReceiptSha256": "b9449e79b389fda4df43ccbf838902cf0e8290eb34bfdded8feb6f0b9b27f954",
+  "textureReceiptSha256": "153294034cb68cb463864c16cf416e88a51e4a1273c6e8b577bebc4b71488cb6",
+  "uploadMs": 3744,
+  "textureGpuBytes": {
+    "kit-oak-basecolor": 28137688,
+    "kit-oak-normal": 56275376,
+    "kit-oak-orm": 14070192,
+    "kit-stone-basecolor": 5242984,
+    "kit-stone-normal": 10485968,
+    "kit-stone-orm": 10485968,
+    "plaster-g-plain-basecolor": 1022144,
+    "plaster-g-plain-normal": 8160288,
+    "plaster-g-plain-orm": 2044288,
+    "plaster-g-window-basecolor": 1022144,
+    "plaster-g-window-normal": 8160288,
+    "plaster-g-window-orm": 2044288,
+    "plaster-g-door-basecolor": 1022144,
+    "plaster-g-door-normal": 8160288,
+    "plaster-g-door-orm": 2044288,
+    "plaster-g-braced-basecolor": 1022144,
+    "plaster-g-braced-normal": 8160288,
+    "plaster-g-braced-orm": 2044288,
+    "plaster-g-cbrace-basecolor": 1022144,
+    "plaster-g-cbrace-normal": 8160288,
+    "plaster-g-cbrace-orm": 2044288,
+    "plaster-g-cbrace2-basecolor": 1022144,
+    "plaster-g-cbrace2-normal": 8160288,
+    "plaster-g-cbrace2-orm": 2044288,
+    "plaster-g-window2-basecolor": 1022144,
+    "plaster-g-window2-normal": 8160288,
+    "plaster-g-window2-orm": 2044288,
+    "plaster-u-window2-basecolor": 1028200,
+    "plaster-u-window2-normal": 8216400,
+    "plaster-u-window2-orm": 2056400,
+    "plaster-u-cbrace-basecolor": 1028200,
+    "plaster-u-cbrace-normal": 8216400,
+    "plaster-u-cbrace-orm": 2056400,
+    "plaster-u-cbrace2-basecolor": 1028200,
+    "plaster-u-cbrace2-normal": 8216400,
+    "plaster-u-cbrace2-orm": 2056400,
+    "plaster-u-plain-basecolor": 1028200,
+    "plaster-u-plain-normal": 8216400,
+    "plaster-u-plain-orm": 2056400,
+    "plaster-u-window-basecolor": 1028200,
+    "plaster-u-window-normal": 8216400,
+    "plaster-u-window-orm": 2056400,
+    "plaster-u-braced-basecolor": 1028200,
+    "plaster-u-braced-normal": 8216400,
+    "plaster-u-braced-orm": 2056400,
+    "mortar-basecolor": 174776,
+    "mortar-normal": 349552,
+    "mortar-orm": 87408,
+    "soil-basecolor": 174776,
+    "soil-normal": 349552,
+    "soil-orm": 87408,
+    "plants-basecolor": 349544,
+    "plants-normal": 699088,
+    "plants-orm": 699088,
+    "kit-iron-basecolor": 43704,
+    "kit-iron-normal": 87408,
+    "kit-iron-orm": 87408,
+    "kit-glass-basecolor": 43704,
+    "kit-glass-normal": 87408,
+    "kit-glass-orm": 87408,
+    "interior-basecolor": 24,
+    "interior-normal": 48,
+    "interior-orm": 48,
+    "paving-ground-basecolor": 11184824,
+    "paving-ground-normal": 5592432,
+    "paving-ground-orm": 1398128,
+    "paving-plant-basecolor": 349544,
+    "paving-plant-normal": 699088,
+    "paving-plant-orm": 699088,
+    "paving-pebble-normal": 48,
+    "paving-pebble-orm": 48
+  },
+  "textureGpuBytesTotal": 294422768,
+  "geometryDecodedBytes": 114925084,
+  "lodBoundaries": {
+    "walls": [12, 40],
+    "paving": {
+      "ground": [12, 32],
+      "pebbles": [6, 12],
+      "plants": [8, 24]
+    }
+  },
+  "shaders": {
+    "modules": [
+      {
+        "sha256": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "bytes": 3223,
+        "markers": ["microShadowSun", "@vertex"]
+      },
+      {
+        "sha256": "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716",
+        "bytes": 3478,
+        "markers": ["microShadowSun", "@fragment"]
+      },
+      {
+        "sha256": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "bytes": 3223,
+        "markers": ["microShadowSun", "@vertex"]
+      },
+      {
+        "sha256": "84bae6cae3b861bc7d5fa370beca1855bf4710cbece74168201089e018c8b9c0",
+        "bytes": 14658,
+        "markers": ["msUvPerMeter", "microShadowSun", "@fragment", "csmSample"]
+      },
+      {
+        "sha256": "a896fc385b468ad1df5c8ee8d8470121efa07e464a1c3049c665332cdc297912",
+        "bytes": 40,
+        "markers": []
+      }
+    ],
+    "pipelines": [
+      {
+        "vertex": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "fragment": "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716",
+        "targets": 0
+      },
+      {
+        "vertex": "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
+        "fragment": "84bae6cae3b861bc7d5fa370beca1855bf4710cbece74168201089e018c8b9c0",
+        "targets": 1
+      }
+    ]
+  },
+  "browserErrors": [],
+  "externalRequests": [],
+  "views": [
+    {
+      "view": "front",
+      "file": "front.png",
+      "sha256": "31b949c26e201ae866a49c07a1f2bf11b542d923546a2c97e5ca1c24c63cdec4",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "corner",
+      "file": "corner.png",
+      "sha256": "1b529658612331f44adb5cf1378d86e14bf3e98e504985e1a345dd732a5d49e7",
+      "width": 1312,
+      "height": 1200,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "junction",
+      "file": "junction.png",
+      "sha256": "49ca85284597041c7de9a1721aa1285a33454f6f8ff84f86e7081407c0bf4c4e",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "close",
+      "file": "close.png",
+      "sha256": "77838ced776007f148b9cf05c657d4578cd9003f814b234b5fca140d901909dd",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "oak",
+      "file": "oak.png",
+      "sha256": "f4afc530cfe7209113fe1c297d70127f6e704bef88aade44eb9820491abaa689",
+      "width": 1312,
+      "height": 1200,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "window",
+      "file": "window.png",
+      "sha256": "d0cd174bd36fab0d6fafe457d0d2c965105510cbe589ec12b6e3e850bebb4394",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "street",
+      "file": "street.png",
+      "sha256": "d1b0d355f5cd2d1cfa8ea99816640209aa37183e1b1d7c302b7541106c3cd5dc",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "overview",
+      "file": "overview.png",
+      "sha256": "46cbc3d1e1041da69d23865a19dd94ead6d2bc55163ed59b6627cbd9228d3b93",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "overcast",
+      "file": "overcast.png",
+      "sha256": "466c87c74a6b08770e4a33729dcc32b9d6c64896bd64f4ba545ec36d64c038f2",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "low",
+      "file": "low.png",
+      "sha256": "1972d5adcfbd9409a9e60a3310f53162582da77f9bec20f3bbd6f3533c95dd8a",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "right",
+      "file": "right.png",
+      "sha256": "6a7a74879d3a862fa744d4bca327717041c552507652977968b02a4d361add22",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "corner-left",
+      "file": "corner-left.png",
+      "sha256": "1c0cb1e7d2cdfdc49b917690c9a7905d340f59f6bab58236f703c083d0270455",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 16862094,
+      "drawCalls": 466,
+      "gpuFrameMs": null
+    },
+    {
+      "view": "far",
+      "file": "far.png",
+      "sha256": "78d5a08f6783ad00cb14fbe039a94a29dd51107994a41e9e7ecafd655ae0d1cb",
+      "width": 1536,
+      "height": 1024,
+      "visibleTriangles": 1546262,
+      "drawCalls": 514,
+      "gpuFrameMs": null
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "class": "d1-architecture-kit",
+  "rationale": "D1 timber-framed wall kit (K1, D-196/D-207): named pieces of several one-material parts, three LODs each, sharing atlas and tile materials, with pre-mirrored part variants for mirrored placements and the test house as an assembly. D-197 suspends size ceilings: sizes and triangle counts are recorded measurements, and only the structural checks gate admission.",
+  "assetId": "d1-timber-walls",
+  "mode": "kit-piece-set",
+  "lodDistancesMetres": [12, 40],
+  "csmExcludedMaterials": ["soil"],
+  "materialFactors": {
+    "baseColorFactor": [1, 1, 1],
+    "roughnessFactor": 1,
+    "normalScale": 1
+  },
+  "assemblies": ["test-house"],
+  "assemblyBoundsMetres": [[-0.6, -0.2, -6.9], [12.9, 6.6, 0.6]],
+  "partExtentMaxMetres": 13,
+  "ormHeightSpanMaxMetres": 1,
+  "normalUnitTolerance": 0.001,
+  "atlasUvToleranceTexels": 1
+}

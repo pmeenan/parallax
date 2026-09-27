@@ -22,8 +22,12 @@ export type { GreyboxSceneConfig } from "../world/world-contract";
 export const RENDER_GAMEPLAY_CROWD_CAPACITY = 64;
 // @2 (engine package 5, D-205): calibrated sun, occluded PBR ambient and baked AgX tone mapping.
 // @3 (engine package 6, D-206): sun micro-shadowing and the normal-offset CSM receiver.
+// @4 (K1 wall delivery, D-206 amended): the micro-shadow march finds its texture direction per
+// fragment and steps by texels, so it works on atlas-mapped and vertical surfaces.
+// @5 (engine package 7): the sky dome shaped by orientation and the measured clear sky by
+// elevation, the paving's ground bounce, and AgX matrices refitted to Blender's colour handling.
 export const RENDER_LIGHTING_MODEL =
-  "calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@3" as const;
+  "calibrated-sun-occluded-pbr-ambient-microshadow-agx-csm@5" as const;
 
 export interface GreyboxRenderTelemetry {
   readonly cellCount: number;

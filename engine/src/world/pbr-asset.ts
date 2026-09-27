@@ -11,14 +11,14 @@ export interface PbrAssetMaterial {
   readonly roughnessFactor: number;
   readonly metallicFactor: number;
   readonly normalScale: number;
-  /** A periodic module's height in ORM.B, for sun micro-shadowing (engine package 6): the metres
-   * that B = 0 and B = 1 stand for, and the tile the planar texture coordinates span. */
+  /** A surface's occluding height in ORM.B, for sun micro-shadowing (engine package 6): the
+   * metres that B = 0 and B = 1 stand for. The march derives its texture-space direction per
+   * fragment, so any UV layout works (the K1 wall delivery). */
   readonly ormHeight?: PbrAssetOrmHeight;
 }
 
 export interface PbrAssetOrmHeight {
   readonly rangeMeters: readonly [number, number];
-  readonly tileMeters: number;
 }
 
 export interface PbrAssetLod {
@@ -128,14 +128,12 @@ export function validatePbrAssetPlacements(
       const height = material.ormHeight;
       if (
         !record(height) ||
-        Object.keys(height).join(",") !== "rangeMeters,tileMeters" ||
+        Object.keys(height).join(",") !== "rangeMeters" ||
         !Array.isArray(height.rangeMeters) ||
         height.rangeMeters.length !== 2 ||
         !height.rangeMeters.every(finite) ||
         !((height.rangeMeters[1] ?? 0) - (height.rangeMeters[0] ?? 0) > 0) ||
         (height.rangeMeters[1] ?? 0) - (height.rangeMeters[0] ?? 0) > 1 ||
-        !finite(height.tileMeters) ||
-        height.tileMeters <= 0 ||
         // The height must stand for real relief: an unread metallic channel only.
         material.metallicFactor !== 0
       )
