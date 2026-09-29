@@ -1431,6 +1431,19 @@ export function uploadStreamingGreyboxCell(
                 placement.material.ormHeight.rangeMeters[1] -
                 placement.material.ormHeight.rangeMeters[0],
             },
+        placement.material.detail === undefined
+          ? undefined
+          : {
+              texture: withPbrTextureAddressMode(
+                renderer.engine,
+                requireTexture(placement.material.detail.resourceId),
+                "repeat",
+              ),
+              uvScale: placement.material.detail.uvScale,
+              normalGain: placement.material.detail.normalGain,
+              albedoGain: placement.material.detail.albedoGain,
+            },
+        placement.material.tint ?? null,
       );
       const lodMeshes: Mesh[] = [];
       const triangleCounts: number[] = [];

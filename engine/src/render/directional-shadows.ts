@@ -15,14 +15,18 @@ export const DIRECTIONAL_SHADOW_CONFIG = Object.freeze({
   // Fade at the outer cascade footprint: the pinned receiver otherwise samples
   // the last cascade beyond shadowMaxZ with clamp-to-edge addressing.
   frustumEdgeFalloff: 0.1,
-  lambda: 0.7,
+  // 0.9 ends cascade 0 near 5 m (0.1 m near plane): about 1 cm texels near the camera, so
+  // centimetre relief between meshes (roof tiles) casts. 0.7 ended it near 14 m (K2 delivery sweep).
+  lambda: 0.9,
   mapSize: 1024,
   numCascades: 4,
   shadowMaxZ: 180,
   stabilizeCascades: true,
   // Caster offset in metres. With the 3-texel receiver normal offset (engine package 6), 0.06 m
-  // removes the sunlit-wall striping that 0.12 m alone left; 0.03 m brought the acne back.
-  worldSpaceBias: 0.06,
+  // removed the sunlit-wall striping that 0.12 m alone left at lambda 0.7, where 0.03 m brought the
+  // acne back. With lambda 0.9's finer near cascades, 0.02 m shows no striping and keeps the
+  // shadows of relief only a few centimetres tall (K2 delivery sweep, 2026-09-28).
+  worldSpaceBias: 0.02,
 });
 
 /** Meshes whose relief a micro-shadow height field carries instead (engine package 6). A weak set,
@@ -67,7 +71,7 @@ export function createDirectionalShadows(engine: EngineContext, sun: Directional
         depthArrayBytes: 4 * 1024 * 1024 * 4,
         membershipUpdates,
         retainedMaterialCount: shadowMaterialMaps(generator)?.views.size ?? 0,
-        technique: "directional-csm-pcf5-normal-offset@2" as const,
+        technique: "directional-csm-pcf5-normal-offset@3" as const,
       });
     },
   };

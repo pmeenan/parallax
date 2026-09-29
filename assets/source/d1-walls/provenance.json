@@ -8,7 +8,7 @@
     "tool": "Blender 5.2.1 LTS (headless) with bundled NumPy; Node meshoptimizer 1.2.0 and KTX-Software 4.4.2",
     "seed": 7,
     "author": "Claude (Anthropic) under human direction",
-    "lineage": "source candidate 18 (human-accepted 2026-09-26) -> source candidate 19 (front-left corner fixed at the human's direction, staged on ground to the horizon; human-accepted 2026-09-27) -> delivery candidate 4 (low-passed displaced LODs, BC1/BC7 maps, geometric plaster AO with the real facade neighbours; human-accepted 2026-09-27, K1 delivery step 1) -> source candidate 20 (mitred, pegged corner braces and closed corner slots at the human's direction; human-accepted 2026-09-27) -> delivery candidate 5 (candidate 4's pipeline on source candidate 20)"
+    "lineage": "source candidate 18 (human-accepted 2026-09-26) -> source candidate 19 (front-left corner fixed at the human's direction, staged on ground to the horizon; human-accepted 2026-09-27) -> delivery candidate 4 (low-passed displaced LODs, BC1/BC7 maps, geometric plaster AO with the real facade neighbours; human-accepted 2026-09-27, K1 delivery step 1) -> source candidate 20 (mitred, pegged corner braces and closed corner slots at the human's direction; human-accepted 2026-09-27) -> delivery candidate 5 (candidate 4's pipeline on source candidate 20) -> delivery candidate 6 (house kit GPU memory round: oak normal 3 mm and ORM 6 mm, plaster 4 mm with a 2 mm normal, stone ORM 5 mm, plinth LOD0 at 2 mm, and the shared plaster and oak detail tiles)"
   },
   "inputs": [
     {
@@ -39,17 +39,22 @@
     {
       "role": "delivery-geometry",
       "path": "assets/source/d1-walls/proof-2026-09-26/delivery/geometry.mjs",
-      "sha256": "92ee5999fa077d7b0846ca8d01413f349642cf90ccac9dc2bf0cb0dd8f483f42"
+      "sha256": "d05e2d2b6c6bf71611772b7e285fae230383609e5184a165e88f63d0834e3900"
     },
     {
       "role": "delivery-maps",
       "path": "assets/source/d1-walls/proof-2026-09-26/delivery/maps.py",
-      "sha256": "3a3708258590bad6e40168d9dd64fc49e81395dcdf1eac61eb4c03438606e378"
+      "sha256": "46f19c58848adb2b5e3f0e0a9956132fdc3c89d0e790bfa46a18013b60a66ccd"
     },
     {
       "role": "delivery-pack",
       "path": "assets/source/d1-walls/proof-2026-09-26/delivery/pack.mjs",
       "sha256": "a7abb5814e4b102534308ee164ebfd3501cfed3685dfe59bd27505c4a0e88791"
+    },
+    {
+      "role": "delivery-detail-tiles",
+      "path": "assets/source/d1-roof/proof-2026-09-28/detail.py",
+      "sha256": "2bc007498238bf01497be9395b169fc4478e0e157ee31183ecb36698c615b69a"
     }
   ],
   "visualReferences": {

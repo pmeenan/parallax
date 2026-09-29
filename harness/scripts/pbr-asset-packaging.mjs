@@ -273,6 +273,18 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
             : {
                 ormHeight: { rangeMeters: source.ormHeightRangeMetres },
               }),
+          // A shared tiling detail tile (K2 delivery): the tile is a texture role of the kit.
+          ...(source.detail === undefined
+            ? {}
+            : {
+                detail: {
+                  resourceId: resource(source.detail.texture),
+                  uvScale: source.detail.uvScale,
+                  normalGain: source.detail.normalGain,
+                  albedoGain: source.detail.albedoGain,
+                },
+              }),
+          ...(source.tint === undefined ? {} : { tint: source.tint }),
         },
         lods: part.lods.map((lod) => ({
           vertexResourceId: resource(lod.vertexRole),
@@ -337,6 +349,8 @@ export function resolvePbrAssetsForCell(cell, requests, library) {
       placements.push(placement);
       dependencies.add(placement.material.normalResourceId);
       dependencies.add(placement.material.ormResourceId);
+      if (placement.material.detail !== undefined)
+        dependencies.add(placement.material.detail.resourceId);
       for (const lod of placement.lods) dependencies.add(lod.indexResourceId);
     }
     if (request.collision === true) {

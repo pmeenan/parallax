@@ -5,7 +5,9 @@
 // output (GPU-ready BC1/BC7 KTX2, as shipped) or a maps.py output (RGBA8 mips, for quick
 // iteration only). Renders the test house on the admitted D1 paving with chrome-worker.ts and
 // writes PNGs plus preview.json (triangles, draw calls, GPU frame time). Timings are
-// isolated-preview diagnostics on this machine, not budget evidence.
+// isolated-preview diagnostics on this machine, not budget evidence. Either directory may be a
+// comma-separated list (the K2 roof's delivery beside the walls'): meshes, placements, textures
+// and materials are merged.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { copyFile, mkdir, mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
@@ -35,35 +37,50 @@ const mode = process.argv[6] ?? "views";
 const out = join(root, outDir);
 await mkdir(out, { recursive: false });
 const hash = (b) => createHash("sha256").update(b).digest("hex");
-const geometry = JSON.parse(await readFile(join(root, geometryDir, "geometry.json"), "utf8"));
-const packed = await stat(join(root, texturesDir, "pack.json")).then(
+const geometryDirs = geometryDir.split(",");
+const texturesDirs = texturesDir.split(",");
+const geometries = await Promise.all(
+  geometryDirs.map(async (d) => JSON.parse(await readFile(join(root, d, "geometry.json"), "utf8"))),
+);
+const geometry = {
+  meshes: geometries.flatMap((g, i) => g.meshes.map((m) => ({ ...m, dir: geometryDirs[i] }))),
+  placements: geometries.flatMap((g) => g.placements),
+  uvTint: geometries.find((g) => g.uvTint)?.uvTint,
+};
+const packed = await stat(join(root, texturesDirs[0], "pack.json")).then(
   () => true,
   () => false,
 );
-const textureReceipt = JSON.parse(
-  await readFile(join(root, texturesDir, packed ? "pack.json" : "maps.json"), "utf8"),
+const receiptName = packed ? "pack.json" : "maps.json";
+const textureReceipts = await Promise.all(
+  texturesDirs.map(async (d) => JSON.parse(await readFile(join(root, d, receiptName), "utf8"))),
 );
 
 // ---------------------------------------------------------------- textures and materials
 const textures = [];
 const materials = {};
-const mapList = packed ? textureReceipt.textures : textureReceipt.maps;
-for (const m of mapList)
-  textures.push(
-    packed
-      ? { role: m.role, srgb: m.srgb, format: m.format, ktx2: `${texturesDir}/${m.ktx2.path}` }
-      : {
-          role: m.role,
-          srgb: m.srgb,
-          format: "rgba8",
-          mips: m.levels.map((l) => ({
-            file: `${texturesDir}/${l.file}`,
-            width: l.width,
-            height: l.height,
-          })),
-        },
-  );
-for (const [name, m] of Object.entries(textureReceipt.materials)) {
+for (const [di, textureReceipt] of textureReceipts.entries())
+  for (const m of packed ? textureReceipt.textures : textureReceipt.maps)
+    textures.push(
+      packed
+        ? {
+            role: m.role,
+            srgb: m.srgb,
+            format: m.format,
+            ktx2: `${texturesDirs[di]}/${m.ktx2.path}`,
+          }
+        : {
+            role: m.role,
+            srgb: m.srgb,
+            format: "rgba8",
+            mips: m.levels.map((l) => ({
+              file: `${texturesDirs[di]}/${l.file}`,
+              width: l.width,
+              height: l.height,
+            })),
+          },
+    );
+for (const [name, m] of textureReceipts.flatMap((r) => Object.entries(r.materials))) {
   const range = m.ormHeightRangeMetres;
   materials[name] = {
     baseColor: `${name}-basecolor`,
@@ -73,6 +90,95 @@ for (const [name, m] of Object.entries(textureReceipt.materials)) {
     metallicFactor: m.metallicFactor ?? 0,
     heightRangeMeters: range ? range[1] - range[0] : 0,
   };
+}
+
+// Tinted meshes (the K2 roof tiles) carry their tint in the UVs' integer parts (geometry.mjs).
+if (geometry.uvTint)
+  for (const m of geometry.meshes)
+    if (m.tintWorstRelativeError !== undefined) materials[m.material].tint = geometry.uvTint;
+
+// ---------------------------------------------------------------- shared detail tiles (K2 delivery memory round)
+// WALLS_DETAIL=<detail.py output dir> and WALLS_DETAIL_REF=<the maps.json the tiles were cut from> give
+// plaster, oak and stone materials a shared tiling detail layer; WALLS_DETAIL_GAIN="normal,albedo".
+if (process.env.WALLS_DETAIL) {
+  const detailDir = resolve(process.env.WALLS_DETAIL);
+  const detail = JSON.parse(await readFile(join(detailDir, "detail.json"), "utf8"));
+  const ref = JSON.parse(await readFile(resolve(process.env.WALLS_DETAIL_REF), "utf8"));
+  const [normalGain, albedoGain] = (process.env.WALLS_DETAIL_GAIN ?? "1,1").split(",").map(Number);
+  const serve = join(root, "detail-serve");
+  await mkdir(serve, { recursive: true });
+  for (const [cls, d] of Object.entries(detail.classes)) {
+    let [w, h] = d.size;
+    let data = new Uint8Array(await readFile(join(detailDir, `${cls}-detail.rgba`)));
+    const mips = [];
+    for (let level = 0; ; level++) {
+      const file = `detail-serve/${cls}-${String(level).padStart(2, "0")}.rgba`;
+      await writeFile(join(root, file), data);
+      mips.push({ file, width: w, height: h });
+      if (w === 1 && h === 1) break;
+      const nw = Math.max(1, w >> 1),
+        nh = Math.max(1, h >> 1);
+      const next = new Uint8Array(nw * nh * 4);
+      for (let y = 0; y < nh; y++)
+        for (let x = 0; x < nw; x++)
+          for (let c = 0; c < 4; c++) {
+            let sum = 0,
+              n = 0;
+            for (const dy of [0, 1])
+              for (const dx of [0, 1]) {
+                const sy = Math.min(h - 1, y * 2 + dy),
+                  sx = Math.min(w - 1, x * 2 + dx);
+                sum += data[(sy * w + sx) * 4 + c];
+                n++;
+              }
+            next[(y * nw + x) * 4 + c] = Math.round(sum / n);
+          }
+      data = next;
+      w = nw;
+      h = nh;
+    }
+    textures.push({ role: `detail-${cls}`, srgb: false, format: "rgba8", mips });
+  }
+  // WALLS_DETAIL_CLASSES limits which classes get detail (oak keeps its unique figure at 1.5 mm).
+  const enabled = new Set((process.env.WALLS_DETAIL_CLASSES ?? "plaster,oak,stone").split(","));
+  const classOf = (name) => {
+    const cls = name.startsWith("plaster-")
+      ? "plaster"
+      : name === "kit-oak"
+        ? "oak"
+        : name === "kit-stone"
+          ? "stone"
+          : null;
+    return cls !== null && enabled.has(cls) ? cls : null;
+  };
+  for (const [name, m] of Object.entries(materials)) {
+    const cls = classOf(name);
+    if (cls === null) continue;
+    const d = detail.classes[cls];
+    // The surface's extent in metres: from the reference maps (at the tile's own density), or for
+    // a material they lack (the roof's gable), from this delivery's normal and its texel size.
+    const normal = ref.maps.find((x) => x.role === `${name}-normal`);
+    let extentU, extentV;
+    if (normal) {
+      extentU = (normal.levels[0].width * d.texelMillimetres) / 1000;
+      extentV = (normal.levels[0].height * d.texelMillimetres) / 1000;
+    } else {
+      const r = textureReceipts.find((x) => x.materials[name]);
+      const t = (packed ? r.textures : r.maps).find((x) => x.role === `${name}-normal`);
+      const mm = r.materials[name].normalTexelMm ?? r.materials[name].texelMm;
+      const [w, h] = packed ? [t.width, t.height] : [t.levels[0].width, t.levels[0].height];
+      extentU = (w * mm) / 1000;
+      extentV = (h * mm) / 1000;
+    }
+    // WALLS_DETAIL_GAIN_<CLASS>="normal,albedo" overrides the gains for one class.
+    const own = process.env[`WALLS_DETAIL_GAIN_${cls.toUpperCase()}`]?.split(",").map(Number);
+    m.detail = {
+      texture: `detail-${cls}`,
+      uvScale: [extentU / d.tileMetres[0], extentV / d.tileMetres[1]],
+      normalGain: own ? own[0] : normalGain,
+      albedoGain: own ? own[1] : albedoGain,
+    };
+  }
 }
 
 // ---------------------------------------------------------------- the admitted paving underfoot
@@ -122,8 +228,8 @@ for (const m of geometry.meshes) {
     key: m.object,
     material: m.material,
     lods: m.lods.map((l) => ({
-      vertices: `${geometryDir}/decoded/${m.object}-lod${l.lod}.vertices`,
-      indices: `${geometryDir}/decoded/${m.object}-lod${l.lod}.indices`,
+      vertices: `${m.dir}/decoded/${m.object}-lod${l.lod}.vertices`,
+      indices: `${m.dir}/decoded/${m.object}-lod${l.lod}.indices`,
     })),
     instances,
     // The soil strip's millimetres of relief stay out of the CSM, as the paving's do.
@@ -233,6 +339,52 @@ if (mode === "matched")
   views = views
     .filter((v) => ["front", "junction", "overcast", "low", "street", "window"].includes(v.name))
     .map((v) => ({ ...v, exposure: 1 }));
+// The K2 roof source's cameras (d1-roof/proof-2026-09-27 build.py VIEWS), for the roof delivery.
+const ROOF = {
+  gable: { eye: [-7.5, -9.5, 1.7], target: [3.5, 1.5, 5.6], lens: 26 },
+  eave: { eye: [13.9, -1.6, 4.3], target: [12.1, -0.3, 6.7], lens: 24, width: 1312, height: 1200 },
+  tile: {
+    eye: [5.75, -1.55, 7.45],
+    target: [5.95, -0.3, 6.9],
+    lens: 35,
+    width: 1312,
+    height: 1200,
+  },
+  underside: { eye: [5.0, -1.6, 1.7], target: [5.6, -0.25, 6.6], lens: 24 },
+  street: { eye: [-4.0, -9.5, 1.7], target: [7.5, 1.0, 5.4], lens: 22 },
+  verge: { eye: [-3.6, -2.4, 3.2], target: [-0.2, 1.6, 7.4], lens: 26 },
+  overview: { eye: [17.5, -13.0, 11.0], target: [6.0, 2.5, 6.0], lens: 30 },
+  "overview-rear": { eye: [-8.5, 18.0, 12.0], target: [6.0, 3.5, 6.0], lens: 30 },
+  front: { eye: [6.0, -14.0, 3.0], target: [6.0, 0.0, 5.0], lens: 30 },
+  cornercheck: {
+    eye: [-1.6, -1.8, 6.2],
+    target: [-0.3, -0.4, 6.75],
+    lens: 45,
+    width: 1312,
+    height: 1200,
+  },
+  ridgecheck: {
+    eye: [4.0, -1.0, 10.6],
+    target: [5.5, 3.1, 9.6],
+    lens: 40,
+    width: 1312,
+    height: 1200,
+  },
+};
+if (mode === "roof")
+  views = [
+    ...Object.entries(ROOF).map(([name, v]) => view(name, v)),
+    view("overcast", { ...ROOF.gable, sun: [34, -35], sunScale: 0, ambientScale: 3 }),
+    view("low", { ...ROOF.gable, sun: [12, -150] }),
+  ];
+// The memory round's range checks (K2 delivery): the plinth stone from standing height and
+// crouched, and a plain plaster panel at 1 m.
+if (mode === "memory")
+  views = [
+    view("plinth-1m", { eye: [1.5, -1.1, 1.3], target: [1.3, 0.0, 0.3], lens: 38 }),
+    view("plinth-close", { eye: [1.3, -0.45, 0.45], target: [1.35, 0.0, 0.3], lens: 42 }),
+    view("plaster-1m", { eye: [1.4, -1.0, 1.3], target: [1.4, 0.0, 1.3], lens: 38 }),
+  ];
 if (mode === "shaders") views = [view("front", { ...V.front, width: 512, height: 342 })];
 if (mode === "corner-lods")
   views = ["lod0", "lod1", "lod2"].map((lodMode) =>
@@ -485,10 +637,16 @@ const report = {
   adapter: result.adapter,
   textureSource: packed ? "pack (GPU-ready BC1/BC7 KTX2)" : "maps (RGBA8 mips, iteration only)",
   workerBundleSha256: hash(await readFile(bundle)),
-  geometryReceiptSha256: hash(await readFile(join(root, geometryDir, "geometry.json"))),
-  textureReceiptSha256: hash(
-    await readFile(join(root, texturesDir, packed ? "pack.json" : "maps.json")),
-  ),
+  geometryReceiptSha256: (
+    await Promise.all(
+      geometryDirs.map(async (d) => hash(await readFile(join(root, d, "geometry.json")))),
+    )
+  ).join(","),
+  textureReceiptSha256: (
+    await Promise.all(
+      texturesDirs.map(async (d) => hash(await readFile(join(root, d, receiptName)))),
+    )
+  ).join(","),
   uploadMs: Math.round(result.uploadMs),
   textureGpuBytes: result.textureGpuBytes,
   textureGpuBytesTotal: Object.values(result.textureGpuBytes).reduce((a, b) => a + b, 0),

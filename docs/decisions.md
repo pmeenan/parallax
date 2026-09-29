@@ -28,6 +28,36 @@ Decision / Context / Consequences / Reopen if
 
 ---
 
+## D-209: CSM cascades split at λ 0.9 with a 0.02 m caster bias (2026-09-28, accepted; human visual acceptance 2026-09-28; amends D-206's bias)
+
+**Decision:** `DIRECTIONAL_SHADOW_CONFIG` splits its four 1024² cascades with λ 0.9 (was 0.7), and
+its caster offset is 0.02 m (was 0.06 m). With the game's 0.1 m near plane, cascade 0 ends near
+5 m instead of 14 m, and its texels are about 1 cm. The last cascade starts at 38 m instead of 60 m.
+The shadow technique identity becomes `directional-csm-pcf5-normal-offset@3`.
+
+**Context:**
+- **The problem.** The K2 roof delivery lost the shadows that covers cast into the pan troughs: relief
+  about 7 cm tall, between separate meshes. D-206's height-field micro-shadows march within one
+  surface, so they cannot carry a neighbouring tile's height.
+- **The sweep** ([delivery results](../assets/source/d1-roof/proof-2026-09-28/delivery-results.md)):
+  - 4096² cascades brought the shadows back for about 268 MB of depth.
+  - Retuning the split alone brought them back at no memory cost: texel size was the dominant cause.
+  - With finer near cascades and the 3-texel receiver normal offset, a 0.02 m bias shows no
+    striping on the walls and no acne on the grass, in the preview or the installed game.
+- **Cost.** Map size and pass count are unchanged.
+
+**Consequences:**
+- **Far shadows.** Shadows past 38 m use coarser texels than before.
+- **Contact shadows.** Screen-space contact shadows stay a later engine package, for moving content
+  that no cascade split reaches.
+- **Frame time.** It is unmeasured while the human is remote. Pass count and map sizes are
+  unchanged, so no change is expected.
+
+**Reopen if:** far-shadow quality or cascade transitions show in a traversal, sunlit striping
+returns on a new surface, or frame-time measurement shows a cost.
+
+---
+
 ## D-208: Buildings are exterior shells; enterable buildings get seamless interiors inside the shell (2026-09-27, accepted; human direction)
 
 **Decision:**
@@ -82,7 +112,7 @@ welcome at any point, but they do not end the package.
 **Reopen if:** unbounded iteration stops converging (repeated candidates without measurable
 screen progress), or effort and cost need a hard cap again.
 
-## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25; march generalized 2026-09-26, below)
+## D-206: Small-scale sun shadows come from surface height fields; CSM receivers use a normal offset (2026-09-25, accepted; human visual acceptance 2026-09-25; march generalized 2026-09-26, below; caster bias and split amended by D-209)
 
 **Decision:**
 - **Sun micro-shadowing.** A periodic PBR module may carry its height in ORM.B, which the paving's

@@ -98,8 +98,9 @@ describe("representative scale-streaming corpus", () => {
       // candidate 9 ships its ground ORM at 1024² (engine package 5). Engine package 6 adds the
       // courtyard placements' ORM height and CSM caster fields (2,176 bytes of cell JSON). The K1
       // wall delivery drops the unused `ormHeight.tileMeters` (240 bytes), and K1 step 2 installs
-      // the wall kit's 387 admitted objects (317,475,432 bytes).
-      expect(materialized.population.installBytes).toBe(2966698637);
+      // the wall kit's 387 admitted objects (317,475,432 bytes). The K2 delivery's tint and detail
+      // plugins grow the PSO warmup trace by 1,120 bytes.
+      expect(materialized.population.installBytes).toBe(2966699757);
       expect(materialized.population.installResourceCount).toBe(762);
       // The installed D1 binding: index + 256 D1 cells + 29 paving, 387 wall-kit and 18 generated
       // deps.

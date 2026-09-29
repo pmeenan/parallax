@@ -13,6 +13,12 @@
 // Displaced meshes are then simplified on the undisplaced base surface with the displacement
 // vector as a weighted attribute, and every LOD's folded area is compared with the source's.
 // Vertex normals stay the undisplaced base surface's; the full normal map carries the relief.
+//
+// The K2 roof's extract (d1-roof delivery) shares this stage: its extract.json carries per-piece
+// pivots, and its tile meshes (tinted: a per-tile tint over a shared variant atlas) drop the faces
+// its visibility pass found hidden, carry their tint in the UV's integer part (engine pbr-tint)
+// and simplify on position with the clay errors. The roof-tile-body faces join the roof-tile
+// material: their UVs already sample the visible face's border.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -46,6 +52,12 @@ const ERRORS = {
   plaster: [1, 3, 8],
   soil: [1.5, 4, 8],
 };
+// Roof tiles (undisplaced shells, simplified on position): GEOMETRY_ERRORS_CLAY=a,b,c overrides.
+const TILE_DILATE = Number(process.env.GEOMETRY_TILE_DILATE ?? 1);
+// The K2 roof's oak is seen from 3 m or more (eaves, verges, gable): coarser than the walls' oak.
+// GEOMETRY_ERRORS_ROOF_OAK=a,b,c overrides.
+const ROOF_OAK_ERRORS = (process.env.GEOMETRY_ERRORS_ROOF_OAK ?? "1.5,3,8").split(",").map(Number);
+const CLAY_ERRORS = (process.env.GEOMETRY_ERRORS_CLAY ?? "0.5,2,6").split(",").map(Number);
 // Gaussian-equivalent sigma of the geometry's displacement low-pass, millimetres (0 = none).
 const SMOOTH_MM = { oak: 2, stone: 2, plaster: 6, soil: 3 };
 for (const k of Object.keys(SMOOTH_MM)) {
@@ -206,7 +218,8 @@ function withBackFaces(P, N, UV, indices) {
 }
 
 function materialClass(material) {
-  if (material === "kit-oak") return "oak";
+  if (material === "kit-oak" || material === "roof-oak") return "oak";
+  if (material === "roof-tile") return "clay";
   if (material === "kit-stone") return "stone";
   if (material.startsWith("plaster-")) return "plaster";
   if (material === "soil") return "soil";
@@ -222,13 +235,16 @@ async function npy(dir, name) {
   const header = b.toString("latin1", start, off);
   assert.match(header, /'fortran_order': False/);
   const descr = /'descr': '([^']+)'/.exec(header)[1];
-  const Type = { "<f4": Float32Array, "<i4": Int32Array, "<u4": Uint32Array }[descr];
+  const Type = { "<f4": Float32Array, "<i4": Int32Array, "<u4": Uint32Array, "|u1": Uint8Array }[
+    descr
+  ];
   assert(Type, descr);
   const copy = b.buffer.slice(b.byteOffset + off, b.byteOffset + b.length);
   return new Type(copy);
 }
 
 function pivotOf(piece) {
+  if (extract.pivots) return extract.pivots[piece] ?? [0, 0, 0];
   if (piece === null) return [0, 0, 0];
   if (piece === "corner") return [12, 0, 0];
   return [1, 0, piece.startsWith("u-") ? 3.5 : 0];
@@ -286,6 +302,45 @@ function interleave(P, N, UV, pivot) {
   return f;
 }
 
+// Per-tile tint (linear RGB) = t (1 + b CAST): the K2 builder's tile_tint model. t and b are
+// recovered exactly from R and B, quantised to TINT steps, and added to the runtime UV's integer
+// parts (engine pbr-tint: floor(u) is t's step, floor(v) is b's).
+const TINT = {
+  brightness: [0.5, 0.9 / 127],
+  cast: [-0.12, 0.32 / 127],
+  castVector: [-0.3, 0.1, 0.35],
+};
+function tintSteps(C) {
+  const n = C.length / 3;
+  const steps = new Uint8Array(n * 2);
+  let worst = 0;
+  for (let i = 0; i < n; i++) {
+    const [r, g, b] = [C[i * 3], C[i * 3 + 1], C[i * 3 + 2]];
+    const t = (0.35 * r + 0.3 * b) / 0.65;
+    const w = (b / t - 1) / 0.35;
+    const ts = Math.round((t - TINT.brightness[0]) / TINT.brightness[1]);
+    const ws = Math.round((w - TINT.cast[0]) / TINT.cast[1]);
+    assert(ts >= 0 && ts <= 127 && ws >= 0 && ws <= 127, `tint ${r} ${g} ${b} outside the steps`);
+    steps[i * 2] = ts;
+    steps[i * 2 + 1] = ws;
+    const tq = TINT.brightness[0] + ts * TINT.brightness[1];
+    const wq = TINT.cast[0] + ws * TINT.cast[1];
+    for (const [k, c] of [r, g, b].entries())
+      worst = Math.max(worst, Math.abs(tq * (1 + wq * TINT.castVector[k]) - c) / c);
+  }
+  return { steps, worstRelativeError: worst };
+}
+
+function withTint(vertices, steps) {
+  const v = new Float32Array(vertices);
+  for (let i = 0; i < v.length / 8; i++) {
+    assert(v[i * 8 + 6] > 0 && v[i * 8 + 6] < 1 && v[i * 8 + 7] > 0 && v[i * 8 + 7] < 1);
+    v[i * 8 + 6] += steps[i * 2];
+    v[i * 8 + 7] += steps[i * 2 + 1];
+  }
+  return v;
+}
+
 function optimize(vertices, indices) {
   const [remap, unique] = MeshoptEncoder.reorderMesh(indices, true, true);
   const v = new Float32Array(unique * 8);
@@ -302,10 +357,17 @@ function simplify(obj, cls, P, B, N, T, lod) {
     const [indices, error] = MeshoptSimplifier.simplify(T, P, 3, target, 1, ["ErrorAbsolute"]);
     return { indices, errorMm: error * 1000 };
   }
+  if (obj.tinted) {
+    if (lod === -1) return { indices: T.slice(), errorMm: 0 };
+    const [indices, error] = MeshoptSimplifier.simplify(T, P, 3, 0, CLAY_ERRORS[lod] / 1000, [
+      "ErrorAbsolute",
+    ]);
+    return { indices, errorMm: error * 1000 };
+  }
   // A copy: reorderMesh remaps its index buffer in place, and every LOD reuses T.
   if (cls === null || !obj.displaced) return { indices: T.slice(), errorMm: 0 };
   if (lod === -1) return { indices: T, errorMm: 0, ...turnedFaces(P, N, T) };
-  const errorMm = ERRORS[cls][lod];
+  const errorMm = obj.materials[0] === "roof-oak" ? ROOF_OAK_ERRORS[lod] : ERRORS[cls][lod];
   let indices;
   let error;
   if (METHOD === "attribute") {
@@ -430,6 +492,9 @@ const receipt = {
   squash: SQUASH,
   errorsMm: ERRORS,
   plantFractions: PLANT_FRACTIONS,
+  ...(extract.objects.some((o) => o.tinted)
+    ? { uvTint: TINT, clayErrorsMm: CLAY_ERRORS, roofOakErrorsMm: ROOF_OAK_ERRORS }
+    : {}),
   layout: { vertex: "position-normal-uv-f32", stride: 32, index: "uint32" },
   meshes: [],
   placements: [],
@@ -481,7 +546,7 @@ for (const obj of extract.objects) {
   const t0 = performance.now();
   const B = await npy(obj.object, "B");
   const cls0 = materialClass(obj.object === "FootPlants" ? "plants" : obj.materials[0]);
-  const P = obj.displaced
+  let P = obj.displaced
     ? smoothDisplacement(
         await npy(obj.object, "P"),
         B,
@@ -489,25 +554,124 @@ for (const obj of extract.objects) {
         SMOOTH_MM[cls0] ?? 0,
       )
     : await npy(obj.object, "P");
-  const N = await npy(obj.object, "N");
+  let N = await npy(obj.object, "N");
   let UV = await npy(obj.object, "UV");
-  const T = await npy(obj.object, "T");
+  let T = await npy(obj.object, "T");
   const M = await npy(obj.object, "M");
   // One material per runtime mesh; the foot plants' five slots share one atlas material.
   const materials = [...new Set(M)].map((i) => obj.materials[i]);
-  assert(obj.object === "FootPlants" || materials.length === 1, `${obj.object} mixes materials`);
-  const material = obj.object === "FootPlants" ? "plants" : materials[0];
+  assert(
+    obj.object === "FootPlants" || obj.tinted || materials.length === 1,
+    `${obj.object} mixes materials`,
+  );
+  const material = obj.object === "FootPlants" ? "plants" : obj.tinted ? "roof-tile" : materials[0];
+  let tint = null;
+  let tileFarT = null;
+  if (obj.tinted) {
+    assert(
+      materials.every((m) => m === "roof-tile" || m === "roof-tile-body"),
+      obj.object,
+    );
+    const VIS = await npy(obj.object, "VIS");
+    // LOD0 keeps TILE_DILATE rings of hidden triangles around the visible ones: a centroid ray test
+    // misses faces seen only at grazing angles, such as a cover's underside just inside its mouth.
+    // Farther LODs keep the visible set alone (the rings' open borders stop simplification).
+    const posKey = (v) => `${P[v * 3]},${P[v * 3 + 1]},${P[v * 3 + 2]}`;
+    const keep = Uint8Array.from(VIS);
+    for (let ring = 0; ring < TILE_DILATE; ring++) {
+      const near = new Set();
+      for (let t = 0; t < keep.length; t++)
+        if (keep[t]) for (let k = 0; k < 3; k++) near.add(posKey(T[t * 3 + k]));
+      const grow = keep.slice();
+      for (let t = 0; t < keep.length; t++)
+        if (!keep[t] && [0, 1, 2].some((k) => near.has(posKey(T[t * 3 + k])))) grow[t] = 1;
+      keep.set(grow);
+    }
+    // Rim (body) faces sampled a stretched strip of the visible face's border and streaked. Their
+    // vertices are duplicated (once each, so every tile's rim band stays connected for the
+    // simplifier) and each band takes one UV, the mean of its border: the tile's own clay, tinted.
+    const body = obj.materials.indexOf("roof-tile-body");
+    let C = await npy(obj.object, "C");
+    const extra = { P: [], N: [], UV: [], C: [] };
+    const dup = new Map();
+    const kept = [];
+    const keptFar = [];
+    for (let t = 0; t < keep.length; t++) {
+      if (!keep[t]) continue;
+      for (let k = 0; k < 3; k++) {
+        const v = T[t * 3 + k];
+        if (M[t] !== body) {
+          kept.push(v);
+          if (VIS[t]) keptFar.push(v);
+          continue;
+        }
+        if (!dup.has(v)) {
+          dup.set(v, P.length / 3 + dup.size);
+          extra.P.push(P[v * 3], P[v * 3 + 1], P[v * 3 + 2]);
+          extra.N.push(N[v * 3], N[v * 3 + 1], N[v * 3 + 2]);
+          extra.UV.push(UV[v * 2], UV[v * 2 + 1]);
+          extra.C.push(C[v * 3], C[v * 3 + 1], C[v * 3 + 2]);
+        }
+        kept.push(dup.get(v));
+        if (VIS[t]) keptFar.push(dup.get(v));
+      }
+    }
+    // Rim bands: connected components of the duplicated vertices; each takes its mean UV.
+    const base = P.length / 3;
+    const lab = Int32Array.from({ length: dup.size }, (_, i) => i);
+    const find = (i) => {
+      while (lab[i] !== i) i = lab[i] = lab[lab[i]];
+      return i;
+    };
+    for (let t = 0; t < kept.length; t += 3)
+      if (kept[t] >= base)
+        for (let k = 1; k < 3; k++) {
+          const a = find(kept[t] - base);
+          const b = find(kept[t + k] - base);
+          if (a !== b) lab[Math.max(a, b)] = Math.min(a, b);
+        }
+    const sum = new Map();
+    for (let i = 0; i < dup.size; i++) {
+      const r = find(i);
+      const e = sum.get(r) ?? [0, 0, 0];
+      e[0] += extra.UV[i * 2];
+      e[1] += extra.UV[i * 2 + 1];
+      e[2] += 1;
+      sum.set(r, e);
+    }
+    for (let i = 0; i < dup.size; i++) {
+      const e = sum.get(find(i));
+      extra.UV[i * 2] = e[0] / e[2];
+      extra.UV[i * 2 + 1] = e[1] / e[2];
+    }
+    const cat = (a, b) => {
+      const o = new Float32Array(a.length + b.length);
+      o.set(a);
+      o.set(b, a.length);
+      return o;
+    };
+    P = cat(P, extra.P);
+    N = cat(N, extra.N);
+    UV = cat(UV, extra.UV);
+    C = cat(C, extra.C);
+    T = Uint32Array.from(kept);
+    tileFarT = Uint32Array.from(keptFar);
+    tint = tintSteps(C);
+  }
   if (material === "plants") UV = plantAtlasUv(obj, UV, T, M);
-  if (material.startsWith("plaster-")) UV = plasterMarginUv(obj, UV);
+  if (material.startsWith("plaster-") && extract.layout?.pieces?.[obj.piece])
+    UV = plasterMarginUv(obj, UV);
   if (material === "kit-iron") UV = ironBoxUv(P, N);
   if (material === "kit-glass") UV = ironBoxUv(P, N, GLASS_TILE_M);
+  // The K2 roof's bedding mortar was object-space procedural: box-mapped onto its 0.5 m tile.
+  if (material === "roof-mortar") UV = ironBoxUv(P, N, 0.5);
   const cls = materialClass(material);
   const pivot = pivotOf(obj.piece);
   const lods = [];
   const mirroredLods = [];
   const source = simplify(obj, cls, P, B, N, T, -1);
   for (let lod = 0; lod < 3; lod++) {
-    const s = simplify(obj, cls, P, B, N, T, lod);
+    const s = simplify(obj, cls, P, B, N, tileFarT && lod > 0 ? tileFarT : T, lod);
     if (s.turnedAreaFraction !== undefined)
       assert(
         s.turnedAreaFraction <= Math.max(2 * source.turnedAreaFraction, 5e-4),
@@ -517,7 +681,9 @@ for (const obj of extract.objects) {
       material === "plants"
         ? (({ P: P2, N: N2, UV: UV2, indices }) =>
             optimize(interleave(P2, N2, UV2, pivot), indices))(withBackFaces(P, N, UV, s.indices))
-        : optimize(interleave(P, N, UV, pivot), s.indices);
+        : tint
+          ? optimize(withTint(interleave(P, N, UV, pivot), tint.steps), s.indices)
+          : optimize(interleave(P, N, UV, pivot), s.indices);
     const entry = await encode(obj.object, lod, mesh);
     if (mirroredPieces.has(obj.piece))
       mirroredLods.push({
@@ -533,7 +699,7 @@ for (const obj of extract.objects) {
     });
   }
   if (cls === null || !obj.displaced)
-    if (material !== "plants")
+    if (material !== "plants" && !obj.tinted)
       for (const l of lods)
         assert(
           l.vertexStream.sha256 === lods[0].vertexStream.sha256 &&
@@ -548,6 +714,9 @@ for (const obj of extract.objects) {
     pivot,
     sourceVertices: obj.vertices,
     sourceTriangles: obj.triangles,
+    ...(tint
+      ? { visibleTriangles: T.length / 3, tintWorstRelativeError: tint.worstRelativeError }
+      : {}),
     ...(source.turnedFaces === undefined
       ? {}
       : {

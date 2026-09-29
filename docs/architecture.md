@@ -1473,13 +1473,19 @@ deduplicated shadow-task timings, caster counts, and logical depth-array bytes.
 materials; Lite has no hook, so it sets Lite's private receiver registry after the generator
 registers the stock one, and the PSO contract pins the composed WGSL. Each cascade lookup moves
 three texels of that cascade along the geometric normal, scaled by the sine of the angle to the
-light, and the caster bias is 0.06 m. Placements may leave the casters
+light. The cascade split (λ 0.9) ends cascade 0 near 5 m, about 1 cm texels near the camera, and
+the caster bias is 0.02 m. Together they keep the shadows of relief a few centimetres tall between
+meshes, such as roof tiles (K2 delivery, 2026-09-28; λ 0.7 and 0.06 m before). Placements may leave the casters
 (`castsCsmShadows: false`): relief below CSM's resolution belongs to the surface instead. A
 PBR surface may carry its occluding height in ORM.B (`ormHeight`). The sun micro-shadow plugin
 marches that field toward the sun in texel-spaced steps, finding its texture-space direction per
 fragment from screen-space derivatives, so any UV layout works. It scales only the direct light,
 before the occluded ambient.
-Every streamed PBR material carries the plugin, so the PBR pipeline family stays single.
+Every streamed PBR material carries the plugin, so the PBR pipeline family stays single. The same
+holds for the K2 delivery's two plugins, which are neutral when unused:
+- `pbr-tint`: a per-element tint carried in the UVs' integer parts, for kits whose many small
+  elements share a variant atlas (roof tiles);
+- `pbr-detail`: a shared tiling detail tile over macro-density unique maps.
 
 For the D-090 M1 preview, the render worker materializes terrain directly from the
 LOD-independent collision samples at strides 1, 2, and 4 and batches triangle-box

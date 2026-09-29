@@ -68,6 +68,14 @@ interface MaterialSpec {
   address: "repeat" | "clamp-to-edge";
   metallicFactor: number;
   heightRangeMeters: number;
+  /** A shared tiling detail layer (K2 delivery memory round). */
+  detail?: { texture: string; uvScale: [number, number]; normalGain: number; albedoGain: number };
+  /** A per-element tint carried in the UVs' integer parts (the K2 roof tiles). */
+  tint?: {
+    brightness: [number, number];
+    cast: [number, number];
+    castVector: [number, number, number];
+  };
 }
 interface MeshSpec {
   /** Unique draw key: `<object>` for wall meshes, `paving-<part>` for the paving. */
@@ -256,6 +264,15 @@ async function run(request: Request): Promise<void> {
         drape,
         pbrAmbient,
         { heightRangeMeters: m.heightRangeMeters },
+        m.detail === undefined
+          ? undefined
+          : {
+              texture: texture(m.detail.texture, "repeat"),
+              uvScale: m.detail.uvScale,
+              normalGain: m.detail.normalGain,
+              albedoGain: m.detail.albedoGain,
+            },
+        m.tint ?? null,
       ),
     );
 

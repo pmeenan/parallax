@@ -1,0 +1,163 @@
+{
+  "createdUtc": "2026-09-28T19:52:28Z",
+  "blender": "5.2.1 LTS",
+  "args": {
+    "out": "candidate9",
+    "walls": "D:\\src\\parallax\\assets\\source\\d1-walls\\proof-2026-09-25\\candidate20\\source.blend",
+    "px": 0.75,
+    "variants": 24,
+    "oak_px": 0.75,
+    "plaster_px": 1.0,
+    "coarse": 0.02,
+    "subdiv": 3,
+    "samples": 256,
+    "views": "unlit",
+    "scale": 1.0,
+    "seed": 11,
+    "walls_subdiv": null,
+    "save_blend": true,
+    "force": true
+  },
+  "walls": {
+    "path": "../../d1-walls/proof-2026-09-25/candidate20/source.blend",
+    "sha256": "8bbffdcabaeeb2cb7655f1894611e5fef4a5df82256fd76e4fd1de14c3d2b61d"
+  },
+  "seconds": 405.8,
+  "geometry": {
+    "pitchDegrees": 40,
+    "ridgeDeckMetres": 9.7734,
+    "courses": 16,
+    "exposureMetres": 0.2931,
+    "channelMetres": 0.2857
+  },
+  "files": [
+    {
+      "path": "build-snapshot.py",
+      "sha256": "57e0881e62e9ed605f24d18b4256cedb9b52207c17b9ce4907738a98e36c788c"
+    },
+    {
+      "path": "cornercheck.png",
+      "sha256": "0358a720b9accfb255290a9cb372fc57c4e20c5ffa6079fa8935949421cb5562"
+    },
+    {
+      "path": "eave.png",
+      "sha256": "27ec1bd5cfbe8629ac99d6c255cb623888f708ff3a743ff32d405e30e676633a"
+    },
+    {
+      "path": "front.png",
+      "sha256": "e375688e67b607335e93682fca1b7871b70f3722c5174e66266e9600cca5f3d9"
+    },
+    {
+      "path": "gable.png",
+      "sha256": "609434630a9227dec569b0ccb50216407562e57afa9e3ef69ff012e8ee186eea"
+    },
+    {
+      "path": "gray.png",
+      "sha256": "5d57cff46b046d1c0fb7edf3bf70af47eb220ffc3e1f7616b145c0be2447ac60"
+    },
+    {
+      "path": "low.png",
+      "sha256": "a5f537744e25475aff37cef98a3e50317ef09a01e351c94670387e4017118f2e"
+    },
+    {
+      "path": "maps/oak-albedo.png",
+      "sha256": "a871d4dae905f51f2dcce28f8102199c5104cc23bc35a55f584e41566f226b2b"
+    },
+    {
+      "path": "maps/oak-detail-albedo.png",
+      "sha256": "ff2ac836af6766acb9d6555f8b4ead10f7dc0ea1ed5d855c7aa92efb58a139d6"
+    },
+    {
+      "path": "maps/oak-detail-height.png",
+      "sha256": "c6eaf629e67e1aac291b98aa468fc74b4d66fccab9526156d51fd7917a286a56"
+    },
+    {
+      "path": "maps/oak-detailmask.png",
+      "sha256": "a6129fe54f0d99d9e8813c0214e57d6775b6566db71a2f3314f1ae46e618617a"
+    },
+    {
+      "path": "maps/oak-height.png",
+      "sha256": "964f6943d56735a3f07763c7e997f1a712fef8c734574c6dfeafe0db8500509a"
+    },
+    {
+      "path": "maps/oak-normal.png",
+      "sha256": "4662193bc6e7821b3ad2861b84146a7697586b2a6a7108e1cb13a26647178177"
+    },
+    {
+      "path": "maps/oak-roughness.png",
+      "sha256": "08741192880822192d3610a759cd9d4c9a157ebdb11efec067fd437795c99cc1"
+    },
+    {
+      "path": "maps/plaster-gable-albedo.png",
+      "sha256": "bf1a409eb6c6c498b1a44c123bb45cf889d992d9be7f13cd7fe6151178cf7ec3"
+    },
+    {
+      "path": "maps/plaster-gable-height.png",
+      "sha256": "cd787a1be64cb9e68c827794e3169a2f8f265212379e4b943bafe10482772510"
+    },
+    {
+      "path": "maps/plaster-gable-normal.png",
+      "sha256": "a439631b6d317183bc5f4f27d6499339e2a49a4f1d2c914677797a7c5bc9713a"
+    },
+    {
+      "path": "maps/plaster-gable-roughness.png",
+      "sha256": "144e094211463ce7081a3d16bd6230e945f988a50c7fb29861205ee2a52f420e"
+    },
+    {
+      "path": "maps/tile-albedo.png",
+      "sha256": "eab02f80a20dd9e903be3ac80358c560c2079dd446832b7bcc80e4ada32954d7"
+    },
+    {
+      "path": "maps/tile-normal.png",
+      "sha256": "b7ff81b182b8fd66cda15ccbe2389e43c4c84225efb3749f71db6bfee7987435"
+    },
+    {
+      "path": "maps/tile-roughness.png",
+      "sha256": "e0e1bea5dec428445d88dea50c1ecbf7df5cef56f2e879a19ab1a52d85254671"
+    },
+    {
+      "path": "overcast.png",
+      "sha256": "019630863fa42637803e0111784b2bbc3bb6bf1d23e1199044db100818e934a7"
+    },
+    {
+      "path": "overview-rear.png",
+      "sha256": "fed5bf708e669e7f58a75b55e8f1dfe046eb11ba489f8892b3d479d4e01bb47e"
+    },
+    {
+      "path": "overview.png",
+      "sha256": "e1bd82974163bcc6546a5c1e85841860c9a1e30fa31c696eba5a607e8563d81b"
+    },
+    {
+      "path": "ridgecheck.png",
+      "sha256": "c1c7883ea6963cd2044af814aa22b4c61026c1e29d205682f0c8cc941d17c9c3"
+    },
+    {
+      "path": "source.blend",
+      "sha256": "7ee7f6fc0c445cd51913c282eee42e2c0315b78bdd6db8450b8d417b056fa149"
+    },
+    {
+      "path": "source.blend1",
+      "sha256": "30e61c1d786d719fb2f521e9c94e92c10633fae0daa4787d60885e1f2563f300"
+    },
+    {
+      "path": "street.png",
+      "sha256": "a60553383f3f28e1873d04fa1363560ace88c1aec1a426c5546a18189fd866c9"
+    },
+    {
+      "path": "tile.png",
+      "sha256": "55aed5d5bf4ed7c59cd810b99072128b9591e3180d103cab6ba4645b2fa1a6c5"
+    },
+    {
+      "path": "underside.png",
+      "sha256": "df6ec4e3b93f9db6225b1a6eb34d9c1dd44cd6a40650a2b8f6cc47d6a569bab4"
+    },
+    {
+      "path": "unlit.png",
+      "sha256": "fd853df492bec6d884c32d719aadd939c2b79113da4dc707aa785603cd1bb701"
+    },
+    {
+      "path": "verge.png",
+      "sha256": "5065fbb19e33244d664c9a3c7fac0dc06320f33e5feec6f220c1a8950a8a7302"
+    }
+  ]
+}

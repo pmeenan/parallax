@@ -163,7 +163,7 @@ export interface RenderFrameSample {
     depthArrayBytes: number;
     membershipUpdates: number;
     retainedMaterialCount: number;
-    technique: "directional-csm-pcf5-normal-offset@2";
+    technique: "directional-csm-pcf5-normal-offset@3";
     cpuSubmitMs: number;
     /** Lite 1.31.1 EMA (0.8 previous + 0.2 latest) of the instrumented frame interval, not a raw duration. */
     gpuFrameEmaMs: number | null;

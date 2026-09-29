@@ -18,11 +18,13 @@ import type { StreamingTextureGpuFormat } from "../streaming/streaming-protocol"
 import type { PbrAssetPlacement } from "../world/pbr-asset";
 import type { WorldVec3 } from "../world/world-contract";
 import { createPbrAmbientPlugin, PBR_AMBIENT_MESH_ID, type PbrAmbientState } from "./pbr-ambient";
+import { createPbrDetailPlugin, type PbrDetailSurface } from "./pbr-detail";
 import {
   createPbrSunMicroShadowPlugin,
   NO_PBR_MICROSHADOW_SURFACE,
   type PbrMicroShadowSurface,
 } from "./pbr-sun-microshadow";
+import { createPbrTintPlugin, type PbrUvTint } from "./pbr-tint";
 import { createTerrainDrapePlugin, type TerrainDrapeField } from "./terrain-drape";
 
 /** Streamed PBR vertices: float32 position, normal and UV, interleaved as meshopt decodes them. */
@@ -137,6 +139,8 @@ export function groupPbrAssetPlacements(
       // The micro-shadow march finds its texture gradients per fragment, so a height surface
       // groups by its range only, not by orientation.
       m.ormHeight?.rangeMeters ?? null,
+      m.detail ?? null,
+      m.tint ?? null,
     ]);
     const group = groups.get(key);
     if (group) group.push(placement);
@@ -181,7 +185,8 @@ export function selectPbrAssetLod(
 }
 
 /** All runtime surfaces and the warmup fixture use precisely the same PBR features and plugins:
- * the terrain drape (D-204; rigid placements bind the zero field), sun micro-shadowing (engine
+ * the terrain drape (D-204; rigid placements bind the zero field), the UV-carried element tint
+ * and shared detail layer (K2 delivery; neutral when unused), sun micro-shadowing (engine
  * package 6; surfaces without height bind a zero range) and the occluded ambient. */
 export function createStreamedPbrMaterial(
   textures: Readonly<{ baseColor: Texture2D; normal: Texture2D; orm: Texture2D }>,
@@ -189,6 +194,15 @@ export function createStreamedPbrMaterial(
   drape: TerrainDrapeField,
   ambient: PbrAmbientState,
   microShadow: PbrMicroShadowSurface = NO_PBR_MICROSHADOW_SURFACE,
+  // No detail: bind the surface's own base colour with zero gains, so every material keeps one pipeline.
+  detail: PbrDetailSurface = {
+    texture: textures.baseColor,
+    uvScale: [1, 1],
+    normalGain: 0,
+    albedoGain: 0,
+  },
+  // No per-element tint: the plugin multiplies by 1.
+  tint: PbrUvTint | null = null,
 ) {
   const material = createPbrMaterial({
     baseColorTexture: textures.baseColor,
@@ -206,6 +220,8 @@ export function createStreamedPbrMaterial(
   });
   material.plugins = [
     createTerrainDrapePlugin(drape),
+    createPbrTintPlugin(tint),
+    createPbrDetailPlugin(detail),
     createPbrSunMicroShadowPlugin(ambient, microShadow),
     createPbrAmbientPlugin(ambient),
   ];

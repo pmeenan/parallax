@@ -60,16 +60,17 @@ describe("independent PSO warmup trace resolver", () => {
     ]);
     const depth = identity.entries[4]?.state;
     expect(depth?.colorTarget).toBeNull();
-    // Material UBO, mesh UBO, three texture/sampler pairs and the vertex-stage terrain
-    // drape texture/sampler (D-204); the drape reaches the shadow caster too.
-    expect(depth?.layout.bindGroups[1]?.entries).toHaveLength(10);
-    expect(depth?.layout.bindGroups[1]?.entries.slice(-2).map((entry) => entry.visibility)).toEqual(
-      [1, 1],
+    // Material UBO, mesh UBO, three texture/sampler pairs, the vertex-stage terrain drape
+    // texture/sampler (D-204; it reaches the shadow caster too) and the fragment-stage shared
+    // detail texture/sampler (K2 delivery).
+    expect(depth?.layout.bindGroups[1]?.entries).toHaveLength(12);
+    expect(depth?.layout.bindGroups[1]?.entries.slice(-4).map((entry) => entry.visibility)).toEqual(
+      [1, 1, 2, 2],
     );
     expect(depth?.shader).toMatchObject({
       family: "pbr",
-      vertexSha256: "32b93a189e6e221ad99a6f4a243dba4724dd887033344f1e49656458e2dfdbdb",
-      fragmentSha256: "e9b7cd9207cf7cfd8797037c1660ab3eb48d129563b986700e4dd41764b52716",
+      vertexSha256: "62be9cbd54af4d2ddb0450714e99bad411298c7dd4071c7f07f61fc4cb47ab88",
+      fragmentSha256: "ccdf02b96514fb2eeef632de00e2450b6bdb88655371f360d1748488b53f5e32",
     });
   });
 

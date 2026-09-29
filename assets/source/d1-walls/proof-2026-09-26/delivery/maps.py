@@ -44,6 +44,12 @@ ap.add_argument('--plaster-normal-factor', type=int, default=1)
 ap.add_argument('--plaster-orm-factor', type=int, default=2)
 # The plinth stones' relief (up to 34 mm) needs its occluding height at the stone's own density.
 ap.add_argument('--stone-orm-factor', type=int, default=1)
+# The oak normal may ship coarser than its base colour (house kit memory round): the figure is in
+# the colour, the checks and arrises in the normal. Default: the oak factor.
+ap.add_argument('--oak-normal-factor', type=int, default=None)
+# The oak ORM (AO, roughness, micro-shadow height) may ship coarser than the other ORMs (house kit
+# memory round). Default: --orm-factor.
+ap.add_argument('--oak-orm-factor', type=int, default=None)
 ap.add_argument('--tile-size', type=int, default=512)
 ap.add_argument('--ao-radius-mm', type=float, default=40.0)
 ap.add_argument('--ao-directions', type=int, default=16)
@@ -58,6 +64,11 @@ ap.add_argument('--plaster-ao-falloff', type=int, default=1)
 # 3 left post shadows about 5 mm short of the source's (delivery candidate 4); 1 keeps the plaster
 # texels at the timber's edge on the plaster's own height, so no lit sliver returns.
 ap.add_argument('--occluder-erode-texels', type=int, default=1)
+# Shared tiling detail (K2 delivery memory round, engine pbr-detail): <dir> is detail.py's output
+# (d1-roof/proof-2026-09-28), and --detail names the classes that use it with their normal and
+# albedo gains, e.g. 'plaster:1,1;oak:1,0'. Each tile ships as its own map (slot 'detail').
+ap.add_argument('--detail-dir', default=None)
+ap.add_argument('--detail', default='')
 A = ap.parse_args(argv)
 HERE = os.path.dirname(os.path.abspath(__file__))
 SOURCE = 'candidate20'  # the accepted source (candidate 20 since the 2026-09-27 brace and corner fixes)
@@ -338,7 +349,7 @@ def enc_orm(x):
 
 
 def emit(material, slot, level0, note, **extra):
-    enc = {'basecolor': enc_color, 'normal': enc_normal, 'orm': enc_orm}[slot]
+    enc = {'basecolor': enc_color, 'normal': enc_normal, 'orm': enc_orm, 'detail': enc_orm}[slot]
     role = '%s-%s' % (material, slot)
     files = []
     for lv, rgba in enumerate(chain(level0, enc)):
@@ -404,15 +415,16 @@ def atlas(cls, f):
     # Base colour and normal at the runtime density, empty texels filled from the islands.
     albf, known = pool(alb, f, occ)
     del alb
-    Nf, _ = pool(N, f, occ)
+    fn = A.oak_normal_factor if cls == 'oak' and A.oak_normal_factor else f
+    Nf, known_n = pool(N, fn, occ)
     del N
     Nf /= np.maximum(np.linalg.norm(Nf, axis=-1, keepdims=True), 1e-6)
-    albf, Nf = push_pull(albf, known), push_pull(Nf, known)
+    albf, Nf = push_pull(albf, known), push_pull(Nf, known_n)
     emit('kit-' + cls, 'basecolor', albf, 'sRGB albedo, %g mm texels, islands push-pull filled' % (px * f * 1000))
     emit('kit-' + cls, 'normal', Nf, 'OpenGL (+Y up) tangent space; low-pass slopes + detail; renormalized mips')
     del albf, Nf
     # ORM a further factor coarser; AO and height never read another island.
-    fo = f * (A.stone_orm_factor if cls == 'stone' else A.orm_factor)
+    fo = f * (A.stone_orm_factor if cls == 'stone' else A.oak_orm_factor or A.orm_factor)
     Ho, knowno = pool(H, fo, occ)
     ro, _ = pool(rgh, fo, occ)
     c = fo // 2
@@ -425,6 +437,8 @@ def atlas(cls, f):
                px * fo * 1000)
     MATERIALS['kit-' + cls].update(texelMm=px * f * 1000, atlas=[W // f, Hh // f],
                                    islands=len(ISLANDS[cls]))
+    if fn != f:
+        MATERIALS['kit-' + cls]['normalTexelMm'] = px * fn * 1000
 
 
 atlas('oak', A.oak_factor)
@@ -655,11 +669,43 @@ for name, c in CONST.items():
                'constant; metallic %g via the factor' % c['metallic'], 0.0, metallic=c['metallic'])
     MATERIALS[name].update(metallicFactor=c['metallic'], constant=True)
 
+# ---------------------------------------------------------------- shared detail tiles
+DETAIL = {}
+if A.detail_dir:
+    dmeta = json.load(open(os.path.join(A.detail_dir, 'detail.json'), encoding='utf-8'))
+    for spec in filter(None, A.detail.split(';')):
+        cls, gains = spec.split(':')
+        normal_gain, albedo_gain = (float(g) for g in gains.split(','))
+        d = dmeta['classes'][cls]
+        tw, th = d['size']
+        raw = np.fromfile(os.path.join(A.detail_dir, cls + '-detail.rgba'), np.uint8).reshape(th, tw, 4)
+        # detail.py writes rows top-down as the preview uploaded them; emit takes row 0 at v = 0.
+        tile = raw[::-1, :, :3].astype(np.float32) / 255.0
+        role = 'detail-' + cls
+        emit(role, 'detail', tile, 'shared %s detail: RG normal offset, B albedo ratio (x%g); %g x %g m tile'
+             % (cls, dmeta['albedoRange'], d['tileMetres'][0], d['tileMetres'][1]),
+             tileMetres=d['tileMetres'], cutoffMillimetres=d['cutoffMillimetres'])
+        DETAIL[cls] = dict(role=role + '-detail', tileMetres=d['tileMetres'], normalGain=normal_gain,
+                           albedoGain=albedo_gain)
+    for name, m in MATERIALS.items():
+        cls = 'plaster' if name.startswith('plaster-') else {'kit-oak': 'oak', 'kit-stone': 'stone'}.get(name)
+        if cls not in DETAIL:
+            continue
+        normal = next(r for r in records if r['role'] == name + '-normal')['levels'][0]
+        mm = m.get('normalTexelMm', m['texelMm'])
+        extent = (normal['width'] * mm / 1000, normal['height'] * mm / 1000)
+        t = DETAIL[cls]
+        m['detail'] = dict(texture=t['role'], uvScale=[extent[0] / t['tileMetres'][0], extent[1] / t['tileMetres'][1]],
+                           normalGain=t['normalGain'], albedoGain=t['albedoGain'])
+
 json.dump(dict(stage='maps', blender=bpy.app.version_string, source=SOURCE,
                factors=dict(oak=A.oak_factor, stone=A.stone_factor, plaster=A.plaster_factor,
                             plasterNormal=A.plaster_normal_factor, plasterOrm=A.plaster_orm_factor,
-                            stoneOrm=A.stone_orm_factor, orm=A.orm_factor),
+                            stoneOrm=A.stone_orm_factor, orm=A.orm_factor,
+                            **({'oakNormal': A.oak_normal_factor} if A.oak_normal_factor else {}),
+                            **({'oakOrm': A.oak_orm_factor} if A.oak_orm_factor else {})),
                tileSize=A.tile_size,
+               **({'detail': dict(source=os.path.abspath(A.detail_dir), classes=A.detail)} if A.detail_dir else {}),
                ambientOcclusion=dict(radiusMm=A.ao_radius_mm, directions=A.ao_directions, steps=A.ao_steps,
                                      plasterRadiusMm=PLASTER_AO_MM, plasterFalloff=bool(A.plaster_ao_falloff)),
                ranges={k: list(v) for k, v in RANGES.items()},

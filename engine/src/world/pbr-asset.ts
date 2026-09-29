@@ -15,6 +15,29 @@ export interface PbrAssetMaterial {
    * metres that B = 0 and B = 1 stand for. The march derives its texture-space direction per
    * fragment, so any UV layout works (the K1 wall delivery). */
   readonly ormHeight?: PbrAssetOrmHeight;
+  /** A shared tiling detail layer over the unique maps (K2 delivery; engine `pbr-detail`). */
+  readonly detail?: PbrAssetDetail;
+  /** A per-element tint carried in the UVs' integer parts (K2 delivery; engine `pbr-tint`).
+   * The integer offsets need repeat addressing. */
+  readonly tint?: PbrAssetUvTint;
+}
+
+export interface PbrAssetDetail {
+  /** A linear KTX2 tile with its full mip chain, sampled with repeat addressing. */
+  readonly resourceId: string;
+  /** Tile repeats per unit of the material's UV, in u and v. */
+  readonly uvScale: readonly [number, number];
+  readonly normalGain: number;
+  readonly albedoGain: number;
+}
+
+export interface PbrAssetUvTint {
+  /** Brightness at step 0 and per step of floor(u). */
+  readonly brightness: readonly [number, number];
+  /** Cast weight at step 0 and per step of floor(v). */
+  readonly cast: readonly [number, number];
+  /** Linear RGB direction the cast weight scales. */
+  readonly castVector: WorldVec3;
 }
 
 export interface PbrAssetOrmHeight {
@@ -122,8 +145,45 @@ export function validatePbrAssetPlacements(
     const material = asset.material;
     keys(
       material,
-      `baseColorFactor,baseColorResourceId,metallicFactor,normalResourceId,normalScale,${"ormHeight" in material ? "ormHeight," : ""}ormResourceId,roughnessFactor${"textureAddressMode" in material ? ",textureAddressMode" : ""}`,
+      `baseColorFactor,baseColorResourceId,${"detail" in material ? "detail," : ""}metallicFactor,normalResourceId,normalScale,${"ormHeight" in material ? "ormHeight," : ""}ormResourceId,roughnessFactor${"textureAddressMode" in material ? ",textureAddressMode" : ""}${"tint" in material ? ",tint" : ""}`,
     );
+    if ("detail" in material) {
+      const detail = material.detail;
+      if (
+        !record(detail) ||
+        Object.keys(detail).sort().join(",") !== "albedoGain,normalGain,resourceId,uvScale" ||
+        !id(detail.resourceId) ||
+        !Array.isArray(detail.uvScale) ||
+        detail.uvScale.length !== 2 ||
+        !detail.uvScale.every((v) => finite(v) && v > 0 && v <= 4096) ||
+        !finite(detail.normalGain) ||
+        detail.normalGain < 0 ||
+        detail.normalGain > 4 ||
+        !finite(detail.albedoGain) ||
+        detail.albedoGain < 0 ||
+        detail.albedoGain > 4
+      )
+        throw new Error("PBR asset detail layer is invalid");
+      if (byId) {
+        const texture = byId.get(detail.resourceId);
+        if (texture?.format !== "ktx2" || texture.decode.colorSpace !== "linear")
+          throw new Error(`PBR asset detail texture is invalid: ${asset.id}`);
+      }
+    }
+    if ("tint" in material) {
+      const tint = material.tint;
+      const pair = (v: unknown) => Array.isArray(v) && v.length === 2 && v.every(finite);
+      if (
+        !record(tint) ||
+        Object.keys(tint).sort().join(",") !== "brightness,cast,castVector" ||
+        !pair(tint.brightness) ||
+        !pair(tint.cast) ||
+        !vec3(tint.castVector) ||
+        // The tint rides in whole-number UV offsets, which only repeat addressing ignores.
+        material.textureAddressMode !== "repeat"
+      )
+        throw new Error("PBR asset UV tint is invalid");
+    }
     if ("ormHeight" in material) {
       const height = material.ormHeight;
       if (

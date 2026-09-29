@@ -10,7 +10,9 @@ import {
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { PBR_AMBIENT_PLUGIN_NAME } from "./pbr-ambient";
+import { PBR_DETAIL_PLUGIN_NAME } from "./pbr-detail";
 import { PBR_SUN_MICROSHADOW_PLUGIN_NAME } from "./pbr-sun-microshadow";
+import { PBR_TINT_PLUGIN_NAME } from "./pbr-tint";
 import {
   createPsoWarmupTrace,
   PBR_COLOR_STATE,
@@ -442,12 +444,15 @@ function assertPbrOpaqueMaterial(material: Mesh["material"], meshName: string): 
     material.doubleSided === true ||
     material.alphaBlend === true ||
     (material.alpha ?? 1) !== 1 ||
-    // Exactly the terrain drape (D-204), sun micro-shadowing (engine package 6) and the occluded
-    // ambient, in that order; any other plugin set changes the pipeline family.
-    material.plugins?.length !== 3 ||
+    // Exactly the terrain drape (D-204), the UV-carried tint and shared detail layer (K2 delivery),
+    // sun micro-shadowing (engine package 6) and the occluded ambient, in that order; any other
+    // plugin set changes the pipeline family.
+    material.plugins?.length !== 5 ||
     material.plugins[0]?.name !== TERRAIN_DRAPE_PLUGIN_NAME ||
-    material.plugins[1]?.name !== PBR_SUN_MICROSHADOW_PLUGIN_NAME ||
-    material.plugins[2]?.name !== PBR_AMBIENT_PLUGIN_NAME ||
+    material.plugins[1]?.name !== PBR_TINT_PLUGIN_NAME ||
+    material.plugins[2]?.name !== PBR_DETAIL_PLUGIN_NAME ||
+    material.plugins[3]?.name !== PBR_SUN_MICROSHADOW_PLUGIN_NAME ||
+    material.plugins[4]?.name !== PBR_AMBIENT_PLUGIN_NAME ||
     material.plugins.some((plugin) => plugin.isEnabled === false) ||
     hasOptInFeature(material, PBR_OPT_IN_FIELDS) ||
     Reflect.get(material, "_renderFeatures") !== undefined
@@ -517,7 +522,9 @@ function normalizeObservedStandardPipeline(
     (vertexModuleSha256 !== STANDARD_VERTEX_WGSL_SHA256 ||
       (!receiver && !shadowDepth && fragmentModuleSha256 !== STANDARD_FRAGMENT_WGSL_SHA256))
   ) {
-    throw new Error("PSO warmup observed composed Standard WGSL drift");
+    throw new Error(
+      `PSO warmup observed composed Standard WGSL drift (vertex ${vertexModuleSha256}, fragment ${fragmentModuleSha256})`,
+    );
   }
   if (
     fragment === undefined ||

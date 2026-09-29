@@ -464,7 +464,33 @@ done as we go (front-loaded, D-197/D-200). Proposed order, open to human reorder
 
     The house cell's first load is 375 ms against the 250 ms traversal budget. The cause is
     attributed: the whole kit's 409 MB goes to the GPU on first residency.
-- **K2 — terracotta roof:** gable, ridge, eave and verge (KIT-008, MAT-011).
+- **K2 — terracotta roof:** gable, ridge, eave and verge (KIT-008, MAT-011)
+  ([brief](../assets/source/d1-roof/proof-2026-09-27/brief.md),
+  [results](../assets/source/d1-roof/proof-2026-09-27/results.md), in progress). The builder opens
+  K1's accepted source and adds the roof as kit pieces. Tiles are real curved shells on a support
+  solver, drawn from an atlas of unique faces.
+
+  **Source accepted (candidate 8, 2026-09-28)**, with the 1 m close view's lap detail as a disclosed
+  limit. The consistency screen found it "consistent with disclosed limits"; the quality screen held
+  it "not ready" on that view only.
+
+  **Delivery (2026-09-28, in progress)** runs as the house kit's GPU memory round, at the human's
+  direction: keep the quality, but radically reduce GPU memory before scenes grow
+  ([brief](../assets/source/d1-roof/proof-2026-09-28/delivery-brief.md)).
+  - **Target (revised with the human, 2026-09-28):** walls, roof and plinth at ≤ 200 MB on the GPU,
+    all LODs resident. Today the walls alone take 377 MB: 276 MB of maps and 102 MB of geometry. The
+    first ≤ 120 MB target cannot hold each bay's unique oak figure, which alone needs about 100 MB.
+  - **Levers so far:**
+    - density by viewing distance: plaster at 4 mm with a 2 mm normal, stone at 2.5 mm;
+    - a shared plaster detail tile (engine `pbr-detail` plugin);
+    - plinth geometry simplified at 2 mm;
+    - the roof tiles' per-tile tint carried in UV integer parts (engine `pbr-tint` plugin), over a
+      shared variant atlas with baked assembled-roof AO.
+  - **Shadows:** retuning the cascade split (λ 0.9, 0.02 m bias; D-209, accepted 2026-09-28)
+    restores the roof tiles' contact shadows at no memory cost.
+  - **Remaining:** close the last ~13 MB, the roof's install with the replay re-pin, the in-game
+    A/B and the screens. Finest-mip residency and screen-space contact shadows are later engine
+    packages.
 - **Assembly A1 — first house at the well court.** Walls and roof as one house in the ordinary
   installed game, so later pieces are judged in place. It needs a court pad and paving moved to
   the well court, building collision replacing the greybox cluster there, and placements split

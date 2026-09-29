@@ -16,3 +16,7 @@ harness/chrome/cft/
 
 # Immutable binary library cache; checked-in manifests pin every admitted object (D-186).
 assets/library/objects/
+
+# Python bytecode from the Blender builders
+__pycache__/
+*.pyc

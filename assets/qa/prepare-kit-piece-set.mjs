@@ -1,4 +1,5 @@
-// Structural QA and candidate packaging for a kit-piece set (the D1 timber-framed wall kit, K1).
+// Structural QA and candidate packaging for a kit-piece set (the D1 timber-framed wall kit, K1;
+// the D1 terracotta roof kit, K2).
 // node assets/qa/prepare-kit-piece-set.mjs <class config> <delivery dir> <candidate dir>
 // The delivery dir (under ignored harness/results) holds the delivery's `pack/` (pack.json and
 // runtime KTX2), `geometry/` (geometry.json and runtime meshopt), `maps.json` and `extract.json`.
@@ -6,7 +7,7 @@
 // gate admission.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { join, relative, resolve } from "node:path";
 import { MeshoptDecoder } from "../../engine/node_modules/meshoptimizer/meshopt_decoder.mjs";
@@ -30,7 +31,8 @@ assert.equal(config.mode, "kit-piece-set");
 await mkdir(output, { recursive: false });
 await Promise.all([MeshoptEncoder.ready, MeshoptDecoder.ready]);
 const hash = (bytes) => createHash("sha256").update(bytes).digest("hex");
-const provenancePath = "assets/source/d1-walls/provenance.json";
+const provenancePath = config.provenancePath;
+assert.match(provenancePath ?? "", /^assets\/source\/[a-z0-9-]+\/provenance\.json$/, "Provenance path");
 const source = {
   sourceProvenancePath: provenancePath,
   sourceProvenanceSha256: hash(await readFile(resolve(root, provenancePath))),
@@ -130,6 +132,18 @@ for (const [name, record] of Object.entries(maps.materials)) {
       `Invalid ORM height for ${name}: a height-carrying ORM needs metallic 0`,
     );
   assert(["clamp-to-edge", "repeat"].includes(record.textureAddressMode), `${name} address mode`);
+  // A shared tiling detail tile (K2 delivery): a linear texture role of this kit, full mips.
+  const detail = record.detail;
+  if (detail !== undefined) {
+    const tile = textures[detail.texture];
+    assert(tile && tile.colorSpace === "linear", `${name} detail tile ${detail.texture}`);
+    assert(
+      detail.uvScale.length === 2 &&
+        detail.uvScale.every((v) => Number.isFinite(v) && v > 0) &&
+        [detail.normalGain, detail.albedoGain].every((v) => Number.isFinite(v) && v >= 0 && v <= 4),
+      `${name} detail layer`,
+    );
+  }
   materials[name] = {
     baseColor: roles[0],
     normal: roles[1],
@@ -138,8 +152,27 @@ for (const [name, record] of Object.entries(maps.materials)) {
     ...config.materialFactors,
     metallicFactor,
     ...(range === undefined ? {} : { ormHeightRangeMetres: range }),
+    ...(detail === undefined
+      ? {}
+      : {
+          detail: {
+            texture: detail.texture,
+            uvScale: detail.uvScale,
+            normalGain: detail.normalGain,
+            albedoGain: detail.albedoGain,
+          },
+        }),
   };
 }
+// Tinted meshes (roof tiles) carry a per-element tint in their UVs' integer parts (engine
+// pbr-tint): their material takes the geometry stage's tint model and must repeat.
+for (const mesh of geometry.meshes)
+  if (mesh.tintWorstRelativeError !== undefined) {
+    const material = materials[mesh.material];
+    assert(geometry.uvTint && material, `${mesh.object} tint`);
+    assert.equal(material.textureAddressMode, "repeat", `${mesh.material} tint needs repeat`);
+    material.tint = geometry.uvTint;
+  }
 
 const constant = (material) =>
   [material.baseColor, material.normal, material.orm].every(
@@ -150,7 +183,26 @@ const constant = (material) =>
 // stream binds to its material's base colour, an index stream to that and to its vertex stream.
 // Byte-identical streams that would bind differently (a small index list shared by two meshes)
 // get a distinct but equivalent encoding: the index list with its first triangle moved last.
+// Keys are content hashes (the runtime's resource identities), and the other admitted library
+// assets' streams are bound first: a stream byte-identical to another kit's (a small box's index
+// list) must bind the same way there too, or it gets its own encoding here.
 const bindings = new Map();
+const libraryDirectory = resolve(root, "assets/library");
+for (const name of (await readdir(libraryDirectory)).filter((n) => n.endsWith(".json")).sort()) {
+  const other = JSON.parse(await readFile(join(libraryDirectory, name), "utf8"));
+  if (other.assetId === config.assetId || other.parts === undefined) continue;
+  const shaOf = (role) => other.resources.find((r) => r.role === role)?.sha256;
+  for (const part of Object.values(other.parts)) {
+    const base = shaOf(other.materials[part.material].baseColor);
+    for (const lod of part.lods) {
+      const vertices = shaOf(lod.vertexRole);
+      if (!bindings.has(vertices)) bindings.set(vertices, base);
+      const indices = shaOf(lod.indexRole);
+      if (!bindings.has(indices)) bindings.set(indices, `${base}|${vertices}`);
+    }
+  }
+}
+const textureSha = (role) => resources.find((r) => r.role === role).sha256;
 function bindStream(bytes, key) {
   const sha = hash(bytes);
   const bound = bindings.get(sha);
@@ -247,10 +299,10 @@ for (const mesh of geometry.meshes) {
     }
     if (lod > 0) assert(entry.triangles <= lods[lod - 1].triangles, `${id} LOD reduction`);
     assert(
-      bindStream(vertexStream, material.baseColor) !== undefined,
+      bindStream(vertexStream, textureSha(material.baseColor)) !== undefined,
       `${id} LOD${lod} vertices are identical to another material's; re-export them`,
     );
-    const indexKey = `${material.baseColor}|${hash(vertexStream)}`;
+    const indexKey = `${textureSha(material.baseColor)}|${hash(vertexStream)}`;
     const boundIndices =
       bindStream(indexStream, indexKey) ??
       reencodeIndices(indexBytes, entry.triangles, indexKey, `${id} LOD${lod}`);
@@ -526,6 +578,8 @@ const candidate = {
     assemblyRotationsAboutYOnly: true,
     ktx2HeadersFullMipChainsGpuReady: true,
     ormHeightNeedsMetallicZero: true,
+    detailTilesLinear: true,
+    uvTintNeedsRepeat: true,
     canonicalMeshoptLayout: true,
     khronosValidator: { version: validatorVersion(), glbs: validation, retained: false },
     rightsReviewed: reviewed.rightsReviewed,
